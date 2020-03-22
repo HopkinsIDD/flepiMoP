@@ -17,3 +17,5 @@ data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lfs -text
 *.shx filter=lfs diff=lfs merge=lfs -text
 *.cpg filter=lfs diff=lfs merge=lfs -text
 *.qpj filter=lfs diff=lfs merge=lfs -text
+/Dockerfile filter=lfs diff=lfs merge=lfs -text
+*.txt filter=lfs diff=lfs merge=lfs -text
