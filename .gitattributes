@@ -20,3 +20,7 @@ data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lfs -text
 /Dockerfile filter=lfs diff=lfs merge=lfs -text
 *.txt filter=lfs diff=lfs merge=lfs -text
 *.yml filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/importation/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/importation/NAMESPACE filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/importation_estimation/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/importation_estimation/NAMESPACE filter=lfs diff=lfs merge=lfs -text
