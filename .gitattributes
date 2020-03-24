@@ -30,3 +30,5 @@ data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lfs -text
 *.Rmd filter=lfs diff=lfs merge=lfs -text
 *.yaml filter=lfs diff=lfs merge=lfs -text
 *.Rd filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/covidcommon/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/covidcommon/NAMESPACE filter=lfs diff=lfs merge=lfs -text
