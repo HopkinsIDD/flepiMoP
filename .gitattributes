@@ -41,3 +41,5 @@ packrat/lib/x86_64-pc-linux-gnu/3.6.3/arrow/libs/arrow.so filter=lfs diff=lfs me
 *.gz filter=lfs diff=lfs merge=lfs -text
 *.rmd filter=lfs diff=lfs merge=lfs -text
 *.Rprofile filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/inference/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/R/pkgs/inference/NAMESPACE filter=lfs diff=lfs merge=lfs -text
