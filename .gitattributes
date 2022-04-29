@@ -52,3 +52,6 @@ packrat/lib/x86_64-pc-linux-gnu/3.6.3/arrow/libs/arrow.so filter=lfs diff=lfs me
 *.cfg filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
 *.html filter=lfs diff=lfs merge=lfs -text
+*.Rproj filter=lfs diff=lfs merge=lfs -text
+/Outcomes.egg-info/PKG-INFO filter=lfs diff=lfs merge=lfs -text
+/Outcomes.egg-info/zip-safe filter=lfs diff=lfs merge=lfs -text
