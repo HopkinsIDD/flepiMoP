@@ -1,5 +1,5 @@
 renv.cache/** filter=lfs diff=lfs merge=lfs -text
-data/**.csv filter=lfs diff=lfs merge=lfs -text
+sample_data/**.csv filter=lfs diff=lfs merge=lfs -text
 *.md filter=lfs diff=lfs merge=lfs -text
 *.py filter=lfs diff=lfs merge=lfs -text
 *.R filter=lfs diff=lfs merge=lfs -text
