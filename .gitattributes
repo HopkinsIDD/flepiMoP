@@ -55,3 +55,4 @@ sample_data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lf
 *.Rproj filter=lfs diff=lfs merge=lfs -text
 /Outcomes.egg-info/PKG-INFO filter=lfs diff=lfs merge=lfs -text
 /Outcomes.egg-info/zip-safe filter=lfs diff=lfs merge=lfs -text
+*.bashrc filter=lfs diff=lfs merge=lfs -text
