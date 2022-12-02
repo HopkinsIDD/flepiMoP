@@ -57,3 +57,5 @@ sample_data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lf
 /Outcomes.egg-info/zip-safe filter=lfs diff=lfs merge=lfs -text
 *.bashrc filter=lfs diff=lfs merge=lfs -text
 *.dockerignore filter=lfs diff=lfs merge=lfs -text
+/batch/Rprofile filter=lfs diff=lfs merge=lfs -text
+*.run filter=lfs diff=lfs merge=lfs -text
