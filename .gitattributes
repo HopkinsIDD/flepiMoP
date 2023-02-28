@@ -59,3 +59,11 @@ sample_data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lf
 *.dockerignore filter=lfs diff=lfs merge=lfs -text
 /batch/Rprofile filter=lfs diff=lfs merge=lfs -text
 *.run filter=lfs diff=lfs merge=lfs -text
+/build/docker/Dockerfile filter=lfs diff=lfs merge=lfs -text
+*.dcf filter=lfs diff=lfs merge=lfs -text
+/flepimop/R_packages/config.writer/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/flepimop/R_packages/config.writer/NAMESPACE filter=lfs diff=lfs merge=lfs -text
+/flepimop/R_packages/flepicommon/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/flepimop/R_packages/flepicommon/NAMESPACE filter=lfs diff=lfs merge=lfs -text
+/flepimop/R_packages/inference/DESCRIPTION filter=lfs diff=lfs merge=lfs -text
+/flepimop/R_packages/inference/NAMESPACE filter=lfs diff=lfs merge=lfs -text
