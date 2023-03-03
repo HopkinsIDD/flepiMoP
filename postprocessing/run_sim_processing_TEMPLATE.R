@@ -4,7 +4,7 @@
 #' 1. Set pathogen, application, and processing options in the "SETUP" block.
 #' 2. Modify submission specifics in the "SUBMISSION SPECIFICS" block for any hub requirements.
 #' 3. Be sure to specify if this is a forecast ("fch") or scenario projection ("smh")
-#' 4. Make sure the CSP repo (https://github.com/HopkinsIDD/flepiMoP) is in the same directory as this repo
+#' 4. Make sure the flepiMoP repo (https://github.com/HopkinsIDD/flepiMoP) is in the same directory as this repo
 
 gc()
 library(inference)
@@ -20,8 +20,8 @@ library(doParallel)
 # Use local if no access to internet or making local changes to code
 use_local_repo <- TRUE
 github_url <- "https://raw.githubusercontent.com/HopkinsIDD/COVIDScenarioPipeline/main-addprocessing"
-csp_local_dir <- "../COVIDScenarioPipeline"
-# csp_local_dir <- "../../nCov/COVIDScenarioPipeline"
+flepimop_local_dir <- "../COVIDScenarioPipeline"
+# flepimop_local_dir <- "../../nCov/COVIDScenarioPipeline"
 
 
 # ~ Main Run Options -----------------------------------------------------------
@@ -199,13 +199,13 @@ if (smh_or_fch == "smh" & pathogen == "covid19"){
 
 # determine if local repo or pulling from github
 # - if local:
-#     -- make sure you have the CSP repo in the same base directory as the project directory (i.e., same as COVID19_USA)
-#     -- make sure to pull CSP so have most up-to-date
+#     -- make sure you have the flepiMoP repo in the same base directory as the project directory (i.e., same as COVID19_USA)
+#     -- make sure to pull flepiMoP so have most up-to-date
 # - if github:
 #     -- code is pulled from the https://github.com/HopkinsIDD/flepiMoP repo
 #
 if (use_local_repo){
-    source_loc <- csp_local_dir
+    source_loc <- flepimop_local_dir
 } else {
     source_loc <- github_url
 }
