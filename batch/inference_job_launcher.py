@@ -44,7 +44,7 @@ def user_confirmation(question="Continue?", default=False):
 @click.option(
     "-p",
     "--pipepath",
-    "csp_path",
+    "flepi_path",
     envvar="FLEPI_PATH",
     type=click.Path(exists=True),
     required=True,
@@ -228,7 +228,7 @@ def user_confirmation(question="Continue?", default=False):
 def launch_batch(
     batch_system,
     config_file,
-    csp_path,
+    flepi_path,
     data_path,
     run_id,
     num_jobs,
@@ -313,7 +313,7 @@ def launch_batch(
 
     handler = BatchJobHandler(
         batch_system,
-        csp_path,
+        flepi_path,
         data_path,
         run_id,
         num_jobs,
@@ -418,7 +418,7 @@ class BatchJobHandler(object):
     def __init__(
         self,
         batch_system,
-        csp_path,
+        flepi_path,
         data_path,
         run_id,
         num_jobs,
@@ -441,7 +441,7 @@ class BatchJobHandler(object):
         s3_upload,
     ):
         self.batch_system = batch_system
-        self.csp_path = csp_path
+        self.flepi_path = flepi_path
         self.data_path = data_path
         self.run_id = run_id
         self.num_jobs = num_jobs
@@ -475,7 +475,7 @@ class BatchJobHandler(object):
         manifest["cmd"] = " ".join(sys.argv[:])
         manifest["job_name"] = job_name
         manifest["data_sha"] = subprocess.getoutput("cd {self.data_path}; git rev-parse HEAD")
-        manifest["csp_sha"] = subprocess.getoutput(f"cd {self.csp_path}; git rev-parse HEAD")
+        manifest["csp_sha"] = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
 
         # Save the manifest file to S3
         with open("manifest.json", "w") as f:
@@ -501,7 +501,7 @@ class BatchJobHandler(object):
         # this tar file always has the structure:
         # where all data files are in the root of the tar file and the csp files are in a COVIDScenarioPipeline folder.
         tar = tarfile.open(tarfile_name, "w:gz", dereference=True)
-        for q in os.listdir(self.csp_path):
+        for q in os.listdir(self.flepi_path):
             if not (
                 q == "packrat"
                 or q == "covid-dashboard-app"
@@ -511,11 +511,11 @@ class BatchJobHandler(object):
                 or q == "renv"               # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
-                tar.add(os.path.join(self.csp_path, q), arcname=os.path.join("COVIDScenarioPipeline", q))
+                tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("COVIDScenarioPipeline", q))
             elif q == "sample_data":
-                for r in os.listdir(os.path.join(self.csp_path, "sample_data")):
+                for r in os.listdir(os.path.join(self.flepi_path, "sample_data")):
                     if r != "united-states-commutes":
-                        tar.add(os.path.join(self.csp_path, "sample_data", r), arcname=os.path.join("COVIDScenarioPipeline", "sample_data", r))
+                        tar.add(os.path.join(self.flepi_path, "sample_data", r), arcname=os.path.join("COVIDScenarioPipeline", "sample_data", r))
                         #tar.add(os.path.join("COVIDScenarioPipeline", "sample_data", r))
         for p in os.listdir(self.data_path):
             if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "COVIDScenarioPipeline"):
@@ -571,7 +571,7 @@ class BatchJobHandler(object):
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
             {"name": "DATA_PATH", "value": str(self.data_path)},
-            {"name": "FLEPI_PATH", "value": str(self.csp_path)},
+            {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
             {"name": "COVID_CONFIG_PATH", "value": config_file},
             {"name": "COVID_NSIMULATIONS", "value": str(self.num_jobs)},
             {
@@ -781,10 +781,10 @@ class BatchJobHandler(object):
                 print(f" >> Final output will be uploaded to {s3_results_path}/model_output/")
         print(f" >> Run id is {self.run_id}")
         print(f" >> config is {config_file.split('/')[-1]}")
-        csp_branch = subprocess.getoutput(f"cd {self.csp_path}; git rev-parse --abbrev-ref HEAD")
+        csp_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
         data_branch = subprocess.getoutput(f"cd {self.data_path}; git rev-parse --abbrev-ref HEAD")
         data_hash = subprocess.getoutput(f"cd {self.data_path}; git rev-parse HEAD")
-        csp_hash = subprocess.getoutput(f"cd {self.csp_path}; git rev-parse HEAD")
+        csp_hash = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
         print(f""" >> CSP branch is {csp_branch} with hash {csp_hash}""")
         print(f""" >> DATA branch is {data_branch} with hash {data_hash}""")
         print(f" ------------------------- END -------------------------")
