@@ -55,7 +55,7 @@ vignettes/*.pdf
 packrat/lib*/
 
 # Python build dirs
-build/
+#build/
 dist/
 SEIR.egg-info/
 Outcomes.egg-info/
