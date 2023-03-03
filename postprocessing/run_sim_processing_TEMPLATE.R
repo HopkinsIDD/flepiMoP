@@ -211,8 +211,8 @@ if (use_local_repo){
 }
 # source("R/process_sims/groundtruth_source.R")
 # source("R/process_sims/process_projections_functions_NEW.R")
-source(paste0(source_loc, "/R/scripts/postprocess/groundtruth_source.R"))
-source(paste0(source_loc, "/R/scripts/postprocess/sim_processing_source.R"))
+source(paste0(source_loc, "/postprocessing/groundtruth_source.R"))
+source(paste0(source_loc, "/postprocessing/sim_processing_source.R"))
 
 
 
@@ -528,7 +528,7 @@ if(plot_projections){
                                                  ifelse(is.na(subname), "", subname)))
 
     # Run plotting script
-    source(paste0(source_loc, "/R/scripts/postprocess/plot_predictions.R"))
+    source(paste0(source_loc, "/postprocessing/plot_predictions.R"))
 }
 
 
