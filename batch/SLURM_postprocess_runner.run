@@ -35,5 +35,5 @@ source /data/struelo1/flepimop-code/slack_credentials.sh # populate $SLACK_TOKEN
 rm -r pplot
 mkdir pplot
 
-source $COVID_PATH/batch/postprocessing-scripts.sh
+source $FLEPI_PATH/batch/postprocessing-scripts.sh
 
