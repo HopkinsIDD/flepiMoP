@@ -660,7 +660,7 @@ initialize_mcmc_first_block <- function(
     if(!file.exists(config$seeding$lambda_file)) {
       err <- system(paste(
         opt$rpath,
-        paste(opt$pipepath, "flepimop", "main_scripts", "create_seeding.R", sep = "/"),
+        paste(opt$flepi_path, "flepimop", "main_scripts", "create_seeding.R", sep = "/"),
         "-c", opt$config
       ))
       if (err != 0) {
