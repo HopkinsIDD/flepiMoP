@@ -1,3 +1,3 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5b8b1feecb7bbadcb7ee39c5e2284c4d21c04005f5a33cf0320f71a98d94b73b
-size 68
+geoid,population,include_in_report
+10001,1000,TRUE
+20002,2000,FALSE

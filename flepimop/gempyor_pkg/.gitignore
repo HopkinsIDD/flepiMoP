@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:432ead7de69bacc2e8c7933ca50a9a64896e188aa5e98840b7da863852481694
-size 187
+tests/outcomes/test_pwrite.parquet
+tests/seir/data/parsed_compartment_compartments.test.parquet
+tests/seir/data/parsed_compartment_transitions.test.parquet
+tests/seir/test_pwrite.parquet

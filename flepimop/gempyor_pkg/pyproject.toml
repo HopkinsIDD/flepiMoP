@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:634633fa3426b545f963606a0f31bc5f3ba789f9b0d0d080f7f93494a33bb6e4
-size 104
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"

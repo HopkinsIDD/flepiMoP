@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d9aa9c76cb362bed1058b3635dadcff48c9afa5890d0693c80820c0143ebb1e6
-size 695
+import pandas as pd
+import numpy as np
+import typing
+
+
+# Helper function
+def reduce_parameter(
+    parameter: np.ndarray,
+    modification: typing.Union[pd.DataFrame, float],
+    method: str = "prod",
+) -> np.ndarray:
+    if isinstance(modification, pd.DataFrame):
+        modification = modification.T
+        modification.index = pd.to_datetime(modification.index.astype(str))
+        modification = modification.resample("1D").ffill().to_numpy()  # Type consistency:
+    if method == "prod":
+        return parameter * (1 - modification)
+    elif method == "sum":
+        return parameter + modification
+    else:
+        raise ValueError(f"Unknown method to do NPI reduction, got {method}")
