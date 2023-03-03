@@ -45,7 +45,7 @@ def user_confirmation(question="Continue?", default=False):
     "-p",
     "--pipepath",
     "csp_path",
-    envvar="COVID_PATH",
+    envvar="FLEPI_PATH",
     type=click.Path(exists=True),
     required=True,
     help="path to the COVIDScenarioPipeline directory",
@@ -571,7 +571,7 @@ class BatchJobHandler(object):
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
             {"name": "DATA_PATH", "value": str(self.data_path)},
-            {"name": "COVID_PATH", "value": str(self.csp_path)},
+            {"name": "FLEPI_PATH", "value": str(self.csp_path)},
             {"name": "COVID_CONFIG_PATH", "value": config_file},
             {"name": "COVID_NSIMULATIONS", "value": str(self.num_jobs)},
             {

@@ -55,7 +55,7 @@ error_handler() {
 	fi
 }
 
-# Note $COVID_PATH because here we're using the tar file of the pipeline, untarred in pwd.
+# Note $FLEPI_PATH because here we're using the tar file of the pipeline, untarred in pwd.
 Rscript COVIDScenarioPipeline/build/local_install.R
 local_install_ret=$?
 

@@ -293,7 +293,7 @@ if (any(pull_from_s3)) {
 # LOAD GROUND TRUTH -------------------------------------------------------
 
 Sys.setenv(CONFIG_PATH = config_name)
-Sys.setenv(COVID_PATH = source_loc)
+Sys.setenv(FLEPI_PATH = source_loc)
 if (pathogen == "flu"){
     source(paste0(source_loc, "/datasetup/build_flu_data.R"))
 } else if (pathogen == "covid19"){

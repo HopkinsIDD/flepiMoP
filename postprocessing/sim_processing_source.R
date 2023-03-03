@@ -394,7 +394,7 @@ load_simulations_orig <- function(geodata,
 get_ground_truth_revised <- function(config, scenario_dir, csp_path = "../COVIDScenarioPipeline") {
 
     Sys.setenv(CONFIG_PATH = config)
-    Sys.setenv(COVID_PATH  = csp_path)
+    Sys.setenv(FLEPI_PATH  = csp_path)
     # source(file.path(csp_path, "datasetup/build_US_setup.R"))
     source(file.path(csp_path, "datasetup/build_covid_data.R"))
 
