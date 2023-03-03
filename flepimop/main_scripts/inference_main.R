@@ -85,7 +85,7 @@ foreach(slot = seq_len(opt$slots)) %dopar% {
     paste(
       opt$rpath,
       paste(
-        opt$pipepath,"R","scripts","inference_slot.R",sep='/'),
+        opt$pipepath, "flepimop", "main_scripts","inference_slot.R",sep='/'),
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$scenarios,

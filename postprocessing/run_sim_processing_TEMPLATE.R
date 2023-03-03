@@ -336,7 +336,7 @@ peak_ram_ <- peakRAM::peakRAM({
         print(scenarios_all[scenario_num])
         scenario_dir <- paste0(round_directory, "/", scenarios_all[i], "/")
 
-        #source("R/scripts/process_sims/process_sims_parallel_NEW.R", local=TRUE)
+        #source("postprocessing/process_sims_parallel_NEW.R", local=TRUE)
         tmp_out_ <- process_sims(scenario_num = scenario_num,
                                  scenarios_all = scenarios_all,
                                  scenario_names = scenario_names,
