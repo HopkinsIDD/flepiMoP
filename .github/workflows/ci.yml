@@ -33,7 +33,7 @@ jobs:
           python -m pip install gempyor_pkg/
         shell: bash
       - name: Install local R packages
-        run: Rscript local_install.R
+        run: Rscript build/local_install.R
         shell: bash
       - name: Run gempyor tests
         run: |
@@ -65,7 +65,7 @@ jobs:
         env:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
         run: |
-          Rscript local_install.R
+          Rscript build/local_install.R
           cd test
           source /var/python/3.10/virtualenv/bin/activate
           pytest run_tests.py

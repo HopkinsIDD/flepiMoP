@@ -33,7 +33,8 @@ model_output/
 
 # RStudio files
 .Rproj.user/
-COVIDScenarioPipeline.Rproj
+flepiMoP.Rproj
+*.Rproj
 
 # produced vignettes
 vignettes/*.html
