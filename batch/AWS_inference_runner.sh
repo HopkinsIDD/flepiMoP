@@ -126,14 +126,14 @@ echo "---"
 find data
 echo "==="
 
-echo "***************** RUNNING FILTER_MC.R *****************"
+echo "***************** RUNNING inference_slot.R *****************"
 # NOTE(jwills): hard coding this for now
-Rscript COVIDScenarioPipeline/R/scripts/filter_MC.R -p COVIDScenarioPipeline
+Rscript COVIDScenarioPipeline/R/scripts/inference_slot.R -p COVIDScenarioPipeline
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
-        error_handler "Error code returned from full_filter.R: $dvc_ret"
+        error_handler "Error code returned from inference_main.R: $dvc_ret"
 fi
-echo "***************** DONE RUNNING FILTER_MC.R *****************"
+echo "***************** DONE RUNNING inference_slot.R *****************"
 
 echo "***************** UPLOADING RESULT TO S3 *****************"
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
