@@ -96,7 +96,7 @@ echo "Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R --config $COVID
                                                --stoch_traj_flag $COVID_STOCHASTIC # Stochastic SEIR and outcomes trajectories if true
                                                --ground_truth_start $COVID_GT_START # First date to include groundtruth for
                                                --ground_truth_end $COVID_GT_END # First date to include groundtruth fo
-                                               --pipepath $FLEPI_PATH
+                                               --flepi_path $FLEPI_PATH
                                                --python python
                                                --rpath Rscript
                                                --is-resume $COVID_IS_RESUME # Is this run a resume

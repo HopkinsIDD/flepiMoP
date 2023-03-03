@@ -43,7 +43,7 @@ def user_confirmation(question="Continue?", default=False):
 )
 @click.option(
     "-p",
-    "--pipepath",
+    "--flepi_path",
     "flepi_path",
     envvar="FLEPI_PATH",
     type=click.Path(exists=True),
