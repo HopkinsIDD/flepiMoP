@@ -120,6 +120,6 @@ COPY --chown=app:app build/renv/renv $HOME/renv
 COPY --chown=app:app build/docker/Docker.Rprofile $HOME/.Rprofile
 COPY --chown=app:app flepimop/R_packages $HOME/pkgs
 
-COPY --chown=app:app build/local_install.R $HOME/local_install.R
+COPY --chown=app:app build/build/local_install.R $HOME/build/local_install.R
 
 CMD ["/bin/bash"]

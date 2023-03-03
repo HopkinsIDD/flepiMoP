@@ -56,11 +56,11 @@ error_handler() {
 }
 
 # Note $COVID_PATH because here we're using the tar file of the pipeline, untarred in pwd.
-Rscript COVIDScenarioPipeline/local_install.R
+Rscript COVIDScenarioPipeline/build/local_install.R
 local_install_ret=$?
 
 if [ $local_install_ret -ne 0 ]; then
-	error_handler "Error code returned from running local_install.R: $local_install_ret"
+	error_handler "Error code returned from running build/local_install.R: $local_install_ret"
 fi
 
 python -m pip install --upgrade pip # needs new pip for toml file
