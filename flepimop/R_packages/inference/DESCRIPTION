@@ -13,7 +13,7 @@ LazyData: true
 Imports:
   dplyr,
   readr,
-  covidcommon,
+  flepicommon,
   report.generation,
   stringr,
   foreach,

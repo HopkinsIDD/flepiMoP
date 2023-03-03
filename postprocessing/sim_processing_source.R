@@ -1076,7 +1076,7 @@ process_sims <- function(
     opt$end_date <- end_date
 
     config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenario, subname_all[1], config_subname)), collapse="_"), ".yml")
-    config <- covidcommon::load_config(config_name)
+    config <- flepicommon::load_config(config_name)
 
     if (smh_or_fch=="fch") {
         scenario <- proj_id

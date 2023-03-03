@@ -586,7 +586,7 @@ get_CSSE_global_data <- function(case_data_filename = "data/case_data/jhucsse_ca
   csse_global_data <- dplyr::arrange(csse_global_data, Country_Region, Province_State, Update)
 
   if (append_wiki){
-    data("wikipedia_cases", package = "covidcommon")
+    data("wikipedia_cases", package = "flepicommon")
     wikipedia_cases <- dplyr::mutate(wikipedia_cases, Country_Region = ifelse(Country_Region=="Mainland China", "China", Country_Region), Update = as.Date(Update), iso2 = "CN", iso3 = "CHN", Latitude = 30.9756, Longitude = 112.2707)
     wikipedia_cases <- dplyr::mutate(wikipedia_cases, UID = ifelse(!is.na(Province_State), paste0(iso3, "-", Province_State), iso3))
     wikipedia_cases <- dplyr::select(wikipedia_cases, -Suspected)

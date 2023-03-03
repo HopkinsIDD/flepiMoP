@@ -1,4 +1,4 @@
 library(testthat)
-library(covidcommon)
+library(flepicommon)
 
-test_check("covidcommon")
+test_check("flepicommon")

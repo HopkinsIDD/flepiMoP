@@ -371,8 +371,8 @@ perturb_snpi <- function(snpi, intervention_settings) {
 
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
 
-      ##get the random distribution from covidcommon package
-      pert_dist <- covidcommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
+      ##get the random distribution from flepicommon package
+      pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
 
       ##get the npi values for this distribution
       ind <- (snpi[["npi_name"]] == intervention)
@@ -384,7 +384,7 @@ perturb_snpi <- function(snpi, intervention_settings) {
       snpi_new <- snpi[["reduction"]][ind] + pert_dist(sum(ind))
 
       ##check that this is in bounds (equivalent to having a positive probability)
-      in_bounds_index <- covidcommon::as_density_distribution(
+      in_bounds_index <- flepicommon::as_density_distribution(
         intervention_settings[[intervention]][['value']]
       )(snpi_new) > 0
 
@@ -413,8 +413,8 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
 
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
 
-      ##get the random distribution from covidcommon package
-      pert_dist <- covidcommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
+      ##get the random distribution from flepicommon package
+      pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
 
       ##get the npi values for this distribution
       ind <- (hnpi[["npi_name"]] == intervention)
@@ -426,7 +426,7 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
       hnpi_new <- hnpi[["reduction"]][ind] + pert_dist(sum(ind))
 
       ##check that this is in bounds (equivalent to having a positive probability)
-      in_bounds_index <- covidcommon::as_density_distribution(
+      in_bounds_index <- flepicommon::as_density_distribution(
         intervention_settings[[intervention]][['value']]
       )(hnpi_new) > 0
 
@@ -453,8 +453,8 @@ perturb_hpar <- function(hpar, intervention_settings) {
     for(quantity in names(intervention_settings[[intervention]])){
       if('perturbation' %in% names(intervention_settings[[intervention]][[quantity]])){
         intervention_quantity <- intervention_settings[[intervention]][[quantity]]
-        ## get the random distribution from covidcommon package
-        pert_dist <- covidcommon::as_random_distribution(intervention_quantity[['perturbation']])
+        ## get the random distribution from flepicommon package
+        pert_dist <- flepicommon::as_random_distribution(intervention_quantity[['perturbation']])
 
         ##get the hpar values for this distribution
         ind <- (hpar[["outcome"]] == intervention) & (hpar[["quantity"]] == quantity) # & (hpar[['source']] == intervention_settings[[intervention]][['source']])
@@ -479,7 +479,7 @@ perturb_hpar <- function(hpar, intervention_settings) {
         }
 
         ## Check that this is in the support of the original distribution
-        in_bounds_index <- covidcommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
+        in_bounds_index <- flepicommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
         hpar$value[ind][in_bounds_index] <- hpar_new[in_bounds_index]
       }
     }
@@ -643,14 +643,14 @@ perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
         his_accept_prob <- llik$accept_prob[llik$geoid==this_geoid] 
         this_intervention_setting<- intervention_settings[[intervention]]
         
-        ##get the random distribution from covidcommon package
-        pert_dist <- covidcommon::as_random_distribution(this_intervention_setting$perturbation)
+        ##get the random distribution from flepicommon package
+        pert_dist <- flepicommon::as_random_distribution(this_intervention_setting$perturbation)
         
         ##add the perturbation...for now always parameterized in terms of a "reduction"
         snpi_new <- snpi[["reduction"]][this_npi_ind] + pert_dist(1)
         
         ##check that this is in bounds (equivalent to having a positive probability)
-        in_bounds_index <- covidcommon::as_density_distribution(
+        in_bounds_index <- flepicommon::as_density_distribution(
           intervention_settings[[intervention]][['value']]
         )(snpi_new) > 0
         
@@ -737,14 +737,14 @@ perturb_hnpi_from_file  <- function(hnpi, intervention_settings, llik){
         this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid] 
         this_intervention_setting<- intervention_settings[[intervention]]
         
-        ##get the random distribution from covidcommon package
-        pert_dist <- covidcommon::as_random_distribution(this_intervention_setting$perturbation)
+        ##get the random distribution from flepicommon package
+        pert_dist <- flepicommon::as_random_distribution(this_intervention_setting$perturbation)
         
         ##add the perturbation...for now always parameterized in terms of a "reduction"
         hnpi_new <- hnpi[["reduction"]][this_npi_ind] + pert_dist(1)
         
         ##check that this is in bounds (equivalent to having a positive probability)
-        in_bounds_index <- covidcommon::as_density_distribution(
+        in_bounds_index <- flepicommon::as_density_distribution(
           intervention_settings[[intervention]][['value']]
         )(hnpi_new) > 0
         

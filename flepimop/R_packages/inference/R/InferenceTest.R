@@ -37,9 +37,9 @@ single_loc_inference_test <- function(to_fit,
     simulations_per_slot <- config$filtering$simulations_per_slot
     
     # SEIR parameters for simulations
-    R0 <- covidcommon::as_evaled_expression(config$seir$parameters$R0s$value)
-    gamma <- covidcommon::as_evaled_expression(config$seir$parameters$gamma$value)
-    sigma <- covidcommon::as_evaled_expression(config$seir$parameters$sigma)
+    R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
+    gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
+    sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
     # Data to fit
     obs <- to_fit
@@ -67,7 +67,7 @@ single_loc_inference_test <- function(to_fit,
     
     # Filtering loops
     required_packages <- c("dplyr", "magrittr", "xts", "zoo", "purrr", "stringr", "truncnorm",
-                           "readr", "covidcommon", "hospitalization", "data.table",
+                           "readr", "flepicommon", "hospitalization", "data.table",
                            "inference")  # packages required for dopar
     
     
@@ -280,9 +280,9 @@ multi_loc_inference_test <- function(to_fit,
     simulations_per_slot <- config$filtering$simulations_per_slot
     
     # SEIR parameters for simulations
-    R0 <- covidcommon::as_evaled_expression(config$seir$parameters$R0s$value)
-    gamma <- covidcommon::as_evaled_expression(config$seir$parameters$gamma$value)
-    sigma <- covidcommon::as_evaled_expression(config$seir$parameters$sigma)
+    R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
+    gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
+    sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
     # Data to fit
     obs <- to_fit
@@ -310,7 +310,7 @@ multi_loc_inference_test <- function(to_fit,
     
     # Filtering loops
     required_packages <- c("dplyr", "magrittr", "xts", "zoo", "purrr", "stringr", "truncnorm",
-                           "readr", "covidcommon", "hospitalization", "data.table",
+                           "readr", "flepicommon", "hospitalization", "data.table",
                            "inference", "purrr", "tidyr")  # packages required for dopar
     
     
@@ -842,9 +842,9 @@ synthetic_data <- function(S0, seeding, config) {
     # Simulate single epidemic 
     times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     npis <- npis_dataframe(config)
-    R0 <- covidcommon::as_evaled_expression(config$seir$parameters$R0s$value)
-    gamma <- covidcommon::as_evaled_expression(config$seir$parameters$gamma$value)
-    sigma <- covidcommon::as_evaled_expression(config$seir$parameters$sigma)
+    R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
+    gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
+    sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
     # Simulate epi
     epi <- simulate_single_epi(times = times,
@@ -891,9 +891,9 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
                                     intervention_multi = z)) %>% 
         bind_rows()
     
-    R0 <- covidcommon::as_evaled_expression(config$seir$parameters$R0s$value)
-    gamma <- covidcommon::as_evaled_expression(config$seir$parameters$gamma$value)
-    sigma <- covidcommon::as_evaled_expression(config$seir$parameters$sigma)
+    R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
+    gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
+    sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
     npi_mat <- select(npis, date, geoid, reduction) %>% 
         pivot_wider(values_from = "reduction", names_from = "geoid", id_cols = "date")
