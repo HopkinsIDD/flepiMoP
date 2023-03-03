@@ -204,7 +204,7 @@ aggregate_and_calc_loc_likelihoods <- function(
 
 ##'
 ##' Function that performs the necessary file copies the end of an MCMC iteration of
-##' filter_MC.
+##' inference_slot.
 ##'
 ##'@param current_index the current index in the run
 ##'@param slot what is the current slot number
@@ -368,7 +368,7 @@ perform_MCMC_step_copies_global <- function(current_index,
 
 ##'
 ##' Function that performs the necessary file copies the end of an MCMC iteration of
-##' filter_MC.
+##' inference_slot.
 ##'
 ##'@param current_index the current index in the run
 ##'@param slot what is the current slot number
