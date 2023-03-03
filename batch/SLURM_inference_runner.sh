@@ -13,7 +13,7 @@ COVID_SLOT_INDEX=${SLURM_ARRAY_TASK_ID}
 
 echo "***************** LOADING ENVIRONMENT *****************"
 module purge
-# on marcc this is anaconda3/2022.05 to circumvent anaconda python bug. Otherwise that is just anaconda 
+# on marcc this is anaconda3/2022.05 to circumvent anaconda python bug. Otherwise that is just anaconda
 module load anaconda
 module load anaconda3/2022.05
 conda activate covidSP
@@ -85,9 +85,9 @@ echo "***************** DONE FETCHING RESUME FILES *****************"
 
 echo "***************** RUNNING inference_slot.R *****************"
 export LOG_FILE="$FS_RESULTS_PATH/log_${COVID_RUN_INDEX}_${COVID_SLOT_INDEX}.txt"
-echo "Rscript $COVID_PATH/R/scripts/inference_slot.R --config $COVID_CONFIG_PATH   # path to the config file  
+echo "Rscript $COVID_PATH/flepimop/main_scripts/inference_slot.R --config $COVID_CONFIG_PATH   # path to the config file
                                                --run_id $COVID_RUN_INDEX  # Unique identifier for this run
-                                               --scenarios $COVID_SCENARIOS  # name of the intervention to run, or 'all' 
+                                               --scenarios $COVID_SCENARIOS  # name of the intervention to run, or 'all'
                                                --deathrates $COVID_DEATHRATES  # name of the outcome scenarios to run, or 'all'
                                                --jobs 1  # Number of jobs to run in parallel
                                                --simulations_per_slot $COVID_SIMULATIONS_PER_SLOT # number of simulations to run for this slot
@@ -102,7 +102,7 @@ echo "Rscript $COVID_PATH/R/scripts/inference_slot.R --config $COVID_CONFIG_PATH
                                                --is-resume $COVID_IS_RESUME # Is this run a resume
                                                --is-interactive FALSE # Is this run an interactive run" > $LOG_FILE 2>&1 &
 
-Rscript $COVID_PATH/R/scripts/inference_slot.R -p $COVID_PATH --this_slot $COVID_SLOT_INDEX --config $COVID_CONFIG_PATH --run_id $COVID_RUN_INDEX --scenarios $COVID_SCENARIOS --deathrates $COVID_DEATHRATES --jobs 1 --simulations_per_slot $COVID_SIMULATIONS_PER_SLOT --this_block 1 --stoch_traj_flag $COVID_STOCHASTIC --is-resume $COVID_IS_RESUME --is-interactive FALSE > $LOG_FILE 2>&1
+Rscript $COVID_PATH/flepimop/main_scripts/inference_slot.R -p $COVID_PATH --this_slot $COVID_SLOT_INDEX --config $COVID_CONFIG_PATH --run_id $COVID_RUN_INDEX --scenarios $COVID_SCENARIOS --deathrates $COVID_DEATHRATES --jobs 1 --simulations_per_slot $COVID_SIMULATIONS_PER_SLOT --this_block 1 --stoch_traj_flag $COVID_STOCHASTIC --is-resume $COVID_IS_RESUME --is-interactive FALSE > $LOG_FILE 2>&1
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
         echo "Error code returned from inference_main.R: $dvc_ret"
@@ -198,10 +198,10 @@ echo "***************** DONE COPYING RESULTS TO RESULT DIRECTORY ***************
 echo "DONE EVERYTHING."
 
 # move all the slurm log files:
-# doc: By default both standard output and standard error are directed to the same file. 
-#For job arrays, the default file name is "slurm-%A_%a.out", 
+# doc: By default both standard output and standard error are directed to the same file.
+#For job arrays, the default file name is "slurm-%A_%a.out",
 # "%A" is replaced by the job ID and "%a" with the array index.
-# --> THIS DOES NOT WORK 
+# --> THIS DOES NOT WORK
 #mv slurm-$SLURM_ARRAY_JOB_ID_${SLURM_ARRAY_TASK_ID}.out $FS_RESULTS_PATH/slurm-$SLURM_ARRAY_JOB_ID_${SLURM_ARRAY_TASK_ID}.out
 
 

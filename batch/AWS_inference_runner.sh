@@ -127,8 +127,8 @@ find data
 echo "==="
 
 echo "***************** RUNNING inference_slot.R *****************"
-# NOTE(jwills): hard coding this for now
-Rscript COVIDScenarioPipeline/R/scripts/inference_slot.R -p COVIDScenarioPipeline
+
+Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p COVIDScenarioPipeline
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
         error_handler "Error code returned from inference_main.R: $dvc_ret"
