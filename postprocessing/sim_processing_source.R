@@ -391,7 +391,7 @@ load_simulations_orig <- function(geodata,
 
 
 
-get_ground_truth_revised <- function(config, scenario_dir, flepi_path = "../COVIDScenarioPipeline") {
+get_ground_truth_revised <- function(config, scenario_dir, flepi_path = "../flepiMoP") {
 
     Sys.setenv(CONFIG_PATH = config)
     Sys.setenv(FLEPI_PATH  = flepi_path)

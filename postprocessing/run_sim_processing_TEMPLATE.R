@@ -19,9 +19,9 @@ library(doParallel)
 # if using local, make sure its pulled and in same base directory as project
 # Use local if no access to internet or making local changes to code
 use_local_repo <- TRUE
-github_url <- "https://raw.githubusercontent.com/HopkinsIDD/COVIDScenarioPipeline/main-addprocessing"
-flepimop_local_dir <- "../COVIDScenarioPipeline"
-# flepimop_local_dir <- "../../nCov/COVIDScenarioPipeline"
+github_url <- "https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/main-addprocessing"
+flepimop_local_dir <- "../flepiMoP"
+# flepimop_local_dir <- "../../nCov/flepiMoP"
 
 
 # ~ Main Run Options -----------------------------------------------------------
