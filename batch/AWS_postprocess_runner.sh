@@ -128,9 +128,8 @@ echo "==="
 
 echo "***************** RUNNING POSTPROCESS SCRIPTS.R *****************"
 ### Above this line: same as inference runner, or quite close
-
-# NOTE(jwills): hard coding this for now
-python COVIDScenarioPipeline/scripts/batch_postprocess.py
+## THis currently does not exist
+python $FLEPI_PATH/batch/batch_postprocess.py
 
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
