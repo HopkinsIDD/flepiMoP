@@ -468,14 +468,14 @@ class BatchJobHandler(object):
         Create a manifest file to preserve what is used for the current run.
         - For slurm: save this manifest into the fs_folder
         - For aws: save the manifest into the s3_bucket, but also upload the necessary files to run the job
-        (inference_runner.sh, inference_runner.py, and the csp_ and data_ folders)
+        (inference_runner.sh, inference_runner.py, and the flepimop_ and data_ folders)
         TODO: should we save the tar file when doing the slurm as well in case the user pulls while the job is running?
         """
         manifest = {}
         manifest["cmd"] = " ".join(sys.argv[:])
         manifest["job_name"] = job_name
         manifest["data_sha"] = subprocess.getoutput("cd {self.data_path}; git rev-parse HEAD")
-        manifest["csp_sha"] = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
+        manifest["flepimop_sha"] = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
 
         # Save the manifest file to S3
         with open("manifest.json", "w") as f:
@@ -763,7 +763,7 @@ class BatchJobHandler(object):
                     retryStrategy={"attempts": 3},
                 )
 
-        print(f" --------- COPY TO #csp_production message below ---------")
+        print(f" --------- COPY TO #flepimop_production message below ---------")
         print(f"Launching {cur_job_name} on {self.batch_system}...")
         print(
             f" >> Job array: {self.num_jobs} slot(s) X {self.num_blocks} block(s) of {self.sims_per_job} simulation(s) each."
@@ -781,11 +781,11 @@ class BatchJobHandler(object):
                 print(f" >> Final output will be uploaded to {s3_results_path}/model_output/")
         print(f" >> Run id is {self.run_id}")
         print(f" >> config is {config_file.split('/')[-1]}")
-        csp_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
+        flepimop_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
         data_branch = subprocess.getoutput(f"cd {self.data_path}; git rev-parse --abbrev-ref HEAD")
         data_hash = subprocess.getoutput(f"cd {self.data_path}; git rev-parse HEAD")
-        csp_hash = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
-        print(f""" >> CSP branch is {csp_branch} with hash {csp_hash}""")
+        flepimop_hash = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
+        print(f""" >> FLEPIMOP branch is {flepimop_branch} with hash {flepimop_hash}""")
         print(f""" >> DATA branch is {data_branch} with hash {data_hash}""")
         print(f" ------------------------- END -------------------------")
         # add in csp and data path branch.
