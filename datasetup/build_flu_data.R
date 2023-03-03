@@ -26,7 +26,7 @@ option_list = list(
 )
 opt = optparse::parse_args(optparse::OptionParser(option_list=option_list))
 
-config <- covidcommon::load_config(opt$c)
+config <- flepicommon::load_config(opt$c)
 if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
@@ -195,7 +195,7 @@ if (adjust_for_variant) {
     us_data <- read_csv(config$filtering$data_path)
     
     tryCatch({
-        us_data <- covidcommon::do_variant_adjustment(us_data, variant_props_file)
+        us_data <- flepicommon::do_variant_adjustment(us_data, variant_props_file)
         us_data <- us_data %>% 
             filter(date >= as_date(config$start_date) & date <= as_date(config$end_date_groundtruth))
         write_csv(us_data, config$filtering$data_path)

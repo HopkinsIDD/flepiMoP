@@ -35,7 +35,7 @@
 
 ## @cond
 
-library(covidcommon)
+library(flepicommon)
 library(magrittr)
 library(dplyr)
 library(readr)
@@ -51,7 +51,7 @@ opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
 
 gt_source <- NULL
 print(paste0("Using config file: ", opt$config))
-config <- covidcommon::load_config(opt$config)
+config <- flepicommon::load_config(opt$config)
 if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
@@ -86,7 +86,7 @@ if (is.null(config$seeding$ratio_incidC)) {
 }
 
 if (!is.null(gt_source)) {
-    # cases_deaths <- covidcommon::get_groundtruth_from_source(source = gt_source, scale = "US county")
+    # cases_deaths <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = "US county")
 
     # Aggregation to state level if in config
     if (is_US_run) {
@@ -109,10 +109,10 @@ if (!is.null(gt_source)) {
         } else {
             if (state_level) {
                 gt_scale <- "US state"
-                cases_deaths <- covidcommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale, incl_unass = TRUE)
+                cases_deaths <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale, incl_unass = TRUE)
             } else{
                 gt_scale <- "US county"
-                cases_deaths <- covidcommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale)
+                cases_deaths <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale)
             }
         }
         cases_deaths <- cases_deaths %>%

@@ -224,7 +224,7 @@ source(paste0(source_loc, "/R/scripts/postprocess/sim_processing_source.R"))
 
 # Get Config for details
 config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenarios[1], subname_all[1], config_subname)), collapse="_"), ".yml")
-config <- covidcommon::load_config(config_name)
+config <- flepicommon::load_config(config_name)
 
 # change n_weeks if FCH (limit to 12 weeks)
 projection_date <- lubridate::as_date(config$end_date_groundtruth)+1 # first day after groundtruth cutoff

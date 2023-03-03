@@ -41,9 +41,9 @@ jobs:
           cd gempyor_pkg
           pytest -s
         shell: bash
-      - name: Run covidcommon tests
+      - name: Run flepicommon tests
         run: |
-          setwd("R/pkgs/covidcommon")
+          setwd("R/pkgs/flepicommon")
           devtools::test(stop_on_failure=TRUE)
         shell: Rscript {0}
       - name: Run hospitalization tests
