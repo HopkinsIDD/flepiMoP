@@ -1,5 +1,5 @@
 Package: config.writer
-Title: Config creator for COVIDScenarioPipeline 
+Title: Config creator for flepiMoP 
 Version: 1.0.0
 Imports:
     tidyverse (>= 1.3.1),
@@ -18,7 +18,7 @@ Authors@R:
            family = "Truelove", 
            role = c("aut", "cre"),
            email = "shauntruelove@jhu.edu")   
-Description: Tools to generate config file for use with COVIDScenarioPipeline.
+Description: Tools to generate config file for use with flepiMoP.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8

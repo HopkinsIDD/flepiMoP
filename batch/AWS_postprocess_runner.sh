@@ -56,7 +56,7 @@ error_handler() {
 }
 
 # Note $FLEPI_PATH because here we're using the tar file of the pipeline, untarred in pwd.
-Rscript COVIDScenarioPipeline/build/local_install.R
+Rscript flepiMoP/build/local_install.R
 local_install_ret=$?
 
 if [ $local_install_ret -ne 0 ]; then
@@ -65,7 +65,7 @@ fi
 
 python -m pip install --upgrade pip # needs new pip for toml file
 
-(cd COVIDScenarioPipeline && pip install -e gempyor_pkg)
+(cd flepiMoP && pip install -e gempyor_pkg)
 python_install_ret=$?
 if [ $python_install_ret -ne 0 ]; then
 	error_handler "Error code returned from running `pip install -e gempyor_pkg`: $python_install_ret"

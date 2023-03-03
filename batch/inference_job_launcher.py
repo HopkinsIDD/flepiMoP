@@ -48,7 +48,7 @@ def user_confirmation(question="Continue?", default=False):
     envvar="FLEPI_PATH",
     type=click.Path(exists=True),
     required=True,
-    help="path to the COVIDScenarioPipeline directory",
+    help="path to the flepiMoP directory",
 )
 @click.option(
     "--data-path",
@@ -499,7 +499,7 @@ class BatchJobHandler(object):
 
     def tar_working_dir(self, tarfile_name):
         # this tar file always has the structure:
-        # where all data files are in the root of the tar file and the csp files are in a COVIDScenarioPipeline folder.
+        # where all data files are in the root of the tar file and the csp files are in a flepiMoP folder.
         tar = tarfile.open(tarfile_name, "w:gz", dereference=True)
         for q in os.listdir(self.flepi_path):
             if not (
@@ -511,14 +511,14 @@ class BatchJobHandler(object):
                 or q == "renv"               # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
-                tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("COVIDScenarioPipeline", q))
+                tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("flepiMoP", q))
             elif q == "sample_data":
                 for r in os.listdir(os.path.join(self.flepi_path, "sample_data")):
                     if r != "united-states-commutes":
-                        tar.add(os.path.join(self.flepi_path, "sample_data", r), arcname=os.path.join("COVIDScenarioPipeline", "sample_data", r))
-                        #tar.add(os.path.join("COVIDScenarioPipeline", "sample_data", r))
+                        tar.add(os.path.join(self.flepi_path, "sample_data", r), arcname=os.path.join("flepiMoP", "sample_data", r))
+                        #tar.add(os.path.join("flepiMoP", "sample_data", r))
         for p in os.listdir(self.data_path):
-            if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "COVIDScenarioPipeline"):
+            if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "flepiMoP"):
                 tar.add(
                     p,
                     filter=lambda x: None if os.path.basename(x.name).startswith(".") else x,
