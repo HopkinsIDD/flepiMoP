@@ -391,12 +391,12 @@ load_simulations_orig <- function(geodata,
 
 
 
-get_ground_truth_revised <- function(config, scenario_dir, csp_path = "../COVIDScenarioPipeline") {
+get_ground_truth_revised <- function(config, scenario_dir, flepi_path = "../flepiMoP") {
 
     Sys.setenv(CONFIG_PATH = config)
-    Sys.setenv(COVID_PATH  = csp_path)
-    # source(file.path(csp_path, "datasetup/build_US_setup.R"))
-    source(file.path(csp_path, "datasetup/build_covid_data.R"))
+    Sys.setenv(FLEPI_PATH  = flepi_path)
+    # source(file.path(flepi_path, "datasetup/build_US_setup.R"))
+    source(file.path(flepi_path, "datasetup/build_covid_data.R"))
 
     gt_data <- readr::read_csv(config$filtering$data_path)
 
@@ -1076,7 +1076,7 @@ process_sims <- function(
     opt$end_date <- end_date
 
     config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenario, subname_all[1], config_subname)), collapse="_"), ".yml")
-    config <- covidcommon::load_config(config_name)
+    config <- flepicommon::load_config(config_name)
 
     if (smh_or_fch=="fch") {
         scenario <- proj_id

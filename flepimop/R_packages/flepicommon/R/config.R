@@ -24,7 +24,7 @@ config <- NA
 load_config <- function(fname) {
 
   if (missing(fname)) {
-    fname <- Sys.getenv("CONFIG_PATH", stop("covidcommon::load_config requires a filename, but no filename was provided"))
+    fname <- Sys.getenv("CONFIG_PATH", stop("flepicommon::load_config requires a filename, but no filename was provided"))
   }
 
   handlers <- list(

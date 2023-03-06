@@ -1,6 +1,6 @@
 ## Preamble ---------------------------------------------------------------------
 suppressMessages(library(readr))
-suppressWarnings(suppressMessages(library(covidcommon)))
+suppressWarnings(suppressMessages(library(flepicommon)))
 suppressMessages(library(report.generation))
 suppressMessages(library(stringr))
 suppressMessages(library(foreach))
@@ -15,7 +15,7 @@ options(readr.num_columns = 0)
 
 option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("COVID_CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"),
-    optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("COVID_RUN_INDEX",covidcommon::run_id())),
+    optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("COVID_RUN_INDEX",flepicommon::run_id())),
     optparse::make_option(c("-s", "--scenarios"), action="store", default=Sys.getenv("COVID_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
     optparse::make_option(c("-d", "--deathrates"), action="store", default=Sys.getenv("COVID_DEATHRATES", 'all'), type='character', help="name of the death scenarios to run, or 'all' to run all of them"),
     optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("COVID_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
@@ -25,7 +25,7 @@ option_list = list(
     optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("COVID_STOCHASTIC",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
     optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("COVID_GT_START", ""), type = "character", help = "First date to include groundtruth for"),
     optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("COVID_GT_END", ""), type = "character", help = "Last date to include groundtruth for"),
-    optparse::make_option(c("-p", "--pipepath"), action="store", type='character', help="path to the COVIDScenarioPipeline directory", default = Sys.getenv("COVID_PATH", "COVIDScenarioPipeline/")),
+    optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP/")),
     optparse::make_option(c("-y", "--python"), action="store", default=Sys.getenv("COVID_PYTHON_PATH","python3"), type='character', help="path to python executable"),
     optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("COVID_RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
     optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("COVID_IS_RESUME",FALSE), type = 'logical', help = "Is this run a resume"),
@@ -46,7 +46,7 @@ if(opt[["is-interactive"]]) {
         }
     )
 }
-covidcommon::prettyprint_optlist(opt)
+flepicommon::prettyprint_optlist(opt)
 
 reticulate::use_python(Sys.which(opt$python),require=TRUE)
 ## Block loads the config file and geodata
@@ -56,7 +56,7 @@ if(opt$config == ""){
         "Please specify a config YAML file with either -c option or CONFIG_PATH environment variable."
     ))
 }
-config = covidcommon::load_config(opt$config)
+config = flepicommon::load_config(opt$config)
 
 if(('perturbation_sd' %in% names(config$seeding))) {
     if(('date_sd' %in% names(config$seeding))) {
@@ -316,17 +316,17 @@ for(scenario in scenarios) {
         ## trailing separator is always added at the end of the string if specified.
         ## create_prefix(prefix="USA/", "inference", "med", "2022.03.04.10.18.42.CET", sep='/', trailing_separator='.')
         ## would be "USA/inference/med/2022.03.04.10.18.42.CET."
-        slot_prefix <- covidcommon::create_prefix(config$name,scenario,deathrate,opt$run_id,sep='/',trailing_separator='/')
+        slot_prefix <- flepicommon::create_prefix(config$name,scenario,deathrate,opt$run_id,sep='/',trailing_separator='/')
         
-        gf_prefix <- covidcommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
-        cf_prefix <- covidcommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
-        ci_prefix <- covidcommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
-        gi_prefix <- covidcommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
+        gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
+        cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
+        ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
+        gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
         
-        chimeric_block_prefix <- covidcommon::create_prefix(prefix=ci_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
-        chimeric_local_prefix <- covidcommon::create_prefix(prefix=chimeric_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
-        global_block_prefix <- covidcommon::create_prefix(prefix=gi_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
-        global_local_prefix <- covidcommon::create_prefix(prefix=global_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
+        chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
+        chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
+        global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
+        global_local_prefix <- flepicommon::create_prefix(prefix=global_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
         
         print("prefixes created successfully.")
 

@@ -55,8 +55,8 @@ error_handler() {
 	fi
 }
 
-# Note $COVID_PATH because here we're using the tar file of the pipeline, untarred in pwd.
-Rscript COVIDScenarioPipeline/build/local_install.R
+# Note $FLEPI_PATH because here we're using the tar file of the pipeline, untarred in pwd.
+Rscript flepiMoP/build/local_install.R
 local_install_ret=$?
 
 if [ $local_install_ret -ne 0 ]; then
@@ -65,7 +65,7 @@ fi
 
 python -m pip install --upgrade pip # needs new pip for toml file
 
-(cd COVIDScenarioPipeline && pip install -e gempyor_pkg)
+(cd flepiMoP && pip install -e gempyor_pkg)
 python_install_ret=$?
 if [ $python_install_ret -ne 0 ]; then
 	error_handler "Error code returned from running `pip install -e gempyor_pkg`: $python_install_ret"
@@ -128,9 +128,8 @@ echo "==="
 
 echo "***************** RUNNING POSTPROCESS SCRIPTS.R *****************"
 ### Above this line: same as inference runner, or quite close
-
-# NOTE(jwills): hard coding this for now
-python COVIDScenarioPipeline/scripts/batch_postprocess.py
+## THis currently does not exist
+python $FLEPI_PATH/batch/batch_postprocess.py
 
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then

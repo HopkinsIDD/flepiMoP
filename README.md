@@ -32,13 +32,13 @@ docker pull hopkinsidd/flepimop:latest
 To start the container:
 ```
 docker run -v ~/mysrcdir:/home/adocker run -it \
-  -v <dir1>\:/home/app/csp \
+  -v <dir1>\:/home/app/flepimop \
   -v <dir2>:/home/app/drp \
 hopkinsidd/flepimop:latest
 ```
 
 In this command we run the docker image hopkinsidd/flepimop. The -v command is used to allocate space from Docker and mount it at the given location. 
-This mounts the data folder <dir2> to a path called drp within the docker environment, and the flepimop folder <dir1> to csp. 
+This mounts the data folder <dir2> to a path called drp within the docker environment, and the flepimop folder <dir1> to flepimop. 
 
 You'll be dropped to the bash prompt where you can run the Python or
 R scripts (with dependencies already installed).
