@@ -15,7 +15,7 @@ install.packages(c("covidcast","data.table","vroom","dplyr","RSocrata"), force=T
 initial.options <- commandArgs(trailingOnly = FALSE)
 file.arg.name <- "--file="
 script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)]) # get the name of this file, by looking for the option "--file" in the arguments that were used to start this R instance and getting the term that comes after
-pkg.dir <- paste0(dirname(script.name), "/R_packages/") # find the directory that this file is within
+pkg.dir <- paste0(dirname(script.name), "../R_packages/") # find the directory that this file is within
 install.packages(list.files(pkg.dir,full.names=TRUE),type='source',repos=NULL)
 
 # to run within a local instance of R studio
