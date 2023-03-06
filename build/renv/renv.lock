@@ -474,12 +474,12 @@
         "tidyr"
       ]
     },
-    "covidcommon": {
-      "Package": "covidcommon",
+    "flepicommon": {
+      "Package": "flepicommon",
       "Version": "0.0.1",
       "Source": "Local",
       "RemoteType": "local",
-      "RemoteUrl": "~/pkgs/covidcommon/",
+      "RemoteUrl": "~/pkgs/flepicommon/",
       "Hash": "17e444a25de7fcd4dbc7814656456c6e",
       "Requirements": [
         "purrr",
@@ -1160,7 +1160,7 @@
       "Hash": "24ef76f3af8c43e368620dc7f755f3eb",
       "Requirements": [
         "arrow",
-        "covidcommon",
+        "flepicommon",
         "dplyr",
         "foreach",
         "magrittr",

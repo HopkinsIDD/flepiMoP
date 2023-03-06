@@ -12,7 +12,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-config = confuse.Configuration("COVIDScenarioPipeline", read=False)
+config = confuse.Configuration("flepiMoP", read=False)
 
 
 def write_df(fname: str, df: pd.DataFrame, extension: str = ""):

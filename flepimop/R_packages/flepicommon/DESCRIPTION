@@ -1,4 +1,4 @@
-Package: covidcommon
+Package: flepicommon
 Title: Common R code shared across packages
 Version: 0.0.1
 Imports:

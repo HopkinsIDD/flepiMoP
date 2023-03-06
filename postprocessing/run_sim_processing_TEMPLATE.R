@@ -4,7 +4,7 @@
 #' 1. Set pathogen, application, and processing options in the "SETUP" block.
 #' 2. Modify submission specifics in the "SUBMISSION SPECIFICS" block for any hub requirements.
 #' 3. Be sure to specify if this is a forecast ("fch") or scenario projection ("smh")
-#' 4. Make sure the CSP repo (https://github.com/HopkinsIDD/COVIDScenarioPipeline) is in the same directory as this repo
+#' 4. Make sure the flepiMoP repo (https://github.com/HopkinsIDD/flepiMoP) is in the same directory as this repo
 
 gc()
 library(inference)
@@ -19,9 +19,9 @@ library(doParallel)
 # if using local, make sure its pulled and in same base directory as project
 # Use local if no access to internet or making local changes to code
 use_local_repo <- TRUE
-github_url <- "https://raw.githubusercontent.com/HopkinsIDD/COVIDScenarioPipeline/main-addprocessing"
-csp_local_dir <- "../COVIDScenarioPipeline"
-# csp_local_dir <- "../../nCov/COVIDScenarioPipeline"
+github_url <- "https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/main"
+flepimop_local_dir <- "../flepiMoP"
+# flepimop_local_dir <- "../../nCov/flepiMoP"
 
 
 # ~ Main Run Options -----------------------------------------------------------
@@ -199,20 +199,20 @@ if (smh_or_fch == "smh" & pathogen == "covid19"){
 
 # determine if local repo or pulling from github
 # - if local:
-#     -- make sure you have the CSP repo in the same base directory as the project directory (i.e., same as COVID19_USA)
-#     -- make sure to pull CSP so have most up-to-date
+#     -- make sure you have the flepiMoP repo in the same base directory as the project directory (i.e., same as COVID19_USA)
+#     -- make sure to pull flepiMoP so have most up-to-date
 # - if github:
-#     -- code is pulled from the https://github.com/HopkinsIDD/COVIDScenarioPipeline repo
+#     -- code is pulled from the https://github.com/HopkinsIDD/flepiMoP repo
 #
 if (use_local_repo){
-    source_loc <- csp_local_dir
+    source_loc <- flepimop_local_dir
 } else {
     source_loc <- github_url
 }
 # source("R/process_sims/groundtruth_source.R")
 # source("R/process_sims/process_projections_functions_NEW.R")
-source(paste0(source_loc, "/R/scripts/postprocess/groundtruth_source.R"))
-source(paste0(source_loc, "/R/scripts/postprocess/sim_processing_source.R"))
+source(paste0(source_loc, "/postprocessing/groundtruth_source.R"))
+source(paste0(source_loc, "/postprocessing/sim_processing_source.R"))
 
 
 
@@ -224,7 +224,7 @@ source(paste0(source_loc, "/R/scripts/postprocess/sim_processing_source.R"))
 
 # Get Config for details
 config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenarios[1], subname_all[1], config_subname)), collapse="_"), ".yml")
-config <- covidcommon::load_config(config_name)
+config <- flepicommon::load_config(config_name)
 
 # change n_weeks if FCH (limit to 12 weeks)
 projection_date <- lubridate::as_date(config$end_date_groundtruth)+1 # first day after groundtruth cutoff
@@ -293,7 +293,7 @@ if (any(pull_from_s3)) {
 # LOAD GROUND TRUTH -------------------------------------------------------
 
 Sys.setenv(CONFIG_PATH = config_name)
-Sys.setenv(COVID_PATH = source_loc)
+Sys.setenv(FLEPI_PATH = source_loc)
 if (pathogen == "flu"){
     source(paste0(source_loc, "/datasetup/build_flu_data.R"))
 } else if (pathogen == "covid19"){
@@ -336,7 +336,7 @@ peak_ram_ <- peakRAM::peakRAM({
         print(scenarios_all[scenario_num])
         scenario_dir <- paste0(round_directory, "/", scenarios_all[i], "/")
 
-        #source("R/scripts/process_sims/process_sims_parallel_NEW.R", local=TRUE)
+        #source("postprocessing/process_sims_parallel_NEW.R", local=TRUE)
         tmp_out_ <- process_sims(scenario_num = scenario_num,
                                  scenarios_all = scenarios_all,
                                  scenario_names = scenario_names,
@@ -528,7 +528,7 @@ if(plot_projections){
                                                  ifelse(is.na(subname), "", subname)))
 
     # Run plotting script
-    source(paste0(source_loc, "/R/scripts/postprocess/plot_predictions.R"))
+    source(paste0(source_loc, "/postprocessing/plot_predictions.R"))
 }
 
 

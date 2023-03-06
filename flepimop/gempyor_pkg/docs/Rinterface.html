@@ -439,7 +439,7 @@ pip install --no-deps -e gempyor_pkg/</code></pre>
 <pre><code>conda create -n covidSProd6 -c conda-forge python jupyterlab ipykernel dask graphviz fastparquet click confuse matplotlib networkx numba&quot;&gt;=0.53&quot; numpy pandas pyarrow pytest scipy seaborn sympy  tqdm r-essentials python-graphviz
 conda activate covidSProd6
 python -m ipykernel install --user --name covidSProd6 --display-name &quot;Python (covidSProd6)&quot;
-export R_PROFILE=$COVID_PATH/slurm_batch/Rprofile
+export R_PROFILE=$FLEPI_PATH/slurm_batch/Rprofile
 conda install r-devtools  r-gridExtra r-ggfortify r-flextable r-doparallel r-reticulate r-truncnorm r-arrow
 conda install r-tigris
 conda install r-tidycensus r-optparse

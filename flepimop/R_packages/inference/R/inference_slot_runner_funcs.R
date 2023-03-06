@@ -230,134 +230,134 @@ perform_MCMC_step_copies_global <- function(current_index,
 
   if(current_index != 0){ #move files from global/intermediate/slot.block.run to global/final/slot
     rc$seed_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'seed','csv'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'seed','csv'),
 	    overwrite = TRUE
     )
 
     rc$seir_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'seir','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'seir','parquet'),
 	    overwrite = TRUE
     )
 
     rc$hosp_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'hosp','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'hosp','parquet'),
 	    overwrite = TRUE
     )
 
     rc$llik_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'llik','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'llik','parquet'),
 	    overwrite = TRUE
     )
 
     rc$snpi_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'snpi','parquet'),
       overwrite = TRUE
     )
 
     rc$hnpi_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'hnpi','parquet'),
 	    overwrite = TRUE
     )
 
     rc$spar_gf <-file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'spar','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'spar','parquet'),
 	    overwrite = TRUE
     )
 
     rc$hpar_gf <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet'),
-      covidcommon::create_file_name(run_id,gf_prefix,slot,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,gf_prefix,slot,'hpar','parquet'),
 	    overwrite = TRUE
     )
     #move files from global/intermediate/slot.block.run to global/intermediate/slot
     rc$seed_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
     )
 
     rc$seir_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
     )
 
     rc$hosp_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet')
     )
 
 
     rc$llik_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'llik','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'llik','parquet')
     )
 
     rc$snpi_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'snpi','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'snpi','parquet')
     )
 
     rc$hnpi_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'hnpi','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'hnpi','parquet')
     )
 
     rc$spar_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'spar','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'spar','parquet')
     )
 
 
     rc$hpar_block <- file.copy(
-      covidcommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'hpar','parquet')
+      flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'hpar','parquet')
     )
   } else { #move files from global/intermediate/slot.(block-1) to global/intermediate/slot.block
     rc$seed_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seed','csv'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seed','csv'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
     )
 
     rc$seir_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seir','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seir','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
     )
 
     rc$hosp_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1 ,'hosp','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'hosp','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet')
     )
 
     rc$llik_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1,'llik','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'llik','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'llik','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'llik','parquet')
     )
 
 
     rc$snpi_prvblk <-file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1,'snpi','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'snpi','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'snpi','parquet')
     )
 
     rc$hnpi_prvblk <-file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1,'hnpi','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'hnpi','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'hnpi','parquet')
     )
 
     rc$spar_prvblk <- file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1,'spar','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'spar','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'spar','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'spar','parquet')
     )
 
     rc$hpar_prvblk <- file.copy(
-      covidcommon::create_file_name(run_id,global_block_prefix,block - 1,'hpar','parquet'),
-      covidcommon::create_file_name(run_id,global_block_prefix,block,'hpar','parquet')
+      flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,global_block_prefix,block,'hpar','parquet')
     )
   }
 
@@ -395,137 +395,137 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
 
   if(current_index != 0){ #move files from chimeric/intermediate/slot.block.run to chimeric/final/slot
     rc$seed_gf <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv'),
-      covidcommon::create_file_name(run_id,cf_prefix,slot,'seed','csv'),
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv'),
+      flepicommon::create_file_name(run_id,cf_prefix,slot,'seed','csv'),
       overwrite = TRUE
     )
 
     # No chimeric SEIR or HOSP files
 
     # rc$seir_gf <- file.copy(
-    #   covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
-    #   covidcommon::create_file_name(run_id,cf_prefix,slot,'seir','parquet'),
+    #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
+    #   flepicommon::create_file_name(run_id,cf_prefix,slot,'seir','parquet'),
     #   overwrite = TRUE
     # )
     #
     # rc$hosp_gf <- file.copy(
-    #   covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet'),
-    #   covidcommon::create_file_name(run_id,cf_prefix,slot,'hosp','parquet'),
+    #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet'),
+    #   flepicommon::create_file_name(run_id,cf_prefix,slot,'hosp','parquet'),
     #   overwrite = TRUE
     # )
 
     rc$llik_gf <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet'),
-      covidcommon::create_file_name(run_id,cf_prefix,slot,'llik','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet'),
+      flepicommon::create_file_name(run_id,cf_prefix,slot,'llik','parquet'),
       overwrite = TRUE
     )
 
 
     rc$snpi_gf <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet'),
-      covidcommon::create_file_name(run_id,cf_prefix,slot,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,cf_prefix,slot,'snpi','parquet'),
       overwrite = TRUE
     )
 
     rc$hnpi_gf <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet'),
-      covidcommon::create_file_name(run_id,cf_prefix,slot,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,cf_prefix,slot,'hnpi','parquet'),
       overwrite = TRUE
     )
 
     rc$spar_gf <-file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet'),
-      covidcommon::create_file_name(run_id,cf_prefix,slot,'spar','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet'),
+      flepicommon::create_file_name(run_id,cf_prefix,slot,'spar','parquet'),
       overwrite = TRUE
     )
 
     rc$hpar_gf <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet'),
-      covidcommon::create_file_name(run_id,cf_prefix,slot,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,cf_prefix,slot,'hpar','parquet'),
       overwrite = TRUE
     )
     #move files from chimeric/intermediate/slot.block.run to chimeric/intermediate/slot
     rc$seed_block <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
     )
 
     # no chimeric SEIR or HOSP files
 
     # rc$seir_block <- file.copy(
-    #   covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
-    #   covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
+    #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
+    #   flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
     # )
     #
     # rc$hosp_block <- file.copy(
-    #   covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet'),
-    #   covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
+    #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet'),
+    #   flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
     # )
 
     rc$llik_block <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'llik','parquet')
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'llik','parquet')
     )
 
     rc$snpi_block <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'snpi','parquet')
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'snpi','parquet')
     )
 
     rc$hnpi_block <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'hnpi','parquet')
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hnpi','parquet')
     )
 
     rc$spar_block <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'spar','parquet')
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'spar','parquet')
     )
 
 
     rc$hpar_block <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'hpar','parquet')
+      flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hpar','parquet')
     )
   } else { #move files from chimeric/intermediate/slot.(block-1) to chimeric/intermediate/slot.block
     rc$seed_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seed','csv'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seed','csv'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
     )
 
     rc$seir_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seir','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seir','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
     )
 
     rc$hosp_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'hosp','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'hosp','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
     )
 
     rc$llik_prevblk <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'llik','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'llik','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'llik','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'llik','parquet')
     )
 
     rc$snpi_prvblk <-file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'snpi','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'snpi','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'snpi','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'snpi','parquet')
     )
 
     rc$hnpi_prvblk <-file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'hnpi','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'hnpi','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'hnpi','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hnpi','parquet')
     )
 
     rc$spar_prvblk <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'spar','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'spar','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'spar','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'spar','parquet')
     )
 
     rc$hpar_prvblk <- file.copy(
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'hpar','parquet'),
-      covidcommon::create_file_name(run_id,chimeric_block_prefix,block,'hpar','parquet')
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'hpar','parquet'),
+      flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hpar','parquet')
     )
   }
 
@@ -550,7 +550,7 @@ create_filename_list <- function(
     x=types,
     y=extensions,
     function(x,y){
-      covidcommon::create_file_name(run_id = run_id,prefix = prefix,index = index,type = x,extension = y, create_directory = TRUE)
+      flepicommon::create_file_name(run_id = run_id,prefix = prefix,index = index,type = x,extension = y, create_directory = TRUE)
     }
   )
   names(rc) <- paste(names(rc),"filename",sep='_')
@@ -660,7 +660,7 @@ initialize_mcmc_first_block <- function(
     if(!file.exists(config$seeding$lambda_file)) {
       err <- system(paste(
         opt$rpath,
-        paste(opt$pipepath, "flepimop", "main_scripts", "create_seeding.R", sep = "/"),
+        paste(opt$flepi_path, "flepimop", "main_scripts", "create_seeding.R", sep = "/"),
         "-c", opt$config
       ))
       if (err != 0) {

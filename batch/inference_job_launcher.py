@@ -43,12 +43,12 @@ def user_confirmation(question="Continue?", default=False):
 )
 @click.option(
     "-p",
-    "--pipepath",
-    "csp_path",
-    envvar="COVID_PATH",
+    "--flepi_path",
+    "flepi_path",
+    envvar="FLEPI_PATH",
     type=click.Path(exists=True),
     required=True,
-    help="path to the COVIDScenarioPipeline directory",
+    help="path to the flepiMoP directory",
 )
 @click.option(
     "--data-path",
@@ -228,7 +228,7 @@ def user_confirmation(question="Continue?", default=False):
 def launch_batch(
     batch_system,
     config_file,
-    csp_path,
+    flepi_path,
     data_path,
     run_id,
     num_jobs,
@@ -313,7 +313,7 @@ def launch_batch(
 
     handler = BatchJobHandler(
         batch_system,
-        csp_path,
+        flepi_path,
         data_path,
         run_id,
         num_jobs,
@@ -418,7 +418,7 @@ class BatchJobHandler(object):
     def __init__(
         self,
         batch_system,
-        csp_path,
+        flepi_path,
         data_path,
         run_id,
         num_jobs,
@@ -441,7 +441,7 @@ class BatchJobHandler(object):
         s3_upload,
     ):
         self.batch_system = batch_system
-        self.csp_path = csp_path
+        self.flepi_path = flepi_path
         self.data_path = data_path
         self.run_id = run_id
         self.num_jobs = num_jobs
@@ -468,14 +468,14 @@ class BatchJobHandler(object):
         Create a manifest file to preserve what is used for the current run.
         - For slurm: save this manifest into the fs_folder
         - For aws: save the manifest into the s3_bucket, but also upload the necessary files to run the job
-        (inference_runner.sh, inference_runner.py, and the csp_ and data_ folders)
+        (inference_runner.sh, inference_runner.py, and the flepimop_ and data_ folders)
         TODO: should we save the tar file when doing the slurm as well in case the user pulls while the job is running?
         """
         manifest = {}
         manifest["cmd"] = " ".join(sys.argv[:])
         manifest["job_name"] = job_name
         manifest["data_sha"] = subprocess.getoutput("cd {self.data_path}; git rev-parse HEAD")
-        manifest["csp_sha"] = subprocess.getoutput(f"cd {self.csp_path}; git rev-parse HEAD")
+        manifest["flepimop_sha"] = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
 
         # Save the manifest file to S3
         with open("manifest.json", "w") as f:
@@ -499,9 +499,9 @@ class BatchJobHandler(object):
 
     def tar_working_dir(self, tarfile_name):
         # this tar file always has the structure:
-        # where all data files are in the root of the tar file and the csp files are in a COVIDScenarioPipeline folder.
+        # where all data files are in the root of the tar file and the csp files are in a flepiMoP folder.
         tar = tarfile.open(tarfile_name, "w:gz", dereference=True)
-        for q in os.listdir(self.csp_path):
+        for q in os.listdir(self.flepi_path):
             if not (
                 q == "packrat"
                 or q == "covid-dashboard-app"
@@ -511,14 +511,14 @@ class BatchJobHandler(object):
                 or q == "renv"               # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
-                tar.add(os.path.join(self.csp_path, q), arcname=os.path.join("COVIDScenarioPipeline", q))
+                tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("flepiMoP", q))
             elif q == "sample_data":
-                for r in os.listdir(os.path.join(self.csp_path, "sample_data")):
+                for r in os.listdir(os.path.join(self.flepi_path, "sample_data")):
                     if r != "united-states-commutes":
-                        tar.add(os.path.join(self.csp_path, "sample_data", r), arcname=os.path.join("COVIDScenarioPipeline", "sample_data", r))
-                        #tar.add(os.path.join("COVIDScenarioPipeline", "sample_data", r))
+                        tar.add(os.path.join(self.flepi_path, "sample_data", r), arcname=os.path.join("flepiMoP", "sample_data", r))
+                        #tar.add(os.path.join("flepiMoP", "sample_data", r))
         for p in os.listdir(self.data_path):
-            if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "COVIDScenarioPipeline"):
+            if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "flepiMoP"):
                 tar.add(
                     p,
                     filter=lambda x: None if os.path.basename(x.name).startswith(".") else x,
@@ -571,7 +571,7 @@ class BatchJobHandler(object):
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
             {"name": "DATA_PATH", "value": str(self.data_path)},
-            {"name": "COVID_PATH", "value": str(self.csp_path)},
+            {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
             {"name": "COVID_CONFIG_PATH", "value": config_file},
             {"name": "COVID_NSIMULATIONS", "value": str(self.num_jobs)},
             {
@@ -763,7 +763,7 @@ class BatchJobHandler(object):
                     retryStrategy={"attempts": 3},
                 )
 
-        print(f" --------- COPY TO #csp_production message below ---------")
+        print(f" --------- COPY TO #flepimop_production message below ---------")
         print(f"Launching {cur_job_name} on {self.batch_system}...")
         print(
             f" >> Job array: {self.num_jobs} slot(s) X {self.num_blocks} block(s) of {self.sims_per_job} simulation(s) each."
@@ -781,11 +781,11 @@ class BatchJobHandler(object):
                 print(f" >> Final output will be uploaded to {s3_results_path}/model_output/")
         print(f" >> Run id is {self.run_id}")
         print(f" >> config is {config_file.split('/')[-1]}")
-        csp_branch = subprocess.getoutput(f"cd {self.csp_path}; git rev-parse --abbrev-ref HEAD")
+        flepimop_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
         data_branch = subprocess.getoutput(f"cd {self.data_path}; git rev-parse --abbrev-ref HEAD")
         data_hash = subprocess.getoutput(f"cd {self.data_path}; git rev-parse HEAD")
-        csp_hash = subprocess.getoutput(f"cd {self.csp_path}; git rev-parse HEAD")
-        print(f""" >> CSP branch is {csp_branch} with hash {csp_hash}""")
+        flepimop_hash = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
+        print(f""" >> FLEPIMOP branch is {flepimop_branch} with hash {flepimop_hash}""")
         print(f""" >> DATA branch is {data_branch} with hash {data_hash}""")
         print(f" ------------------------- END -------------------------")
         # add in csp and data path branch.

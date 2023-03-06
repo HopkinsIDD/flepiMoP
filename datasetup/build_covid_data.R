@@ -13,12 +13,12 @@ library(lubridate)
 
 option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("COVID_CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"),
-    optparse::make_option(c("-p", "--path"), action="store", default=Sys.getenv("COVID_PATH", "COVIDScenarioPipeline"), type='character', help="path to the COVIDScenarioPipeline directory"),
+    optparse::make_option(c("-p", "--path"), action="store", default=Sys.getenv("FLEPI_PATH", "flepiMoP"), type='character', help="path to the flepiMoP directory"),
     optparse::make_option(c("-w", "--wide_form"), action="store",default=FALSE,type='logical',help="Whether to generate the old wide format mobility or the new long format")
 )
 opt = optparse::parse_args(optparse::OptionParser(option_list=option_list))
 
-config <- covidcommon::load_config(opt$c)
+config <- flepicommon::load_config(opt$c)
 if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
@@ -44,7 +44,7 @@ if (is.null(end_date_)) end_date_ <- config$end_date
 
 gt_source <- "covidcast"
 gt_scale <- "US state"
-us_data <- covidcommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale, 
+us_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale, 
                                                     incl_unass = TRUE,
                                                     variables = c("Confirmed", "Deaths", "incidI", "incidDeath"),
                                                     adjust_for_variant = TRUE, 
@@ -55,7 +55,7 @@ us_data <- us_data %>%
 
 # ~ Pull HHS hospitalization  -------------------
 
-us_hosp <- covidcommon::get_hhsCMU_incidH_st_data()
+us_hosp <- flepicommon::get_hhsCMU_incidH_st_data()
 us_hosp <- us_hosp %>%
     dplyr::select(-incidH_all) %>%
     rename(incidH = incidH_confirmed) %>%
@@ -71,7 +71,7 @@ head(read_csv(variant_props_file))
 if (adjust_for_variant) {
     
     tryCatch({
-        us_hosp <- covidcommon::do_variant_adjustment(us_hosp, variant_props_file)
+        us_hosp <- flepicommon::do_variant_adjustment(us_hosp, variant_props_file)
     }, error = function(e) {
         stop(paste0("Could not use variant file |", variant_props_file, 
                     "|, with error message", e$message))
