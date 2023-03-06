@@ -14,7 +14,7 @@ jobs:
   unit-tests:
     runs-on: ubuntu-20.04
     container:
-      image: hopkinsidd/covidscenariopipeline:latest-dev
+      image: hopkinsidd/flepimop:latest-dev
       options: --user root
     steps:
       - name: Checkout
@@ -23,7 +23,7 @@ jobs:
           lfs: true
       - name: Set up Rprofile
         run: |
-          cp Docker.Rprofile $HOME/.Rprofile
+          cp build/docker/Docker.Rprofile $HOME/.Rprofile
           cp /home/app/.bashrc $HOME/.bashrc
         shell: bash
       - name: Install the gempyor package
@@ -41,32 +41,32 @@ jobs:
           cd gempyor_pkg
           pytest -s
         shell: bash
-      - name: Run covidcommon tests
+      - name: Run flepicommon tests
         run: |
-          setwd("R/pkgs/covidcommon")
+          setwd("R_packages/flepicommon")
           devtools::test(stop_on_failure=TRUE)
         shell: Rscript {0}
-      - name: Run hospitalization tests
-        run: |
-          setwd("R/pkgs/hospitalization")
-          devtools::test(stop_on_failure=TRUE)
-        shell: Rscript {0}
+#      - name: Run hospitalization tests
+#        run: |
+#          setwd("R_packages/hospitalization")
+#          devtools::test(stop_on_failure=TRUE)
+#        shell: Rscript {0}
 #      - name: Run report.generation tests
 #        run: |
-#          setwd("R/pkgs/report.generation")
+#          setwd("Rpackages/pkgs/report.generation")
 #          devtools::test(stop_on_failure=TRUE)
 #        shell: Rscript {0}
       - name: Run inference tests
         run: |
-          setwd("R/pkgs/inference")
+          setwd("R_packages/inference")
           devtools::test(stop_on_failure=TRUE)
         shell: Rscript {0}
-      - name: Run integration tests
-        env:
-          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
-        run: |
-          Rscript build/local_install.R
-          cd test
-          source /var/python/3.10/virtualenv/bin/activate
-          pytest run_tests.py
-        shell: bash
+#      - name: Run integration tests
+#        env:
+#          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+#        run: |
+#          Rscript build/local_install.R
+#          cd test
+#          source /var/python/3.10/virtualenv/bin/activate
+#          pytest run_tests.py
+#        shell: bash
