@@ -28,7 +28,7 @@ ss = setup.SpatialSetup(
     nodenames_key="geoid",
 )
 
-index = 1
+first_sim_index = 1
 run_id = "test_SeedOneNode"
 prefix = ""
 s = setup.Setup(
@@ -43,7 +43,7 @@ s = setup.Setup(
     tf=config["end_date"].as_date(),
     interactive=True,
     write_csv=False,
-    first_sim_index=index,
+    first_sim_index=first_sim_index,
     in_run_id=run_id,
     in_prefix=prefix,
     out_run_id=run_id,
@@ -100,7 +100,7 @@ ts = ts.pivot(columns="mc_vaccination_stage").sum(axis=1, level=1)
 ts["unvaccinated"].plot()
 
 out_df = df
-out_df["date"] = out_df.index
+out_df["date"] = out_df.first_sim_index
 pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
 pa.parquet.write_table(pa_df, "testlol.parquet")
 
