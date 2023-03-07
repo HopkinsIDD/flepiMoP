@@ -43,7 +43,7 @@ generate_config <- function(){
                    incidC_prob_value = c(0.4, 0.4, 0.4),
                    compartment = FALSE)
 
-    print_filtering_statistics(sims_per_slot = 1000,
+    print_filtering_statistics(iterations_per_slot = 1000,
                                compartment = FALSE,
                                gt_column_name = c("death_incid", "confirmed_incid"))
 

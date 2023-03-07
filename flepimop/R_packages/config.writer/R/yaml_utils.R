@@ -1200,7 +1200,7 @@ print_seeding <- function (method = "FolderDraw",
 #' Print filtering and filtering::statistics
 #' @description Set settings for the filtering section and its statistics component
 #'
-#' @param sims_per_slot number of iterations in a single MCMC inference chain With inference model runs, the number of simulations nslots refers to the number of final model simulations that will be produced. The sims_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
+#' @param iterations_per_slot number of iterations in a single MCMC inference chain With inference model runs, the number of simulations nslots refers to the number of final model simulations that will be produced. The iterations_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 #' @param do_filtering whether to perform inference
 #' @param data_path file path where observed data are saved
 #' @param gt_source source of data
@@ -1224,14 +1224,14 @@ print_seeding <- function (method = "FolderDraw",
 #'
 #' @details
 #' The filtering section configures the settings for the inference algorithm, while the statistics component determines how the model is calibrated.
-#' With inference model runs, the number of simulations n_simulations in [print_header()] refers to the number of final model simulations that will be produced. The sims_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
+#' With inference model runs, the number of simulations n_simulations in [print_header()] refers to the number of final model simulations that will be produced. The iterations_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 #' The statistics specified here are used to calibrate the model to empirical data. If multiple statistics are specified, this inference is performed jointly and they are weighted in the likelihood according to the number of data points and the variance of the proposal distribution.
 #' @export
 #'
 #' @examples
 #' print_filtering_statistics()
 #'
-print_filtering_statistics <- function(sims_per_slot = 300, 
+print_filtering_statistics <- function(iterations_per_slot = 300, 
                                        do_filtering = TRUE, 
                                        data_path = "data/us_data.csv", 
                                        gt_source = "csse", 
@@ -1254,7 +1254,7 @@ print_filtering_statistics <- function(sims_per_slot = 300,
     
     cat(paste0("\n", 
                "filtering:\n", 
-               "  iterations_per_slot: ", sims_per_slot, "\n", 
+               "  iterations_per_slot: ", iterations_per_slot, "\n", 
                "  do_filtering: ", do_filtering, "\n", 
                "  data_path: ", data_path, "\n", 
                "  gt_source: \"", gt_source, "\"\n", {
