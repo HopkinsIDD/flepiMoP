@@ -14,15 +14,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def run_parallel_outcomes(s, *, sim_id2write, nslot=1, n_jobs=1):
+def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
     start = time.monotonic()
 
-    # sim_id2loads = np.arange(sim_id2load, sim_id2load + s.nslot)
-    sim_id2writes = np.arange(sim_id2write, sim_id2write + s.nslot)
+    # sim_id2loads = np.arange(sim_id2load, sim_id2load + s.nslots)
+    sim_id2writes = np.arange(sim_id2write, sim_id2write + s.nslots)
 
     loaded_values = None
-    if (n_jobs == 1) or (s.nslot == 1):  # run single process for debugging/profiling purposes
-        for sim_offset in np.arange(nslot):
+    if (n_jobs == 1) or (s.nslots == 1):  # run single process for debugging/profiling purposes
+        for sim_offset in np.arange(nslots):
             onerun_delayframe_outcomes(
                 sim_id2write=sim_id2writes[sim_offset],
                 s=s,
@@ -45,7 +45,7 @@ def run_parallel_outcomes(s, *, sim_id2write, nslot=1, n_jobs=1):
 
     print(
         f"""
->> {nslot} outcomes simulations completed in {time.monotonic() - start:.1f} seconds
+>> {nslots} outcomes simulations completed in {time.monotonic() - start:.1f} seconds
 """
     )
     return 1

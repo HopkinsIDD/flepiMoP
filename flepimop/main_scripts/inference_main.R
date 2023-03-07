@@ -60,7 +60,7 @@ if(is.na(opt$iterations_per_slot)) {
 }
 
 if(is.na(opt$slots)) {
-  opt$slots <- config$nsimulations
+  opt$slots <- config$nslots
 }
 
 cl <- parallel::makeCluster(opt$j)

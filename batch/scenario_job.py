@@ -131,7 +131,7 @@ def launch_batch(
 
     # Update and save the config file with the number of sims to run
     print(f"Updating {config_file} to run {slots_per_job} slots...")
-    config["nsimulations"] = slots_per_job
+    config["nslots"] = slots_per_job
 
     if parallelize_scenarios:
         scenarios = config["interventions"]["scenarios"]

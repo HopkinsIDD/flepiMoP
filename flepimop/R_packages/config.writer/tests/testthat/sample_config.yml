@@ -1,7 +1,7 @@
 name: USA
 start_date: 2020-01-01
 end_date: 2021-08-07
-nsimulations: 300
+nslots: 300
 dt: 0.25
 
 spatial_setup:

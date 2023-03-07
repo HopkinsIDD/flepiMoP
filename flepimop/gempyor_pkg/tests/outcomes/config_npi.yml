@@ -1,7 +1,7 @@
 name: test_inference
 start_date: 2020-04-01
 end_date: 2020-05-15
-nslot: 1
+nslots: 1
 dt: 0.25
 
 spatial_setup:

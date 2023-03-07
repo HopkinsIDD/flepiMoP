@@ -49,7 +49,7 @@ class InferenceSimulator:
         deathrate="med",
         stoch_traj_flag=False,
         rng_seed=None,
-        nslot=1,
+        nslots=1,
         initialize=True,
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
@@ -89,7 +89,7 @@ class InferenceSimulator:
                 popnodes_key=spatial_config["popnodes"].get(),
                 nodenames_key=spatial_config["nodenames"].get(),
             ),
-            nslot=nslot,
+            nslots=nslots,
             npi_scenario=scenario,
             npi_config_seir=config["interventions"]["settings"][scenario],
             seeding_config=config["seeding"],

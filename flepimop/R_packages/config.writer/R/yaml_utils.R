@@ -1118,7 +1118,7 @@ print_header <- function (sim_name,
                "start_date: ", sim_start_date, "\n", 
                "end_date: ", sim_end_date, "\n", 
                ifelse(!is.na(end_date_groundtruth), paste0("end_date_groundtruth: ", end_date_groundtruth, "\n"), ""),
-               "nsimulations: ", n_simulations, "\n", 
+               "nslots: ", n_simulations, "\n", 
                "dt: ", sprintf(fmt="%#.3f",as.numeric(dt)), "\n", 
                "\n", 
                "spatial_setup:\n", 
@@ -1200,7 +1200,7 @@ print_seeding <- function (method = "FolderDraw",
 #' Print filtering and filtering::statistics
 #' @description Set settings for the filtering section and its statistics component
 #'
-#' @param sims_per_slot number of iterations in a single MCMC inference chain With inference model runs, the number of simulations nsimulations refers to the number of final model simulations that will be produced. The sims_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
+#' @param sims_per_slot number of iterations in a single MCMC inference chain With inference model runs, the number of simulations nslots refers to the number of final model simulations that will be produced. The sims_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 #' @param do_filtering whether to perform inference
 #' @param data_path file path where observed data are saved
 #' @param gt_source source of data

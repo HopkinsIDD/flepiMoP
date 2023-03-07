@@ -29,9 +29,9 @@ class Results:
             expand_data[nd] = {}
             expand_data[nd][comp] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(self.s.nslot),
+                columns=np.arange(self.s.nslots),
             )
-            for sim in range(self.s.nslot):
+            for sim in range(self.s.nslots):
                 expand_data[nd][comp][sim] = self.seir[sim][cumI][nd]
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 5), sharey=True, sharex=True)
@@ -79,38 +79,38 @@ class Results:
         # Build Quantiles:
         expand_data = [0] * self.s.nnodes
 
-        nslot = self.s.nslot
+        nslots = self.s.nslots
         for nd in range(self.s.nnodes):
             expand_data[nd] = {}
             expand_data[nd]["S"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
             expand_data[nd]["E"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
             expand_data[nd]["I1"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
             expand_data[nd]["I2"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
             expand_data[nd]["I3"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
             expand_data[nd]["R"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
             expand_data[nd]["cumI"] = pd.DataFrame(
                 index=pd.date_range(self.ti, self.tf, freq=self.freq),
-                columns=np.arange(nslot),
+                columns=np.arange(nslots),
             )
-            for sim in range(self.s.nslot):
+            for sim in range(self.s.nslots):
                 expand_data[nd]["S"][sim] = self.seir[sim][S][nd]
                 expand_data[nd]["E"][sim] = self.seir[sim][E][nd]
                 expand_data[nd]["I1"][sim] = self.seir[sim][I1][nd]
@@ -132,7 +132,7 @@ class Results:
         #    os.makedirs(self.datadir)
 
         sims = []
-        for s in range(self.s.nslot):
+        for s in range(self.s.nslots):
             a = seir[s].copy()[:, :, :: int(1 / self.s.dt)]
             a = np.moveaxis(a, 1, 2)
             a = np.moveaxis(a, 0, 1)

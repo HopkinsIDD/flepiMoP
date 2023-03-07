@@ -359,7 +359,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
     sims_per_slot = int(config["filtering"]["iterations_per_slot"])
 
     if num_jobs is None:
-        num_jobs = config["nsimulations"]
+        num_jobs = config["nslots"]
         print(f"Setting number of output slots to {num_jobs} [via config file]")
 
     if sims_per_job is None:
