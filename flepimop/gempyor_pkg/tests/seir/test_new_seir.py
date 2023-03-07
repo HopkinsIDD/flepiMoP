@@ -30,7 +30,7 @@ def test_constant_population():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nslot=1,
+        nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],

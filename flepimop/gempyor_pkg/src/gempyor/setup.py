@@ -28,7 +28,7 @@ class Setup:
         *,
         setup_name,
         spatial_setup,
-        nslot,
+        nslots,
         ti,  # time to start
         tf,  # time to finish
         npi_scenario=None,
@@ -54,7 +54,7 @@ class Setup:
 
         # 1. Important global variables
         self.setup_name = setup_name
-        self.nslot = nslot
+        self.nslots = nslots
         self.dt = float(dt)
         self.ti = ti  ## we start at 00:00 on ti
         self.tf = tf  ## we end on 23:59 on tf

@@ -37,7 +37,7 @@ def test_parameters_from_config_plus_read_write():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nslot=1,
+        nslots=1,
         npi_scenario="None",
         config_version="v2",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -108,7 +108,7 @@ def test_parameters_quick_draw_old():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nslot=1,
+        nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
@@ -182,7 +182,7 @@ def test_parameters_from_timeserie_file():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nslot=1,
+        nslots=1,
         npi_scenario="None",
         config_version="v2",
         npi_config_seir=config["interventions"]["settings"]["None"],

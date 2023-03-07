@@ -128,7 +128,7 @@ filtering:
 
 ## `filtering` settings
 
-With inference model runs, the number of simulations `nsimulations` refers to the number of final model simulations that will be produced. The `filtering$iterations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
+With inference model runs, the number of simulations `nslots` refers to the number of final model simulations that will be produced. The `filtering$iterations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 
 
 | Item              | Required?             | Type/Format                                     | 

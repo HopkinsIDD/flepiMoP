@@ -67,7 +67,7 @@ validation_list$end_date_groundtruth <-function(value,full_config,config_name){
   return(TRUE)
 }
 
-validation_list$nsimulations<- function(value,full_config,config_name){
+validation_list$nslots<- function(value,full_config,config_name){
   if(is.null(value)){
     print("Enter a value for number of simulations")
     return(FALSE)

@@ -227,7 +227,7 @@ def onerun_SEIR(
 
 def run_parallel_SEIR(s, config, *, n_jobs=1):
     start = time.monotonic()
-    sim_ids = np.arange(1, s.nslot + 1)
+    sim_ids = np.arange(1, s.nslots + 1)
 
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
@@ -243,7 +243,7 @@ def run_parallel_SEIR(s, config, *, n_jobs=1):
             max_workers=n_jobs,
         )
 
-    logging.info(f""">> {s.nslot} seir simulations completed in {time.monotonic() - start:.1f} seconds""")
+    logging.info(f""">> {s.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds""")
 
 
 def states2Df(s, states):

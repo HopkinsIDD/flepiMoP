@@ -13,7 +13,7 @@
 # start_date: <date>
 # end_date: <date>
 # dt: float
-# nslot: <integer> overridden by the -n/--nslot script parameter
+# nslots: <integer> overridden by the -n/--nslots script parameter
 # spatial_setup:
 #   setup_name: <string>
 #   base_path: <path to directory>
@@ -152,7 +152,7 @@ from gempyor.utils import config
 )
 @click.option(
     "-n",
-    "--nslot",
+    "--nslots",
     envvar="NUM_SLOTS",
     type=click.IntRange(min=1),
     help="override the # of simulation runs in the config file",
@@ -227,7 +227,7 @@ def simulate(
     in_run_id,
     out_run_id,
     scenarios,
-    nslot,
+    nslots,
     jobs,
     interactive,
     write_csv,
@@ -248,8 +248,8 @@ def simulate(
         scenarios = config["interventions"]["scenarios"].as_str_seq()
     print(f"Scenarios to be run: {', '.join(scenarios)}")
 
-    if not nslot:
-        nslot = config["nslot"].as_number()
+    if not nslots:
+        nslots = config["nslots"].as_number()
 
     spatial_setup = setup.SpatialSetup(
         setup_name=spatial_config["setup_name"].get(),
@@ -267,7 +267,7 @@ def simulate(
         s = setup.Setup(
             setup_name=config["name"].get() + "/" + str(scenario) + "/",
             spatial_setup=spatial_setup,
-            nslot=nslot,
+            nslots=nslots,
             npi_scenario=scenario,
             npi_config_seir=config["interventions"]["settings"][scenario],
             seeding_config=config["seeding"],
@@ -291,7 +291,7 @@ def simulate(
         print(
             f"""
 >> Scenario: {scenario} from config {config_file}
->> Starting {s.nslot} model runs beginning from {s.first_sim_index} on {jobs} processes
+>> Starting {s.nslots} model runs beginning from {s.first_sim_index} on {jobs} processes
 >> Setup *** {s.setup_name} *** from {s.ti} to {s.tf}
     """
         )
