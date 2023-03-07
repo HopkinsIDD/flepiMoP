@@ -31,7 +31,7 @@ def test_check_values():
     s = setup.Setup(
         setup_name="test_values",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
@@ -87,7 +87,7 @@ def test_constant_population_legacy_integration():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
@@ -163,7 +163,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
@@ -249,7 +249,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
@@ -318,7 +318,7 @@ def test_steps_SEIR_no_spread():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
@@ -392,7 +392,7 @@ def test_continuation_resume():
     config.set_file("data/config.yml")
     scenario = "Scenario1"
     sim_id2write = 100
-    nsim = 1
+    nslot = 1
     interactive = False
     write_csv = False
     write_parquet = True
@@ -412,7 +412,7 @@ def test_continuation_resume():
             popnodes_key=spatial_config["popnodes"].get(),
             nodenames_key=spatial_config["nodenames"].get(),
         ),
-        nsim=nsim,
+        nslot=nslot,
         npi_scenario=scenario,
         npi_config_seir=config["interventions"]["settings"][scenario],
         parameters_config=config["seir"]["parameters"],
@@ -443,7 +443,7 @@ def test_continuation_resume():
     config.set_file("data/config_continuation_resume.yml")
     scenario = "Scenario1"
     sim_id2write = 100
-    nsim = 1
+    nslot = 1
     interactive = False
     write_csv = False
     write_parquet = True
@@ -463,7 +463,7 @@ def test_continuation_resume():
             popnodes_key=spatial_config["popnodes"].get(),
             nodenames_key=spatial_config["nodenames"].get(),
         ),
-        nsim=nsim,
+        nslot=nslot,
         npi_scenario=scenario,
         npi_config_seir=config["interventions"]["settings"][scenario],
         seeding_config=config["seeding"],
@@ -512,7 +512,7 @@ def test_inference_resume():
     config.set_file("data/config.yml")
     scenario = "Scenario1"
     sim_id2write = 100
-    nsim = 1
+    nslot = 1
     interactive = False
     write_csv = False
     write_parquet = True
@@ -532,7 +532,7 @@ def test_inference_resume():
             popnodes_key=spatial_config["popnodes"].get(),
             nodenames_key=spatial_config["nodenames"].get(),
         ),
-        nsim=nsim,
+        nslot=nslot,
         npi_scenario=scenario,
         npi_config_seir=config["interventions"]["settings"][scenario],
         parameters_config=config["seir"]["parameters"],
@@ -558,7 +558,7 @@ def test_inference_resume():
     config.read(user=False)
     config.set_file("data/config_inference_resume.yml")
     scenario = "Scenario1"
-    nsim = 1
+    nslot = 1
     interactive = False
     write_csv = False
     write_parquet = True
@@ -578,7 +578,7 @@ def test_inference_resume():
             popnodes_key=spatial_config["popnodes"].get(),
             nodenames_key=spatial_config["nodenames"].get(),
         ),
-        nsim=nsim,
+        nslot=nslot,
         npi_scenario=scenario,
         npi_config_seir=config["interventions"]["settings"][scenario],
         seeding_config=config["seeding"],
@@ -634,7 +634,7 @@ def test_parallel_compartments_with_vacc():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="Scenario_vacc",
         npi_config_seir=config["interventions"]["settings"]["Scenario_vacc"],
         parameters_config=config["seir"]["parameters"],
@@ -728,7 +728,7 @@ def test_parallel_compartments_no_vacc():
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
-        nsim=1,
+        nslot=1,
         npi_scenario="Scenario_novacc",
         npi_config_seir=config["interventions"]["settings"]["Scenario_novacc"],
         parameters_config=config["seir"]["parameters"],

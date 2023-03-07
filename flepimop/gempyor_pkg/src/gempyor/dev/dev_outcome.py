@@ -51,7 +51,7 @@ outcomes.run_delayframe_outcomes(
     run_id,
     prefix,  # output
     deathrate,
-    nsim=1,
+    nslot=1,
     n_jobs=1,
     stoch_traj_flag=stoch_traj_flag,
 )
