@@ -30,7 +30,7 @@ jobs:
         run: |
           source /var/python/3.10/virtualenv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install gempyor_pkg/
+          python -m pip install flepimop/gempyor_pkg/
         shell: bash
       - name: Install local R packages
         run: Rscript build/local_install.R
@@ -38,27 +38,27 @@ jobs:
       - name: Run gempyor tests
         run: |
           source /var/python/3.10/virtualenv/bin/activate
-          cd gempyor_pkg
+          cd flepimop/gempyor_pkg
           pytest -s
         shell: bash
       - name: Run flepicommon tests
         run: |
-          setwd("R_packages/flepicommon")
+          setwd("flepimop/R_packages/flepicommon")
           devtools::test(stop_on_failure=TRUE)
         shell: Rscript {0}
 #      - name: Run hospitalization tests
 #        run: |
-#          setwd("R_packages/hospitalization")
+#          setwd("flepimop/R_packages/hospitalization")
 #          devtools::test(stop_on_failure=TRUE)
 #        shell: Rscript {0}
 #      - name: Run report.generation tests
 #        run: |
-#          setwd("Rpackages/pkgs/report.generation")
+#          setwd("flepimop/R_packages/report.generation")
 #          devtools::test(stop_on_failure=TRUE)
 #        shell: Rscript {0}
       - name: Run inference tests
         run: |
-          setwd("R_packages/inference")
+          setwd("flepimop/R_packages/inference")
           devtools::test(stop_on_failure=TRUE)
         shell: Rscript {0}
 #      - name: Run integration tests
