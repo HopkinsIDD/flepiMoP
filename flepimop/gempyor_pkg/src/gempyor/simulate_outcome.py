@@ -65,7 +65,7 @@ from gempyor import outcomes
     "-c",
     "--config",
     "config_file",
-    envvar=["CONFIG_PATH", "CONFIG_PATH"],
+    envvar="CONFIG_PATH",
     type=click.Path(exists=True),
     required=True,
     help="configuration file for this simulation",
@@ -89,8 +89,8 @@ from gempyor import outcomes
 )
 @click.option(
     "-i",
-    "--index",
-    envvar="COVID_INDEX",
+    "--first_sim_index",
+    envvar="FIRST_SIM_INDEX",
     type=click.IntRange(min=1),
     default=1,
     show_default=True,
@@ -176,7 +176,7 @@ def simulate(
     scenarios_outcomes,
     nslots,
     jobs,
-    index,
+    first_sim_index,
     stoch_traj_flag,
     write_csv,
     write_parquet,
@@ -226,7 +226,7 @@ def simulate(
             tf=config["end_date"].as_date(),
             write_csv=write_csv,
             write_parquet=write_parquet,
-            first_sim_index=index,
+            first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=in_prefix,
             out_run_id=out_run_id,
@@ -239,14 +239,14 @@ def simulate(
 
         print(
             f"""
->> Starting {nslots} model runs beginning from {index} on {jobs} processes
+>> Starting {nslots} model runs beginning from {first_sim_index} on {jobs} processes
 >> Scenario: {scenario_outcomes} 
 >> writing to folder : {out_prefix}
 >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories"""
         )
 
         if config["outcomes"]["method"].get() == "delayframe":
-            outcomes.run_parallel_outcomes(sim_id2write=index, s=s, nslots=nslots, n_jobs=jobs)
+            outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, s=s, nslots=nslots, n_jobs=jobs)
         else:
             raise ValueError(f"Only method 'delayframe' is supported at the moment.")
 

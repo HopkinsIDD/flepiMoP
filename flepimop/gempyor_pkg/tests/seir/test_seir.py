@@ -81,7 +81,7 @@ def test_constant_population_legacy_integration():
         nodenames_key="geoid",
     )
 
-    index = 1
+    first_sim_index = 1
     run_id = "test"
     prefix = ""
     s = setup.Setup(
@@ -96,7 +96,7 @@ def test_constant_population_legacy_integration():
         tf=config["end_date"].as_date(),
         interactive=True,
         write_csv=False,
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -157,7 +157,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         nodenames_key="geoid",
     )
 
-    index = 1
+    first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
     s = setup.Setup(
@@ -172,7 +172,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         tf=config["end_date"].as_date(),
         interactive=True,
         write_csv=False,
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -242,7 +242,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         nodenames_key="geoid",
     )
 
-    index = 1
+    first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
 
@@ -258,7 +258,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         tf=config["end_date"].as_date(),
         interactive=True,
         write_csv=False,
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -312,7 +312,7 @@ def test_steps_SEIR_no_spread():
         nodenames_key="geoid",
     )
 
-    index = 1
+    first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
     s = setup.Setup(
@@ -327,7 +327,7 @@ def test_steps_SEIR_no_spread():
         tf=config["end_date"].as_date(),
         interactive=True,
         write_csv=False,
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -396,7 +396,7 @@ def test_continuation_resume():
     interactive = False
     write_csv = False
     write_parquet = True
-    index = 1
+    first_sim_index = 1
     run_id = "test"
     prefix = ""
     stoch_traj_flag = True
@@ -425,7 +425,7 @@ def test_continuation_resume():
         write_csv=write_csv,
         write_parquet=write_parquet,
         dt=config["dt"].as_number(),
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -447,7 +447,7 @@ def test_continuation_resume():
     interactive = False
     write_csv = False
     write_parquet = True
-    index = 1
+    first_sim_index = 1
     run_id = "test"
     prefix = ""
     stoch_traj_flag = True
@@ -475,7 +475,7 @@ def test_continuation_resume():
         write_csv=write_csv,
         write_parquet=write_parquet,
         dt=config["dt"].as_number(),
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -516,7 +516,7 @@ def test_inference_resume():
     interactive = False
     write_csv = False
     write_parquet = True
-    index = 1
+    first_sim_index = 1
     run_id = "test"
     prefix = ""
     stoch_traj_flag = True
@@ -543,7 +543,7 @@ def test_inference_resume():
         write_csv=write_csv,
         write_parquet=write_parquet,
         dt=config["dt"].as_number(),
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -562,7 +562,7 @@ def test_inference_resume():
     interactive = False
     write_csv = False
     write_parquet = True
-    index = 1
+    first_sim_index = 1
     run_id = "test"
     prefix = ""
     stoch_traj_flag = True
@@ -590,7 +590,7 @@ def test_inference_resume():
         write_csv=write_csv,
         write_parquet=write_parquet,
         dt=config["dt"].as_number(),
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -628,7 +628,7 @@ def test_parallel_compartments_with_vacc():
         nodenames_key="geoid",
     )
 
-    index = 1
+    first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
     s = setup.Setup(
@@ -644,7 +644,7 @@ def test_parallel_compartments_with_vacc():
         seir_config=config["seir"],
         interactive=True,
         write_csv=False,
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
@@ -722,7 +722,7 @@ def test_parallel_compartments_no_vacc():
         nodenames_key="geoid",
     )
 
-    index = 1
+    first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
     s = setup.Setup(
@@ -738,7 +738,7 @@ def test_parallel_compartments_no_vacc():
         seir_config=config["seir"],
         interactive=True,
         write_csv=False,
-        first_sim_index=index,
+        first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,

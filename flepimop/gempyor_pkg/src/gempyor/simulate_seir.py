@@ -159,8 +159,8 @@ from gempyor.utils import config
 )
 @click.option(
     "-i",
-    "--index",
-    envvar="COVID_INDEX",
+    "--first_sim_index",
+    envvar="FIRST_SIM_INDEX",
     type=click.IntRange(min=1),
     default=1,
     show_default=True,
@@ -232,7 +232,7 @@ def simulate(
     interactive,
     write_csv,
     write_parquet,
-    index,
+    first_sim_index,
     stoch_traj_flag,
 ):
 
@@ -280,7 +280,7 @@ def simulate(
             write_csv=write_csv,
             write_parquet=write_parquet,
             dt=config["dt"].as_number(),
-            first_sim_index=index,
+            first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=config["name"].get() + "/",
             out_run_id=out_run_id,
