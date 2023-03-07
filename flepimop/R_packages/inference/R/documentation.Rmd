@@ -97,7 +97,7 @@ This section configures the settings for the inference algorithm. The below exam
 
 ```
 filtering:
-  simulations_per_slot: 350
+  iterations_per_slot: 350
   do_filtering: TRUE
   data_path: data/observed_data.csv
   likelihood_directory: importation/likelihood/
@@ -128,12 +128,12 @@ filtering:
 
 ## `filtering` settings
 
-With inference model runs, the number of simulations `nsimulations` refers to the number of final model simulations that will be produced. The `filtering$simulations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
+With inference model runs, the number of simulations `nsimulations` refers to the number of final model simulations that will be produced. The `filtering$iterations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 
 
 | Item              | Required?             | Type/Format                                     | 
 |-------------------|-----------------------|-------------------------------------------------|
-| simulations_per_slot  | **required**    | number of iterations in a single MCMC inference chain |
+| iterations_per_slot  | **required**    | number of iterations in a single MCMC inference chain |
 | do_filtering          | required        | TRUE if inference should be performed |
 | data_path             | required        | file path where observed data are saved  |
 | likelihood_directory  | required        | folder path where likelihood evaluations will be stored as the inference algorithm runs |

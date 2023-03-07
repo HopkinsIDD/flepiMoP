@@ -1254,7 +1254,7 @@ print_filtering_statistics <- function(sims_per_slot = 300,
     
     cat(paste0("\n", 
                "filtering:\n", 
-               "  simulations_per_slot: ", sims_per_slot, "\n", 
+               "  iterations_per_slot: ", sims_per_slot, "\n", 
                "  do_filtering: ", do_filtering, "\n", 
                "  data_path: ", data_path, "\n", 
                "  gt_source: \"", gt_source, "\"\n", {

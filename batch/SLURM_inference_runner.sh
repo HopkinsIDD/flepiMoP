@@ -9,7 +9,7 @@ set -x
 
 cd $DATA_PATH
 
-COVID_SLOT_INDEX=${SLURM_ARRAY_TASK_ID}
+SLOT_INDEX=${SLURM_ARRAY_TASK_ID}
 
 echo "***************** LOADING ENVIRONMENT *****************"
 module purge
@@ -33,8 +33,8 @@ echo "***************** FETCHING RESUME FILES *****************"
 ### In case of resume, download or move the right files
 export LAST_JOB_OUTPUT=$(echo $LAST_JOB_OUTPUT | sed 's/\/$//')
 if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is nonzero --> if LAST_JOB_OUTPUT is not empty, the we download the output from the last job
-	if [ $COVID_BLOCK_INDEX -eq 1 ]; then  # always true for slurm submissions
-		export RESUME_RUN_INDEX=$COVID_OLD_RUN_INDEX
+	if [ $BLOCK_INDEX -eq 1 ]; then  # always true for slurm submissions
+		export RESUME_RUN_INDEX=$OLD_RUN_INDEX
 		echo "RESUME_DISCARD_SEEDING is set to $RESUME_DISCARD_SEEDING"
 		if [ $RESUME_DISCARD_SEEDING == "true" ]; then
 			export PARQUET_TYPES="spar snpi hpar hnpi"
@@ -42,7 +42,7 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 			export PARQUET_TYPES="seed spar snpi hpar hnpi"
 		fi
 	else                                 # if we are not in the first block, we need to resume from the last job, with seeding an all.
-		export RESUME_RUN_INDEX=$COVID_RUN_INDEX
+		export RESUME_RUN_INDEX=$RUN_INDEX
 		export PARQUET_TYPES="seed spar snpi seir hpar hnpi hosp llik"
 	fi
 	for filetype in $PARQUET_TYPES
@@ -54,9 +54,9 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 		fi
 		for liketype in "global" "chimeric"
 		do
-			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/$liketype/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX-1,'$filetype','$extension'))")
-			if [ $COVID_BLOCK_INDEX -eq 1 ]; then
-				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RESUME_RUN_INDEX','$COVID_PREFIX/$RESUME_RUN_INDEX/$liketype/final/',$COVID_SLOT_INDEX,'$filetype','$extension'))")
+			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/$liketype/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX-1,'$filetype','$extension'))")
+			if [ $BLOCK_INDEX -eq 1 ]; then
+				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RESUME_RUN_INDEX','$MODEL_PREFIX/$RESUME_RUN_INDEX/$liketype/final/',$SLOT_INDEX,'$filetype','$extension'))")
 			else
 				export IN_FILENAME=$OUT_FILENAME
 			fi
@@ -84,25 +84,25 @@ fi
 echo "***************** DONE FETCHING RESUME FILES *****************"
 
 echo "***************** RUNNING inference_slot.R *****************"
-export LOG_FILE="$FS_RESULTS_PATH/log_${COVID_RUN_INDEX}_${COVID_SLOT_INDEX}.txt"
-echo "Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R --config $COVID_CONFIG_PATH   # path to the config file
-                                               --run_id $COVID_RUN_INDEX  # Unique identifier for this run
-                                               --scenarios $COVID_SCENARIOS  # name of the intervention to run, or 'all'
-                                               --deathrates $COVID_DEATHRATES  # name of the outcome scenarios to run, or 'all'
+export LOG_FILE="$FS_RESULTS_PATH/log_${RUN_INDEX}_${SLOT_INDEX}.txt"
+echo "Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R --config $CONFIG_PATH   # path to the config file
+                                               --run_id $RUN_INDEX  # Unique identifier for this run
+                                               --scenarios $MODEL_SCENARIOS  # name of the intervention to run, or 'all'
+                                               --deathrates $MODEL_DEATHRATES  # name of the outcome scenarios to run, or 'all'
                                                --jobs 1  # Number of jobs to run in parallel
-                                               --simulations_per_slot $COVID_SIMULATIONS_PER_SLOT # number of simulations to run for this slot
-                                               --this_slot $COVID_SLOT_INDEX # id of this slot
+                                               --iterations_per_slot $ITERATIONS_PER_SLOT # number of iterations to run for this slot
+                                               --this_slot $SLOT_INDEX # id of this slot
                                                --this_block 1 # id of this block
-                                               --stoch_traj_flag $COVID_STOCHASTIC # Stochastic SEIR and outcomes trajectories if true
-                                               --ground_truth_start $COVID_GT_START # First date to include groundtruth for
-                                               --ground_truth_end $COVID_GT_END # First date to include groundtruth fo
+                                               --stoch_traj_flag $STOCHASTIC_RUN # Stochastic SEIR and outcomes trajectories if true
+                                               --ground_truth_start $GT_START_DATE # First date to include groundtruth for
+                                               --ground_truth_end $GT_START_DATE # Last date to include groundtruth for
                                                --flepi_path $FLEPI_PATH
                                                --python python
                                                --rpath Rscript
-                                               --is-resume $COVID_IS_RESUME # Is this run a resume
+                                               --is-resume $RESUME_RUN # Is this run a resume
                                                --is-interactive FALSE # Is this run an interactive run" > $LOG_FILE 2>&1 &
 
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p $FLEPI_PATH --this_slot $COVID_SLOT_INDEX --config $COVID_CONFIG_PATH --run_id $COVID_RUN_INDEX --scenarios $COVID_SCENARIOS --deathrates $COVID_DEATHRATES --jobs 1 --simulations_per_slot $COVID_SIMULATIONS_PER_SLOT --this_block 1 --stoch_traj_flag $COVID_STOCHASTIC --is-resume $COVID_IS_RESUME --is-interactive FALSE > $LOG_FILE 2>&1
+Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p $FLEPI_PATH --this_slot $SLOT_INDEX --config $CONFIG_PATH --run_id $RUN_INDEX --scenarios $MODEL_SCENARIOS --deathrates $MODEL_DEATHRATES --jobs 1 --iterations_per_slot $ITERATIONS_PER_SLOT --this_block 1 --stoch_traj_flag $STOCHASTIC_RUN --is-resume $RESUME_RUN --is-interactive FALSE > $LOG_FILE 2>&1
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
         echo "Error code returned from inference_main.R: $dvc_ret"
@@ -115,32 +115,32 @@ echo "***************** UPLOADING RESULT TO S3 (OR NOT) *****************"
 if [ $S3_UPLOAD == "true" ]; then
     for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
     do
-        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/chimeric/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','parquet'))")
+        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/chimeric/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
         for type in "seed"
         do
-            export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/chimeric/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','csv'))")
+            export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/chimeric/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','csv'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
         for type in "seed"
         do
-            export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','csv'))")
+            export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','csv'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
         for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
     do
-        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','parquet'))")
+        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
         for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
     do
-        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/final/', $COVID_SLOT_INDEX,'$type','parquet'))")
+        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/final/', $SLOT_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
         for type in "seed"
     do
-        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/final/', $COVID_SLOT_INDEX,'$type','csv'))")
+        export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/final/', $SLOT_INDEX,'$type','csv'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
 fi
@@ -151,42 +151,42 @@ echo "***************** DONE UPLOADING RESULT TO S3 (OR NOT) *****************"
 echo "***************** COPYING RESULTS TO RESULT DIRECTORY *****************"
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/chimeric/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','parquet'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/chimeric/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
 for type in "seed"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/chimeric/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','csv'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/chimeric/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','csv'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
 for type in "seed"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','csv'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','csv'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/intermediate/%09d.'% $COVID_SLOT_INDEX,$COVID_BLOCK_INDEX,'$type','parquet'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
     for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/final/', $COVID_SLOT_INDEX,'$type','parquet'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/final/', $SLOT_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
     for type in "seed"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$COVID_RUN_INDEX','$COVID_PREFIX/$COVID_RUN_INDEX/global/final/', $COVID_SLOT_INDEX,'$type','csv'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/final/', $SLOT_INDEX,'$type','csv'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH

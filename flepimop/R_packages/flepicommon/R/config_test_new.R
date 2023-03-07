@@ -545,17 +545,17 @@ validation_list$outcomes$interventions<-function(value, full_config,config_name)
 
 ###FILTERING
 validation_list$filtering<-list()
-validation_list$filtering$simulations_per_slot<-function(value,full_config,config_name){
+validation_list$filtering$iterations_per_slot<-function(value,full_config,config_name){
   if(is.null(value)){
-    print("simulations_per_slot undefined in config, can't autodetect parameters")
+    print("iterations_per_slot undefined in config, can't autodetect parameters")
     return(FALSE)
   }
   if(!is.numeric(value)){
-    print("Incorrect value mentioned for simulations_per_slot should be a numeric value")
+    print("Incorrect value mentioned for iterations_per_slot should be a numeric value")
     return(FALSE)
   }
   if(value<1){
-    print("simulations_per_slot should be 1 or greater")
+    print("iterations_per_slot should be 1 or greater")
     return(FALSE)
   }
   return(TRUE)

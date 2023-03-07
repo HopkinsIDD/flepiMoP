@@ -34,7 +34,7 @@ single_loc_inference_test <- function(to_fit,
     obs_nodename <- config$spatial_setup$nodenames
     
     # Set number of simulations
-    simulations_per_slot <- config$filtering$simulations_per_slot
+    iterations_per_slot <- config$filtering$iterations_per_slot
     
     # SEIR parameters for simulations
     R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
@@ -151,7 +151,7 @@ single_loc_inference_test <- function(to_fit,
         current_index <- 0
         previous_likelihood_data <- initial_log_likelihood_data
         
-        for (index in seq_len(simulations_per_slot)) {
+        for (index in seq_len(iterations_per_slot)) {
             current_seeding <- perturb_seeding(initial_seeding, config$seeding$perturbation_sd, date_bounds)
             current_npis <- perturb_expand_npis(initial_npis, config$interventions$settings)
             
@@ -277,7 +277,7 @@ multi_loc_inference_test <- function(to_fit,
     obs_nodename <- config$spatial_setup$nodenames
     
     # Set number of simulations
-    simulations_per_slot <- config$filtering$simulations_per_slot
+    iterations_per_slot <- config$filtering$iterations_per_slot
     
     # SEIR parameters for simulations
     R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
@@ -419,7 +419,7 @@ multi_loc_inference_test <- function(to_fit,
         current_index <- 0
         previous_likelihood_data <- initial_likelihood_data
         
-        for (index in seq_len(simulations_per_slot)) {
+        for (index in seq_len(iterations_per_slot)) {
             current_seeding <- perturb_seeding(initial_seeding, config$seeding$perturbation_sd, date_bounds)
             current_npis <- perturb_expand_npis(initial_npis, config$interventions$settings, multi = T)
             
