@@ -9,7 +9,7 @@ option_list = list(
   optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("RUN_INDEX",flepicommon::run_id())),
   optparse::make_option(c("-s", "--scenarios"), action="store", default=Sys.getenv("MODEL_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
   optparse::make_option(c("-d", "--deathrates"), action="store", default=Sys.getenv("MODEL_DEATHRATES", 'all'), type='character', help="name of the death scenarios to run, or 'all' to run all of them"),
-  optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("COVID_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
+  optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
   optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
   optparse::make_option(c("-n", "--slots"), action="store", default=Sys.getenv("NUM_SLOTS", as.numeric(NA)), type='integer', help = "Number of slots to run."),
   optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("BLOCK_INDEX",1), type='integer', help = "id of this block"),

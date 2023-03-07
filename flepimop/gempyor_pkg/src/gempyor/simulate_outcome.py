@@ -99,7 +99,7 @@ from gempyor import outcomes
 @click.option(
     "-j",
     "--jobs",
-    envvar="COVID_NJOBS",
+    envvar="NJOBS",
     type=click.IntRange(min=1),
     default=multiprocessing.cpu_count(),
     show_default=True,
