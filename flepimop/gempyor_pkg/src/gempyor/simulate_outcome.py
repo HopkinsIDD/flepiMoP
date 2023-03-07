@@ -82,7 +82,7 @@ from gempyor import outcomes
 )
 @click.option(
     "-n",
-    "--nsim",
+    "--nslot",
     envvar="NUM_SLOTS",
     type=click.IntRange(min=1),
     help="override the # of outcomes simulation to run runs in the config file",
@@ -174,7 +174,7 @@ def simulate(
     out_run_id,
     out_prefix,
     scenarios_outcomes,
-    nsim,
+    nslot,
     jobs,
     index,
     stoch_traj_flag,
@@ -193,9 +193,9 @@ def simulate(
         scenarios_outcomes = config["outcomes"]["scenarios"].as_str_seq()
     print(f"Outcomes scenarios to be run: {', '.join(scenarios_outcomes)}")
 
-    if not nsim:
-        nsim = config["nsimulations"].as_number()
-    print(f"Simulations to be run: {nsim}")
+    if not nslot:
+        nslot = config["nslot"].as_number()
+    print(f"Simulations to be run: {nslot}")
 
     spatial_setup = setup.SpatialSetup(
         setup_name=spatial_config["setup_name"].get(),
@@ -219,7 +219,7 @@ def simulate(
         s = setup.Setup(
             setup_name=config["name"].get() + "/" + str(scenarios_outcomes) + "/",
             spatial_setup=spatial_setup,
-            nsim=nsim,
+            nslot=nslot,
             outcomes_config=config["outcomes"],
             outcomes_scenario=scenario_outcomes,
             ti=config["start_date"].as_date(),
@@ -239,14 +239,14 @@ def simulate(
 
         print(
             f"""
->> Starting {nsim} model runs beginning from {index} on {jobs} processes
+>> Starting {nslot} model runs beginning from {index} on {jobs} processes
 >> Scenario: {scenario_outcomes} 
 >> writing to folder : {out_prefix}
 >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories"""
         )
 
         if config["outcomes"]["method"].get() == "delayframe":
-            outcomes.run_parallel_outcomes(sim_id2write=index, s=s, nsim=nsim, n_jobs=jobs)
+            outcomes.run_parallel_outcomes(sim_id2write=index, s=s, nslot=nslot, n_jobs=jobs)
         else:
             raise ValueError(f"Only method 'delayframe' is supported at the moment.")
 
