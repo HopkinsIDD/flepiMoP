@@ -36,8 +36,7 @@ NULL
 load_geodata_file <- function(filename,
                               geoid_len = 0,
                               geoid_pad = "0",
-                              state_name = TRUE
-) {
+                              state_name = TRUE) {
 
     if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
     geodata <- readr::read_csv(filename) %>%
@@ -128,12 +127,12 @@ npi_recode_scenario <- function(data
 #'
 
 npi_recode_scenario_mult <- function(data){
-    data %>% dplyr::mutate(scenario_mult = action_new, 
+    data %>% dplyr::mutate(scenario_mult = action_new,
                            scenario_mult = ifelse(grepl("stay at home", scenario_mult), "lockdown", scenario_mult),
-                           scenario_mult = gsub("paste", "open_p", scenario_mult), 
-                           scenario_mult = gsub("phase", "open_p", scenario_mult), 
+                           scenario_mult = gsub("paste", "open_p", scenario_mult),
+                           scenario_mult = gsub("phase", "open_p", scenario_mult),
                            scenario_mult = ifelse(grepl("open_p", scenario_mult),
-                                                  stringr::str_extract(scenario_mult, "open_p[[:digit:]]+"), scenario_mult), 
+                                                  stringr::str_extract(scenario_mult, "open_p[[:digit:]]+"), scenario_mult),
                            scenario_mult = dplyr::recode(scenario_mult, `social distancing` = "sd"))
 }
 
@@ -161,32 +160,32 @@ npi_recode_scenario_mult <- function(data){
 #' npi_dat <- process_npi_shub(intervention_path = system.file("extdata", "intervention_data.csv", package = "config.writer"), geodata)
 #'
 #' npi_dat
-process_npi_usa <- function (intervention_path, 
-                               geodata, 
-                               prevent_overlap = TRUE, 
+process_npi_usa <- function (intervention_path,
+                               geodata,
+                               prevent_overlap = TRUE,
                                prevent_gaps = TRUE) {
-    
-    og <- readr::read_csv(intervention_path) %>% dplyr::left_join(geodata) %>% 
-        dplyr::filter(GEOID == "all") %>% 
-        npi_recode_scenario() %>% 
+
+    og <- readr::read_csv(intervention_path) %>% dplyr::left_join(geodata) %>%
+        dplyr::filter(GEOID == "all") %>%
+        npi_recode_scenario() %>%
         npi_recode_scenario_mult()
-    
+
     if (!all(lubridate::is.Date(og$start_date), lubridate::is.Date(og$end_date))) {
         og <- og %>% dplyr::mutate(dplyr::across(tidyselect::ends_with("_date"), ~lubridate::mdy(.x)))
     }
     if ("template" %in% colnames(og)) {
-        og <- og %>% dplyr::mutate(name = dplyr::if_else(template == "MultiTimeReduce", scenario_mult, scenario)) %>% 
+        og <- og %>% dplyr::mutate(name = dplyr::if_else(template == "MultiTimeReduce", scenario_mult, scenario)) %>%
             dplyr::select(USPS, geoid, start_date, end_date, name, template)
     } else {
-        og <- og %>% dplyr::mutate(template = "MultiTimeReduce") %>% 
+        og <- og %>% dplyr::mutate(template = "MultiTimeReduce") %>%
             dplyr::select(USPS, geoid, start_date, end_date, name = scenario_mult, template)
     }
     if (prevent_overlap) {
-        og <- og %>% dplyr::group_by(USPS, geoid) %>% 
+        og <- og %>% dplyr::group_by(USPS, geoid) %>%
             dplyr::mutate(end_date = dplyr::if_else(end_date >= dplyr::lead(start_date), dplyr::lead(start_date) - 1, end_date))
     }
     if (prevent_gaps) {
-        og <- og %>% dplyr::group_by(USPS, geoid) %>% 
+        og <- og %>% dplyr::group_by(USPS, geoid) %>%
             dplyr::mutate(end_date = dplyr::if_else(end_date < dplyr::lead(start_date), dplyr::lead(start_date) - 1, end_date))
     }
     return(og)
@@ -527,8 +526,8 @@ generate_multiple_variants_state <- function(variant_path_1,
         dplyr::ungroup() %>%
         dplyr::mutate(final_week = dplyr::case_when(start_date >= lubridate::floor_date(projection_start_date-14, "week") & start_date < projection_start_date ~ 1,
                                                     start_date >= projection_start_date ~ 0,
-                                                    TRUE ~ NA_real_), 
-                      sequential = dplyr::case_when(R_ratio == dplyr::lead(R_ratio) & R_ratio != dplyr::lag(R_ratio) ~ 1,  
+                                                    TRUE ~ NA_real_),
+                      sequential = dplyr::case_when(R_ratio == dplyr::lead(R_ratio) & R_ratio != dplyr::lag(R_ratio) ~ 1,
                                                     R_ratio == dplyr::lag(R_ratio) ~ 0,
                                                     R_ratio != dplyr::lag(R_ratio) ~ 1)) %>%
         dplyr::group_by(location) %>%
@@ -573,28 +572,28 @@ generate_multiple_variants_state <- function(variant_path_1,
 #' variant
 #'
 generate_compartment_variant <- function(variant_path = "../COVID19_USA/data/variant/variant_props_long.csv",
-                                         variant_compartments = c("WILD", "ALPHA", "DELTA"), 
+                                         variant_compartments = c("WILD", "ALPHA", "DELTA"),
                                          transmission_increase = c(1, 1.45, (1.6*1.6)),
-                                         geodata, 
+                                         geodata,
                                          sim_start_date = as.Date("2020-03-31"),
                                          sim_end_date = Sys.Date()+60){
-    trans_incr <- dplyr::tibble(variant_compartments, 
+    trans_incr <- dplyr::tibble(variant_compartments,
                                 transmission_increase)
-    
+
     variant_data <- readr::read_csv(variant_path)
-    
+
     if(!("source" %in% colnames(variant_data))){
         variant_data$source <- ""
     }
     variant_data <- variant_data %>% dplyr::full_join(trans_incr) %>%
         dplyr::rename(date = Update, USPS = source) %>%
-        dplyr::mutate(trans_mult = (trans_incr * prop)) %>% 
+        dplyr::mutate(trans_mult = (trans_incr * prop)) %>%
         dplyr::group_by(date, USPS) %>%
         dplyr::summarise(trans_mult = sum(trans_mult))
-    
+
     sim_start_date <- as.Date(sim_start_date)
     sim_end_date <- as.Date(sim_end_date)
-    
+
     variant_data <- variant_data %>%
         dplyr::mutate(week = MMWRweek::MMWRweek(date)$MMWRweek,
                       year = MMWRweek::MMWRweek(date)$MMWRyear,
@@ -606,18 +605,18 @@ generate_compartment_variant <- function(variant_path = "../COVID19_USA/data/var
         dplyr::mutate(param = "ReduceR0") %>%
         dplyr::rename(R_ratio = trans_mult) %>%
         dplyr::mutate(sd_variant = (sqrt(R_ratio)-1)/5)
-    
+
     variant_data <- variant_data %>%
         dplyr::filter(end_date >= sim_start_date) %>%
         dplyr::mutate(start_date = dplyr::if_else(start_date < sim_start_date &
                                                       end_date > sim_start_date, sim_start_date, start_date),
                       end_date = dplyr::if_else(end_date > sim_end_date, sim_end_date, end_date))
-    
+
     variant_data <- variant_data %>%
         dplyr::mutate(R_ratio = round(R_ratio, 2)) %>%
         dplyr::select(USPS, week, start_date, end_date, param, R_ratio, sd_variant) %>%
         dplyr::mutate(R_ratio = round(R_ratio*(1/0.05))*0.05, sd_variant = mean(sd_variant)) # THIS IS NOT THE RIGHT SD BUT DOESN'T MATTER B/C WE DON'T USE IT
-    
+
     # Combine interventions
     dates_start_ <- sort(unique(variant_data$start_date))
     for (d in 1:length(dates_start_)){
@@ -628,12 +627,12 @@ generate_compartment_variant <- function(variant_path = "../COVID19_USA/data/var
             dplyr::summarise(start_date=min(start_date), end_date=max(end_date),
                              sd_variant = round(mean(sd_variant,na.rm=TRUE),4))
     }
-    variant_data <- variant_data %>% dplyr::as_tibble() %>% dplyr::select(-date_comb) %>% dplyr::distinct() 
-    variant_data <- variant_data %>% 
+    variant_data <- variant_data %>% dplyr::as_tibble() %>% dplyr::select(-date_comb) %>% dplyr::distinct()
+    variant_data <- variant_data %>%
         dplyr::filter(R_ratio>1) %>%
         dplyr::filter(USPS != "US") %>%
         dplyr::left_join(geodata %>% dplyr::select(USPS, geoid))
-    
+
     return(variant_data)
 }
 
