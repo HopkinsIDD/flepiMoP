@@ -356,7 +356,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
 
     if "filtering" not in config or "iterations_per_slot" not in config["filtering"]:
         raise click.UsageError("filtering::iterations_per_slot undefined in config, can't autodetect parameters")
-    sims_per_slot = int(config["filtering"]["iterations_per_slot"])
+    iterations_per_slot = int(config["filtering"]["iterations_per_slot"])
 
     if num_jobs is None:
         num_jobs = config["nslots"]
@@ -364,9 +364,9 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
 
     if sims_per_job is None:
         if num_blocks is not None:
-            sims_per_job = int(math.ceil(sims_per_slot / num_blocks))
+            sims_per_job = int(math.ceil(iterations_per_slot / num_blocks))
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
-            print(f"Setting sims per job to {sims_per_job} [via {sims_per_slot} iterations_per_slot in config]")
+            print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
             geoid_fname = (
                 pathlib.Path(data_path, config["spatial_setup"]["base_path"]) / config["spatial_setup"]["geodata"]
@@ -378,23 +378,23 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
                 # formula based on a simple regression of geoids (based on known good performant params)
                 sims_per_job = max(60 - math.sqrt(num_geoids), 10)
                 sims_per_job = 5 * int(math.ceil(sims_per_job / 5))  # multiple of 5
-                num_blocks = int(math.ceil(sims_per_slot / sims_per_job))
+                num_blocks = int(math.ceil(iterations_per_slot / sims_per_job))
             elif batch_system == "slurm":
                 # now launch full sims:
-                sims_per_job = sims_per_slot
+                sims_per_job = iterations_per_slot
                 num_blocks = 1
             else:
                 raise ValueError(f"Unknown batch submission system {batch_system}")
 
             print(
                 f"Setting sims per job to {sims_per_job} "
-                f"[estimated based on {num_geoids} geoids and {sims_per_slot} iterations_per_slot in config]"
+                f"[estimated based on {num_geoids} geoids and {iterations_per_slot} iterations_per_slot in config]"
             )
             print(f"Setting number of blocks to {num_blocks} [via math]")
 
     if num_blocks is None:
-        num_blocks = int(math.ceil(sims_per_slot / sims_per_job))
-        print(f"Setting number of blocks to {num_blocks} [via {sims_per_slot} iterations_per_slot in config]")
+        num_blocks = int(math.ceil(iterations_per_slot / sims_per_job))
+        print(f"Setting number of blocks to {num_blocks} [via {iterations_per_slot} iterations_per_slot in config]")
 
     return (num_jobs, sims_per_job, num_blocks)
 
