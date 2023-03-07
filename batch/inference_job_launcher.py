@@ -63,7 +63,7 @@ def user_confirmation(question="Continue?", default=False):
     "--id",
     "--id",
     "run_id",
-    envvar="COVID_RUN_INDEX",
+    envvar="RUN_INDEX",
     type=str,
     default=file_paths.run_id(),
     help="Unique identifier for this run",
@@ -176,7 +176,7 @@ def user_confirmation(question="Continue?", default=False):
     "--stochastic/--non-stochastic",
     "--stochastic/--non-stochastic",
     "stochastic",
-    envvar="COVID_STOCHASTIC",
+    envvar="STOCHASTIC_RUN",
     type=bool,
     default=False,
     help="Flag determining whether to run stochastic simulations or not",
@@ -194,7 +194,7 @@ def user_confirmation(question="Continue?", default=False):
     "--stacked-max",
     "--stacked-max",
     "max_stacked_interventions",
-    envvar="COVID_MAX_STACK_SIZE",
+    envvar="MAX_STACK_SIZE",
     type=click.IntRange(min=350),
     default=5000,
     help="Maximum number of interventions to allow in a stacked intervention",
@@ -212,7 +212,7 @@ def user_confirmation(question="Continue?", default=False):
     "--reset-chimerics-on-global-accept",
     "--reset-chimerics-on-global-accept",
     "reset_chimerics",
-    envvar="COVID_RESET_CHIMERICS",
+    envvar="RESET_CHIMERICS",
     type=bool,
     default=True,
     help="Flag determining whether to reset chimeric values on any global acceptances",
@@ -271,7 +271,7 @@ def launch_batch(
     # Update and save the config file with the number of sims to run
     # TODO: does this really save the config file?
     if "filtering" in config:
-        config["filtering"]["simulations_per_slot"] = sims_per_job
+        config["filtering"]["iterations_per_slot"] = sims_per_job
         if not os.path.exists(pathlib.Path(data_path, config["filtering"]["data_path"])):
             print(
                 f"ERROR: filtering.data_path path {pathlib.Path(data_path, config['filtering']['data_path'])} does not exist!"
@@ -354,9 +354,9 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
     if num_jobs and sims_per_job and num_blocks:
         return (num_jobs, sims_per_job, num_blocks)
 
-    if "filtering" not in config or "simulations_per_slot" not in config["filtering"]:
-        raise click.UsageError("filtering::simulations_per_slot undefined in config, can't autodetect parameters")
-    sims_per_slot = int(config["filtering"]["simulations_per_slot"])
+    if "filtering" not in config or "iterations_per_slot" not in config["filtering"]:
+        raise click.UsageError("filtering::iterations_per_slot undefined in config, can't autodetect parameters")
+    sims_per_slot = int(config["filtering"]["iterations_per_slot"])
 
     if num_jobs is None:
         num_jobs = config["nsimulations"]
@@ -366,7 +366,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
         if num_blocks is not None:
             sims_per_job = int(math.ceil(sims_per_slot / num_blocks))
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
-            print(f"Setting sims per job to {sims_per_job} [via {sims_per_slot} simulations_per_slot in config]")
+            print(f"Setting sims per job to {sims_per_job} [via {sims_per_slot} iterations_per_slot in config]")
         else:
             geoid_fname = (
                 pathlib.Path(data_path, config["spatial_setup"]["base_path"]) / config["spatial_setup"]["geodata"]
@@ -388,13 +388,13 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
 
             print(
                 f"Setting sims per job to {sims_per_job} "
-                f"[estimated based on {num_geoids} geoids and {sims_per_slot} simulations_per_slot in config]"
+                f"[estimated based on {num_geoids} geoids and {sims_per_slot} iterations_per_slot in config]"
             )
             print(f"Setting number of blocks to {num_blocks} [via math]")
 
     if num_blocks is None:
         num_blocks = int(math.ceil(sims_per_slot / sims_per_job))
-        print(f"Setting number of blocks to {num_blocks} [via {sims_per_slot} simulations_per_slot in config]")
+        print(f"Setting number of blocks to {num_blocks} [via {sims_per_slot} iterations_per_slot in config]")
 
     return (num_jobs, sims_per_job, num_blocks)
 
@@ -572,23 +572,23 @@ class BatchJobHandler(object):
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
             {"name": "DATA_PATH", "value": str(self.data_path)},
             {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
-            {"name": "COVID_CONFIG_PATH", "value": config_file},
-            {"name": "COVID_NSIMULATIONS", "value": str(self.num_jobs)},
+            {"name": "CONFIG_PATH", "value": config_file},
+            {"name": "NUM_SLOTS", "value": str(self.num_jobs)},
             {
-                "name": "COVID_MAX_STACK_SIZE",
+                "name": "MAX_STACK_SIZE",
                 "value": str(self.max_stacked_interventions),
             },
             {"name": "VALIDATION_DATE", "value": str(self.last_validation_date)},
             {"name": "SIMS_PER_JOB", "value": str(self.sims_per_job)},
-            {"name": "COVID_SIMULATIONS_PER_SLOT", "value": str(self.sims_per_job)},
+            {"name": "ITERATIONS_PER_SLOT", "value": str(self.sims_per_job)},
             {
                 "name": "RESUME_DISCARD_SEEDING",
                 "value": str(
                     self.resume_discard_seeding
                 ).lower(),  # lower is import here, this is string-compared to "true" in the run script
             },
-            {"name": "COVID_STOCHASTIC", "value": str(self.stochastic)},
-            {"name": "COVID_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
+            {"name": "STOCHASTIC_RUN", "value": str(self.stochastic)},
+            {"name": "RESET_CHIMERICS", "value": str(self.reset_chimerics)},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
@@ -597,22 +597,22 @@ class BatchJobHandler(object):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()
-            cur_env_vars.append({"name": "COVID_SCENARIOS", "value": s})
-            cur_env_vars.append({"name": "COVID_DEATHRATES", "value": d})
-            cur_env_vars.append({"name": "COVID_PREFIX", "value": f"{config['name']}/{s}/{d}"})
-            cur_env_vars.append({"name": "COVID_BLOCK_INDEX", "value": "1"})
-            cur_env_vars.append({"name": "COVID_RUN_INDEX", "value": f"{self.run_id}"})
+            cur_env_vars.append({"name": "MODEL_SCENARIOS", "value": s})
+            cur_env_vars.append({"name": "MODEL_DEATHRATES", "value": d})
+            cur_env_vars.append({"name": "MODEL_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+            cur_env_vars.append({"name": "BLOCK_INDEX", "value": "1"})
+            cur_env_vars.append({"name": "RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
                 cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": self.restart_from_location})
                 cur_env_vars.append(
                     {
-                        "name": "COVID_OLD_RUN_INDEX",
+                        "name": "OLD_RUN_INDEX",
                         "value": f"{self.restart_from_run_id}",
                     }
                 )
-                cur_env_vars.append({"name": "COVID_IS_RESUME", "value": f"TRUE"})
+                cur_env_vars.append({"name": "RESUME_RUN", "value": f"TRUE"})
             else:
-                cur_env_vars.append({"name": "COVID_IS_RESUME", "value": f"FALSE"})
+                cur_env_vars.append({"name": "RESUME_RUN", "value": f"FALSE"})
 
             # First job:
             if self.batch_system == "aws":
@@ -706,12 +706,12 @@ class BatchJobHandler(object):
                 block_idx = 1
                 while block_idx < self.num_blocks:
                     cur_env_vars = base_env_vars.copy()
-                    cur_env_vars.append({"name": "COVID_SCENARIOS", "value": s})
-                    cur_env_vars.append({"name": "COVID_DEATHRATES", "value": d})
-                    cur_env_vars.append({"name": "COVID_PREFIX", "value": f"{config['name']}/{s}/{d}"})
-                    cur_env_vars.append({"name": "COVID_BLOCK_INDEX", "value": f"{block_idx+1}"})
-                    cur_env_vars.append({"name": "COVID_RUN_INDEX", "value": f"{self.run_id}"})
-                    cur_env_vars.append({"name": "COVID_OLD_RUN_INDEX", "value": f"{self.run_id}"})
+                    cur_env_vars.append({"name": "MODEL_SCENARIOS", "value": s})
+                    cur_env_vars.append({"name": "MODEL_DEATHRATES", "value": d})
+                    cur_env_vars.append({"name": "MODEL_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+                    cur_env_vars.append({"name": "BLOCK_INDEX", "value": f"{block_idx+1}"})
+                    cur_env_vars.append({"name": "RUN_INDEX", "value": f"{self.run_id}"})
+                    cur_env_vars.append({"name": "OLD_RUN_INDEX", "value": f"{self.run_id}"})
                     cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{s3_results_path}/"})
                     cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}_block{block_idx}"})
                     cur_job = batch_client.submit_job(

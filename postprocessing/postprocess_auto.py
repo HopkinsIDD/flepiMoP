@@ -108,7 +108,7 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     "-I",
     "--run-id",
     "run_id",
-    envvar="COVID_RUN_INDEX",
+    envvar="RUN_INDEX",
     type=str,
     show_default=True,
     help="run index",

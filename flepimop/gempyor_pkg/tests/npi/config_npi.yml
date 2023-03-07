@@ -61460,7 +61460,7 @@ outcomes:
         scenarios: ["outcome_interventions"]
 
 filtering:
-  simulations_per_slot: 100
+  iterations_per_slot: 100
   do_filtering: TRUE
   data_path: data/us_data.csv
   gt_source: "csse"

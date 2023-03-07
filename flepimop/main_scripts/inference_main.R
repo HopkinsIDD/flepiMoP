@@ -5,23 +5,23 @@ suppressMessages(library(doParallel))
 options(readr.num_columns = 0)
 
 option_list = list(
-  optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("COVID_CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"),
-  optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("COVID_RUN_INDEX",flepicommon::run_id())),
-  optparse::make_option(c("-s", "--scenarios"), action="store", default=Sys.getenv("COVID_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
-  optparse::make_option(c("-d", "--deathrates"), action="store", default=Sys.getenv("COVID_DEATHRATES", 'all'), type='character', help="name of the death scenarios to run, or 'all' to run all of them"),
+  optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
+  optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("RUN_INDEX",flepicommon::run_id())),
+  optparse::make_option(c("-s", "--scenarios"), action="store", default=Sys.getenv("MODEL_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
+  optparse::make_option(c("-d", "--deathrates"), action="store", default=Sys.getenv("MODEL_DEATHRATES", 'all'), type='character', help="name of the death scenarios to run, or 'all' to run all of them"),
   optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("COVID_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
-  optparse::make_option(c("-k", "--simulations_per_slot"), action="store", default=Sys.getenv("COVID_SIMULATIONS_PER_SLOT", NA), type='integer', help = "number of simulations to run for this slot"),
-  optparse::make_option(c("-n", "--slots"), action="store", default=Sys.getenv("COVID_NSIMULATIONS", as.numeric(NA)), type='integer', help = "Number of slots to run."),
-  optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("COVID_BLOCK_INDEX",1), type='integer', help = "id of this block"),
-  optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("COVID_STOCHASTIC",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
-  optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("COVID_GT_START", ""), type = "character", help = "First date to include groundtruth for"),
-  optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("COVID_GT_END", ""), type = "character", help = "Last date to include groundtruth for"),
+  optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
+  optparse::make_option(c("-n", "--slots"), action="store", default=Sys.getenv("NUM_SLOTS", as.numeric(NA)), type='integer', help = "Number of slots to run."),
+  optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("BLOCK_INDEX",1), type='integer', help = "id of this block"),
+  optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("STOCHASTIC_RUN",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
+  optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "First date to include groundtruth for"),
+  optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "Last date to include groundtruth for"),
   optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP/")),
-  optparse::make_option(c("-y", "--python"), action="store", default=Sys.getenv("COVID_PYTHON_PATH","python3"), type='character', help="path to python executable"),
-  optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("COVID_RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
-  optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("COVID_IS_RESUME",FALSE), type = 'logical', help = "Is this run a resume"),
-  optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("COVID_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
-  optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("COVID_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs')
+  optparse::make_option(c("-y", "--python"), action="store", default=Sys.getenv("PYTHON_PATH","python3"), type='character', help="path to python executable"),
+  optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
+  optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
+  optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("RUN_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
+  optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs')
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -55,8 +55,8 @@ if (all(scenarios == "all")){
   quit("yes", status=1)
 }
 
-if(is.na(opt$simulations_per_slot)) {
-  opt$simulations_per_slot <- config$filtering$simulations_per_slot
+if(is.na(opt$iterations_per_slot)) {
+  opt$iterations_per_slot <- config$filtering$iterations_per_slot
 }
 
 if(is.na(opt$slots)) {
@@ -91,7 +91,7 @@ foreach(slot = seq_len(opt$slots)) %dopar% {
         "-s", opt$scenarios,
         "-d", opt$deathrates,
         "-j", opt$jobs,
-        "-k", opt$simulations_per_slot,
+        "-k", opt$iterations_per_slot,
         "-i", slot,
         "-b", opt$this_block,
         "-t", opt$stoch_traj_flag,

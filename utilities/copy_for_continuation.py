@@ -9,7 +9,7 @@ import sys, os, click, glob, tqdm, shutil
     "--run_id",
     "run_id",
     required=True,
-    envvar="COVID_RUN_INDEX",
+    envvar="RUN_INDEX",
     help="run_id_to convert from",
 )
 @click.option(
