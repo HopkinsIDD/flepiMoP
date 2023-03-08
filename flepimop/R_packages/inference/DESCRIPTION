@@ -7,7 +7,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "first.last@example.com")
 Description: Performs inference on pipeline model using MCMC
-License: What license it uses
+License: `use_mit_license()`
 Encoding: UTF-8
 LazyData: true
 Imports:
