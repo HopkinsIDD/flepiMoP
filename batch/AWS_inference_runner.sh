@@ -39,7 +39,7 @@ cd model_data
 
 # check for presence of LAST_JOB_OUTPUT and download the
 # output from the corresponding last job here
-export SLOT_INDEX=$(python -c "print($AWS_BATCH_JOB_ARRAY_INDEX + 1)")
+export FLEPI_SLOT_INDEX=$(python -c "print($AWS_BATCH_JOB_ARRAY_INDEX + 1)")
 
 error_handler() {
 	msg=$1
@@ -77,8 +77,8 @@ echo "***************** FETCHING RESUME FILES *****************"
 ## Remove trailing slashes
 export LAST_JOB_OUTPUT=$(echo $LAST_JOB_OUTPUT | sed 's/\/$//')
 if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is nonzero --> if LAST_JOB_OUTPUT is not empty, the we download the output from the last job
-	if [ $BLOCK_INDEX -eq 1 ]; then
-		export RESUME_RUN_INDEX=$OLD_RUN_INDEX
+	if [ $FLEPI_BLOCK_INDEX -eq 1 ]; then
+		export RESUME_FLEPI_RUN_INDEX=$OLD_FLEPI_RUN_INDEX
 		echo "RESUME_DISCARD_SEEDING is set to $RESUME_DISCARD_SEEDING"
 		if [ $RESUME_DISCARD_SEEDING == "true" ]; then
 			export PARQUET_TYPES="spar snpi hpar hnpi"
@@ -86,7 +86,7 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 			export PARQUET_TYPES="seed spar snpi hpar hnpi"
 		fi
 	else                                 # if we are not in the first block, we need to resume from the last job, with seeding an all.
-		export RESUME_RUN_INDEX=$RUN_INDEX
+		export RESUME_FLEPI_RUN_INDEX=$FLEPI_RUN_INDEX
 		export PARQUET_TYPES="seed spar snpi seir hpar hnpi hosp llik"
 	fi
 	for filetype in $PARQUET_TYPES
@@ -98,9 +98,9 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 		fi
 		for liketype in "global" "chimeric"
 		do
-			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/$liketype/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX-1,'$filetype','$extension'))")
-			if [ $BLOCK_INDEX -eq 1 ]; then
-				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RESUME_RUN_INDEX','$MODEL_PREFIX/$RESUME_RUN_INDEX/$liketype/final/',$SLOT_INDEX,'$filetype','$extension'))")
+			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/$liketype/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX-1,'$filetype','$extension'))")
+			if [ $FLEPI_BLOCK_INDEX -eq 1 ]; then
+				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RESUME_FLEPI_RUN_INDEX','$FLEPI_PREFIX/$RESUME_FLEPI_RUN_INDEX/$liketype/final/',$FLEPI_SLOT_INDEX,'$filetype','$extension'))")
 			else
 				export IN_FILENAME=$OUT_FILENAME
 			fi
@@ -138,32 +138,32 @@ echo "***************** DONE RUNNING inference_slot.R *****************"
 echo "***************** UPLOADING RESULT TO S3 *****************"
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
 do
-	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/chimeric/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','parquet'))")
+	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/chimeric/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
 	for type in "seed"
 	do
-		export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/chimeric/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','csv'))")
+		export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/chimeric/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','csv'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
 	for type in "seed"
 	do
-		export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','csv'))")
+		export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','csv'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
 	for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
 do
-	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/intermediate/%09d.'% $SLOT_INDEX,$BLOCK_INDEX,'$type','parquet'))")
+	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
 	for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
 do
-	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/final/', $SLOT_INDEX,'$type','parquet'))")
+	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','parquet'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
 	for type in "seed"
 do
-	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RUN_INDEX','$MODEL_PREFIX/$RUN_INDEX/global/final/', $SLOT_INDEX,'$type','csv'))")
+	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','csv'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
 echo "***************** DONE UPLOADING RESULT TO S3 *****************"

@@ -25,7 +25,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
+logging.basicConfig(level=os.environ.get("FLEPI_LOGLEVEL", "INFO").upper())
 logger = logging.getLogger()
 handler = logging.StreamHandler()
 # '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
