@@ -428,17 +428,17 @@ pip install -e gempyor_pkg/</code></pre>
 <div id="conda-simple" class="section level3">
 <h3>Conda (simple)</h3>
 <p>If you use conda, let’s create a conda environment with everything needed:s</p>
-<pre><code>conda create -n covidSProd6 python=3.7
-conda activate covidSProd6
+<pre><code>conda create -n flepimop-env python=3.7
+conda activate flepimop-env
 conda install -c conda-forge jupyterlab ipykernel  dask click confuse matplotlib numba&quot;&gt;=0.53&quot; numpy pandas pyarrow pytest scipy seaborn sympy tqdm python-graphviz
 pip install --no-deps -e gempyor_pkg/</code></pre>
 </div>
 <div id="conda-complicated" class="section level3">
 <h3>Conda (complicated)</h3>
 <p>This conda environment allows you to run both the R and the python code. It is not recommended except to run on HPCs. Here the full pipeline R and python code will work on pinned version.</p>
-<pre><code>conda create -n covidSProd6 -c conda-forge python jupyterlab ipykernel dask graphviz fastparquet click confuse matplotlib networkx numba&quot;&gt;=0.53&quot; numpy pandas pyarrow pytest scipy seaborn sympy  tqdm r-essentials python-graphviz
-conda activate covidSProd6
-python -m ipykernel install --user --name covidSProd6 --display-name &quot;Python (covidSProd6)&quot;
+<pre><code>conda create -n flepimop-env -c conda-forge python jupyterlab ipykernel dask graphviz fastparquet click confuse matplotlib networkx numba&quot;&gt;=0.53&quot; numpy pandas pyarrow pytest scipy seaborn sympy  tqdm r-essentials python-graphviz
+conda activate flepimop-env
+python -m ipykernel install --user --name flepimop-env --display-name &quot;Python (flepimop-env)&quot;
 export R_PROFILE=$FLEPI_PATH/slurm_batch/Rprofile
 conda install r-devtools  r-gridExtra r-ggfortify r-flextable r-doparallel r-reticulate r-truncnorm r-arrow
 conda install r-tigris
