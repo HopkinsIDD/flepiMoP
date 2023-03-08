@@ -618,11 +618,11 @@ class BatchJobHandler(object):
             if self.batch_system == "aws":
                 cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}_block0"})
                 runner_script_path = f"s3://{self.s3_bucket}/{job_name}-runner.sh"
-                s3_cp_run_script = f"aws s3 cp {runner_script_path} $PWD/run-covid-pipeline"  # line to copy the runner script in wd as ./run-covid-pipeline
+                s3_cp_run_script = f"aws s3 cp {runner_script_path} $PWD/run-flepimop-inference"  # line to copy the runner script in wd as ./run-covid-pipeline
                 command = [
                     "sh",
                     "-c",
-                    f"{s3_cp_run_script}; /bin/bash $PWD/run-covid-pipeline",
+                    f"{s3_cp_run_script}; /bin/bash $PWD/run-flepimop-inference",
                 ]  # execute copy line above and then run the script
 
                 cur_job_queue = job_queues[ctr % len(job_queues)]
@@ -739,11 +739,11 @@ class BatchJobHandler(object):
                 ]
 
                 copy_script_path = f"s3://{self.s3_bucket}/{job_name}-copy.sh"
-                s3_cp_run_script = f"aws s3 cp {copy_script_path} $PWD/run-covid-pipeline"
+                s3_cp_run_script = f"aws s3 cp {copy_script_path} $PWD/run-flepimop-copy"
                 cp_command = [
                     "sh",
                     "-c",
-                    f"{s3_cp_run_script}; /bin/bash $PWD/run-covid-pipeline",
+                    f"{s3_cp_run_script}; /bin/bash $PWD/run-flepimop-copy",
                 ]
 
                 run_id_restart = self.run_id
