@@ -35,7 +35,6 @@ def get_all_filenames(file_type, all_runs, finals_only=False, intermediates_only
     if file_type == "seed":
         ext = "csv"
     else:
-
         ext = "parquet"
     files = {}
     for run_name, run_info in all_runs.items():
@@ -57,10 +56,8 @@ def get_all_filenames(file_type, all_runs, finals_only=False, intermediates_only
 def slack_multiple_files_deprecated(slack_token, message, file_list, channel):
     import logging
     from slack_sdk import WebClient
-
     client = WebClient(slack_token)
     logging.basicConfig(level=logging.DEBUG)
-
     logging.basicConfig(level=logging.DEBUG)
     for file in file_list:
         upload = client.files_upload(file=file, filename=file)
@@ -79,19 +76,17 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     #        "title": "random log file",
     #    },
     # ],
-
     import logging
     from slack_sdk import WebClient
-
     client = WebClient(slack_token)
     logging.basicConfig(level=logging.DEBUG)
-
     file_uploads = [{"file": f, "title": f.split(".")[0]} for f in file_list]
     response = client.files_upload_v2(
         file_uploads=file_uploads,
         channel=channel,
         initial_comment=message,
     )
+    return response
 
 
 @click.command()
@@ -287,8 +282,11 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
     # In[9]:
 
     file_list = []
-    for f in Path(str(".")).rglob(f"./pplot/*"):
+    #f or f in Path(str(".")).rglob(f"./pplot/*"): # this took all the files also very deep into subdirectories
+    for f in glob.glob(f"pplot/*"):
         file_list.append(str(f))
+
+    print(f"list of files to be sent over slack: {file_list}")
 
     channel = channelid_cspproduction
 
@@ -299,12 +297,13 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
     #    channel=channelid_chadi,
     # )
 
-    slack_multiple_files_v2(
+    r = slack_multiple_files_v2(
         slack_token=slack_token,
         message=f"""FlepiMoP run `{run_id}` (job `{job_name}`) has successfully completed 🎉🤖. \n \nPlease find below a little analysis of the llik files, and I'll try to be more helpful in the future.""",
         file_list=file_list,
         channel=channel,
     )
+    print(f"api response: {r}")
 
 
 if __name__ == "__main__":
