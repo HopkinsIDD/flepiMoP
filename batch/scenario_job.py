@@ -221,8 +221,8 @@ def launch_job_inner(
         {"name": "S3_RESULTS_PATH", "value": results_path},
         {"name": "SLOTS_PER_JOB", "value": str(slots_per_job)},
     ]
-    s3_cp_run_script = f"aws s3 cp s3://{s3_input_bucket}/{runner_script_name} $PWD/run-covid-pipeline"
-    command = ["sh", "-c", f"{s3_cp_run_script}; /bin/bash $PWD/run-covid-pipeline"]
+    s3_cp_run_script = f"aws s3 cp s3://{s3_input_bucket}/{runner_script_name} $PWD/run-flepimop-inference"
+    command = ["sh", "-c", f"{s3_cp_run_script}; /bin/bash $PWD/run-flepimop-inference"]
     container_overrides = {
         "vcpus": vcpu,
         "memory": vcpu * memory,
