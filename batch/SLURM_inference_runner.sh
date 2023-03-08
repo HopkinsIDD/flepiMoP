@@ -16,7 +16,7 @@ module purge
 # on marcc this is anaconda3/2022.05 to circumvent anaconda python bug. Otherwise that is just anaconda
 module load anaconda
 module load anaconda3/2022.05
-conda activate covidSP
+conda activate flepimop-env
 # in case conda not found
 #source /home/jcblemai/.bashrc
 #source ~/miniconda3/etc/profile.d/conda.sh # loading conda in case

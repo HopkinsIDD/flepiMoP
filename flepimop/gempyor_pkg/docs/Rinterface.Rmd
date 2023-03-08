@@ -38,7 +38,7 @@ library(tidyverse)
 library(ggplot2)
 library(tibble)
 # reticulate::use_python(Sys.which('python'),require=TRUE)
-reticulate::use_condaenv('covidSProd6')   
+reticulate::use_condaenv('flepimop-env')   
 gempyor <- reticulate::import("gempyor")
 ```
 
@@ -249,8 +249,8 @@ pip install -e gempyor_pkg/
 ### Conda (simple)
 If you use conda, let's create a conda environment with everything needed:s
 ```
-conda create -n covidSProd6 python=3.7
-conda activate covidSProd6
+conda create -n flepimop-env python=3.7
+conda activate flepimop-env
 conda install -c conda-forge jupyterlab ipykernel  dask click confuse matplotlib numba">=0.53" numpy pandas pyarrow pytest scipy seaborn sympy tqdm python-graphviz
 pip install --no-deps -e gempyor_pkg/
 ```
@@ -258,9 +258,9 @@ pip install --no-deps -e gempyor_pkg/
 ### Conda (complicated)
 This conda environment allows you to run both the R and the python code. It is not recommended except to run on HPCs. Here the full pipeline R and python code will work on pinned version.
 ```
-conda create -n covidSProd6 -c conda-forge python jupyterlab ipykernel dask graphviz fastparquet click confuse matplotlib networkx numba">=0.53" numpy pandas pyarrow pytest scipy seaborn sympy  tqdm r-essentials python-graphviz
-conda activate covidSProd6
-python -m ipykernel install --user --name covidSProd6 --display-name "Python (covidSProd6)"
+conda create -n flepimop-env -c conda-forge python jupyterlab ipykernel dask graphviz fastparquet click confuse matplotlib networkx numba">=0.53" numpy pandas pyarrow pytest scipy seaborn sympy  tqdm r-essentials python-graphviz
+conda activate flepimop-env
+python -m ipykernel install --user --name flepimop-env --display-name "Python (flepimop-env)"
 export R_PROFILE=$FLEPI_PATH/slurm_batch/Rprofile
 conda install r-devtools  r-gridExtra r-ggfortify r-flextable r-doparallel r-reticulate r-truncnorm r-arrow
 conda install r-tigris
