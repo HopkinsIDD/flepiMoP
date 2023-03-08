@@ -1,5 +1,2 @@
 renv.cache/** filter=lfs diff=lfs merge=lfs -text
 build/renv/renv.cache/** filter=lfs diff=lfs merge=lfs -text
-sample_data/**.csv filter=lfs diff=lfs merge=lfs -text
-sample_data/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lfs -text
-temp/united-states-commutes/commute_data.csv filter=lfs diff=lfs merge=lfs -text
