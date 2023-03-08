@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5417bdd02e40dea82322ac75a82f2d9f48210c36df6d0c3d883ab415692dae47
-size 738
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:notes
+  xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+  xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr>
+        <a:xfrm>
+          <a:off x="0" y="0"/>
+          <a:ext cx="0" cy="0"/>
+          <a:chOff x="0" y="0"/>
+          <a:chExt cx="0" cy="0"/>
+        </a:xfrm>
+      </p:grpSpPr>
+    </p:spTree>
+    </p:cSld>
+    <p:clrMapOvr>
+      <a:masterClrMapping/>
+    </p:clrMapOvr>
+  </p:notes>

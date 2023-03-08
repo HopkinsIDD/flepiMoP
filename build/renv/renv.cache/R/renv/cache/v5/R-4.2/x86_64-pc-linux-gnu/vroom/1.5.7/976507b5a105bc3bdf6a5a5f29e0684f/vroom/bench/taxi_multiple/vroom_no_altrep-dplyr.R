@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e51311896f826c7271d20c1061f4f099ff3e8403bff14ccb33c4e9cc14cce4aa
-size 357
+({library(vroom); library(dplyr)})
+x <- vroom(file, id = "path", col_types = c(pickup_datetime = "c"), trim_ws = FALSE, quote = "", escape_double = FALSE, na = character(), altrep = FALSE)
+print(x)
+a <- head(x)
+b <- tail(x)
+c <- sample_n(x, 100)
+d <- filter(x, payment_type == "UNK")
+e <- group_by(x, payment_type) %>% summarise(avg_tip = mean(tip_amount))

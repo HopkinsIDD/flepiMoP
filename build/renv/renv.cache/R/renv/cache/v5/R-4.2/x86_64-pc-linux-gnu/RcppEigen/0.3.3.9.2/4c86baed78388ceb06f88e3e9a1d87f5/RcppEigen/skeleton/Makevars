@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:aa8f4a6f06921aebd9857152e50b8c314284f66d9d4c86ab5923c68d4627cc85
-size 326
+## With Rcpp 0.11.0 and later, we no longer need to set PKG_LIBS as there is
+## no user-facing library. The include path to headers is already set by R.
+#PKG_LIBS = 
+
+## With R 3.1.0 or later, you can uncomment the following line to tell R to 
+## enable compilation with C++11 (or even C++14) where available
+#CXX_STD = CXX11

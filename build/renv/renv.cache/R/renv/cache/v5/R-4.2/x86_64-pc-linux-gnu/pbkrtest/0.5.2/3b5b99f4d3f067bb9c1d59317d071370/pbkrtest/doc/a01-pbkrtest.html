@@ -1,3 +1,583 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b00e4c9f2b7729634b1c7422b5fb9d0eaafcc109a3cc18239978d3538df16ac4
-size 43723
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Søren Højsgaard and Ulrich Halekoh" />
+
+
+<title>01 - Introduction to ‘pbkrtest’</title>
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">01 - Introduction to ‘pbkrtest’</h1>
+<h4 class="author">Søren Højsgaard and Ulrich Halekoh</h4>
+
+
+
+<pre><code>## Loading required package: pbkrtest</code></pre>
+<pre><code>## Loading required package: lme4</code></pre>
+<pre><code>## Loading required package: Matrix</code></pre>
+<p><strong>Package version: 0.5.2</strong></p>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>The  data is a list of two vectors, giving the wear of shoes of materials A and B for one foot each of ten boys.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">data</span>(shoes, <span class="dt">package=</span><span class="st">&quot;MASS&quot;</span>)</a>
+<a class="sourceLine" id="cb4-2" title="2">shoes</a></code></pre></div>
+<pre><code>## $A
+##  [1] 13.2  8.2 10.9 14.3 10.7  6.6  9.5 10.8  8.8 13.3
+## 
+## $B
+##  [1] 14.0  8.8 11.2 14.2 11.8  6.4  9.8 11.3  9.3 13.6</code></pre>
+<p>A plot reveals that boys wear their shoes differently.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">plot</span>(A <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">data=</span>shoes, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>,<span class="dt">lwd=</span><span class="dv">2</span>, <span class="dt">pch=</span><span class="dv">1</span>, <span class="dt">ylab=</span><span class="st">&quot;wear&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;boy&quot;</span>)</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">points</span>(B <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">data=</span>shoes, <span class="dt">col=</span><span class="st">&quot;blue&quot;</span>, <span class="dt">lwd=</span><span class="dv">2</span>, <span class="dt">pch=</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="kw">points</span>(<span class="kw">I</span>((A <span class="op">+</span><span class="st"> </span>B) <span class="op">/</span><span class="st"> </span><span class="dv">2</span>) <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">data=</span>shoes, <span class="dt">pch=</span><span class="st">&quot;-&quot;</span>, <span class="dt">lwd=</span><span class="dv">2</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>One option for testing the effect of materials is to make a paired <span class="math inline">\(t\)</span>–test, e.g. as:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">r1 &lt;-<span class="st"> </span><span class="kw">t.test</span>(shoes<span class="op">$</span>A, shoes<span class="op">$</span>B, <span class="dt">paired=</span>T)</a>
+<a class="sourceLine" id="cb7-2" title="2">r1 <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 1 × 8
+##   estimate statistic p.value parameter conf.low conf.high method        altern…¹
+##      &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;         &lt;chr&gt;   
+## 1    -0.41     -3.35 0.00854         9   -0.687    -0.133 Paired t-test two.sid…
+## # … with abbreviated variable name ¹​alternative</code></pre>
+<p>To work with data in a mixed model setting we create a dataframe, and for later use we also create an imbalanced version of data:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1">boy &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb9-2" title="2">boyf&lt;-<span class="st"> </span><span class="kw">factor</span>(letters[boy])</a>
+<a class="sourceLine" id="cb9-3" title="3">material &lt;-<span class="st"> </span><span class="kw">factor</span>(<span class="kw">c</span>(<span class="kw">rep</span>(<span class="st">&quot;A&quot;</span>, <span class="dv">10</span>), <span class="kw">rep</span>(<span class="st">&quot;B&quot;</span>, <span class="dv">10</span>)))</a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="co">## Balanced data:</span></a>
+<a class="sourceLine" id="cb9-5" title="5">shoe.bal &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">wear=</span><span class="kw">unlist</span>(shoes), <span class="dt">boy=</span>boy, <span class="dt">boyf=</span>boyf, <span class="dt">material=</span>material)</a>
+<a class="sourceLine" id="cb9-6" title="6"><span class="kw">head</span>(shoe.bal)</a></code></pre></div>
+<pre><code>##    wear boy boyf material
+## A1 13.2   1    a        A
+## A2  8.2   2    b        A
+## A3 10.9   3    c        A
+## A4 14.3   4    d        A
+## A5 10.7   5    e        A
+## A6  6.6   6    f        A</code></pre>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="co">## Imbalanced data; delete (boy=1, material=1) and (boy=2, material=b)</span></a>
+<a class="sourceLine" id="cb11-2" title="2">shoe.imbal &lt;-<span class="st">  </span>shoe.bal[<span class="op">-</span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">12</span>),]</a></code></pre></div>
+<p>We fit models to the two datasets:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">lmm1.bal  &lt;-<span class="st"> </span><span class="kw">lmer</span>( wear <span class="op">~</span><span class="st"> </span>material <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>boyf), <span class="dt">data=</span>shoe.bal)</a>
+<a class="sourceLine" id="cb12-2" title="2">lmm0.bal  &lt;-<span class="st"> </span><span class="kw">update</span>(lmm1.bal, .<span class="op">~</span>. <span class="op">-</span><span class="st"> </span>material)</a>
+<a class="sourceLine" id="cb12-3" title="3">lmm1.imbal  &lt;-<span class="st"> </span><span class="kw">lmer</span>(wear <span class="op">~</span><span class="st"> </span>material <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>boyf), <span class="dt">data=</span>shoe.imbal)</a>
+<a class="sourceLine" id="cb12-4" title="4">lmm0.imbal  &lt;-<span class="st"> </span><span class="kw">update</span>(lmm1.imbal, .<span class="op">~</span>. <span class="op">-</span><span class="st"> </span>material)</a></code></pre></div>
+<p>The asymptotic likelihood ratio test shows stronger significance than the <span class="math inline">\(t\)</span>–test:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">anova</span>(lmm1.bal, lmm0.bal, <span class="dt">test=</span><span class="st">&quot;Chisq&quot;</span>)  <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## refitting model(s) with ML (instead of REML)</code></pre>
+<pre><code>## # A tibble: 2 × 9
+##   term      npar   AIC   BIC logLik deviance statistic    df  p.value
+##   &lt;chr&gt;    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
+## 1 lmm0.bal     3  67.9  70.9  -31.0     61.9     NA       NA NA      
+## 2 lmm1.bal     4  61.8  65.8  -26.9     53.8      8.09     1  0.00445</code></pre>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">anova</span>(lmm1.imbal, lmm0.imbal, <span class="dt">test=</span><span class="st">&quot;Chisq&quot;</span>)  <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## refitting model(s) with ML (instead of REML)</code></pre>
+<pre><code>## # A tibble: 2 × 9
+##   term        npar   AIC   BIC logLik deviance statistic    df p.value
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 lmm0.imbal     3  63.9  66.5  -28.9     57.9     NA       NA NA     
+## 2 lmm1.imbal     4  60.8  64.3  -26.4     52.8      5.09     1  0.0240</code></pre>
+</div>
+<div id="kenwardroger-approach" class="section level1">
+<h1>Kenward–Roger approach</h1>
+<p>The Kenward–Roger approximation is exact in certain balanced designs in the sense that the approximation produces the same result as the paired <span class="math inline">\(t\)</span>–test.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1">kr.bal &lt;-<span class="st"> </span><span class="kw">KRmodcomp</span>(lmm1.bal, lmm0.bal)</a>
+<a class="sourceLine" id="cb19-2" title="2">kr.bal <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 1 × 5
+##   type   stat   ndf   ddf p.value
+##   &lt;chr&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 Ftest  11.2     1  9.00 0.00854</code></pre>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="kw">summary</span>(kr.bal) <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>() </a></code></pre></div>
+<pre><code>## F-test with Kenward-Roger approximation; time: 0.22 sec
+## large : wear ~ material + (1 | boyf)
+## small : wear ~ (1 | boyf)
+##          stat    ndf    ddf F.scaling  p.value   
+## Ftest  11.215  1.000  9.000         1 0.008539 **
+## FtestU 11.215  1.000  9.000           0.008539 **
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre><code>## # A tibble: 2 × 6
+##   type    stat   ndf   ddf F.scaling p.value
+##   &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+## 1 Ftest   11.2     1  9.00         1 0.00854
+## 2 FtestU  11.2     1  9.00        NA 0.00854</code></pre>
+<p>For the imbalanced data we get</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1">kr.imbal &lt;-<span class="st"> </span><span class="kw">KRmodcomp</span>(lmm1.imbal, lmm0.imbal)</a>
+<a class="sourceLine" id="cb24-2" title="2">kr.imbal <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 1 × 5
+##   type   stat   ndf   ddf p.value
+##   &lt;chr&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 Ftest  5.99     1  7.02  0.0442</code></pre>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw">summary</span>(kr.imbal) <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## F-test with Kenward-Roger approximation; time: 0.06 sec
+## large : wear ~ material + (1 | boyf)
+## small : wear ~ (1 | boyf)
+##          stat    ndf    ddf F.scaling p.value  
+## Ftest  5.9893 1.0000 7.0219         1 0.04418 *
+## FtestU 5.9893 1.0000 7.0219           0.04418 *
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre><code>## # A tibble: 2 × 6
+##   type    stat   ndf   ddf F.scaling p.value
+##   &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+## 1 Ftest   5.99     1  7.02         1  0.0442
+## 2 FtestU  5.99     1  7.02        NA  0.0442</code></pre>
+<p>Estimated degrees of freedom can be found with</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1"><span class="kw">c</span>(<span class="dt">bal_ddf =</span> <span class="kw">getKR</span>(kr.bal, <span class="st">&quot;ddf&quot;</span>), <span class="dt">imbal_ddf =</span> <span class="kw">getKR</span>(kr.imbal, <span class="st">&quot;ddf&quot;</span>))</a></code></pre></div>
+<pre><code>##   bal_ddf imbal_ddf 
+##  9.000000  7.021904</code></pre>
+<p>Notice that the Kenward-Roger approximation gives results similar to but not identical to the paired <span class="math inline">\(t\)</span>–test when the two boys are removed:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1">shoes2 &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">A=</span>shoes<span class="op">$</span>A[<span class="op">-</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>)], <span class="dt">B=</span>shoes<span class="op">$</span>B[<span class="op">-</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>)])</a>
+<a class="sourceLine" id="cb31-2" title="2"><span class="kw">t.test</span>(shoes2<span class="op">$</span>A, shoes2<span class="op">$</span>B, <span class="dt">paired=</span>T) <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 1 × 8
+##   estimate statistic p.value parameter conf.low conf.high method        altern…¹
+##      &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;         &lt;chr&gt;   
+## 1   -0.337     -2.39  0.0483         7   -0.672  -0.00328 Paired t-test two.sid…
+## # … with abbreviated variable name ¹​alternative</code></pre>
+</div>
+<div id="satterthwaite-approach" class="section level1">
+<h1>Satterthwaite approach</h1>
+<p>The Satterthwaite approximation is exact in certain balanced designs in the sense that the approximation produces the same result as the paired <span class="math inline">\(t\)</span>–test.</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" title="1">sat.bal &lt;-<span class="st"> </span><span class="kw">SATmodcomp</span>(lmm1.bal, lmm0.bal)</a>
+<a class="sourceLine" id="cb33-2" title="2">sat.bal <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 1 × 5
+##   type  statistic   ndf   ddf p.value
+##   &lt;chr&gt;     &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 Ftest      11.2     1  9.00 0.00854</code></pre>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" title="1">sat.imbal &lt;-<span class="st"> </span><span class="kw">SATmodcomp</span>(lmm1.imbal, lmm0.imbal)</a>
+<a class="sourceLine" id="cb35-2" title="2">sat.imbal <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 1 × 5
+##   type  statistic   ndf   ddf p.value
+##   &lt;chr&gt;     &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 Ftest      6.00     1  7.01  0.0441</code></pre>
+<p>Estimated degrees of freedom can be found with</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1"><span class="kw">c</span>(<span class="dt">bal_ddf =</span> <span class="kw">getSAT</span>(sat.bal, <span class="st">&quot;ddf&quot;</span>), <span class="dt">imbal_ddf =</span> <span class="kw">getSAT</span>(sat.imbal, <span class="st">&quot;ddf&quot;</span>))</a></code></pre></div>
+<pre><code>##   bal_ddf imbal_ddf 
+##  9.000000  7.010863</code></pre>
+</div>
+<div id="parametric-bootstrap" class="section level1">
+<h1>Parametric bootstrap</h1>
+<p>Parametric bootstrap provides an alternative but many simulations are often needed to provide credible results (also many more than shown here; in this connection it can be useful to exploit that computations can be made en parallel, see the documentation):</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb39-1" title="1">pb.bal &lt;-<span class="st"> </span><span class="kw">PBmodcomp</span>(lmm1.bal, lmm0.bal, <span class="dt">nsim=</span><span class="dv">500</span>, <span class="dt">cl=</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb39-2" title="2">pb.bal <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 2 × 4
+##   type    stat    df p.value
+##   &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 LRT     8.09     1 0.00445
+## 2 PBtest  8.09    NA 0.00998</code></pre>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" title="1"><span class="kw">summary</span>(pb.bal) <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 5 × 5
+##   type      stat    df   ddf p.value
+##   &lt;chr&gt;    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 LRT       8.09     1  NA   0.00445
+## 2 PBtest    8.09    NA  NA   0.00998
+## 3 Gamma     8.09    NA  NA   0.00856
+## 4 Bartlett  7.07     1  NA   0.00784
+## 5 F         8.09     1  15.8 0.0118</code></pre>
+<p>For the imbalanced data, the result is similar to the result from the paired <span class="math inline">\(t\)</span>–test.</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb43-1" title="1">pb.imbal &lt;-<span class="st"> </span><span class="kw">PBmodcomp</span>(lmm1.imbal, lmm0.imbal, <span class="dt">nsim=</span><span class="dv">500</span>, <span class="dt">cl=</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb43-2" title="2">pb.imbal <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 2 × 4
+##   type    stat    df p.value
+##   &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 LRT     5.09     1  0.0240
+## 2 PBtest  5.09    NA  0.0359</code></pre>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" title="1"><span class="kw">summary</span>(pb.imbal)  <span class="op">|</span><span class="er">&gt;</span><span class="st"> </span><span class="kw">tidy</span>()</a></code></pre></div>
+<pre><code>## # A tibble: 5 × 5
+##   type      stat    df   ddf p.value
+##   &lt;chr&gt;    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 LRT       5.09     1  NA    0.0240
+## 2 PBtest    5.09    NA  NA    0.0359
+## 3 Gamma     5.09    NA  NA    0.0363
+## 4 Bartlett  4.19     1  NA    0.0406
+## 5 F         5.09     1  11.3  0.0447</code></pre>
+</div>
+<div id="matrices-for-random-effects" class="section level1">
+<h1>Matrices for random effects</h1>
+<p>The matrices involved in the random effects can be obtained with</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb47-1" title="1">shoe3 &lt;-<span class="st"> </span><span class="kw">subset</span>(shoe.bal, boy<span class="op">&lt;=</span><span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb47-2" title="2">shoe3 &lt;-<span class="st"> </span>shoe3[<span class="kw">order</span>(shoe3<span class="op">$</span>boy), ]</a>
+<a class="sourceLine" id="cb47-3" title="3">lmm1  &lt;-<span class="st"> </span><span class="kw">lmer</span>( wear <span class="op">~</span><span class="st"> </span>material <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>boyf), <span class="dt">data=</span>shoe3 )</a>
+<a class="sourceLine" id="cb47-4" title="4"><span class="kw">str</span>( SG &lt;-<span class="st"> </span><span class="kw">get_SigmaG</span>( lmm1 ), <span class="dt">max=</span><span class="dv">2</span>)</a></code></pre></div>
+<pre><code>## List of 3
+##  $ Sigma   :Formal class &#39;dgCMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##  $ G       :List of 2
+##   ..$ :Formal class &#39;dgCMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##   ..$ :Formal class &#39;dgCMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##  $ n.ggamma: int 2</code></pre>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb49-1" title="1"><span class="kw">round</span>( SG<span class="op">$</span>Sigma<span class="op">*</span><span class="dv">10</span> )</a></code></pre></div>
+<pre><code>## 10 x 10 sparse Matrix of class &quot;dgCMatrix&quot;</code></pre>
+<pre><code>##   [[ suppressing 10 column names &#39;A1&#39;, &#39;B1&#39;, &#39;A2&#39; ... ]]</code></pre>
+<pre><code>##                                 
+## A1 53 52  .  .  .  .  .  .  .  .
+## B1 52 53  .  .  .  .  .  .  .  .
+## A2  .  . 53 52  .  .  .  .  .  .
+## B2  .  . 52 53  .  .  .  .  .  .
+## A3  .  .  .  . 53 52  .  .  .  .
+## B3  .  .  .  . 52 53  .  .  .  .
+## A4  .  .  .  .  .  . 53 52  .  .
+## B4  .  .  .  .  .  . 52 53  .  .
+## A5  .  .  .  .  .  .  .  . 53 52
+## B5  .  .  .  .  .  .  .  . 52 53</code></pre>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb53-1" title="1">SG<span class="op">$</span>G</a></code></pre></div>
+<pre><code>## [[1]]
+## 10 x 10 sparse Matrix of class &quot;dgCMatrix&quot;</code></pre>
+<pre><code>##   [[ suppressing 10 column names &#39;A1&#39;, &#39;B1&#39;, &#39;A2&#39; ... ]]</code></pre>
+<pre><code>##                       
+## A1 1 1 . . . . . . . .
+## B1 1 1 . . . . . . . .
+## A2 . . 1 1 . . . . . .
+## B2 . . 1 1 . . . . . .
+## A3 . . . . 1 1 . . . .
+## B3 . . . . 1 1 . . . .
+## A4 . . . . . . 1 1 . .
+## B4 . . . . . . 1 1 . .
+## A5 . . . . . . . . 1 1
+## B5 . . . . . . . . 1 1
+## 
+## [[2]]
+## 10 x 10 sparse Matrix of class &quot;dgCMatrix&quot;
+##                          
+##  [1,] 1 . . . . . . . . .
+##  [2,] . 1 . . . . . . . .
+##  [3,] . . 1 . . . . . . .
+##  [4,] . . . 1 . . . . . .
+##  [5,] . . . . 1 . . . . .
+##  [6,] . . . . . 1 . . . .
+##  [7,] . . . . . . 1 . . .
+##  [8,] . . . . . . . 1 . .
+##  [9,] . . . . . . . . 1 .
+## [10,] . . . . . . . . . 1</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

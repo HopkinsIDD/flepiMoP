@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:03ef70f1e0e35ad5f7ea0acc7fb46e20f6f992edfb7159607284db4ad9540c53
-size 324
+element_markdown        Theme element that enables markdown text.
+element_textbox         Theme element that enables markdown text in a
+                        box.
+geom_richtext           Richtext labels
+geom_textbox            Draw boxes containing text
+ggtext                  Improved text rendering support for ggplot2

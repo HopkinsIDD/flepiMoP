@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7341498c12f42cfbeb0b1401402bfe6a86e411d64fa15cb9fec83635e08ef673
-size 236
+tzdb_initialize         Initialize tzdb for usage in other packages
+tzdb_names              Time zone database names
+tzdb_path               Retrieve the path to the time zone database
+tzdb_version            Time zone database version

@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cbd94fef18c716a51706b61282d96a6bfe7eb4e8f0b9a451ca7abd1abb4ce247
-size 586
+// This file is part of Eigen, a lightweight C++ template library
+// for linear algebra.
+//
+//
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#ifndef EIGEN_MOREVECTORIZATION_MODULE_H
+#define EIGEN_MOREVECTORIZATION_MODULE_H
+
+#include <Eigen/Core>
+
+namespace Eigen {
+
+/**
+  * \defgroup MoreVectorization More vectorization module
+  */
+
+}
+
+#include "src/MoreVectorization/MathFunctions.h"
+
+#endif // EIGEN_MOREVECTORIZATION_MODULE_H

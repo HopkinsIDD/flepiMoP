@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:910329a3a38f81469c5f4ba4a8311dc875216f213373414768a411fe65f709e9
-size 254
+name: themer-demo
+title:
+username:
+account: testing-apps
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2981422
+bundleId: 4002065
+url: https://testing-apps.shinyapps.io/themer-demo/
+when: 1608222468.72097
+lastSyncTime: 1608222468.72098

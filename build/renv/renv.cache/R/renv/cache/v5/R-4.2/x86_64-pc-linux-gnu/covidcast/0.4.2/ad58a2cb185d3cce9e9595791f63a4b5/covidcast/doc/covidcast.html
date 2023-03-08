@@ -1,3 +1,1180 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7dc6e3a0b3d616444e9200ebf72fc5e4f968e9977df396fd75d84709e498e307
-size 74122
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Get started with covidcast</title>
+
+<style type="text/css">
+a.anchor-section {margin-left: 10px; visibility: hidden; color: inherit;}
+a.anchor-section::before {content: '#';}
+.hasAnchor:hover a.anchor-section {visibility: visible;}
+</style>
+<script>// Anchor sections v1.0 written by Atsushi Yasumoto on Oct 3rd, 2020.
+document.addEventListener('DOMContentLoaded', function() {
+  // Do nothing if AnchorJS is used
+  if (typeof window.anchors === 'object' && anchors.hasOwnProperty('hasAnchorJSLink')) {
+    return;
+  }
+
+  const h = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+  // Do nothing if sections are already anchored
+  if (Array.from(h).some(x => x.classList.contains('hasAnchor'))) {
+    return null;
+  }
+
+  // Use section id when pandoc runs with --section-divs
+  const section_id = function(x) {
+    return ((x.classList.contains('section') || (x.tagName === 'SECTION'))
+            ? x.id : '');
+  };
+
+  // Add anchors
+  h.forEach(function(x) {
+    const id = x.id || section_id(x.parentElement);
+    if (id === '') {
+      return null;
+    }
+    let anchor = document.createElement('a');
+    anchor.href = '#' + id;
+    anchor.classList = ['anchor-section'];
+    x.classList.add('hasAnchor');
+    x.appendChild(anchor);
+  });
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Get started with covidcast</h1>
+
+
+
+<p>This package provides access to data frames of values from the <a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast.html">COVIDcast API</a>. Using the <code>covidcast_signal()</code> function, you can fetch any data you may be interested in analyzing, then use <code>plot.covidcast_signal()</code> to make plots and maps. Since the data is provided as a simple data frame, you can also wrangle it into whatever form you need to conduct your desired analyses using other packages and functions.</p>
+<div id="basic-examples" class="section level2">
+<h2>Basic examples</h2>
+<p>To obtain smoothed estimates of COVID-like illness from our Facebook survey for every county in the United States between 2020-05-01 and 2020-05-07, we can use <code>covidcast_signal()</code>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(covidcast)</a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb1-3" title="3"></a>
+<a class="sourceLine" id="cb1-4" title="4">cli &lt;-<span class="st"> </span><span class="kw">suppressMessages</span>(</a>
+<a class="sourceLine" id="cb1-5" title="5">  <span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;fb-survey&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb1-6" title="6">                   <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-07&quot;</span>,</a>
+<a class="sourceLine" id="cb1-7" title="7">                   <span class="dt">geo_type =</span> <span class="st">&quot;county&quot;</span>)</a>
+<a class="sourceLine" id="cb1-8" title="8">)</a>
+<a class="sourceLine" id="cb1-9" title="9">knitr<span class="op">::</span><span class="kw">kable</span>(<span class="kw">head</span>(cli))</a></code></pre></div>
+<table>
+<colgroup>
+<col width="12%"></col>
+<col width="13%"></col>
+<col width="10%"></col>
+<col width="11%"></col>
+<col width="11%"></col>
+<col width="4%"></col>
+<col width="10%"></col>
+<col width="10%"></col>
+<col width="12%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">geo_value</th>
+<th align="left">time_value</th>
+<th align="left">issue</th>
+<th align="right">lag</th>
+<th align="right">value</th>
+<th align="right">stderr</th>
+<th align="right">sample_size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">01000</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.8254101</td>
+<td align="right">0.1360033</td>
+<td align="right">1722.4551</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">01001</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">1.2994255</td>
+<td align="right">0.9671356</td>
+<td align="right">115.8025</td>
+</tr>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">01003</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.6965968</td>
+<td align="right">0.3247531</td>
+<td align="right">584.3194</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">01015</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.4282713</td>
+<td align="right">0.5485655</td>
+<td align="right">122.5577</td>
+</tr>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">01031</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.0255788</td>
+<td align="right">0.3608268</td>
+<td align="right">114.8318</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">01045</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">1.0495589</td>
+<td align="right">0.7086324</td>
+<td align="right">110.6544</td>
+</tr>
+</tbody>
+</table>
+<p><code>covidcast_signal()</code> returns a data frame. (Here we’re using <code>knitr::kable()</code> to make it more readable.) Each row represents one observation in one county on one day. The county FIPS code is given in the <code>geo_value</code> column, the date in the <code>time_value</code> column. Here <code>value</code> is the requested signal—in this case, the smoothed estimate of the percentage of people with COVID-like illness, based on the symptom surveys, and <code>stderr</code> is its standard error. See the <code>covidcast_signal()</code> documentation for details on the returned data frame.</p>
+<p>Notice the use of <code>suppressMessages()</code> to hide progress reporting from the function as it downloads the data; if you download particularly large amounts of data, you may prefer to allow the progress reporting so you know how long to wait.</p>
+<p>To get a basic summary of the returned data frame:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">summary</span>(cli)</a></code></pre></div>
+<pre><code>## A `covidcast_signal` dataframe with 7080 rows and 9 columns.
+## 
+## data_source : fb-survey
+## signal      : smoothed_cli
+## geo_type    : county
+## 
+## first date                          : 2020-05-01
+## last date                           : 2020-05-07
+## median number of geo_values per day : 1021</code></pre>
+<p>The COVIDcast API makes estimates available at several different geographic levels, and <code>covidcast_signal()</code> defaults to requesting county-level data. To request estimates for states instead of counties, we use the <code>geo_type</code> argument:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">cli &lt;-<span class="st"> </span><span class="kw">suppressMessages</span>(</a>
+<a class="sourceLine" id="cb4-2" title="2">  <span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;fb-survey&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb4-3" title="3">                   <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-07&quot;</span>,</a>
+<a class="sourceLine" id="cb4-4" title="4">                   <span class="dt">geo_type =</span> <span class="st">&quot;state&quot;</span>)</a>
+<a class="sourceLine" id="cb4-5" title="5">)</a>
+<a class="sourceLine" id="cb4-6" title="6">knitr<span class="op">::</span><span class="kw">kable</span>(<span class="kw">head</span>(cli))</a></code></pre></div>
+<table>
+<colgroup>
+<col width="12%"></col>
+<col width="13%"></col>
+<col width="10%"></col>
+<col width="11%"></col>
+<col width="11%"></col>
+<col width="4%"></col>
+<col width="10%"></col>
+<col width="10%"></col>
+<col width="12%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">geo_value</th>
+<th align="left">time_value</th>
+<th align="left">issue</th>
+<th align="right">lag</th>
+<th align="right">value</th>
+<th align="right">stderr</th>
+<th align="right">sample_size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">ak</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.4607721</td>
+<td align="right">0.1591131</td>
+<td align="right">1606.000</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">al</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.6994761</td>
+<td align="right">0.0826180</td>
+<td align="right">7540.244</td>
+</tr>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">ar</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.7597720</td>
+<td align="right">0.1036828</td>
+<td align="right">4921.483</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">az</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.5669361</td>
+<td align="right">0.0618211</td>
+<td align="right">11220.959</td>
+</tr>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">ca</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.3649079</td>
+<td align="right">0.0228051</td>
+<td align="right">51870.138</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">co</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.6458274</td>
+<td align="right">0.0684792</td>
+<td align="right">10105.894</td>
+</tr>
+</tbody>
+</table>
+<p>One can also select a specific geographic region by its ID. For example, this is the FIPS code for Allegheny County, Pennsylvania:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1">cli &lt;-<span class="st"> </span><span class="kw">suppressMessages</span>(</a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;fb-survey&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb5-3" title="3">                   <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-07&quot;</span>,</a>
+<a class="sourceLine" id="cb5-4" title="4">                   <span class="dt">geo_type =</span> <span class="st">&quot;county&quot;</span>, <span class="dt">geo_value =</span> <span class="st">&quot;42003&quot;</span>)</a>
+<a class="sourceLine" id="cb5-5" title="5">)</a>
+<a class="sourceLine" id="cb5-6" title="6">knitr<span class="op">::</span><span class="kw">kable</span>(<span class="kw">head</span>(cli))</a></code></pre></div>
+<table>
+<colgroup>
+<col width="12%"></col>
+<col width="13%"></col>
+<col width="10%"></col>
+<col width="11%"></col>
+<col width="11%"></col>
+<col width="4%"></col>
+<col width="10%"></col>
+<col width="10%"></col>
+<col width="12%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">geo_value</th>
+<th align="left">time_value</th>
+<th align="left">issue</th>
+<th align="right">lag</th>
+<th align="right">value</th>
+<th align="right">stderr</th>
+<th align="right">sample_size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">42003</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-09-03</td>
+<td align="right">125</td>
+<td align="right">0.3990346</td>
+<td align="right">0.1050942</td>
+<td align="right">2635.136</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">42003</td>
+<td align="left">2020-05-02</td>
+<td align="left">2020-09-03</td>
+<td align="right">124</td>
+<td align="right">0.3804239</td>
+<td align="right">0.1073435</td>
+<td align="right">2589.751</td>
+</tr>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">42003</td>
+<td align="left">2020-05-03</td>
+<td align="left">2020-09-03</td>
+<td align="right">123</td>
+<td align="right">0.3370994</td>
+<td align="right">0.1046873</td>
+<td align="right">2552.011</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">42003</td>
+<td align="left">2020-05-04</td>
+<td align="left">2020-09-03</td>
+<td align="right">122</td>
+<td align="right">0.1359437</td>
+<td align="right">0.0638714</td>
+<td align="right">2568.443</td>
+</tr>
+<tr class="odd">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">42003</td>
+<td align="left">2020-05-05</td>
+<td align="left">2020-09-03</td>
+<td align="right">121</td>
+<td align="right">0.1438750</td>
+<td align="right">0.0669286</td>
+<td align="right">2482.389</td>
+</tr>
+<tr class="even">
+<td align="left">fb-survey</td>
+<td align="left">smoothed_cli</td>
+<td align="left">42003</td>
+<td align="left">2020-05-06</td>
+<td align="left">2020-09-03</td>
+<td align="right">120</td>
+<td align="right">0.2492732</td>
+<td align="right">0.0890122</td>
+<td align="right">2530.457</td>
+</tr>
+</tbody>
+</table>
+<div id="plotting-and-mapping" class="section level3">
+<h3>Plotting and mapping</h3>
+<p>This package provides convenient functions for plotting and mapping these signals. For example, simple line charts are easy to construct:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">plot</span>(cli, <span class="dt">plot_type =</span> <span class="st">&quot;line&quot;</span>,</a>
+<a class="sourceLine" id="cb6-2" title="2">     <span class="dt">title =</span> <span class="st">&quot;Survey results in Allegheny County, PA&quot;</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAAEgCAYAAAAUg66AAAAEDmlDQ1BrQ0dDb2xvclNwYWNlR2VuZXJpY1JHQgAAOI2NVV1oHFUUPpu5syskzoPUpqaSDv41lLRsUtGE2uj+ZbNt3CyTbLRBkMns3Z1pJjPj/KRpKT4UQRDBqOCT4P9bwSchaqvtiy2itFCiBIMo+ND6R6HSFwnruTOzu5O4a73L3PnmnO9+595z7t4LkLgsW5beJQIsGq4t5dPis8fmxMQ6dMF90A190C0rjpUqlSYBG+PCv9rt7yDG3tf2t/f/Z+uuUEcBiN2F2Kw4yiLiZQD+FcWyXYAEQfvICddi+AnEO2ycIOISw7UAVxieD/Cyz5mRMohfRSwoqoz+xNuIB+cj9loEB3Pw2448NaitKSLLRck2q5pOI9O9g/t/tkXda8Tbg0+PszB9FN8DuPaXKnKW4YcQn1Xk3HSIry5ps8UQ/2W5aQnxIwBdu7yFcgrxPsRjVXu8HOh0qao30cArp9SZZxDfg3h1wTzKxu5E/LUxX5wKdX5SnAzmDx4A4OIqLbB69yMesE1pKojLjVdoNsfyiPi45hZmAn3uLWdpOtfQOaVmikEs7ovj8hFWpz7EV6mel0L9Xy23FMYlPYZenAx0yDB1/PX6dledmQjikjkXCxqMJS9WtfFCyH9XtSekEF+2dH+P4tzITduTygGfv58a5VCTH5PtXD7EFZiNyUDBhHnsFTBgE0SQIA9pfFtgo6cKGuhooeilaKH41eDs38Ip+f4At1Rq/sjr6NEwQqb/I/DQqsLvaFUjvAx+eWirddAJZnAj1DFJL0mSg/gcIpPkMBkhoyCSJ8lTZIxk0TpKDjXHliJzZPO50dR5ASNSnzeLvIvod0HG/mdkmOC0z8VKnzcQ2M/Yz2vKldduXjp9bleLu0ZWn7vWc+l0JGcaai10yNrUnXLP/8Jf59ewX+c3Wgz+B34Df+vbVrc16zTMVgp9um9bxEfzPU5kPqUtVWxhs6OiWTVW+gIfywB9uXi7CGcGW/zk98k/kmvJ95IfJn/j3uQ+4c5zn3Kfcd+AyF3gLnJfcl9xH3OfR2rUee80a+6vo7EK5mmXUdyfQlrYLTwoZIU9wsPCZEtP6BWGhAlhL3p2N6sTjRdduwbHsG9kq32sgBepc+xurLPW4T9URpYGJ3ym4+8zA05u44QjST8ZIoVtu3qE7fWmdn5LPdqvgcZz8Ww8BWJ8X3w0PhQ/wnCDGd+LvlHs8dRy6bLLDuKMaZ20tZrqisPJ5ONiCq8yKhYM5cCgKOu66Lsc0aYOtZdo5QCwezI4wm9J/v0X23mlZXOfBjj8Jzv3WrY5D+CsA9D7aMs2gGfjve8ArD6mePZSeCfEYt8CONWDw8FXTxrPqx/r9Vt4biXeANh8vV7/+/16ffMD1N8AuKD/A/8leAvFY9bLAAAAOGVYSWZNTQAqAAAACAABh2kABAAAAAEAAAAaAAAAAAACoAIABAAAAAEAAAEgoAMABAAAAAEAAAEgAAAAAKtAJY0AAEAASURBVHgB7V0HvBRF0q/dfYEoShAkIxnJEuRExQQiGBDxUAxgxnj6CYoJRcCIWTzxVJQg6UA5DwRBFEQlSM6CgAQBQUVJL85X/+Z6md23b3f2vZ3dmd2q32/fm+np6a7+d3dNdXV3tcdgIiFBQBAQBBKAgDcBeUqWgoAgIAgoBEQASUMQBASBhCEgAihh0EvGgoAgIAJI2oAgIAgkDAERQAmDXjIWBAQBEUDSBgQBQSBhCBRJAP300080ZMgQuuqqq6hTp05077330tixY0lm9O2px++++47uuOMO2r17d0AG+/fvD7gvys3TTz9Nb7zxRlFeDfvO8OHDFc9btmwJGS+4TMH3IV8qRuBTTz1Fb775ZjFSiP+rOTk59M0339CwYcOoS5cudMkll9BDDz1E27Ztiz8zheRY7DaIdUDR0KxZs4xTTjnFKFu2rHHBBRcYF110kVGyZEmsJTIuv/xy488//4wmOYlrAYHRo0crfFevXq1iZ2dnG9wgjaFDh1p4O3yUM844w+CGHT5SlE+3b99ueL1eIyMjw/jHP/4R8u3gMgXfh3ypGIGNGzc2unXrVowU4vvqsWPHVN9CvypdurRx6aWXGk2bNlXtID093fj666/jy1CI3D799FOjYsWKIZ5YD4paA7r99tuJASFuZDR37lz64osv6LfffiN8SadPn06vvvpqIbJSgmOFwNGjR4k/BDFJburUqTRy5MiYpKUTYWFCJ510Et1222304YcfEvgVso4ANJ+rr76a5s2bRxMmTKADBw7Qf//7X+IPEEGjPPXUU+mWW26hI0eOWE/UhphfffUV/fHHH8VKOSoB9OOPPyrBg8KzFuTPuESJEjRw4EA67bTTFFD6waFDh5S6CEDNBKbNauSuXbvo999/J8QH6H/99Rft2bOHdu7caX7Nf413IfTMhHu8+/333wdUDGsLKq+DBw+ao6tr5IO08vLyCjxDwOHDh9Vzlue0Zs0aWrVqVUC8wvI0R0IeCxYsUII6VHkQ9uuvv5pfUdfgK1Tlojw///yzigPMEA/8adq4caOqg+XLl1vq+GXKlKFSpUrp10nXBQKQDwQd8rBK4OWDDz4g1ozp+uuvV/U6ceJEq68XiIe6WbduHX3++edh+UD9zpkzh3bs2KHSwHAVHTcUoRPPnj2b9u7dG+qxag/h8jS3i6ysLPr222/VzywQ9u3bp/pKqAzAY7ihy9tvv02fffYZYdj497//nTIzM/3JnH766WoouXnzZnr22Wf94bhA20C9z5w5MyRW0fZHpFlYG0D5eLSDKCovtMUildm6smQYUAu5sRotW7Y0uHILvMpfuoCwwtTqRx99VKmSXHkqfr169Yy7777bgJrM5TFYwhs81jV8Pp/xyy+/BKTJla3isM1JhWM48sgjjyiVH2q/x+Mx+OtrfPTRR+o5Nwp1z/aqgHRwc+ONNxpVq1Y1cnNzCzxDAPIAP2+99Zb6j+vXX3/diJSnTmzy5Mkqb7yHsuA/hgFm7GrXrm307NlTv6L+I33EHTRokLo348gNzM8L4uCHMnKn8KvsOq9y5coZ3PkD0g6+CR6CoQ7uuusuo0ePHgH59OnTx+APSfDrBe5ZK1bvjRs3Tj2rU6eO0a5duwLxzGXCw+B7hP3www9Go0aNVHq6TBgu8scJjxUBK9RtWlqaH+P+/fsbTZo0MfhDqaOpttWxY0fjyiuvDCjXrbfeauTn5/vjWckTmAJ31h6VKULXQ6VKlfxDI7bbqDj80fKnjQsWfiqctc6AcPPNNddcY5x88skGC19zcMA1C6AAvlmgGmhL4EVjBfMICzv/e6EwxsPg/milDVxxxRUqL112VkCMopQZX8+o6MUXX1SdnL+cqpECyPXr14dMw2qBIYBgL4AN6eOPPzbGjBmj0kThXnnllYC00bjQsdDpQDz0U0Cgs8L2wJLYuOeee1TY/PnzVRweNhr8FVHPVAD/4a+BGlsDuMJICyCMc1HO1157zWCNxVKeEMawjaFzgC/wq/EYPHiwP8toBRCE5datW1X50HD4S6rSAg7ohPz1Ux+KTZs2GehwsB+wFubPL/gilABCOmhgwA/lvemmm1R+U6ZMCX69wP11112nhK6uH/6Kq3fRsc2ksdB2reB7COkKFSoYzZs3N2BrgKABP9WqVTMuvPBCf1L4cKGM4A0CcuXKlUr4oO0ECyCEde/e3WBt1gA+vXv3Vrx98sknKj2reWoBBIHDBnyDtS0DAgDtEnYaEDo+PojB7Qt4oC2y9qzihfpTs2ZNo0OHDqEehQxD+8JH9+yzzzZYA1Y4sMaoPuRt2rTxC7JgjHVioQRQpDYAW++dd96p2hzaID6ARSlz1AIITKNBnHPOOX5Ji4pl1dDg8b4uk/pvtcAQQAAQhTDTWWedZZx55pn+IGhM5cuXNyBQQKx2q04eXFloiBAa559/vorHMyyqoY0aNUrd4w80JPDNqrY/LPhCCyCzsddqntu2bVPpo8GZadKkScbixYv9QdEKILwIHsC7ma++ffuqMvNwzp82GiPy46GcPyz4IpQAQsfXAgTxoXEgP62RBaeh7yH8eThuQKvQBGEJrZTtQTpI/Q9uG8H3jz/+uMoTkx5mYhujCocRFp0YfCGumYAvwoMFkPnDhfhr165V8TSOVvLEe1oAvfDCC7j1Ezok8tWaPSYKqlev7hcAiFi3bl0DGk5hpMvEw9fCohQIR74QamZtB5HwIQc/+sMRjLFOKJQAstIGHnjgASWAdDr4H22Z05jBqIk1FcIPNgoYomCM5koh/lIqQxlrSVGn2bBhwwBbBBK4+eabCUbvDRs2EKviyrYBu0u/fv1U+rB3wMAJo1yw8Zu/lH6bDQsy9T4LFGUYxcssgIiHBsTqpkor3J9WrVr5H1vNs1atWsRfJGIBpIzzXbt2Jfx4uEX8ZfSnF6sL2Aq4wRELczVdiylbnjmhXr16RZ0F6oK1N/97lStXJp55UTY6f2CIC9ZeiYfp1L59e2Uz01FYi6Hx48fTSy+9pIzTOjzc/2XLlhFsiywklA1Ix4VtEAR7HGuD6po1IvVf/2nbti3xEEbf+v+jDZnLxcM01eZg9wJZyfPcc8/1p8emCP81LljYqHvYWvhDqdopa1nEwpL4Y0gLFy5URuRwyx7ANwz4mqeADAq5gXEaGOv8dTQe7qtL1gpVu9PhVv4XtQ2gb0ZT5qgEEIxOMJ7BEAYCWDymVj+sC2K7gRIE/CUh/toUWk4WlAWewYAdTOhUPI1LbE+gZ555RnUwNCIIFJA26q5YsYJgIA+mKlWqqA6Bhgxg2FakjGo8RqYvv/zS8voXM2/R5AlDJ9ZwsBai/uMaggmd8W9/+1swu/77UPj4HxZyAYEDI+yIESOUwMMHAeXETBQPHYmHuIW8WTDYPMGgn0JoRuLrvffeU9GRZyiC0OfhcahHBcKAM2tO9K9//avAMwgOGH9Zu1LPQrU1CIBgYq04OEh9DHS5rORpTiAYJ+AN0umhbyAOPnwQQCg/2lLnzp3NyQRco8z44EHwhiPUNT42rEGrfsBDvwLRkTcPpQo1xusXNL/6Hv+Dy4YwK20g2jJH9SlmVZXq169PbBgGPwEEhtHJ8VWCxAXpLz2+imYKXlCHZwA+mPAlgMaALyus7JiK1NoP4mqJj1k5VFjwDzNXED6gG264QfEDYYAfvujXXnutehbpj5m3aPLE7BKEDoQjZl4gCKA1QrBqAkZW8NHxw/3HotD//Oc/aoYQs1fQuP75z3+qhh/uvVg8g0bCdh4lYPBBMP8QjroEL1YJOKPzLFmypEC9op7/7//+j9hWopLTHwWdNhuVCyza1M/C/beSZ7j3g59h9gptDEsdoKnzUEjNDGpBFRxf37PZQc0oYUYrFKH8+ODggw+qUaNGyPJilg/9sVmzZipeNP1RvVCEP9GWOSoBhGEXKpeNqH71V/MIKYpGDxUXKjAIjQ7EY1P1H38ACBqkVYLAQeeFhoUpWQgSTdCGMI2ML4uZUNngAUNCTfjyoNKmTZtGbMNSQ8hQUl7HL+y/1TyXLl1KPAOktBGkBa3xvvvuU8IHAhxqOggYBXcgLCUIR7oh6SEI4gInDA9QDxC6+Mq+8847KhlM2dpN77//vsoCGk6LFi0Cfq1bt1YdER0HSxKsEOoPSxhQX2bCFD/bUYjtPGqohzpk24Y5ilo7EyzUAyIUcmMlz0JeLTQY9YKPDj7eMB/07du30Lj6AdoJtDXsNAg1Xf/www+rvsATMuoV8I0PAEwVZoIWDNImhFj0R3P6EKSQB/iZKaoyc4O1TJgWxHQsZ2ZwoQ0WCgammmEYhMEX4Wzz8KfHEljNbjVo0MBg7cVge5GaFcIUI+JqYx2M0Jh1CUVcOANTudzp1GrQ4DjPP/+8SguzGzBYwuDMdg8VnztyQHTwinQYOMVPwMMQN9oIjalvM1nJE3wDI5QdM3uYNkV6MKJjelQTVgoDCywlwEzRu+++q4zJmEHTRl/uYCqOnjFCPWDWENPbmO4GjrxuRMWBYRDpAAfUFWtvBnd6nV2B/6GM0KFWDMPIidnFUIT8YbQMNd2u4y9atEjxxxqBCgouU/A9DO08hDbY/mTw8FvNiiIOd6KAFc2YmQR+SBfGYcwGYpU+ym02hmNqOVS5MJsLIy7Iap7IB3mydqbe0394XY4K1zOTOhwzY1i9jPZgldBXMBOFvsECx8CsFi9KVEZe5I2lG3qantffqGl7ttsYvDDYwAQIJlxQNszC8odKZWu1PxaGVXAbQL2AF/SHYCzClZk1c7UEBkzhixk1wfoPJgEQGECnZs3A4K9TgbRQWeh0iIf4mAFAJ8O9FQGEBPVUOwRIMKGjoxFqoQbhghm6ULzojoKGrSslOD3zfWECyGqerAX5p4RRXggNrK/BbJEmTP1CeKLDIA54gyBFwytMAOHdxx57TKWHdzD1DIIwQx4Iww9rnP7973+rZ4X9iYUAwkwb8sMaqXCERgn+0GGCBU7wPdKB0MaHzYwNZrZYYwzIBu9iuhmChw3g6kOHfFiT8McrrFOZBZDVPKMVQGx8V/jwXjQ/P1YuWPszWJv01ycwRl+CoGMNLyAJ1i7V1L2ueywRgGDF8gUzWemPhWEVLIB4T6ia1UOeaNdmCldm9FW0BVCRBJDOCCCg4JH2f6HDsh1Erb3R79rxH5LfvMgvOA8IIFRM8NqM4HjR3EfKE2lhMSVw0gI3VPqYKkeFRkNIL7i8mD5nVVytTYkmLSfHxfIMrNtBOzITyq/XvZjD0R7RKaChF5UKy7Mo6WGEwMPisGt/wqWLqXlov5hmD8Yg+D1ocehr4eLFuj9C4wsWdOHKjL7A5hDFerEEUHDhnX6PxYTQ1lBBQu5HAOu9oOnoYZ0u0YABA5QACjf01HHt/g+BwBM3Btsu7c7KMelHKjPqi7ebKH5TQgA999xzakgDVf7+++93TEUJI8VHALYzaDuwf8DmBVMA7tkdSPETL0YK0M5g/8PiRwybsAUj2clqmWGf1OTBBVdYUhNmXjAFjNkC+C6KNA2a1GAkYeF4eKZmYNnQTVgjxDZA9Ut0UXlCQK1XwrooPROVaJ7szj/aMqeEALIbdElfEBAEioZAVOuAipaFvCUICAKCQGgERACFxkVCBQFBIA4IiACKA8iShSAgCIRGQARQaFwkVBAQBOKAgAigOIAsWQgCgkBoBKJyxxE6icSF8roDNc2ZOA6KljNWPvCapKK9LG8JAi5CAB4NzD7Hg1l3tQCC4zM4qMIpHeEIu+hBTlj/A1542brase4EIQReeDVxOPji9gy8QDjDpYMTyEnYwMMDXMigQyeaeCuH2gEfiRfUJTwawMl+YZT40hTGmcVwXnavnHyFi47KAxjhJHG492P5DLzAPQO8ODpBIIIXuGngLSqxLGaR0oLPJwjoUI7DipRgMV+C+wxexVzMVGLzOly48GZb5X4mNikWPRWMPHgbTERe4C4GC3/DUdxaHfyawF8QXJpGIkhNHLEjJAgIAsmNQFwEEDy7wUkRlszzTvQCTqaCIX755ZeJXSwEB8u9ICAIJBkCcRmCwWE8PMLBUx77AyJ2FEVwmB3K9gA/yjh1VUgQEASSHwHbNSCMA+FyFF77QThhAbaYUF7/4cMWDtv5YLzkR15KKAgIAmS7BoTjWjFLZZ7xwSkGMPDBZ7ImWNbhwB2nYBQ2C4LjR8w+ddlzmzrWuLD4Om0YoL07fqY/T6tKPJWggxPyH7yAgIsZk4Qww5mCn6L4T7aDX42NPnrHjjyiSRP8OIUX8A3bqPYlHk057IgLbCLxAuUDv3BkuwDCTI+eBteMgCl9WoUOw8kXcPiOs5b4pFUdHPAfM0cYvmmCE25oU5Gm4XP5jPe0f76FYzqIGjUhasqnBJzBx5iEODtKp23Xf5QdHR58O2HmCbxAgDtBGIIXfIicMFuJ+seMpfkcMbvahJV00dlhsghltrDyfizjoD/jF4kXtPVIbdx2AcTOyondW6oFg1pTgfbD/ooDMJkxY4bSZviYXPVVxlQfO6pXJ1joiBi+6ZMAEAa7EoQPpifD0REWgsaAQZS+YR3lrlhO+R+PVdG9tWqTr2UrSuOft87pcemEaNToaDjNwwnT8GhI4CVSQwmHb6yeocGCn0j1Gav8IqWDqWan8AIBhP6Duko0RTMNH6ld2S6AsFgJJ2VOnz5dndLJ53urQ8/0kTjsU5lwgCAOH9QEDYi9GBIf9ayDivVffd35QMAMHrJl9OhJ+QcPUt7K5UoY5Xw+g3I+nUYeXgvja9FSCSPfGc3IYzoZtFiZy8uCgCBQKAK2CyDkDKOynn6HRHzyySf9DEGjgbDBDFm8yMs2KO+5nSidf3w8BuWtX8cCaYUSSLkL5mPJNPkaNT6uHbVg7Yg1LyFBQBCIPQJxEUA4jpiPA1ErgHGcs5lmzpxpvlXXMC7HSvspkHhQgIc1tLRmzdUv8/obKX/3ruOCiIdq2R+Po+xxY8jDhxqmtWx9fKhWvwF5WEAJCQKCQPERiIsA0mwGCx8d7qT/3qrVKAO/S7uTwbar3NWrKG/FMsqZ/zXlzPwvsYVUCSsfa0ZprLV5yoS3PzmpbMKLIOA0BOIqgJxW+Ej8eNjAnX5WB/Xjg5Yof/OPSjvKY+0od9H3lMU72r316h+3G7Eh21e9RqQk5bkgIAiYEBABZAIj3KWHbVe+Bg3Vj67pTfn7f/ULo+xPphJNnkieChVPGLIbNyGPQ3aZhyuXPBMEEomACKAiou+tWIkyLupMxD8+8pTy1q45LpCWLaXcL+cQL5IgH681SuOhGmbXvA7ZVV3E4sprgoAtCIgAigGsHl6fkdb6TPVDcnnbtrLdiIdpPNWfNfo9lYO3Zi01q2awZkQnnxKDXCUJQcD9CIgAsqEOfbXrEH4ZV171vzVHx6f4c2Z/TjT9Eyp9UjnK63sz+c5sY0PukqQg4B4ERADZXFfH1xydx2uOzlNrjo5ivdGMzyj79Vcon9chZV53vSx6tLkOJHnnIiACKI51gzVHniZn0FHeFFt+9UrKYcN13rq1VOL2O8nXsFEcOZGsBAFnIGC7Ow5nFNNhXPD0fRobr0s9M5y3gJSlo88OpawJ48ngvUdCgkAqISACKIG17WVNqOTjT1HGFT0oZ9ZMOjr4ccrbvi2BHEnWgkB8ERABFF+8C+SGbR3YIFvyyacJix2PPv0kZf/nU3VdILIECAJJhoAIIIdUqI/dgZQaMozSL7yIsqdMoqPDhlA+e4gUEgSSGQERQA6qXayczuxzI5V4+FEyfjtARx4fRDlfznUQh8KKIBBbBEQAxRbPmKSWxjNlpYY9T2lt2lLWh+/T0REvUP4fv8ckbUlEEHASAiKAnFQbJl48vOu+xB39qcS991PeT1voyKMPU+7iRaYYcikIuB8BEUAOr8O0Nu2o1PAXyFevAR1763U69vZbyk2Iw9kW9gQBSwiIALIEU2IjYTV1yQcfosx+t1Lu8h/oyGOPUO6a1YllSnIXBGKAgAigGIAYryTSO53PtqHnyFOxIh178TnKGjOajOzseGUv+QgCMUdABFDMIbU3QW+lU6nko09QBvskypn3pZopy9uyxd5MJXVBwCYERADZBKydycI5Wka3y6jk00OV07OjQ5+irKlTyOAjbYQEATchIALITbUVxKuvRk0q+dQzlN61G+Wwm4+jQwYrp/pB0eRWEHAsAiKAHFs11hjDDvtMHo5hWGYcOUxHnnyMsnlfmT7m2FoqEksQSAwCrnbHgWN8jxw5EvGMapxwiQ6J+Ikm8ALCabGRTo2Milc+yYMefoyIh2LZ48dS9tIlRDf0JYrgChb8gBcnHM2Mk1FRR5HOHI8Kl2JEBj9O4QXFyOYJByfwY7WedLxwVeBqAYROg5NX09PTw5VRCR8IoEjxwiYSo4daMwEvMRVA4A843NSP8tk9bB6voKbhQ8jX+zrydji7UO5xzC4wjDkvheZY+APwAnJCPYEPYOIUXpzGD4RLJGzQPyN92FwvgDKwf4p9MocjfFXR8SPFC5dGrJ5pLQx823Y2PG/hMBo1omOj36e8D9gn9apVVKLfLeQpW/AMM5xVD1ycIICgzTqlnlDf0Ayd0GZ028OHwkn8ROIF7TuSABIbkK7dJPuPAxNL3nM/Zd7en4+eXstbOQbyIsZlSVZKKY7bERAB5PYajMB/+tkd1eJFb/WadOzVEXTsvXfJYK1HSBBwAgIigJxQCzbz4C1fgUoMfIQyrr+Rcr9beHzx4sYNNucqyQsCkREQARQZo6SIgbF4xsVdjvuhZluQ9kNNucdn5ZKikFII1yEgAsh1VVY8hpUf6idO+KH2vcS+hvbvL16i8rYgUEQERAAVETg3v2b2Q00H/6BcXrgoJAgkAgERQIlA3SF5wg+10bwl5S37wSEcCRuphoAIoFSr8aDyGs1bKP/TchxQEDByGxcERADFBWbnZmI0aEi8uo1yf1jqXCaFs6RFQARQ0latxYLx9g1fs+Y8DBMBZBExiRZDBEQAxRBMtybl471j+Tt2UP6v+9xaBOHbpQiIAHJpxcWSbV+Llth5KcOwWIIqaVlCQASQJZiSO5KnVGnyNWpCuTIbltwV7cDSiQByYKUkgiU1DNu0kYy//kpE9pJniiIgAihFKz642GlsB2JfGLJjPhgYubcVARFAtsLrnsS9FSqQt3YdHobJbJh7as39nIoAcn8dxqwE0ILy+MBD43+eCWOWsCQkCBSCgAigQoBJxWDfmW2I2Ed03upVqVh8KXMCEBABlADQnZqlr3oN8px6qgzDnFpBSciXCKAkrNTiFCmtdRvKXbGcDAecIFKccsi77kBABJA76iluXKZhGMbO2PM2rI9bnpJR6iIgAih16z5kyb316hOxx8S85eKiIyRAEhhTBOImgPaz171Zs2bRxo0bwxZg7dq1NHfuXPrjjz/CxpOH9iCAc+fTWp3J2zJEANmDsKRqRiAuAmj58uXUr18/2rRpEw0cOJCmTZtm5sF//dBDD9HHH39M69atozvuuIN27tzpfyYX8UMg7cwzyTiwn8RHUPwwT9Wc4nIw4auvvkpDhw6lFi1a0DXXXEO33nordevWjXA4n6atW7fyDHAOvfTSSyoIh9TNmTOH+vbtq6PI/zgh4GvSlCiDfQTx3jBfrdpxylWySUUEbBdAOMIVmkzz5s0VvpUrV6ZSpUrRrl27qE6dOn7Mcf3aa6+pewy/Vq5cSbfddpv/OS62bdtGI0aM8IfhrOyDBw/S77//7g8LdZGXl6dO3NRH/4aKE68w8AIC35FOjYwHT8AQeAfz4mvUmLIXL6IjnS6IBxsqD/CCk1Ej1We8GMIH0Sm8oMw4xRY8JZp0f4rEC/q+bu+F8RyVAAIAn376qRpKQYvZvXs3tW7dOuyxvvv27aPSpUsHNPBy5crRb7/9FiCANIOzZ8+m559/nhrx0cJnnx14pjkKY7YN4WhYNFh93LFOI/g/4liJF/yeHffgAwSegzu9HflZSTMkL02bUfr4MXxixq9EfK5YPClSfcaLF6e0GV1ep/ADPqzwYqUeLQug9evXU9euXWnPnj2q81x22WX0xBNPqC/51KlTqUqVKhqngP84HzpYCkIylihRIiCevuncuTN17NiRXn/9dTVsGzJkiH5EdevWpTFjxvjvMaw7+eSTqQLvYwpHEJwADJpXogm8QIiecsop9p0NH0UhwctJJ51U4CNidDyHDk8YR2V/2kIZ9RtEkWLRo0LbQFuJVJ9FzyG6N/GRLF++fHQv2RT7l19+Ue23TJkyNuVgPVmMJKD9ROIF/Rz9PxxZNkLfcsst1KFDB4JGU6NGDZXm6NGjVcOF4bgwQmM6zOtKzMMfVGzVqlUDXtm7d69/hgyCokePHrR0qWyMDAApjjce1loxDBNf0XEEPQWzsiSAYBBevHgxQRvB11IT7Dn3338/zZgxQwcV+J+Wlkbt27en6dOnq2fz589XX39oACDYdY4dO0bI45FHHlHXCJ83bx7Vq1cPl0IJQsDvI+iQ+AhKUBUkfbaWBBCEiJfXh0CTCSas28GzcHTXXXfRlClT6LrrrqNRo0bRoEGD/NH79++vNB8YoXv27Em33367mrKHpgWBJJQ4BLAtg8eu4iMocVWQ9DlbsgFhuhy2mQceeIBeeOEFBQo0lvHjx9Pbb78dUVDUqlWLJk6cqGwfsNmYaebME6dyXn/99UpIQSNygr3GzGcqXisfQTwNj0WJ6eecl4oQSJltRiC86mLKHJoLhE67du0Ia3bOP/986tOnD11wwQV03333mWIWfhksfELFhDYlwicUMokJw96wvDWrxEdQYuBP+lwtaUBAAUbj77//nhYsWEAbNmxQiwhbtmxJ+AklLwKwA9HUKcpRmdqomrxFlZIlAAHLAgjTgJjKhmHYbBzGWqCSJUsqw3IC+JcsbUbAV6MmeSqxjyA+OVUEkM1gp2DylgVQ48aN1ZqfUBj16tWLJk2aFOqRhCUBAnDVmvPNAuUjCJtVhQSBWCFgWQB98803AQsK/+LjW5YtW0ZvvfWWWrkcK4YkHechAM0nZ9ZMytu4gdIaN3Eeg8KRaxGwLICaNuUNikGEFcswTA8fPpzefffdoKdymywIeLESGj6CeHOqCKBkqVVnlKPY+vRpp51Gq1evdkZphAtbEFA+glq2Fl/RtqCb2ola1oCwEhp7OzThGvvChg0bRp06ddLB8j9JEcAwLHfB15T383by1ayVpKWUYsUbAcsCCAsR4UIimDAMe+aZZ4KD5T7JEPCdcdxHUB7PhokASrLKTWBxLAugn3/+WU3Dm3mFmw1s0xBKfgQ8vBre16y5clKW0aNn8hdYShgXBCzbgLAJFX58zD8RPnGpI8dkAlet+TwEy/+VfQQJCQIxQCCs+rJixQo1yxUpn4oVK1KDBvHxGROJF3luHwJpLVpRFq8DgqvWjC6X2JeRpJwyCIQVQNgcit3ukUgWIkZCKDmee9gZlq9hI56OZz9NIoCSo1ITXIqwAui7776L6O4U/Kenpye4GJJ9vBDA3rDs8WPJOPQXecqUjVe2kk+SIhDWBlSWF5+ZbT5wy4EV0HCdiR/O+tqyZQthlbRQaiCg9oPBRxAf3ywkCBQXgbACyJz42LFjqVKlSsodK5yH4YdNqWeyYRLOxoRSAwFvhYrk5XVA4qo1Nerb7lJaFkADBgygq6++Wp3VBc0IrjngOB4roZ999lm7+ZT0HYQAtKC8NavJ4GN0hASB4iBgSQBhASJWPeMUigsvvFBpQnAudu+999KDDz6o9oIVhwl5110I+OCqlYUPHJUJCQLFQcCSAIKHQhia9VE6OLNr4cKFKl84nF+0aFFxeJB3XYaAryb7CKpYSblqdRnrwq7DELAkgCB8cKzy4MGDlREaXhAnT56szgbCiRiwBwmlFgJqb9iKZcpHUGqVXEobSwTCTsObMxo5ciThMEJsPMWRyTA+42AyHCSnj9wxx5fr5EZAOSljH0H5mzaq88OSu7RSOrsQsCyA2rZtS9gPhvO7IXiWL19OOEb54osvJpx6kQiCi1jsyo90RjWEJOJGihePMuhTYsG3laNr7eYJPACXSEcrBfNh1DmduCFQ9tLFlFa3XvDjIt2DF6fUEwqgsSlSYWL9Ep9GmsenCTuhDeu2G4kXxEN9hqOwAgjeDiFg9DYLrAPCD1ST7QA4Hz6RhMLhCB8cdxyONBCRwAiXRqyegRcQ+HbC2fAQiEXlxXNGM7UtI+fyHjGBR38oItVnTDKzkAgEkCN4+fNPKvPcUOJzjukYb4cxWrUmgpM43haTCEI9AZtIpPtduHhhBRDW99xzzz107rnnKmGDaXg4oHcK4asNbcx8Wmso3tCIIHyccNwPeMEx1eA70rnZocoS6zCcDY9lFdFqQOAj96wOdGzRd1SK04BhuriEho1fpPosbj5W30cHcgIvxyaMoxxuvx6effSsWkHGwgVK+4QdLq1te/Kxm1xPHL1SRHM2fKR2FVaEfvnll/T111+rBYd33323OpoHAgmbVIUEAV/TZsQq8fG9YQKHLQjk/biJchd+Q1kXdyH6+7VU6tU3qeRjT1L6386mvNWr6NhLz9Phe++iY+++o1anG//TsG1hxoZEw2pAGCJA+8HvjTfeoKlTp9KHH36oDNCtWrVSxuhrr73WEV8JG7CRJCMg4PcRxE7KMq68KkJseRwtAgYPc7I+Gk3e6jUop8PZVIITQJ/0NWiofhnX3UD5WzZT7hL2Vsq2uNxv5hMPUSiNh2hpbduRr2lzQh05mcJqQGbGMXzB7vgvvviCtm3bps5xx8wYVkK/+OKL5qhynUII4Px45SNov/gIinW1586bq7DNvOGmkPYeJYzq1afMa/tQ6RGvUcmnnqH0Cy6ivM2b6dhrr9Dhe+6kYyPfUALK4GG/EymsBlQYwzVq1KCuXbvSoUOH1GkYK1euLCyqhCc5Amkt2UcQf5WVj6DO4iMoVtVt8KbvrCmTKa3D344vc+CDQSORj2cm8cu8pjflbd92QjNa9L0aKvtatFSaEfw6eXhGzQkUlQDavn07jR8/nrAxdePGjdSlSxd65513qHv37k4oi/CQAASUj6BGjdWRPSQCKGY1kDV5Aq8DyKOMv19XpDR9tWoTfplXX0N5O3coYZS3ZBFljXyTsnhhMdzrwoCdxqYUT8lSRcojFi9FFEBwu4FTT8eNG6fcbmDV880330x9+/alatWqxYIHScPlCPhasY8gnqkxWCOGQBIqHgJ5P22h3K+/ooze15H3lFOKlxi/7WMbEn7Evrzzf9lNuYsXKYGU9c5IyuLZMx8vp0hr146F0ZnkYT/v8aSwAujOO++kDz74QE3RXnXVVTR37lzq1KmTI9avxBMkySs8AvAVnT1+jJqFSe94TvjI8jQsAlguAsOz57SqlI6ZrxiTl9PNuKKH+uXv3XN8mMZG7CyeRcvy+cjX5IzjwzSe4o+Hw7mwAgg2npdffpn69OlD2P0uJAiEQsDLG1OVjyB21SoCKBRC1sNyv55H+Vt/ohIDB9m+tsdbuQpldL9c/XDQQC4P0TCjlvX+vyhr9Ptse2pyfDatTRvynlTOeiGiiBlWAMHWIyQIWEEAe8OyZ3ymfAQ5ferXSnkSEcc4fJiyJk/k4RDbZnAOWxzJy84GMy7trn75Bw4cn9aHMPrwfaKPPlC+wH08tZ/Wpi1P9cfOZhRWAMWx/JKVyxHwscpOn0xVjsogjISiRyBrykT2s5RDGTytnkjyVqjAp550Vb/8P35nrWiJ0o6yx35E+Hmw9++Gvmo1dnH5FAFUXATlfYUATkv18PFMuTwMEwEUfaNQ0+bzvqQMnrXylq8QfQI2veE9+RTKuLiz+uX/eZDyli6hbD6WiZ3FxyRHEUAxgVESAQJYlJjz7TfKR5CH9+kJWUPAb3g+9VRKv+RSay8lIBbsQF5e6Jh/9jkx25UvrSQBFZmsWaoTM3jiAj6ChKwjgC0U+Zt/pMzrb7Ld8Gydq/jEFAEUH5xTIhcv71Gi0mXUquiUKHAMCmkcOULZkyYQzltLa94iBim6KwkRQO6qL0dzi2EXNkJiW4aQNQSyp04hg120ZPLG0lQkEUCpWOs2lhmLEo1f91Hejp9tzCU5kgZGOXNmU8ZlVxCmwVORRAClYq3bWGa4gDjuI0i0oEgwZ435UJ0ukt61W6SoSftcBFDSVm1iCqZ8BLGjMjk5NTz+Od8upPyNG9jwfIPjffaEL0nxnooAKh5+8nYIBDAbls/uIPIP7A/xVIJg88meMJ6Ue4yW7N85hUkEUApXvl1Fh48g3rEsxuhCAM7mFePG4UOU2efGQmKkTrAIoNSp67iVFLuofQ0bUR67ahUKRCB/9y7K+WIWpfO+K2/lyoEPU/BOBFAKVno8iox1LXls48AGS6ETCCjDc7mT1Q70E6GpexU3AbR//36aNWuW8qQYDu7N7M923rx5zjiPKRyj8iwsAtiWwYdHsY+gZWHjpdJDOALLW7eWh17XkyczM5WKXmhZ4yKAcIpqv379aNOmTTRw4ECaNm1aSIYefPBB5eIV7l7hcXHx4sUh40mg8xHAuhZvjZo8GybT8agtI+sYZX08lk+qYO+Dbdo5vwLjxGFcNqO++uqrNHToUGrRogVdc8016pDDbt26+U9ZRVnXrFlDv7JTpDFjxqiiN2zYkCZMmEDt2FWkkDsRgIuOnBn/FR9BXH3Zn35CxsGDlMmOxoROIGC7AMLpkjt37qTmzXmBGlNlNrzhiJ9du3YR/EtratKkCY0aNUrf0kGuLBwZbKYD7CgJ59Fr+u233+gI76U5HMHOgDOsseMYv0STPk8bfEc6NTIevKJ+wIsdx0Qbjc9QPoIOszHaY2Gfkz7KN1J9xgMX5IFTWmPBi7FvL9HnM4guvIiOwrNghPZaWPmys7Njwk9h6VsNRz1ZwQbxIh3hbLsA2rdvH5VmR9fmBl6OfYlAeJgFEDqjPvYZ70ATGjBgQAAmO3bsoKeeesof1rp1a3U00J98drYVChZoVt6xKw7c3TqFtFCMOT9cz6XZqXoeH5p3rPaJj02kfKzWZ6R0YvE8FryUHD+WvNwHDnc8l8hiWw3FO45Exs8pFIkXRwggnH8OaWkmMFaikHOJtm7dSg8//LCyGZ111lnm16hly5a0du1af9izzz5LldjWUKVKFX9YqAsnnQ0PIYjz2MG3U86Gx/nndmljWWzvyP3+WyrHvm4i+QgCLmgrFdgjnxMIH8ny5csXixWsCM9i9ySZ/e+hsuy0rai0Z88eKsMnjuCXaILgwUcrEi/o52kRzqy3XQNCY4IaC6Yz/2f5R8VWrVq1AI7r16+nQYMG0QMPPEDnnXdegecIMBcIWpX+hYz8v0Ctfen/4eLG65kVvuPBi+bDLmywKjr3i1lksL8bL68NskJ28WIlb3McjY05LJprg4dM2TA8N25C6Wd1iObVkHGLy0/IRIsQqPmIVE+RniNr22fBIDDat29P06dPV0WdP38+ncJqOX6gbdu2KVsPpukxQzZ48OBChY96Qf64CgEsSExVH0HZn00ngz+2GexoTCg0ArZrQMj2rrvu8k+/Q9V/8skn/dz079+fnnvuOVq4cKEamtx///3+Z1B/P/nkE/+9XLgPAeUjiLdmwFc0zjBPFcpnO2bOjM/U2V6+6tVTpdhRlzMuAqhWrVo0ceJEJWCCzxebOXOmYhpT9BBUQsmHgBqGLVygjghWJ3QmXxELlCgLp0fwbG9Gj6sKPJOAEwjYPgQ7kRXJ4YZmMFLoGovviM8jT5W9YbkrllPeyuXqXPdEnrvuhiYWVwHkBkCEx9gjgG0HcFSWCq5aDZ4dyhr3EXnrN6D0szvGHswkS1EEUJJVqFOLA1et+du2so+gA05lMSZ8we5j8Ir+zBv7xiS9ZE9EBFCy17BDypcGx1tJ7iMof/+vhJmv9AsvJhzUKBQZARFAkTGSGDFAwFO2LOHYnjyeDUtWyho/jnixG2VcdXWyFjHm5RIBFHNIJcHCEMCRzXkb1ielj6Dc1avYyL6EMq+5ljy87ULIGgIigKzhJLFigIA6OVX5CFoeg9Sck4TBWw4w7e6tW4/SzuH9XkKWERABZBkqiVhcBLyVTmUfQTXUosTipuWk93M+n0nG3j2UeUPfgE3XTuLRqbyIAHJqzSQpXz72lJi3apXyEZQMRcznrRbZn06jtE4XkM/kXiYZyhaPMogAigfKkocfATUMy85i16Rr/GFuvsj+mA3PvMgy8+pr3FyMhPEuAihh0Kdmxr5atclToWJSuGrNZf/OuYu/p8xefyePA9xkuLFFiQByY625nGc1G7Z8GRlskHYrGey3KHvsh+RlR2tp53VyazESzrcIoIRXQeoxgCN7jL/+pHz2EeRWymEfR/nsVhgrniM5WnNrGePBtwigeKAseQQgcNxHUGnX7g3LZ8+N2dOm8pT7eeTjqXehoiMgAqjo2MmbRUTAw256cXwz3JW6kbInjmdXfh5edNjbjew7imcRQI6qjtRhBgcX4rSIPD4xxU2Ux/6dc79dSBk9e5GHfWkLFQ8BEUDFw0/eLiICvmZ8TBN8BLlobxiM5lkfjVYHLqZfcFERSy6vmREQAWRGQ67jhsBxH0HNXDUMy5n7BeXv+FkMzzFsJSKAYgimJBUdAhiGKR9BvznfR5DB53llT51CaX/rSD7e1S8UGwREAMUGR0mlCAiktXKPj6CsSR8T5RvsZvXaIpRUXikMARFAhSEj4bYj4PcR9MMPtudVnAzyeL1S7oL5ysG89+STi5OUvBuEgAigIEDkNr4IqFXRG53rI0gZnsfwiudq1dQRO/FFJ/lzi8uxPHbBiIPvcZxvWfa2F4700dBOOBte8wK+rZwcGa5csXiGI3Z///33xPFyej3K4G0NBxd+Q9ktWpJhGISTc51AwObgjM8ojX1Z59x9Hx07eDChbB05coSy+bTVRBP6HX6ReMHRzLq9F8azqwUQDjnEOWORzu920tnw4AXCB3ynwtnwhTU8fzgfPnmkeg3K3LSBjLbtVIONVJ/+d22++G3HDkqDAGp/FpVp197m3MIn/8svv1ApPmcs0nns4VOJzdNozoaP1MZlCBabOpFUioEA9oblrVpJlJtTjFRi/6rvv3ycOH/FM3qnzomusUcxfIqu1oDCF02eugUB+AjKmf4JeTZuJGrUOO5sY4o9n4/SwakWOFJH/edr75rVlMGuNryspQnZg4AIIHtwlVSjQMDHLi085SuQlx272yGAjEN/sYDZz8Jl3/+Ey36+xzWHsaBhY8YJbnl1tqdiRfJWrET5nc6n9C5dTzyTq5gjIAIo5pBKgkVBALNh+d9/R8R7rKIl4/DhQO3Fr8UcFzSUlXUiybQ0dojGwo4FDBYUev92NgucSuStVEn995Qr5zfIH2VjuIfjC9mHgKBrH7aSchQI+HgY5pkzmzzbtxGdemrAm8bRI8c1mP2stUCTYa3FPFwiNuz7iXfaawHjPb0upbHx2ANn+KzVQNB4TjnFL2D878hFwhAQAZQw6CVjMwLwEWSULElpLISyftzkHx7BNkNHDp+IyjOfHrbJQIPx1q5NaW3aBmowEDAcR8gdCIgAckc9JT2X8BGUz8MwL7u6yN23j7UWFjDVq5OPt2to7QVCB9qNCJjkaQ4igJKnLl1fkvxevSnniquoYuXKri+LFMAaAqKrWsNJYsULAdaEhFIHARFAqVPXUlJBwHEIiAByXJUIQ4JA6iAgAih16lpKKgg4DgERQI6rEmFIEEgdBFw9C1ab14E8/fTTEReWwcUDftg9n2iCC4O//vrLMbvh4S4h0o7leGEGXFBPJznktAknYQMXJSV5nRR+iaZo+lPTpk3DsuvhxIywMeRhTBGYOXMm/eMf/6Bvv/2WKvCaFqETCDz44IO0i08bnThx4olAuVIING/enO677z669dZbkwqRxKsESQWnFEYQEASiQUAEUDRoSVxBQBCIKQKutgHFFIk4JYYx8ZAhQxzh2S5ORbacTa9evegw72wXKojAk08+SZHsKQXfcn6I2ICcX0fCoSCQtAjIECxpq1YKJgg4HwERQBbrCCcSTJ8+nVasWFHgjSVLltAXX3xRILyoAfvZU9+sWbNoI1yUBtHmzZtp3rx57ALH5AMnKE68b8ETsNnHu9jNhJMT/vOf/9DatWvNwcW6BiazZ88mYBSK8DwUbqHixiNs/vz5NGPGjAJZYbYPmOFEklgQHMUvXLhQza7iNA8z7d27V7WnH3/80RzsiGsRQBarASdZvPjii+pnfgVrRZ555hn65z//aQ4u8vXy5cupX79+tGnTJho4cCBNmzbNnxamqd955x3Vwfr27UuLFy/2P0vkxaJFixQu6FBmWrlyJb3wwgtKYJrDi3r9yiuvqHyA0S233EI///xzQFKoI2D23XfsWdEh9NFHH9Gzzz5LW7ZsCeAISw3Qnnbv3h0QXpQbfIzQHvBhGjt2rMJAr64BVvfee6/CCvi9/PLLRcnCtndEAEUBLY5FwVle5saECg4+RgZCaefOnarScTYSCF+oYAMrOoxuKJqNV199lYYOHaoazahRo+j9999X5y+tWbOGfmXnXGi0d955p/pNmDBBv5bw/02aNKEvv/wygI85c+ZQ3bp1A8LQWYCfWYPBAkTzVxvXCDPTtm3baMGCBQRMHn74Ybr22mtp3Lhx5ihK2AXXRUCEBN0EY4P2sXTpUnb8GOj5EYsNoU1C2wZBgwzWkPAMbclMEGbt27enxx9/nEaOHKnex0cBhA8jPly33XYbQQChzUU6z8uctt3XIoCiRPiCCy4I6Ghz586liy++2J/K1q1b6aabblJfmieeeIKuv/56+pNPXcAw5Pbbb/fHw9fbfI8HEFYQXFh0BqrMfnEg9KCuoxGj82k6yIfkOeGgRc3P6aefrlZUa+GMskA4t2vXTkdRQ44bb7xRlQNaHoQpCOX68MMP/fHGjx9P0BzM9NNPPylc9Gr21q1b07p16/xRMNQ7hb0htm3b1h/mlIsLL7wwQAv8gY+ibtasGWVkZCgWgdWgQYPooYceorfeeouuuuoqNZyCAIJmozFF5LvuuivgHmEQWsBDk8YGHzw8a9iwoRq2QtvCDKzOV8dP5H8RQFGib25MaDgYZrRp08afCjpd7969lQBCp8JBcmhwrVq1Ul+eDRs2qLiw8XTp0iVgGwlsKKVLlw4IK8dO0vFlRMfTy/ARb8yYMYTO7CQCNloLwhe+ZcuWlM6nTICg6cFW9tprr9Hzzz+vhA6EBjrZpZdeGmBDAzYIMxMO5gMWmrBd48CBA+oWQnvq1Kl0zz336MeO+o8tQ8ABwgCEj9ZFF13k53H79u2q3qHtQktBvQKDNHaI37lzZyU8EBnvo83hY2SmPXv2BGxf0dignaDNQGPEBxBT+UjfSSQCKMraqFWrlvqCoDHABnPmmWcG7KW68sor1ZDs3XffVRWPzgGVGUO3rl27qsaEzghDKu7NhD1ZUM/NhAZXokQJfxA0LHQ0aBBnnXWWP9wJF9AOYYcABXcylB/2mWXLlpEeZgIHDLcaN26sMF29erXqKND66tSpE1CkYGyACzoX/g8bNkxpD1pAB7zokBuNDcqLcpo1FgxT+/TpQxhSw5746aef+odZWjhDUH/++ecF2gyKVxg2eAeacv/+/emBBx5Q9kO0u+DhbSIhEgFUBPR1YwruZEgKX/iPP/6YatSoofbumBePQeBAQ8BMGoZXVatWDcgde8OgNpvH+NB+dLz169erhnT33XdT9+7dA951wk3NmjUpMzOTwCeGR9CANGG4CMMxhhOwVwwePFg/Uv91R8NsYrBgRoRK7CMaWGjC9WmnnUawDWlcoC1MnjxZDd9eeuklHdUR/3WbwUcLw0TzBmAIZQgIUM+ePZUw0kxDEFfkEz3QZtB2oDUHE54HY4M2o21MWmOCYAeO5iFdcFrxvhcBVATE9TAMM1XaXqOTWbVqlRqCXXLJJUrtxpBLazXoMNCgMJMVqpNB5Ubn1LNJmMKFXQM/GG2hQaDjnnfeeTo7x/0HNiNGjFDl0PYaMAkDOr7GEJ4dOnRQ9iGEa2zQsbBB9/vvvw8YniAOCJ0WhvgdfF47tB4M32BfqlevHn311VdKo8TXHaupMYSBPcVJhA8SNNkPPvigQPlQLgzjMXRv1KiRmsVDGTVBOMNOBjsbhE0wnXPOOYRNzhDyaCfAEUP+smXLqo+AXiIC7Rl2oAYNGgQnkbB72YpRBOirVaumjMP4wmNoYabrrrtOGRLxJcYzqNoYhmlCY8LX+fzzz9dBAf9hZNTT7+jAGLeDJk2apGYw7r//fn98zPh88skn/nsnXOBLDwGLmRczoQNCcEILgl2sNttF8JUGNugQKAuGIrCVmG09Og3YNWC0x25wxIUgB9ZuIghnLKswa8XgH8L30UcfVcIZQzQIj6+//tpfNLz3xhtvqDj+QNMF7ElYA4SZQbQZCDI9hB0wYIBqQ2gnEE74gEETcgrJVgwbagJj70OHDgUYBnU2+ErDKI1Zj3CE6dKTTz45XBRXPsM0MoYfGKoF0yOPPEKwoYWzbaGDYogKIZZsBA0Rgjb4owabDWbDMLQPN4OFeLCDQZMOJkznoz0Fpx0cL973BTmNNwdJmB++QmhIZsJQ4/XXX1fqMWaBIlEyCh+UOdTXFzYczGLhC40haDiChqRn1sLFc+OzUJrfZ599plZSQzCHEz4oL4ZchRGG8U4k0YDiWCuw7WBNBn5CJxCAfQh2i3PPPVfZu048kSss64CBGUNbp2kvsagdEUCxQFHSEAQEgSIhILNgRYJNXhIEBIFYICACKBYoShqCgCBQJATECF0k2OSlcAhgEyqmhTVhZgbrVzDdjCUM0RL20gUb9aNNQ+I7EwGxATmzXlzNFabTMeOHBYcgTA9jxTIECdahRFqCYC48tp1UqVJF7fQ2h8t1ciAgQ7DkqEfHlaJ69epqPxi2q2D7ATZG4jiixx57zL9fzArT2q2ElbgSx30IiAByX525luPnnnuOOnbsGKDNYFEhnJZhCwWGaDj7CrvDQdjSAc0JmzPh1EsT9kXBvw32fkGoxcKpl05b/scXARFA8cU75XPDsAx7nzRB6GAXOLYb6M26WPOC1eTYFwX3JLAb6Q2V2JCJNLDSHEILGhL244kQ0oi67D+7RBASBGKKAPufMerXrx8yTRY2OInXYIFh8Mpng4WIwTvn/XHZf7J6zj5uVBhv0jTYRYX/Oe+TMnr06OG/xwXCeJNrQJjcuAMBmQVz2QfD7exivxMI2w6wLQObbDGkGj16tPJ1DQ8AoFBO9zFcgwM4eBWAoVsT9pbBAZqQ+xCQIZj76szVHMM9CQQIhA/cR8BtCbZgYBiGMDjmKowwi4ahGTaiYr+d/sElLvzoCLkPAdGA3FdnruUYM2Hvvfee3xc2XERglgz+nuGuA6Tdi0DQBBOcaWE9ENx4DB8+3P8YHgaSdYOqv5BJeiEaUJJWbKKLhSEUTrHAD86y3nzzTTr77LMJXh/howaE9T3wEoBzq0CY/cI0PUg73Ed87JaHT2gQ3IvCHzY29uJdDNmuuOIKtZNeRZA/7kLAHaYq4dJNCMAIzb3A/2PfPwZ78zPY2ZrBDsgCisIOygzWagwWRgZrQQaM1OyKxODzrVS8t99+22A3FAavK1L37E9IGZxZ4zF4hbXBjs0MPn0kIE25cQ8CshLaXd+LpOQW51TBF5D2fR1cSDyHi1KzLyE4JoPmhAWPQu5FQASQe+tOOBcEXI+A2IBcX4VSAEHAvQiIAHJv3QnngoDrERAB5PoqlAIIAu5FQASQe+tOOBcEXI+ACCDXV6EUQBBwLwIigNxbd8K5IOB6BEQAub4KpQCCgHsREAHk3roTzgUB1yMgAsj1VSgFEATxYqoWAAAFhElEQVTci4AIIPfWnXAuCLgeARFArq9CKYAg4F4ERAC5t+6Ec0HA9QiIAHJ9FUoBBAH3IiACyL11J5wLAq5HQASQ66tQCiAIuBcBEUDurTvhXBBwPQIigFxfhVIAQcC9CIgAcm/dCeeCgOsREAHk+iqUAggC7kVABJB76044FwRcj4AIINdXoRRAEHAvAiKA3Ft3wrkg4HoERAC5vgqlAIKAexEQAeTeuhPOBQHXIyACyPVVKAUQBNyLgAgg99adcC4IuB4BEUCur0IpgCDgXgREALm37oRzQcD1CIgAcn0VSgEEAfciIALIvXUnnAsCrkdABJDrqzA1CjBlyhT6448/Agq7atUqQvjhw4cDwn/55RcaO3YsLVu2LCAcNwgbN24cIY6Zjhw5QlOnTqU5c+ZQbm6u+ZFc24iACCAbwZWkY4PAtGnTqFevXrRnzx5/gl26dKFBgwbR0qVLqUWLFjR79mz17KuvvqKWLVsqQdOtWzd6++23/e/ce++9dMcddxDitG7dmjZu3Kie7dq1ixo1akTfffcdvf7663TFFVf435ELmxEwhAQBByOwe/dugwWMUalSJWP9+vWK02+//dY444wz/FxPnjzZ6Ny5s7pv1qyZMX/+fHW9fft29d6xY8eMdevWGdWrVzfy8vLUsxEjRhg333yz//qFF15Q16z9GBUqVPDnpQLlj20IpNks3yT5JEEg56t5lP35f4tdGk96BpV6ZrildLjVEwsJeumll+i2227zv9O+fXtatGiR/37//v1qGIah048//kgdO3ZUz2rWrEknnXQSbd68mdauXavCvd7jSv/5559P7733nor34IMP+tOaN2+eGoJVq1bNHyYX9iEgAsg+bJMqZU/FipTWpGnxy5Rmvcm98cYb1KBBA7rooosC8oUQKV26tArbuXMnDR8+nEaNGkU7duygcuXKkcfj8cdnbYb27t1L27Zto4pcBk3ly5cPGNIhvHfv3jRp0iR6/vnnqWzZsjqq/LcRAeutwUYmJGnnI5DWtBnhFy+CxjJ69GhauHBhoVnysIq6d+9OgwcPpksuuUQJoGADck5OjhJWaSz4zM8QXqZMmYC0J0yYQMOGDVNp1alTh66++uqA53ITewTECB17TCXFGCAwceJEYpsPVa5cWQ2j2J5Dbdq08RublyxZQhdffLEant1yyy0qxypVqtCff/5JbPPxcwDDNYQJhlRmIzaua9eureJhOKef1a1bl3r27Klmw/yJyIV9CNhmXZKEBYEYIsDCwm8Y5lkr49RTTzV4NqtADpdddpnx2muvqXCePTN4RkxdHzhwwGBhZmzatMnIzs42brrpJoO1HfVsyJAhxq233qqueUrfgCF75MiR6l7+2IsA2Zu8pC4IxAYBswAaMGCAwZ9kg21B/t9pp52mMsJMGWsxBtuOjMaNGxu87sfPwL/+9S+DjdJG/fr1jcsvv1wJIjzk9UUGD7eMVq1aKeHzxBNPGJgNE7IfAQ+ysE+/kpQFgcQggJkxs9FZc8HaDx09elQZq3WY/n/o0CEqVaoU6ZkyHS7/7UNABJB92ErKgoAgEAEBMUJHAEgeCwKCgH0IiACyD1tJWRAQBCIgIAIoAkDyWBAQBOxDQASQfdhKyoKAIBABARFAEQCSx4KAIGAfAiKA7MNWUhYEBIEICIgAigCQPBYEBAH7EBABZB+2krIgIAhEQEAEUASA5LEgIAjYh4AIIPuwlZQFAUEgAgIigCIAJI8FAUHAPgREANmHraQsCAgCERAQARQBIHksCAgC9iEgAsg+bCVlQUAQiICACKAIAMljQUAQsA8BEUD2YSspCwKCQAQERABFAEgeCwKCgH0IiACyD1tJWRAQBCIgIAIoAkDyWBAQBOxD4P8BwFLFp4k6MmQAAAAASUVORK5CYII=" /><!-- --></p>
+<p>For more details and examples, including choropleth and bubble maps, see <code>vignette(&quot;plotting-signals&quot;)</code>.</p>
+</div>
+<div id="finding-signals-of-interest" class="section level3">
+<h3>Finding signals of interest</h3>
+<p>Above we used data from <a href="https://delphi.cmu.edu/covidcast/surveys/">Delphi’s symptom surveys</a>, but the COVIDcast API includes numerous data streams: medical claims data, cases and deaths, mobility, and many others; new signals are added regularly. This can make it a challenge to find the data stream that you are most interested in.</p>
+<p>The <a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html">COVIDcast Data Sources and Signals documentation</a> lists all data sources and signals available through COVIDcast. When you find a signal of interest, get the data source name (such as <code>jhu-csse</code> or <code>fb-survey</code>) and the signal name (such as <code>confirmed_incidence_num</code> or <code>smoothed_wcli</code>). These are provided as arguments to <code>covidcast_signal()</code> to request the data you want.</p>
+</div>
+<div id="finding-counties-and-metro-areas" class="section level3">
+<h3>Finding counties and metro areas</h3>
+<p>The COVIDcast API identifies counties by their 5-digit FIPS code and metropolitan areas by their CBSA ID number. (See the <a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html">geographic coding documentation</a> for details.) This means that to query a specific county or metropolitan area, we must have some way to quickly find its identifier.</p>
+<p>This package includes several utilities intended to make the process easier. For example, if we look at <code>?county_census</code>, we find that the package provides census data (such as population) on every county in the United States, including its FIPS code. Similarly, by looking at <code>?msa_census</code> we can find data about metropolitan statistical areas, their corresponding CBSA IDs, and recent census data.</p>
+<p>(Note: the <code>msa_census</code> data includes types of area beyond metropolitan statistical areas, including micropolitan statistical areas. The <code>LSAD</code> column identifies the type of each area. The COVIDcast API only provides estimates for metropolitan statistical areas, not for their divisions or for micropolitan areas.)</p>
+<p>Building on these datasets, the convenience functions <code>name_to_fips()</code> and <code>name_to_cbsa()</code> conduct <code>grep()</code>-based searching of county or metropolitan area names to find FIPS or CBSA codes, respectively:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">name_to_fips</span>(<span class="st">&quot;Allegheny&quot;</span>)</a></code></pre></div>
+<pre><code>## Allegheny County 
+##          &quot;42003&quot;</code></pre>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">name_to_cbsa</span>(<span class="st">&quot;Pittsburgh&quot;</span>)</a></code></pre></div>
+<pre><code>## Pittsburgh, PA 
+##        &quot;38300&quot;</code></pre>
+<p>Since these functions return vectors of IDs, we can use them to construct the <code>geo_values</code> argument to <code>covidcast_signal()</code> to select specific regions to query.</p>
+<p>You may also want to convert FIPS codes or CBSA IDs back to well-known names, for instance to report in tables or graphics. The package provides inverse mappings <code>county_fips_to_name()</code> and <code>cbsa_to_name()</code> that work in the analogous way:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">county_fips_to_name</span>(<span class="st">&quot;42003&quot;</span>)</a></code></pre></div>
+<pre><code>##              42003 
+## &quot;Allegheny County&quot;</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">cbsa_to_name</span>(<span class="st">&quot;38300&quot;</span>)</a></code></pre></div>
+<pre><code>##            38300 
+## &quot;Pittsburgh, PA&quot;</code></pre>
+<p>See their documentation for more details (for example, the options for handling matches when counties have the same name).</p>
+</div>
+</div>
+<div id="signal-metadata" class="section level2">
+<h2>Signal metadata</h2>
+<p>If we are interested in exploring the available signals and their metadata, we can use <code>covidcast_meta()</code> to fetch a data frame of the available signals:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">meta &lt;-<span class="st"> </span><span class="kw">covidcast_meta</span>()</a>
+<a class="sourceLine" id="cb15-2" title="2">knitr<span class="op">::</span><span class="kw">kable</span>(<span class="kw">head</span>(meta))</a></code></pre></div>
+<table>
+<colgroup>
+<col width="6%"></col>
+<col width="15%"></col>
+<col width="5%"></col>
+<col width="5%"></col>
+<col width="6%"></col>
+<col width="6%"></col>
+<col width="7%"></col>
+<col width="5%"></col>
+<col width="5%"></col>
+<col width="6%"></col>
+<col width="6%"></col>
+<col width="6%"></col>
+<col width="6%"></col>
+<col width="4%"></col>
+<col width="4%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">time_type</th>
+<th align="left">geo_type</th>
+<th align="left">min_time</th>
+<th align="left">max_time</th>
+<th align="right">num_locations</th>
+<th align="right">min_value</th>
+<th align="right">max_value</th>
+<th align="right">mean_value</th>
+<th align="right">stdev_value</th>
+<th align="right">last_update</th>
+<th align="left">max_issue</th>
+<th align="right">min_lag</th>
+<th align="right">max_lag</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">chng</td>
+<td align="left">smoothed_adj_outpatient_cli</td>
+<td align="left">day</td>
+<td align="left">county</td>
+<td align="left">2020-02-01</td>
+<td align="left">2021-04-26</td>
+<td align="right">3063</td>
+<td align="right">0.001303</td>
+<td align="right">99.92593</td>
+<td align="right">4.259104</td>
+<td align="right">7.234424</td>
+<td align="right">1619925727</td>
+<td align="left">2021-05-01</td>
+<td align="right">3</td>
+<td align="right">386</td>
+</tr>
+<tr class="even">
+<td align="left">chng</td>
+<td align="left">smoothed_adj_outpatient_cli</td>
+<td align="left">day</td>
+<td align="left">hhs</td>
+<td align="left">2020-02-01</td>
+<td align="left">2021-04-26</td>
+<td align="right">10</td>
+<td align="right">0.007255</td>
+<td align="right">15.21246</td>
+<td align="right">3.411312</td>
+<td align="right">2.743890</td>
+<td align="right">1619925730</td>
+<td align="left">2021-05-01</td>
+<td align="right">5</td>
+<td align="right">386</td>
+</tr>
+<tr class="odd">
+<td align="left">chng</td>
+<td align="left">smoothed_adj_outpatient_cli</td>
+<td align="left">day</td>
+<td align="left">hrr</td>
+<td align="left">2020-02-01</td>
+<td align="left">2021-04-26</td>
+<td align="right">306</td>
+<td align="right">0.001360</td>
+<td align="right">50.81590</td>
+<td align="right">3.319890</td>
+<td align="right">3.342192</td>
+<td align="right">1619925730</td>
+<td align="left">2021-05-01</td>
+<td align="right">5</td>
+<td align="right">386</td>
+</tr>
+<tr class="even">
+<td align="left">chng</td>
+<td align="left">smoothed_adj_outpatient_cli</td>
+<td align="left">day</td>
+<td align="left">msa</td>
+<td align="left">2020-02-01</td>
+<td align="left">2021-04-26</td>
+<td align="right">392</td>
+<td align="right">0.001350</td>
+<td align="right">50.94313</td>
+<td align="right">2.994006</td>
+<td align="right">3.346190</td>
+<td align="right">1619925731</td>
+<td align="left">2021-05-01</td>
+<td align="right">5</td>
+<td align="right">386</td>
+</tr>
+<tr class="odd">
+<td align="left">chng</td>
+<td align="left">smoothed_adj_outpatient_cli</td>
+<td align="left">day</td>
+<td align="left">nation</td>
+<td align="left">2020-02-01</td>
+<td align="left">2021-04-26</td>
+<td align="right">1</td>
+<td align="right">0.016727</td>
+<td align="right">10.39771</td>
+<td align="right">3.701778</td>
+<td align="right">2.395005</td>
+<td align="right">1619925731</td>
+<td align="left">2021-05-01</td>
+<td align="right">5</td>
+<td align="right">386</td>
+</tr>
+<tr class="even">
+<td align="left">chng</td>
+<td align="left">smoothed_adj_outpatient_cli</td>
+<td align="left">day</td>
+<td align="left">state</td>
+<td align="left">2020-02-01</td>
+<td align="left">2021-04-26</td>
+<td align="right">55</td>
+<td align="right">0.002476</td>
+<td align="right">29.55265</td>
+<td align="right">3.122229</td>
+<td align="right">2.908380</td>
+<td align="right">1619925732</td>
+<td align="left">2021-05-01</td>
+<td align="right">5</td>
+<td align="right">386</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>covidcast_meta()</code> documentation describes the columns and their meanings. The metadata data frame can be filtered and sliced as desired to obtain information about signals of interest. To get a basic summary of the metadata:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">summary</span>(meta)</a></code></pre></div>
+<p>(We silenced the evaluation because the output of <code>summary()</code> here is still quite long.)</p>
+</div>
+<div id="tracking-issues-and-updates" class="section level2">
+<h2>Tracking issues and updates</h2>
+<p>The COVIDcast API records not just each signal’s estimate for a given location on a given day, but also <em>when</em> that estimate was made, and all updates to that estimate.</p>
+<p>For example, consider using our <a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast-signals/doctor-visits.html">doctor visits signal</a>, which estimates the percentage of outpatient doctor visits that are COVID-related, and consider a result row with <code>time_value</code> 2020-05-01 for <code>geo_values = &quot;pa&quot;</code>. This is an estimate for the percentage in Pennsylvania on May 1, 2020. That estimate was <em>issued</em> on May 5, 2020, the delay being due to the aggregation of data by our source and the time taken by the COVIDcast API to ingest the data provided. Later, the estimate for May 1st could be updated, perhaps because additional visit data from May 1st arrived at our source and was reported to us. This constitutes a new <em>issue</em> of the data.</p>
+<div id="data-known-as-of-a-specific-date" class="section level3">
+<h3>Data known “as of” a specific date</h3>
+<p>By default, <code>covidcast_signal()</code> fetches the most recent issue available. This is the best option for users who simply want to graph the latest data or construct dashboards. But if we are interested in knowing <em>when</em> data was reported, we can request specific data versions using the <code>as_of</code>, <code>issues</code>, or <code>lag</code> arguments. (Note these are mutually exclusive; only one can be specified at a time.)</p>
+<p>First, we can request the data that was available <em>as of</em> a specific date, using the <code>as_of</code> argument:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;doctor-visits&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb17-2" title="2">                 <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-01&quot;</span>,</a>
+<a class="sourceLine" id="cb17-3" title="3">                 <span class="dt">geo_type =</span> <span class="st">&quot;state&quot;</span>, <span class="dt">geo_values =</span> <span class="st">&quot;pa&quot;</span>, <span class="dt">as_of =</span> <span class="st">&quot;2020-05-07&quot;</span>)</a></code></pre></div>
+<pre><code>## A `covidcast_signal` dataframe with 1 rows and 9 columns.
+## 
+## data_source : doctor-visits
+## signal      : smoothed_cli
+## geo_type    : state
+## 
+##     data_source       signal geo_value time_value      issue lag   value stderr
+## 1 doctor-visits smoothed_cli        pa 2020-05-01 2020-05-07   6 2.32192     NA
+##   sample_size
+## 1          NA</code></pre>
+<p>This shows that an estimate of about 2.3% was issued on May 7. If we don’t specify <code>as_of</code>, we get the most recent estimate available:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;doctor-visits&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb19-2" title="2">                 <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-01&quot;</span>,</a>
+<a class="sourceLine" id="cb19-3" title="3">                 <span class="dt">geo_type =</span> <span class="st">&quot;state&quot;</span>, <span class="dt">geo_values =</span> <span class="st">&quot;pa&quot;</span>)</a></code></pre></div>
+<pre><code>## A `covidcast_signal` dataframe with 1 rows and 9 columns.
+## 
+## data_source : doctor-visits
+## signal      : smoothed_cli
+## geo_type    : state
+## 
+##     data_source       signal geo_value time_value      issue lag    value
+## 1 doctor-visits smoothed_cli        pa 2020-05-01 2020-07-04  64 5.075015
+##   stderr sample_size
+## 1     NA          NA</code></pre>
+<p>Note the substantial change in the estimate, to over 5%, reflecting new data that became available <em>after</em> May 7 about visits occurring on May 1. This illustrates the importance of issue date tracking, particularly for forecasting tasks. To backtest a forecasting model on past data, it is important to use the data that would have been available <em>at the time</em>, not data that arrived much later.</p>
+</div>
+<div id="multiple-issues-of-observations" class="section level3">
+<h3>Multiple issues of observations</h3>
+<p>By using the <code>issues</code> argument, we can request all issues in a certain time period:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;doctor-visits&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb21-2" title="2">                 <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-01&quot;</span>,</a>
+<a class="sourceLine" id="cb21-3" title="3">                 <span class="dt">geo_type =</span> <span class="st">&quot;state&quot;</span>, <span class="dt">geo_values =</span> <span class="st">&quot;pa&quot;</span>,</a>
+<a class="sourceLine" id="cb21-4" title="4">                 <span class="dt">issues =</span> <span class="kw">c</span>(<span class="st">&quot;2020-05-01&quot;</span>, <span class="st">&quot;2020-05-15&quot;</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb21-5" title="5"><span class="st">  </span>knitr<span class="op">::</span><span class="kw">kable</span>()</a></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">geo_value</th>
+<th align="left">time_value</th>
+<th align="left">issue</th>
+<th align="right">lag</th>
+<th align="right">value</th>
+<th align="left">stderr</th>
+<th align="left">sample_size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-07</td>
+<td align="right">6</td>
+<td align="right">2.321920</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-08</td>
+<td align="right">7</td>
+<td align="right">2.897032</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-09</td>
+<td align="right">8</td>
+<td align="right">2.956456</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-12</td>
+<td align="right">11</td>
+<td align="right">3.190634</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-13</td>
+<td align="right">12</td>
+<td align="right">3.220023</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-14</td>
+<td align="right">13</td>
+<td align="right">3.231314</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-15</td>
+<td align="right">14</td>
+<td align="right">3.239970</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+</tbody>
+</table>
+<p>This estimate was clearly updated many times as new data for May 1st arrived. Note that these results include only data issued or updated between 2020-05-01 and 2020-05-15. If a value was first reported on 2020-04-15, and never updated, a query for issues between 2020-05-01 and 2020-05-15 will not include that value among its results.</p>
+<p>After fetching multiple issues of data, we can use the <code>latest_issue()</code> or <code>earliest_issue()</code> functions to subset the data frame to view only the latest or earliest issue of each observation.</p>
+</div>
+<div id="observations-issued-with-a-specific-lag" class="section level3">
+<h3>Observations issued with a specific lag</h3>
+<p>Finally, we can use the <code>lag</code> argument to request only data reported with a certain lag. For example, requesting a lag of 7 days means to request only issues 7 days after the corresponding <code>time_value</code>:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1"><span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;doctor-visits&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb22-2" title="2">                 <span class="dt">start_day =</span> <span class="st">&quot;2020-05-01&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-07&quot;</span>,</a>
+<a class="sourceLine" id="cb22-3" title="3">                 <span class="dt">geo_type =</span> <span class="st">&quot;state&quot;</span>, <span class="dt">geo_values =</span> <span class="st">&quot;pa&quot;</span>, <span class="dt">lag =</span> <span class="dv">7</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb22-4" title="4"><span class="st">  </span>knitr<span class="op">::</span><span class="kw">kable</span>()</a></code></pre></div>
+<pre><code>## Warning: Data not fetched for the following days: 2020-05-03, 2020-05-04</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">geo_value</th>
+<th align="left">time_value</th>
+<th align="left">issue</th>
+<th align="right">lag</th>
+<th align="right">value</th>
+<th align="left">stderr</th>
+<th align="left">sample_size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-01</td>
+<td align="left">2020-05-08</td>
+<td align="right">7</td>
+<td align="right">2.897032</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-02</td>
+<td align="left">2020-05-09</td>
+<td align="right">7</td>
+<td align="right">2.802238</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-05</td>
+<td align="left">2020-05-12</td>
+<td align="right">7</td>
+<td align="right">3.483125</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-06</td>
+<td align="left">2020-05-13</td>
+<td align="right">7</td>
+<td align="right">2.968670</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-07</td>
+<td align="left">2020-05-14</td>
+<td align="right">7</td>
+<td align="right">2.400255</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+</tbody>
+</table>
+<p>Note that though this query requested all values between 2020-05-01 and 2020-05-07, May 3rd and May 4th were <em>not</em> included in the results set. This is because the query will only include a result for May 3rd if a value were issued on May 10th (a 7-day lag), but in fact the value was not updated on that day:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">covidcast_signal</span>(<span class="dt">data_source =</span> <span class="st">&quot;doctor-visits&quot;</span>, <span class="dt">signal =</span> <span class="st">&quot;smoothed_cli&quot;</span>,</a>
+<a class="sourceLine" id="cb24-2" title="2">                 <span class="dt">start_day =</span> <span class="st">&quot;2020-05-03&quot;</span>, <span class="dt">end_day =</span> <span class="st">&quot;2020-05-03&quot;</span>,</a>
+<a class="sourceLine" id="cb24-3" title="3">                 <span class="dt">geo_type =</span> <span class="st">&quot;state&quot;</span>, <span class="dt">geo_values =</span> <span class="st">&quot;pa&quot;</span>,</a>
+<a class="sourceLine" id="cb24-4" title="4">                 <span class="dt">issues =</span> <span class="kw">c</span>(<span class="st">&quot;2020-05-09&quot;</span>, <span class="st">&quot;2020-05-15&quot;</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb24-5" title="5"><span class="st">  </span>knitr<span class="op">::</span><span class="kw">kable</span>()</a></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">data_source</th>
+<th align="left">signal</th>
+<th align="left">geo_value</th>
+<th align="left">time_value</th>
+<th align="left">issue</th>
+<th align="right">lag</th>
+<th align="right">value</th>
+<th align="left">stderr</th>
+<th align="left">sample_size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-03</td>
+<td align="left">2020-05-09</td>
+<td align="right">6</td>
+<td align="right">2.749537</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-03</td>
+<td align="left">2020-05-12</td>
+<td align="right">9</td>
+<td align="right">2.989626</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-03</td>
+<td align="left">2020-05-13</td>
+<td align="right">10</td>
+<td align="right">3.006860</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-03</td>
+<td align="left">2020-05-14</td>
+<td align="right">11</td>
+<td align="right">2.970561</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">doctor-visits</td>
+<td align="left">smoothed_cli</td>
+<td align="left">pa</td>
+<td align="left">2020-05-03</td>
+<td align="left">2020-05-15</td>
+<td align="right">12</td>
+<td align="right">3.038054</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

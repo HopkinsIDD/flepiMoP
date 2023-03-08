@@ -1,3 +1,34 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c18bf82b08aa530e7adb7d6ddbab91b97eda04b50575f6409306ffe95d29e4c9
-size 1187
+## ----setup, include = FALSE---------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ---- fig.align='center', fig.width=7-----------------------------------------
+usmap::plot_usmap()
+
+## ---- fig.align='center', fig.width=7-----------------------------------------
+usmap::plot_usmap(regions = "counties")
+
+## ---- eval = FALSE------------------------------------------------------------
+#  states_df <- usmap::us_map()
+#  counties_df <- usmap::us_map(regions = "counties")
+
+## -----------------------------------------------------------------------------
+# Get FIPS code for a state
+usmap::fips(state = "MA")
+usmap::fips(state = "Massachusetts")
+
+# Get FIPS code for a county
+usmap::fips(state = "NJ", county = "Bergen")
+usmap::fips(state = "CA", county = "Orange County")
+
+# The parameters are NOT case sensitive!
+usmap::fips(state = "ca", county = "oRanGe cOUNty")
+
+## -----------------------------------------------------------------------------
+usmap::fips_info(c("30", "33", "34"))
+
+## -----------------------------------------------------------------------------
+usmap::fips_info(c("01001", "01003", "01005", "01007"))
+

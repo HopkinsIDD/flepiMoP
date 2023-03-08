@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a33b931d35c46584448896377a290a91e80583423aa2b6902876c13eeef04fc5
-size 332
+#' No user-supplied code found ... so we've made some up. You're welcome!
+
+#+ fortunes, include = requireNamespace("fortunes", quietly = TRUE), eval = requireNamespace("fortunes", quietly = TRUE)
+fortunes::fortune()
+
+#+ no-fortunes, include = !requireNamespace("fortunes", quietly = TRUE)
+sprintf("Happy %s!", weekdays(Sys.Date()))

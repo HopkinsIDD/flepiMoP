@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3b88c13f70831f9e7c336d49a2bcba06211077ef7f15486dd0357daa1681e6cb
-size 249
+// stylelint-disable declaration-no-important
+
+.shadow-sm { box-shadow: $box-shadow-sm !important; }
+.shadow { box-shadow: $box-shadow !important; }
+.shadow-lg { box-shadow: $box-shadow-lg !important; }
+.shadow-none { box-shadow: none !important; }

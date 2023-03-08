@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4d26bf259d7e10df41102354778ca6d442cdec282d89979d4c6716172ee20bfa
-size 640
+library(itertools)
+
+display <- function(it, level=0) {
+  it <- ihasNext(it)
+  i <- 0
+  while(hasNext(it)) {
+    if (i > 0) cat(', ')
+    y <- nextElem(it)
+    if (inherits(y, 'iter')) {
+      cat('{')
+      display(y, level=level+1)
+      cat('}')
+    } else {
+      if (length(y) > 1)
+        cat(sprintf('[%s]', paste(y, collapse=', ')))
+      else
+        cat(sprintf('%s', y))
+    }
+    i <- i + 1
+  }
+  if (level == 0) cat('\n')
+}
+
+x <- array(seq_len(2*3*2), c(2,3,2))
+display(iarray(x, c(1,2,3)))
+display(iarray(x, c(3,2,1)))
+display(iarray(x, c(2,3)))
+display(iarray(x, c(3,2)))
+display(iarray(x[,,1], 2))
+display(iarray(x[,,2], 1))

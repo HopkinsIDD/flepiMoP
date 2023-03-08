@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c31509a11e2f5c3d4dab9d25a02eab03ffa90c5613106fcb94cc9e90ecbc0b83
-size 284
+({ library(vroom); library(dplyr) })
+x <- vroom(file, trim_ws = FALSE, quote = "", escape_double = FALSE, na = character())
+print(x)
+a <- head(x)
+b <- tail(x)
+c <- sample_n(x, 100)
+d <- filter(x, X1 == "helpless_sheep")
+e <- group_by(x, X1) %>% summarise(avg_nchar = mean(nchar(X2)))

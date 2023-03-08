@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3dae7fba672e031a6361d1c70cc8cd0593a5271c463d904dac401b8b3f3df1ff
-size 539
+// toggle visibility of R source blocks in R Markdown output
+function toggle_R() {
+  var x = document.getElementsByClassName('r');
+  if (x.length == 0) return;
+  function toggle_vis(o) {
+    var d = o.style.display;
+    o.style.display = (d == 'block' || d == '') ? 'none':'block';
+  }
+
+  for (i = 0; i < x.length; i++) {
+    var y = x[i];
+    if (y.tagName.toLowerCase() === 'pre') toggle_vis(y);
+  }
+}
+
+document.write('<button type="button" onclick="toggle_R();" style="position: absolute; top: 0; right: 0;">Hide/Show Source</button>')

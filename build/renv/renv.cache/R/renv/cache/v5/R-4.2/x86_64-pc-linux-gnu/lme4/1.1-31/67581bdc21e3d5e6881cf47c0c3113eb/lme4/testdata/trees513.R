@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7bf22cc120f1eba086dd33ae431c73b449ef49d2d8e63c04bcfc706fa3bf7d26
-size 453
+### How to generate the  trees513.RData, needed in ../../tests/HSAURtrees.R:
+
+data("trees513", package = "multcomp")
+trees513A <- droplevels(subset(trees513, !species %in%
+			       c("fir", "ash/maple/elm/lime", "softwood (other)")))
+levels(trees513A$species)[nlevels(trees513A$species)] <- "hardwood"
+trees513B <- droplevels(subset(trees513,
+			       !species %in% c("fir", "softwood (other)")))
+save("trees513A", "trees513B", file="trees513.RData")

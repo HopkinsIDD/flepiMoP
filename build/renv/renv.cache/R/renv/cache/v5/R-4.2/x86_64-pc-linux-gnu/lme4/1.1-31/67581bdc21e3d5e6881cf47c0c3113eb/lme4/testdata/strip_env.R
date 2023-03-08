@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:058e12285c8aae807b198ec9a64c0547ed0c7e50781c007103ca5b377ec6a825
-size 515
+## code for reducing prof
+
+dropform <- function(z) {
+    lapply(z, function(x) {
+        environment(attr(x,"formula")) <- NULL
+        x
+    })
+}
+rpt <- function(p, hdr) {
+    cat(hdr, capture.output(pryr::object_size(p)), "\n")
+}
+
+strip_profile <- function(p, quietly=FALSE) {
+    
+    if (!quietly) {
+        rpt(p,"initial : ")
+    }
+    attr(p,"forward") <- dropform(attr(p,"forward"))
+    attr(p,"backward") <- dropform(attr(p,"backward"))
+    if (!quietly) {
+        rpt(p,"final : ")
+    }
+    return(p)
+}
+

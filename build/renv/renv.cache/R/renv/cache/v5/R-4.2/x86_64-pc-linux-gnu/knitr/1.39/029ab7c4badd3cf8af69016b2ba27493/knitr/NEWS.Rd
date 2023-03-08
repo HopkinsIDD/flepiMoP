@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9820860ad03feeec84935843541e3594994df164c0bebdb92e0ca989fc7e8bfa
-size 281
+\name{NEWS}
+\title{News for Package 'knitr'}
+
+\section{CHANGES IN knitr VERSION 999.999}{
+  \itemize{
+    \item This NEWS file is only a placeholder. The version 999.999 does not really
+    exist. Please read the NEWS on Github: \url{https://github.com/yihui/knitr/releases}
+  }
+}

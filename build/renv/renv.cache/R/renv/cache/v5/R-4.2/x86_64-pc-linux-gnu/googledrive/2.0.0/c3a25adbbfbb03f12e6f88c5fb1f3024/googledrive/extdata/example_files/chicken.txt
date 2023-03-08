@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b4a4fa2ab18e4ca3fac3eb039e26767fca92e237bc8e363199217490f0d27c85
-size 165
+A chicken whose name was Chantecler
+Clucked in iambic pentameter
+It sat on a shelf, reading Song of Myself
+And laid eggs with a perfect diameter.
+
+—Richard Maxson

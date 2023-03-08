@@ -1,3 +1,91 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:607a591be74724ac800acb27f3676b659d1081acfcd09f7cc7dfb8d10dd71896
-size 4770
+add_ci                  Add CI Column
+add_difference          Add difference between groups
+add_glance              Add Model Statistics
+add_global_p            Add the global p-values
+add_n_regression        Add N to regression table
+add_n.tbl_summary       Add column with N
+add_n.tbl_survfit       Add column with number of observations
+add_nevent_regression   Add event N to regression table
+add_nevent.tbl_survfit
+                        Add column with number of observed events
+add_overall             Add column with overall summary statistics
+add_p.tbl_continuous    P-values for 'tbl_continuous'
+add_p.tbl_cross         Adds p-value to crosstab table
+add_p.tbl_summary       Adds p-values to summary tables
+add_p.tbl_survfit       Adds p-value to survfit table
+add_p.tbl_svysummary    Adds p-values to svysummary tables
+add_q                   Add a column of q-values to account for
+                        multiple comparisons
+add_significance_stars
+                        Add significance stars
+add_stat                Add a custom statistic column
+add_stat_label          Add statistic labels
+add_vif                 Add Variance Inflation Factor
+as_flex_table           Convert gtsummary object to a flextable object
+as_gt                   Convert gtsummary object to a gt object
+as_hux_table            Convert gtsummary object to a huxtable object
+as_kable                Convert gtsummary object to a kable object
+as_kable_extra          Convert gtsummary object to a kableExtra object
+as_tibble.gtsummary     Convert gtsummary object to a tibble
+bold_italicize_labels_levels
+                        Bold or Italicize labels or levels in gtsummary
+                        tables
+bold_p                  Bold significant p-values or q-values
+combine_terms           Combine terms in a regression model
+continuous_summary      Summarize a continuous variable
+custom_tidiers          Collection of custom tidiers
+inline_text.gtsummary   Report statistics from summary tables inline
+inline_text.tbl_cross   Report statistics from cross table inline
+inline_text.tbl_regression
+                        Report statistics from regression summary
+                        tables inline
+inline_text.tbl_summary
+                        Report statistics from summary tables inline
+inline_text.tbl_survfit
+                        Report statistics from survfit tables inline
+inline_text.tbl_uvregression
+                        Report statistics from regression summary
+                        tables inline
+modify                  Modify column headers, footnotes, spanning
+                        headers, and table captions
+modify_cols_merge       Modify Column Merging
+modify_column_alignment
+                        Modify Column Alignment
+modify_column_hide      Modify Hidden Columns
+modify_column_indent    Add/Remove Indentation
+modify_fmt_fun          Modify Formatting Functions
+modify_table_body       Modify Table Body
+modify_table_styling    Modify Table Styling
+plot                    Plot Regression Coefficients
+proportion_summary      Summarize a proportion
+ratio_summary           Summarize the ratio of two variables
+remove_row_type         Remove rows by type
+select_helpers          Select helper functions
+separate_p_footnotes    Create footnotes for individual p-values
+set_gtsummary_theme     Set a gtsummary theme
+sort_filter_p           Sort and filter variables in table by p-values
+style_number            Style numbers
+style_percent           Style percentages
+style_pvalue            Style p-values
+style_ratio             Style significant figure-like rounding for
+                        ratios
+style_sigfig            Style significant figure-like rounding
+tbl_butcher             Reduce size of gtsummary objects
+tbl_continuous          Summarize a continuous variable
+tbl_cross               Create a cross table of summary statistics
+tbl_custom_summary      Create a table of summary statistics using a
+                        custom summary function
+tbl_merge               Merge two or more gtsummary objects
+tbl_regression          Display regression model results in table
+tbl_split               Split gtsummary table
+tbl_stack               Stacks two or more gtsummary objects
+tbl_strata              Stratified gtsummary tables
+tbl_summary             Create a table of summary statistics
+tbl_survfit             Creates table of survival probabilities
+tbl_svysummary          Create a table of summary statistics from a
+                        survey object
+tbl_uvregression        Display univariate regression model results in
+                        table
+theme_gtsummary         Available gtsummary themes
+trial                   Results from a simulated study of two
+                        chemotherapy agents

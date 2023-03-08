@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ab6b8cac9d64e381c5a34ab86c5c21970d72df4dd520be16ba19738bafe4adbd
-size 460
+as_glue                 Coerce object to glue
+glue                    Format and interpolate a string
+glue_col                Construct strings with color
+glue_collapse           Collapse a character vector
+glue_safe               Safely interpolate strings
+glue_sql                Interpolate strings with SQL escaping
+identity_transformer    Parse and Evaluate R code
+quoting                 Quoting operators
+trim                    Trim a character vector

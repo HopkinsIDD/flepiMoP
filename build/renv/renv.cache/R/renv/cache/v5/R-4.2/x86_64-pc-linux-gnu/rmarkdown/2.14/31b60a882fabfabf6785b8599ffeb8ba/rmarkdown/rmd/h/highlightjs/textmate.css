@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7ddcc83c6a4b689c86d6a609deb8fae51c9e3e7401f44985865558888f95ddd5
-size 222
+.hljs-literal {
+  color: rgb(88, 72, 246);
+}
+
+.hljs-number {
+  color: rgb(0, 0, 205);
+}
+
+.hljs-comment {
+  color: rgb(76, 136, 107);
+}
+
+.hljs-keyword {
+  color: rgb(0, 0, 255);
+}
+
+.hljs-string {
+  color: rgb(3, 106, 7);
+}

@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:893f3441a751d861f19814ea15d31c2352483ce06351ed51b36e5d0356fff603
-size 599
+## ----setup, include = FALSE----------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ------------------------------------------------------------------------
+library(ggplot2)
+library(profvis)
+
+p <- ggplot(mtcars, aes(mpg, disp)) + 
+  geom_point() + 
+  facet_grid(gear~cyl)
+
+p_build <- ggplot_build(p)
+
+profile <- profvis(for (i in seq_len(100)) ggplot_gtable(p_build))
+
+profile
+
+## ---- eval=FALSE, include=FALSE------------------------------------------
+#  saveRDS(profile, file.path('profilings', paste0(packageVersion('gtable'), '.rds')))
+

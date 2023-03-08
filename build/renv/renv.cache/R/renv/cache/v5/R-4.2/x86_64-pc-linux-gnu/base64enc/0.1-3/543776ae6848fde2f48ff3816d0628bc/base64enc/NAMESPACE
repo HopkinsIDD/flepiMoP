@@ -1,3 +1,2 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9639822048b1066b83fd9578450068b275c6c66fa5d6460b47ef89498b998cf8
-size 125
+useDynLib(base64enc, B64_encode, B64_decode, C_URIencode, utf8_check)
+export(base64encode, base64decode, dataURI, checkUTF8)

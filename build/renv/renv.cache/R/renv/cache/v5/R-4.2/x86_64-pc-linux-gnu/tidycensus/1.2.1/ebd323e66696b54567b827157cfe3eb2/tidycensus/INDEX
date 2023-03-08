@@ -1,3 +1,44 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d3b2591923f7255d0ba1fbdec87b5cddd66cbfada5558650e4dd279afb870400
-size 2457
+acs5_geography          Dataset used to identify geography availability
+                        in the 5-year ACS Detailed Tables
+as_dot_density          Convert polygon geometry to dots for
+                        dot-density mapping
+census_api_key          Install a CENSUS API Key in Your '.Renviron'
+                        File for Repeated Use
+county_laea             County geometry with Alaska and Hawaii shifted
+                        and re-scaled
+fips_codes              Dataset with FIPS codes for US states and
+                        counties
+get_acs                 Obtain data and feature geometry for the
+                        American Community Survey
+get_decennial           Obtain data and feature geometry for the
+                        decennial US Census
+get_estimates           Get data from the US Census Bureau Population
+                        Estimates APIs
+get_flows               Obtain data and feature geometry for American
+                        Community Survey Migration Flows
+get_pums                Load data from the American Community Survey
+                        Public Use Microdata Series API
+interpolate_pw          Use population-weighted interpolation to
+                        transfer information from one set of shapes to
+                        another
+load_variables          Load variables from a decennial Census or
+                        American Community Survey dataset to search in
+                        R
+mig_recodes             Dataset with Migration Flows characteristic
+                        recodes
+moe_product             Calculate the margin of error for a derived
+                        product
+moe_prop                Calculate the margin of error for a derived
+                        proportion
+moe_ratio               Calculate the margin of error for a derived
+                        ratio
+moe_sum                 Calculate the margin of error for a derived sum
+pums_variables          Dataset with PUMS variables and codes
+significance            Evaluate whether the difference in two
+                        estimates is statistically significant.
+state_laea              State geometry with Alaska and Hawaii shifted
+                        and re-scaled
+tidycensus              Return tidy data frames from the US Census
+                        Bureau API
+to_survey               Convert a data frame returned by get_pums() to
+                        a survey object

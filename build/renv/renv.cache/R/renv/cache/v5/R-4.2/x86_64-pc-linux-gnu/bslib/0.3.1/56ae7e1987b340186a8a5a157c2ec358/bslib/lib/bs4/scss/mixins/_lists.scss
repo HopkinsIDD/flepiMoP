@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:801765ec8a7da77b1fb05580438c8e5040fe2c541f83f154e613c033b422daa5
-size 170
+// Lists
+
+// Unstyled keeps list items block level, just removes default browser padding and list-style
+@mixin list-unstyled() {
+  padding-left: 0;
+  list-style: none;
+}

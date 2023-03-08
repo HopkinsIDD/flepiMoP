@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:54bab5c7b42f955036dd2fc05c0e7785c66d713e80c56dca73e3b2f8a47c77f3
-size 606
+
+set.seed(0)
+r <- rast(nrows=10, ncols=10)
+values(r) <- sample(3, ncell(r), replace=TRUE) - 1
+lv <- c("forest", "water", "urban")
+levels(r) <- lv
+names(r) <- "land cover"
+v <- cats(r)[[1]]
+#coltab(r) <- rainbow(4)
+
+expect_equal(v$value, 0:2)
+expect_equal(v$category, lv)
+
+ftmp <- tempfile(fileext = ".tif")
+z <- writeRaster(r, ftmp, overwrite=TRUE)
+v <- cats(z)[[1]]
+expect_equal(v$value, 0:2)
+expect_equal(v$`land cover`, lv)
+
+levels(r) = cats(r)[[1]][2:3,]
+zz = writeRaster(r, ftmp, overwrite=TRUE)
+v <- cats(zz)[[1]]
+
+expect_equal(v$value, 1:2)
+expect_equal(v$category, lv[-1])

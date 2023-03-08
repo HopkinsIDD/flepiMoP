@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e85ea7e6025a8a061fe65b27706be1b1fd76fc3164c4c91d6727f91a0055ae1c
-size 168
+// Text truncate
+// Requires inline-block or block for proper styling
+
+@mixin text-truncate() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,3 +1,56 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:49af59127e320a592d564e4a43a873332bf0df67708e868b3b2ae827b3808a14
-size 1629
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// Copyright 2008-2016 National ICT Australia (NICTA)
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ------------------------------------------------------------------------
+
+
+
+//! \addtogroup glue_trapz
+//! @{
+
+
+
+class glue_trapz
+  {
+  public:
+  
+  template<typename T1, typename T2>
+  struct traits
+    {
+    static constexpr bool is_row  = false;
+    static constexpr bool is_col  = false;
+    static constexpr bool is_xvec = true;
+    };
+  
+  template<typename T1, typename T2> inline static void apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_trapz>& in);
+  
+  template<typename eT> inline static void apply_noalias(Mat<eT>& out, const Mat<eT>& X, const Mat<eT>& Y, const uword dim);
+  };
+
+
+
+class op_trapz
+  : public traits_op_xvec
+  {
+  public:
+  
+  template<typename T1> inline static void apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trapz>& in);
+  
+  template<typename eT> inline static void apply_noalias(Mat<eT>& out, const Mat<eT>& Y, const uword dim);
+  };
+
+
+
+//! @}

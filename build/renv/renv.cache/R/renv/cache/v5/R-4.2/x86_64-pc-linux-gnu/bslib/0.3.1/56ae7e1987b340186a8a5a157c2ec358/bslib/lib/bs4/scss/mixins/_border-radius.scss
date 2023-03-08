@@ -1,3 +1,76 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2cf8b0547cefec3b48ba26f893883b30284f66e1e09beed07db6915b53a929da
-size 1828
+// stylelint-disable property-disallowed-list
+// Single side border-radius
+
+// Helper function to replace negative values with 0
+@function valid-radius($radius) {
+  $return: ();
+  @each $value in $radius {
+    @if type-of($value) == number {
+      $return: append($return, max($value, 0));
+    } @else {
+      $return: append($return, $value);
+    }
+  }
+  @return $return;
+}
+
+@mixin border-radius($radius: $border-radius, $fallback-border-radius: false) {
+  @if $enable-rounded {
+    border-radius: valid-radius($radius);
+  }
+  @else if $fallback-border-radius != false {
+    border-radius: $fallback-border-radius;
+  }
+}
+
+@mixin border-top-radius($radius) {
+  @if $enable-rounded {
+    border-top-left-radius: valid-radius($radius);
+    border-top-right-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-right-radius($radius) {
+  @if $enable-rounded {
+    border-top-right-radius: valid-radius($radius);
+    border-bottom-right-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-bottom-radius($radius) {
+  @if $enable-rounded {
+    border-bottom-right-radius: valid-radius($radius);
+    border-bottom-left-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-left-radius($radius) {
+  @if $enable-rounded {
+    border-top-left-radius: valid-radius($radius);
+    border-bottom-left-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-top-left-radius($radius) {
+  @if $enable-rounded {
+    border-top-left-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-top-right-radius($radius) {
+  @if $enable-rounded {
+    border-top-right-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-bottom-right-radius($radius) {
+  @if $enable-rounded {
+    border-bottom-right-radius: valid-radius($radius);
+  }
+}
+
+@mixin border-bottom-left-radius($radius) {
+  @if $enable-rounded {
+    border-bottom-left-radius: valid-radius($radius);
+  }
+}

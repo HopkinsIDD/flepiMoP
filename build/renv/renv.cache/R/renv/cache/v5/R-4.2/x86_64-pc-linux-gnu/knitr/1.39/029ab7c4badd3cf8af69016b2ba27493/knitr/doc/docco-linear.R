@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b36e1253c00461887dfbf4511c02a19c0a3ad1385da6a60de6fdb8a38b139440
-size 645
+## ----hello, results='asis'----------------------------------------------------
+cat('_hello_ **markdown**!', '\n')
+
+## -----------------------------------------------------------------------------
+1+1
+10:1
+rnorm(5)^2
+strsplit('hello, markdown vignettes', '')
+
+## -----------------------------------------------------------------------------
+n=300; set.seed(123)
+par(mar=c(4,4,.1,.1))
+plot(rnorm(n), rnorm(n), pch=21, cex=5*runif(n), col='white', bg='gray')
+
+## ----header, eval=FALSE-------------------------------------------------------
+#  knit2html(..., markdown.HTML.template = system.file('misc', 'docco-template.html', package='knitr'))
+

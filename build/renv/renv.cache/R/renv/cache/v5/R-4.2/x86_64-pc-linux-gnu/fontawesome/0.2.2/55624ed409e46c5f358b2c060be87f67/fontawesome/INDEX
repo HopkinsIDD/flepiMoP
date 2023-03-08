@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d1453e9b09806cf6b7c5a39361f035bd5dd0ff01924b0a7f14615ace86a20a17
-size 342
+fa                      Generate Font Awesome icons as SVGs
+fa_html_dependency      Use a Font Awesome 'html_dependency'
+fa_i                    Generate a Font Awesome <i> tag
+fa_metadata             Get metadata on the included Font Awesome
+                        assets
+fa_png                  Create a PNG version of a Font Awesome icon

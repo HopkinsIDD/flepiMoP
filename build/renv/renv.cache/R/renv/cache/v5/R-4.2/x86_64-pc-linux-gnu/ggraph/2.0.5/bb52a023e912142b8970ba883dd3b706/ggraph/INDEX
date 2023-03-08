@@ -1,3 +1,93 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3280e2a18f0a2560b217fdde7fb1db9bd3b92e508787ca288ee875f59ead97ce
-size 4607
+autograph               Quickplot wrapper for networks
+facet_edges             Create small multiples based on edge attributes
+facet_graph             Create a grid of small multiples by node and/or
+                        edge attributes
+facet_nodes             Create small multiples based on node attributes
+flare                   The class hierarchy of the flare visualization
+                        library
+geom_axis_hive          Draw rectangular bars and labels on hive axes
+geom_conn_bundle        Create hierarchical edge bundles between node
+                        connections
+geom_edge_arc           Draw edges as Arcs
+geom_edge_bend          Draw edges as diagonals
+geom_edge_density       Show edges as a density map
+geom_edge_diagonal      Draw edges as diagonals
+geom_edge_elbow         Draw edges as elbows
+geom_edge_fan           Draw edges as curves of different curvature
+geom_edge_hive          Draw edges in hive plots
+geom_edge_link          Draw edges as straight lines between nodes
+geom_edge_loop          Draw edges as diagonals
+geom_edge_parallel      Draw multi edges as parallel lines
+geom_edge_point         Draw edges as glyphs
+geom_edge_span          Draw edges as vertical spans
+geom_edge_tile          Draw edges as glyphs
+geom_node_arc_bar       Show nodes as thick arcs
+geom_node_circle        Show nodes as circles
+geom_node_point         Show nodes as points
+geom_node_range         Show nodes as a line spanning a horizontal
+                        range
+geom_node_text          Annotate nodes with text
+geom_node_tile          Draw the rectangles in a treemap
+geom_node_voronoi       Show nodes as voronoi tiles
+geometry                Define simple shapes for line capping
+get_con                 Create a connection extractor function
+get_edges               Create edge extractor function
+get_nodes               Create a node extractor function
+ggraph                  Create a ggraph plot
+ggraph-package          ggraph: An Implementation of Grammar of
+                        Graphics for Graphs and Networks
+guide_edge_colourbar    Colourbar legend for edges
+guide_edge_direction    Edge direction guide
+highschool              Friendship among high school boys
+layout_tbl_graph_auto   Automatically pick a layout based on graph type
+layout_tbl_graph_backbone
+                        Place node to emphasize group structure
+layout_tbl_graph_centrality
+                        Place nodes in circles according to centrality
+                        measure
+layout_tbl_graph_circlepack
+                        Calculate nodes as circles packed within their
+                        parent circle
+layout_tbl_graph_dendrogram
+                        Apply a dendrogram layout to layout_tbl_graph
+layout_tbl_graph_eigen
+                        Place nodes according to their eigenvalues
+layout_tbl_graph_fabric
+                        Create a fabric layout
+layout_tbl_graph_focus
+                        Place nodes in circles based on distance to a
+                        specific node
+layout_tbl_graph_hive   Place nodes in a Hive Plot layout
+layout_tbl_graph_igraph
+                        Use igraph layout algorithms for
+                        layout_tbl_graph
+layout_tbl_graph_linear
+                        Place nodes on a line or circle
+layout_tbl_graph_manual
+                        Manually specify a layout for layout_tbl_graph
+layout_tbl_graph_matrix
+                        Place nodes on a diagonal
+layout_tbl_graph_partition
+                        Calculate nodes as areas dividing their parent
+layout_tbl_graph_pmds   Place nodes based on a multidimensional scaling
+                        of a set of pivot nodes
+layout_tbl_graph_stress
+                        Place nodes using stress majorisation
+layout_tbl_graph_treemap
+                        Calculate nodes as rectangles subdividing that
+                        of their parent
+layout_tbl_graph_unrooted
+                        Create an unrooted layout using equal-angle or
+                        equal-daylight
+node_angle              Get the angle of nodes and edges
+pack_circles            Pack circles together
+scale_edge_alpha        Edge alpha scales
+scale_edge_colour       Edge colour scales
+scale_edge_fill         Edge fill scales
+scale_edge_linetype     Edge linetype scales
+scale_edge_shape        Edge shape scales
+scale_edge_size         Edge size scales
+scale_edge_width        Edge width scales
+scale_label_size        Edge label size scales
+theme_graph             A theme tuned for graph visualizations
+whigs                   Membership network of American Whigs

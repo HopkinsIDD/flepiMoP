@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:03ecdbe4ed8fe7877bf5ed79a382d77f0474381b9b1959518e635a1f2068735c
-size 490
+Package: labeling
+Type: Package
+Title: Axis Labeling
+Version: 0.4.2
+Date: 2020-10-15
+Author: Justin Talbot,
+Maintainer: Nuno Sempere <nuno.semperelh@gmail.com>
+Description: Functions which provide a range of axis labeling algorithms. 
+License: MIT + file LICENSE | Unlimited
+Collate: 'labeling.R'
+NeedsCompilation: no
+Imports: stats, graphics
+Packaged: 2020-10-18 12:56:46 UTC; nuno
+Repository: CRAN
+Date/Publication: 2020-10-20 07:00:09 UTC
+Built: R 4.2.2; ; 2023-02-25 10:45:03 UTC; unix

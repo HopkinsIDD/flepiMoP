@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c3e96e9b182301510f04551d7de8860ccee050e9169df03bb8ab9fccb602c75b
-size 339
+#
+#.onLoad <- function(libname, pkgname){
+#    loadRcppModules()
+#}
+
+## For R 2.15.1 and later this also works. Note that calling loadModule() triggers
+## a load action, so this does not have to be placed in .onLoad() or evalqOnLoad().
+loadModule("RcppModuleNumEx", TRUE)
+loadModule("RcppModuleWorld", TRUE)
+loadModule("stdVector", TRUE)
+

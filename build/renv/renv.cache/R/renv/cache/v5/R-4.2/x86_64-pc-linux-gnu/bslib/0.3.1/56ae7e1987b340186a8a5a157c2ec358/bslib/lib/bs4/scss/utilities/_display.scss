@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:05d27c10aaf9778ba8486204a060cae022553d61e12232f31835b5c73a159319
-size 519
+// stylelint-disable declaration-no-important
+
+//
+// Utilities for common `display` values
+//
+
+@each $breakpoint in map-keys($grid-breakpoints) {
+  @include media-breakpoint-up($breakpoint) {
+    $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+    @each $value in $displays {
+      .d#{$infix}-#{$value} { display: $value !important; }
+    }
+  }
+}
+
+
+//
+// Utilities for toggling `display` in print
+//
+
+@media print {
+  @each $value in $displays {
+    .d-print-#{$value} { display: $value !important; }
+  }
+}

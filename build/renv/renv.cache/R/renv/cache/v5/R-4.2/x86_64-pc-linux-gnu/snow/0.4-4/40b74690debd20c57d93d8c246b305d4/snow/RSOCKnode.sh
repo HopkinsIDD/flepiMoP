@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ec9774f3103782d036514f4e577f65de36cade3a86db377a13db218a28023eff
-size 238
+#! /bin/sh
+
+
+# the & for backgrounding works in bash--does it work in other sh variants?
+
+${RPROG:-R} --vanilla <<EOF > ${OUT:-/dev/null} 2>&1 &
+
+library(snow)
+
+options(timeout=getClusterOption("timeout"))
+
+workLoop(makeSOCKmaster())
+EOF

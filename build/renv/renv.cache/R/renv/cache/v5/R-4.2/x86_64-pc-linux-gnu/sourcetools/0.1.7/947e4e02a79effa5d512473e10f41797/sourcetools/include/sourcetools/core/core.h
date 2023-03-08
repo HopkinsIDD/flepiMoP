@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:77f99342f406538e81c325efa04536d721cb6e51fac3b949f0a1a904f133f93e
-size 175
+#ifndef SOURCETOOLS_CORE_CORE_H
+#define SOURCETOOLS_CORE_CORE_H
+
+#include <sourcetools/core/macros.h>
+#include <sourcetools/core/util.h>
+
+#endif /* SOURCETOOLS_CORE_CORE_H */

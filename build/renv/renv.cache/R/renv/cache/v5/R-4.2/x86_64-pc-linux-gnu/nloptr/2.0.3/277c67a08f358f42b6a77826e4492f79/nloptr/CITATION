@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2160643e220aebdb21dd7ac0734493bb73a2921d991541e706c17bf4cd3e27a8
-size 757
+citHeader("If you use NLopt in work that leads to a publication, we would appreciate it if
+you would kindly cite NLopt in your manuscript. Please cite both the NLopt library and the
+authors of the specific algorithm(s) that you employed in your work. Cite NLopt as:")
+
+citEntry(entry="Article",
+  title = 	 "The NLopt nonlinear-optimization package",
+  author = personList(as.person("Steven G. Johnson")),
+  year =     "?",
+  journal =  "?",
+  volume = "?",
+  number = "?",
+  pages = "?",
+  textVersion = "Steven G. Johnson, The NLopt nonlinear-optimization package, https://nlopt.readthedocs.io/en/latest/" )
+
+citFooter("The authors and appropriate citations for the specific optimization algorithms
+in NLopt are listed in the NLopt Algorithms page.")
+
+
+
+

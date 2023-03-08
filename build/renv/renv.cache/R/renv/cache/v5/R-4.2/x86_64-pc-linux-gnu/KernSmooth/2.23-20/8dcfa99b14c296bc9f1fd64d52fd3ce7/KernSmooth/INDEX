@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c1d1b7989f3ad3a5ecf6482735d6e20e88c44b960fa13a713dd43aae958d6ec0
-size 489
+bkde                    Compute a Binned Kernel Density Estimate
+bkde2D                  Compute a 2D Binned Kernel Density Estimate
+bkfe                    Compute a Binned Kernel Functional Estimate
+dpih                    Select a Histogram Bin Width
+dpik                    Select a Bandwidth for Kernel Density
+                        Estimation
+dpill                   Select a Bandwidth for Local Linear Regression
+locpoly                 Estimate Functions Using Local Polynomials

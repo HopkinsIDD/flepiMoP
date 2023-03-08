@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:225c44b96bf393abd0a7e449e0ba57190d2858b6a35dcd95f609c87e45e61ac0
-size 477
+stopifnot(requireNamespace("Matrix" , quietly = TRUE)) # includes 'methods'
+
+USCounties <-
+    local({
+	load(system.file(file.path("external", "USCounties_slots.rda"),
+                         package = "Matrix"))
+	## -> 'L'
+	r <- methods::new("dsCMatrix")
+        `slot<-` <- methods::`slot<-`
+	for (n in c("Dim", "i","p","x"))
+	    slot(r, n) <- L[[n]]
+	r
+    })
+
+## The reverse:
+if(FALSE) {
+ L <- list()
+ for (n in c("Dim", "i","p","x"))    L[[n]] <- slot(USCounties, n)
+}
+

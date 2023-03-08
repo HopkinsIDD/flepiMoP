@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a8fd4085279296e0ac98100682dc918d05db1af7a865e26bb5dcce5e6a4c67c9
-size 307
+/* Styles for section anchors content */
+/* Link symbol : https://codepoints.net/U+1F517
+   with variation selector https://graphemica.com/FE0E */
+a.anchor-section::before{content: '\01F517\00FE0E';font-size: 20px;}
+/* deactivate underline for link symbol */
+a.anchor-section:hover {text-decoration: none;}

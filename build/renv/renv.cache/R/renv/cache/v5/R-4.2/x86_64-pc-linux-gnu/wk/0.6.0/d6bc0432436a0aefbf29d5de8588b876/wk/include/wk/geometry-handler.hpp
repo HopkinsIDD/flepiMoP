@@ -1,3 +1,50 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5efe9a1e5c44624cafd07d3ff94f4b3f398e87e34757c677d874ff40e52476a7
-size 936
+
+#ifndef WK_GEOMETRY_HANDLER_H
+#define WK_GEOMETRY_HANDLER_H
+
+#include "wk/coord.hpp"
+#include "wk/parse-exception.hpp"
+#include "wk/geometry-meta.hpp"
+
+class WKGeometryHandler {
+public:
+
+  virtual void nextFeatureStart(size_t featureId) {
+
+  }
+
+  virtual void nextFeatureEnd(size_t featureId) {
+
+  }
+
+  virtual void nextNull(size_t featureId) {
+
+  }
+
+  virtual void nextGeometryStart(const WKGeometryMeta& meta, uint32_t partId) {
+
+  }
+
+  virtual void nextGeometryEnd(const WKGeometryMeta& meta, uint32_t partId) {
+
+  }
+
+  virtual void nextLinearRingStart(const WKGeometryMeta& meta, uint32_t size, uint32_t ringId) {
+
+  }
+
+  virtual void nextLinearRingEnd(const WKGeometryMeta& meta, uint32_t size, uint32_t ringId) {
+
+  }
+
+  virtual void nextCoordinate(const WKGeometryMeta& meta, const WKCoord& coord, uint32_t coordId) {
+
+  }
+
+  virtual bool nextError(WKParseException& error, size_t featureId) {
+    return false;
+  }
+
+};
+
+#endif

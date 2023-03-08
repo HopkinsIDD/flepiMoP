@@ -1,3 +1,28 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e1f59ef121416e746e788473e7ed1758f54cf23dd9b84a4c0b8c1d60afa27530
-size 1121
+Package: cdlTools
+Title: Tools to Download and Work with USDA Cropscape Data
+Version: 0.15
+Date: 2020-06-23
+Authors@R: c(
+    person("Jonathan", "Lisic", email = "jlisic@gmail.com", role = "cre"),
+    person("Lu", "Chen", role = "aut"),
+    person("Joseph","Stachelek", email = "stachel2@msu.edu", role="ctb")
+    )
+Maintainer: Jonathan Lisic <jlisic@gmail.com>
+URL: https://www.github.com/jlisic/cdlTools
+BugReports: https://www.github.com/jlisic/cdlTools/issues
+Description: Downloads USDA National Agricultural Statistics Service (NASS) 
+    cropscape data for a specified state. Utilities for fips, abbreviation, 
+    and name conversion are also provided. Full functionality requires an 
+    internet connection, but data sets can be cached for later off-line use.
+License: Unlimited
+LazyData: true
+Imports: raster, utils, httr
+RoxygenNote: 6.0.1
+NeedsCompilation: yes
+Packaged: 2020-06-26 21:55:59 UTC; jonathanlisic
+Author: Jonathan Lisic [cre],
+  Lu Chen [aut],
+  Joseph Stachelek [ctb]
+Repository: CRAN
+Date/Publication: 2020-06-27 15:50:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 15:57:27 UTC; unix

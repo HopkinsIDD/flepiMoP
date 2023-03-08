@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:eb6f9d2f8bccaeffe22763259f2e5bc29d58cf8b325bb406445a6bfd62d88fc4
-size 332
+test_that("one plus one is two", {
+  expect_equal(1 + 1, 2)
+})
+
+test_that("you can skip tests if needed", {
+  skip("This test hasn't been written yet")
+})
+
+test_that("some tests have warnings", {
+  expect_equal(log(-1), NaN)
+})
+
+test_that("some more successes just to pad things out", {
+  expect_true(TRUE)
+  expect_false(FALSE)
+})

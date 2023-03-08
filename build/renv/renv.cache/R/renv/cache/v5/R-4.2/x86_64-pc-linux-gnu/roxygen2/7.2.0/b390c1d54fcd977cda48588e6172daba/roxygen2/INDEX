@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:80cd548c5f393d11723d3c79fb3bb05c12e9e8570f445a4cad77d68144fed7ec
-size 567
+is_s3_generic           Determine if a function is an S3 generic or S3
+                        method.
+load                    Load package code
+namespace_roclet        Roclet: make 'NAMESPACE'
+object_format           Default format for data
+rd_roclet               Roclet: make Rd files.
+roclet_find             Create a roclet from a string.
+roxygenize              Process a package with the Rd, namespace and
+                        collate roclets.
+update_collate          Update Collate field in DESCRIPTION
+vignette_roclet         Re-build outdated vignettes.

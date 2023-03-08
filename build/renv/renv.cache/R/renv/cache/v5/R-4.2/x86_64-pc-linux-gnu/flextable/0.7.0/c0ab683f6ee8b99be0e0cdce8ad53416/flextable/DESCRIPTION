@@ -1,3 +1,46 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c400af341d39a7190d98394dc1a11ad15aa55988c4b1c4b94aeb1bb6f35d1ae8
-size 2200
+Package: flextable
+Type: Package
+Title: Functions for Tabular Reporting
+Version: 0.7.0
+Authors@R: c(
+    person("David", "Gohel", role = c("aut", "cre"),
+    email = "david.gohel@ardata.fr"),
+    person("Clementine", "Jager", role = c("ctb")),
+    person("Quentin", "Fazilleau", role = c("ctb")),
+    person("Maxim", "Nazarov", role = c("ctb"),
+      comment = "rmarkdown for docx output"),
+    person(given = "Titouan", family = "Robert", role = c("ctb")),
+    person(given = "Michael", family = "Barrowman", role = c("ctb"), comment = "inline footnotes"),
+    person(given = "Atsushi", family = "Yasumoto", role = c("ctb"), comment = "support for bookdown cross reference"),
+    person(given = "Paul", family = "Julian", role = c("ctb"), comment = "support for gam objects")
+    )
+Description: Create pretty tables for 'HTML', 'PDF', 'Microsoft Word' and 'Microsoft PowerPoint' 
+  documents from 'R Markdown'. Functions are provided to let users create tables, modify and format 
+  their content. It also extends package 'officer' that does not contain any feature for customized 
+  tabular reporting.
+License: GPL-3
+Imports: stats, utils, grDevices, graphics, officer (>= 0.4.1),
+        rmarkdown, knitr, htmltools, xml2, data.table (>= 1.13.0), uuid
+        (>= 0.1-4), gdtools (>= 0.1.6), rlang, base64enc
+RoxygenNote: 7.1.2
+Suggests: testthat (>= 2.1.0), xtable, webshot, magick, ggplot2,
+        scales, broom, mgcv, bookdown, equatags, commonmark,pdftools
+Encoding: UTF-8
+URL: https://ardata-fr.github.io/flextable-book/,
+        https://davidgohel.github.io/flextable/
+BugReports: https://github.com/davidgohel/flextable/issues
+VignetteBuilder: knitr
+NeedsCompilation: no
+Packaged: 2022-03-06 22:42:13 UTC; davidgohel
+Author: David Gohel [aut, cre],
+  Clementine Jager [ctb],
+  Quentin Fazilleau [ctb],
+  Maxim Nazarov [ctb] (rmarkdown for docx output),
+  Titouan Robert [ctb],
+  Michael Barrowman [ctb] (inline footnotes),
+  Atsushi Yasumoto [ctb] (support for bookdown cross reference),
+  Paul Julian [ctb] (support for gam objects)
+Maintainer: David Gohel <david.gohel@ardata.fr>
+Repository: CRAN
+Date/Publication: 2022-03-06 23:20:02 UTC
+Built: R 4.2.2; ; 2023-02-25 17:16:27 UTC; unix

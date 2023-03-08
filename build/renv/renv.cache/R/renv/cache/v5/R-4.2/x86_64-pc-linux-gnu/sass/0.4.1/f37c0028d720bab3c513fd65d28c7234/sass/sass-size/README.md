@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5145603935679aadb83a0f0ce9610975e3fc6c187c9c51429e0f9c6b1028d66c
-size 241
+This example shows how to use the [sass](https://github.com/rstudio/sass) R package to dynamically generate a stylesheet that changes the background and font color in a shiny app. The app also allows you to dynmically resize the plot width.

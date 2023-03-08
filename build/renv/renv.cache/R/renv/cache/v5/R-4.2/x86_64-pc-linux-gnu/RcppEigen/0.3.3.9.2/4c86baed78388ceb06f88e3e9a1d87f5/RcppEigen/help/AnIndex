@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c3ed0f7a7f9972aa9f586e76f7c0bb152aead5be776509bd84134ed76cc505fb
-size 194
+RcppEigen-package	RcppEigen-package
+fastLm	fastLm
+fastLm.default	fastLm
+fastLm.formula	fastLm
+fastLmPure	fastLm
+RcppEigen	RcppEigen-package
+RcppEigen.package.skeleton	RcppEigen.package.skeleton

@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:be70d0d638c56099f74c2646435d2fb19ba3210ba1467821f4cee21a2c236b47
-size 427
+# generics 0.1.2
+
+# generics 0.1.2
+
+* New `forecast()` and `accuracy()` generics.
+
+# generics 0.1.1
+
+* New `tune_args()` generic.
+
+# generics 0.1.0
+
+* Maintainer changed to Hadley Wickham.
+
+* Re-licensed with MIT license.
+
+* New `min_grid()`, `required_pkgs()`, and `tunable()` generics.
+
+# `generics` 0.0.2
+
+* Removed the `data` argument to `augment` to resolve issues with `broom`. 
+
+# `generics` 0.0.1
+
+First CRAN version
+
+

@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:086fa3dacc1797f17b8c54bc910ef24f99c34b007d63b1242359a479126e15b3
-size 471
+## -----------------------------------------------------------------------------
+library(highr)
+highr:::cmd_latex
+
+## -----------------------------------------------------------------------------
+m = highr:::cmd_latex
+m[, 1] = sub('\\hl', '\\my', m[, 1], fixed = TRUE)
+head(m)
+
+## -----------------------------------------------------------------------------
+hilight("x = 1+1  # a comment")  # default markup
+hilight("x = 1+1  # a comment", markup = m)  # custom markup
+

@@ -1,3 +1,28 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8dd4a24d599160e334e6ae0d16f3032799ca5e7af6b4581efd730c91e3f266a5
-size 438
+#!/usr/bin/env r
+
+library(Rcpp)
+library(rbenchmark)
+
+piR <- function(N) {
+    x <- runif(N)
+    y <- runif(N)
+    d <- sqrt(x^2 + y^2)
+    return(4 * sum(d < 1.0) / N)
+}
+
+sourceCpp("piSugar.cpp")
+
+N <- 1e6
+
+set.seed(42)
+resR <- piR(N)
+
+set.seed(42)
+resCpp <- piSugar(N)
+
+## important: check results are identical with RNG seeded
+stopifnot(identical(resR, resCpp))
+
+res <- benchmark(piR(N), piSugar(N), order="relative")
+
+print(res[,1:4])

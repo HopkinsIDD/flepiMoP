@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1e0ac8941134e9778e0a4302f3858d3be6d31dcc3bbe0149a3e564801edc0098
-size 244
+The function `invalidateLater()` can be used to invalidate an observer or
+reactive expression in a given number of milliseconds. In this example, the
+output `currentTime` is updated every second, so it shows the current time
+on a second basis.

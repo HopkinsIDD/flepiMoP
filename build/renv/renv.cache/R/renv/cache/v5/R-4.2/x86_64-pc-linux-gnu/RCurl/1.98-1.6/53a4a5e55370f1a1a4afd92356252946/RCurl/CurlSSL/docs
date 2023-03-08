@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6d3a8c551ff8b1067bd94c87ba702204664ece61d8eb1e3c2d816346fd20fdc5
-size 166
+http://ademar.name/blog/2006/04/curl-ssl-certificate-problem-v.html
+
+http://secure.globalsign.net/cacert/sureserverEDU.pem
+
+
+http://curl.haxx.se/docs/caextract.html
+

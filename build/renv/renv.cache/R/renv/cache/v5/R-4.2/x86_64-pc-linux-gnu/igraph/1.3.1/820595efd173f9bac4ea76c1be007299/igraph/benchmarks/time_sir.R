@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f1954e5cd95a66a01e3ed0f47c1e4beb320e60bcf31011ebd3c5cd41e65e5f94
-size 242
+
+time_group("SIR epidemics models on networks")
+
+time_that("SIR is fast", replications=10,
+          init = { library(igraph); set.seed(42) },
+          reinit = { g <- sample_gnm(40, 40) },
+          { sir(g, beta=5, gamma=1, no.sim=100) })

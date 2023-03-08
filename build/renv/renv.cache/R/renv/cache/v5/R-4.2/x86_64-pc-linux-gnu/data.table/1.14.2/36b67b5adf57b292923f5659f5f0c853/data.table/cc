@@ -1,3 +1,2 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:66ddc797c14dcb7e9385aba62838452f1e0ed875a79c9b46b6c9ca022883679a
-size 175
+CC=gcc
+CFLAGS=-g -O2 -fdebug-prefix-map=/build/r-base-a3XuZ5/r-base-4.2.2.20221110=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2

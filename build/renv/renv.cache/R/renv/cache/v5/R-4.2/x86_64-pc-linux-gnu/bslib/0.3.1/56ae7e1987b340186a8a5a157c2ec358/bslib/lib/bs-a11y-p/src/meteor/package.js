@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8c158e369f764c8f0fffe3083c5a9451f1d35eb7c25e3788db31dc3f197acb44
-size 452
+Package.describe({
+  name: 'paypal:bootstrap-accessibility-plugin',
+  summary: 'Accessibility Plugin for Bootstrap 3',
+  git: 'https://github.com/paypal/bootstrap-accessibility-plugin.git',
+  version: '{{version}}'
+});
+
+Package.onUse(function(api) {
+  api.use('ecmascript');
+  api.use('jquery');
+  api.use('twbs:bootstrap');
+  api.addFiles([
+    'plugins/css/bootstrap-accessibility.css',
+    'plugins/js/bootstrap-accessibility.js'
+  ], 'client');
+});

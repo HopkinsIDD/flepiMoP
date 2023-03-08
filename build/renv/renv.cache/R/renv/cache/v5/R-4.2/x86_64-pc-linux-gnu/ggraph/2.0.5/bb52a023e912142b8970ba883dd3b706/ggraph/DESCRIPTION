@@ -1,3 +1,40 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:29183ace5dcd3feaf2221c5f8fb74ea2e0cc10d771bec09635b5c31bda6835be
-size 1662
+Package: ggraph
+Type: Package
+Title: An Implementation of Grammar of Graphics for Graphs and Networks
+Version: 2.0.5
+Authors@R: 
+    c(person(given = "Thomas Lin",
+             family = "Pedersen",
+             role = c("cre", "aut"),
+             email = "thomasp85@gmail.com",
+             comment = c(ORCID = "0000-0002-5147-4711")),
+      person(given = "RStudio",
+             role = "cph"))
+Maintainer: Thomas Lin Pedersen <thomasp85@gmail.com>
+Description: The grammar of graphics as implemented in ggplot2 is a poor fit for
+    graph and network visualizations due to its reliance on tabular data input.
+    ggraph is an extension of the ggplot2 API tailored to graph visualizations
+    and provides the same flexible approach to building up plots layer by layer.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: TRUE
+Imports: Rcpp (>= 0.12.2), dplyr, ggforce (>= 0.3.1), grid, igraph (>=
+        1.0.0), scales, MASS, digest, gtable, ggrepel, utils, stats,
+        viridis, rlang, tidygraph, graphlayouts (>= 0.5.0), withr
+Suggests: network, knitr, rmarkdown, purrr, tibble, seriation, deldir,
+        gganimate, covr
+LinkingTo: Rcpp
+RoxygenNote: 7.1.1
+Depends: R (>= 2.10), ggplot2 (>= 3.0.0)
+VignetteBuilder: knitr
+URL: https://ggraph.data-imaginist.com,
+        https://github.com/thomasp85/ggraph
+BugReports: https://github.com/thomasp85/ggraph/issues
+NeedsCompilation: yes
+Packaged: 2021-02-22 15:00:12 UTC; thomas
+Author: Thomas Lin Pedersen [cre, aut]
+    (<https://orcid.org/0000-0002-5147-4711>),
+  RStudio [cph]
+Repository: CRAN
+Date/Publication: 2021-02-23 12:20:30 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 17:50:04 UTC; unix

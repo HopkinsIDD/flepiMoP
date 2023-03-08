@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7eb7bc140595aeef6664ff13521ffa4bcdb85df8cd1d236f1a20e18ba4acb262
-size 279
+TOP=../..
+PKG=${shell cd ${TOP};pwd}
+SUITE=doRUnit.R
+R=/Users/jryan/Downloads/R-2.10.1/bin/R
+
+all: inst test
+
+inst: # Install package
+	cd ${TOP}/..;\
+	${R} CMD INSTALL ${PKG}
+
+test: # Run unit tests
+	export RCMDCHECK=FALSE;\
+	cd ${TOP}/tests;\
+	${R} --vanilla --slave < ${SUITE}

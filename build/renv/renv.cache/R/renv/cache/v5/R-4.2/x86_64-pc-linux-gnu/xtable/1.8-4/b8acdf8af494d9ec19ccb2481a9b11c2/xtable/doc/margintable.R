@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:940f2a55da159513f6ca1e5856aeef8f64836870551c6aaad6f285b8af755959
-size 487
+## ----include=FALSE-------------------------------------------------------
+library(knitr)
+
+## ------------------------------------------------------------------------
+library(xtable)
+x <- matrix(rnorm(6), ncol = 2)
+x.small <- xtable(x, label = 'tabsmall', caption = 'A margin table')
+
+## ----results='asis'------------------------------------------------------
+print(x.small,floating.environment='margintable',
+      latex.environments = "",
+      table.placement = NULL)
+

@@ -1,3 +1,59 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b407bca97c0cddc5782e9eacf0df5c1e8df09179f354d7edc3c4054e08e5ef36
-size 2422
+Package: reticulate
+Type: Package
+Title: Interface to 'Python'
+Version: 1.25
+Authors@R: c(
+  person("Tomasz", "Kalinowski", role = c("ctb", "cre"),
+         email = "tomasz@rstudio.com"),
+  person("Kevin", "Ushey", role = c("aut"),
+         email = "kevin@rstudio.com"),
+  person("JJ", "Allaire", role = c("aut"), email = "jj@rstudio.com"),
+  person("RStudio", role = c("cph", "fnd")),
+  person("Yuan", "Tang", role = c("aut", "cph"),
+         email = "terrytangyuan@gmail.com",
+         comment = c(ORCID = "0000-0001-5243-233X")),
+  person("Dirk", "Eddelbuettel", role = c("ctb", "cph"),
+         email = "edd@debian.org"),
+  person("Bryan", "Lewis", role = c("ctb", "cph"),
+         email = "blewis@illposed.net"),
+  person("Sigrid", "Keydana", role = c("ctb"),
+         email = "sigrid@rstudio.com"),
+  person("Ryan", "Hafen", role = c("ctb", "cph"),
+         email = "rhafen@gmail.com"),
+  person("Marcus", "Geelnard", role = c("ctb", "cph"),
+         comment = "TinyThread library, http://tinythreadpp.bitsnbites.eu/")
+  )
+Description: Interface to 'Python' modules, classes, and functions. When calling
+    into 'Python', R data types are automatically converted to their equivalent 'Python'
+    types. When values are returned from 'Python' to R they are converted back to R
+    types. Compatible with all versions of 'Python' >= 2.7.
+License: Apache License 2.0
+URL: https://rstudio.github.io/reticulate/,
+        https://github.com/rstudio/reticulate
+BugReports: https://github.com/rstudio/reticulate/issues
+SystemRequirements: Python (>= 2.7.0)
+Encoding: UTF-8
+Depends: R (>= 3.0)
+Imports: Matrix, Rcpp (>= 0.12.7), RcppTOML, graphics, here, jsonlite,
+        methods, png, rappdirs, utils, withr
+Suggests: callr, knitr, rlang, rmarkdown, testthat
+LinkingTo: Rcpp
+RoxygenNote: 7.1.2
+VignetteBuilder: knitr
+NeedsCompilation: yes
+Packaged: 2022-05-11 15:49:46 UTC; tomasz
+Author: Tomasz Kalinowski [ctb, cre],
+  Kevin Ushey [aut],
+  JJ Allaire [aut],
+  RStudio [cph, fnd],
+  Yuan Tang [aut, cph] (<https://orcid.org/0000-0001-5243-233X>),
+  Dirk Eddelbuettel [ctb, cph],
+  Bryan Lewis [ctb, cph],
+  Sigrid Keydana [ctb],
+  Ryan Hafen [ctb, cph],
+  Marcus Geelnard [ctb, cph] (TinyThread library,
+    http://tinythreadpp.bitsnbites.eu/)
+Maintainer: Tomasz Kalinowski <tomasz@rstudio.com>
+Repository: CRAN
+Date/Publication: 2022-05-11 17:20:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 18:30:57 UTC; unix

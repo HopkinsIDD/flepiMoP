@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6a874439bdce89eb3ade76922bd751b5a191d8ff10b2e408e5c6a923c6d8c01b
-size 576
+xy = expand.grid(x = seq(5,355,by=10),y=seq(-85,85,by=10))
+xyp = SpatialPoints(xy, CRS("+proj=longlat"))
+gridded(xyp)=T
+gridparameters(xyp)
+xyf = spsample(xyp, 1000, type="Fibonacci")
+plot(xyf, axes=TRUE)
+if (require(rgdal)) {
+	xy = expand.grid(x = seq(-85,85,by=10),y=seq(-85,85,by=10))
+	xyp = SpatialPoints(xy, CRS("+proj=longlat"))
+	gridded(xyp) = TRUE
+	tocrs = CRS("+proj=ortho +lat_0=0 +lon_0=0 +x0=0 +y0=0")
+	plot(spTransform(xyp, tocrs), pch=16,cex=.7)
+	xyf = spsample(xyp, 1000, type="Fibonacci")
+	plot(spTransform(xyf, tocrs), pch=16,cex=.7)
+	dim(coordinates(xyf))
+}

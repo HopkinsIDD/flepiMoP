@@ -1,3 +1,692 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:94b06b1936b8bcedede1af0806a95586a4fb006333f09d1a4aefc9d3ea3f2c8e
-size 39153
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Joseph Larmarange" />
+
+
+<title>About missing values: regular NAs, tagged NAs and user NAs</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">About missing values: regular NAs, tagged
+NAs and user NAs</h1>
+<h4 class="author">Joseph Larmarange</h4>
+
+
+
+<p>In base <strong>R</strong>, missing values are indicated using the
+specific value <code>NA</code>. <strong>Regular NAs</strong> could be
+used with any type of vector (double, integer, character, factor, Date,
+etc.).</p>
+<p>Other statistical software have implemented ways to differentiate
+several types of missing values.</p>
+<p><strong>Stata</strong> and <strong>SAS</strong> have a system of
+<strong>tagged NAs</strong>, where NA values are tagged with a letter
+(from a to z). <strong>SPSS</strong> allows users to indicate that
+certain non-missing values should be treated in some analysis as missing
+(<strong>user NAs</strong>). The <code>haven</code> package implements
+<strong>tagged NAs</strong> and <strong>user NAs</strong> in order to
+keep this information when importing files from <strong>Stata</strong>,
+<strong>SAS</strong> or <strong>SPSS</strong>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(labelled)</span></code></pre></div>
+<div id="tagged-nas" class="section level2">
+<h2>Tagged NAs</h2>
+<div id="creation-and-tests" class="section level3">
+<h3>Creation and tests</h3>
+<p><strong>Tagged NAs</strong> are proper <code>NA</code> values with a
+tag attached to them. They can be created with <code>tagged_na()</code>.
+The attached tag should be a single letter, lowercase (a-z) or uppercase
+(A-Z).</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;a&quot;</span>), <span class="fu">tagged_na</span>(<span class="st">&quot;z&quot;</span>), <span class="cn">NA</span>)</span></code></pre></div>
+<p>For most <strong>R</strong> functions, tagged NAs are just considered
+as regular NAs. By default, they are just printed as any other regular
+NA.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>x</span></code></pre></div>
+<pre><code>## [1]  1  2  3  4  5 NA NA NA</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE</code></pre>
+<p>To show/print their tags, you need to use <code>na_tag()</code>,
+<code>print_tagged_na()</code> or <code>format_tagged_na()</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">na_tag</span>(x)</span></code></pre></div>
+<pre><code>## [1] NA  NA  NA  NA  NA  &quot;a&quot; &quot;z&quot; NA</code></pre>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print_tagged_na</span>(x)</span></code></pre></div>
+<pre><code>## [1]     1     2     3     4     5 NA(a) NA(z)    NA</code></pre>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">format_tagged_na</span>(x)</span></code></pre></div>
+<pre><code>## [1] &quot;    1&quot; &quot;    2&quot; &quot;    3&quot; &quot;    4&quot; &quot;    5&quot; &quot;NA(a)&quot; &quot;NA(z)&quot; &quot;   NA&quot;</code></pre>
+<p>To test if a certain NA is a regular NA or a tagged NA, you should
+use <code>is_regular_na()</code> or <code>is_tagged_na()</code>.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE</code></pre>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is_tagged_na</span>(x)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE FALSE</code></pre>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># You can test for specific tagged NAs with the second argument</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">is_tagged_na</span>(x, <span class="st">&quot;a&quot;</span>)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE</code></pre>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is_regular_na</span>(x)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE</code></pre>
+<p>Tagged NAs could be defined <strong>only</strong> for double vectors.
+If you add a tagged NA to a character vector, it will be converted into
+a regular NA. If you add a tagged NA to an integer vector, the vector
+will be converted into a double vector.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;z&quot;</span>))</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>y</span></code></pre></div>
+<pre><code>## [1] &quot;a&quot; &quot;b&quot; NA</code></pre>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is_tagged_na</span>(y)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE</code></pre>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">format_tagged_na</span>(y)</span></code></pre></div>
+<pre><code>## Error: `x` must be a double vector</code></pre>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">c</span>(1L, 2L, <span class="fu">tagged_na</span>(<span class="st">&quot;a&quot;</span>))</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">typeof</span>(z)</span></code></pre></div>
+<pre><code>## [1] &quot;double&quot;</code></pre>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">format_tagged_na</span>(z)</span></code></pre></div>
+<pre><code>## [1] &quot;    1&quot; &quot;    2&quot; &quot;NA(a)&quot;</code></pre>
+</div>
+<div id="unique-values-duplicates-and-sorting-with-tagged-nas" class="section level3">
+<h3>Unique values, duplicates and sorting with tagged NAs</h3>
+<p>By default, functions such as <code>base::unique()</code>,
+<code>base::duplicated()</code>, <code>base::order()</code> or
+<code>base::sort()</code> will treat tagged NAs as the same thing as a
+regular NA. You can use <code>unique_tagged_na()</code>,
+<code>duplicated_tagged_na()</code>, <code>order_tagged_na()</code> and
+<code>sort_tagged_na()</code> as alternatives that will treat two tagged
+NAs with different tags as separate values.</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;a&quot;</span>), <span class="dv">1</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;z&quot;</span>), <span class="dv">2</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;a&quot;</span>), <span class="cn">NA</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>x <span class="sc">%&gt;%</span> <span class="fu">print_tagged_na</span>()</span></code></pre></div>
+<pre><code>## [1]     1     2 NA(a)     1 NA(z)     2 NA(a)    NA</code></pre>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(x) <span class="sc">%&gt;%</span> <span class="fu">print_tagged_na</span>()</span></code></pre></div>
+<pre><code>## [1]     1     2 NA(a)</code></pre>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unique_tagged_na</span>(x) <span class="sc">%&gt;%</span> <span class="fu">print_tagged_na</span>()</span></code></pre></div>
+<pre><code>## [1]     1     2 NA(a) NA(z)    NA</code></pre>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">duplicated</span>(x)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE  TRUE</code></pre>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">duplicated_tagged_na</span>(x)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE  TRUE FALSE  TRUE  TRUE FALSE</code></pre>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(x, <span class="at">na.last =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> <span class="fu">print_tagged_na</span>()</span></code></pre></div>
+<pre><code>## [1]     1     1     2     2 NA(a) NA(z) NA(a)    NA</code></pre>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sort_tagged_na</span>(x) <span class="sc">%&gt;%</span> <span class="fu">print_tagged_na</span>()</span></code></pre></div>
+<pre><code>## [1]     1     1     2     2 NA(a) NA(a) NA(z)    NA</code></pre>
+</div>
+<div id="tagged-nas-and-value-labels" class="section level3">
+<h3>Tagged NAs and value labels</h3>
+<p>It is possible to define value labels for tagged NAs.</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;r&quot;</span>), <span class="dv">0</span>, <span class="fu">tagged_na</span>(<span class="st">&quot;d&quot;</span>), <span class="fu">tagged_na</span>(<span class="st">&quot;z&quot;</span>), <span class="cn">NA</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">val_labels</span>(x) <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">no =</span> <span class="dv">0</span>, <span class="at">yes =</span> <span class="dv">1</span>,</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;don&#39;t know&quot;</span> <span class="ot">=</span> <span class="fu">tagged_na</span>(<span class="st">&quot;d&quot;</span>),</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">refusal =</span> <span class="fu">tagged_na</span>(<span class="st">&quot;r&quot;</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>x</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;double&gt;[8]&gt;
+## [1]     1     0     1 NA(r)     0 NA(d) NA(z)    NA
+## 
+## Labels:
+##  value      label
+##      0         no
+##      1        yes
+##  NA(d) don&#39;t know
+##  NA(r)    refusal</code></pre>
+<p>When converting such labelled vector into factor, tagged NAs are, by
+default, converted into regular NAs (it is not possible to define tagged
+NAs with factors).</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">to_factor</span>(x)</span></code></pre></div>
+<pre><code>## [1] yes  no   yes  &lt;NA&gt; no   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
+## Levels: no yes</code></pre>
+<p>However, the option <code>explicit_tagged_na</code> of
+<code>to_factor()</code> allows to transform tagged NAs into explicit
+factor levels.</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">to_factor</span>(x, <span class="at">explicit_tagged_na =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code>## [1] yes        no         yes        refusal    no         don&#39;t know NA(z)     
+## [8] &lt;NA&gt;      
+## Levels: no yes don&#39;t know refusal NA(z)</code></pre>
+<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">to_factor</span>(x, <span class="at">levels =</span> <span class="st">&quot;prefixed&quot;</span>, <span class="at">explicit_tagged_na =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code>## [1] [1] yes            [0] no             [1] yes            [NA(r)] refusal   
+## [5] [0] no             [NA(d)] don&#39;t know [NA(z)] NA(z)      &lt;NA&gt;              
+## Levels: [0] no [1] yes [NA(d)] don&#39;t know [NA(r)] refusal [NA(z)] NA(z)</code></pre>
+</div>
+<div id="conversion-into-user-nas" class="section level3">
+<h3>Conversion into user NAs</h3>
+<p>Tagged NAs can be converted into user NAs with
+<code>tagged_na_to_user_na()</code>.</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tagged_na_to_user_na</span>(x)</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;double&gt;[8]&gt;
+## [1]  1  0  1  3  0  2  4 NA
+## Missing range:  [2, 4]
+## 
+## Labels:
+##  value      label
+##      0         no
+##      1        yes
+##      2 don&#39;t know
+##      3    refusal
+##      4      NA(z)</code></pre>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tagged_na_to_user_na</span>(x, <span class="at">user_na_start =</span> <span class="dv">10</span>)</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;double&gt;[8]&gt;
+## [1]  1  0  1 11  0 10 12 NA
+## Missing range:  [10, 12]
+## 
+## Labels:
+##  value      label
+##      0         no
+##      1        yes
+##     10 don&#39;t know
+##     11    refusal
+##     12      NA(z)</code></pre>
+<p>Use <code>tagged_na_to_regular_na()</code> to convert tagged NAs into
+regular NAs.</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tagged_na_to_regular_na</span>(x)</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;double&gt;[8]&gt;
+## [1]  1  0  1 NA  0 NA NA NA
+## 
+## Labels:
+##  value label
+##      0    no
+##      1   yes</code></pre>
+<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tagged_na_to_regular_na</span>(x) <span class="sc">%&gt;%</span> <span class="fu">is_tagged_na</span>()</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE</code></pre>
+</div>
+</div>
+<div id="user-nas" class="section level2">
+<h2>User NAs</h2>
+<p><code>haven</code> introduced an <code>haven_labelled_spss</code>
+class to deal with user defined missing values in a similar way as
+<strong>SPSS</strong>. In such case, additional attributes will be used
+to indicate with values should be considered as missing, but such values
+will not be stored as internal <code>NA</code> values. You should note
+that most R function will not take this information into account.
+Therefore, you will have to convert missing values into <code>NA</code>
+if required before analysis. These defined missing values could co-exist
+with internal <code>NA</code> values.</p>
+<div id="creation" class="section level3">
+<h3>Creation</h3>
+<p>User NAs could be created directly with <code>labelled_spss()</code>.
+You can also manipulate them with <code>na_values()</code> and
+<code>na_range()</code>.</p>
+<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">labelled</span>(<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">9</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="cn">NA</span>), <span class="fu">c</span>(<span class="at">yes =</span> <span class="dv">1</span>, <span class="at">no =</span> <span class="dv">3</span>, <span class="st">&quot;don&#39;t know&quot;</span> <span class="ot">=</span> <span class="dv">9</span>))</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;double&gt;[8]&gt;
+## [1]  1  2  3  9  1  3  2 NA
+## 
+## Labels:
+##  value      label
+##      1        yes
+##      3         no
+##      9 don&#39;t know</code></pre>
+<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">na_values</span>(v) <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;double&gt;[8]&gt;
+## [1]  1  2  3  9  1  3  2 NA
+## Missing values: 9
+## 
+## Labels:
+##  value      label
+##      1        yes
+##      3         no
+##      9 don&#39;t know</code></pre>
+<div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">na_values</span>(v) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;double&gt;[8]&gt;
+## [1]  1  2  3  9  1  3  2 NA
+## 
+## Labels:
+##  value      label
+##      1        yes
+##      3         no
+##      9 don&#39;t know</code></pre>
+<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">na_range</span>(v) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="cn">Inf</span>)</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="fu">na_range</span>(v)</span></code></pre></div>
+<pre><code>## [1]   5 Inf</code></pre>
+<div class="sourceCode" id="cb69"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;double&gt;[8]&gt;
+## [1]  1  2  3  9  1  3  2 NA
+## Missing range:  [5, Inf]
+## 
+## Labels:
+##  value      label
+##      1        yes
+##      3         no
+##      9 don&#39;t know</code></pre>
+<p>NB: you cant also use <code>set_na_range()</code> and
+<code>set_na_values()</code> for a <code>dplyr</code>-like syntax.</p>
+<div class="sourceCode" id="cb71"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="co"># setting value labels and user NAs</span></span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">s1 =</span> <span class="fu">c</span>(<span class="st">&quot;M&quot;</span>, <span class="st">&quot;M&quot;</span>, <span class="st">&quot;F&quot;</span>, <span class="st">&quot;F&quot;</span>), <span class="at">s2 =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">9</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_value_labels</span>(<span class="at">s2 =</span> <span class="fu">c</span>(<span class="at">yes =</span> <span class="dv">1</span>, <span class="at">no =</span> <span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_na_values</span>(<span class="at">s2 =</span> <span class="dv">9</span>)</span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>s2</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;double&gt;[4]&gt;
+## [1] 1 1 2 9
+## Missing values: 9
+## 
+## Labels:
+##  value label
+##      1   yes
+##      2    no</code></pre>
+<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="co"># removing user NAs</span></span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> <span class="fu">set_na_values</span>(<span class="at">s2 =</span> <span class="cn">NULL</span>)</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>s2</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;double&gt;[4]&gt;
+## [1] 1 1 2 9
+## 
+## Labels:
+##  value label
+##      1   yes
+##      2    no</code></pre>
+</div>
+<div id="tests" class="section level3">
+<h3>Tests</h3>
+<p>Note that <code>is.na()</code> will return <code>TRUE</code> for user
+NAs. Use <code>is_user_na()</code> to test if a specific value is a user
+NA and <code>is_regular_na()</code> to test if it is a regular NA.</p>
+<div class="sourceCode" id="cb75"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;double&gt;[8]&gt;
+## [1]  1  2  3  9  1  3  2 NA
+## Missing range:  [5, Inf]
+## 
+## Labels:
+##  value      label
+##      1        yes
+##      3         no
+##      9 don&#39;t know</code></pre>
+<div class="sourceCode" id="cb77"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(v)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE  TRUE</code></pre>
+<div class="sourceCode" id="cb79"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is_user_na</span>(v)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE</code></pre>
+<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is_regular_na</span>(v)</span></code></pre></div>
+<pre><code>## [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE</code></pre>
+</div>
+<div id="conversion" class="section level3">
+<h3>Conversion</h3>
+<p>For most <strong>R</strong> functions, user NAs values are
+<strong>still</strong> regular values.</p>
+<div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">11</span><span class="sc">:</span><span class="dv">15</span>)</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a><span class="fu">na_range</span>(x) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="cn">Inf</span>)</span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a><span class="fu">val_labels</span>(x) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;dk&quot;</span> <span class="ot">=</span> <span class="dv">11</span>, <span class="st">&quot;refused&quot;</span> <span class="ot">=</span> <span class="dv">15</span>)</span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>x</span></code></pre></div>
+<pre><code>## &lt;labelled_spss&lt;integer&gt;[10]&gt;
+##  [1]  1  2  3  4  5 11 12 13 14 15
+## Missing range:  [10, Inf]
+## 
+## Labels:
+##  value   label
+##     11      dk
+##     15 refused</code></pre>
+<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x)</span></code></pre></div>
+<pre><code>## [1] 8</code></pre>
+<p>You can convert user NAs into regular NAs with
+<code>user_na_to_na()</code> or <code>user_na_to_regular_na()</code>
+(both functions are identical).</p>
+<div class="sourceCode" id="cb87"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">user_na_to_na</span>(x)</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;integer&gt;[10]&gt;
+##  [1]  1  2  3  4  5 NA NA NA NA NA</code></pre>
+<div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">user_na_to_na</span>(x), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code>## [1] 3</code></pre>
+<p>Alternatively, if the vector is numeric, you can convert user NAs
+into tagged NAs with <code>user_na_to_tagged_na()</code>.</p>
+<div class="sourceCode" id="cb91"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="fu">user_na_to_tagged_na</span>(x)</span></code></pre></div>
+<pre><code>## &#39;x&#39; has been converted into a double vector.</code></pre>
+<pre><code>## &lt;labelled&lt;double&gt;[10]&gt;
+##  [1]     1     2     3     4     5 NA(a) NA(b) NA(c) NA(d) NA(e)
+## 
+## Labels:
+##  value   label
+##  NA(a)      dk
+##  NA(e) refused</code></pre>
+<div class="sourceCode" id="cb94"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">user_na_to_tagged_na</span>(x), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code>## &#39;x&#39; has been converted into a double vector.</code></pre>
+<pre><code>## [1] 3</code></pre>
+<p>Finally, you can also remove user NAs definition without converting
+these values to <code>NA</code>, using
+<code>remove_user_na()</code>.</p>
+<div class="sourceCode" id="cb97"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="fu">remove_user_na</span>(x)</span></code></pre></div>
+<pre><code>## &lt;labelled&lt;integer&gt;[10]&gt;
+##  [1]  1  2  3  4  5 11 12 13 14 15
+## 
+## Labels:
+##  value   label
+##     11      dk
+##     15 refused</code></pre>
+<div class="sourceCode" id="cb99"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">remove_user_na</span>(x))</span></code></pre></div>
+<pre><code>## [1] 8</code></pre>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

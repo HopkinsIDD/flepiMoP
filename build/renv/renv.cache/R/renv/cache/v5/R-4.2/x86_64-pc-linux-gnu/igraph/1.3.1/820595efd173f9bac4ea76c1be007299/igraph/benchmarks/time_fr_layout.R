@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8c920ed297dd36bb3555fc18e7dd755a85c9104e2ba9cbee092b690379d7ef19
-size 451
+
+time_group("Fruchterman-Reingold layout")
+
+time_that("FR layout is fast, connected", replications=10,
+          init = { library(igraph); set.seed(42) },
+          reinit = { g <- sample_pa(400) },
+          { layout_with_fr(g, niter=500) })
+
+time_that("FR layout is fast, unconnected", replications=10,
+          init = { library(igraph); set.seed(42) },
+          reinit = { g <- sample_gnm(400, 400) },
+          { layout_with_fr(g, niter=500) })

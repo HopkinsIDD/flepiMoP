@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:abf2c572426f32804497e40897df539e8aad5f0f1fba922b62b92320197d7442
-size 887
+Package: rematch2
+Title: Tidy Output from Regular Expression Matching
+Version: 2.1.2
+Authors@R: c(
+    person("Gábor", "Csárdi", email = "csardi.gabor@gmail.com", role = c("aut", "cre")),
+    person("Matthew", "Lincoln", email = "matthew.d.lincoln@gmail.com", role = c("ctb")))
+Description: Wrappers on 'regexpr' and 'gregexpr' to return the match
+    results in tidy data frames.
+License: MIT + file LICENSE
+LazyData: true
+URL: https://github.com/r-lib/rematch2#readme
+BugReports: https://github.com/r-lib/rematch2/issues
+RoxygenNote: 7.1.0
+Imports: tibble
+Suggests: covr, testthat
+Encoding: UTF-8
+NeedsCompilation: no
+Packaged: 2020-04-30 10:31:13 UTC; gaborcsardi
+Author: Gábor Csárdi [aut, cre],
+  Matthew Lincoln [ctb]
+Maintainer: Gábor Csárdi <csardi.gabor@gmail.com>
+Repository: CRAN
+Date/Publication: 2020-05-01 06:50:02 UTC
+Built: R 4.2.2; ; 2023-02-25 16:59:25 UTC; unix

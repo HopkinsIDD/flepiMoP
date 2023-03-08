@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c31c9160edd8bbe39d1bf742e819697fe901025710831d17827baf1f3bddd67c
-size 384
+#bsthemerToggle {
+  padding: 0 5px;
+  margin-right: -5px;
+}
+#bsthemerToggle span {
+  @include caret(up);
+}
+#bsthemerToggle.collapsed span {
+  @include caret(down);
+}
+
+.move-grabber {
+  cursor: move;
+  /* Required to avoid scrolling on mobile safari */
+  touch-action: none;
+  -webkit-touch-action: none;
+  -moz-touch-action: none;
+  -ms-touch-action: none;
+  -o-touch-action: none;
+}

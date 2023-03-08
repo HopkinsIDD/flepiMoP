@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ac19307e3944fe0b5c619bda636fbc640da4be06ceb42a426deafecac092c3f0
-size 332
+# simple test of recycle
+test01 <- function() {
+  if (require(foreach, quietly=TRUE)) {
+    nr <- 21
+    nc <- 17
+    x <- rnorm(nr)
+    it <- iter(x, recycle=TRUE)
+    actual <- foreach(y=it, icount(nr*nc), .combine='c') %do% y
+    dim(actual) <- c(nr, nc)
+    expected <- matrix(x, nr, nc)
+    checkEquals(actual, expected)
+  }
+}

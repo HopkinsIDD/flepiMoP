@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5abcaa546a285556adb3a2d050c27cc2c143b4285739438f30af9790853c365b
-size 249
+# ggtext 0.1.1
+
+- Make sure tests don't fail if vdiffr is missing.
+
+# ggtext 0.1.0
+
+First public release. Provides the two ggplot2 theme elements `element_markdown()` and `element_textbox()` and the two geoms `geom_richtext()` and `geom_textbox()`.

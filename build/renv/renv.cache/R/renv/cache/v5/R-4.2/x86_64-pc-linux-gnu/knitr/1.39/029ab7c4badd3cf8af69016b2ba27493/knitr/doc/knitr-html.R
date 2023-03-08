@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:666b57b3300b81d9669a57323dd85994b06e0d30207474dd23e2905d4eebfd35
-size 593
+## ----setup, include=FALSE-----------------------------------------------------
+library(knitr)
+# to base64 encode images
+opts_knit$set(upload.fun = image_uri)
+
+## ----cars-demo----------------------------------------------------------------
+summary(cars)
+fit=lm(dist~speed, data=cars)
+summary(fit)
+
+## ----cars-plot, fig.width=7, fig.height=6, fig.align='center'-----------------
+par(mar=c(4,4,.1,.1))
+plot(cars, pch=19)
+
+## ----setup, eval=FALSE--------------------------------------------------------
+#  library(knitr)
+#  # to base64 encode images
+#  opts_knit$set(upload.fun = image_uri)
+

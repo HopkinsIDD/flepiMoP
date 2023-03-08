@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a80f97ce213dafc44bcbf5cea2d46c20dc91bdee34e75a5b55f2ac298ef649a9
-size 376
+#include "config.h"
+
+#include <Rcpp.h>
+#include <testRcppInterfaceExporter.h>
+
+#include "unwound.h"
+
+
+//' @export
+// [[Rcpp::export]]
+SEXP use_cpp_interface(SEXP x, bool fast = false) {
+  unwound_t stack_obj("cpp_interface_downstream");
+  Rcpp::RObject out = testRcppInterfaceExporter::test_cpp_interface(x, fast);
+  Rcpp::Rcout << "Wrapping up" << std::endl;
+  return out;
+}

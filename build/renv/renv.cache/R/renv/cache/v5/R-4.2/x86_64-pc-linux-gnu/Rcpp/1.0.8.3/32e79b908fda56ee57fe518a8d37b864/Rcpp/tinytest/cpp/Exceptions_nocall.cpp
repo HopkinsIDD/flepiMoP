@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:50f0d671bf53fe97215f8791b3c5adac3d2da61f0791b1e6e2610985011d76c2
-size 268
+#define RCPP_DEFAULT_INCLUDE_CALL false
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+void Rcpp_exception(){
+    throw Rcpp::exception("ouch");
+}
+
+// [[Rcpp::export]]
+void eval_error_no_call(){
+    Rcpp_eval(Rf_lang1(Rf_install("ouch")), R_EmptyEnv);
+}

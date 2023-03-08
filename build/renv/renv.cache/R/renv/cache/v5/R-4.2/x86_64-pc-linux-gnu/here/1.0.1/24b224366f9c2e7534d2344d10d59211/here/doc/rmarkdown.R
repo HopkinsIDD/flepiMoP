@@ -1,3 +1,29 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3ab6ed0bc0c04ddc3ce9af9d6e690c791d80022d5f7fa6c7db4993e64f8b7964
-size 1007
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  error = !identical(Sys.getenv("IN_PKGDOWN"), "true")
+)
+
+project_path <- system.file("demo-project", package = "here")
+
+## ----echo = FALSE-------------------------------------------------------------
+fs::dir_tree(project_path)
+
+## ----eval = FALSE-------------------------------------------------------------
+#  setwd(file.path(project_path, "analysis"))
+
+## ----include = FALSE----------------------------------------------------------
+knitr::opts_knit$set(root.dir = file.path(project_path, "analysis"))
+
+## -----------------------------------------------------------------------------
+getwd()
+
+## -----------------------------------------------------------------------------
+here::i_am("analysis/report.Rmd")
+
+## -----------------------------------------------------------------------------
+library(here)
+here("data", "penguins.csv")
+here("data/penguins.csv")
+

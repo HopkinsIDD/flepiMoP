@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ee68c1623bd3d9528a4410c9c1f024230f3f224a6d3c697540e4b48634aa313e
-size 152
+
+dyn.load("piWithInterrupts.so")
+#res <- .Call("PiLeibniz", n=1e9, frequency=1e6)
+res <- .Call("PiLeibniz", n=1e9, frequency=1e6)
+print(res, digits=10)

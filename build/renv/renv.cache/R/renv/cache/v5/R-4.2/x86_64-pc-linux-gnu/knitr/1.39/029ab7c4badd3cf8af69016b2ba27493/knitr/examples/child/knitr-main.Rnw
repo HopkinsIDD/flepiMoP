@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f043f33e39351b72c64a0d8261100634a66bceb6aff811ba2f06f67e932ddbe4
-size 265
+\documentclass{article}
+\usepackage{mathpazo}
+\begin{document}
+This main document has several children.
+
+<<test-main>>=
+1+1
+@
+<<test-child, child=c('knitr-child-a.Rnw', 'knitr-child-b.Rnw')>>=
+@
+
+<<test-child-dir, child='sub/knitr-child-c.Rnw'>>=
+@
+
+\end{document}

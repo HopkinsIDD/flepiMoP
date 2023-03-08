@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:200d2171cb2ab55690277de6eeb035e62826bace359d6f415128215384e8a76e
-size 256
+Normally we use the built-in functions, such as `textInput()`, to generate the HTML UI in the R script `ui.R`. Actually **shiny** also works with a custom HTML page `www/index.html`. See [the tutorial](http://shiny.rstudio.com/tutorial/) for more details.

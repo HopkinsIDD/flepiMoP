@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cd5df72929565626ced175dfa0fe414ede1ec10124d6c7f49f38c195c4e766d1
-size 580
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 300;
+  src: url(fonts/KFOlCnqEu92Fr1MmSU5fBBc-.woff) format('woff');
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url(fonts/KFOmCnqEu92Fr1Mu4mxM.woff) format('woff');
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  src: url(fonts/KFOlCnqEu92Fr1MmEU9fBBc-.woff) format('woff');
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  src: url(fonts/KFOlCnqEu92Fr1MmWUlfBBc-.woff) format('woff');
+}

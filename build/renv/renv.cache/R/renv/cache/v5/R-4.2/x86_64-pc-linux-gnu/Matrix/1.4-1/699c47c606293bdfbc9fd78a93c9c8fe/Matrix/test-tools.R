@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:88040f2d732570828ec9cf119f346d99d724b4c070b70b49cfacea5491210bdc
-size 591
+#### Will be sourced by several R scripts in ../tests/
+
+### ------- Part I & -- unrelated to "Matrix" classes ---------------
+### ------- Part II  -- related to matrices, but *not* "Matrix" -----------
+source(system.file("test-tools-1.R",      package = "Matrix"), keep.source = FALSE)
+### ------- Part III --  "Matrix" (classes) specific ----------------------
+source(system.file("test-tools-Matrix.R", package = "Matrix"), keep.source = FALSE)
+
+doExtras <- interactive() || nzchar(Sys.getenv("R_MATRIX_CHECK_EXTRA")) ||
+    identical("true", unname(Sys.getenv("R_PKG_CHECKING_doExtras")))

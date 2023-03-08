@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:26a94bdcab8afdff48aec7119765d51d9850b55ca4518669d9010d8deac998cc
-size 517
+## ---- include = FALSE---------------------------------------------
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", width = 68)
+options(width = 68, cli.unicode = FALSE, cli.width = 68)
+
+## ---- eval = FALSE------------------------------------------------
+#  install.packages("tidyverse")
+
+## -----------------------------------------------------------------
+library(tidyverse)
+
+## ---- include = FALSE---------------------------------------------
+# Ensure pkgdown links to the right packages.
+library(dplyr)
+

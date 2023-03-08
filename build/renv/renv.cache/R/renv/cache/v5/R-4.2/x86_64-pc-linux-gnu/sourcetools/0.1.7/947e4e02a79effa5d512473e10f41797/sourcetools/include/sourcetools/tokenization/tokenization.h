@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6259ed25c1f33aeda0bf3c41acc2ebeb5eddeb867215c6a1b86806e2f5b662e4
-size 294
+#ifndef SOURCETOOLS_TOKENIZATION_TOKENIZATION_H
+#define SOURCETOOLS_TOKENIZATION_TOKENIZATION_H
+
+#include <sourcetools/tokenization/Registration.h>
+#include <sourcetools/tokenization/Token.h>
+#include <sourcetools/tokenization/Tokenizer.h>
+
+#endif /* SOURCETOOLS_TOKENIZATION_TOKENIZATION_H */

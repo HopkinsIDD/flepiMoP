@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e53fd80b389630b8876c4049ba0931b851a452fae58b140908fc2fd7504e4111
-size 262
+args <- commandArgs(trailingOnly = TRUE)
+rows <- as.integer(args[[1]])
+cols <- as.integer(args[[2]])
+output <- args[[3]]
+
+set.seed(42)
+RNGversion("3.5.3")
+
+data <- vroom::gen_tbl(rows, cols, col_types = strrep("d", cols))
+
+vroom::vroom_write(data, output, "\t")

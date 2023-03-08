@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:82b4a5bda99445da2770a81bbd5382788fb6ee6cb8b0b7de8f7b1355eff02d4b
-size 219
+//
+// Form text
+//
+
+.form-text {
+  margin-top: $form-text-margin-top;
+  @include font-size($form-text-font-size);
+  font-style: $form-text-font-style;
+  font-weight: $form-text-font-weight;
+  color: $form-text-color;
+}

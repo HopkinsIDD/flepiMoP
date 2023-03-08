@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:21af74a4878031421a84db14b4112391bfb9af0a7d7a7cc2622c47f1dbf5dac9
-size 526
+#ifndef UNWOUND_H
+#define UNWOUND_H
+
+
+#include <Rcpp.h>
+
+#define PKG_NAME "testRcppInterfaceUser"
+
+struct unwound_t {
+  unwound_t(std::string flag_) {
+    flag = flag_;
+    Rcpp::Rcout << "Initialising " << flag << std::endl;
+    Rcpp::Environment ns = Rcpp::Environment::namespace_env(PKG_NAME);
+    flags_env = ns["flags"];
+    flags_env[flag] = false;
+  }
+  ~unwound_t() {
+    Rcpp::Rcout << "Unwinding " << flag << std::endl;
+    flags_env[flag] = true;
+  }
+
+  std::string flag;
+  Rcpp::Environment flags_env;
+};
+
+
+#endif

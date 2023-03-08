@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cb42f7a8c99dcf2936b48ca6a70528033d525b1aa3690311d17f8240bad9dec2
-size 265
+iteratelist             Create an iteration list from a R object
+rowSplit                Split a data.frame or matrix into rows
+whisker-package         Mustache for R
+whisker.escape          escape basic HTML characters
+whisker.render          Logicless templating

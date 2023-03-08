@@ -1,3 +1,31 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c91a51c6e6bfe35c66d68d544a0f90880cff3e4ede6347c794d9889c86565127
-size 533
+This directory contains a skeleton example
+of how to link to the C-API
+
+The basic requirements to use the exported xts
+C code is:
+
+(1) Add to your DESCRIPTION file:
+
+  Depends: xts
+  linkingTo: xts
+
+(2) In your .c files:
+
+  #include "xtsAPI.h"
+
+This header file exports the functions that are
+public in xts.
+
+(3) Compile as you would with any other package:
+
+  R CMD build api_example
+  R CMD INSTALL linkXTS_1.0.tar.gz
+
+(4) Try it out!
+
+  R> require(linkXTS)
+  R> checkOrder(1:10)
+  [1] TRUE
+  R> checkOrder(c(1:10,1))
+  [1] FALSE
+

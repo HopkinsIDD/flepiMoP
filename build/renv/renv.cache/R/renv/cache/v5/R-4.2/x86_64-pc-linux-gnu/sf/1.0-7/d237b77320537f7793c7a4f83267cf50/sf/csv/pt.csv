@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4cd658174f0419ec6510f251db9ab30bd06e69cd83808ffac18f9f69afb611a9
-size 81
+Id,Int64,Int32,WKT
+1,0,33,POINT(0 1)
+2,4294967297,44,POINT(44 55)
+3,,,POINT(0 0)

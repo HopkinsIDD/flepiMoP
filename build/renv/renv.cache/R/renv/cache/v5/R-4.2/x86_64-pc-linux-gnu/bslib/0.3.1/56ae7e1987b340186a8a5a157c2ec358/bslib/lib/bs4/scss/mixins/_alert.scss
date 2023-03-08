@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:75d86577eb4780173cd06bac82a7ded8a0bdc1cc8c744ea6f87bac35e0e85b41
-size 242
+@mixin alert-variant($background, $border, $color) {
+  color: $color;
+  @include gradient-bg($background);
+  border-color: $border;
+
+  hr {
+    border-top-color: darken($border, 5%);
+  }
+
+  .alert-link {
+    color: darken($color, 10%);
+  }
+}

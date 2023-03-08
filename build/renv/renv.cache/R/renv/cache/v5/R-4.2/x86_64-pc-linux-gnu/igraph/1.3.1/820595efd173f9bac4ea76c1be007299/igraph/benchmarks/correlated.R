@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a9e7f2a68e42e407548a736b421aaf8fda08d86dee93dcdabcd2f73be784d242
-size 205
+
+time_group("correlated E-R graphs, v1")
+
+time_that("sample_correlated_gnp is fast", replications=10,
+          init={ library(igraph) },
+          { sample_correlated_gnp_pair(100, corr=.8, p=5/100) })
+
+

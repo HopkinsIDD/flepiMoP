@@ -1,3 +1,33 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f2577e7f8a201d782ef11a138d04de3ebcd8d7749fed8c65222225f7b98f4e7a
-size 1272
+// -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+/* :tabSize=4:indentSize=4:noTabs=false:folding=explicit:collapseFolds=1: */
+//
+// Row_proto.h: Rcpp/Armadillo glue
+//
+// Copyright (C)  2010 - 2013  Dirk Eddelbuettel, Romain Francois and Douglas Bates
+//
+// This file is part of RcppArmadillo.
+//
+// RcppArmadillo is free software: you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 of the License, or
+// (at your option) any later version.
+//
+// RcppArmadillo is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with RcppArmadillo.  If not, see <http://www.gnu.org/licenses/>.
+
+
+#ifndef RCPPARMADILLO_ROW_PROTO_H
+#define RCPPARMADILLO_ROW_PROTO_H
+
+template <int RTYPE, bool NA, typename VECTOR>
+inline Row( const Rcpp::VectorBase<RTYPE,NA,VECTOR>& X ) ;
+
+template <int RTYPE, bool NA, typename VECTOR>
+inline Row( const Rcpp::MatrixBase<RTYPE,NA,VECTOR>& X ) ;
+
+#endif

@@ -1,3 +1,33 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:affd7f2abfbcb1b1e787140de610257723340be059dbaca1285928637263e60f
-size 602
+// Row
+//
+// Rows contain your columns.
+
+@if $enable-grid-classes {
+  .row {
+    @include make-row();
+
+    > * {
+      @include make-col-ready();
+    }
+  }
+}
+
+@if $enable-cssgrid {
+  .grid {
+    display: grid;
+    grid-template-rows: repeat(var(--#{$variable-prefix}rows, 1), 1fr);
+    grid-template-columns: repeat(var(--#{$variable-prefix}columns, #{$grid-columns}), 1fr);
+    gap: var(--#{$variable-prefix}gap, #{$grid-gutter-width});
+
+    @include make-cssgrid();
+  }
+}
+
+
+// Columns
+//
+// Common styles for small and large grid columns
+
+@if $enable-grid-classes {
+  @include make-grid-columns();
+}

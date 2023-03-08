@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f945582de7fe55d072dca4c0aced2fd87d3c99a648cb809e48e715e170e4ffd9
-size 745
+
+isWindows <- Sys.info()[["sysname"]] == "Windows"
+if (!isWindows) exit_file("Skipping test on non-Windows platform")
+
+d <- tempfile()
+dir.create(d)
+
+# A file path not representable in latin-1
+f <- file.path(d, "tricky-ő")
+
+# We need to use a binary mode connection so the newlines
+# are consistent across platforms
+con <- file(f, open = "wb")
+writeLines("foobar", con = con)
+close(con)
+
+expect_identical(digest::digest(file = f), "14758f1afd44c09b7992073ccf00b43d")
+
+expect_identical(digest::digest(f, file = TRUE), "14758f1afd44c09b7992073ccf00b43d")
+
+vd <- getVDigest()
+
+expect_identical(vd(file = f), "14758f1afd44c09b7992073ccf00b43d")
+
+expect_identical(vd(f, file = TRUE), "14758f1afd44c09b7992073ccf00b43d")
+
+unlink(d, recursive = TRUE)

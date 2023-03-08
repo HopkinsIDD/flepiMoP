@@ -1,3 +1,52 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b8a0d1f2d545b6dd040d520cdfa66d596c71a5fea583c49294b9232c7fb03ca3
-size 2058
+Package: ggfortify
+Type: Package
+Title: Data Visualization Tools for Statistical Analysis Results
+Version: 0.4.14
+Date: 2022-01-02
+Authors@R: c(
+  person("Masaaki", "Horikoshi", role = c("aut"),
+         email = "sinhrks@gmail.com"),
+  person("Yuan", "Tang", role = c("aut", "cre"),
+         email = "terrytangyuan@gmail.com",
+         comment = c(ORCID = "0000-0001-5243-233X")),
+  person("Austin", "Dickey", role = c("ctb")),
+  person("Matthias", "Grenié", role = c("ctb")),
+  person("Ryan", "Thompson", role = c("ctb")),
+  person("Luciano", "Selzer", role = c("ctb")),
+  person("Dario", "Strbenac", role = c("ctb")),
+  person("Kirill", "Voronin", role = c("ctb")),
+  person("Damir", "Pulatov", role = c("ctb"))
+  )
+Maintainer: Yuan Tang <terrytangyuan@gmail.com>
+URL: https://github.com/sinhrks/ggfortify
+BugReports: https://github.com/sinhrks/ggfortify/issues
+Encoding: UTF-8
+Description: Unified plotting tools for statistics commonly used, such as GLM,
+    time series, PCA families, clustering and survival analysis. The package offers
+    a single plotting interface for these analysis results and plots in a unified
+    style using 'ggplot2'.
+License: MIT + file LICENSE
+VignetteBuilder: knitr
+Depends: methods, ggplot2 (>= 2.0.0)
+Imports: dplyr (>= 0.3), tidyr, gridExtra, grid, scales, stringr,
+        tibble
+Suggests: testthat, cluster, changepoint, dlm, fGarch, forecast,
+        ggrepel, glmnet, grDevices, KFAS, knitr, lintr, mapdata,
+        markdown, MASS, MSwM, nlme, raster, ROCR, sp, stats,
+        strucchange, survival, timeSeries, tseries, utils, vars, xts,
+        zoo, lfda
+RoxygenNote: 7.1.1
+NeedsCompilation: no
+Packaged: 2022-01-03 14:47:10 UTC; yuan.tang
+Author: Masaaki Horikoshi [aut],
+  Yuan Tang [aut, cre] (<https://orcid.org/0000-0001-5243-233X>),
+  Austin Dickey [ctb],
+  Matthias Grenié [ctb],
+  Ryan Thompson [ctb],
+  Luciano Selzer [ctb],
+  Dario Strbenac [ctb],
+  Kirill Voronin [ctb],
+  Damir Pulatov [ctb]
+Repository: CRAN
+Date/Publication: 2022-01-03 15:30:02 UTC
+Built: R 4.2.2; ; 2023-02-25 17:26:37 UTC; unix

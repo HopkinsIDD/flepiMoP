@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:457cf809caf3a9f005fe8dcfb10eb91f3e7565f4e2a6f7822e9f6b5dd953a9b3
-size 722
+## ----setup, include=FALSE-----------------------------------------------------
+library(sass)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  message = FALSE,
+  fig.align = "center",
+  out.width = "80%",
+  class.output = "css",
+  comment = ""
+)
+
+## ---- eval=FALSE, ref.label='bs_sass'-----------------------------------------
+#  NA
+
+## ---- echo = FALSE, out.width='50%'-------------------------------------------
+knitr::include_graphics('my-style.png')
+
+## ---- echo = FALSE, out.width='30%'-------------------------------------------
+knitr::include_graphics('hello-pacifico.png')
+
+## ---- echo = FALSE------------------------------------------------------------
+knitr::include_graphics("https://i.imgur.com/5cUEifg.gif")
+

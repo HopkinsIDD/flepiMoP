@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0a3de1dec32ca54a2447aa324b7cc4755d29154c560c769d252143ec5702502f
-size 252
+detaiks.chunk-details > summary.chunk-summary {
+  text-align: right;
+}
+details.chunk-details[open] > summary.chunk-summary::after {
+  content: "Hide";
+}
+details.chunk-details[open] > summary.chunk-summary > span.chunk-summary-text {
+  display: none;
+}

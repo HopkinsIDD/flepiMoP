@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:305384d27f2c39820048233872ae2c74c031b9a7b52cd583b814c09f6efb1fbe
-size 710
+library(gWidgetsWWW2)
+w = gwindow('An R Notebook')
+sb = gstatusbar('Powered by Rook, gWidgetsWWW2 and knitr', container = w)
+g = gframe('An R Notebook based on knitr', use.scrollwindow = TRUE,
+           horizontal = FALSE, container = w)
+gbutton('Knit', container = g, handler = function(h, ...) {
+  library(knitr)
+  svalue(g3) = try(knit2html(text = svalue(g1), fragment.only = TRUE))
+})
+g0 = ggroup(container = g)
+code = readLines(system.file('examples', 'knitr-minimal.Rmd', package = 'knitr'))
+# g1 = gtext(code, container = g, use.codemirror = TRUE, width = 500)
+g1 = gtext(code, container = g0, width = 500, height = 500)
+g2 = ggroup(cont = g0, expand = TRUE)
+g3 = ghtml('results here', container = g2)

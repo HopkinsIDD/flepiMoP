@@ -1,3 +1,49 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7cc844e30ffb7cc35b0e0067c74325ccbf6dff022b66a61226ae112eb31815c6
-size 1522
+## ----setup, echo=FALSE--------------------------------------------------------
+library(knitr)
+opts_chunk$set(warning = FALSE, message = FALSE)
+
+## ----lmfit--------------------------------------------------------------------
+lmfit <- lm(mpg ~ wt, mtcars)
+lmfit
+summary(lmfit)
+
+## -----------------------------------------------------------------------------
+library(broom)
+tidy(lmfit)
+
+## -----------------------------------------------------------------------------
+augment(lmfit)
+
+## -----------------------------------------------------------------------------
+glance(lmfit)
+
+## ----glmfit-------------------------------------------------------------------
+glmfit <- glm(am ~ wt, mtcars, family = "binomial")
+tidy(glmfit)
+augment(glmfit)
+glance(glmfit)
+
+## -----------------------------------------------------------------------------
+nlsfit <- nls(mpg ~ k / wt + b, mtcars, start = list(k = 1, b = 0))
+tidy(nlsfit)
+augment(nlsfit, mtcars)
+glance(nlsfit)
+
+## ----ttest--------------------------------------------------------------------
+tt <- t.test(wt ~ am, mtcars)
+tidy(tt)
+
+## -----------------------------------------------------------------------------
+wt <- wilcox.test(wt ~ am, mtcars)
+tidy(wt)
+
+## -----------------------------------------------------------------------------
+glance(tt)
+glance(wt)
+
+## -----------------------------------------------------------------------------
+chit <- chisq.test(xtabs(Freq ~ Sex + Class, 
+                         data = as.data.frame(Titanic)))
+tidy(chit)
+augment(chit)
+

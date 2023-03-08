@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1a1cd633065c57b9f21a9da05bcdf38d0ef2790ac38d77f5123e1b29bed6dc80
-size 264
+#ifndef VCTRS_H
+#define VCTRS_H
+
+#include <Rinternals.h>
+#include <R_ext/Rdynload.h>
+#include <stdbool.h>
+
+extern bool (*vec_is_vector)(SEXP);
+extern R_len_t (*short_vec_size)(SEXP);
+extern SEXP (*short_vec_recycle)(SEXP, R_len_t);
+
+void vctrs_init_api();
+
+#endif

@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0c65b4e5e5be620e65aab3e7f04f3df1dd3ae70e9f957c861a9c272dc8a00997
-size 459
+td_add                  Add a value to the t-Digest with the specified
+                        count
+td_create               Allocate a new histogram
+td_merge                Merge one t-Digest into another
+td_quantile_of          Return the quantile of the value
+td_total_count          Total items contained in the t-Digest
+td_value_at             Return the value at the specified quantile
+tquantile               Calculate sample quantiles from a t-Digest

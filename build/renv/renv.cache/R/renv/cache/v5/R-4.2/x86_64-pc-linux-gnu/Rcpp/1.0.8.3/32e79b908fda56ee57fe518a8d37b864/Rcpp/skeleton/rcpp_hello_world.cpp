@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1bac981c68c47dc10f798e71ce7807927f2381ab2387cff4eb41a176dcdc4873
-size 276
+#include "rcpp_hello_world.h"
+
+SEXP rcpp_hello_world(){
+    using namespace Rcpp ;
+
+    CharacterVector x = CharacterVector::create( "foo", "bar" )  ;
+    NumericVector y   = NumericVector::create( 0.0, 1.0 ) ;
+    List z            = List::create( x, y ) ;
+
+    return z ;
+}

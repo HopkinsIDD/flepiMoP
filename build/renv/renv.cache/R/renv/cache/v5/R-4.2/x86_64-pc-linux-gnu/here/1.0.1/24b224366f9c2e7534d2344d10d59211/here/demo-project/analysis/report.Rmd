@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ea0a3bd5bf4095788a8ea838cfa597468780e2a76e20d2a94533debc3cfee7f5
-size 404
+---
+title: "Palmer penguins"
+author: "Kirill Müller"
+date: "11/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+here::i_am("analysis/report.Rmd", uuid = "50208352-4ee9-4401-bb40-9f7ec81050da")
+library(here)
+
+knitr::opts_chunk$set(echo = TRUE)
+
+penguins <- readr::read_csv(here("data/penguins.csv"))
+```
+
+## Linear model
+
+```{r}
+lm(flipper_length_mm ~ body_mass_g + species, penguins)
+```

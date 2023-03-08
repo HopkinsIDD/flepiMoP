@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b7e129f7e8d11ed63ad659c3b148145d71340fb8ad3b8d9e9040331bda05912d
-size 473
+@mixin reset-text() {
+  font-family: $font-family-base;
+  // We deliberately do NOT reset font-size.
+  font-style: normal;
+  font-weight: 400;
+  line-height: $line-height-base;
+  line-break: auto;
+  text-align: left; // Fallback for where `start` is not supported
+  text-align: start;
+  text-decoration: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  word-break: normal;
+  word-spacing: normal;
+  word-wrap: normal;
+  white-space: normal;
+}

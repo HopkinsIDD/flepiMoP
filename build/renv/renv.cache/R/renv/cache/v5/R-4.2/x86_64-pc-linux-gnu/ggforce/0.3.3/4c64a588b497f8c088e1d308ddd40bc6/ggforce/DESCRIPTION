@@ -1,3 +1,52 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7aba45cb5ab7ccad5ee436ed5ef840293a217abdfefc55afd8c37e0c76b109f9
-size 2368
+Package: ggforce
+Type: Package
+Title: Accelerating 'ggplot2'
+Version: 0.3.3
+Authors@R: 
+    c(person(given = "Thomas Lin",
+             family = "Pedersen",
+             role = c("cre", "aut"),
+             email = "thomasp85@gmail.com",
+             comment = c(ORCID = "0000-0002-5147-4711")),
+      person("RStudio",
+             role = "cph"))
+Maintainer: Thomas Lin Pedersen <thomasp85@gmail.com>
+Description: The aim of 'ggplot2' is to aid in visual data investigations. This
+    focus has led to a lack of facilities for composing specialised plots.
+    'ggforce' aims to be a collection of mainly new stats and geoms that fills
+    this gap. All additional functionality is aimed to come through the official
+    extension system so using 'ggforce' should be a stable experience.
+URL: https://ggforce.data-imaginist.com,
+        https://github.com/thomasp85/ggforce
+BugReports: https://github.com/thomasp85/ggforce/issues
+License: MIT + file LICENSE
+LazyData: TRUE
+Encoding: UTF-8
+Depends: ggplot2 (>= 3.0.0), R (>= 3.3.0)
+Imports: Rcpp (>= 0.12.2), grid, scales, MASS, tweenr (>= 0.1.5),
+        gtable, rlang, polyclip, stats, grDevices, tidyselect, withr,
+        utils
+LinkingTo: Rcpp, RcppEigen
+RoxygenNote: 7.1.1
+Suggests: sessioninfo, concaveman, deldir, reshape2, units (>= 0.4-6),
+        covr
+Collate: 'RcppExports.R' 'aaa.R' 'shape.R' 'arc_bar.R' 'arc.R'
+        'autodensity.R' 'autohistogram.R' 'autopoint.R' 'bezier.R'
+        'bspline.R' 'bspline_closed.R' 'circle.R' 'diagonal.R'
+        'diagonal_wide.R' 'ellipse.R' 'facet_grid_paginate.R'
+        'facet_matrix.R' 'facet_row.R' 'facet_stereo.R'
+        'facet_wrap_paginate.R' 'facet_zoom.R' 'ggforce_package.R'
+        'ggproto-classes.R' 'interpolate.R' 'link.R' 'mark_circle.R'
+        'mark_ellipse.R' 'mark_hull.R' 'mark_label.R' 'mark_rect.R'
+        'parallel_sets.R' 'position-jitternormal.R' 'position_auto.R'
+        'position_floatstack.R' 'regon.R' 'scale-depth.R'
+        'scale-unit.R' 'sina.R' 'spiro.R' 'themes.R' 'trans.R'
+        'trans_linear.R' 'utilities.R' 'voronoi.R' 'zzz.R'
+NeedsCompilation: yes
+Packaged: 2021-03-05 08:25:05 UTC; thomas
+Author: Thomas Lin Pedersen [cre, aut]
+    (<https://orcid.org/0000-0002-5147-4711>),
+  RStudio [cph]
+Repository: CRAN
+Date/Publication: 2021-03-05 10:20:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 17:20:45 UTC; unix

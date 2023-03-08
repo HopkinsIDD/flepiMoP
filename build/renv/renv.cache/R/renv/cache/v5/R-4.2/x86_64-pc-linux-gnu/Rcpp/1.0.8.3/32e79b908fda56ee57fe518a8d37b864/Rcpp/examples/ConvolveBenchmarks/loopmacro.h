@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3ce76bc77b0e265799fbe65e8ab7fafb001de8c8bfbb4dae7c80d64d01a15030
-size 430
+
+#define LOOPMACRO_C(name)                   \
+SEXP name##__loop(SEXP n_, SEXP a, SEXP b){ \
+    int n = INTEGER(n_)[0] ;                \
+    SEXP res  = R_NilValue ;                \
+    for( int i=0; i<n; i++){                \
+       res = name( a, b ) ;                 \
+    }                                       \
+    return res ;                            \
+}
+
+#define LOOPMACRO_CPP(name) RcppExport LOOPMACRO_C(name)
+

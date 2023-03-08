@@ -1,3 +1,115 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7e9f529c4fc2c673809da453a6a6323a0826d12b88bfa4e3a4c05e688384c959
-size 5068
+Package: gtsummary
+Title: Presentation-Ready Data Summary and Analytic Result Tables
+Version: 1.6.0
+Authors@R: 
+    c(person(given = "Daniel D.",
+             family = "Sjoberg",
+             role = c("aut", "cre"),
+             email = "danield.sjoberg@gmail.com",
+             comment = c(ORCID = "0000-0003-0862-2018")),
+      person(given = "Michael",
+             family = "Curry",
+             role = "aut",
+             comment = c(ORCID = "0000-0002-0261-4044")),
+      person(given = "Joseph",
+             family = "Larmarange",
+             role = "aut",
+             comment = c(ORCID = "0000-0001-7097-700X")),
+      person(given = "Jessica",
+             family = "Lavery",
+             role = "aut",
+             comment = c(ORCID = "0000-0002-2746-5647")),
+      person(given = "Karissa",
+             family = "Whiting",
+             role = "aut",
+             comment = c(ORCID = "0000-0002-4683-1868")),
+      person(given = "Emily C.",
+             family = "Zabor",
+             role = "aut",
+             comment = c(ORCID = "0000-0002-1402-4498")),
+      person(given = "Xing",
+             family = "Bai",
+             role = "ctb"),
+      person(given = "Esther",
+             family = "Drill",
+             role = "ctb",
+             comment = c(ORCID = "0000-0002-3315-4538")),
+      person(given = "Jessica",
+             family = "Flynn",
+             role = "ctb",
+             comment = c(ORCID = "0000-0001-8310-6684")),
+      person(given = "Margie",
+             family = "Hannum",
+             role = "ctb",
+             comment = c(ORCID = "0000-0002-2953-0449")),
+      person(given = "Stephanie",
+             family = "Lobaugh",
+             role = "ctb"),
+      person(given = "Shannon", 
+             family = "Pileggi",
+             role = "ctb",
+             comment = c(ORCID = "0000-0002-7732-4164")),
+      person(given = "Amy",
+             family = "Tin",
+             role = "ctb",
+             comment = c(ORCID = "0000-0002-8005-0694")),
+      person(given = "Gustavo",
+             family = "Zapata Wainberg",
+             role = "ctb",
+             comment = c(ORCID = "0000-0002-2524-3637")))
+Description: Creates presentation-ready tables summarizing data
+    sets, regression models, and more. The code to create the tables is
+    concise and highly customizable. Data frames can be summarized with
+    any function, e.g. mean(), median(), even user-written functions.
+    Regression models are summarized and include the reference rows for
+    categorical variables. Common regression models, such as logistic
+    regression and Cox proportional hazards regression, are automatically
+    identified and the tables are pre-filled with appropriate column
+    headers.
+License: MIT + file LICENSE
+URL: https://github.com/ddsjoberg/gtsummary,
+        https://www.danieldsjoberg.com/gtsummary/
+BugReports: https://github.com/ddsjoberg/gtsummary/issues
+Depends: R (>= 3.4)
+Imports: broom (>= 0.8.0), broom.helpers (>= 1.7.0), cli (>= 3.1.1),
+        dplyr (>= 1.0.7), forcats (>= 0.5.1), glue (>= 1.6.0), gt (>=
+        0.5.0), knitr (>= 1.37), lifecycle (>= 1.0.1), purrr (>=
+        0.3.4), rlang (>= 0.4.12), stringr (>= 1.4.0), tibble (>=
+        3.1.6), tidyr (>= 1.1.4)
+Suggests: aod (>= 1.3.1), broom.mixed (>= 0.2.7), car (>= 3.0-11),
+        covr, effectsize (>= 0.6.0), emmeans (>= 1.7.3), flextable (>=
+        0.6.10), ftExtra (>= 0.4.0), geepack, GGally (>= 2.1.0), Hmisc,
+        huxtable (>= 5.4.0), insight (>= 0.15.0), kableExtra (>=
+        1.3.4), lme4, mgcv, mice (>= 3.10.0), nnet, officer, openxlsx,
+        parameters (>= 0.16.0), parsnip (>= 0.1.7), rmarkdown, sandwich
+        (>= 3.0.1), scales, smd (>= 0.6.6), spelling (>= 2.2), survey,
+        survival (>= 3.2-11), testthat (>= 3.0.4), tidycmprsk (>=
+        0.1.2), workflows (>= 0.2.4)
+VignetteBuilder: knitr
+RdMacros: lifecycle
+Encoding: UTF-8
+Language: en-US
+LazyData: true
+RoxygenNote: 7.1.2
+Config/testthat/edition: 3
+Config/testthat/parallel: true
+NeedsCompilation: no
+Packaged: 2022-04-25 20:27:01 UTC; SjobergD
+Author: Daniel D. Sjoberg [aut, cre] (<https://orcid.org/0000-0003-0862-2018>),
+  Michael Curry [aut] (<https://orcid.org/0000-0002-0261-4044>),
+  Joseph Larmarange [aut] (<https://orcid.org/0000-0001-7097-700X>),
+  Jessica Lavery [aut] (<https://orcid.org/0000-0002-2746-5647>),
+  Karissa Whiting [aut] (<https://orcid.org/0000-0002-4683-1868>),
+  Emily C. Zabor [aut] (<https://orcid.org/0000-0002-1402-4498>),
+  Xing Bai [ctb],
+  Esther Drill [ctb] (<https://orcid.org/0000-0002-3315-4538>),
+  Jessica Flynn [ctb] (<https://orcid.org/0000-0001-8310-6684>),
+  Margie Hannum [ctb] (<https://orcid.org/0000-0002-2953-0449>),
+  Stephanie Lobaugh [ctb],
+  Shannon Pileggi [ctb] (<https://orcid.org/0000-0002-7732-4164>),
+  Amy Tin [ctb] (<https://orcid.org/0000-0002-8005-0694>),
+  Gustavo Zapata Wainberg [ctb] (<https://orcid.org/0000-0002-2524-3637>)
+Maintainer: Daniel D. Sjoberg <danield.sjoberg@gmail.com>
+Repository: CRAN
+Date/Publication: 2022-04-25 23:50:13 UTC
+Built: R 4.2.2; ; 2023-02-25 18:00:02 UTC; unix

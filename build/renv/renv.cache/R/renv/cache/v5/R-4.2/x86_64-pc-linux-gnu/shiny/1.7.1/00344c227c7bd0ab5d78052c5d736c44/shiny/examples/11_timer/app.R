@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7d4c1f67507a19ffed5aba0c26bed5adfda89a903915ee5d51fd69d19a699b09
-size 401
+library(shiny)
+
+# Define UI for displaying current time ----
+ui <- fluidPage(
+
+  h2(textOutput("currentTime"))
+
+)
+
+# Define server logic to show current time, update every second ----
+server <- function(input, output, session) {
+
+  output$currentTime <- renderText({
+    invalidateLater(1000, session)
+    paste("The current time is", Sys.time())
+  })
+
+}
+
+# Create Shiny app ----
+shinyApp(ui, server)

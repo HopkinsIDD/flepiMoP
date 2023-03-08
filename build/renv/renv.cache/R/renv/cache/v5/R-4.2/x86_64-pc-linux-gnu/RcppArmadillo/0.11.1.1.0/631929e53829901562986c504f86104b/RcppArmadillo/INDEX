@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:dad80b806f9d12be377016e807bab0e6db7ea000a647371c82e6bc1be383faef
-size 565
+armadillo_set_seed      Set the Armadillo Random Number Generator to
+                        the given value
+armadillo_set_seed_random
+                        Set the Armadillo Random Number Generator to a
+                        random value
+armadillo_version       Report the version of Armadillo
+fastLm                  Bare-bones linear model fitting function
+RcppArmadillo-package   R and Armadillo Integration
+RcppArmadillo.package.skeleton
+                        Create a skeleton for a new package that
+                        intends to use RcppArmadillo

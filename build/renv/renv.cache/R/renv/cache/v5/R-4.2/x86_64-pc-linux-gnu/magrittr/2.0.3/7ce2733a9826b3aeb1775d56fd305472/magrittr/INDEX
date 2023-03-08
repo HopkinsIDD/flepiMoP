@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ca1e828180cd07dcbd0d0537af1fa37e669eee8741c9508e4b51989a208777e6
-size 705
+[[.fseq                 Extract function(s) from a functional sequence.
+%<>%                    Assignment pipe
+%>%                     Pipe
+%$%                     Exposition pipe
+%T>%                    Tee pipe
+debug_fseq              Debugging function for functional sequences.
+debug_pipe              Debugging function for magrittr pipelines.
+extract                 Aliases
+faq-pipe-gender         FAQ: What is the gender of the pipe?
+freduce                 Apply a list of functions sequentially
+functions               Extract the function list from a functional
+                        sequence.
+pipe-eager              Eager pipe
+print.fseq              Print method for functional sequence.

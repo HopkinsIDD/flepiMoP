@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:73ce556c33122ff15568264121a3a687d7ae9ea3443ce6da6241bbbe2b2b46f3
-size 236
+#!/usr/bin/env Rscript
+
+vroom::vroom_write(
+  sessioninfo::package_info(c("vroom", "readr", "dplyr", "data.table", "base"), dependencies = FALSE, include_base = TRUE),
+  here::here("inst", "bench", "session_info.tsv"),
+  delim = "\t"
+)

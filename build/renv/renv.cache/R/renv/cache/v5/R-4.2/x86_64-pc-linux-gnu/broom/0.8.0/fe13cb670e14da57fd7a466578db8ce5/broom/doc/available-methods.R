@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c0aead2180bf0e7d98daee60a467f690a27f1783f531433c0c5323661501e592
-size 630
+## ----setup, include = FALSE---------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ----echo = FALSE, message = FALSE--------------------------------------------
+library(broom)
+library(dplyr)
+library(stringr)
+
+method_df <- function(method_name) {
+    m <- as.vector(methods(method_name))
+    tibble::tibble(class = str_remove(m, str_c(method_name, "[.]")),
+                   !!method_name := "x")
+}
+
+method_df("tidy") %>% 
+    left_join(method_df("glance")) %>% 
+    left_join(method_df("augment")) %>% 
+    mutate_all(tidyr::replace_na, "") %>% 
+    knitr::kable()
+

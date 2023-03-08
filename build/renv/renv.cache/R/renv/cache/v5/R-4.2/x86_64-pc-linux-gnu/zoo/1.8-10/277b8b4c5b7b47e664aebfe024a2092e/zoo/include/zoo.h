@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4cf753c4ac817116db6060d1caba11b00024d0d76da3d95a375f8eac792a83da
-size 364
+/*
+Header file for using internal C-level facilities
+provided by zoo.
+
+This is not 100% designed for end users, so
+any user comments and bug reports are very
+welcomed.
+
+Copyright Jeffrey A. Ryan 2010
+*/
+
+#include <R.h>
+#include <Rinternals.h>
+
+#ifndef _Zoo
+#define _Zoo
+
+SEXP zoo_lag (SEXP x, SEXP _k, SEXP _pad);
+SEXP zoo_coredata (SEXP x, SEXP copyAttr);
+#endif

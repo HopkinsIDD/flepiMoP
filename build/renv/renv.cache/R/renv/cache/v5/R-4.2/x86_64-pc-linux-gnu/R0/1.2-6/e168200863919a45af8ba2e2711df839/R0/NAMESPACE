@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d8c7e640fb0a81fd7488c6b0055863b70208aafcdff699c9f8580e46570c8387
-size 621
+# R0 package NAMESPACE
+
+# DEBUG ONLY: Export all names
+#exportPattern(".")
+
+# Selective export
+export(check.incid, integrity.checks, est.GT, estimate.R, est.R0.AR, est.R0.EG, est.R0.ML, est.R0.SB, est.R0.TD, generation.time, impute.incid, plotfit, sensitivity.analysis, sa.time, sa.GT, sim.epid, smooth.Rt)
+
+# Import fitdistr from package MASS
+importFrom(MASS, fitdistr)
+
+# Registering S3 Methods
+#plot
+S3method(plot, R0.R)
+S3method(plot, R0.sR)
+S3method(plot, R0.S)
+S3method(plot, R0.GT)
+#plotfit
+S3method(plotfit, R0.R)
+S3method(plotfit, R0.sR)
+#print
+S3method(print, R0.R)
+S3method(print, R0.sR)
+S3method(print, R0.GT)

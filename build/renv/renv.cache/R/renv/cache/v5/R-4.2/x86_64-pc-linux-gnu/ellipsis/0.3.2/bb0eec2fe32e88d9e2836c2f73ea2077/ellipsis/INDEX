@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:45ede90568445672561629a1e79ef3fa567cc3bad3613a4449130b882dac3fea
-size 213
+check_dots_empty        Check that dots are unused
+check_dots_unnamed      Check that all dots are unnamed
+check_dots_used         Check that all dots have been used
+safe_median             Safe version of median

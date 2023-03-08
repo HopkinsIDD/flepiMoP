@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:947c84f700735c719cb93dd4dd7553993c5214a2341732a108a66691b9c079ad
-size 586
+iapply                  Array/Apply Iterator
+icount                  Counting Iterators
+idiv                    Dividing Iterator
+iread.table             Iterator over Rows of a Data Frame Stored in a
+                        File
+ireadLines              Iterator over Lines of Text from a Connection
+irnorm                  Random Number Iterators
+isplit                  Split Iterator
+iter                    Iterator Factory Functions
+iterators-package       The Iterators Package
+makeIwrapper            Iterator Maker Generator
+nextElem                Get Next Element of Iterator

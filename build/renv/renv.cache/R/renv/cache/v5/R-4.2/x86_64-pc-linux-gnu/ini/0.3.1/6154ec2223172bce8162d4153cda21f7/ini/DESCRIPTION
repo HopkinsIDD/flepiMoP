@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e4eb107f3d98f1b13e2590e1947d51db89daa7c736d7f708382bb570d86bd397
-size 739
+Package: ini
+Type: Package
+Title: Read and Write '.ini' Files
+Version: 0.3.1
+Date: 2018-05-19
+Author: David Valentim Dias
+Maintainer: David Valentim Dias <dvdscripter@gmail.com>
+Description: Parse simple '.ini' configuration files to an structured list. Users
+  can manipulate this resulting list with lapply() functions. This same
+  structured list can be used to write back to file after modifications.
+License: GPL-3
+URL: https://github.com/dvdscripter/ini
+BugReports: https://github.com/dvdscripter/ini/issues
+LazyData: FALSE
+RoxygenNote: 6.0.1
+Suggests: testthat
+NeedsCompilation: no
+Packaged: 2018-05-19 23:19:45 UTC; CLIENTE
+Repository: CRAN
+Date/Publication: 2018-05-20 03:26:39 UTC
+Built: R 4.2.2; ; 2023-02-25 17:04:53 UTC; unix

@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6b0eeb567a3d3b915b569021cc6b667c5813c4b790d85bd4e40146e4a168a13b
-size 233
+
+#include <Rcpp.h>
+
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+double piSugar(const int N) {
+    NumericVector x = runif(N);
+    NumericVector y = runif(N);
+    NumericVector d = sqrt(x*x + y*y);
+    return 4.0 * sum(d < 1.0) / N;
+}

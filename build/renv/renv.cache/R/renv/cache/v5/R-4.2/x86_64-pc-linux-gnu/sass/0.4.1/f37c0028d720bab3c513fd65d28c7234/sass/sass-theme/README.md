@@ -1,3 +1,3 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d40941ffe2a00fc8121ac5dca96158bc085e9d11d05059893532b56d4480e700
-size 581
+This self contained example shows how to use the [sass](https://github.com/rstudio/sass) R package to generate CSS for multiple themes and dynamically create colors based off of an original theme color.  If a Shiny button is clicked, the javascript event is captured and the theme color is updated within the browser.  A Shiny server event is triggered in addition to changing the theme within browser.
+
+Original [article](http://www.sitepoint.com/dealing-color-schemes-sass/) and [demo](https://codepen.io/SitePoint/pen/czixa) by [Hugo Giraudel](https://codepen.io/HugoGiraudel).

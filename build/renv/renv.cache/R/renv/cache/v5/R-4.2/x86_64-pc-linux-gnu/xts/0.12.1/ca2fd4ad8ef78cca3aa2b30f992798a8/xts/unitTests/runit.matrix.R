@@ -1,3 +1,45 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c9701e88ed0cdd7109a6a9bc0d91404f34ce1e71d90aa02be3bbc1a1bda3b978
-size 1563
+data(sample_matrix)
+sample.matrix <- sample_matrix
+sample.xts <- as.xts(sample.matrix)
+
+test.convert_matrix_to_xts <- function() {
+  checkIdentical(sample.xts,as.xts(sample.matrix))
+}
+test.convert_matrix_to_xts_j1 <- function() {
+  checkIdentical(sample.xts[,1],as.xts(sample.matrix)[,1])
+}
+test.convert_matrix_to_xts_i1 <- function() {
+  checkIdentical(sample.xts[1,],as.xts(sample.matrix)[1,])
+}
+test.convert_matrix_to_xts_i1j1 <- function() {
+  checkIdentical(sample.xts[1,1],as.xts(sample.matrix)[1,1])
+}
+test.matrix_reclass <- function() {
+  checkIdentical(sample.matrix,reclass(try.xts(sample.matrix)))
+}
+test.matrix_reclass_subset_reclass_j1 <- function() {
+  checkIdentical(sample.matrix[,1],reclass(try.xts(sample.matrix))[,1])
+}
+test.matrix_reclass_subset_as.xts_j1 <- function() {
+  checkIdentical(sample.matrix[,1,drop=FALSE],reclass(try.xts(sample.matrix)[,1]))
+  checkIdentical(sample.matrix[,1],reclass(try.xts(sample.matrix))[,1])
+}
+test.matrix_reclass_subset_matrix_j1 <- function() {
+  checkIdentical(sample.matrix[,1,drop=FALSE],reclass(try.xts(sample.matrix[,1,drop=FALSE])))
+}
+
+# zero-width to matrix
+test.zero_width_xts_to_matrix <- function() {
+  x <- .xts(,1)
+  xm <- as.matrix(x)
+  zm <- as.matrix(as.zoo(x))
+  checkIdentical(xm, zm)
+}
+
+# dim-less xts to matrix
+test.dimless_xts_to_matrix <- function() {
+  ix <- structure(1:3, tclass = c("POSIXct", "POSIXt"), tzone = "")
+  x <- structure(1:3, index = ix, class = c("xts", "zoo"))
+  m <- matrix(1:3, 3, 1, dimnames = list(format(.POSIXct(1:3)), "x"))
+  checkIdentical(as.matrix(x), m)
+}

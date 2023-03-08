@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8cbe048ee7e49c7acbb7f0acd69d4db36385245dd452523e3fc969f43cd05562
-size 1143
+Package: httr
+Title: Tools for Working with URLs and HTTP
+Version: 1.4.3
+Authors@R: c(
+    person("Hadley", "Wickham", , "hadley@rstudio.com", role = c("aut", "cre")),
+    person("RStudio", role = c("cph", "fnd"))
+  )
+Description: Useful tools for working with HTTP organised by HTTP verbs
+    (GET(), POST(), etc). Configuration functions make it easy to control
+    additional request components (authenticate(), add_headers() and so
+    on).
+License: MIT + file LICENSE
+URL: https://httr.r-lib.org/, https://github.com/r-lib/httr
+BugReports: https://github.com/r-lib/httr/issues
+Depends: R (>= 3.2)
+Imports: curl (>= 3.0.0), jsonlite, mime, openssl (>= 0.8), R6
+Suggests: covr, httpuv, jpeg, knitr, png, readr, rmarkdown, testthat
+        (>= 0.8.0), xml2
+VignetteBuilder: knitr
+Config/Needs/website: tidyverse/tidytemplate
+Encoding: UTF-8
+RoxygenNote: 7.1.2
+NeedsCompilation: no
+Packaged: 2022-05-03 20:41:18 UTC; hadleywickham
+Author: Hadley Wickham [aut, cre],
+  RStudio [cph, fnd]
+Maintainer: Hadley Wickham <hadley@rstudio.com>
+Repository: CRAN
+Date/Publication: 2022-05-04 00:20:02 UTC
+Built: R 4.2.2; ; 2023-02-25 15:57:02 UTC; unix

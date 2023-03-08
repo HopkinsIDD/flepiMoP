@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8afeefc92454bc0a608d2ca6b4ef331cca86e821144ba1252c1199d11846844f
-size 264
+# Demo of combos functions
+H <- combos(20,3)
+if(!require("rgl",quietly=TRUE)){
+      warning("The package rgl is needed for plotting")
+     } else{
+      if(interactive()){
+         plot3d(t(H))
+         lines3d(t(H),col=rep(topo.colors(57),20))
+         }
+     }

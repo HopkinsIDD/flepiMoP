@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5ae23443073791fd23879055c3df63763a2aac8889f1e71946f619ffd2903ea7
-size 418
+useDynLib(foreign, .registration = TRUE)
+
+export(data.restore, lookup.xport, read.arff, read.dbf, read.dta,
+       read.epiinfo, read.mtp, read.octave, read.S, read.spss, read.ssd,
+       read.systat, read.xport, write.arff, write.dbf, write.dta,
+       write.foreign)
+
+# not exported: SModeNames writeForeignStata writeForeignSPSS
+
+importFrom(utils, download.file, read.table, write.table)
+importFrom(stats, na.omit)

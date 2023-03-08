@@ -1,3 +1,44 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8e69ce4c153783f085b18d71cea596b9d9f0b2276dcda320da83717a25835fd0
-size 2419
+activate                Determine the context of subsequent
+                        manipulations
+as_tbl_graph.data.frame
+                        A data structure for tidy graph manipulation
+bind_graphs             Add graphs, nodes, or edges to a tbl_graph
+centrality              Calculate node and edge centrality
+component_games         Graph games based on connected components
+context_accessors       Access graph, nodes, and edges directly inside
+                        verbs
+create_graphs           Create different types of well-defined graphs
+edge_types              Querying edge types
+evolution_games         Graph games based on evolution
+graph_join              Join graphs on common nodes
+graph_measures          Graph measurements
+graph_types             Querying graph types
+group_graph             Group nodes and edges based on community
+                        structure
+local_graph             Measures based on the neighborhood of each node
+map_bfs                 Apply a function to nodes in the order of a
+                        breath first search
+map_bfs_back            Apply a function to nodes in the reverse order
+                        of a breath first search
+map_dfs                 Apply a function to nodes in the order of a
+                        depth first search
+map_dfs_back            Apply a function to nodes in the reverse order
+                        of a depth first search
+map_local               Map a function over a graph representing the
+                        neighborhood of each node
+morph                   Create a temporary alternative representation
+                        of the graph to compute on
+morphers                Functions to generate alternate representations
+                        of graphs
+node_measures           Querying node measures
+node_rank               Calculate node ranking
+node_topology           Node properties related to the graph topology
+node_types              Querying node types
+pair_measures           Calculate node pair properties
+reroute                 Change terminal nodes of edges
+sampling_games          Graph games based on direct sampling
+search_graph            Search a graph with depth first and breath
+                        first
+type_games              Graph games based on different node types
+with_graph              Evaluate a tidygraph algorithm in the context
+                        of a graph

@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e8c1b33d443244bfc3402262876b1f66cef355cef564a3032fe18c05a3bdd318
-size 443
+# Function for simulating an environmental factor
+################################################################################
+library("fields")
+library("mvtnorm")
+
+px <- 10
+py <- 10
+
+xy <- expand.grid(x= 1:px, y= 1:py)
+dists <- as.matrix(dist(xy, method= "euclidian", diag= TRUE, upper= TRUE))
+P <- Matern(dists, scale= 1, range= 1)
+set.seed(124)
+x <- rmvnorm(1, mean= seq(1, 2, length.out= px*py), sigma= 0.25 * P)
+envir <- as.vector(x)

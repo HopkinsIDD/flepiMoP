@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1ac2663dd0dbfcf0aec20a9b8ad0302f8b57969fc5bfd4167d6746053bd77752
-size 653
+library(shiny)
+library(knitr)
+options(device.ask.default = FALSE)
+
+shinyServer(function(input, output) {
+
+  output$nbOut = reactive({
+    src = input$nbSrc
+    if (length(src) == 0L || src == '') return('Nothing to show yet...')
+    owd = setwd(tempdir()); on.exit(setwd(owd))
+    opts_knit$set(root.dir = owd)
+
+    paste(knit2html(text = src, fragment.only = TRUE, quiet = TRUE),
+          '<script>',
+          '// highlight code blocks',
+          "$('#nbOut pre code').each(function(i, e) {hljs.highlightBlock(e)});",
+          'MathJax.Hub.Queue(["Typeset", MathJax.Hub]); // update MathJax expressions',
+          '</script>', sep = '\n')
+  })
+})

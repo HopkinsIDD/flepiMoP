@@ -1,3 +1,35 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b460a242bd48ea6b93bd1480170121ca1273a59da50ba288692ee2954066ae9e
-size 1458
+Package: tidygraph
+Type: Package
+Title: A Tidy API for Graph Manipulation
+Version: 1.2.1
+Authors@R: 
+    person(given = "Thomas Lin",
+           family = "Pedersen",
+           role = c("cre", "aut"),
+           email = "thomasp85@gmail.com",
+           comment = c(ORCID = "0000-0002-5147-4711"))
+Maintainer: Thomas Lin Pedersen <thomasp85@gmail.com>
+Description: A graph, while not "tidy" in itself, can be thought of as two tidy
+    data frames describing node and edge data respectively. 'tidygraph'
+    provides an approach to manipulate these two virtual data frames using the
+    API defined in the 'dplyr' package, as well as provides tidy interfaces to 
+    a lot of common graph algorithms.
+License: MIT + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.1.2
+Imports: tibble, dplyr (>= 0.8.5), igraph, magrittr, utils, rlang, R6,
+        tools, stats, tidyr, pillar, cli
+URL: https://tidygraph.data-imaginist.com,
+        https://github.com/thomasp85/tidygraph
+BugReports: https://github.com/thomasp85/tidygraph/issues
+LinkingTo: cpp11
+Suggests: network, data.tree, ape, graph, methods, testthat, covr,
+        seriation, netrankr, influenceR, NetSwan
+SystemRequirements: C++11
+NeedsCompilation: yes
+Packaged: 2022-04-05 15:23:18 UTC; thomas
+Author: Thomas Lin Pedersen [cre, aut]
+    (<https://orcid.org/0000-0002-5147-4711>)
+Repository: CRAN
+Date/Publication: 2022-04-05 16:00:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 17:45:06 UTC; unix

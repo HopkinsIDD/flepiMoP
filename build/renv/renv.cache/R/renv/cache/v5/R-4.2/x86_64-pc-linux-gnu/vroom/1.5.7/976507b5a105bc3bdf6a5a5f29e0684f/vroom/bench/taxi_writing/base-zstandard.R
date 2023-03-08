@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a0bf4dcdb14320611fbe9115d9543346c4671c4af266d8aed2a84250b42bf377
-size 290
+{
+  library(vroom)
+  data <- vroom(file, col_types = c(pickup_datetime = "c"))
+  vroom:::vroom_materialize(data, replace = TRUE)
+}
+
+{
+  con <- pipe(sprintf("zstd > %s", tempfile(fileext = ".zst")), "wb")
+  write.table(data, con, sep = "\t", quote = FALSE, row.names = FALSE)
+  close(con)
+}

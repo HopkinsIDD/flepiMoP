@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4ef27674494321ab3c23fe15dade0c68cb937621cd1ac0b8c834f43e7edeec69
-size 489
+Package: rjson
+Version: 0.2.21
+Date: 2022-01-06
+Title: JSON for R
+Author: Alex Couture-Beil <rjson_pkg@mofo.ca>
+Maintainer: Alex Couture-Beil <rjson_pkg@mofo.ca>
+Depends: R (>= 4.0.0)
+Description: Converts R object into JSON objects and vice-versa.
+URL: https://github.com/alexcb/rjson
+License: GPL-2
+Repository: CRAN
+Date/Publication: 2022-01-09 03:32:41 UTC
+Packaged: 2022-01-08 19:22:39 UTC; root
+NeedsCompilation: yes
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 18:35:54 UTC; unix

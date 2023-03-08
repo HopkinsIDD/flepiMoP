@@ -1,3 +1,96 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c75b30082071bfdcf1a823cda7c7daba7d1e9b62c5661215f8832e6495e6fc7f
-size 2909
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+set.seed(1014)
+
+## ----setup--------------------------------------------------------------------
+library(testthat)
+
+## ----include = FALSE----------------------------------------------------------
+snapper <- local_snapshotter()
+snapper$start_file("snapshotting.Rmd", "test")
+
+## -----------------------------------------------------------------------------
+bullets <- function(text, id = NULL) {
+  paste0(
+    "<ul", if (!is.null(id)) paste0(" id=\"", id, "\""), ">\n", 
+    paste0("  <li>", text, "</li>\n", collapse = ""),
+    "</ul>\n"
+  )
+}
+cat(bullets("a", id = "x"))
+
+## -----------------------------------------------------------------------------
+test_that("bullets", {
+  expect_equal(bullets("a"), "<ul>\n  <li>a</li>\n</ul>\n")
+  expect_equal(bullets("a", id = "x"), "<ul id=\"x\">\n  <li>a</li>\n</ul>\n")
+})
+
+## -----------------------------------------------------------------------------
+test_that("bullets", {
+  expect_snapshot(cat(bullets("a")))
+  expect_snapshot(cat(bullets("a", "b")))
+})
+
+## ---- include = FALSE---------------------------------------------------------
+# Reset snapshot test
+snapper$end_file()
+snapper$start_file("snapshotting.Rmd", "test")
+
+## -----------------------------------------------------------------------------
+test_that("bullets", {
+  expect_snapshot(cat(bullets("a")))
+  expect_snapshot(cat(bullets("a", "b")))
+})
+
+## ---- include = FALSE---------------------------------------------------------
+# Reset snapshot test
+snapper$end_file()
+snapper$start_file("snapshotting.Rmd", "test")
+
+## ---- error = TRUE------------------------------------------------------------
+bullets <- function(text, id = NULL) {
+  paste0(
+    "<ul", if (!is.null(id)) paste0(" id=\"", id, "\""), ">\n", 
+    paste0("<li>", text, "</li>\n", collapse = ""),
+    "</ul>\n"
+  )
+}
+test_that("bullets", {
+  expect_snapshot(cat(bullets("a")))
+  expect_snapshot(cat(bullets("a", "b")))
+})
+
+## -----------------------------------------------------------------------------
+f <- function() {
+  print("Hello")
+  message("Hi!")
+  warning("How are you?")
+}
+
+## -----------------------------------------------------------------------------
+test_that("f() makes lots of noise", {
+  expect_snapshot(f())
+})
+
+## ---- error = TRUE------------------------------------------------------------
+test_that("you can't add a number and a letter", {
+  expect_snapshot(1 + "a")
+})
+
+## -----------------------------------------------------------------------------
+test_that("you can't add a number and a letter", {
+  expect_snapshot(1 + "a", error = TRUE)
+})
+
+## -----------------------------------------------------------------------------
+test_that("you can't add weird thngs", {
+  expect_snapshot(error = TRUE, {
+    1 + "a"
+    mtcars + iris
+    mean + sum
+  })
+})
+

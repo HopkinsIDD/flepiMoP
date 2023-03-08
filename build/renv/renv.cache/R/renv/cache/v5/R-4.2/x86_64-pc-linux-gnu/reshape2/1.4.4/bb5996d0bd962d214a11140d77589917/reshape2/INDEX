@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2783e175240f6b779add40b0a20a4ed89d4169ac1d1d6f98a1842ba947226804
-size 1021
+add_margins             Add margins to a data frame.
+cast                    Cast functions Cast a molten data frame into an
+                        array or data frame.
+colsplit                Split a vector into multiple columns
+french_fries            Sensory data from a french fries experiment.
+melt                    Convert an object into a molten data frame.
+melt_check              Check that input variables to melt are
+                        appropriate.
+melt.array              Melt an array.
+melt.data.frame         Melt a data frame into form suitable for easy
+                        casting.
+melt.default            Melt a vector. For vectors, makes a column of a
+                        data frame
+melt.list               Melt a list by recursively melting each
+                        component.
+parse_formula           Parse casting formulae.
+recast                  Recast: melt and cast in a single step
+smiths                  Demo data describing the Smiths.
+tips                    Tipping data

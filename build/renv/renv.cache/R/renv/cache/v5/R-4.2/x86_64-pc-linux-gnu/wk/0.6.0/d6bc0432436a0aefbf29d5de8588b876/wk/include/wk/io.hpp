@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:65b6e72412446f233c8d32c748ce92619b76c9fd72388ae232f33f61eb9a78bd
-size 522
+
+#ifndef WK_IO_H
+#define WK_IO_H
+
+class WKProvider {
+public:
+  virtual bool seekNextFeature() = 0;
+  virtual bool featureIsNull() = 0;
+  virtual size_t nFeatures() = 0;
+  virtual void reset() = 0;
+  virtual ~WKProvider() {}
+};
+
+class WKExporter {
+public:
+  WKExporter(size_t size): size(size) {}
+  virtual void prepareNextFeature() = 0;
+  virtual void writeNull() = 0;
+  virtual void writeNextFeature() = 0;
+  size_t nFeatures() {
+    return this->size;
+  }
+
+  virtual ~WKExporter() {}
+
+private:
+  size_t size;
+};
+
+#endif

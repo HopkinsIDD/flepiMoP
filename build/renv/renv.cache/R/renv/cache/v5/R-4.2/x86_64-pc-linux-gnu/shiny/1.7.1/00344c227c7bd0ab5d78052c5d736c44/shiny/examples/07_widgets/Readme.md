@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:57044c7d924c238efeb665edd13951b536f0bee9fa82da75ac7cd2da3c5993ab
-size 290
+This example demonstrates some additional widgets included in Shiny, such as `helpText` and `actionButton`. The latter is used to delay rendering output until the user explicitly requests it (a construct which also introduces two important server functions, `eventReactive` and `isolate`).

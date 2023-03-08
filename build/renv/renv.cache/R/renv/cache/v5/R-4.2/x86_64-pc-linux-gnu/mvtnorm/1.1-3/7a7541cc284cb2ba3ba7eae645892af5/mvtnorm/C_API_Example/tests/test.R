@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6f7fea2fa8712303cee54638a51646115811b8cb22c92d74eed1baedae66ed5c
-size 389
+
+library("mvtnormAPI")
+set.seed(29)
+(v1 <- unlist(testAPI(list(maxpts = 2000, abseps = 1/1000, releps = 1/1000), 
+     2L, 0L, 1:1, c(-1,-1), 0:0, .2, .2, 0)))
+
+library("mvtnorm")
+set.seed(29)
+(v2 <- unlist(mvtnorm:::probval.GenzBretz(list(maxpts = 2000, abseps = 1/1000, releps = 1/1000), 
+     2L, 0L, 1:1, c(-1,-1), 0:0, .2, .2, 0) ))
+v2 <- v2[names(v1)]
+
+stopifnot(all.equal(v1, v2))
+

@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c19356b235f9d1b14d63a37fc0b280d064991ca4043e4cd4693af85912196f47
-size 715
+library(rgdal)
+example("CRS-class", ask=FALSE)
+example("displayDataset", ask=FALSE)
+example("GDALDriver-class", ask=FALSE)
+example("GDALMajorObject-class", ask=FALSE)
+example("GDALRasterBand-class", ask=FALSE)
+example("GDALReadOnlyDataset-class", ask=FALSE)
+example("GDALReadOnlyDataset-methods", ask=FALSE)
+example("GDALTransientDataset-class", ask=FALSE)
+example("make_EPSG", ask=FALSE)
+example("project", ask=FALSE)
+example("projInfo", ask=FALSE)
+example("readGDAL", ask=FALSE)
+example("readOGR", ask=FALSE)
+example("RGB2PCT", ask=FALSE)
+example("SGDF2PCT", ask=FALSE)
+example("showWKT", ask=FALSE)
+example("SpatialGDAL-class", ask=FALSE)
+example("spTransform-methods", ask=FALSE)
+example("writeOGR", ask=FALSE)

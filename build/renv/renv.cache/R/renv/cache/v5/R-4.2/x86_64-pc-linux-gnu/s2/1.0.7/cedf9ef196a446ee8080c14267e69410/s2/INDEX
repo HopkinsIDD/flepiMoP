@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0b836db26e782a1d37e3275e76a7afed8eab64e60ed40e0f01e1d8c42af4686d
-size 901
+as_s2_geography         Create an S2 Geography Vector
+s2_boundary             S2 Geography Transformations
+s2_bounds_cap           Compute feature-wise and aggregate bounds
+s2_cell                 Create S2 Cell vectors
+s2_cell_is_valid        S2 cell operators
+s2_closest_feature      Matrix Functions
+s2_contains             S2 Geography Predicates
+s2_data_tbl_countries   Low-resolution world boundaries, timezones, and
+                        cities
+s2_earth_radius_meters
+                        Earth Constants
+s2_geog_point           Create and Format Geography Vectors
+s2_is_collection        S2 Geography Accessors
+s2_lnglat               Create an S2 LngLat Vector
+s2_options              Geography Operation Options
+s2_point                Create an S2 Point Vector
+s2_project              Linear referencing
+s2_unprojection_filter
+                        Low-level wk filters and handlers

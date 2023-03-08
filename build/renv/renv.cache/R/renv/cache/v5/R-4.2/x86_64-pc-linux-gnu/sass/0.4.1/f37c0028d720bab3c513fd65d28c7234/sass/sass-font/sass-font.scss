@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f88dfb56783a5b6cc8be54d811eebb67ad406543609d8192a3814d713e258ed2
-size 358
+body {
+  background-color: $color;
+}
+
+// https://stackoverflow.com/a/3943023/6637133
+@function font-color($color) {
+  @return if(
+    red($color) * 0.299 + green($color) * 0.587 + blue($color) * 0.114 > 186,
+    #000000, #ffffff
+  );
+}
+
+h1 {
+  color: if(
+    red($color) * 0.299 + green($color) * 0.587 + blue($color) * 0.114 > 186,
+    #000000, #ffffff);
+}

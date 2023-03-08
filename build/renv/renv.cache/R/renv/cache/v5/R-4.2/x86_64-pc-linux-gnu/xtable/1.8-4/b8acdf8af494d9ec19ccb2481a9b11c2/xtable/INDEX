@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:91749768018aeec41af5d1923d7db71a35a6b42e3324a355f0ec42f12f2f0e35
-size 676
+autoformat              Automatically Format Export Tables
+caption                 Retrieve and Set Options for Export Tables
+print.xtable            Print Export Tables
+print.xtableMatharray   Print Math Array
+sanitize                Sanitization Functions
+string                  String handling functions
+tli                     Math scores from Texas Assessment of Academic
+                        Skills (TAAS)
+toLatex.xtable          Convert Table to Latex
+xtable                  Create Export Tables
+xtableFtable            Create and Export Flat Tables
+xtableList              Create and Export Lists of Tables
+xtableMatharray         Create LaTeX Mathematical Array

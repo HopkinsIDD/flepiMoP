@@ -1,3 +1,39 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3551d0137aab39d644135dfd7b57df088e24b56d22dc687ce7fc1f3d8ef54d0c
-size 1086
+<!--
+%\VignetteEngine{knitr::docco_classic}
+%\VignetteIndexEntry{Customization of the highr package}
+-->
+
+# Customization of the `highr` package
+
+If you are not satisfied with the default syntax highlighting commands in
+the **highr** package, you can just use your own tags/commands. In this
+vignette, we show a brief example.
+
+The default highlighting commands are stored in two internal data frames
+`cmd_latex` and `cmd_html`:
+
+```{r}
+library(highr)
+highr:::cmd_latex
+```
+
+This data frame is passed to the `markup` argument in `hilight()`, so we are
+free to pass a modified version there. Suppose I want to use the command
+`\my<*>` instead of `\hl<*>`:
+
+```{r}
+m = highr:::cmd_latex
+m[, 1] = sub('\\hl', '\\my', m[, 1], fixed = TRUE)
+head(m)
+```
+
+Then
+
+```{r}
+hilight("x = 1+1  # a comment")  # default markup
+hilight("x = 1+1  # a comment", markup = m)  # custom markup
+```
+
+This allows one to use arbitrary commands around the text symbols in the R
+code. See <https://github.com/yihui/highr/blob/master/R/highlight.R> for how
+`cmd_latex` and `cmd_html` were generated in **highr**.

@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7baf7b10dd09f0186e89e31312450a3ac02463abeabf1ff45b33453e5ebeaa28
-size 587
+<!--
+%\VignetteEngine{knitr::docco_classic}
+%\VignetteIndexEntry{R Markdown with the Docco Classic Style}
+-->
+
+# R Markdown with the Docco Classic Style
+
+```{r setup, echo=FALSE, results='asis'}
+x = readLines('docco-linear.Rmd')[-(1:7)]
+x = gsub('linear', 'classic', x)
+i = grep('^knit2html[(][.]{3}', x)
+x[i - 1] = '```{r}'
+x[i] = 'head(knitr::rocco, 5)'
+library(knitr)
+cat(knit_child(text = x, quiet = TRUE), sep = '\n')
+```
+
+You probably have noticed that you can adjust the widths of the two columns
+using your cursor. What is more, press `T` on your keyboard, and see what
+happens.

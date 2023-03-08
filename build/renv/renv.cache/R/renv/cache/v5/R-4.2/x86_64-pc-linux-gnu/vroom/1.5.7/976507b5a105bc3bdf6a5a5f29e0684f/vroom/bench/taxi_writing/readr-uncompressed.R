@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3d2b3c6b91f0b9b253f9a15ba936a5c94c3b6178c026f1305c0cd074a29a22e0
-size 183
+{
+  library(vroom)
+  data <- vroom(file, col_types = c(pickup_datetime = "c"))
+  vroom:::vroom_materialize(data, replace = TRUE)
+}
+
+readr::write_tsv(data, tempfile(fileext = ".tsv"))

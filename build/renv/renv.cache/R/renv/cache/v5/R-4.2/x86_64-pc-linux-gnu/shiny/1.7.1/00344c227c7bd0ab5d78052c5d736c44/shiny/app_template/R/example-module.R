@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5f51a1d9fc8429abbe2be210049b2a4397cf5741e2ae7fbf2876f7bfb7713639
-size 623
+exampleModuleUI <- function(id, label = "Counter") {
+  # All uses of Shiny input/output IDs in the UI must be namespaced,
+  # as in ns("x").
+  ns <- NS(id)
+  tagList(
+    actionButton(ns("button"), label = label),
+    verbatimTextOutput(ns("out"))
+  )
+}
+
+exampleModuleServer <- function(id) {
+  # moduleServer() wraps a function to create the server component of a
+  # module.
+  moduleServer(
+    id,
+    function(input, output, session) {
+      count <- reactiveVal(0)
+      observeEvent(input$button, {
+        count(count() + 1)
+      })
+      output$out <- renderText({
+        count()
+      })
+      count
+    }
+  )
+}

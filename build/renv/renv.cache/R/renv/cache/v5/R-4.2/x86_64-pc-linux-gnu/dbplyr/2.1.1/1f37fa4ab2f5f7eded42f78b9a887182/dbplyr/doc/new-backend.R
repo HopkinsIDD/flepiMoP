@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:eae07f555cdfc09f9e994e2780c86985a75267681aff3c7feed94e97e868abec
-size 684
+## ---- echo = FALSE, message = FALSE-------------------------------------------
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4L, tibble.print_max = 4L)
+
+## ----setup, message = FALSE---------------------------------------------------
+library(dplyr)
+library(DBI)
+
+## -----------------------------------------------------------------------------
+con <- DBI::dbConnect(RSQLite::SQLite(), path = ":memory:")
+DBI::dbWriteTable(con, "mtcars", mtcars)
+
+tbl(con, "mtcars")
+
+## -----------------------------------------------------------------------------
+#' @importFrom dbplyr dbplyr_edition
+#' @export
+dbplyr_edition.myConnectionClass <- function(con) 2L
+

@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:02dd95aea1b2546bd5071558cd1947a027783f42de0b51a272de2e39e38b7c40
-size 308
+@font-face {
+  font-family: 'News Cycle';
+  font-style: normal;
+  font-weight: 400;
+  src: url(fonts/CSR64z1Qlv-GDxkbKVQ_fOAKSw.woff) format('woff');
+}
+@font-face {
+  font-family: 'News Cycle';
+  font-style: normal;
+  font-weight: 700;
+  src: url(fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNRevw.woff) format('woff');
+}

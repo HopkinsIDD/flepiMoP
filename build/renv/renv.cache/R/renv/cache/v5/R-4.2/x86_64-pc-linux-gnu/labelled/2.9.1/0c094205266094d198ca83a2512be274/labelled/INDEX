@@ -1,3 +1,29 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8e475a8278df8cab40e597d5349414087421a8966b001d2824c2fe0a5ef61ab2
-size 1493
+copy_labels             Copy variable and value labels and SPSS-style
+                        missing value
+drop_unused_value_labels
+                        Drop unused value labels
+is_prefixed             Check if a factor is prefixed
+look_for                Look for keywords variable names and
+                        descriptions / Create a data dictionary
+na_values               Get / Set SPSS missing values
+names_prefixed_by_values
+                        Turn a named vector into a vector of names
+                        prefixed by values
+nolabel_to_na           Recode values with no label to NA
+recode_if               Recode some values based on condition
+recode.haven_labelled   Recode values
+remove_attributes       Remove attributes
+remove_labels           Remove variable label, value labels and user
+                        defined missing values
+sort_val_labels         Sort value labels
+tagged_na_to_user_na    Convert tagged NAs into user NAs
+to_character            Convert input to a character vector
+to_factor               Convert input to a factor.
+to_labelled             Convert to labelled data
+unique_tagged_na        Unique elements, duplicated, ordering and
+                        sorting with tagged NAs
+update_labelled         Update labelled data to last version
+val_labels              Get / Set value labels
+val_labels_to_na        Recode value labels to NA
+var_label               Get / Set a variable label
+x_haven_2.0             Datasets for testing

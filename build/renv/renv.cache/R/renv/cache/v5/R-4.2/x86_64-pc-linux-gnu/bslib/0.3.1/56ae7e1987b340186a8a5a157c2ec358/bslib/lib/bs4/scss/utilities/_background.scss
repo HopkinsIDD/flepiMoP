@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6cab3f7ccf277fc2c0e9043de8ed054496d9907dd55e46fd735ccd55740f996a
-size 442
+// stylelint-disable declaration-no-important
+
+@each $color, $value in $theme-colors {
+  @include bg-variant(".bg-#{$color}", $value, true);
+}
+
+@if $enable-gradients {
+  @each $color, $value in $theme-colors {
+    @include bg-gradient-variant(".bg-gradient-#{$color}", $value, true);
+  }
+}
+
+.bg-white {
+  background-color: $white !important;
+  color: color-contrast($white);
+}
+
+.bg-transparent {
+  background-color: transparent !important;
+}

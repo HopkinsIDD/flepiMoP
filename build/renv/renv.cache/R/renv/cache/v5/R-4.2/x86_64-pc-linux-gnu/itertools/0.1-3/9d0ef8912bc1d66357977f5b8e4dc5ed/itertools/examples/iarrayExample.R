@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e17fc28c4740b98ba2dd700e7fc8f0bce13a32df3fcb3e41cddf1947642bc46b
-size 296
+library(itertools)
+library(foreach)
+
+n <- 10
+x <- matrix(rnorm(n * n), n)
+
+# Split matrix x into four submatrices and put them back
+# together again
+y <-
+  foreach(a=iarray(x, c(1,2), chunks=2), .combine='cbind') %:%
+    foreach(b=a, .combine='rbind') %do% {
+      b
+    }
+print(identical(x, y))

@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5477646af22bbf087b82885626b9206e1f2a855211cfdededd2972e06f1f5c6b
-size 405
+# See ?testServer for more information
+testServer(exampleModuleServer, {
+  # Set initial value of a button
+  session$setInputs(button = 0)
+
+  # Check the value of the reactiveVal `count()`
+  expect_equal(count(), 1)
+  # Check the value of the renderText()
+  expect_equal(output$out, "1")
+
+  # Simulate a click
+  session$setInputs(button = 1)
+
+  expect_equal(count(), 2)
+  expect_equal(output$out, "2")
+})

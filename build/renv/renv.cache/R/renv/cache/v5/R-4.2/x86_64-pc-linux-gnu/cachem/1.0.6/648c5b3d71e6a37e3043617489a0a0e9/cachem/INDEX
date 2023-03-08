@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7aa243edad8dac31e273b7fbe289d20f22a86c3675c0ae9fd84d594470aba0ca
-size 221
+cache_disk              Create a disk cache object
+cache_layered           Compose any number of cache objects into a new,
+                        layered cache object
+cache_mem               Create a memory cache object

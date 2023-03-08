@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e8b80370614900da6c402e8cbe79de3c67879ddb1b54c9ed8f57857e302546db
-size 157
+---
+schema:
+  fields:
+  - name: var1
+    type: string
+  - name: var2
+    type: integer
+  - name: var3
+    type: number
+---
+
+
+var1,var2,var3
+A,1,2.5
+B,3,4.3
+

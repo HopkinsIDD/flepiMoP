@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:38854c81ff42ee219eba9b2e16a97ed5102dcf6afceb5ab77be5b59a515f986a
-size 342
+# simple (and inefficient) parallel matrix multiply
+
+library(foreach)
+
+# generate the input matrices
+x <- matrix(rnorm(16), 4)
+y <- matrix(rnorm(16), 4)
+
+# multiply the matrices
+z <- foreach(y=iter(y, by='col'), .combine=cbind) %dopar% (x %*% y)
+
+# print the results
+print(z)
+
+# check the results
+print(all.equal(z, x %*% y))

@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3772ecfc7de29f383b5ccc09541d8bc121f3adef468506786cce0b3ced221eb9
-size 210
+{
+  library(vroom)
+  data <- vroom(file, col_types = c(pickup_datetime = "c"))
+  vroom:::vroom_materialize(data, replace = TRUE)
+}
+
+readr::write_tsv(data, pipe(sprintf("pigz > %s", tempfile(fileext = ".gz"))))

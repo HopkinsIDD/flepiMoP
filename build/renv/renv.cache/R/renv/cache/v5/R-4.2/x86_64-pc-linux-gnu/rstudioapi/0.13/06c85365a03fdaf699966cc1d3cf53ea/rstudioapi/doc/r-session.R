@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:28a77eb7977ef854377afdd584307cafd6a21e5416d2b93d5c2dee0499008669
-size 676
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(eval = FALSE)
+
+## -----------------------------------------------------------------------------
+#  # restart R, then run some code after
+#  rstudioapi::restartSession(command = "print('Welcome back!')")
+#  
+#  # send some code to the console and execute it immediately
+#  rstudioapi::sendToConsole("1 + 1", execute = TRUE)
+
+## -----------------------------------------------------------------------------
+#  setHook("rstudio.sessionInit", function(newSession) {
+#    if (newSession)
+#      message("Welcome to RStudio ", rstudioapi::getVersion())
+#  }, action = "append")
+

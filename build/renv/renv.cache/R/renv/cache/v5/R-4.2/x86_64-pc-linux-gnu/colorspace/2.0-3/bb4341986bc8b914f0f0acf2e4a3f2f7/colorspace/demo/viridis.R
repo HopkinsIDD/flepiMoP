@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:10aa542237cddbfd89bb7c20e630a5fc52ba212feed588c91da2747aa9dcc4e5
-size 524
+if(requireNamespace("viridis")) {
+
+library("colorspace")
+
+specplot(viridis::viridis(9), sequential_hcl(9, "Viridis"), main = "Viridis")
+specplot(viridis::cividis(9), divergingx_hcl(9, "Cividis"), main = "Cividis")
+specplot(viridis::plasma(9),  sequential_hcl(9, "Plasma"),  main = "Plasma")
+specplot(viridis::inferno(9), sequential_hcl(9, "Inferno"), main = "Inferno")
+specplot(viridis::rocket(9),  sequential_hcl(9, "Rocket"),  main = "Rocket")
+specplot(viridis::mako(9),    sequential_hcl(9, "Mako"),    main = "Mako")
+
+}

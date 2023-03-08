@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3015fbdfb48fc63770cc088ce914e537f9f80cd3b47937bffe4c8808ebcc1134
-size 393
+as_utf8                 UTF-8 Character Encoding
+output_utf8             Output Capabilities
+utf8_encode             Encode Character Object as for UTF-8 Printing
+utf8_format             UTF-8 Text Formatting
+utf8_normalize          Text Normalization
+utf8_print              Print UTF-8 Text
+utf8_width              Measure the Character String Width
+utf8-package            The utf8 Package

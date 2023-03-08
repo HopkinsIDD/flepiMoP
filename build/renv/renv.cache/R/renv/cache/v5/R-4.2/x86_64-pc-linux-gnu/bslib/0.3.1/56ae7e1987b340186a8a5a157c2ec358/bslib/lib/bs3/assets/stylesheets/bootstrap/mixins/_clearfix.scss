@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:10d782d33ba704e5beae9e166a8b2a20bf28ff4310e2759465b1da381c0f1899
-size 611
+// Clearfix
+//
+// For modern browsers
+// 1. The space content is one way to avoid an Opera bug when the
+//    contenteditable attribute is included anywhere else in the document.
+//    Otherwise it causes space to appear at the top and bottom of elements
+//    that are clearfixed.
+// 2. The use of `table` rather than `block` is only necessary if using
+//    `:before` to contain the top-margins of child elements.
+//
+// Source: http://nicolasgallagher.com/micro-clearfix-hack/
+
+@mixin clearfix() {
+  &:before,
+  &:after {
+    display: table; // 2
+    content: " "; // 1
+  }
+  &:after {
+    clear: both;
+  }
+}

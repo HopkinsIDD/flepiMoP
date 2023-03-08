@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c92e8b1ea46a028c67dd5b499601949ff24ddc6e0979708a6178b8297797662b
-size 311
+bibentry(
+  bibtype = "Article",
+  key = "checkmate",
+  title = "{checkmate}: Fast Argument Checks for Defensive {R} Programming",
+  author = person("Michel", "Lang"),
+  journal = "The R Journal",
+  year = 2017L,
+  doi = "10.32614/RJ-2017-028",
+  pages = "437--445",
+  volume = 9L,
+  number = 1L
+)
+
+# vim: ft=r

@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c5c85a317f4144774916cd8f5de24b538f0ff66fb029ebe880d3ae88a82a8253
-size 689
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url(OpenSans.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: url(OpenSansSemibold.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: url(OpenSansItalic.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 600;
+  src: url(OpenSansSemiboldItalic.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Source Code Pro';
+  font-style: normal;
+  font-weight: 400;
+  src: url(SourceCodePro.ttf) format('truetype');
+}

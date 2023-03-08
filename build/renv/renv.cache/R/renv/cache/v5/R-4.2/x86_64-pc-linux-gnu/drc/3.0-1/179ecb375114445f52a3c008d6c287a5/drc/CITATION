@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:97a6164ffc4aa86b1fd2e1883eee9026be946b309ff14c1bc2d02702e57d7979
-size 738
+citHeader("To cite the package 'drc' in publications:")
+
+citEntry(entry   = "Article",
+         title   = "Dose-Response Analysis Using R",
+         author  = personList(as.person("C. Ritz"), as.person("F. Baty"), as.person("J. C. Streibig"),
+                             as.person("D. Gerhard")),
+         journal = "PLOS ONE",
+         volume  = 10,
+         issue   = 12,
+         number  = "e0146021",
+         year    = 2015,
+         url     = "http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0146021",
+
+         textVersion =
+         paste("Ritz, C., Baty, F., Streibig, J. C., Gerhard, D. (2015)",
+               "Dose-Response Analysis Using R",
+               "PLOS ONE, 10(12), e0146021")
+)

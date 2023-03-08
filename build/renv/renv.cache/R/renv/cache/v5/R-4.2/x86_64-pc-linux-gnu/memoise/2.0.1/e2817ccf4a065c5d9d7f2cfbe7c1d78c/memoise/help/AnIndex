@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:486977fa4463e8f326e813d2715c5fa221cdc8615aff07f26f974b78d0e36870
-size 250
+cache_filesystem	cache_filesystem
+cache_gcs	cache_gcs
+cache_memory	cache_memory
+cache_s3	cache_s3
+drop_cache	drop_cache
+forget	forget
+has_cache	has_cache
+is.memoised	is.memoised
+is.memoized	is.memoised
+memoise	memoise
+memoize	memoise
+timeout	timeout

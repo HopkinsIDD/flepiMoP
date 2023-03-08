@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:463dc79a5ff22de10f9765e63f029d58740351c5df5f42321d655198511096f4
-size 354
+
+<comment>%% Create surface data</comment>
+<code>[X,Y] = meshgrid(-8:.5:8);</code>
+<code>R = sqrt(X.^2 + Y.^2) + eps;</code>
+<code>Z = sin(R)./R;</code>
+
+<comment>%% Plotting surface</comment>
+<code>surf(X,Y,Z,'EdgeColor','black')</code>
+
+<comment>%% Adding your color palette and colorbar</comment>
+<code>colormap(colors)</code>
+<code>colorbar()</code>

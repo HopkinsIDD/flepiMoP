@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0af5740aac64522c7dad23ab6abef513cce16a628baff02a0921f94077c8bb35
-size 128
+.close {
+  &:hover,
+  &:focus {
+	@include mouse-outline(1px);
+  }
+  &:focus-visible {
+    @include keyboard-outline(1px);
+  }
+}

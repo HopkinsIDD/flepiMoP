@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4f57ae19ab03a94695cee3adaa47713b37d40b3c3107f871c99822c3f444538a
-size 271
+This example shows how to use the [sass](https://github.com/rstudio/sass) R package to dynamically generate a stylesheet that changes the background color in a shiny app. The font color also depends on the background color, changing between black and white as necessary.

@@ -1,3 +1,34 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:166f1f6835a5c44bfdb1a33a8ecda20195f40ccc57c2fb31d532ddc4ff71e342
-size 709
+#ifndef SOURCETOOLS_COLLECTION_RANGE_H
+#define SOURCETOOLS_COLLECTION_RANGE_H
+
+#include <ostream>
+#include <sourcetools/collection/Position.h>
+
+namespace sourcetools {
+namespace collections {
+
+class Range
+{
+public:
+  Range(const Position& start, const Position& end)
+    : start_(start), end_(end)
+  {
+  }
+
+  friend std::ostream& operator <<(std::ostream& os, const Range& range)
+  {
+    os << "[" << range.start() << "-" << range.end() << "]";
+    return os;
+  }
+
+  const Position start() const { return start_; }
+  const Position end() const { return end_; }
+
+private:
+  Position start_;
+  Position end_;
+};
+} // namespace collections
+} // namespace sourcetools
+
+#endif /* SOURCETOOLS_COLLECTION_RANGE_H */

@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9b30affdadfbea67db8423926e93c213036c7d5e750914caa75f5c7f5af763f0
-size 270
+tidyverse-package	tidyverse-package
+tidyverse	tidyverse-package
+tidyverse_conflicts	tidyverse_conflicts
+tidyverse_deps	tidyverse_deps
+tidyverse_logo	tidyverse_logo
+tidyverse_packages	tidyverse_packages
+tidyverse_sitrep	tidyverse_sitrep
+tidyverse_update	tidyverse_update

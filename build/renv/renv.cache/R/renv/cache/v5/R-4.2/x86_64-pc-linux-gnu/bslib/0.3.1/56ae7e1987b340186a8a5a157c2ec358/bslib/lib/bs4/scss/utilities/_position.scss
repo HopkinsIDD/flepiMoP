@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:37e8361c22f3d4ff6f1148cd4a8ff59cebff754e465e895851254123f0dd7f00
-size 484
+// stylelint-disable declaration-no-important
+
+// Common values
+@each $position in $positions {
+  .position-#{$position} { position: $position !important; }
+}
+
+// Shorthand
+
+.fixed-top {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: $zindex-fixed;
+}
+
+.fixed-bottom {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: $zindex-fixed;
+}
+
+.sticky-top {
+  @supports (position: sticky) {
+    position: sticky;
+    top: 0;
+    z-index: $zindex-sticky;
+  }
+}

@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3e3acfec611009e0ab3ddd6bae93d1dfa95560797d011baa4cd8447357de31a3
-size 772
+{
+  "name": "bootstrap-accessibility-plugin",
+  "version": "1.0.6",
+  "description": "A plugin that provides accessibility features for Bootstrap3 components",
+  "main": "Gruntfile.js",
+  "homepage": "https://github.com/paypal/bootstrap-accessibility-plugin",
+  "author": "PayPal Accessibility Team",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paypal/bootstrap-accessibility-plugin.git"
+  },
+  "licenses": [
+    {
+      "type": "BSD",
+      "url": "https://github.com/paypal/bootstrap-accessibility-plugin/blob/master/LICENSE.md"
+    }
+  ],
+  "bugs": {
+    "url": "https://github.com/paypal/bootstrap-accessibility-plugin/issues"
+  },
+  "keywords": ["bootstrap", "accessibility"],
+  "license": "BSD"
+}

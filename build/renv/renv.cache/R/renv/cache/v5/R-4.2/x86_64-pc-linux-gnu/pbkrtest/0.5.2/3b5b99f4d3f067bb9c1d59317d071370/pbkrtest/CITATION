@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:83d247cca695d2b92d1c4490685fbd9383c0301a04e1ac6012a3c379a7f84e41
-size 859
+citHeader("To cite pbkrtest in publications use:")
+
+citEntry(entry = "Article",
+  title        = "A Kenward-Roger Approximation and Parametric Bootstrap Methods for Tests in Linear Mixed Models -- The {R} Package {pbkrtest}",
+  author       = personList(as.person("Ulrich Halekoh"),
+                   as.person("S{\\o}ren H{\\o}jsgaard")),
+  journal      = "Journal of Statistical Software",
+  year         = "2014",
+  volume       = "59",
+  number       = "9",
+  pages        = "1--30",
+  url          = "https://www.jstatsoft.org/v59/i09/",
+
+  textVersion  =
+  paste("Ulrich Halekoh, Søren Højsgaard (2014).",
+        "A Kenward-Roger Approximation and Parametric Bootstrap Methods for Tests in Linear Mixed Models - The R Package pbkrtest.",
+        "Journal of Statistical Software, 59(9), 1-30.",
+        "URL https://www.jstatsoft.org/v59/i09/.")
+)
+

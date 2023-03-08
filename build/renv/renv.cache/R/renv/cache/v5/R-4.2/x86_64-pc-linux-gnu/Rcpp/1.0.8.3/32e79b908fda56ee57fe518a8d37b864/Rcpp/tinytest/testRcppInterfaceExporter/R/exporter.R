@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:833e242f48e2caaca9c27b6e6c02f64b32bfe537f900062a3648300acbab1590
-size 328
+#' @useDynLib testRcppInterfaceExporter, .registration = TRUE
+#' @importFrom Rcpp sourceCpp
+NULL
+
+flags <- new.env(parent = emptyenv())
+
+#' @export
+reset_flags <- function() {
+  flags$cpp_interface_upstream <- FALSE
+}
+.onLoad <- function(lib, pkg) {
+  reset_flags()
+}
+
+#' @export
+peek_flag <- function(name) {
+  flags[[name]]
+}

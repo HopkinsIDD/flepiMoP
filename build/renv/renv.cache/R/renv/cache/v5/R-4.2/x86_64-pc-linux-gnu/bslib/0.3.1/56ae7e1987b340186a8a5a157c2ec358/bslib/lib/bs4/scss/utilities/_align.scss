@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:520e54a8e4b23655af787da250eb6b91e64f4997d6f6d02f0eae5dc7622f2a41
-size 420
+// stylelint-disable declaration-no-important
+
+.align-baseline    { vertical-align: baseline !important; } // Browser default
+.align-top         { vertical-align: top !important; }
+.align-middle      { vertical-align: middle !important; }
+.align-bottom      { vertical-align: bottom !important; }
+.align-text-bottom { vertical-align: text-bottom !important; }
+.align-text-top    { vertical-align: text-top !important; }

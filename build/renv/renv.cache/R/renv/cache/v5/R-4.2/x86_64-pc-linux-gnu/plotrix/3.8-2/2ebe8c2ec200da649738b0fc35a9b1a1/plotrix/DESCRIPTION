@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5e082a8b9d003d962a2b5909c8e94a626d592b4223f785a4b0855d692c47ae6b
-size 934
+Package: plotrix
+Version: 3.8-2
+Date: 2021-09-08
+Title: Various Plotting Functions
+Author: Jim Lemon, Ben Bolker, Sander Oom,
+	Eduardo Klein, Barry Rowlingson,
+	Hadley Wickham, Anupam Tyagi,
+	Olivier Eterradossi, Gabor Grothendieck,
+	Michael Toews, John Kane, Rolf Turner,
+	Carl Witthoft, Julian Stander, Thomas Petzoldt,
+	Remko Duursma, Elisa Biancotto, Ofir Levy,
+	Christophe Dutang, Peter Solymos, Robby Engelmann, 
+	Michael Hecker, Felix Steinbeck, Hans Borchers,
+	Henrik Singmann, Ted Toal, Derek Ogle, Darshan Baral,
+	Ulrike Groemping, Bill Venables
+Maintainer: Jim Lemon <drjimlemon@gmail.com>
+Imports: grDevices, graphics, stats, utils
+Description: Lots of plots, various labeling, axis and color scaling functions.
+License: GPL (>= 2)
+NeedsCompilation: no
+Packaged: 2021-09-08 10:15:08 UTC; root
+Depends: R (>= 3.5.0)
+Repository: CRAN
+Date/Publication: 2021-09-08 11:00:02 UTC
+Built: R 4.2.2; ; 2023-02-25 20:40:40 UTC; unix

@@ -1,3 +1,669 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4b143f3863f1a053c3dd6af56f1d82d50c1ad9c9f284c44bc14b042e7e5b2bf9
-size 38771
+<!DOCTYPE html>
+<html>
+<head><title>R: A Tidy API for Graph Manipulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+<h1> A Tidy API for Graph Manipulation
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]" />
+</h1>
+<hr/>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]" /></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]" /></a>
+</div><h2>Documentation for package &lsquo;tidygraph&rsquo; version 1.2.1</h2>
+
+<ul><li><a href="../DESCRIPTION">DESCRIPTION file</a>.</li>
+<li><a href="../NEWS">Package NEWS</a>.</li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<p style="text-align: center;">
+<a href="#A">A</a>
+<a href="#B">B</a>
+<a href="#C">C</a>
+<a href="#D">D</a>
+<a href="#E">E</a>
+<a href="#G">G</a>
+<a href="#I">I</a>
+<a href="#L">L</a>
+<a href="#M">M</a>
+<a href="#N">N</a>
+<a href="#P">P</a>
+<a href="#R">R</a>
+<a href="#S">S</a>
+<a href="#T">T</a>
+<a href="#U">U</a>
+<a href="#W">W</a>
+<a href="#misc">misc</a>
+</p>
+
+
+<h2><a id="A">-- A --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="activate.html">activate</a></td>
+<td>Determine the context of subsequent manipulations</td></tr>
+<tr><td style="width: 25%;"><a href="activate.html">active</a></td>
+<td>Determine the context of subsequent manipulations</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.data.frame</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.default</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.dendrogram</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.evonet</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.graphAM</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.graphBAM</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.graphNEL</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.hclust</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.igraph</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.list</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.matrix</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.network</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.Node</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="tbl_graph.html">as_tbl_graph.phylo</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+</table>
+
+<h2><a id="B">-- B --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="search_graph.html">bfs_after</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">bfs_before</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">bfs_dist</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">bfs_parent</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">bfs_rank</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="bind_graphs.html">bind_edges</a></td>
+<td>Add graphs, nodes, or edges to a tbl_graph</td></tr>
+<tr><td style="width: 25%;"><a href="bind_graphs.html">bind_graphs</a></td>
+<td>Add graphs, nodes, or edges to a tbl_graph</td></tr>
+<tr><td style="width: 25%;"><a href="bind_graphs.html">bind_nodes</a></td>
+<td>Add graphs, nodes, or edges to a tbl_graph</td></tr>
+</table>
+
+<h2><a id="C">-- C --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="centrality.html">centrality</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_alpha</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_authority</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_betweenness</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_betweenness_communicability</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_betweenness_current</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_betweenness_network</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_betweenness_rsp_net</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_betweenness_rsp_simple</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_closeness</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_closeness_generalised</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_closeness_harmonic</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_closeness_residual</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_communicability</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_communicability_even</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_communicability_odd</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_decay</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_degree</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_edge_betweenness</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_eigen</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_expected</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_hub</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_information</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_integration</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_katz</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_manual</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_pagerank</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_power</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_random_walk</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_subgraph</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_subgraph_even</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="centrality.html">centrality_subgraph_odd</a></td>
+<td>Calculate node and edge centrality</td></tr>
+<tr><td style="width: 25%;"><a href="component_games.html">component_games</a></td>
+<td>Graph games based on connected components</td></tr>
+<tr><td style="width: 25%;"><a href="context_accessors.html">context_accessors</a></td>
+<td>Access graph, nodes, and edges directly inside verbs</td></tr>
+<tr><td style="width: 25%;"><a href="morph.html">convert</a></td>
+<td>Create a temporary alternative representation of the graph to compute on</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_bipartite</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_chordal_ring</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_citation</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_complete</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_de_bruijn</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_empty</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_graphs</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_kautz</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_lattice</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_notable</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_path</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_ring</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_star</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="create_graphs.html">create_tree</a></td>
+<td>Create different types of well-defined graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morph.html">crystallise</a></td>
+<td>Create a temporary alternative representation of the graph to compute on</td></tr>
+<tr><td style="width: 25%;"><a href="morph.html">crystallize</a></td>
+<td>Create a temporary alternative representation of the graph to compute on</td></tr>
+</table>
+
+<h2><a id="D">-- D --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="search_graph.html">dfs_dist</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">dfs_parent</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">dfs_rank</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">dfs_rank_out</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+</table>
+
+<h2><a id="E">-- E --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_between</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_from</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_incident</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_loop</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_multiple</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_mutual</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_is_to</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="edge_types.html">edge_types</a></td>
+<td>Querying edge types</td></tr>
+<tr><td style="width: 25%;"><a href="evolution_games.html">evolution_games</a></td>
+<td>Graph games based on evolution</td></tr>
+</table>
+
+<h2><a id="G">-- G --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_adhesion</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_assortativity</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_asym_count</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_automorphisms</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_clique_count</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_clique_num</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_component_count</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_diameter</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_girth</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_bipartite</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_chordal</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_complete</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_connected</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_dag</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_directed</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_forest</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_isomorphic_to</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_simple</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_subgraph_isomorphic_to</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_is_tree</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_join.html">graph_join</a></td>
+<td>Join graphs on common nodes</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_mean_dist</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_measures</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_min_cut</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_modularity</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_motif_count</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_mutual_count</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_order</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_radius</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_reciprocity</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_size</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="graph_types.html">graph_types</a></td>
+<td>Querying graph types</td></tr>
+<tr><td style="width: 25%;"><a href="graph_measures.html">graph_unconn_count</a></td>
+<td>Graph measurements</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_biconnected_component</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_components</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_edge_betweenness</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_fast_greedy</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_graph</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_infomap</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_label_prop</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_leading_eigen</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_louvain</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_optimal</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_spinglass</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+<tr><td style="width: 25%;"><a href="group_graph.html">group_walktrap</a></td>
+<td>Group nodes and edges based on community structure</td></tr>
+</table>
+
+<h2><a id="I">-- I --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="tbl_graph.html">is.tbl_graph</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+</table>
+
+<h2><a id="L">-- L --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="local_graph.html">local_ave_degree</a></td>
+<td>Measures based on the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="local_graph.html">local_graph</a></td>
+<td>Measures based on the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="local_graph.html">local_members</a></td>
+<td>Measures based on the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="local_graph.html">local_size</a></td>
+<td>Measures based on the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="local_graph.html">local_transitivity</a></td>
+<td>Measures based on the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="local_graph.html">local_triangles</a></td>
+<td>Measures based on the neighborhood of each node</td></tr>
+</table>
+
+<h2><a id="M">-- M --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="map_bfs.html">map_bfs</a></td>
+<td>Apply a function to nodes in the order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs_back.html">map_bfs_back</a></td>
+<td>Apply a function to nodes in the reverse order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs_back.html">map_bfs_back_chr</a></td>
+<td>Apply a function to nodes in the reverse order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs_back.html">map_bfs_back_dbl</a></td>
+<td>Apply a function to nodes in the reverse order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs_back.html">map_bfs_back_int</a></td>
+<td>Apply a function to nodes in the reverse order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs_back.html">map_bfs_back_lgl</a></td>
+<td>Apply a function to nodes in the reverse order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs.html">map_bfs_chr</a></td>
+<td>Apply a function to nodes in the order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs.html">map_bfs_dbl</a></td>
+<td>Apply a function to nodes in the order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs.html">map_bfs_int</a></td>
+<td>Apply a function to nodes in the order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_bfs.html">map_bfs_lgl</a></td>
+<td>Apply a function to nodes in the order of a breath first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs.html">map_dfs</a></td>
+<td>Apply a function to nodes in the order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs_back.html">map_dfs_back</a></td>
+<td>Apply a function to nodes in the reverse order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs_back.html">map_dfs_back_chr</a></td>
+<td>Apply a function to nodes in the reverse order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs_back.html">map_dfs_back_dbl</a></td>
+<td>Apply a function to nodes in the reverse order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs_back.html">map_dfs_back_int</a></td>
+<td>Apply a function to nodes in the reverse order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs_back.html">map_dfs_back_lgl</a></td>
+<td>Apply a function to nodes in the reverse order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs.html">map_dfs_chr</a></td>
+<td>Apply a function to nodes in the order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs.html">map_dfs_dbl</a></td>
+<td>Apply a function to nodes in the order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs.html">map_dfs_int</a></td>
+<td>Apply a function to nodes in the order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_dfs.html">map_dfs_lgl</a></td>
+<td>Apply a function to nodes in the order of a depth first search</td></tr>
+<tr><td style="width: 25%;"><a href="map_local.html">map_local</a></td>
+<td>Map a function over a graph representing the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="map_local.html">map_local_chr</a></td>
+<td>Map a function over a graph representing the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="map_local.html">map_local_dbl</a></td>
+<td>Map a function over a graph representing the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="map_local.html">map_local_int</a></td>
+<td>Map a function over a graph representing the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="map_local.html">map_local_lgl</a></td>
+<td>Map a function over a graph representing the neighborhood of each node</td></tr>
+<tr><td style="width: 25%;"><a href="morph.html">morph</a></td>
+<td>Create a temporary alternative representation of the graph to compute on</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">morphers</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+</table>
+
+<h2><a id="N">-- N --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_adhesion_from</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_adhesion_to</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_bibcoupling_with</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_bridging_score</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_closeness_impact</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_cocitation_with</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_cohesion_from</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_cohesion_to</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_connectivity_impact</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_constraint</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_coreness</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_distance_from</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_distance_to</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_diversity</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_topology.html">node_dominator</a></td>
+<td>Node properties related to the graph topology</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_eccentricity</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_effective_network_size</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_fareness_impact</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_adjacent</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_center</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_cut</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_isolated</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_keyplayer</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_leaf</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_root</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_simplical</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_sink</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_source</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_is_universal</a></td>
+<td>Querying node types</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_max_flow_from</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_max_flow_to</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="node_measures.html">node_measures</a></td>
+<td>Querying node measures</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_anneal</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_branch_bound</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_dendser</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_genetic</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_hclust</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_leafsort</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_mds</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_quadratic</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_spectral</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_spin_in</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_spin_out</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_traveller</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_two</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="node_rank.html">node_rank_visual</a></td>
+<td>Calculate node ranking</td></tr>
+<tr><td style="width: 25%;"><a href="pair_measures.html">node_similarity_with</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="node_topology.html">node_topology</a></td>
+<td>Node properties related to the graph topology</td></tr>
+<tr><td style="width: 25%;"><a href="node_topology.html">node_topo_order</a></td>
+<td>Node properties related to the graph topology</td></tr>
+<tr><td style="width: 25%;"><a href="node_types.html">node_types</a></td>
+<td>Querying node types</td></tr>
+</table>
+
+<h2><a id="P">-- P --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="pair_measures.html">pair_measures</a></td>
+<td>Calculate node pair properties</td></tr>
+<tr><td style="width: 25%;"><a href="evolution_games.html">play_barabasi_albert</a></td>
+<td>Graph games based on evolution</td></tr>
+<tr><td style="width: 25%;"><a href="evolution_games.html">play_barabasi_albert_aging</a></td>
+<td>Graph games based on evolution</td></tr>
+<tr><td style="width: 25%;"><a href="type_games.html">play_bipartite</a></td>
+<td>Graph games based on different node types</td></tr>
+<tr><td style="width: 25%;"><a href="component_games.html">play_blocks</a></td>
+<td>Graph games based on connected components</td></tr>
+<tr><td style="width: 25%;"><a href="component_games.html">play_blocks_hierarchy</a></td>
+<td>Graph games based on connected components</td></tr>
+<tr><td style="width: 25%;"><a href="evolution_games.html">play_citation_age</a></td>
+<td>Graph games based on evolution</td></tr>
+<tr><td style="width: 25%;"><a href="type_games.html">play_citation_type</a></td>
+<td>Graph games based on different node types</td></tr>
+<tr><td style="width: 25%;"><a href="sampling_games.html">play_degree</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="sampling_games.html">play_dotprod</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="sampling_games.html">play_erdos_renyi</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="sampling_games.html">play_fitness</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="sampling_games.html">play_fitness_power</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="evolution_games.html">play_forestfire</a></td>
+<td>Graph games based on evolution</td></tr>
+<tr><td style="width: 25%;"><a href="sampling_games.html">play_geometry</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="evolution_games.html">play_growing</a></td>
+<td>Graph games based on evolution</td></tr>
+<tr><td style="width: 25%;"><a href="component_games.html">play_islands</a></td>
+<td>Graph games based on connected components</td></tr>
+<tr><td style="width: 25%;"><a href="type_games.html">play_preference</a></td>
+<td>Graph games based on different node types</td></tr>
+<tr><td style="width: 25%;"><a href="type_games.html">play_preference_asym</a></td>
+<td>Graph games based on different node types</td></tr>
+<tr><td style="width: 25%;"><a href="component_games.html">play_smallworld</a></td>
+<td>Graph games based on connected components</td></tr>
+<tr><td style="width: 25%;"><a href="type_games.html">play_traits</a></td>
+<td>Graph games based on different node types</td></tr>
+</table>
+
+<h2><a id="R">-- R --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="reroute.html">reroute</a></td>
+<td>Change terminal nodes of edges</td></tr>
+</table>
+
+<h2><a id="S">-- S --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="sampling_games.html">sampling_games</a></td>
+<td>Graph games based on direct sampling</td></tr>
+<tr><td style="width: 25%;"><a href="search_graph.html">search_graph</a></td>
+<td>Search a graph with depth first and breath first</td></tr>
+</table>
+
+<h2><a id="T">-- T --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="tbl_graph.html">tbl_graph</a></td>
+<td>A data structure for tidy graph manipulation</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_bfs_tree</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_complement</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_components</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_contracted</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_dfs_tree</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_directed</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_dominator_tree</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_hierarchical_clusters</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_linegraph</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_local_neighborhood</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_minimum_spanning_tree</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_shortest_path</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_simple</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_split</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_subcomponent</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_subgraph</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_undirected</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="morphers.html">to_unfolded_tree</a></td>
+<td>Functions to generate alternate representations of graphs</td></tr>
+<tr><td style="width: 25%;"><a href="type_games.html">type_games</a></td>
+<td>Graph games based on different node types</td></tr>
+</table>
+
+<h2><a id="U">-- U --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="morph.html">unmorph</a></td>
+<td>Create a temporary alternative representation of the graph to compute on</td></tr>
+</table>
+
+<h2><a id="W">-- W --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="with_graph.html">with_graph</a></td>
+<td>Evaluate a tidygraph algorithm in the context of a graph</td></tr>
+</table>
+
+<h2><a id="misc">-- misc --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="activate.html">%E&gt;%</a></td>
+<td>Determine the context of subsequent manipulations</td></tr>
+<tr><td style="width: 25%;"><a href="activate.html">%N&gt;%</a></td>
+<td>Determine the context of subsequent manipulations</td></tr>
+<tr><td style="width: 25%;"><a href="context_accessors.html">.E</a></td>
+<td>Access graph, nodes, and edges directly inside verbs</td></tr>
+<tr><td style="width: 25%;"><a href="context_accessors.html">.G</a></td>
+<td>Access graph, nodes, and edges directly inside verbs</td></tr>
+<tr><td style="width: 25%;"><a href="context_accessors.html">.N</a></td>
+<td>Access graph, nodes, and edges directly inside verbs</td></tr>
+</table>
+</div></body></html>

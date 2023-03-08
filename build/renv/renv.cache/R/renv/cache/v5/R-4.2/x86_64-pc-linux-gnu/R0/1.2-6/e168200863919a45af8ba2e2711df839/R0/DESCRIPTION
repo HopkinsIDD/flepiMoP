@@ -1,3 +1,28 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:287f67cacdfbc95ce626ce9d87657366b354f73b58d7aed65f1e5762809fe9b9
-size 1382
+Package: R0
+Type: Package
+Title: Estimation of R0 and Real-Time Reproduction Number from
+        Epidemics
+Version: 1.2-6
+Date: 2015-05-21
+Author: Pierre-Yves Boelle, Thomas Obadia
+Maintainer: Thomas Obadia <thomas.obadia@iplesp.upmc.fr>
+Depends: R (>= 2.13.0), MASS
+Description: Estimation of reproduction numbers for disease outbreak, based on
+    incidence data. The R0 package implements several documented methods. It is
+    therefore possible to compare estimations according to the methods used.
+    Depending on the methods requested by user, basic reproduction number
+    (commonly denoted as R0) or real-time reproduction number (referred to as
+    R(t)) is computed, along with a 95% Confidence Interval. Plotting outputs
+    will give different graphs depending on the methods requested : basic
+    reproductive number estimations will only show the epidemic curve
+    (collected data) and an adjusted model, whereas real-time methods will also
+    show the R(t) variations throughout the outbreak time period. Sensitivity
+    analysis tools are also provided, and allow for investigating effects of
+    varying Generation Time distribution or time window on estimates.
+License: GPL (>= 2)
+LazyLoad: yes
+Packaged: 2015-05-21 15:45:29 UTC; thomas
+NeedsCompilation: no
+Repository: CRAN
+Date/Publication: 2015-05-21 19:34:12
+Built: R 4.2.2; ; 2023-02-25 11:27:33 UTC; unix

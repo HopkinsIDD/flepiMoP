@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8b54d6a408788f4f97d5c61f3324360dc6e1785a7fde7cae4a4c441cd4eaf77e
-size 207
+require(rms)
+set.seed(1)
+a <- runif(100)
+b <- factor(sample(c('a','b','c'), 100, TRUE))
+b[10] <- NA
+d <- data.frame(a, b)
+x <- aregImpute(~ a + b, data=d)
+x$imputed$b
+fit.mult.impute(a ~ b, ols, x, data=d)
+

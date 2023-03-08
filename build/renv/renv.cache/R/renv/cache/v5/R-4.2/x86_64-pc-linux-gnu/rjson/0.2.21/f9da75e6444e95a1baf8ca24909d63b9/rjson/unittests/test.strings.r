@@ -1,3 +1,29 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:be8a036fc6bd252937fd228806c73fa39f0831a3192ea6b9830a99c99d78dfb5
-size 561
+.setUp <- function() {}
+.tearDown <- function() {}
+
+test.strings <- function()
+{
+	json <- "\"\""
+	x <- fromJSON( json )
+	checkIdentical( x, "" )
+
+	json <- "\"hello world\""
+	x <- fromJSON( json )
+	checkIdentical( x, "hello world" )
+
+	json <- "\"hello\\ttab\""
+	x <- fromJSON( json )
+	checkIdentical( x, "hello\ttab" )
+
+	json <- "\"hello\\\"quote\""
+	x <- fromJSON( json )
+	checkIdentical( x, "hello\"quote" )
+
+	#really long string
+	s <- paste( 1:100000, collapse = "-" )
+	json <- paste("\"", s, "\"", sep="" )
+	x <- fromJSON( json )
+	checkIdentical( x, s )
+}
+
+

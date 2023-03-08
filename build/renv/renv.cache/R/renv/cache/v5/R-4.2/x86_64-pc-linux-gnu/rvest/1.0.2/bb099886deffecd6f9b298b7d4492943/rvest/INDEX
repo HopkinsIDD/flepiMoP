@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f21583452f0c8b7f8433024eeba8947526c3db9db371eecb62d0bb7e9c87cada
-size 463
+html_attr               Get element attributes
+html_children           Get element children
+html_element            Select elements from an HTML document
+html_encoding_guess     Guess faulty character encoding
+html_form               Parse forms and set values
+html_name               Get element name
+html_table              Parse an html table into a data frame
+html_text               Get element text
+session                 Simulate a session in web browser

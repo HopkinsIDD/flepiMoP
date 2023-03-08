@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9f0164a4b8d45046acef2cc960d21581db22d810804b0992cf15306045b123bb
-size 433
+// List Groups
+
+@mixin list-group-item-variant($state, $background, $color) {
+  .list-group-item-#{$state} {
+    color: $color;
+    background-color: $background;
+
+    &.list-group-item-action {
+      @include hover-focus() {
+        color: $color;
+        background-color: darken($background, 5%);
+      }
+
+      &.active {
+        color: $white;
+        background-color: $color;
+        border-color: $color;
+      }
+    }
+  }
+}

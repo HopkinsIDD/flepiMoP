@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6a7a0f889665b45571068c6f2ec2d9d869426a820d1670993e5ee6d1519f7f3c
-size 278
+\name{NEWS}
+\title{News for Package 'mime'}
+
+\section{CHANGES IN mime VERSION 999.999}{
+  \itemize{
+    \item This NEWS file is only a placeholder. The version 999.999 does not really
+    exist. Please read the NEWS on Github: \url{https://github.com/yihui/mime/releases}
+  }
+}

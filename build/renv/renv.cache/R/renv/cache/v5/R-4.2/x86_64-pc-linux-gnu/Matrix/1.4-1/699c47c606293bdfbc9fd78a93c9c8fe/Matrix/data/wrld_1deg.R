@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:45edbdb8ce60a93ef2d421e14b37c50fb0c57a7086781316ca6fe00737eb017a
-size 443
+stopifnot(requireNamespace("Matrix" , quietly = TRUE)) # includes 'methods'
+
+wrld_1deg <-
+    local({
+	load(system.file(file.path("external", "wrld_1deg_slots.rda"),
+                         package = "Matrix"))
+	## -> 'L'
+	r <- methods::new("dsCMatrix")
+	for (n in c("Dim", "i","p","x"))
+	    methods::slot(r, n) <- L[[n]]
+	r
+    })
+
+if(FALSE) {## The reverse:
+ L <- list()
+ for (n in c("Dim", "i","p","x"))    L[[n]] <- slot(wrld_1deg, n)
+}

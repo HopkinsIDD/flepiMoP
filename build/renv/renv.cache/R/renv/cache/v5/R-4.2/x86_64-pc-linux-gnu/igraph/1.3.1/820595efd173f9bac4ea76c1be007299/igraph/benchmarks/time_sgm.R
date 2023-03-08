@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a39bb5bf5d7651bb8e3dd33fc35bdb7d4f6445eed7a8c34747ca8804d51b68a4
-size 500
+
+time_group("Seeded graph matching")
+
+time_that("SGM is fast(er)", replications=10,
+          init = { library(igraph); set.seed(42); vc <- 200; nos=10 },
+          reinit = { g1 <- erdos.renyi.game(vc, .01);
+                     perm <- c(1:nos, sample(vc-nos)+nos)
+                     g2 <- sample_correlated_gnp(g1, corr=.7, p=g1$p, permutation=perm)
+                   },
+          { match_vertices(g1[], g2[], m=nos, start=matrix(1/(vc-nos), vc-nos, vc-nos),
+                iteration = 20) })

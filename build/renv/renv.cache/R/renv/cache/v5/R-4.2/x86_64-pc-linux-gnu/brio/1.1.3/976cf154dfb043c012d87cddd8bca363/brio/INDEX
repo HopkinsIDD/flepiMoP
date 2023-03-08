@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a4335f7b878228618a21c0fb82b277828cd9665d18229734b83d05aead94fcbb
-size 427
+file_line_endings       Retrieve the type of line endings used by a
+                        file
+read_file               Read an entire file
+read_lines              Read text lines from a file
+readLines               Read text lines from a file
+write_file              Write data to a file
+write_file_raw          Write data to a file
+write_lines             Write lines to a file
+writeLines              Write lines to a file

@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a502384e10de8b7a856e0979c00808b780c2d480ebe5d75d598447cf679f4a66
-size 320
+.background {
+  color: #600000;
+}
+.num {
+  color: #88ddee;
+}
+.str {
+  color: #ffcc88;
+}
+.com {
+  color: #ffffff;
+  font-style: italic;
+}
+.opt {
+  color: #ffcc33;
+}
+.std {
+  color: #f08080;
+}
+.kwa {
+  color: #eeff99;
+  font-weight: bold;
+}
+.kwb {
+  color: #88ffaa;
+}
+.kwc {
+  color: #aa99ff;
+}
+.kwd {
+  color: #f0b77f;
+}

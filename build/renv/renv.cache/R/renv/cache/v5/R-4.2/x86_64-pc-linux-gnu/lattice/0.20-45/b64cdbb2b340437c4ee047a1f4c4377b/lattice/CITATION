@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5c9335d6f309394e43bad40ad3f5f54e1c884501fbb6b6ddf25415c7c13eeb36
-size 656
+citHeader("To cite the lattice package in publications use:")
+
+citEntry(entry="Book",
+         title = "Lattice: Multivariate Data Visualization with R",
+         author = personList(as.person("Deepayan Sarkar")),
+         publisher = "Springer",
+	 ## edition = "First",
+         address      = "New York",
+         year         = 2008,
+         note         = "ISBN 978-0-387-75968-5",
+         url          = "http://lmdvr.r-forge.r-project.org",
+         
+         textVersion = 
+         paste("Sarkar, Deepayan (2008)", 
+               "Lattice: Multivariate Data Visualization with R.",
+               "Springer, New York. ISBN 978-0-387-75968-5"))
+

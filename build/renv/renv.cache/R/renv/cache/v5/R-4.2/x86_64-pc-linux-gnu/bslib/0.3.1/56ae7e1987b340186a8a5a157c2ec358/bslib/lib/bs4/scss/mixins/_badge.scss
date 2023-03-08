@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cd06bf8a625acd6da5edf2fae56f59afa039755d6e27c10cb24d67cc2f317230
-size 330
+@mixin badge-variant($bg) {
+  color: color-contrast($bg);
+  background-color: $bg;
+
+  @at-root a#{&} {
+    @include hover-focus() {
+      color: color-contrast($bg);
+      background-color: darken($bg, 10%);
+    }
+
+    &:focus,
+    &.focus {
+      outline: 0;
+      box-shadow: 0 0 0 $badge-focus-width rgba($bg, .5);
+    }
+  }
+}

@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:dad8ffe9634ebabf6a2d2845fc1bdac6e73002b9d232cacecde930e0316e8864
-size 340
+#ifndef SOURCE_TOOLS_H
+#define SOURCE_TOOLS_H
+
+#include <sourcetools/core/core.h>
+#include <sourcetools/platform/platform.h>
+#include <sourcetools/collection/collection.h>
+#include <sourcetools/utf8/utf8.h>
+#include <sourcetools/cursor/cursor.h>
+#include <sourcetools/read/read.h>
+#include <sourcetools/tokenization/tokenization.h>
+
+#endif

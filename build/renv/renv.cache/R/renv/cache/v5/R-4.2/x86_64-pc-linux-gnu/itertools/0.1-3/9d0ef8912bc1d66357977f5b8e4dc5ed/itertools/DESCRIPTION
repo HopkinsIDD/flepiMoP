@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b02b03bed2c862930b2d64394ad6c618a292281e40ccb86b0df1c6a958087af8
-size 736
+Package: itertools
+Type: Package
+Title: Iterator Tools
+Version: 0.1-3
+Author: Steve Weston, Hadley Wickham
+Maintainer: Steve Weston <stephen.b.weston@gmail.com>
+Description: Various tools for creating iterators, many patterned after
+        functions in the Python itertools module, and others patterned
+        after functions in the 'snow' package.
+Depends: R (>= 2.14.0), iterators(>= 1.0.0)
+Imports: parallel
+Suggests: foreach
+License: GPL-2
+Repository: CRAN
+Repository/R-Forge/Project: itertools
+Repository/R-Forge/Revision: 60
+Repository/R-Forge/DateTimeStamp: 2014-02-27 22:33:49
+Date/Publication: 2014-03-12 00:20:01
+Packaged: 2014-02-27 23:36:25 UTC; rforge
+NeedsCompilation: no
+Built: R 4.2.2; ; 2023-02-25 18:22:31 UTC; unix

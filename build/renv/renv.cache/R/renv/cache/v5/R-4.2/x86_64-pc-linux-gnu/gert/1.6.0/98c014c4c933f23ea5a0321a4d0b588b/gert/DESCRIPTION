@@ -1,3 +1,34 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0a0945dc1b2832e3726488254018d0017d5a3c0aa0d4e328f13a2c5a0209864e
-size 1571
+Type: Package
+Package: gert
+Title: Simple Git Client for R
+Version: 1.6.0
+Authors@R: c(
+    person("Jeroen", "Ooms", role = c("aut", "cre"), email = "jeroen@berkeley.edu",
+      comment = c(ORCID = "0000-0002-4035-0289")),
+    person("Jennifer", "Bryan", role = "ctb", email = "jenny@rstudio.com",
+      comment = c(ORCID = "0000-0002-6983-2759")))
+Description: Simple git client for R based on 'libgit2' <https://libgit2.org> with
+    support for SSH and HTTPS remotes. All functions in 'gert' use basic R data 
+    types (such as vectors and data-frames) for their arguments and return values.
+    User credentials are shared with command line 'git' through the git-credential
+    store and ssh keys stored on disk or ssh-agent.
+License: MIT + file LICENSE
+URL: https://docs.ropensci.org/gert/, https://github.com/r-lib/gert
+BugReports: https://github.com/r-lib/gert/issues
+Imports: askpass, credentials (>= 1.2.1), openssl (>= 1.4.1),
+        rstudioapi (>= 0.11), sys, zip (>= 2.1.0)
+Suggests: spelling, knitr, rmarkdown, testthat
+VignetteBuilder: knitr
+Encoding: UTF-8
+RoxygenNote: 7.1.2
+SystemRequirements: libgit2 (>= 1.0): libgit2-devel (rpm) or
+        libgit2-dev (deb)
+Language: en-US
+NeedsCompilation: yes
+Packaged: 2022-03-29 20:42:24 UTC; jeroen
+Author: Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>),
+  Jennifer Bryan [ctb] (<https://orcid.org/0000-0002-6983-2759>)
+Maintainer: Jeroen Ooms <jeroen@berkeley.edu>
+Repository: CRAN
+Date/Publication: 2022-03-29 21:10:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 17:04:06 UTC; unix

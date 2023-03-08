@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:62c8ba74a02567073f1b13618983a89b1eb53b86db2328553db70c0c5e1307be
-size 504
+library(iterators)
+
+# return an iterator that returns the specified value
+# a limited number of times
+irep <- function(x, times) {
+  nextEl <- function() {
+    if (times > 0)
+      times <<- times - 1
+    else
+      stop('StopIteration')
+
+    x
+  }
+
+  obj <- list(nextElem=nextEl)
+  class(obj) <- c('irep', 'abstractiter', 'iter')
+  obj
+}
+
+# create an iterator that returns a 7 exactly 6 times
+it <- irep(7, 6)
+
+# convert the iterator into a list, which gets all of its values
+print(unlist(as.list(it)))

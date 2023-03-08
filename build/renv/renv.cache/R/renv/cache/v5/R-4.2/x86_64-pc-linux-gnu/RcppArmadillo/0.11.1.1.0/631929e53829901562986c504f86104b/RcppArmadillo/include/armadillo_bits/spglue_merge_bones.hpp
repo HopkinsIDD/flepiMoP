@@ -1,3 +1,43 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:814c13ebf124e0f20459c41b471766201af07343f88ee21a0055c5279c4d51be
-size 1364
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// Copyright 2008-2016 National ICT Australia (NICTA)
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ------------------------------------------------------------------------
+
+
+//! \addtogroup spglue_merge
+//! @{
+
+
+
+class spglue_merge
+  {
+  public:
+  
+  template<typename eT>
+  arma_hot inline static void subview_merge(SpSubview<eT>& sv, const SpMat<eT>& B);
+  
+  template<typename eT>
+  arma_hot inline static void subview_merge(SpSubview<eT>& sv, const   Mat<eT>& B);
+  
+  template<typename eT>
+  arma_hot inline static void symmat_merge(SpMat<eT>& out, const SpMat<eT>& A, const SpMat<eT>& B);
+  
+  template<typename eT>
+  arma_hot inline static void diagview_merge(SpMat<eT>& out, const SpMat<eT>& A, const SpMat<eT>& B);
+  };
+
+
+
+//! @}

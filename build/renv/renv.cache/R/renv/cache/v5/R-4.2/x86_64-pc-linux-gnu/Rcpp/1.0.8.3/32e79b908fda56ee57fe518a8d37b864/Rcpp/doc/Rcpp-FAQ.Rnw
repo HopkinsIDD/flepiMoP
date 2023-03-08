@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:21a9d753ee433bed9d4fba609d305c85e0c81d89bcf43307449ceace2ef9e8e9
-size 252
+\documentclass{article}
+\usepackage{pdfpages}
+%\VignetteIndexEntry{Rcpp-FAQ}
+%\VignetteKeywords{Rcpp, FAQ, R, Cpp}
+%\VignettePackage{Rcpp}
+%\VignetteEncoding{UTF-8}
+
+\begin{document}
+\includepdf[pages=-, fitpaper=true]{pdf/Rcpp-FAQ.pdf}
+\end{document}

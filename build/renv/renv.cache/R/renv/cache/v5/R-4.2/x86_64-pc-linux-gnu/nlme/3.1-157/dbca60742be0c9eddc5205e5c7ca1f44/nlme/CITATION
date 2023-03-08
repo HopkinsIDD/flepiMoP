@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1abc79611f0baf3790a3cd30d011f3f3b5293de015f444d8381fa5eac7fed710
-size 398
+## R package reference generated from DESCRIPTION metadata
+citation(auto = meta)
+
+## NLME book
+bibentry(bibtype = "Book",
+         title = "Mixed-Effects Models in S and S-PLUS",
+         author = c(person(c("José", "C."), "Pinheiro"),
+                    person(c("Douglas", "M."), "Bates")),
+         year = "2000", publisher = "Springer", address = "New York",
+         doi = "10.1007/b98882")

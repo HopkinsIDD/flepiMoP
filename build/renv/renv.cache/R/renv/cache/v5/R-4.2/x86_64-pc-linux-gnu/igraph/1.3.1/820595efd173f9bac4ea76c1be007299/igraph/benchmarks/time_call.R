@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8ad7da9a348e7ff2a1fac30c2a0bd9ede868ed0f28542f417a1fc977543036dc
-size 495
+
+time_group(".Call from R")
+
+time_that("Redefining .Call does not have much overhead #1", replications=10,
+          init = { library(igraph) ; g <- graph.ring(100) },
+          { for (i in 1:20000) {
+            .Call(C_R_igraph_vcount, g)
+          }  })
+
+time_that("Redefining .Call does not have much overhead #1", replications=10,
+          init = { library(igraph) ; g <- graph.ring(100) },
+          { for (i in 1:20000) {
+            igraph:::.Call(C_R_igraph_vcount, g)
+          }  })

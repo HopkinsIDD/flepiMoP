@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:eca9f386067e55aa86fd770670b940d9c02c37080ac7ac029ea41c547a229001
-size 243
+require(Hmisc)
+set.seed(1)
+d <- expand.grid(day=c(1, 3), rx=c('A','B'), reps=1:3)
+d$x <- runif(nrow(d))
+s <- summary(x ~ day + stratify(rx), fun=smean.sd, overall=FALSE, data=d)
+w <- latex(s, file='/tmp/z.tex', table.env=FALSE, booktabs=TRUE)

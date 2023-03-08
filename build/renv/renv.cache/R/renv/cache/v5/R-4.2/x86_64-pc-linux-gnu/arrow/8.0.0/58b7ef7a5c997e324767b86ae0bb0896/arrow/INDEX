@@ -1,3 +1,104 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:02f22e5a260a05a5391571c0d161bebb2343e6ac3795fe727b9f7e40261e9411
-size 5316
+array                   Arrow Arrays
+ArrayData               ArrayData class
+arrow_available         Is the C++ Arrow library available?
+arrow_info              Report information on the package's
+                        capabilities
+as_arrow_array          Convert an object to an Arrow Array
+as_arrow_table          Convert an object to an Arrow Table
+as_chunked_array        Convert an object to an Arrow ChunkedArray
+as_data_type            Convert an object to an Arrow DataType
+as_record_batch         Convert an object to an Arrow RecordBatch
+as_record_batch_reader
+                        Convert an object to an Arrow RecordBatchReader
+as_schema               Convert an object to an Arrow DataType
+buffer                  Buffer class
+call_function           Call an Arrow compute function
+ChunkedArray            ChunkedArray class
+Codec                   Compression Codec class
+codec_is_available      Check whether a compression codec is available
+compression             Compressed stream classes
+concat_arrays           Concatenate zero or more Arrays
+concat_tables           Concatenate one or more Tables
+copy_files              Copy files between FileSystems
+cpu_count               Manage the global CPU thread pool in libarrow
+create_package_with_all_dependencies
+                        Create a source bundle that includes all
+                        thirdparty dependencies
+CsvReadOptions          File reader options
+CsvTableReader          Arrow CSV and JSON table reader classes
+data-type               Apache Arrow data types
+Dataset                 Multi-file datasets
+dataset_factory         Create a DatasetFactory
+DataType                class arrow::DataType
+dictionary              Create a dictionary type
+DictionaryType          class DictionaryType
+Expression              Arrow expressions
+ExtensionArray          class arrow::ExtensionArray
+ExtensionType           class arrow::ExtensionType
+FeatherReader           FeatherReader class
+Field                   Field class
+FileFormat              Dataset file formats
+FileInfo                FileSystem entry info
+FileSelector            file selector
+FileSystem              FileSystem classes
+FileWriteOptions        Format-specific write options
+FixedWidthType          class arrow::FixedWidthType
+flight_connect          Connect to a Flight server
+flight_disconnect       Explicitly close a Flight client
+flight_get              Get data from a Flight server
+flight_put              Send data to a Flight server
+FragmentScanOptions     Format-specific scan options
+hive_partition          Construct Hive partitioning
+infer_type              Infer the arrow Array type from an R object
+InputStream             InputStream classes
+install_arrow           Install or upgrade the Arrow library
+install_pyarrow         Install pyarrow for use with reticulate
+io_thread_count         Manage the global I/O thread pool in libarrow
+list_compute_functions
+                        List available Arrow C++ compute functions
+list_flights            See available resources on a Flight server
+load_flight_server      Load a Python Flight server
+map_batches             Apply a function to a stream of RecordBatches
+match_arrow             'match' and '%in%' for Arrow objects
+Message                 class arrow::Message
+MessageReader           class arrow::MessageReader
+mmap_create             Create a new read/write memory mapped file of a
+                        given size
+mmap_open               Open a memory mapped file
+new_extension_type      Extension types
+open_dataset            Open a multi-file dataset
+OutputStream            OutputStream classes
+ParquetArrowReaderProperties
+                        ParquetArrowReaderProperties class
+ParquetFileReader       ParquetFileReader class
+ParquetFileWriter       ParquetFileWriter class
+ParquetWriterProperties
+                        ParquetWriterProperties class
+Partitioning            Define Partitioning for a Dataset
+read_arrow              Read Arrow IPC stream format
+read_delim_arrow        Read a CSV or other delimited file with Arrow
+read_feather            Read a Feather file
+read_json_arrow         Read a JSON file
+read_message            Read a Message from a stream
+read_parquet            Read a Parquet file
+read_schema             read a Schema from a stream
+RecordBatch             RecordBatch class
+RecordBatchReader       RecordBatchReader classes
+RecordBatchWriter       RecordBatchWriter classes
+s3_bucket               Connect to an AWS S3 bucket
+Scalar                  Arrow scalars
+Scanner                 Scan the contents of a dataset
+Schema                  Schema class
+Table                   Table class
+to_arrow                Create an Arrow object from others
+to_duckdb               Create a (virtual) DuckDB table from an Arrow
+                        object
+unify_schemas           Combine and harmonize schemas
+value_counts            'table' for Arrow objects
+vctrs_extension_array   Extension type for generic typed vectors
+write_arrow             Write Arrow IPC stream format
+write_csv_arrow         Write CSV file to disk
+write_dataset           Write a dataset
+write_feather           Write data in the Feather format
+write_parquet           Write Parquet file to disk
+write_to_raw            Write Arrow data to a raw vector

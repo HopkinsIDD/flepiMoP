@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:916b093f04483013f98f5db98acf7e7d85af28d0217585848668f732f7f71fce
-size 973
+Package: usmapdata
+Title: Mapping Data for 'usmap' Package
+Version: 0.1.0
+Description: Provides a container for data used by the 'usmap' package.
+    The data used by 'usmap' has been extracted into this package so that the
+    file size of the 'usmap' package can be reduced greatly. The data in this
+    package will be updated roughly once per year (plus bug fixes) as new
+    shape files are provided by the US Census bureau.
+Authors@R: person("Paolo", "Di Lorenzo", email = "paolo@dilorenzo.pl", role = c("aut", "cre"))
+Depends: R (>= 3.5.0)
+License: GPL (>= 3)
+Encoding: UTF-8
+URL: https://usmap.dev
+BugReports: https://github.com/pdil/usmapdata/issues
+Imports: utils
+Suggests: covr, testthat
+RoxygenNote: 7.1.2
+NeedsCompilation: no
+Packaged: 2022-02-08 19:42:08 UTC; paolo
+Author: Paolo Di Lorenzo [aut, cre]
+Maintainer: Paolo Di Lorenzo <paolo@dilorenzo.pl>
+Repository: CRAN
+Date/Publication: 2022-02-09 10:10:02 UTC
+Built: R 4.2.2; ; 2023-02-25 18:42:26 UTC; unix

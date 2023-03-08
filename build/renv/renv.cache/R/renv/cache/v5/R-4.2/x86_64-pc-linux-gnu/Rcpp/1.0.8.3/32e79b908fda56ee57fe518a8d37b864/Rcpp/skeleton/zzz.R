@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f4727471eb7d6fbbf57a180e7811775a51a36b9d371f9358eb9417907fc6d301
-size 477
+
+## Up until R 2.15.0, the require("methods") is needed but (now)
+## triggers an warning from R CMD check
+#.onLoad <- function(libname, pkgname){
+#    #require("methods")  ## needed with R <= 2.15.0
+#    loadRcppModules()
+#}
+
+
+## For R 2.15.1 and later this also works. Note that calling loadModule() triggers
+## a load action, so this does not have to be placed in .onLoad() or evalqOnLoad().
+loadModule("NumEx", TRUE)
+loadModule("yada", TRUE)
+loadModule("stdVector", TRUE)
+
+

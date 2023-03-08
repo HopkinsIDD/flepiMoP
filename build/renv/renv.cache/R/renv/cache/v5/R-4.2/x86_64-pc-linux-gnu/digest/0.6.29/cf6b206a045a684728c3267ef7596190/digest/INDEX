@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:631b6eafadd79f485a5ab8752bb7020ffefa51a11ae68f016c9601d2e1bebb9b
-size 531
+AES                     Create AES block cipher object
+digest                  Create hash function digests for arbitrary R
+                        objects or files
+digest2int              hash arbitrary string to integer
+getVDigest              Set a vectorised function for creating hash
+                        function digests
+hmac                    compute a hash-based message authentication
+                        code
+makeRaw                 Create a raw object
+sha1                    Calculate a SHA1 hash of an object

@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fd63deb3e1bf5911119016d07af6090f4eca89ef5b7256d8ca9606e5558b48ef
-size 398
+# ensure first group is included in output
+test.to.frequency_includes_first_group <- function() {
+  data(sample_matrix)
+  x <- as.xts(sample_matrix)
+  x$Volume <- 1
+  
+  tf <- xts:::to.frequency(x, x$Volume, 90, name=NULL)
+  tp <- .Call("toPeriod", x, c(0L, 90L, 180L), TRUE, 5L, FALSE, FALSE,
+              c("Open", "High", "Low", "Close", "Volume") , PACKAGE="xts")
+
+  checkIdentical(tf, tp)
+}
+

@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fdfadfb021294ce8c30f397ec44f315a3b49a045452d4b2860db5c3131687ea9
-size 309
+#!/bin/bash
+
+# run this from the inst/ directory
+# go to the root directory of the package
+cd ..
+
+vers=`grep Version: DESCRIPTION | awk '{print $2}'`
+
+R --vanilla --quiet -e 'library(devtools); document()'
+
+export R_RD4PDF=times,hyper
+rm -f inst/tictoc_${vers}.pdf 
+R CMD Rd2pdf -o inst/tictoc_${vers}.pdf .
+

@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:85ff371710160abd2465835644678cbbcdff02d23fc4aa31db813b8b015d3ac9
-size 504
+future_promise_queue    'future' promise
+is.promise              Coerce to a promise
+pipes                   Promise pipe operators
+promise                 Create a new promise object
+promise_all             Combine multiple promise objects
+promise_map             Promise-aware lapply/map
+promise_reduce          Promise-aware version of Reduce
+promise_resolve         Create a resolved or rejected promise
+then                    Access the results of a promise
+with_promise_domain     Promise domains

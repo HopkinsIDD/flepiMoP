@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a95fbf725d2389be5af72f568a6aaa1c022a6c49feb31d9b25bcb5a563c11c3e
-size 375
+
+test.issue24 <- function()
+{
+	# json unicode is escaped as \u018E; not uppercase \U
+	bad_json <- "\"\\U018E\""
+	x <- try( fromJSON( bad_json ), silent = TRUE )
+	checkTrue( any( class( x ) == "try-error" ) )
+	# TODO validate error message is ok: should contain "<simpleError in fromJSON(bad_json): not all data was parsed (0 chars were parsed out of a total of 8 chars)>"
+}
+

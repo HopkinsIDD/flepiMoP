@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:65f4eaed701fff879718cc4af7cbf13990655a88d40c629dfe033caca66d6dc6
-size 326
+library(vroom)
+x <- vroom(file, id = "path", col_types = c(pickup_datetime = "c"), trim_ws = FALSE, quote = "", escape_double = FALSE, na = character(), altrep = TRUE)
+print(head(x, 10))
+a <- head(x)
+b <- tail(x)
+c <- x[sample(NROW(x), 100), ]
+d <- x[x$payment_type == "UNK", ]
+e <- tapply(x$tip_amount, x$payment_type, mean)

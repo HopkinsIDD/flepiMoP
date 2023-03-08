@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bdfe2d22db4b9b01fa857f0908b7a17e5bbc57a0b404aaec30fb346689a287b9
-size 929
+Package: brew
+Type: Package
+Title: Templating Framework for Report Generation
+Version: 1.0-7
+Date: 2022-02-04
+Authors@R: c(person(given="Jeffrey", 
+                  family="Horner", 
+                  role = c("aut", "cph")),
+             person(given="Greg", 
+                  family="Hunt", 
+                  email = "greg@firmansyah.com", 
+                  role = c("aut", "cre", "cph")))
+Author: Jeffrey Horner [aut, cph],
+  Greg Hunt [aut, cre, cph]
+Maintainer: Greg Hunt <greg@firmansyah.com>
+Description: Implements a templating framework for mixing text and
+        R code for report generation. brew template syntax is similar
+        to PHP, Ruby's erb module, Java Server Pages, and Python's psp
+        module.
+License: GPL-2
+Repository: CRAN
+Suggests: testthat
+NeedsCompilation: no
+Packaged: 2022-02-04 10:07:41 UTC; greg
+Date/Publication: 2022-02-04 11:50:02 UTC
+Built: R 4.2.2; ; 2023-02-25 14:25:24 UTC; unix

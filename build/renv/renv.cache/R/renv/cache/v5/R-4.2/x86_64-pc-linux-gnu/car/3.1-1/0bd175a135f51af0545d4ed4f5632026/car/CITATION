@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fe4e254b0c516d5dcc62d65a6f02a52624bd6767ba5f36602c0778683cbbb2f0
-size 676
+citHeader("To cite the car package in publications use:")
+
+citEntry(entry = "Book",
+  title        = "An {R} Companion to Applied Regression",
+  edition	   = "Third",
+  author       = personList(as.person("John Fox"), as.person("Sanford Weisberg")),
+  year         = "2019",
+  publisher    = "Sage",
+  address      = "Thousand Oaks {CA}",
+  url          = "https://socialsciences.mcmaster.ca/jfox/Books/Companion/",
+
+  textVersion  =
+  paste("John Fox and Sanford Weisberg (2019).",
+        "An {R} Companion to Applied Regression, Third Edition.",
+        "Thousand Oaks CA: Sage.",
+        "URL: https://socialsciences.mcmaster.ca/jfox/Books/Companion/")
+)

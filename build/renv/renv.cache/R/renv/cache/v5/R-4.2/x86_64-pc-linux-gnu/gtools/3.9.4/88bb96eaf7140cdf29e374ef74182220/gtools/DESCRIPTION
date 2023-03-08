@@ -1,3 +1,49 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0b18cb3d53daeb99353bf0c4a96a43ffef510cec5b5f303adc1c7f49b1499d4f
-size 2545
+Package: gtools
+Title: Various R Programming Tools
+Description: Functions to assist in R programming, including:
+  - assist in developing, updating, and maintaining R and R packages ('ask', 'checkRVersion',
+    'getDependencies', 'keywords', 'scat'),
+  - calculate the logit and inverse logit transformations ('logit', 'inv.logit'),
+  - test if a value is missing, empty or contains only NA and NULL values ('invalid'),
+  - manipulate R's .Last function ('addLast'),
+  - define macros ('defmacro'),
+  - detect odd and even integers ('odd', 'even'),
+  - convert strings containing non-ASCII characters (like single quotes) to plain ASCII ('ASCIIfy'),
+  - perform a binary search ('binsearch'),
+  - sort strings containing both numeric and character components ('mixedsort'),
+  - create a factor variable from the quantiles of a continuous variable ('quantcut'),
+  - enumerate permutations and combinations ('combinations', 'permutation'),
+  - calculate and convert between fold-change and log-ratio ('foldchange',
+    'logratio2foldchange', 'foldchange2logratio'),
+  - calculate probabilities and generate random numbers from Dirichlet distributions
+    ('rdirichlet', 'ddirichlet'),
+  - apply a function over adjacent subsets of a vector ('running'),
+  - modify the TCP_NODELAY ('de-Nagle') flag for socket objects,
+  - efficient 'rbind' of data frames, even if the column names don't match ('smartbind'),
+  - generate significance stars from p-values ('stars.pval'),
+  - convert characters to/from ASCII codes ('asc', 'chr'),
+  - convert character vector to ASCII representation ('ASCIIfy'),
+  - apply title capitalization rules to a character vector ('capwords').
+Version: 3.9.4
+Authors@R: c(person("Ben","Bolker", role=c("aut", "cre"),
+                     email = "bolker@mcmaster.ca",
+				    comment=c(ORCID="0000-0002-2127-0443")),
+	     person("Gregory R.", "Warnes", role = "aut"),	
+	     person("Thomas", "Lumley", role = "aut"))
+License: GPL-2
+Depends: methods, stats, utils
+URL: https://github.com/r-gregmisc/gtools
+BugReports: https://github.com/r-gregmisc/gtools/issues
+Language: en-US
+Suggests: car, gplots, knitr, rstudioapi, SGP, taxize
+RoxygenNote: 7.2.2
+Encoding: UTF-8
+NeedsCompilation: yes
+Packaged: 2022-11-25 18:52:42 UTC; bolker
+Author: Ben Bolker [aut, cre] (<https://orcid.org/0000-0002-2127-0443>),
+  Gregory R. Warnes [aut],
+  Thomas Lumley [aut]
+Maintainer: Ben Bolker <bolker@mcmaster.ca>
+Repository: CRAN
+Date/Publication: 2022-11-27 22:00:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 20:07:04 UTC; unix

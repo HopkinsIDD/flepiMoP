@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:87138de7a7c70511296867e922e757cab1886a045cb9a66c2d4565b568bf8427
-size 202
+
+#ifndef __RCPP_UNITTESTS_ATTRIBUTES__
+#define __RCPP_UNITTESTS_ATTRIBUTES__
+
+/*
+ *  dummy header used to test that local includes for sourceCpp are working
+ */
+
+#endif // __RCPP_UNITTESTS_ATTRIBUTES__

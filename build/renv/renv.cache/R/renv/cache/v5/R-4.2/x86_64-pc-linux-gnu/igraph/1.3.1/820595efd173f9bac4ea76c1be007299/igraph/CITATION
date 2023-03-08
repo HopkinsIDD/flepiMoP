@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fd3127a6dc414f509c6941b771ae1eb3708d9c1e3f6ef7cc1dc539ee60b59b2b
-size 646
+citHeader("To cite 'igraph' in publications use:")
+
+citEntry(entry="article",
+	 title="The igraph software package for complex network research",
+         author=personList(as.person("Gabor Csardi"),
+			   as.person("Tamas Nepusz")),
+	 journal="InterJournal",
+         volume="Complex Systems",
+         pages="1695",
+         year="2006",
+         url="https://igraph.org",
+         textVersion=paste("Csardi G, Nepusz T: The igraph software package for ",
+                           "complex network research, InterJournal, ",
+                           "Complex Systems 1695. 2006. ",
+                           "https://igraph.org", sep=""))

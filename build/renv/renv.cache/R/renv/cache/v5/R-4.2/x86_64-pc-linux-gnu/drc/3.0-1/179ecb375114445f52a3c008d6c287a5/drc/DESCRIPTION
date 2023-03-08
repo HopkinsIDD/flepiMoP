@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:301adffe0ecfff04282f21ecfbdb8ed7825112af052b29f12aa541f4abc3f53d
-size 721
+Package: drc
+Version: 3.0-1
+Date: 2016-08-25
+Title: Analysis of Dose-Response Curves
+Author: Christian Ritz <ritz@bioassay.dk>, Jens C. Strebig <streibig@bioassay.dk>
+Maintainer: Christian Ritz <ritz@bioassay.dk>
+Depends: R (>= 2.0.0), MASS, stats
+Imports: car, gtools, multcomp, plotrix, scales
+LazyLoad: yes
+LazyData: yes
+Description: Analysis of dose-response data is made available through a suite of flexible and versatile model fitting and after-fitting functions.
+License: GPL-2 | file LICENCE
+URL: http://www.r-project.org, http://www.bioassay.dk
+NeedsCompilation: no
+Packaged: 2016-08-24 23:24:51 UTC; mwr165
+Repository: CRAN
+Date/Publication: 2016-08-30 01:33:38
+Built: R 4.2.2; ; 2023-02-26 18:10:55 UTC; unix

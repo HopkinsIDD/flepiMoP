@@ -1,3 +1,95 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e560b60b69fd98f52e00914920b5b07e7ec4935d226f22c4ecd07881dd9a7073
-size 5227
+Anova                   Anova Tables for Various Statistical Models
+avPlots                 Added-Variable Plots
+basicPowerAxis          Axes for Transformed Variables
+bcPower                 Box-Cox, Box-Cox with Negatives Allowed,
+                        Yeo-Johnson and Basic Power Transformations
+Boot                    Bootstrapping for regression models
+boxCox                  Graph the profile log-likelihood for Box-Cox
+                        transformations in 1D, or in 2D with the
+                        bcnPower family.
+boxCoxVariable          Constructed Variable for Box-Cox Transformation
+Boxplot                 Boxplots With Point Identification
+boxTidwell              Box-Tidwell Transformations
+brief                   Print Abbreviated Ouput
+car-defunct             Defunct Functions in the car Package
+car-deprecated          Deprecated Functions in the car Package
+car-internal.Rd         Internal Objects for the 'car' package
+carHexsticker           View the Official Hex Sticker for the car
+                        Package
+carPalette              Set or Retrieve 'car' Package Color Palette
+carWeb                  Access to the R Companion to Applied Regression
+                        Website
+ceresPlots              Ceres Plots
+compareCoefs            Print estimated coefficients and their standard
+                        errors in a table for several regression
+                        models.
+Contrasts               Functions to Construct Contrasts
+crPlots                 Component+Residual (Partial Residual) Plots
+deltaMethod             Estimate and Standard Error of a Nonlinear
+                        Function of Estimated Regression Coefficients
+densityPlot             Nonparametric Density Estimates
+dfbetaPlots             dfbeta and dfbetas Index Plots
+durbinWatsonTest        Durbin-Watson Test for Autocorrelated Errors
+ellipse                 Ellipses, Data Ellipses, and Confidence
+                        Ellipses
+Export                  Export a data frame to disk in one of many
+                        formats
+hccm                    Heteroscedasticity-Corrected Covariance
+                        Matrices
+hist.boot               Methods Functions to Support 'boot' Objects
+Import                  Import data from many file formats
+infIndexPlot            Influence Index Plot
+influence.mixed.models
+                        Influence Diagnostics for Mixed-Effects Models
+influencePlot           Regression Influence Plot
+invResPlot              Inverse Response Plots to Transform the
+                        Response
+invTranPlot             Choose a Predictor Transformation Visually or
+                        Numerically
+leveneTest              Levene's Test
+leveragePlots           Regression Leverage Plots
+linearHypothesis        Test Linear Hypothesis
+logit                   Logit Transformation
+mcPlots                 Draw Linear Model Marginal and Conditional
+                        Plots in Parallel or Overlaid
+mmps                    Marginal Model Plotting
+ncvTest                 Score Test for Non-Constant Error Variance
+outlierTest             Bonferroni Outlier Test
+panel.car               Panel Function for Coplots
+pointLabel              Label placement for points to avoid overlaps
+poTest                  Test for Proportional Odds in the
+                        Proportional-Odds Logistic-Regression Model
+powerTransform          Finding Univariate or Multivariate Power
+                        Transformations
+Predict                 Model Predictions
+qqPlot                  Quantile-Comparison Plot
+recode                  Recode a Variable
+regLine                 Plot Regression Line
+residualPlots           Residual Plots for Linear and Generalized
+                        Linear Models
+S                       Modified Functions for Summarizing Linear,
+                        Generalized Linear, and Some Other Models
+scatter3d               Three-Dimensional Scatterplots and Point
+                        Identification
+scatterplot             Enhanced Scatterplots with Marginal Boxplots,
+                        Point Marking, Smoothers, and More
+scatterplotMatrix       Scatterplot Matrices
+ScatterplotSmoothers    Smoothers to Draw Lines on Scatterplots
+showLabels              Functions to Identify and Mark Extreme Points
+                        in a 2D Plot.
+sigmaHat                Return the scale estimate for a regression
+                        model
+some                    Sample a Few Elements of an Object
+spreadLevelPlot         Spread-Level Plots
+strings2factors         Convert Character-String Variables in a Data
+                        Frame to Factors
+subsets                 Plot Output from regsubsets Function in leaps
+                        package
+symbox                  Boxplots for transformations to symmetry
+Tapply                  Apply a Function to a Variable Within Factor
+                        Levels
+testTransform           Likelihood-Ratio Tests for Univariate or
+                        Multivariate Power Transformations to Normality
+vif                     Variance Inflation Factors
+wcrossprod              Weighted Matrix Crossproduct
+whichNames              Position of Row Names

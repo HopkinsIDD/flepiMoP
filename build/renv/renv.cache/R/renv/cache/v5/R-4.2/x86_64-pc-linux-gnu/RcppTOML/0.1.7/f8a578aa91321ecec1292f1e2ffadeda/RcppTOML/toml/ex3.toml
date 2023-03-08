@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a6218063d32f06ac7ef5836582ae9ff01c6ab4cef493eaa5d7abdab6a35c0460
-size 269
+
+
+## An int array
+xint = [ 1, 2, 3 ]
+
+## A double array
+yflt = [ 1.1, 2.2, 3.3 ]
+
+## A char array
+ztxt = [ "the", "quick", "brown", "fox" ]
+
+## No logical array
+
+## A nested array
+aa = [ [ 1, 2], [ 3, 4] ]
+
+## A twice nested array
+bb = [ [ 1, 2], [ [3, 4], [5, 6 ] ] ]

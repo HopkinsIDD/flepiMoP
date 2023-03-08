@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c99d64da37ccb153ae4dc64dc13c9e81786101a15d74e61f047af1ec10e4542e
-size 380
+export(walkCode,makeCodeWalker)
+
+export(showTree)
+
+export(makeConstantFolder,constantFold)
+export(isConstantValue)
+
+export(getAssignedVar)
+export(makeLocalsCollector,collectLocals)
+export(findLocals,findLocalsList)
+export(findFuncLocals)
+
+export(flattenAssignment)
+
+export(makeUsageCollector,collectUsage)
+export(findGlobals)
+
+export(checkUsage, checkUsageEnv, checkUsagePackage)

@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:141707f30bc9383f756260bedc99e5aa42d2170ff0ded61a04a1cdf56c20dc71
-size 378
+testServer(expr = {
+  # Set the `size` slider and check the output
+  session$setInputs(size = 6)
+  expect_equal(output$sequence, "1 2 3 4 5 6")
+{{
+if (isTRUE(rdir)) {
+'
+  session$setInputs(size = 12)
+  expect_equal(output$sequence, "1 10 11 12 2 3 4 5 6 7 8 9")
+'
+} else {
+'
+  session$setInputs(size = 12)
+  expect_equal(output$sequence, "1 2 3 4 5 6 7 8 9 10 11 12")
+'
+}
+}}
+})

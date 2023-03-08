@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:15dbd7f36ef9e2cca21b4af7a131ee208dfa9c27a3a2d7bff0e4057c95742f5a
-size 761
+Package: TH.data
+Title: TH's Data Archive
+Date: 2022-05-24
+Version: 1.1-1
+Authors@R: c(person("Torsten", "Hothorn", role = c("aut", "cre"),
+                    email = "Torsten.Hothorn@R-project.org"))
+Description: Contains data sets used in other packages Torsten Hothorn
+  maintains.
+Depends: R (>= 3.5.0), survival, MASS
+Suggests: dplyr, gdata, plyr, trtf, tram, rms, coin, ATR, multcomp,
+        gridExtra, vcd, colorspace, lattice, knitr
+LazyData: yes
+VignetteBuilder: knitr
+License: GPL-3
+NeedsCompilation: no
+Packaged: 2022-04-25 10:09:01 UTC; hothorn
+Author: Torsten Hothorn [aut, cre]
+Maintainer: Torsten Hothorn <Torsten.Hothorn@R-project.org>
+Repository: CRAN
+Date/Publication: 2022-04-26 04:52:16 UTC
+Built: R 4.2.2; ; 2023-02-25 20:39:26 UTC; unix

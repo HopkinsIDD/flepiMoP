@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:20e71a2563baaa4799fb33a4f2c11aff27c32b74e2e257487cf6f9e6adc742ba
-size 267
+require(Hmisc)
+
+getHdata(pbc)
+pbc <- upData(pbc, moveUnits = TRUE)
+s <- summaryM(bili + albumin + alk.phos + copper + spiders + sex ~ drug, data=pbc, test=TRUE)
+
+s
+html(s)
+options(grType='plotly')
+a <- plot(s)
+a$Categorical
+a$Continuous
+plot(s, which='con', nrows=2)

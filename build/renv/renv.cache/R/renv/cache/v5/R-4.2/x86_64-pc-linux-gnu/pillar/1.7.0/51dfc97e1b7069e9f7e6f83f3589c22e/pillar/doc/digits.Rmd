@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3e9959d82056d36f90ad09e419e0019125c180939c67a39f73ccf4dada44a8e7
-size 265
+---
+title: "Comparison with data frames"
+output: html_vignette
+vignette: >
+  %\VignetteIndexEntry{Comparison with data frames}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This content has moved to `vignette("digits", packages = "tibble)`.

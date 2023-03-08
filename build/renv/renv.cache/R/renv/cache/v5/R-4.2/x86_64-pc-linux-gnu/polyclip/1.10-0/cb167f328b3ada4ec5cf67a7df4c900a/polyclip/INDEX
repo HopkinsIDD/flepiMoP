@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e4cd7fe110b71dffb79117da5f335d311c3c3aaa8be3ada802920af89a00b29f
-size 317
+pointinpolygon          Test Whether a Point Lies Inside a Polygon
+polyclip                Polygon Clipping
+polylineoffset          Polygonal Line Offset
+polyminkowski           Minkowski Sum of Polygon with Path
+polyoffset              Polygon Offset
+polysimplify            Remove Self-Intersections from a Polygon

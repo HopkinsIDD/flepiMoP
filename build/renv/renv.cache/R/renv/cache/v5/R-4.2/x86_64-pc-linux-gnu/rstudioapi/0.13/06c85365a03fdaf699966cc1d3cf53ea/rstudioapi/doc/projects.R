@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bff08039763554133d94af3e7bc420958731971449864a04f8a0f703346d2cea
-size 489
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(eval = FALSE)
+
+## -----------------------------------------------------------------------------
+#  # open a project in another directory
+#  rstudioapi::openProject("~/projects/t-sne-gene-expression-2017")
+#  
+#  # re-open the current project
+#  rstudioapi::openProject()
+#  
+#  # initialize an RStudio project (without opening it)
+#  rstudioapi::initializeProject("~/scratch/testbed")
+

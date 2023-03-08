@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a2f951e0fa5a2497a6b1bf238f33675d9209009b73d8ef5ccffe99785621b3e0
-size 902
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ----eval = FALSE-------------------------------------------------------------
+#  library(googledrive)
+#  
+#  drive_auth(use_oob = TRUE)
+#  
+#  # now carry on with your work
+#  drive_find(n_max = 5)
+
+## ----eval = FALSE-------------------------------------------------------------
+#  options(gargle_oob_default = TRUE)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  drive_auth <- function(email = gargle::gargle_oauth_email(),
+#                         path = NULL,
+#                         scopes = "https://www.googleapis.com/auth/drive",
+#                         cache = gargle::gargle_oauth_cache(),
+#                         use_oob = gargle::gargle_oob_default(),
+#                         token = NULL) {...}
+

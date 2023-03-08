@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2fe64f9da9f2b630e8971c277abb56de3661f112d45d29c52abc6ccb111b41fa
-size 283
+name: themer-demo
+title:
+username: carson
+account: carson
+server: connect.rstudioservices.com
+hostUrl: https://connect.rstudioservices.com/__api__
+appId: 1443
+bundleId: 37700
+url: https://connect.rstudioservices.com/content/1443/
+when: 1606940219.70389
+lastSyncTime: 1606940219.7039

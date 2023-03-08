@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8d442ed6b04a504a97217f3679c642073c79fa1d5b7c0de76bcadd1517fca796
-size 338
+// WebKit-style focus
+
+@mixin tab-focus() {
+  // WebKit-specific. Other browsers will keep their default outline style.
+  // (Initially tried to also force default via `outline: initial`,
+  // but that seems to erroneously remove the outline in Firefox altogether.)
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}

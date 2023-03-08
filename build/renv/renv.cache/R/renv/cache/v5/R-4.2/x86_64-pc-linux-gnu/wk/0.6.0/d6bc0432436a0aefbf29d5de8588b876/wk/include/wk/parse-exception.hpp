@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b7c5e9313035743095235e0b2cd37fa7598d87ff72a6c1727032297a352d6b52
-size 477
+
+#ifndef WK_PARSE_EXCEPTION_H
+#define WK_PARSE_EXCEPTION_H
+
+#include <string>
+#include <stdexcept>
+
+class WKParseException: public std::runtime_error {
+public:
+  static const int CODE_UNSPECIFIED = 0;
+  WKParseException(int code): std::runtime_error(""), exceptionCode(code) {}
+  WKParseException(std::string message): std::runtime_error(message), exceptionCode(CODE_UNSPECIFIED) {}
+
+  int code() {
+    return this->exceptionCode;
+  }
+
+private:
+  int exceptionCode;
+};
+
+#endif

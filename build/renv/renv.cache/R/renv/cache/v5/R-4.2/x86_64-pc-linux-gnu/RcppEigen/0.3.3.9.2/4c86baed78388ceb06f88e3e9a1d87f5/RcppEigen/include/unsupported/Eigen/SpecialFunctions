@@ -1,3 +1,63 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ae96f521a97003040c904ec3496f8df98e7c16498ee73e020683e7091c2eeea1
-size 1574
+// This file is part of Eigen, a lightweight C++ template library
+// for linear algebra.
+//
+// Copyright (C) 2016 Gael Guennebaud <g.gael@free.fr>
+//
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#ifndef EIGEN_SPECIALFUNCTIONS_MODULE
+#define EIGEN_SPECIALFUNCTIONS_MODULE
+
+#include <math.h>
+
+#include "../../Eigen/Core"
+
+#include "../../Eigen/src/Core/util/DisableStupidWarnings.h"
+
+namespace Eigen {
+
+/**
+  * \defgroup SpecialFunctions_Module Special math functions module
+  *
+  * This module features additional coefficient-wise math functions available
+  * within the numext:: namespace for the scalar version, and as method and/or free
+  * functions of Array. Those include:
+  *
+  * - erf
+  * - erfc
+  * - lgamma
+  * - igamma
+  * - igammac
+  * - digamma
+  * - polygamma
+  * - zeta
+  * - betainc
+  *
+  * \code
+  * #include <unsupported/Eigen/SpecialFunctions>
+  * \endcode
+  */
+//@{
+
+}
+
+#include "src/SpecialFunctions/SpecialFunctionsImpl.h"
+#include "src/SpecialFunctions/SpecialFunctionsPacketMath.h"
+#include "src/SpecialFunctions/SpecialFunctionsHalf.h"
+#include "src/SpecialFunctions/SpecialFunctionsFunctors.h"
+#include "src/SpecialFunctions/SpecialFunctionsArrayAPI.h"
+
+#if defined EIGEN_VECTORIZE_CUDA
+  #include "src/SpecialFunctions/arch/CUDA/CudaSpecialFunctions.h"
+#endif
+
+namespace Eigen {
+//@}
+}
+
+
+#include "../../Eigen/src/Core/util/ReenableStupidWarnings.h"
+
+#endif // EIGEN_SPECIALFUNCTIONS_MODULE

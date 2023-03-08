@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fa7cde532b9d0ea49fb092ec52d64af136aa64b0edc3fccd016c342d45c616ef
-size 499
+context('MMWRweek')
+
+dates = seq(as.Date('1900-01-01'), as.Date('2015-12-31'), by='day')
+truth = readRDS('MMWRweek-truth.rds')
+
+test_that('MMWRweek returns a factor vector', {
+  week = MMWRweek(dates)
+  expect_that(week, is_a('data.frame'))
+  expect_that(names(week), equals(c('MMWRyear', 'MMWRweek', 'MMWRday')))
+})
+
+test_that('MMWRweek returns correct values', {
+  dates_chr = as.Date(dates)
+  expect_that(MMWRweek(dates    ), equals(truth))
+  expect_that(MMWRweek(dates_chr), equals(truth))
+})
+ 

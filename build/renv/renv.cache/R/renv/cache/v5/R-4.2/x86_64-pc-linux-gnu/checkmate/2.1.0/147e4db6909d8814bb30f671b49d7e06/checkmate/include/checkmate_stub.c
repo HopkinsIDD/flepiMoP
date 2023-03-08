@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e5a7895f125749d25ccf499e3734cf3b76b41905f384fe4acb2cf66b06f7e6a9
-size 775
+#include "checkmate.h"
+
+Rboolean qtest(SEXP x, const char *rule) {
+  static Rboolean(*fun)(SEXP, const char *) = NULL;
+  if (fun == NULL)
+    fun = (Rboolean(*)(SEXP, const char *)) R_GetCCallable("checkmate", "qtest");
+  return fun(x, rule);
+}
+
+SEXP qassert(SEXP x, const char *rule, const char *name) {
+  static SEXP(*fun)(SEXP, const char *, const char *) = NULL;
+  if (fun == NULL)
+    fun = (SEXP(*)(SEXP, const char *, const char *)) R_GetCCallable("checkmate", "qassert");
+  return fun(x, rule, name);
+}
+
+SEXP qcheck(SEXP x, const char *rule, const char *name) {
+  static SEXP(*fun)(SEXP, const char *, const char *) = NULL;
+  if (fun == NULL)
+    fun = (SEXP(*)(SEXP, const char *, const char *)) R_GetCCallable("checkmate", "qcheck");
+  return fun(x, rule, name);
+}

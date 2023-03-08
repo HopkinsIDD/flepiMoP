@@ -1,3 +1,38 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3cf0e9b14bf9d0de649a29530fa5df6c094b68d8ccccf010624c14c694137e11
-size 1086
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ----setup--------------------------------------------------------------------
+library(testthat)
+
+## -----------------------------------------------------------------------------
+skip_if_Tuesday <- function() {
+  if (as.POSIXlt(Sys.Date())$wday != 2) {
+    return(invisible(TRUE))
+  }
+  
+  skip("Not run on Tuesday")
+}
+
+## -----------------------------------------------------------------------------
+skip_if_dangerous <- function() {
+  if (identical(Sys.getenv("DANGER"), "")) {
+    return(invisible(TRUE))
+  }
+  
+  skip("Not run in dangerous enviromnents")
+}
+
+## -----------------------------------------------------------------------------
+test_that("skip_if_dangerous work", {
+  # Test that a skip happens
+  withr::local_envvar(DANGER = "yes")
+  expect_condition(skip_if_dangerous(), class = "skip") 
+
+  # Test that a skip doesn't happen
+  withr::local_envvar(DANGER = "")
+  expect_condition(skip_if_dangerous(), NA, class = "skip")
+})
+

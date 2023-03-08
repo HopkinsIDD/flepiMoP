@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5ce5bf2ffc0cf09a2f8ff311a102208cf69fd726cb4803c9d612aa7663c4f101
-size 402
+optparse-package	optparse-package
+add_option	add_make_option
+IndentedHelpFormatter	formatter
+make_option	add_make_option
+OptionParser	OptionParser
+OptionParser-class	OptionParser-class
+OptionParserOption	OptionParserOption-class
+OptionParserOption-class	OptionParserOption-class
+optparse	optparse-package
+parse_args	parse_args
+parse_args2	parse_args
+print_help	print_help
+TitledHelpFormatter	formatter

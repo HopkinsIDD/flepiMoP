@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:25ba9498d3f945f68bd72f74bd80d49f28d114b591555784c2593da1054e09f3
-size 247
+library(RCurl)
+
+h = basicTextGatherer()
+txt = getURL("http://192.168.0.3", header= TRUE, headerfunction = h[[1]], httpheader = c(Accept="text/html", Duncan="bob"), verbose = TRUE)
+read.dcf(textConnection(paste(h$value(NULL)[-1], collapse="")))
+
+
+

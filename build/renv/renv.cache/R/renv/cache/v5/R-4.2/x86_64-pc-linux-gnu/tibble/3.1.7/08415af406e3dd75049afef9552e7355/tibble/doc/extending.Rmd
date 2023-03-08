@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f6a6d2d8c820b84d25ff335a2b2475784971ae74d44c7798572e315fab0bdf26
-size 302
+---
+title: "Extending tibble"
+author: "Kirill Müller, Hadley Wickham"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Extending tibble}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This material has moved to <https://vctrs.r-lib.org/articles/pillar.html>.

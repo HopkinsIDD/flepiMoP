@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:84d2dd886be55e672835093d5e5696f8d61deb609723b4d9e2fadeee31acd633
-size 303
+%>%	pipe
+is_tdigest	td_create
+length.tdigest	td_total_count
+print.tdigest	tdigest
+quantile.tdigest	tquantile
+tdigest	tdigest
+td_add	td_add
+td_create	td_create
+td_merge	td_merge
+td_quantile_of	td_quantile_of
+td_total_count	td_total_count
+td_value_at	td_value_at
+tquantile	tquantile
+[.tdigest	td_value_at

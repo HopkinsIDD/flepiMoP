@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9a4312fe8a60e2242cc06c5ce77c49ef6b897c2b540709ac81aaf112a26966d0
-size 425
+#include "vctrs.h"
+
+bool (*vec_is_vector)(SEXP) = NULL;
+R_len_t (*short_vec_size)(SEXP) = NULL;
+SEXP (*short_vec_recycle)(SEXP, R_len_t) = NULL;
+
+void vctrs_init_api() {
+  vec_is_vector = (bool (*)(SEXP)) R_GetCCallable("vctrs", "vec_is_vector");
+  short_vec_size = (R_len_t (*)(SEXP)) R_GetCCallable("vctrs", "short_vec_size");
+  short_vec_recycle = (SEXP (*)(SEXP, R_len_t)) R_GetCCallable("vctrs", "short_vec_recycle");
+}

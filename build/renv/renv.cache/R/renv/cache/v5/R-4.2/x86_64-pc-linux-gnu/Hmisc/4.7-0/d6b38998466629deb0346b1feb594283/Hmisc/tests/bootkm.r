@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e58d0af780ff05ed6902dd4992834b942e261b887ababe081a4a95bb7ee8b80d
-size 270
+require(Hmisc)
+yrs <- runif(30, 0, 10)
+ev  <- sample(0:1, 30, TRUE)
+w <- bootkm(Surv(yrs, ev), times=5)
+describe(w)
+quantile(w, c(.025, .975))
+
+# Try with only 2 events
+ev <- c(1, 1, rep(0, 28))
+w <- bootkm(Surv(yrs, ev), times=5)
+describe(w)
+quantile(w, c(.025, .975))

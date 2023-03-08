@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0bebee05aa642731e345458222315e43ec07ac9e74ae4624bd79611f49f5ee61
-size 165
+here::i_am("prepare/penguins.R", uuid = "115147ca-fedd-42ca-8650-2cb3dad0aebc")
+library(here)
+
+readr::write_csv(palmerpenguins::penguins, here("data/penguins.csv"))

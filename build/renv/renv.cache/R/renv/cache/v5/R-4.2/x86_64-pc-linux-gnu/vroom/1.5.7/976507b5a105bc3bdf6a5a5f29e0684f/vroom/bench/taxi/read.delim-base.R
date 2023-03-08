@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0dac976c030035ecc71d04c37187178700a6879876e8ccb46b7271962bf3c73b
-size 253
+({})
+x <- read.delim(file, sep = ",", quote = "", na.strings = NULL, stringsAsFactors = FALSE)
+print(head(x, 10))
+a <- head(x)
+b <- tail(x)
+c <- x[sample(NROW(x), 100), ]
+d <- x[x$payment_type == "UNK", ]
+e <- tapply(x$tip_amount, x$payment_type, mean)

@@ -1,3 +1,54 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ddb429777b84f161dcbb42da594f1e7662f4fd58b4447fa7e6891a6f2f76d746
-size 855
+//
+// Pager pagination
+// --------------------------------------------------
+
+
+.pager {
+  padding-left: 0;
+  margin: $line-height-computed 0;
+  text-align: center;
+  list-style: none;
+  @include clearfix;
+  li {
+    display: inline;
+    > a,
+    > span {
+      display: inline-block;
+      padding: 5px 14px;
+      background-color: $pager-bg;
+      border: 1px solid $pager-border;
+      border-radius: $pager-border-radius;
+    }
+
+    > a:hover,
+    > a:focus {
+      text-decoration: none;
+      background-color: $pager-hover-bg;
+    }
+  }
+
+  .next {
+    > a,
+    > span {
+      float: right;
+    }
+  }
+
+  .previous {
+    > a,
+    > span {
+      float: left;
+    }
+  }
+
+  .disabled {
+    > a,
+    > a:hover,
+    > a:focus,
+    > span {
+      color: $pager-disabled-color;
+      cursor: $cursor-disabled;
+      background-color: $pager-bg;
+    }
+  }
+}

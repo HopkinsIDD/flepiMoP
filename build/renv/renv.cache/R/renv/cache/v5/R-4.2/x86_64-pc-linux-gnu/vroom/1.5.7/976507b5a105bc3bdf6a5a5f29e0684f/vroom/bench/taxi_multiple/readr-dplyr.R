@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:12944d20d6ec9f660008211470ad2eaa2f8c3b138a67f691aed9bdbcf9f1db42
-size 369
+({ library(readr); library(dplyr); library(purrr) })
+x <- map_dfr(set_names(file), .id = "path",
+  ~ read_csv(.x, col_types = c(pickup_datetime = "c"), quote = "", trim_ws = FALSE, na = character())
+)
+print(x)
+a <- head(x)
+b <- tail(x)
+c <- sample_n(x, 100)
+d <- filter(x, payment_type == "UNK")
+e <- group_by(x, payment_type) %>% summarise(avg_tip = mean(tip_amount))

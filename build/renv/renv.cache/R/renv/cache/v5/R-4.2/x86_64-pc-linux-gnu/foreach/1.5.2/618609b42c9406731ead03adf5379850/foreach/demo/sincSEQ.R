@@ -1,3 +1,36 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9f16e6cd9fbee01d87a8567805f9e7c658caf672e7703c78aae16976745c0ec9
-size 943
+library(foreach)
+
+# Define a function that creates an iterator that returns subvectors
+ivector <- function(x, chunks) {
+  n <- length(x)
+  i <- 1
+
+  nextEl <- function() {
+    if (chunks <= 0 || n <= 0) stop('StopIteration')
+    m <- ceiling(n / chunks)
+    r <- seq(i, length=m)
+    i <<- i + m
+    n <<- n - m
+    chunks <<- chunks - 1
+    x[r]
+  }
+
+  obj <- list(nextElem=nextEl)
+  class(obj) <- c('abstractiter', 'iter')
+  obj
+}
+
+# Define the coordinate grid and figure out how to split up the work
+x <- seq(-10, 10, by=0.1)
+cat('Running sequentially\n')
+ntasks <- 4
+
+# Compute the value of the sinc function at each point in the grid
+z <- foreach(y=ivector(x, ntasks), .combine=cbind) %do% {
+  y <- rep(y, each=length(x))
+  r <- sqrt(x ^ 2 + y ^ 2)
+  matrix(10 * sin(r) / r, length(x))
+}
+
+# Plot the results as a perspective plot
+persp(x, x, z, ylab='y', theta=30, phi=30, expand=0.5, col="lightblue")

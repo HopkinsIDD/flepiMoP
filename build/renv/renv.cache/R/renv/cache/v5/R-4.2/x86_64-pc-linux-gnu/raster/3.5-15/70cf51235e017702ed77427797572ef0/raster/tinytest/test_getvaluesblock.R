@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:677811914e6aff7d960cfc1c63eaf3760f856a5fb9084ee4598d7d53606c782e
-size 339
+
+#test_that('we can extract from a single layer of a RasterStack using the lyrs argument', {
+
+rast <- raster(matrix(1:16, nrow=4), xmn=0, xmx=4, ymn=0, ymx=4)
+  
+stk <- stack(list(a=rast, b=sqrt(rast)))
+  
+expect_equivalent(
+    getValuesBlock(stk[[1]], 1, 3, 3, 2, format='m'),
+    getValuesBlock(stk, 1, 3, 3, 2, lyrs=1),
+)
+

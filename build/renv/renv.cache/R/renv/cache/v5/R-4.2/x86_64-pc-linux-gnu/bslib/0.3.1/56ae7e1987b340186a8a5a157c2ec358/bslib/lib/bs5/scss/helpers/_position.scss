@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ff62c8c904994e4af9130c1d3d1083d7ebef4bfc55ae89291511d931869ba8f9
-size 501
+// Shorthand
+
+.fixed-top {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: $zindex-fixed;
+}
+
+.fixed-bottom {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: $zindex-fixed;
+}
+
+// Responsive sticky top
+@each $breakpoint in map-keys($grid-breakpoints) {
+  @include media-breakpoint-up($breakpoint) {
+    $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+    .sticky#{$infix}-top {
+      position: sticky;
+      top: 0;
+      z-index: $zindex-sticky;
+    }
+  }
+}

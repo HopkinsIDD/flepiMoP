@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c773f2b7d29f2720dd4788946b3246b48e2b780787a5ef398a742b2e6f8bef41
-size 666
+are_equal               Are two objects equal?
+assert_that             Assert that certain conditions are true.
+assertions-file         Useful test related to files
+has_args                Check a function has specified arguments
+has_attr                Has attribute or name?
+is.error                Missing is functions.
+is.scalar               Assert input is a scalar.
+noNA                    Does object contain any missing values?
+not_empty               Check an object doesn't have any empty
+                        dimensions
+on_failure              Custom failure messages for assertions.
+validate_that           Validate that certain conditions are true.

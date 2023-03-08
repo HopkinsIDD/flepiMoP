@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:36db8dd8b3bf95fb6fd8d6a899eb2f74d8938c4c536fbc1a48ca06171bc9f1b9
-size 168
+GEOGCS["GCS_North_American_1927",DATUM["D_North_American_1927",SPHEROID["Clarke_1866",6378206.4,294.9786982]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]

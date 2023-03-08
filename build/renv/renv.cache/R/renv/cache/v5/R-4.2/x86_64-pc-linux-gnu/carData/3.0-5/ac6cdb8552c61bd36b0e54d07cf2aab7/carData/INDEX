@@ -1,3 +1,75 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:183d3fb4d895f75f2cc96041a0f8a17dcb871858e9dbb7b62983bd42bd50cdea
-size 4183
+Adler                   Experimenter Expectations
+AMSsurvey               American Math Society Survey Data
+Angell                  Moral Integration of American Cities
+Anscombe                U. S. State Public-School Expenditures
+Arrests                 Arrests for Marijuana Possession
+Baumann                 Methods of Teaching Reading Comprehension
+BEPS                    British Election Panel Study
+Bfox                    Canadian Women's Labour-Force Participation
+Blackmore               Exercise Histories of Eating-Disordered and
+                        Control Subjects
+Burt                    Fraudulent Data on IQs of Twins Raised Apart
+CanPop                  Canadian Population Data
+CES11                   2011 Canadian National Election Study, With
+                        Attitude Toward Abortion
+Chile                   Voting Intentions in the 1988 Chilean
+                        Plebiscite
+Chirot                  The 1907 Romanian Peasant Rebellion
+Cowles                  Cowles and Davis's Data on Volunteering
+Davis                   Self-Reports of Height and Weight
+DavisThin               Davis's Data on Drive for Thinness
+Depredations            Minnesota Wolf Depredation Data
+Duncan                  Duncan's Occupational Prestige Data
+Ericksen                The 1980 U.S. Census Undercount
+Florida                 Florida County Voting
+Freedman                Crowding and Crime in U. S. Metropolitan Areas
+Friendly                Format Effects on Recall
+Ginzberg                Data on Depression
+Greene                  Refugee Appeals
+GSSvocab                Data from the General Social Survey (GSS) from
+                        the National Opinion Research Center of the
+                        University of Chicago.
+Guyer                   Anonymity and Cooperation
+Hartnagel               Canadian Crime-Rates Time Series
+Highway1                Highway Accidents
+KosteckiDillon          Treatment of Migraine Headaches
+Leinhardt               Data on Infant-Mortality
+LoBD                    Cancer drug data use to provide an example of
+                        the use of the skew power distributions.
+Mandel                  Contrived Collinear Data
+Migration               Canadian Interprovincial Migration Data
+Moore                   Status, Authoritarianism, and Conformity
+MplsDemo                Minneapolis Demographic Data 2015, by
+                        Neighborhood
+MplsStops               Minneapolis Police Department 2017 Stop Data
+Mroz                    U.S. Women's Labor-Force Participation
+OBrienKaiser            O'Brien and Kaiser's Repeated-Measures Data
+OBrienKaiserLong        O'Brien and Kaiser's Repeated-Measures Data in
+                        "Long" Format
+Ornstein                Interlocking Directorates Among Major Canadian
+                        Firms
+Pottery                 Chemical Composition of Pottery
+Prestige                Prestige of Canadian Occupations
+Quartet                 Four Regression Datasets
+Robey                   Fertility and Contraception
+Rossi                   Rossi et al.'s Criminal Recidivism Data
+Sahlins                 Agricultural Production in Mazulu Village
+Salaries                Salaries for Professors
+SLID                    Survey of Labour and Income Dynamics
+Soils                   Soil Compositions of Physical and Chemical
+                        Characteristics
+States                  Education and Related Statistics for the U.S.
+                        States
+TitanicSurvival         Survival of Passengers on the Titanic
+Transact                Transaction data
+UN                      National Statistics from the United Nations,
+                        Mostly From 2009-2011
+UN98                    United Nations Social Indicators Data 1998]
+USPop                   Population of the United States
+Vocab                   Vocabulary and Education
+WeightLoss              Weight Loss Data
+Wells                   Well Switching in Bangladesh
+Womenlf                 Canadian Women's Labour-Force Participation
+Wong                    Post-Coma Recovery of IQ
+Wool                    Wool data
+WVS                     World Values Surveys

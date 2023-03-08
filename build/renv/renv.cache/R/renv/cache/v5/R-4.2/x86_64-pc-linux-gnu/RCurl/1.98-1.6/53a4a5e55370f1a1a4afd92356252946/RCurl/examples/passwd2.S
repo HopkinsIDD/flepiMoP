@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b1ae1908f40b1ce0b8b23a3643a3e05cf634cc4a7682b27dac223e779e2272a2
-size 635
+x = getURL("http://192.168.0.3/stat141/Winter04/Homework/Solutions/index.html",
+#                 userpwd = "name:passwd:",
+#                  userpwd = "bob:",
+                                     header = TRUE, verbose = TRUE,
+                                     cookiefile = "/home/duncan/Rcookies",
+                                     netrc = TRUE,
+                                     maxredirs = as.integer(20),
+                                     netrc.file = "/home2/duncan/.netrc1",
+                                     followlocation = TRUE)
+
+# This is no longer supported in libcurl.
+# , passwdfunction = promptPassword)

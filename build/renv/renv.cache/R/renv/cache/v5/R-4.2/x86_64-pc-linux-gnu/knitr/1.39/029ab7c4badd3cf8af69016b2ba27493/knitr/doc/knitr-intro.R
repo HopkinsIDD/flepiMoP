@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7d891e7e1a69a270e7fd62da516dfd13caf7ec4f3803241f5fb5fdb20d95f37b
-size 462
+## ----show-off, tidy=TRUE------------------------------------------------------
+options(digits=4)
+rnorm(20)
+fit=lm(dist~speed, data=cars)
+b=coef(fit)
+
+## ----results='asis', echo=FALSE-----------------------------------------------
+knitr::kable(summary(fit)$coefficients, caption='Regression coefficients.')
+
+## ----graphics, fig.cap='A scatterplot with a regression line.'----------------
+par(mar=c(4, 4, 1, .1))
+plot(cars, pch = 20)
+abline(fit, col = 'red')
+

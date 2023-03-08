@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d0ebc952332f3e2db207fd71d9699918a1a51282e2cbddc60a956e9925bc4934
-size 572
+library(iterators)
+
+# Returns an iterator that limits another iterator based on time
+itimer <- function(it, time) {
+  it <- iter(it)
+  start <- proc.time()[[3]]
+
+  nextEl <- function() {
+    current <- proc.time()[[3]]
+    if (current - start >= time)
+      stop('StopIteration')
+
+    nextElem(it)
+  }
+
+  obj <- list(nextElem=nextEl)
+  class(obj) <- c('itimer', 'abstractiter', 'iter')
+  obj
+}
+
+# Create a iterator that counts for one second
+it <- itimer(icount(Inf), 1)
+tryCatch({
+  repeat {
+    print(nextElem(it))
+  }
+},
+error=function(e) {
+  cat('timer expired\n')
+})

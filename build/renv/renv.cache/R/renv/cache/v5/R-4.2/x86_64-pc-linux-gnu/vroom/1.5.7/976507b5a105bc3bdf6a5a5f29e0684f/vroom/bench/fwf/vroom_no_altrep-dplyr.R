@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3b182bae2151703721055f74fece6a3b4e78b11e7390322c0b6cd88cf61780b5
-size 261
+({library(vroom); library(dplyr)})
+x <- vroom_fwf(file, fields, col_types = types, altrep_opts = FALSE)
+print(x)
+a <- head(x)
+b <- tail(x)
+c <- sample_n(x, 100)
+d <- filter(x, PERSONS == "06")
+e <- group_by(x, STATE) %>% summarise(avg_TOTPUM5 = mean(TOTPUMA5))

@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ba7d2a1c3d6a9c96269e336f6f9f20d3d41f52f50f4a910bdb096c1a2fc3317a
-size 507
+\name{Rcpp Modules Examples}
+\alias{Num}
+\alias{World}
+\alias{bar}
+\alias{bla}
+\alias{bla1}
+\alias{bla2}
+\alias{foo}
+\alias{vec}
+\alias{hello}
+\alias{Rcpp_Num-class}
+\alias{Rcpp_World-class}
+\alias{Rcpp_vec-class}
+\alias{C++Object-class}
+\title{
+  Functions and Objects created by Rcpp Modules Example
+}
+\description{
+  These function and objects are accessible from R via the Rcpp Modules mechanism
+  which creates them based on the declaration in the C++ file.  
+}
+\seealso{
+  The Rcpp Modules vignette.
+}

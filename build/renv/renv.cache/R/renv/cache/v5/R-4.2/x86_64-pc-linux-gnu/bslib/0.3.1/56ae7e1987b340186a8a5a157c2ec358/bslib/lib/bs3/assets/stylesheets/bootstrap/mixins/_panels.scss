@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d6fb2063735bf908241957257cfdb03d6410e22a29d2499c0536be2632abd592
-size 543
+// Panels
+
+@mixin panel-variant($border, $heading-text-color, $heading-bg-color, $heading-border) {
+  border-color: $border;
+
+  & > .panel-heading {
+    color: $heading-text-color;
+    background-color: $heading-bg-color;
+    border-color: $heading-border;
+
+    + .panel-collapse > .panel-body {
+      border-top-color: $border;
+    }
+    .badge {
+      color: $heading-bg-color;
+      background-color: $heading-text-color;
+    }
+  }
+  & > .panel-footer {
+    + .panel-collapse > .panel-body {
+      border-bottom-color: $border;
+    }
+  }
+}

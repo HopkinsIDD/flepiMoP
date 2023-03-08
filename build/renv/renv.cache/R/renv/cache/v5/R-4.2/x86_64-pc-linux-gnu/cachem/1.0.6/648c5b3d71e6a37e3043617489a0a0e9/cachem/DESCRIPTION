@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:78bd060a803d52b7df867c66a6f796b27909e4bbf5a9c5cd87bdf614a5d1294d
-size 907
+Package: cachem
+Version: 1.0.6
+Title: Cache R Objects with Automatic Pruning
+Description: Key-value stores with automatic pruning. Caches can limit
+    either their total size or the age of the oldest object (or both),
+    automatically pruning objects to maintain the constraints.
+Authors@R: c(
+    person("Winston", "Chang", , "winston@rstudio.com", c("aut", "cre")),
+    person(family = "RStudio", role = c("cph", "fnd")))
+License: MIT + file LICENSE
+Encoding: UTF-8
+ByteCompile: true
+URL: https://cachem.r-lib.org/, https://github.com/r-lib/cachem
+Imports: rlang, fastmap
+Suggests: testthat
+RoxygenNote: 7.1.1
+NeedsCompilation: yes
+Packaged: 2021-08-19 21:07:46 UTC; barret
+Author: Winston Chang [aut, cre],
+  RStudio [cph, fnd]
+Maintainer: Winston Chang <winston@rstudio.com>
+Repository: CRAN
+Date/Publication: 2021-08-19 21:30:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 15:09:01 UTC; unix

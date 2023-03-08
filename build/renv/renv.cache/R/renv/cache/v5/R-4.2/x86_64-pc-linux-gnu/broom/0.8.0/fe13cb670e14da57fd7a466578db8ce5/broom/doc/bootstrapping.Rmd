@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b52119d16b57aa336a7f33af8622f0e2061a5a2996b2ebe46ed68aaba64a9678
-size 469
+---
+title: "Tidy bootstrapping"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tidy bootstrapping}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE
+)
+```
+
+# Tidy bootstrapping
+
+This vignette is now an [article](https://www.tidymodels.org/learn/statistics/bootstrap/) on the {tidymodels} website.

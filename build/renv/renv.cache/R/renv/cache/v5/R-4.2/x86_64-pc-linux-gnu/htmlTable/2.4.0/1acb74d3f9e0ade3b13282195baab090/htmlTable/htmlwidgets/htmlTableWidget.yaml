@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:53b201663651765acbf2708a250c0e9788add8bca2c0637708c2866d5f2ecc6d
-size 269
+dependencies:
+  - name: jquery
+    version: 3.1.1
+    src: "htmlwidgets/lib/jquery"
+    script: jquery.min.js
+  - name: table_pagination
+    version: 0.1.0
+    src: "htmlwidgets/lib/table_pagination"
+    script: table_pagination.js
+    stylesheet: table_pagination.css

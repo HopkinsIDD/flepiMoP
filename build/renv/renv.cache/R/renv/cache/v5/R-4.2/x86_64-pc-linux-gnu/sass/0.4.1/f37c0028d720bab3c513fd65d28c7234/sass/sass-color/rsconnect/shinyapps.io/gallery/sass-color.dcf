@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6288f528d3ee1f663be4c78e21b29cbec930121cdcdb3ef7e45e0aec4e5f29c2
-size 255
+name: sass-color
+title: sass-color
+username:
+account: gallery
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 429290
+bundleId: 1584201
+url: https://gallery.shinyapps.io/sass-color/
+when: 1536858925.49865
+asMultiple: FALSE
+asStatic: FALSE

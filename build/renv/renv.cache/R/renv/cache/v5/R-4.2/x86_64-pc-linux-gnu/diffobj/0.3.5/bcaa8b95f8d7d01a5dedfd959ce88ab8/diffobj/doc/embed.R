@@ -1,3 +1,68 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cc168638c361bdf3e8c6d504c2c428387c9e8fa8815f503dcfed2e5ab6de7de7
-size 1967
+## ----echo=FALSE---------------------------------------------------------------
+library(diffobj)
+
+## ----results='asis'-----------------------------------------------------------
+cat(
+  as.character(
+    diffPrint(
+      1:5, 2:6,
+      format="html",
+      style=list(html.output="diff.w.style")
+) ) )
+
+## ----results='asis'-----------------------------------------------------------
+cat(
+  as.character(
+    diffPrint(
+      1:5, 2:6,
+      format="html",
+      style=list(html.output="diff.only")   # notice this changed
+) ) )
+
+## ----eval=FALSE---------------------------------------------------------------
+#  options(
+#    diffobj.format="html",
+#    diffobj.style=list(html.output="diff.only")
+#  )
+
+## ----echo=FALSE---------------------------------------------------------------
+old.opts <- options(
+  diffobj.format="html",
+  diffobj.style=list(html.output="diff.only")
+)
+
+## ----results='asis'-----------------------------------------------------------
+cat(as.character(diffPrint(1:5, 2:6)))
+
+## ----echo=FALSE---------------------------------------------------------------
+options(old.opts)
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  library(shiny)
+#  shinyApp(
+#    ui=fluidPage(htmlOutput('diffobj_element')),
+#    server=function(input, output) {
+#      output$diffobj_element <- renderUI({
+#        HTML(
+#          as.character(
+#            diffPrint(
+#              1:5, 2:6,
+#              format="html",
+#              style=list(html.output="diff.w.style")
+#  ) ) )}) } )
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  options(
+#    diffobj.format="html",
+#    diffobj.style=list(html.output="diff.only")
+#  )
+#  shinyApp(
+#    ui=fluidPage(
+#      includeCSS(diffobj_css()),
+#      htmlOutput('diffobj_element')
+#    ),
+#    server=function(input, output) {
+#      output$diffobj_element <- renderUI({
+#        HTML(as.character(diffPrint(1:5, 2:6,)))
+#  }) } )
+

@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1fe592110ca6b96030c2c801b8a90176a99ac9eb144c2b49f1dc7cd82f07994b
-size 195
+require(Hmisc)
+x <- data.frame(x1=c('a','b^2','c'), x2=1:3 + .25)
+format.df(x, dec=1)
+cat(latexTabular(x, headings=c('$x_{1}$', '$x_{2}$'), translate=FALSE, hline=2))
+cat(latexTabular(x, dec=1))

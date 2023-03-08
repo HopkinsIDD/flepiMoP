@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b916a1a49362b8741f7444b6c458c47aad64953010a54c7cc1c727a623e723fe
-size 219
+library(foreach)
+
+w <- getDoParWorkers()
+n <- 10000000
+h <- 1 / n
+
+pi <- foreach(i=1:w, .combine='+') %dopar% {
+  x <- h * (seq(i, n, by=w) - 0.5)
+  h * sum(4 / (1 + x * x))
+}
+
+cat(sprintf('pi = %f\n', pi))

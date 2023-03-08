@@ -1,3 +1,39 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:484d07de822800e39bda927f0c1fa763fc0f7635383c31600c2df05d3c095054
-size 1737
+Package: broom.helpers
+Title: Helpers for Model Coefficients Tibbles
+Version: 1.7.0
+Authors@R: c(
+    person("Joseph", "Larmarange", , "joseph@larmarange.net", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-7097-700X")),
+    person("Daniel D.", "Sjoberg", , "danield.sjoberg@gmail.com", role = "aut",
+           comment = c(ORCID = "0000-0003-0862-2018"))
+  )
+Description: Provides suite of functions to work with regression model
+    'broom::tidy()' tibbles.  The suite includes functions to group
+    regression model terms by variable, insert reference and header rows
+    for categorical variables, add variable labels, and more.
+License: GPL-3
+URL: https://larmarange.github.io/broom.helpers/
+BugReports: https://github.com/larmarange/broom.helpers/issues
+Depends: R (>= 3.4)
+Imports: broom, cli, dplyr, labelled, lifecycle, purrr, rlang (>=
+        1.0.1), stats, stringr, tibble, tidyr
+Suggests: brms (>= 2.13.0), broom.mixed, cmprsk, covr, datasets,
+        emmeans, forcats, gam, gee, geepack, ggplot2, glmmTMB, glue,
+        gt, gtsummary, knitr, lavaan, lfe, lme4 (>= 1.1.28), MASS,
+        mgcv, mice, nnet, ordinal, parameters, plm, rmarkdown,
+        rstanarm, spelling, survey, survival, testthat, tidycmprsk,
+        VGAM
+VignetteBuilder: knitr
+RdMacros: lifecycle
+Encoding: UTF-8
+Language: en-US
+LazyData: true
+RoxygenNote: 7.1.2
+NeedsCompilation: no
+Packaged: 2022-04-22 08:12:02 UTC; josep
+Author: Joseph Larmarange [aut, cre] (<https://orcid.org/0000-0001-7097-700X>),
+  Daniel D. Sjoberg [aut] (<https://orcid.org/0000-0003-0862-2018>)
+Maintainer: Joseph Larmarange <joseph@larmarange.net>
+Repository: CRAN
+Date/Publication: 2022-04-22 08:40:09 UTC
+Built: R 4.2.2; ; 2023-02-25 14:47:22 UTC; unix

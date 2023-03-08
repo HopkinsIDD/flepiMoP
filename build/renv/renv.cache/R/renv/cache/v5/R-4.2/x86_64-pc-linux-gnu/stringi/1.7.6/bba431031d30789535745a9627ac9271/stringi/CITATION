@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b5de683944822c198fd5f5de4292b8705400990e8af275349af985dd68c64dce
-size 621
+bibentry(
+    bibtype = "article",
+    title  = "stringi: Fast and portable character string processing in R",
+    author = personList(as.person("Marek Gagolewski")),
+    journal = "Journal of Statistical Software",
+    year = "2021",
+    note = "to appear"
+#    volume = "x",
+#    pages = "x",
+#    doi = "x",
+)
+
+bibentry(
+    bibtype = "manual",
+    title = "stringi: Fast and portable character string processing in R",
+    author = personList(as.person("Marek Gagolewski")),
+    year = sub("-.*", "", meta$Date),
+    note = sprintf("R package version %s", meta$Version),
+    url = "https://stringi.gagolewski.com/"
+)

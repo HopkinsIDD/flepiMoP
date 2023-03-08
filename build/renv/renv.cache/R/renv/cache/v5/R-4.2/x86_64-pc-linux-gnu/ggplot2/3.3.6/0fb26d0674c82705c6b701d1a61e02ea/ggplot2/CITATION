@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2de8ae23cb2fc04ae22accfec01785d444329800dc4ede538c22435f15de6202
-size 409
+citHeader("To cite ggplot2 in publications, please use:")
+
+citEntry(entry = "book",
+  author = "Hadley Wickham",
+  title = "ggplot2: Elegant Graphics for Data Analysis",
+  publisher = "Springer-Verlag New York",
+  year = "2016",
+  isbn = "978-3-319-24277-4",
+  url = "https://ggplot2.tidyverse.org",
+  textVersion = "H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016."
+)

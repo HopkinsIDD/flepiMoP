@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c07b1277ef1bfc5d0602f225fb966269bb4a27c5b94e836a2f0267a595e31698
-size 453
+compare_colour          Calculate the distance between colours
+convert_colour          Convert between colour spaces
+decode_colour           Decode RGB hex-strings into colour values
+encode_colour           Encode colours into RGB hex-strings
+manip_channel           Modify colour space channels in hex-encoded
+                        colour strings
+native-encoding         Convert to and from the R native colour
+                        representation

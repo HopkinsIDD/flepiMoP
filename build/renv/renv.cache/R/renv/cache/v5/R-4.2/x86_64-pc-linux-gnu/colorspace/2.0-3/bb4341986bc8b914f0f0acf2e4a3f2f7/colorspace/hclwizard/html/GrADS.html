@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f901c63e5c2e651d5142a2c5ee515b21ee63996e7d85c13ba18509a67021065b
-size 591
+
+<comment>** - Setting region to load</comment>
+<code>'set lon -20 40'</code>
+<code>'set lat 30 85'</code>
+
+<comment>** - Map projection</comment>
+<code>'set mpdset hires'</code>
+<code>'set mproj nps'</code>
+<code>'set mpvals -10 30 34 52'</code>
+
+<comment>** - Plotting relative humidity on 850 hPa</comment>
+<code>'set gxout shaded'</code>
+<code>'set lev 850'</code>
+<code>'d rhprs'</code>
+<code>'set gxout contour'</code>
+<code>'d rhprs'</code>
+
+<comment>** Labeling</comment>
+<code>'set string 3 l'</code>
+<code>'draw string 1 1 NCEP GFS 1 deg analysis: relative humidity 850hPa'</code>

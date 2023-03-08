@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a202b16208649bc7c78e58a70b9b4af9237cc5cd2d784406bb35be5f0044e2b3
-size 179
+foo: &foo
+  one: 1
+  two: 2
+bar: &bar
+  three: 3
+  four: 4
+baz:
+  - *foo
+  - *bar
+quux: &quux
+  <<: *foo
+  <<: *bar
+  five: 5
+  six: 6
+corge:
+  - *quux
+  - xyzzy:
+      <<: *quux

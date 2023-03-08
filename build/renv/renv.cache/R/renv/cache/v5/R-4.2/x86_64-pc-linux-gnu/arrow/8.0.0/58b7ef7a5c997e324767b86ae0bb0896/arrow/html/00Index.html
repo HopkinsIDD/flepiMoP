@@ -1,3 +1,604 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7b767201e3c055d35de86eb434d8bb6537670dad39cb9adf369b14f0ca012ced
-size 30851
+<!DOCTYPE html>
+<html>
+<head><title>R: Integration to 'Apache' 'Arrow'</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+<h1> Integration to 'Apache' 'Arrow'
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]" />
+</h1>
+<hr/>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]" /></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]" /></a>
+</div><h2>Documentation for package &lsquo;arrow&rsquo; version 8.0.0</h2>
+
+<ul><li><a href="../DESCRIPTION">DESCRIPTION file</a>.</li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation.</a></li>
+<li><a href="../NEWS">Package NEWS</a>.</li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<p style="text-align: center;">
+<a href="#A">A</a>
+<a href="#B">B</a>
+<a href="#C">C</a>
+<a href="#D">D</a>
+<a href="#E">E</a>
+<a href="#F">F</a>
+<a href="#H">H</a>
+<a href="#I">I</a>
+<a href="#J">J</a>
+<a href="#L">L</a>
+<a href="#M">M</a>
+<a href="#N">N</a>
+<a href="#O">O</a>
+<a href="#P">P</a>
+<a href="#R">R</a>
+<a href="#S">S</a>
+<a href="#T">T</a>
+<a href="#U">U</a>
+<a href="#V">V</a>
+<a href="#W">W</a>
+</p>
+
+
+<h2><a id="A">-- A --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="array.html">Array</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="array.html">array</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="ArrayData.html">ArrayData</a></td>
+<td>ArrayData class</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_available.html">arrow_available</a></td>
+<td>Is the C++ Arrow library available?</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_info.html">arrow_info</a></td>
+<td>Report information on the package's capabilities</td></tr>
+<tr><td style="width: 25%;"><a href="Table.html">arrow_table</a></td>
+<td>Table class</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_available.html">arrow_with_dataset</a></td>
+<td>Is the C++ Arrow library available?</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_available.html">arrow_with_json</a></td>
+<td>Is the C++ Arrow library available?</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_available.html">arrow_with_parquet</a></td>
+<td>Is the C++ Arrow library available?</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_available.html">arrow_with_s3</a></td>
+<td>Is the C++ Arrow library available?</td></tr>
+<tr><td style="width: 25%;"><a href="arrow_available.html">arrow_with_substrait</a></td>
+<td>Is the C++ Arrow library available?</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_array.html">as_arrow_array</a></td>
+<td>Convert an object to an Arrow Array</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_array.html">as_arrow_array.Array</a></td>
+<td>Convert an object to an Arrow Array</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_array.html">as_arrow_array.ChunkedArray</a></td>
+<td>Convert an object to an Arrow Array</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_array.html">as_arrow_array.Scalar</a></td>
+<td>Convert an object to an Arrow Array</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_table.html">as_arrow_table</a></td>
+<td>Convert an object to an Arrow Table</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_table.html">as_arrow_table.data.frame</a></td>
+<td>Convert an object to an Arrow Table</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_table.html">as_arrow_table.default</a></td>
+<td>Convert an object to an Arrow Table</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_table.html">as_arrow_table.RecordBatch</a></td>
+<td>Convert an object to an Arrow Table</td></tr>
+<tr><td style="width: 25%;"><a href="as_arrow_table.html">as_arrow_table.Table</a></td>
+<td>Convert an object to an Arrow Table</td></tr>
+<tr><td style="width: 25%;"><a href="as_chunked_array.html">as_chunked_array</a></td>
+<td>Convert an object to an Arrow ChunkedArray</td></tr>
+<tr><td style="width: 25%;"><a href="as_chunked_array.html">as_chunked_array.Array</a></td>
+<td>Convert an object to an Arrow ChunkedArray</td></tr>
+<tr><td style="width: 25%;"><a href="as_chunked_array.html">as_chunked_array.ChunkedArray</a></td>
+<td>Convert an object to an Arrow ChunkedArray</td></tr>
+<tr><td style="width: 25%;"><a href="as_data_type.html">as_data_type</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+<tr><td style="width: 25%;"><a href="as_data_type.html">as_data_type.DataType</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+<tr><td style="width: 25%;"><a href="as_data_type.html">as_data_type.Field</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+<tr><td style="width: 25%;"><a href="as_data_type.html">as_data_type.Schema</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch.html">as_record_batch</a></td>
+<td>Convert an object to an Arrow RecordBatch</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch.html">as_record_batch.data.frame</a></td>
+<td>Convert an object to an Arrow RecordBatch</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch.html">as_record_batch.RecordBatch</a></td>
+<td>Convert an object to an Arrow RecordBatch</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch.html">as_record_batch.Table</a></td>
+<td>Convert an object to an Arrow RecordBatch</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.arrow_dplyr_query</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.data.frame</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.Dataset</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.RecordBatch</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.RecordBatchReader</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.Scanner</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_record_batch_reader.html">as_record_batch_reader.Table</a></td>
+<td>Convert an object to an Arrow RecordBatchReader</td></tr>
+<tr><td style="width: 25%;"><a href="as_schema.html">as_schema</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+<tr><td style="width: 25%;"><a href="as_schema.html">as_schema.Schema</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+<tr><td style="width: 25%;"><a href="as_schema.html">as_schema.StructType</a></td>
+<td>Convert an object to an Arrow DataType</td></tr>
+</table>
+
+<h2><a id="B">-- B --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="data-type.html">binary</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">bool</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">boolean</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="buffer.html">Buffer</a></td>
+<td>Buffer class</td></tr>
+<tr><td style="width: 25%;"><a href="buffer.html">buffer</a></td>
+<td>Buffer class</td></tr>
+<tr><td style="width: 25%;"><a href="OutputStream.html">BufferOutputStream</a></td>
+<td>OutputStream classes</td></tr>
+<tr><td style="width: 25%;"><a href="InputStream.html">BufferReader</a></td>
+<td>InputStream classes</td></tr>
+</table>
+
+<h2><a id="C">-- C --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="concat_arrays.html">c.Array</a></td>
+<td>Concatenate zero or more Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="call_function.html">call_function</a></td>
+<td>Call an Arrow compute function</td></tr>
+<tr><td style="width: 25%;"><a href="ChunkedArray.html">ChunkedArray</a></td>
+<td>ChunkedArray class</td></tr>
+<tr><td style="width: 25%;"><a href="ChunkedArray.html">chunked_array</a></td>
+<td>ChunkedArray class</td></tr>
+<tr><td style="width: 25%;"><a href="Codec.html">Codec</a></td>
+<td>Compression Codec class</td></tr>
+<tr><td style="width: 25%;"><a href="codec_is_available.html">codec_is_available</a></td>
+<td>Check whether a compression codec is available</td></tr>
+<tr><td style="width: 25%;"><a href="compression.html">CompressedInputStream</a></td>
+<td>Compressed stream classes</td></tr>
+<tr><td style="width: 25%;"><a href="compression.html">CompressedOutputStream</a></td>
+<td>Compressed stream classes</td></tr>
+<tr><td style="width: 25%;"><a href="compression.html">compression</a></td>
+<td>Compressed stream classes</td></tr>
+<tr><td style="width: 25%;"><a href="concat_arrays.html">concat_arrays</a></td>
+<td>Concatenate zero or more Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="concat_tables.html">concat_tables</a></td>
+<td>Concatenate one or more Tables</td></tr>
+<tr><td style="width: 25%;"><a href="copy_files.html">copy_files</a></td>
+<td>Copy files between FileSystems</td></tr>
+<tr><td style="width: 25%;"><a href="cpu_count.html">cpu_count</a></td>
+<td>Manage the global CPU thread pool in libarrow</td></tr>
+<tr><td style="width: 25%;"><a href="create_package_with_all_dependencies.html">create_package_with_all_dependencies</a></td>
+<td>Create a source bundle that includes all thirdparty dependencies</td></tr>
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">CsvConvertOptions</a></td>
+<td>File reader options</td></tr>
+<tr><td style="width: 25%;"><a href="FileFormat.html">CsvFileFormat</a></td>
+<td>Dataset file formats</td></tr>
+<tr><td style="width: 25%;"><a href="FragmentScanOptions.html">CsvFragmentScanOptions</a></td>
+<td>Format-specific scan options</td></tr>
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">CsvParseOptions</a></td>
+<td>File reader options</td></tr>
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">CsvReadOptions</a></td>
+<td>File reader options</td></tr>
+<tr><td style="width: 25%;"><a href="CsvTableReader.html">CsvTableReader</a></td>
+<td>Arrow CSV and JSON table reader classes</td></tr>
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">CsvWriteOptions</a></td>
+<td>File reader options</td></tr>
+</table>
+
+<h2><a id="D">-- D --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="data-type.html">data-type</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="Dataset.html">Dataset</a></td>
+<td>Multi-file datasets</td></tr>
+<tr><td style="width: 25%;"><a href="Dataset.html">DatasetFactory</a></td>
+<td>Multi-file datasets</td></tr>
+<tr><td style="width: 25%;"><a href="dataset_factory.html">dataset_factory</a></td>
+<td>Create a DatasetFactory</td></tr>
+<tr><td style="width: 25%;"><a href="DataType.html">DataType</a></td>
+<td>class arrow::DataType</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">date32</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">date64</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">decimal</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">decimal128</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">decimal256</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="dictionary.html">dictionary</a></td>
+<td>Create a dictionary type</td></tr>
+<tr><td style="width: 25%;"><a href="array.html">DictionaryArray</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="DictionaryType.html">DictionaryType</a></td>
+<td>class DictionaryType</td></tr>
+<tr><td style="width: 25%;"><a href="Partitioning.html">DirectoryPartitioning</a></td>
+<td>Define Partitioning for a Dataset</td></tr>
+<tr><td style="width: 25%;"><a href="Partitioning.html">DirectoryPartitioningFactory</a></td>
+<td>Define Partitioning for a Dataset</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">duration</a></td>
+<td>Apache Arrow data types</td></tr>
+</table>
+
+<h2><a id="E">-- E --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="Expression.html">Expression</a></td>
+<td>Arrow expressions</td></tr>
+<tr><td style="width: 25%;"><a href="ExtensionArray.html">ExtensionArray</a></td>
+<td>class arrow::ExtensionArray</td></tr>
+<tr><td style="width: 25%;"><a href="ExtensionType.html">ExtensionType</a></td>
+<td>class arrow::ExtensionType</td></tr>
+</table>
+
+<h2><a id="F">-- F --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="FeatherReader.html">FeatherReader</a></td>
+<td>FeatherReader class</td></tr>
+<tr><td style="width: 25%;"><a href="Field.html">Field</a></td>
+<td>Field class</td></tr>
+<tr><td style="width: 25%;"><a href="Field.html">field</a></td>
+<td>Field class</td></tr>
+<tr><td style="width: 25%;"><a href="FileFormat.html">FileFormat</a></td>
+<td>Dataset file formats</td></tr>
+<tr><td style="width: 25%;"><a href="FileInfo.html">FileInfo</a></td>
+<td>FileSystem entry info</td></tr>
+<tr><td style="width: 25%;"><a href="OutputStream.html">FileOutputStream</a></td>
+<td>OutputStream classes</td></tr>
+<tr><td style="width: 25%;"><a href="FileSelector.html">FileSelector</a></td>
+<td>file selector</td></tr>
+<tr><td style="width: 25%;"><a href="FileSystem.html">FileSystem</a></td>
+<td>FileSystem classes</td></tr>
+<tr><td style="width: 25%;"><a href="Dataset.html">FileSystemDataset</a></td>
+<td>Multi-file datasets</td></tr>
+<tr><td style="width: 25%;"><a href="Dataset.html">FileSystemDatasetFactory</a></td>
+<td>Multi-file datasets</td></tr>
+<tr><td style="width: 25%;"><a href="FileWriteOptions.html">FileWriteOptions</a></td>
+<td>Format-specific write options</td></tr>
+<tr><td style="width: 25%;"><a href="array.html">FixedSizeListArray</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">FixedSizeListType</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="FixedWidthType.html">FixedWidthType</a></td>
+<td>class arrow::FixedWidthType</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">fixed_size_binary</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">fixed_size_list_of</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="flight_connect.html">flight_connect</a></td>
+<td>Connect to a Flight server</td></tr>
+<tr><td style="width: 25%;"><a href="flight_disconnect.html">flight_disconnect</a></td>
+<td>Explicitly close a Flight client</td></tr>
+<tr><td style="width: 25%;"><a href="flight_get.html">flight_get</a></td>
+<td>Get data from a Flight server</td></tr>
+<tr><td style="width: 25%;"><a href="list_flights.html">flight_path_exists</a></td>
+<td>See available resources on a Flight server</td></tr>
+<tr><td style="width: 25%;"><a href="flight_put.html">flight_put</a></td>
+<td>Send data to a Flight server</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">float</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">float16</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">float32</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">float64</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="FragmentScanOptions.html">FragmentScanOptions</a></td>
+<td>Format-specific scan options</td></tr>
+</table>
+
+<h2><a id="H">-- H --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="data-type.html">halffloat</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="Partitioning.html">HivePartitioning</a></td>
+<td>Define Partitioning for a Dataset</td></tr>
+<tr><td style="width: 25%;"><a href="Partitioning.html">HivePartitioningFactory</a></td>
+<td>Define Partitioning for a Dataset</td></tr>
+<tr><td style="width: 25%;"><a href="hive_partition.html">hive_partition</a></td>
+<td>Construct Hive partitioning</td></tr>
+</table>
+
+<h2><a id="I">-- I --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="infer_type.html">infer_type</a></td>
+<td>Infer the arrow Array type from an R object</td></tr>
+<tr><td style="width: 25%;"><a href="Dataset.html">InMemoryDataset</a></td>
+<td>Multi-file datasets</td></tr>
+<tr><td style="width: 25%;"><a href="InputStream.html">InputStream</a></td>
+<td>InputStream classes</td></tr>
+<tr><td style="width: 25%;"><a href="install_arrow.html">install_arrow</a></td>
+<td>Install or upgrade the Arrow library</td></tr>
+<tr><td style="width: 25%;"><a href="install_pyarrow.html">install_pyarrow</a></td>
+<td>Install pyarrow for use with reticulate</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">int16</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">int32</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">int64</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">int8</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="io_thread_count.html">io_thread_count</a></td>
+<td>Manage the global I/O thread pool in libarrow</td></tr>
+<tr><td style="width: 25%;"><a href="FileFormat.html">IpcFileFormat</a></td>
+<td>Dataset file formats</td></tr>
+<tr><td style="width: 25%;"><a href="match_arrow.html">is_in</a></td>
+<td>'match' and '%in%' for Arrow objects</td></tr>
+</table>
+
+<h2><a id="J">-- J --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">JsonParseOptions</a></td>
+<td>File reader options</td></tr>
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">JsonReadOptions</a></td>
+<td>File reader options</td></tr>
+<tr><td style="width: 25%;"><a href="CsvTableReader.html">JsonTableReader</a></td>
+<td>Arrow CSV and JSON table reader classes</td></tr>
+</table>
+
+<h2><a id="L">-- L --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="array.html">LargeListArray</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">large_binary</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">large_list_of</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">large_utf8</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="array.html">ListArray</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="list_compute_functions.html">list_compute_functions</a></td>
+<td>List available Arrow C++ compute functions</td></tr>
+<tr><td style="width: 25%;"><a href="list_flights.html">list_flights</a></td>
+<td>See available resources on a Flight server</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">list_of</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="load_flight_server.html">load_flight_server</a></td>
+<td>Load a Python Flight server</td></tr>
+<tr><td style="width: 25%;"><a href="FileSystem.html">LocalFileSystem</a></td>
+<td>FileSystem classes</td></tr>
+</table>
+
+<h2><a id="M">-- M --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="array.html">MapArray</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">MapType</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="map_batches.html">map_batches</a></td>
+<td>Apply a function to a stream of RecordBatches</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">map_of</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="match_arrow.html">match_arrow</a></td>
+<td>'match' and '%in%' for Arrow objects</td></tr>
+<tr><td style="width: 25%;"><a href="InputStream.html">MemoryMappedFile</a></td>
+<td>InputStream classes</td></tr>
+<tr><td style="width: 25%;"><a href="Message.html">Message</a></td>
+<td>class arrow::Message</td></tr>
+<tr><td style="width: 25%;"><a href="MessageReader.html">MessageReader</a></td>
+<td>class arrow::MessageReader</td></tr>
+<tr><td style="width: 25%;"><a href="mmap_create.html">mmap_create</a></td>
+<td>Create a new read/write memory mapped file of a given size</td></tr>
+<tr><td style="width: 25%;"><a href="mmap_open.html">mmap_open</a></td>
+<td>Open a memory mapped file</td></tr>
+</table>
+
+<h2><a id="N">-- N --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="new_extension_type.html">new_extension_array</a></td>
+<td>Extension types</td></tr>
+<tr><td style="width: 25%;"><a href="new_extension_type.html">new_extension_type</a></td>
+<td>Extension types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">null</a></td>
+<td>Apache Arrow data types</td></tr>
+</table>
+
+<h2><a id="O">-- O --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="open_dataset.html">open_dataset</a></td>
+<td>Open a multi-file dataset</td></tr>
+<tr><td style="width: 25%;"><a href="OutputStream.html">OutputStream</a></td>
+<td>OutputStream classes</td></tr>
+</table>
+
+<h2><a id="P">-- P --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="ParquetArrowReaderProperties.html">ParquetArrowReaderProperties</a></td>
+<td>ParquetArrowReaderProperties class</td></tr>
+<tr><td style="width: 25%;"><a href="FileFormat.html">ParquetFileFormat</a></td>
+<td>Dataset file formats</td></tr>
+<tr><td style="width: 25%;"><a href="ParquetFileReader.html">ParquetFileReader</a></td>
+<td>ParquetFileReader class</td></tr>
+<tr><td style="width: 25%;"><a href="ParquetFileWriter.html">ParquetFileWriter</a></td>
+<td>ParquetFileWriter class</td></tr>
+<tr><td style="width: 25%;"><a href="FragmentScanOptions.html">ParquetFragmentScanOptions</a></td>
+<td>Format-specific scan options</td></tr>
+<tr><td style="width: 25%;"><a href="ParquetWriterProperties.html">ParquetWriterProperties</a></td>
+<td>ParquetWriterProperties class</td></tr>
+<tr><td style="width: 25%;"><a href="Partitioning.html">Partitioning</a></td>
+<td>Define Partitioning for a Dataset</td></tr>
+</table>
+
+<h2><a id="R">-- R --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="InputStream.html">RandomAccessFile</a></td>
+<td>InputStream classes</td></tr>
+<tr><td style="width: 25%;"><a href="InputStream.html">ReadableFile</a></td>
+<td>InputStream classes</td></tr>
+<tr><td style="width: 25%;"><a href="read_ipc_stream.html">read_arrow</a></td>
+<td>Read Arrow IPC stream format</td></tr>
+<tr><td style="width: 25%;"><a href="read_delim_arrow.html">read_csv_arrow</a></td>
+<td>Read a CSV or other delimited file with Arrow</td></tr>
+<tr><td style="width: 25%;"><a href="read_delim_arrow.html">read_delim_arrow</a></td>
+<td>Read a CSV or other delimited file with Arrow</td></tr>
+<tr><td style="width: 25%;"><a href="read_feather.html">read_feather</a></td>
+<td>Read a Feather file</td></tr>
+<tr><td style="width: 25%;"><a href="read_ipc_stream.html">read_ipc_stream</a></td>
+<td>Read Arrow IPC stream format</td></tr>
+<tr><td style="width: 25%;"><a href="read_json_arrow.html">read_json_arrow</a></td>
+<td>Read a JSON file</td></tr>
+<tr><td style="width: 25%;"><a href="read_message.html">read_message</a></td>
+<td>Read a Message from a stream</td></tr>
+<tr><td style="width: 25%;"><a href="read_parquet.html">read_parquet</a></td>
+<td>Read a Parquet file</td></tr>
+<tr><td style="width: 25%;"><a href="read_schema.html">read_schema</a></td>
+<td>read a Schema from a stream</td></tr>
+<tr><td style="width: 25%;"><a href="read_delim_arrow.html">read_tsv_arrow</a></td>
+<td>Read a CSV or other delimited file with Arrow</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatch.html">RecordBatch</a></td>
+<td>RecordBatch class</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatchReader.html">RecordBatchFileReader</a></td>
+<td>RecordBatchReader classes</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatchWriter.html">RecordBatchFileWriter</a></td>
+<td>RecordBatchWriter classes</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatchReader.html">RecordBatchReader</a></td>
+<td>RecordBatchReader classes</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatchReader.html">RecordBatchStreamReader</a></td>
+<td>RecordBatchReader classes</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatchWriter.html">RecordBatchStreamWriter</a></td>
+<td>RecordBatchWriter classes</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatchWriter.html">RecordBatchWriter</a></td>
+<td>RecordBatchWriter classes</td></tr>
+<tr><td style="width: 25%;"><a href="RecordBatch.html">record_batch</a></td>
+<td>RecordBatch class</td></tr>
+<tr><td style="width: 25%;"><a href="new_extension_type.html">register_extension_type</a></td>
+<td>Extension types</td></tr>
+<tr><td style="width: 25%;"><a href="new_extension_type.html">reregister_extension_type</a></td>
+<td>Extension types</td></tr>
+</table>
+
+<h2><a id="S">-- S --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="FileSystem.html">S3FileSystem</a></td>
+<td>FileSystem classes</td></tr>
+<tr><td style="width: 25%;"><a href="s3_bucket.html">s3_bucket</a></td>
+<td>Connect to an AWS S3 bucket</td></tr>
+<tr><td style="width: 25%;"><a href="Scalar.html">Scalar</a></td>
+<td>Arrow scalars</td></tr>
+<tr><td style="width: 25%;"><a href="Scanner.html">Scanner</a></td>
+<td>Scan the contents of a dataset</td></tr>
+<tr><td style="width: 25%;"><a href="Scanner.html">ScannerBuilder</a></td>
+<td>Scan the contents of a dataset</td></tr>
+<tr><td style="width: 25%;"><a href="Schema.html">Schema</a></td>
+<td>Schema class</td></tr>
+<tr><td style="width: 25%;"><a href="Schema.html">schema</a></td>
+<td>Schema class</td></tr>
+<tr><td style="width: 25%;"><a href="cpu_count.html">set_cpu_count</a></td>
+<td>Manage the global CPU thread pool in libarrow</td></tr>
+<tr><td style="width: 25%;"><a href="io_thread_count.html">set_io_thread_count</a></td>
+<td>Manage the global I/O thread pool in libarrow</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">string</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">struct</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="array.html">StructArray</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="array.html">StructScalar</a></td>
+<td>Arrow Arrays</td></tr>
+<tr><td style="width: 25%;"><a href="FileSystem.html">SubTreeFileSystem</a></td>
+<td>FileSystem classes</td></tr>
+</table>
+
+<h2><a id="T">-- T --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="Table.html">Table</a></td>
+<td>Table class</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">time32</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">time64</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">timestamp</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="CsvReadOptions.html">TimestampParser</a></td>
+<td>File reader options</td></tr>
+<tr><td style="width: 25%;"><a href="to_arrow.html">to_arrow</a></td>
+<td>Create an Arrow object from others</td></tr>
+<tr><td style="width: 25%;"><a href="to_duckdb.html">to_duckdb</a></td>
+<td>Create a (virtual) DuckDB table from an Arrow object</td></tr>
+<tr><td style="width: 25%;"><a href="infer_type.html">type</a></td>
+<td>Infer the arrow Array type from an R object</td></tr>
+</table>
+
+<h2><a id="U">-- U --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="data-type.html">uint16</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">uint32</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">uint64</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">uint8</a></td>
+<td>Apache Arrow data types</td></tr>
+<tr><td style="width: 25%;"><a href="unify_schemas.html">unify_schemas</a></td>
+<td>Combine and harmonize schemas</td></tr>
+<tr><td style="width: 25%;"><a href="Dataset.html">UnionDataset</a></td>
+<td>Multi-file datasets</td></tr>
+<tr><td style="width: 25%;"><a href="new_extension_type.html">unregister_extension_type</a></td>
+<td>Extension types</td></tr>
+<tr><td style="width: 25%;"><a href="data-type.html">utf8</a></td>
+<td>Apache Arrow data types</td></tr>
+</table>
+
+<h2><a id="V">-- V --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="value_counts.html">value_counts</a></td>
+<td>'table' for Arrow objects</td></tr>
+<tr><td style="width: 25%;"><a href="vctrs_extension_array.html">vctrs_extension_array</a></td>
+<td>Extension type for generic typed vectors</td></tr>
+<tr><td style="width: 25%;"><a href="vctrs_extension_array.html">vctrs_extension_type</a></td>
+<td>Extension type for generic typed vectors</td></tr>
+</table>
+
+<h2><a id="W">-- W --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="write_ipc_stream.html">write_arrow</a></td>
+<td>Write Arrow IPC stream format</td></tr>
+<tr><td style="width: 25%;"><a href="write_csv_arrow.html">write_csv_arrow</a></td>
+<td>Write CSV file to disk</td></tr>
+<tr><td style="width: 25%;"><a href="write_dataset.html">write_dataset</a></td>
+<td>Write a dataset</td></tr>
+<tr><td style="width: 25%;"><a href="write_feather.html">write_feather</a></td>
+<td>Write data in the Feather format</td></tr>
+<tr><td style="width: 25%;"><a href="write_ipc_stream.html">write_ipc_stream</a></td>
+<td>Write Arrow IPC stream format</td></tr>
+<tr><td style="width: 25%;"><a href="write_parquet.html">write_parquet</a></td>
+<td>Write Parquet file to disk</td></tr>
+<tr><td style="width: 25%;"><a href="write_to_raw.html">write_to_raw</a></td>
+<td>Write Arrow data to a raw vector</td></tr>
+</table>
+</div></body></html>

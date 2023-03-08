@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:37c0051dfae8deabafc1d5298512e21c44cee416573b06cd46273a0385a53385
-size 552
+#!/bin/bash
+
+# download and extract taxi data
+mkdir ~/data/
+cd ~/data
+
+wget -O ~/data/trip_fare.7z https://archive.org/download/nycTaxiTripData2013/trip_fare.7z && \
+  sudo apt install p7zip-full && \
+  7z x trip_fare.7z &> data.out
+
+# fix trailing space in header for every file
+ls *trip_fare*.csv | xargs -P 16 sed -i '1 s/, /,/g'
+
+# download the US census data
+wget -O ~/data/all_California.zip https://www2.census.gov/census_2000/datasets/PUMS/FivePercent/California/all_California.zip && \
+  sudo apt install unzip && \
+  unzip all_California.zip

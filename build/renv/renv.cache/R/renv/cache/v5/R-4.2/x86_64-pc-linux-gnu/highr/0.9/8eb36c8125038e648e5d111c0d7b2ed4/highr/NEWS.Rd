@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0acea49305b82e047500fd8af3e0530cc771c4435b7a15e5d5efe32c050cd44f
-size 281
+\name{NEWS}
+\title{News for Package 'highr'}
+
+\section{CHANGES IN highr VERSION 999.999}{
+  \itemize{
+    \item This NEWS file is only a placeholder. The version 999.999 does not really
+    exist. Please read the NEWS on Github: \url{https://github.com/yihui/highr/releases}
+  }
+}

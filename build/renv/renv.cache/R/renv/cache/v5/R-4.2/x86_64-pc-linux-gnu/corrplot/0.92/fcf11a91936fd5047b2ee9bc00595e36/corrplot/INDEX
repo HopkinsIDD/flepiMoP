@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:dabf90302c26768ce34d1ab2ff80f38f8c2ed6ae1da603a1d2ce0153a4293881
-size 786
+COL1                    Get sequential colors
+COL2                    Get diverging colors
+colorlegend             Draw color legend.
+cor.mtest               Significance test which produces p-values and
+                        confidence intervals for each pair of input
+                        features.
+corrMatOrder            Reorder a correlation matrix.
+corrplot                A visualization of a correlation matrix.
+corrplot-package        Visualization of a correlation matrix
+corrplot.mixed          Using mixed methods to visualize a correlation
+                        matrix.
+corrRect                Draw rectangle(s) on the correlation matrix
+                        graph.
+corrRect.hclust         Draw rectangles on the correlation matrix
+                        graph.

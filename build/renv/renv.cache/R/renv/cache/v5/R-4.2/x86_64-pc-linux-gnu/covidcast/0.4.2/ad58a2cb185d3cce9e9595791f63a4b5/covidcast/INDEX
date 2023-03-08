@@ -1,3 +1,34 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cd29881b7abd03515252cf2ba5532f857f788b8943c515e1324719be05c78652
-size 1869
+abbr_to_fips            Get FIPS codes from state abbreviations
+abbr_to_name            Get state names from state abbreviations
+aggregate_signals       Aggregate 'covidcast_signal' objects into one
+                        data frame
+as.covidcast_signal     Convert data from an external source into a
+                        form compatible with 'covidcast_signal'.
+county_census           County census population data
+covidcast               covidcast: Client for Delphi's COVIDcast API
+covidcast_cor           Compute correlations between two
+                        'covidcast_signal' data frames
+covidcast_longer        Pivot aggregated signals between "wide" and
+                        "long" formats
+covidcast_meta          Obtain COVIDcast metadata
+covidcast_signal        Obtain a data frame for one COVIDcast signal
+covidcast_signals       Obtain multiple COVIDcast signals at once
+fips_to_abbr            Get state abbreviations from FIPS codes
+latest_issue            Fetch the latest or earliest issue for each
+                        observation
+msa_census              Metro area population data
+name_to_abbr            Get state abbreviations from state names
+name_to_fips            Get FIPS or CBSA codes from county or
+                        metropolitan area names
+plot.covidcast_signal   Plot 'covidcast_signal' object as choropleths,
+                        bubbles, or time series
+print.covidcast_meta    Print 'covidcast_meta' object
+print.covidcast_signal
+                        Print 'covidcast_signal' object
+state_census            State population data
+state_fips_to_name      Get state, county or metropolitan area names
+                        from FIPS or CBSA codes
+summary.covidcast_meta
+                        Summarize 'covidcast_meta' object
+summary.covidcast_signal
+                        Summarize 'covidcast_signal' object

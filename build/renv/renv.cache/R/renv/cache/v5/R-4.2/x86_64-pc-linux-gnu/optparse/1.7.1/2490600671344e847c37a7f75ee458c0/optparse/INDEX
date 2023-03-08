@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6b6685d0a55a671035cef064fc6f633c81a0a58a22292eb091196f534b291ec8
-size 651
+IndentedHelpFormatter   Builtin help text formatters
+make_option             Functions to enable our OptionParser to
+                        recognize specific command line options.
+OptionParser            A function to create an instance of a parser
+                        object
+OptionParser-class      Option Parser
+OptionParserOption-class
+                        Class to hold information about command-line
+                        options
+optparse-package        Command line option parser
+parse_args              Parse command line options.
+print_help              Printing an usage message from an OptionParser
+                        object

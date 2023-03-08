@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9fd8843bfd6ad94415844040998cbfcc17893e08bae45b5614ac8b4b9f578266
-size 391
+library(testRcppModule)
+
+v <- new(vec)
+data <- 1:10
+v$assign(data)
+v[[3]] <- v[[3]] + 1
+
+data[[4]] <- data[[4]] +1
+
+stopifnot(identical(all.equal(v$as.vector(), data), TRUE))
+
+## a few function calls
+
+stopifnot(all.equal(bar(2), 4))
+stopifnot(all.equal(foo(2,3), 6))
+
+## properties (at one stage this seqfaulted, so beware)
+nn <- new(RcppModuleNum)
+nn$x <- pi
+stopifnot(all.equal(nn$x, pi))

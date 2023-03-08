@@ -1,3 +1,56 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:494195f0eb6997e220c1748b220597abbce8fe9321c1356cdfca67109a7e6935
-size 1283
+// United 3.4.1
+// Bootswatch
+// -----------------------------------------------------
+
+$web-font-path: "https://fonts.googleapis.com/css?family=Ubuntu:400,700" !default;
+@import url($web-font-path);
+
+// Navbar =====================================================================
+
+.navbar {
+
+  &-default {
+
+    .badge {
+      background-color: #fff;
+      color: $navbar-default-bg;
+    }
+  }
+
+  &-inverse {
+
+    .badge {
+      background-color: #fff;
+      color: $navbar-inverse-bg;
+    }
+  }
+}
+
+@media (max-width: $grid-float-breakpoint-max) {
+
+  .navbar {
+
+    .dropdown-menu {
+      a {
+        color: #fff;
+      }
+    }
+  }
+}
+
+
+// Buttons ====================================================================
+
+// Typography =================================================================
+
+// Tables =====================================================================
+
+// Forms ======================================================================
+
+// Navs =======================================================================
+
+// Indicators =================================================================
+
+// Progress bars ==============================================================
+
+// Containers =================================================================

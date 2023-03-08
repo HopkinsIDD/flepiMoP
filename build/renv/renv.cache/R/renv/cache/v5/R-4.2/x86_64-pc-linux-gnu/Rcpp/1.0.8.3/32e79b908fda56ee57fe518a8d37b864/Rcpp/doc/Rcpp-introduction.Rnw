@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:67800f566773862bcad02b28f173069da1d78b24abc749497acd2117918583ff
-size 266
+\documentclass{article}
+\usepackage{pdfpages}
+%\VignetteIndexEntry{Rcpp-introduction}
+%\VignetteKeywords{Rcpp, R, Cpp}
+%\VignettePackage{Rcpp}
+%\VignetteEncoding{UTF-8}
+
+\begin{document}
+\includepdf[pages=-, fitpaper=true]{pdf/Rcpp-introduction.pdf}
+\end{document}
+

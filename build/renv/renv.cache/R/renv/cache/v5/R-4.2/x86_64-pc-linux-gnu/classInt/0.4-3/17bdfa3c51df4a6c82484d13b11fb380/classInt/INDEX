@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:362bf5b8f3bd2dd1921bb2fbbc97046b922fa695dbd6ec9d469b2d9ad6581898
-size 443
+classIntervals          Choose univariate class intervals
+findColours             assign colours to classes from classInterval
+                        object
+findCols                extract classes from classInterval object
+getBclustClassIntervals
+                        Change breaks in a "classIntervals" object
+jenks.tests             Indices for assessing class intervals
+logLik.classIntervals   Log-likelihood for classIntervals objects

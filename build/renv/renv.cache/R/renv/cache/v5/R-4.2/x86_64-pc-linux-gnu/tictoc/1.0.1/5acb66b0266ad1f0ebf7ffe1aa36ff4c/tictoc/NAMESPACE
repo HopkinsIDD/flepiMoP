@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:732b97bd15e55162b7da6299f41049d4d8499a05de769633d5a51e0fd2922b2d
-size 330
+S3method(as.List,default)
+S3method(as.Stack,default)
+S3method(clear,default)
+S3method(first,default)
+S3method(last,default)
+S3method(pop,default)
+S3method(push,default)
+S3method(shift,default)
+S3method(size,default)
+export(tic)
+export(tic.clear)
+export(tic.clearlog)
+export(tic.log)
+export(toc)
+export(toc.outmsg)
+import(methods)

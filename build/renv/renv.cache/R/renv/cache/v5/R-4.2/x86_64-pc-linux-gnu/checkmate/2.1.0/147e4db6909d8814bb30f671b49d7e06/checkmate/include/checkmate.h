@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0bebe57103a26a342361181b48559172fb8f560848f1c3701a5ea16acd32207a
-size 450
+#ifndef _CHECKMATE_H_
+#define _CHECKMATE_H_
+
+#include <R.h>
+#include <Rinternals.h>
+#include <Rdefines.h>
+#include <R_ext/Rdynload.h>
+#include <R_ext/Visibility.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+Rboolean attribute_hidden qtest(SEXP x, const char *rule);
+SEXP attribute_hidden qassert(SEXP x, const char *rule, const char *name);
+SEXP attribute_hidden qcheck(SEXP x, const char *rule, const char *name);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

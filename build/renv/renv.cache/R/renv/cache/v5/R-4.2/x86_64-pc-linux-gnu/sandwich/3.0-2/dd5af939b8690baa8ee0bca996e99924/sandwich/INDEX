@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:913a7016114a53183f67e65706c093694da38a9ae11c3da4026de2c829ce9f99
-size 1542
+bread                   Bread for Sandwiches
+estfun                  Extract Empirical Estimating Functions
+InstInnovation          Innovation and Institutional Ownership
+Investment              US Investment Data
+isoacf                  Isotonic Autocorrelation Function
+kweights                Kernel Weights
+lrvar                   Long-Run Variance of the Mean
+meat                    A Simple Meat Matrix Estimator
+NeweyWest               Newey-West HAC Covariance Matrix Estimation
+PetersenCL              Petersen's Simulated Data for Assessing
+                        Clustered Standard Errors
+PublicSchools           US Expenditures for Public Schools
+sandwich                Making Sandwiches with Bread and Meat
+vcovBS                  (Clustered) Bootstrap Covariance Matrix
+                        Estimation
+vcovCL                  Clustered Covariance Matrix Estimation
+vcovHAC                 Heteroscedasticity and Autocorrelation
+                        Consistent (HAC) Covariance Matrix Estimation
+vcovHC                  Heteroscedasticity-Consistent Covariance Matrix
+                        Estimation
+vcovOPG                 Outer-Product-of-Gradients Covariance Matrix
+                        Estimation
+vcovPC                  Panel-Corrected Covariance Matrix Estimation
+vcovPL                  Clustered Covariance Matrix Estimation for
+                        Panel Data
+weightsAndrews          Kernel-based HAC Covariance Matrix Estimation
+weightsLumley           Weighted Empirical Adaptive Variance Estimation

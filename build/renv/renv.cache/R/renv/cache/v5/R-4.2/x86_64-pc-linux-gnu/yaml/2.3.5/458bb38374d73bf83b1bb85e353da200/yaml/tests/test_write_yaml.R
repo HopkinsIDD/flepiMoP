@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1ac4a0a963029a6993cbc73a9f6ecf85822cfdab3cd454b420f5ea0ac4ecfec0
-size 230
+test_output_is_written_to_a_file_when_a_filename_is_specified <- function() {
+  filename <- tempfile()
+  write_yaml(1:3, filename)
+  output <- readLines(filename)
+  unlink(filename)
+  checkEquals(c("- 1", "- 2", "- 3"), output)
+}

@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:08d74eecc45d4e3a508fc6be272e44a082426c1e951bf551c6637461a9ccdc53
-size 815
+\documentclass{article}
+\title{Proximity measures in the \texttt{proxy} package for {\sf R}}
+\author{David Meyer}
+
+%\VignetteIndexEntry{Proximity measures in the proxy package for R}
+%\VignetteDepends{proxy}
+%\VignetteKeywords{similarities,dissimilarities,distance}
+%\VignettePackage{proxy}
+
+<<preliminaries,echo=FALSE,results=hide>>=
+library(proxy)
+x <- summary(pr_DB, "long")
+FUN <- function(index) {
+    for (i in which(index)) {
+        writeLines(sprintf("Aliases: %s", paste(x$names[[i]], collapse = ", ")))
+        writeLines(sprintf("Type   : %s", x$type[i]))
+        writeLines(sprintf("Formula: %s\n", x$formula[i]))
+    }
+}
+@
+\begin{document}
+\maketitle
+\section{Similarities}
+<<echo=FALSE>>=
+FUN(x$distance == FALSE)
+@
+
+\section{Dissimilarities}
+<<echo=FALSE>>=
+FUN(x$distance == TRUE)
+@
+\end{document}

@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:661884917286e11141dd82b772f5c1e1c26d65d355914caca30f3dc5697f1ef5
-size 219
+css_to_xpath            Translate a CSS selector to an equivalent XPath
+                        expression.
+querySelectorAll        Find nodes that match a group of CSS selectors
+                        in an XML tree.

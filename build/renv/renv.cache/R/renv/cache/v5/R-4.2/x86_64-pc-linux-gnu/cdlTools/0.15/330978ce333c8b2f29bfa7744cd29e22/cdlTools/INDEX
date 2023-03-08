@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:20cc5dd1980a9b737d8ab7720ac2a60340f90bf4b545d385fceddba984af159f
-size 959
+census2010FIPS          U.S. Census 2010 FIPS Data
+corn                    CDL corn classes
+cotton                  CDL cotton classes
+createComparableCDL     Create comparable raster images
+cultivated              CDL cultivated classes
+durumWheat              CDL durum wheat classes
+fips                    FIPS code conversion function.
+getCDL                  Get CDL raster data
+matchCount              Counts distinct pixel pairs in CDL raster
+                        images
+nothing                 CDL nothing class
+pasture                 CDL pasture classes
+projCDL                 The default projection of CDL data
+soybeans                CDL soybeans classes
+springWheat             CDL spring wheat classes
+stateNames              U.S. Census 2010 State FIPS Data
+updateNamesCDL          Label CDL classes.
+varNamesCDL             Enumerated CDL classes
+water                   CDL water classes
+winterWheat             CDL winter wheat classes

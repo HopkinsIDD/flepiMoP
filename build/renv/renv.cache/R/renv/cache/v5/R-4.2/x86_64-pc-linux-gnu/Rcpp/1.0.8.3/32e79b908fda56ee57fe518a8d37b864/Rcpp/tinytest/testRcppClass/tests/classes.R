@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9cffef65371d60c9d3b5d623aa6fc30e09a8f6cef3fe4817de759a08c52120f2
-size 462
+library(testRcppClass)
+
+v <- stdNumeric$new()
+data <- 1:10
+v$assign(data)
+v$set(3L, v$at(3L) + 1)
+
+data[[4]] <- data[[4]] +1
+
+stopifnot(identical(all.equal(v$as.vector(), data), TRUE))
+
+## a few function calls
+
+stopifnot(all.equal(bar(2), 4))
+stopifnot(all.equal(foo(2,3), 6))
+
+## Uncomment this when a C++Class can be found w/o extracting from module
+## as in commented code in R/load.R
+
+## nn <- new("NumEx")
+## nn$x <- pi
+## stopifnot(all.equal(nn$x, pi))
+
+
+

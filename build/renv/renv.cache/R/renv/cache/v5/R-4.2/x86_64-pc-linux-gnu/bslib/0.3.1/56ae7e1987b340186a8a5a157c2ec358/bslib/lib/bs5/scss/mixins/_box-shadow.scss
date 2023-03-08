@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:96f68fadee0ab0cde1a59aef895b0bfb8cb7d6c20f5f028cf9f273a3d8293726
-size 398
+@mixin box-shadow($shadow...) {
+  @if $enable-shadows {
+    $result: ();
+
+    @each $value in $shadow {
+      @if $value != null {
+        $result: append($result, $value, "comma");
+      }
+      @if $value == none and length($shadow) > 1 {
+        @warn "The keyword 'none' must be used as a single argument.";
+      }
+    }
+
+    @if (length($result) > 0) {
+      box-shadow: $result;
+    }
+  }
+}

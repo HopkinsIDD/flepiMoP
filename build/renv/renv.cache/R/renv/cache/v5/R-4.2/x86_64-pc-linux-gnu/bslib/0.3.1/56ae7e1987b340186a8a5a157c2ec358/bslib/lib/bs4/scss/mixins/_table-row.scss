@@ -1,3 +1,39 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d37c564130953324502e543ed1dcec866ee2c17dcf6a66061c48c86c78a0b736
-size 794
+// Tables
+
+@mixin table-row-variant($state, $background, $border: null) {
+  // Exact selectors below required to override `.table-striped` and prevent
+  // inheritance to nested tables.
+  .table-#{$state} {
+    &,
+    > th,
+    > td {
+      background-color: $background;
+    }
+
+    @if $border != null {
+      th,
+      td,
+      thead th,
+      tbody + tbody {
+        border-color: $border;
+      }
+    }
+  }
+
+  // Hover states for `.table-hover`
+  // Note: this is not available for cells or rows within `thead` or `tfoot`.
+  .table-hover {
+    $hover-background: darken($background, 5%);
+
+    .table-#{$state} {
+      @include hover() {
+        background-color: $hover-background;
+
+        > td,
+        > th {
+          background-color: $hover-background;
+        }
+      }
+    }
+  }
+}

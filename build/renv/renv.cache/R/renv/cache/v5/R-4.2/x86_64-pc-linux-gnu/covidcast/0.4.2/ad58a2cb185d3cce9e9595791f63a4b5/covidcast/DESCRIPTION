@@ -1,3 +1,73 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2e04668112f451909033e29286f8d9701a4cfb298753e5226ab04f91c6c57edc
-size 2554
+Package: covidcast
+Type: Package
+Title: Client for Delphi's 'COVIDcast Epidata' API
+Version: 0.4.2
+Date: 2021-04-30
+Authors@R: 
+  c(
+    person(given = "Taylor",
+           family = "Arnold",
+           role = "aut"),
+    person(given = "Jacob",
+           family = "Bien",
+           role = "aut"),
+    person(given = "Logan",
+           family = "Brooks",
+           role = "aut"),
+    person(given = "Sarah",
+           family = "Colquhoun",
+           role = "aut"),
+    person(given = "David",
+           family = "Farrow",
+           role = "aut"),
+    person(given = "Jed",
+           family = "Grabman",
+           role = "ctb"),
+    person(given = "Pedrito",
+           family = "Maynard-Zhang",
+           role = "ctb"),
+    person(given = "Alex",
+           family = "Reinhart",
+           role = c("aut", "cre"),
+           email = "areinhar@stat.cmu.edu",
+           comment = c(ORCID = "0000-0002-6658-514X")),
+    person(given = "Ryan",
+           family = "Tibshirani",
+           role = "aut"))
+URL: https://cmu-delphi.github.io/covidcast/covidcastR/,
+        https://github.com/cmu-delphi/covidcast
+BugReports: https://github.com/cmu-delphi/covidcast/issues
+Description: Tools for Delphi's 'COVIDcast Epidata' API: data access, maps and
+    time series plotting, and basic signal processing. The API includes a
+    collection of numerous indicators relevant to the COVID-19 pandemic in the
+    United States, including official reports, de-identified aggregated medical
+    claims data, large-scale surveys of symptoms and public behavior, and
+    mobility data, typically updated daily and at the county level. All data
+    sources are documented at
+    <https://cmu-delphi.github.io/delphi-epidata/api/covidcast.html>.
+Depends: R (>= 3.5.0)
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: dplyr, ggplot2, grDevices, httr, MMWRweek, purrr, rlang, sf,
+        tidyr
+RoxygenNote: 7.1.1
+Suggests: gridExtra, httptest, knitr, mockery, rmarkdown, testthat,
+        tibble, vdiffr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+NeedsCompilation: no
+Packaged: 2021-05-03 14:39:28 UTC; alexreinhart
+Author: Taylor Arnold [aut],
+  Jacob Bien [aut],
+  Logan Brooks [aut],
+  Sarah Colquhoun [aut],
+  David Farrow [aut],
+  Jed Grabman [ctb],
+  Pedrito Maynard-Zhang [ctb],
+  Alex Reinhart [aut, cre] (<https://orcid.org/0000-0002-6658-514X>),
+  Ryan Tibshirani [aut]
+Maintainer: Alex Reinhart <areinhar@stat.cmu.edu>
+Repository: CRAN
+Date/Publication: 2021-05-04 07:00:12 UTC
+Built: R 4.2.2; ; 2023-02-25 16:51:46 UTC; unix

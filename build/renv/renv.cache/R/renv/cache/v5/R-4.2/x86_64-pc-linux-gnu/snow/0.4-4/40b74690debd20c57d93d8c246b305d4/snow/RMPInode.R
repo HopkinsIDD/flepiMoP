@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9db3611458ee33c75c76ee3eedc9663d7479a4e73536ee495512034b59d87ca8
-size 705
+local({
+    snowlib <- Sys.getenv("R_SNOW_LIB")
+    outfile <- Sys.getenv("R_SNOW_OUTFILE")
+
+    args <- commandArgs()
+    pos <- match("--args", args)
+    args <- args[-(1 : pos)]
+    for (a in args) {
+        pos <- regexpr("=", a)
+        name <- substr(a, 1, pos - 1)
+        value <- substr(a,pos + 1, nchar(a))
+        switch(name,
+               SNOWLIB = snowlib <- value,
+               OUT = outfile <- value)
+    }
+
+    if (! (snowlib %in% .libPaths()))
+        .libPaths(c(snowlib, .libPaths()))
+    library(methods) ## because Rscript as of R 2.7.0 doesn't load methods
+    library(Rmpi)
+    library(snow)
+
+    sinkWorkerOutput(outfile)
+    cat("starting MPI worker\n")
+    runMPIworker()
+})

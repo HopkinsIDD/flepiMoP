@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2bb69c07653b046267ce82e767015491cf7b3351a3c615529890df2d979be698
-size 252
+name: sass-font
+title: sass-font
+username:
+account: gallery
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 429503
+bundleId: 1585777
+url: https://gallery.shinyapps.io/sass-font/
+when: 1536936506.34148
+asMultiple: FALSE
+asStatic: FALSE

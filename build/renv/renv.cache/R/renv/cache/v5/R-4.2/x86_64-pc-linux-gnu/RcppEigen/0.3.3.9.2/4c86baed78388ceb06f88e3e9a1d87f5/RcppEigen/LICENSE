@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:366b9d7d46bf82fb74c5f21a35c110a4f350481c056c488f3298f7fefd535667
-size 325
+
+Please see the included file COPYRIGHTS for per-file (or per-directory)
+details on licenses as well as copyrights.
+
+In short: 
+
+ - Eigen (as an upstream project) in licensed under the MPL-2 (a 
+   version of which is included in the file COPYRIGHT), and 
+
+ - the RcppEigen integration into R is licensed as GPL-2 or later.
+

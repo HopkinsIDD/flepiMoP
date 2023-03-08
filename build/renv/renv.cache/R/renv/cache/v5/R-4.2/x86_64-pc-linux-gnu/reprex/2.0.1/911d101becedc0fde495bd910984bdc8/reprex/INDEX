@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:12e1f2eb83b944bf82ad942f7376b1d07d6ebb518dfc71f175248cf7383b2767
-size 392
+reprex                  Render a reprex
+reprex_addin            Render a reprex, conveniently
+reprex_document         reprex output format
+reprex_locale           Render a reprex in a specific locale
+reprex_options          reprex options
+reprex_render           Render a document in a new R session
+reprex_venue            Venue-specific shortcuts
+un-reprex               Un-render a reprex

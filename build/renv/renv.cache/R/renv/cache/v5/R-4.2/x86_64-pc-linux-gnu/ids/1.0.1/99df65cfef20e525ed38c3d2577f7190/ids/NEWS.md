@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c9b206133a341dda482c1f66567b199277a12168833e738e9945e09a62d89de5
-size 176
+# ids 1.1.0 (2017-05-22)
+
+* Fix occasionally failing text (removes one animal from the pool)
+* New identifier type "proquint"
+
+# ids 1.0.0 (2016-11-03)
+
+* Initial CRAN release

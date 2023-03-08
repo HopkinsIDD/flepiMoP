@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8585b8cef92be47c0d46b23bbba19b2cc1c689f0b800ea96bd10d1bc7d5be372
-size 301
+<OGRVRTDataSource>
+    <OGRVRTLayer name="test64">
+        <SrcDataSource>test64.csv</SrcDataSource>
+        <GeometryType>wkbPoint</GeometryType>
+        <LayerSRS>WGS84</LayerSRS>
+        <GeometryField encoding="PointFromColumns" x="Longitude" y="Latitude"/>
+    </OGRVRTLayer>
+</OGRVRTDataSource>

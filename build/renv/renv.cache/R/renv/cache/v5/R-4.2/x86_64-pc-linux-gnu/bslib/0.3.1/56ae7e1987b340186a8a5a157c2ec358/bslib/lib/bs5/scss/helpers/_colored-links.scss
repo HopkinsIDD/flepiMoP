@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f68bff0eac79aea127c92073063ba5491b5331854706c168e996e4249ac44939
-size 326
+@each $color, $value in $theme-colors {
+  .link-#{$color} {
+    color: $value;
+
+    @if $link-shade-percentage != 0 {
+      &:hover,
+      &:focus {
+        color: if(color-contrast($value) == $color-contrast-light, shade-color($value, $link-shade-percentage), tint-color($value, $link-shade-percentage));
+      }
+    }
+  }
+}

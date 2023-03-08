@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b125ba90e3489541cc6199cdfa003f919be09c63ac149c73bc6580c32fee7a0d
-size 250
+({ library(readr); library(dplyr) })
+x <- read_tsv(file, trim_ws = FALSE, quote = "", na = character())
+print(x)
+a <- head(x)
+b <- tail(x)
+c <- sample_n(x, 100)
+d <- filter(x, X1 > 3)
+e <- group_by(x, as.integer(X2)) %>% summarise(avg_X1 = mean(X1))

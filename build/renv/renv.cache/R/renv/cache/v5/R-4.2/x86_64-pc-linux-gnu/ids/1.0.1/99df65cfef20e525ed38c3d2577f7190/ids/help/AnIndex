@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b278d344e16aad5ab7d8f52b1128d6e8ac8b2b155b732d11915b0544a312f082
-size 262
+adjective_animal	adjective_animal
+ids	ids
+int_to_proquint	proquint_conversion
+int_to_proquint_word	proquint_conversion
+proquint	proquint
+proquint_to_int	proquint_conversion
+proquint_word_to_int	proquint_conversion
+random_id	random_id
+sentence	sentence
+uuid	uuid

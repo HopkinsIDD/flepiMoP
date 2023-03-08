@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bbeb6d5196f4164ade3af59dbd6ecf9df76e7dc447f89483f70e9f409097b90e
-size 148
+## title: A test script for the function stitch()
+## author: Yihui Xie
+set.seed(1121)
+(x = rnorm(20))
+mean(x);var(x)
+boxplot(x)
+hist(x, main = '')
+

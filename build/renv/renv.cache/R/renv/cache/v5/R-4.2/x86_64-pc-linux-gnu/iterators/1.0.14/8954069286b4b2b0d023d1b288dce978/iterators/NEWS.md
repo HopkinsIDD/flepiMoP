@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7de8e64fdda8e70f6a8c48335badbf7f19e385d1c66414bd784276b7dca3a5ac
-size 274
+## 1.0.14
+
+- Maintainer change (Folashade Daniel; fdaniel@microsoft.com).
+
+## 1.0.13
+
+- Maintainer change (Michelle Wallig; Michelle.Wallig@microsoft.com).
+
+## 1.0.12
+
+- Exported makeIwrapper function; request of Bill Venables.
+- Exported `isample` iterator maker function.

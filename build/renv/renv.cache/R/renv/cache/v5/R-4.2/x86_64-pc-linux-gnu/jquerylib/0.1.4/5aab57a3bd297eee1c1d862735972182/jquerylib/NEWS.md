@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:541e7159fd5ffb253e3f7d2d2f8c6ac6db1b2d10eee249c50a5d03902efbbb90
-size 522
+# jquerylib 0.1.4
+
+* `jquery_core(3)` now returns 3.6.0 instead of 3.5.1.
+* Closed #4: The dependency behind `jquery_core()` no longer copies every major version of jQuery to it's destination directory.
+
+# jquerylib 0.1.3
+
+* `jquery_core()` no longer returns a `href` `src` field (ensuring that the dependency is always served locally).
+
+# jquerylib 0.1.2
+
+* `jquery_core(3)` now returns 3.5.1 instead of 3.5.0. Also, source maps are now included.
+
+# jquerylib 0.1.1
+
+* `jquery_core(3)` now returns 3.5.0 instead of 3.4.1

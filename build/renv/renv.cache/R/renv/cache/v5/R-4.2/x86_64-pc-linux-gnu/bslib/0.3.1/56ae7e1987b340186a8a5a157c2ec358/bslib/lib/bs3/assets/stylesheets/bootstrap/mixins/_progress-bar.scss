@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ca1ef669b76b55180afd8a5530bdf02df253bb07cfbab5bdf9a232ce52fc3fb4
-size 200
+// Progress bars
+
+@mixin progress-bar-variant($color) {
+  background-color: $color;
+
+  // Deprecated parent class requirement as of v3.2.0
+  .progress-striped & {
+    @include gradient-striped;
+  }
+}

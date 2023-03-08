@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bd6416ff40cb1895da6c65c8849508b41d3df3d0fede3ffd40b008b7d9cd29ee
-size 287
+#proxy {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: none;
+}
+
+#notebook {
+  position: absolute;
+  width: 600px;
+  top: 0;
+  left: 0;
+  bottom: 0;
+}
+
+#nbOut {
+  position: absolute;
+  left: 620px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  padding-right: 5px;
+  overflow-y: scroll;
+}

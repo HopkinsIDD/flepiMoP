@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:126bd3b67f42fb661ef371226cd00b71bebd8bbcc429934eb0b51189d93e2443
-size 524
+
+library(RcppTOML)
+
+toml <- parseToml("tables.toml")
+
+expect_true(setequal(names(toml), c("table", "x")))
+
+expect_true(setequal(names(toml$table), c("key", "subtable", "inline")))
+
+expect_equal(toml$table$key, "value")
+
+expect_equal(toml$table$subtable$key, "another value")
+
+expect_equal(toml$table$x$y$z$w, NULL)  # not list()
+
+expect_equal(names(toml$table$inline), c("name", "point"))
+expect_equal(toml$table$inline$name, list(first="Tom", last="Preston-Werner"))
+expect_equal(toml$table$inline$point, list(x=1L, y=2L))

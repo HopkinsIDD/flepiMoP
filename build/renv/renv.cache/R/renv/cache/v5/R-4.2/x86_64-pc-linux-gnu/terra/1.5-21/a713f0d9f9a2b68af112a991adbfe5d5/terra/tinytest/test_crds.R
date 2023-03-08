@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b8f90b2042cf1ebb5e60c52538d5c80dce6a444d75f76e9410e53bbad056c769
-size 136
+
+m <- matrix(c(0,1,0,0,0,1), ncol=2)
+v <- vect(m, type="polygons")
+x <- as.vector(crds(v))
+
+expect_equal(x, c(0,1,0,0,0,0,1,0))
+

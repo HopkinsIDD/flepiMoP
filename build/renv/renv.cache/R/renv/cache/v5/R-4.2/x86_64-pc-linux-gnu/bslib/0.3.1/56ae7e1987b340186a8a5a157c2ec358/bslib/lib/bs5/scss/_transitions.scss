@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e5661be1476af60c9e453750780f86841c689dcf229de80223007c3cada148c9
-size 425
+.fade {
+  @include transition($transition-fade);
+
+  &:not(.show) {
+    opacity: 0;
+  }
+}
+
+// scss-docs-start collapse-classes
+.collapse {
+  &:not(.show) {
+    display: none;
+  }
+}
+
+.collapsing {
+  height: 0;
+  overflow: hidden;
+  @include transition($transition-collapse);
+
+  &.collapse-horizontal {
+    width: 0;
+    height: auto;
+    @include transition($transition-collapse-width);
+  }
+}
+// scss-docs-end collapse-classes

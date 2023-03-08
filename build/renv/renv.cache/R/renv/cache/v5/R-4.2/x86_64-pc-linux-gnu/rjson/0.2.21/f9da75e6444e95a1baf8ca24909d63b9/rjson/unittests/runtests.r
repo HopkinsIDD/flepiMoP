@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6b43c5a75c64addcd0d92a32f009e9b24cb0971ef188955fb69610c8852389d6
-size 232
+library( rjson )
+library( RUnit )
+
+
+path <- system.file( "unittests", package="rjson" )
+test.suite <- defineTestSuite( "json unittests", dirs = path, testFileRegexp = "^test\\..*\\.[rR]$" )
+runTestSuite( test.suite, verbose = 100 )

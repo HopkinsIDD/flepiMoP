@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7439fd46cd16a9f93d8f7e1b38d5ea0ee562e325ca6d07425a21842217da4d9e
-size 190
+# intersection of disjoint envelopes is NULL
+a <- ext(c(xmin = 0, xmax = 10, ymin = 0, ymax = 10))
+b <- ext(c(xmin = 100, xmax = 101, ymin = 100, ymax = 101))
+expect_null(intersect(a, b))

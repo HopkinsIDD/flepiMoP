@@ -1,3 +1,68 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f6d4c85fa1ee0c8d8d1264a4aece857186449e8767b3b66def695c38498f7dac
-size 3548
+array_reshape           Reshape an Array
+as.character.python.builtin.bytes
+                        Convert Python bytes to an R character vector
+conda-tools             Conda Tools
+configure_environment   Configure a Python Environment
+dict                    Create Python dictionary
+eng_python              A reticulate Engine for Knitr
+import                  Import a Python module
+install_miniconda       Install Miniconda
+install_python          Install Python
+iterate                 Traverse a Python iterator or generator
+miniconda_path          Path to Miniconda
+miniconda_uninstall     Remove Miniconda
+miniconda_update        Update Miniconda
+np_array                NumPy array
+py                      Interact with the Python Main Module
+py_available            Check if Python is available on this system
+py_bool                 Python Truthiness
+py_capture_output       Capture and return Python output
+py_clear_last_error     Get or (re)set the last Python error
+                        encountered.
+py_config               Python configuration
+py_del_attr             Delete an attribute of a Python object
+py_del_item             Delete / remove an item from a Python object
+py_discover_config      Discover the version of Python to use with
+                        reticulate.
+py_ellipsis             The builtin constant Ellipsis
+py_eval                 Evaluate a Python Expression
+py_exe                  Python executable
+py_func                 Wrap an R function in a Python function with
+                        the same signature.
+py_function_custom_scaffold
+                        Custom Scaffolding of R Wrappers for Python
+                        Functions
+py_get_attr             Get an attribute of a Python object
+py_get_item             Get an item from a Python object
+py_has_attr             Check if a Python object has an attribute
+py_help                 Documentation for Python Objects
+py_id                   Unique identifer for Python object
+py_install              Install Python packages
+py_is_null_xptr         Check if a Python object is a null externalptr
+py_iterator             Create a Python iterator from an R function
+py_len                  Length of Python object
+py_list_attributes      List all attributes of a Python object
+py_list_packages        List installed Python packages
+py_main_thread_func     Create a Python function that will always be
+                        called on the main thread
+py_module_available     Check if a Python module is available on this
+                        system.
+py_none                 The Python None object
+py_repr                 String representation of a python object.
+py_run                  Run Python code
+py_save_object          Save and Load Python Objects
+py_set_attr             Set an attribute of a Python object
+py_set_item             Set an item for a Python object
+py_set_seed             Set Python and NumPy random seeds
+py_suppress_warnings    Suppress Python warnings for an expression
+py_unicode              Convert to Python Unicode Object
+py_version              Python version
+PyClass                 Create a python class
+r-py-conversion         Convert between Python and R objects
+repl_python             Run a Python REPL
+source_python           Read and evaluate a Python script
+tuple                   Create Python tuple
+use_python              Use Python
+virtualenv-tools        Interface to Python Virtual Environments
+with.python.builtin.object
+                        Evaluate an expression within a context.

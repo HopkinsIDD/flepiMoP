@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:be9579e0918c272b48e323bbda3091218f4192ac961f45cef4e83f4f35efbd84
-size 213
+create_loop             Private event loops
+later                   Executes a function later
+next_op_secs            Relative time to next scheduled operation
+run_now                 Execute scheduled operations

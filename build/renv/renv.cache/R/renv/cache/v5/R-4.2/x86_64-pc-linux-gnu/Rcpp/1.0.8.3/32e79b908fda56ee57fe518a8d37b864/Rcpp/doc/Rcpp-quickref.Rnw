@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c5873d4e0df7dc754fddcb758d3f5787d5a662b9f48447bf411418dd7805092b
-size 267
+\documentclass{article}
+\usepackage{pdfpages}
+%\VignetteIndexEntry{Rcpp-quickref}
+%\VignetteKeywords{Rcpp, quickref, R, Cpp}
+%\VignettePackage{Rcpp}
+%\VignetteEncoding{UTF-8}
+
+\begin{document}
+\includepdf[pages=-, fitpaper=true]{pdf/Rcpp-quickref.pdf}
+\end{document}

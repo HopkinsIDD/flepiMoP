@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:396e8e7bb685d94e605aa65f28593fd15b2a6033313385e656f42d28d64c3d7e
-size 432
+Naming conventions
+==================
+R/*.R 		R   files (including .Rd comments)
+src/*.c		C   files 
+man/*.Rd	Automatically generated Rd. files, do not modify
+
+Rd api
+======
+prebuild.sh		call manually for generating all .Rd files from the .Rd comments in the R files with the help of
+exec/make_rd.pl		converts "#! lines" in R/*.R files into man/<name>.Rd files, where <name> is derived from the "#! \name{<name>}" in the first line

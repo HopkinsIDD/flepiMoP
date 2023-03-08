@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:75349188b13ad5d76824b06d54441c0d6e52e2db891de42185a6f4119d28c1f4
-size 228
+site_data_dir           Path to shared data/config directories
+user_cache_dir          Path to user cache directory
+user_data_dir           Path to user config/data directories
+user_log_dir            Path to user log directory

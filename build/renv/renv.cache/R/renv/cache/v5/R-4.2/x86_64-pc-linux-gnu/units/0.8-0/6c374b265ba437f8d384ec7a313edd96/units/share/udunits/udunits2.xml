@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ea752dbd70383237521f749a6aa530fc3c4d4b9dc7c0a8990a1aa2bd1800bcca
-size 519
+<?xml version="1.0" encoding="US-ASCII"?>
+<!--
+Copyright 2008, 2009 University Corporation for Atmospheric Research
+
+This file is part of the UDUNITS-2 package.  See the file COPYRIGHT
+in the top-level source-directory of the package for copying and
+redistribution conditions.
+-->
+
+<unit-system>
+    <import>udunits2-prefixes.xml</import>
+    <import>udunits2-base.xml</import>
+    <import>udunits2-derived.xml</import>
+    <import>udunits2-accepted.xml</import>
+    <import>udunits2-common.xml</import>
+</unit-system>

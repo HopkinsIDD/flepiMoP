@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6930dc138f193b8502727c6321d8067bd4c64f0f23516c5c31bfafa5468f03a5
-size 485
+export(product, ihasNext, ilimit, izip, enumerate, chain, ifilter,
+       ifilterfalse, irepeat, recycle, ichunk, timeout, ireadBin, irep,
+       isplitVector, isplitRows, isplitCols, isplitIndices,
+       irecord, ireplay, iRNGStream, iRNGSubStream,
+       ireaddf, writedf.combiner, iarray, ibreak,
+       end_iteration, iteration_has_ended, new_iterator, is.iterator)
+export(hasNext)
+S3method("hasNext", "ihasNext")
+S3method("iter", "connection")
+import(iterators)
+import(parallel)

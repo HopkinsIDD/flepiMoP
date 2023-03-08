@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b1c67d6545c76c2b4bdf3e819a34f7ce9bf7aa5d88ca3cf4a192a0cfd95ab15d
-size 257
+library(testthat)
+library({{{ name }}})
+
+if (requireNamespace("xml2")) {
+  test_check("{{{ name }}}", reporter = MultiReporter$new(reporters = list(JunitReporter$new(file = "test-results.xml"), CheckReporter$new())))
+} else {
+  test_check("{{{ name }}}")
+}

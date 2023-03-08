@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1cd9bb7048ae860a553311074caaa9c2f122ce4fa28c41f77d6b0ff5620dccc8
-size 470
+## ---- echo=FALSE--------------------------------------------------------------
+run <- FALSE
+if (requireNamespace("rgdal", quietly=TRUE)) run <- TRUE
+
+## ---- eval=run----------------------------------------------------------------
+library(rgdal)
+
+## ---- eval=run----------------------------------------------------------------
+rgdal::rgdal_extSoftVersion()
+
+## ---- eval=run----------------------------------------------------------------
+rgdal::new_proj_and_gdal()
+

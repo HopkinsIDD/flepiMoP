@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b4b9fd26afe6ccb7d34cadc6b85488272938f2fed6a01158fc2eabbaf167e816
-size 147
+var path = require('path');
+
+module.exports = function(eyeglass, sass) {
+  return {
+    sassDir: path.join(__dirname, 'assets/stylesheets')
+  }
+};

@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b696ec5a1c658d9767902069ac522d00c9b8cc72e2ecba37c692045bc80755d6
-size 528
+stopifnot(requireNamespace("Matrix" , quietly = TRUE)) # includes 'methods'
+
+CAex <-
+    local({
+	load(system.file(file.path("external", "CAex_slots.rda"), package = "Matrix"))
+	## -> 'L'
+	r <- methods::new("dgCMatrix")
+	for (n in c("Dim", "i","p","x"))
+	    methods::slot(r, n) <- L[[n]]
+	r
+    })
+
+## The reverse { CAex |--> L } is
+if(FALSE) {
+    sNms <- c("Dim", "i", "p", "x")
+    L <- lapply(sNms, function(N) slot(CAex, N)); names(L) <- sNms
+    save(L, file = "/u/maechler/R/Pkgs/Matrix/inst/external/CAex_slots.rda")
+}

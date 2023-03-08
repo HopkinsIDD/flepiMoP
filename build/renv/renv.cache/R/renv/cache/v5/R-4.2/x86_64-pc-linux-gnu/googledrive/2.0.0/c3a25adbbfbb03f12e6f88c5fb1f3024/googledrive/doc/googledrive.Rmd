@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:adc1cc0d67775f46a653c037c58a135bc99886377ebae441909a0d4360a5483f
-size 456
+---
+title: "googledrive"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{googledrive}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Please see the googledrive website for full documentation:
+
+  * <https://googledrive.tidyverse.org/index.html>
+  
+In addition to function-specific help, there are several articles which are indexed here:
+
+  * [Article index](https://googledrive.tidyverse.org/articles/index.html)

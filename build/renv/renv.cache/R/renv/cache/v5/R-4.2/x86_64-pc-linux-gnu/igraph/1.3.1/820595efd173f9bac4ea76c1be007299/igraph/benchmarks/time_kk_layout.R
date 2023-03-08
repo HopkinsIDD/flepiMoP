@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:85209d9f7571b2230d321b8f975ede7b24c51f6c1c69424476d8d79275a38141
-size 656
+
+time_group("Kamada-Kawai layout")
+
+time_that("KK layout is fast, connected", replications=10,
+          init = { library(igraph); set.seed(42) },
+          reinit = { g <- sample_pa(400) },
+          { layout_with_kk(g, maxiter=500) })
+
+time_that("KK layout is fast, unconnected", replications=10,
+          init = { library(igraph); set.seed(42) },
+          reinit = { g <- sample_gnm(400, 400) },
+          { layout_with_kk(g, maxiter=500) })
+
+time_that("KK layout is fast for large graphs", replications=10,
+          init = { library(igraph); set.seed(42) },
+          reinit = { g <- sample_pa(3000) },
+          { layout_with_kk(g, maxiter=500) })

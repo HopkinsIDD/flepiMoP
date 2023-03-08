@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:da5c05ea1e5daff22deb301e49739e53d49aaeb34ec3a0ef3392c0cece9ddb9c
-size 75
+This is a test of "brew".
+<%
+library(RODBC)
+library(stats)
+%>
+End of test.

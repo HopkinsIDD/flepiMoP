@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:654029fa989fbe719afa29fdc7650b6c0cb98560cd63b482cb3c10625454c8cd
-size 565
+as_sass                 Convert an R object into Sass code
+font_google             Helpers for importing web fonts
+output_template         An intelligent (temporary) output file
+sass                    Compile Sass to CSS
+sass_cache_get          Retrieve the default file cache
+sass_file_cache         Create a file cache object
+sass_import             Sass Import
+sass_layer              Bundling Sass layers
+sass_options            Compiler Options for Sass
+sass_partial            Compile rules against a Sass Bundle or Sass
+                        Layer object

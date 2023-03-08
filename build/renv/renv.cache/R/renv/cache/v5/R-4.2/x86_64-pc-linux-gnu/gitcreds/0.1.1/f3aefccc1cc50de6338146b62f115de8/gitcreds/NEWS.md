@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:26baa3ec092ccf79148a2bc74277c13ddb50641fd033d18b21fdb6f64131b3ba
-size 453
+
+# gitcreds 0.1.1
+
+* gitcreds now works with older git versions on Windows. It should work
+  without any configuration for git 2.12.1 or later, and with minimal
+  configuration for git 2.9.2 - git 2.12.0. See `?gitcreds_get` for more.
+
+* git errors have now better error messages, they include the output
+  from git as well.
+
+* The `git-auth.R` file is now standalone, and can be embedded into
+  other packages.
+
+# gitcreds 0.1.0
+
+First public release.

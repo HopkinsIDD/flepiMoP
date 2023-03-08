@@ -1,3 +1,41 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bd09f77c76fa37d2f455167b1abd41c983763a558e478606af7a2b1c6dd711ff
-size 729
+#ifndef SOURCETOOLS_MULTIBYTE_MULTIBYTE_H
+#define SOURCETOOLS_MULTIBYTE_MULTIBYTE_H
+
+#include <cstdlib>
+#include <cwchar>
+
+namespace sourcetools {
+namespace multibyte {
+
+template <typename T>
+inline bool countWhitespaceBytes(const char* data,
+                                 T* pBytes)
+{
+  wchar_t ch;
+  T bytes = 0;
+  const char* it = data;
+
+  while (true) {
+
+    int status = std::mbtowc(&ch, it, MB_CUR_MAX);
+    if (status == 0) {
+      break;
+    } else if (status == -1) {
+      break;
+    }
+
+    if (!std::iswspace(ch))
+      break;
+
+    bytes += status;
+    it += status;
+  }
+
+  *pBytes = bytes;
+  return bytes != 0;
+}
+
+} // namespace multibyte
+} // namespace sourcetools
+
+#endif /* SOURCETOOLS_MULTIBYTE_MULTIBYTE_H */

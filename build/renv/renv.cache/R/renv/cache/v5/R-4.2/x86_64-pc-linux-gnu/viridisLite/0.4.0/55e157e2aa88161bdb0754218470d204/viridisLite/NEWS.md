@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ccd6cf7196420313710b4b08b5e3bdd192da0fa5632da08072f0cd1008e5210c
-size 179
+# viridisLite 0.4.0
+
+## New features
+
+* Add 3 more color maps: mako, rocket, and turbo. 
+
+## Minor improvements and fixes
+
+* Minor bug fixes and improvements here and there. 
+
+---

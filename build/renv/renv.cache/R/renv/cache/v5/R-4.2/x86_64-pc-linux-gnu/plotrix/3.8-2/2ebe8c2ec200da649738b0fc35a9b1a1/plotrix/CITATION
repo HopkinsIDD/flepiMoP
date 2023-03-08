@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:34f87f49ebcc7728070b90dc2c5c12780d6394105f2be23e46f7879515b9017c
-size 383
+citHeader("To cite package 'plotrix' in publications use:")
+citEntry(entry="Article",
+ year = 2006,
+ title = "Plotrix: a package in the red light district of R",
+ journal = "R-News",
+ volume = "6",
+ number = "4",
+ pages = "8-12",
+ author = personList(as.person("Lemon J")),
+ textVersion = "Lemon, J. (2006) Plotrix: a package in the red light
+  district of R. R-News, 6(4): 8-12."
+)

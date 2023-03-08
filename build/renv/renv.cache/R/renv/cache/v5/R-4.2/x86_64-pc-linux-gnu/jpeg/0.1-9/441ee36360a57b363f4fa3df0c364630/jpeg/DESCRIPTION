@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b30d249c00a004b9b9cba035e1664eb0d4a7ae8fa5d5171591d34a501034b819
-size 654
+Package: jpeg
+Version: 0.1-9
+Title: Read and write JPEG images
+Author: Simon Urbanek <Simon.Urbanek@r-project.org>
+Maintainer: Simon Urbanek <Simon.Urbanek@r-project.org>
+Depends: R (>= 2.9.0)
+Description: This package provides an easy and simple way to read, write and display bitmap images stored in the JPEG format. It can read and write both files and in-memory raw vectors.
+License: GPL-2 | GPL-3
+SystemRequirements: libjpeg
+URL: http://www.rforge.net/jpeg/
+NeedsCompilation: yes
+Packaged: 2021-07-23 23:40:17 UTC; svnuser
+Repository: CRAN
+Date/Publication: 2021-07-24 10:07:24 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 09:04:17 UTC; unix

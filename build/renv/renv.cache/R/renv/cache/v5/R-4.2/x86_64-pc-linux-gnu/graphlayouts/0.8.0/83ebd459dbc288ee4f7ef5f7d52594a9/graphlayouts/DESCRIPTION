@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:79516fde70f8da9b6810861001d5235155c02bdd6a386b09e19c8cdb09934a4a
-size 1290
+Package: graphlayouts
+Title: Additional Layout Algorithms for Network Visualizations
+Version: 0.8.0
+Authors@R: person("David", "Schoch", email = "david@schochastics.net", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-2952-4812"))
+Description: Several new layout algorithms to visualize networks are provided which are not part of 'igraph'. 
+    Most are based on the concept of stress majorization by Gansner et al. (2004) <doi:10.1007/978-3-540-31843-9_25>. 
+    Some more specific algorithms allow to emphasize hidden group structures in networks or focus on specific nodes.
+URL: http://graphlayouts.schochastics.net/,
+        https://github.com/schochastics/graphlayouts
+BugReports: https://github.com/schochastics/graphlayouts/issues
+Depends: R (>= 3.2.0)
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: igraph, Rcpp
+Suggests: oaqc, testthat, ggraph, ggplot2, knitr, rmarkdown, uwot
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.1.2
+NeedsCompilation: yes
+Packaged: 2022-01-03 13:43:26 UTC; david
+Author: David Schoch [aut, cre] (<https://orcid.org/0000-0003-2952-4812>)
+Maintainer: David Schoch <david@schochastics.net>
+Repository: CRAN
+Date/Publication: 2022-01-03 14:50:02 UTC
+Built: R 4.2.2; x86_64-pc-linux-gnu; 2023-02-25 17:46:00 UTC; unix

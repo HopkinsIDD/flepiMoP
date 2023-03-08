@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:731ace83c4f14ce0503005dfafe9067b8db809fafc89b25c4d787ab50c529056
-size 223
+brewer	ColorBrewer
+brewer.all	ColorBrewer
+brewer.pal	ColorBrewer
+brewer.pal.info	ColorBrewer
+ColorBrewer	ColorBrewer
+colors	ColorBrewer
+display.brewer.all	ColorBrewer
+display.brewer.pal	ColorBrewer
+RColorBrewer	ColorBrewer

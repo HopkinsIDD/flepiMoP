@@ -1,3 +1,35 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a416ff47ff0f4270fae1406e59d0fbc87c0d60b82e5dda3b72e34d5f29b1966d
-size 1570
+Package: tidycensus
+Type: Package
+Title: Load US Census Boundary and Attribute Data as 'tidyverse' and
+        'sf'-Ready Data Frames
+Version: 1.2.1
+Authors@R: c(
+    person(given = "Kyle", family = "Walker", email="kyle@walker-data.com", role=c("aut", "cre")),
+    person(given = "Matt", family = "Herman", email = "mfherman@gmail.com", role = "aut"),
+    person(given = "Kris", family = "Eberwein", email = "eberwein@knights.ucf.edu", role = "ctb"))
+Date: 2022-04-21
+URL: https://walker-data.com/tidycensus/
+BugReports: https://github.com/walkerke/tidycensus/issues
+Description: An integrated R interface to several United States Census Bureau 
+    APIs (<https://www.census.gov/data/developers/data-sets.html>) and the US Census Bureau's 
+    geographic boundary files. Allows R users to return Census and ACS data as 
+    tidyverse-ready data frames, and optionally returns a list-column with feature geometry for mapping 
+    and spatial analysis. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.3.0)
+Imports: httr, sf, dplyr (>= 1.0.0), tigris, stringr, jsonlite (>=
+        1.5.0), purrr, rvest, tidyr (>= 1.0.0), rappdirs, readr, xml2,
+        units, utils, rlang, crayon, tidyselect
+Suggests: ggplot2, survey, srvyr, terra
+RoxygenNote: 7.1.2
+NeedsCompilation: no
+Packaged: 2022-04-21 10:10:08 UTC; kyle
+Author: Kyle Walker [aut, cre],
+  Matt Herman [aut],
+  Kris Eberwein [ctb]
+Maintainer: Kyle Walker <kyle@walker-data.com>
+Repository: CRAN
+Date/Publication: 2022-04-21 11:40:02 UTC
+Built: R 4.2.2; ; 2023-02-25 18:40:51 UTC; unix

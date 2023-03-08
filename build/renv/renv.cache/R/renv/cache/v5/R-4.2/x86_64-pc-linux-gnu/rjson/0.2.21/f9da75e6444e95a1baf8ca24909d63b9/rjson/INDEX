@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:026cd72c9a4a47a407659f2d9738b14346574f1d6ed027deae78b2e293bf349d
-size 178
+fromJSON                Convert JSON To R
+newJSONParser           Convert buffered JSON objects To R
+rjson                   JSON for R
+toJSON                  Convert R To JSON

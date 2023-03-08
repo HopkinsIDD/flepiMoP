@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:23cc4683ecdd3ef32d7b0eee5b2e2cccb674c703cee3bbc942ff08e4692a4f54
-size 267
+Package: testRcppInterfaceExporter
+Title: Exports c++ function via the cpp interface
+Version: 0.1.0
+Authors@R: 'Lionel Henry <lionel@rstudio.com> [aut, cre]'
+Description: The API package.
+Depends:
+    R (>= 3.1.0)
+Imports:
+    Rcpp
+LinkingTo:
+    Rcpp
+License: GPL-3

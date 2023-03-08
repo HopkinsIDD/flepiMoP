@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cd34bf96fe9d6622aafb047857357278be65d50f82efe4f61b21b2e0239c775b
-size 772
+// # DROPDOWNS
+//
+// In bs3, dropdown menus are .dropdown-menu>li.active>a
+// In bs4, dropdown menus are .dropdown-menu>.dropdown-item.active
+//
+// Also, bs3 dropdowns within tabs/pills are interfered with in bs4 by
+// selectors like `.bs-tabs li>a`, making menu items look like tabs.
+
+.dropdown-menu>li>a {
+  @extend .dropdown-item;
+}
+.dropdown-menu>li.active>a {
+  // This @extend works, but it litters `.dropdown-menu>li.active>a` all over
+  // the bootstrap.css output because it's such a common class. Instead, we
+  // copy these few properties from from _dropdown.scss.
+  // @extend .active;
+  color: $dropdown-link-active-color;
+  text-decoration: none;
+  @include gradient-bg($dropdown-link-active-bg);
+}
+.dropdown-menu>li.divider {
+  @extend .dropdown-divider;
+}

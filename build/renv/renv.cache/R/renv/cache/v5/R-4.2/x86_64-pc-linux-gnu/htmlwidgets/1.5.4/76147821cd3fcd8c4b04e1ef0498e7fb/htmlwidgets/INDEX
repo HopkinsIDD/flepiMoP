@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0a7274f2ce73f30b7f20cc8482f04881a70ed6a29efe754efdeb3b36b936fe50
-size 820
+createWidget            Create an HTML Widget
+getDependency           Get js and css dependencies for a htmlwidget
+htmlwidgets-package     HTML Widgets for R
+htmlwidgets-shiny       Shiny bindings for HTML widgets
+JS                      Mark character strings as literal JavaScript
+                        code
+onRender                Execute custom JavaScript code after rendering
+onStaticRenderComplete
+                        Execute JavaScript code after static render
+prependContent          Prepend/append extra HTML content to a widget
+saveWidget              Save a widget to an HTML file
+scaffoldWidget          Create implementation scaffolding for an HTML
+                        widget
+setWidgetIdSeed         Set the random seed for widget element ids
+sizingPolicy            Create a widget sizing policy

@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c68db026c135df98069c54f9f6f35fe7793b1cbc42756ae090ee69f2236d5efb
-size 566
+
+library(RcppTOML)
+
+toml <- parseToml("float.toml")
+
+expect_equal(names(toml), c("float"))
+expect_equal(names(toml$float), c("both", "exponent", "fractional", "underscores"))
+
+expect_equal(toml$float$both$key, 6.626e-34)
+
+expect_equal(toml$float$exponent$key1, 5e22)
+expect_equal(toml$float$exponent$key2, 1e+06)
+expect_equal(toml$float$exponent$key3, -0.02)
+
+expect_equal(toml$float$fractional$key1, 1)
+expect_equal(toml$float$fractional$key2, 3.1415)
+expect_equal(toml$float$fractional$key3, -0.01)
+
+expect_equal(toml$float$underscores$key1, 9224617.445991228313)

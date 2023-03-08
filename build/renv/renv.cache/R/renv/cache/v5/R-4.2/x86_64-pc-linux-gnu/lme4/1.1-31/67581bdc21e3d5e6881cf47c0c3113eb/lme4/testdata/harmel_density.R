@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:61c5d7fe8c871317ff408934c48dbc463854f75340e8d8d26e48200200272152
-size 295
+hsb <- read.csv('https://raw.githubusercontent.com/rnorouzian/e/master/hsb.csv')
+source("strip_env.R")
+library(lme4)
+library(lattice)
+
+m31 <- lmer(math ~ ses*meanses + (ses | sch.id), data = hsb)
+p <-  strip_profile(profile(m31))
+densityplot(p)
+saveRDS(p, file="harmel_profile.rds", version=2)
+

@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6d48946d2e33c352cc6f3633d89df6f2d1497768c3cd2ac058f18e56e91abd6e
-size 474
+Package: codetools
+Version: 0.2-18
+Priority: recommended
+Author: Luke Tierney <luke-tierney@uiowa.edu>
+Description: Code analysis tools for R.
+Title: Code Analysis Tools for R
+Depends: R (>= 2.1)
+Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
+URL: https://gitlab.com/luke-tierney/codetools
+License: GPL
+NeedsCompilation: no
+Packaged: 2020-11-02 14:45:50 UTC; luke
+Repository: CRAN
+Date/Publication: 2020-11-04 17:12:32 UTC
+Built: R 4.2.2; ; 2023-02-25 08:39:22 UTC; unix

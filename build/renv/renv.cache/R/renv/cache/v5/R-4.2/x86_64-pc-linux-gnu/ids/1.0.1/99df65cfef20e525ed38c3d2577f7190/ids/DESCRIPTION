@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:575587d582c602e30c6ba211e16aee00da890815c765e9eff25abc4d4d30a8b8
-size 723
+Package: ids
+Title: Generate Random Identifiers
+Version: 1.0.1
+Authors@R: person("Rich", "FitzJohn", role = c("aut", "cre"),
+    email = "rich.fitzjohn@gmail.com")
+Description: Generate random or human readable and pronounceable identifiers.
+License: MIT + file LICENSE
+URL: https://github.com/richfitz/ids
+BugReports: https://github.com/richfitz/ids/issues
+Imports: openssl, uuid
+Suggests: knitr, rcorpora, rmarkdown, testthat
+RoxygenNote: 6.0.1
+VignetteBuilder: knitr
+NeedsCompilation: no
+Packaged: 2017-05-31 08:43:42 UTC; rich
+Author: Rich FitzJohn [aut, cre]
+Maintainer: Rich FitzJohn <rich.fitzjohn@gmail.com>
+Repository: CRAN
+Date/Publication: 2017-05-31 08:49:59 UTC
+Built: R 4.2.2; ; 2023-02-25 17:58:20 UTC; unix

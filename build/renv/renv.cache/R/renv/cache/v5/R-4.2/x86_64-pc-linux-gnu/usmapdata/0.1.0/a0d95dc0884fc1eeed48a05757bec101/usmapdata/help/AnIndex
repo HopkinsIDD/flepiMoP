@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b712eb6dc3451d22edffce713a518d2b436fbccaceecffbec49b7c881a944897
-size 170
+usmapdata-package	usmapdata
+centroid_labels	centroid_labels
+col_classes_centroids	col_classes_centroids
+col_classes_map	col_classes_map
+usmapdata	usmapdata
+us_map	us_map

@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3f9cbfa75242cf8336001d0f4931a6ab84c2b2bc5eac2bb11c11a3db747fdca6
-size 395
+---
+- &CENTER { x: 1, "y": 2 }
+- &LEFT { x: 0, "y": 2 }
+- &BIG { r: 10 }
+- &SMALL { r: 1 }
+
+# All the following maps are equal:
+
+- # Explicit keys
+  x: 1
+  "y": 2
+  r: 10
+  label: center/big
+
+- # Merge one map
+  << : *CENTER
+  r: 10
+  label: center/big
+
+- # Merge multiple maps
+  << : [ *CENTER, *BIG ]
+  label: center/big
+
+- # Override
+  << : [ *BIG, *LEFT, *SMALL ]
+  x: 1
+  label: center/big

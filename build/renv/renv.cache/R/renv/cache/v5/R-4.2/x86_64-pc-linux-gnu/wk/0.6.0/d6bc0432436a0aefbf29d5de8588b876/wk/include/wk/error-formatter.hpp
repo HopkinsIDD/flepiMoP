@@ -1,3 +1,36 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:703173a4d481e4bf05f204fd926f975d47d5fcb886f7672fbdc5de705f761b72
-size 823
+
+#ifndef WK_ERROR_FORMATTER
+#define WK_ERROR_FORMATTER
+
+// https://stackoverflow.com/questions/12261915/how-to-throw-stdexceptions-with-variable-messages
+#include <stdexcept>
+#include <sstream>
+#include <stdexcept>
+
+class ErrorFormatter {
+public:
+    ErrorFormatter() {}
+    ~ErrorFormatter() {}
+
+    template <typename Type>
+    ErrorFormatter & operator << (const Type & value) {
+        stream_ << value;
+        return *this;
+    }
+
+    std::string str() const { return stream_.str(); }
+    operator std::string () const { return stream_.str(); }
+
+    enum ConvertToString {
+        to_str
+    };
+    std::string operator >> (ConvertToString) { return stream_.str(); }
+
+private:
+    std::stringstream stream_;
+
+    ErrorFormatter(const ErrorFormatter &);
+    ErrorFormatter & operator = (ErrorFormatter &);
+};
+
+# endif

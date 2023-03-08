@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ff78c16079511bdacabc3943ee4752d9772987ed80e3a8afdce3555700e244cf
-size 568
+markdown                Markdown rendering for R
+markdownExtensions      Markdown extensions
+markdownHTMLOptions     Markdown HTML rendering options
+markdownToHTML          Render markdown to HTML
+registeredRenderers     List of Registered Markdown Renderers
+rendererExists          Testing for existence of a markdown renderer
+rendererOutputType      Fetch the Renderer Output Type
+renderMarkdown          Render markdown to an HTML fragment
+rpubsUpload             Upload an HTML file to RPubs
+smartypants             smartypants: ASCII punctuation to HTML entities

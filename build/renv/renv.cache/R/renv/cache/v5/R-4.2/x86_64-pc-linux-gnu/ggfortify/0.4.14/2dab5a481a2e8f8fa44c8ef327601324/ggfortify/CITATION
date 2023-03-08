@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b31f053f224a16f0db60d6bf058b6757ea037009102847e88d7de593af4b57f3
-size 1011
+citHeader("To cite ggfortify in publications, please use:")
+
+citEntry(entry = "article",
+  author = "Yuan Tang, Masaaki Horikoshi, and Wenxuan Li",
+  title = "ggfortify: Unified Interface to Visualize Statistical Result of Popular R Packages",
+  journal = "The R Journal",
+  year = "2016",
+  number = 2,
+  volume = 8,
+  pages = "474--485",
+  url = "https://doi.org/10.32614/RJ-2016-060",
+  doi = "10.32614/RJ-2016-060",
+  textVersion = 'Yuan Tang, Masaaki Horikoshi, and Wenxuan Li. "ggfortify: Unified Interface to Visualize Statistical Result of Popular R Packages." The R Journal 8.2 (2016): 478-489.'
+)
+
+citEntry(entry = "manual",
+  author = "Masaaki Horikoshi and Yuan Tang",
+  title = "ggfortify: Data Visualization Tools for Statistical Analysis Results",
+  year = "2018",
+  url = "https://CRAN.R-project.org/package=ggfortify",
+  textVersion = "Masaaki Horikoshi and Yuan Tang (2016). ggfortify: Data Visualization Tools for Statistical Analysis Results. https://CRAN.R-project.org/package=ggfortify"
+)

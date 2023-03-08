@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c8234d6b6b238447820b6310169c8111003c3cc17db48ef600efc619f0221747
-size 329
+bibentry(
+    bibtype = "techreport",
+    title = "Introducing the selectr Package",
+    author = person("Simon", "Potter"),
+    institution = "The University of Auckland",
+    address = "Auckland, New Zealand",
+    year = 2012,
+    url = "http://stattech.wordpress.fos.auckland.ac.nz/2012-10-introducing-the-selectr-package/"
+)

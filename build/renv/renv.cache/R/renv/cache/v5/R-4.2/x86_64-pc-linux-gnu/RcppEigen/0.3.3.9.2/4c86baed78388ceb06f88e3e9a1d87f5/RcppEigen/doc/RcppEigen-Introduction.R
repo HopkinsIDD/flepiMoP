@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:679aa2ee6aef6d8307ec139689acd486bd77c5c65b6d7793a0d288f42378aca3
-size 471
+### R code from vignette source 'RcppEigen-Introduction.Rnw'
+
+###################################################
+### code chunk number 1: RcppEigen-Introduction.Rnw:8-13
+###################################################
+pkgVersion <- packageDescription("RcppEigen")$Version
+pkgDate <- packageDescription("RcppEigen")$Date
+prettyDate <- format(Sys.Date(), "%B %e, %Y")
+#require("RcppEigen")
+#eigenVersion <- paste(unlist(.Call("eigen_version", FALSE)), collapse=".")
+
+

@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0ea54d8c9f4b2599ff1d45b78a9250bccd399f8508e424d256840605fca57ad1
-size 164
+abind	abind
+acorn	acorn
+acorn.default	acorn
+adrop	adrop
+adrop.default	adrop
+afill	afill
+afill<-	afill
+afill<-.default	afill
+ahead	acorn
+asub	asub
+asub.default	asub

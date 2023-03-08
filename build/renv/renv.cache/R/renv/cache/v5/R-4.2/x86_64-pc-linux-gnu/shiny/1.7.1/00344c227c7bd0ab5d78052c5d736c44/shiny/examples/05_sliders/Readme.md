@@ -1,3 +1,3 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:89e106b09f09d655f1b31c8f872138aa434b62665de6e7c29749547213df120c
-size 193
+This example demonstrates Shiny's versatile `sliderInput` widget. 
+
+Slider inputs can be used to select single values, to select a continuous range of values, and even to animate over a range.

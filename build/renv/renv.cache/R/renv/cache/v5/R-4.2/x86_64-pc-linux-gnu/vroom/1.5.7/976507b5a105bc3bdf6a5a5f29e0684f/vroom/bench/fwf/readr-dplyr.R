@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9c84b649f4dcbcc982637c466500df21d15ed7e2f2611b9ef4d83a73c6a8814a
-size 241
+({ library(readr); library(dplyr) })
+x <- read_fwf(file, fields, col_types = types)
+print(x)
+a <- head(x)
+b <- tail(x)
+c <- sample_n(x, 100)
+d <- filter(x, PERSONS == "06")
+e <- group_by(x, STATE) %>% summarise(avg_TOTPUM5 = mean(TOTPUMA5))

@@ -1,3 +1,9 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ff2a785389550e38884964b5440722f9afa69c55ce66b95dac4a6e3c7a3cf1d0
-size 503
+r_oldrel                Version number of R-oldrel
+r_release               Version number of R-release
+r_release_macos         Latest R release with a macOS installer
+                        available for download
+r_release_tarball       Latest release for which a source tarball is
+                        available for download
+r_release_win           Latest R release with a Windows installer
+                        available for download
+r_versions              Query R's past and present versions

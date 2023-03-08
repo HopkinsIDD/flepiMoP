@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:af6fe778c6ac4f168886927f97e280ad89b01b87b92b0ba77c107ea1919b1659
-size 237
+# usmapdata 0.1.0
+
+* First release
+
+### Main features
+
+* Contains the `us_map` function and associated data extracted from the `usmap` package
+* Will allow future removal of data from `usmap` package so file size can be reduced greatly.

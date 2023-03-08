@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3aa833adee3720078cb8f494aa1523aac9b8d2d685ba59c35ebe502b01233b69
-size 714
+font_family_exists      Check if font family exists.
+fontconfig_reinit       reload Fontconfig configuration
+glyphs_match            Validate glyph entries
+m_str_extents           Compute string extents for a vector of string.
+match_family            Find best family match with systemfonts
+raster_str              Draw/preview a raster into a string
+raster_write            Draw/preview a raster to a png file
+set_dummy_conf          Set and unset a minimalistic Fontconfig
+                        configuration
+str_extents             Compute string extents.
+str_metrics             Get font metrics for a string.
+sys_fonts               List system fonts.
+version_freetype        Version numbers of C libraries

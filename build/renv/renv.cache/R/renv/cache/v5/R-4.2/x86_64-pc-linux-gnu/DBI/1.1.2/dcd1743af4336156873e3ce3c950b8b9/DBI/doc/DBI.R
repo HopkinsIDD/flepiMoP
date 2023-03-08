@@ -1,3 +1,57 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cd360cf99ca5e6f2b5a5da33fcf426281a021f3eec3a118e9f9593fd2d95c621
-size 1927
+## ----setup, include=FALSE,warning=FALSE, message=FALSE------------------------
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(error = Sys.getenv("IN_PKGDOWN") != "true" || (getRversion() < "3.5"))
+
+## -----------------------------------------------------------------------------
+library(DBI)
+
+con <- dbConnect(
+  RMariaDB::MariaDB(),
+  host = "relational.fit.cvut.cz",
+  port = 3306,
+  username = "guest",
+  password = "relational",
+  dbname = "sakila"
+)
+
+dbListTables(con)
+dbDisconnect(con)
+
+## ----eval = FALSE-------------------------------------------------------------
+#  con <- dbConnect(
+#    RMariaDB::MariaDB(),
+#    host = "relational.fit.cvut.cz",
+#    port = 3306,
+#    username = "guest",
+#    password = keyring::key_get("relational.fit.cvut.cz", "guest"),
+#    dbname = "sakila"
+#  )
+
+## -----------------------------------------------------------------------------
+con <- dbConnect(RMariaDB::MariaDB(), username = "guest", password = "relational", host = "relational.fit.cvut.cz", port = 3306, dbname = "sakila")
+dbListFields(con, "film")
+
+## -----------------------------------------------------------------------------
+df <- dbReadTable(con, "film")
+head(df, 3)
+
+## -----------------------------------------------------------------------------
+df <- dbGetQuery(con, "SELECT film_id, title, description FROM film WHERE release_year = 2006")
+head(df, 3)
+
+## -----------------------------------------------------------------------------
+df <- dbGetQuery(con, "SELECT film_id, title, description FROM film WHERE release_year = 2006 AND rating = 'G'")
+head(df,3)
+
+## ----message=FALSE------------------------------------------------------------
+library(dplyr)
+
+lazy_df <-
+  tbl(con, "film") %>%
+  filter(release_year == 2006 & rating == "G") %>%
+  select(film_id, title, description)
+head(lazy_df, 3)
+
+## -----------------------------------------------------------------------------
+dbDisconnect(con)
+

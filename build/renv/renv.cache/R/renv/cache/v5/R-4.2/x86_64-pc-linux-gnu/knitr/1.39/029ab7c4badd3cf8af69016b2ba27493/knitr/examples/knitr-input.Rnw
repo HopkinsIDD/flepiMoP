@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7e281510b081d5e8034ec862dc6d18654817ab5025d9bf4b891e088856abc812
-size 347
+\documentclass{article}
+
+\begin{document}
+
+<<test-main>>=
+options(width = 60)
+summary(iris)
+@
+
+Let's see how to work with child documents in knitr. Below we input
+the file \textsf{knitr-input-child.Rnw}:
+
+<<child-demo, child='knitr-input-child.Rnw'>>=
+@
+% Or alternatively, use knit_child('knitr-input-child.Rnw') in \Sexpr
+
+Done!
+
+\end{document}

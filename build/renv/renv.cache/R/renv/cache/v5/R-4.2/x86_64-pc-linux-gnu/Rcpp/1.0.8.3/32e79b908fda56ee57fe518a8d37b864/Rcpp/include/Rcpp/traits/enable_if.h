@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1bc803bcaf386c8610f637128241626b2812b810fe16d3a359237fa39b3f6de1
-size 247
+#ifndef RCPP_TRAITS_ENABLE_IF_H
+#define RCPP_TRAITS_ENABLE_IF_H
+
+namespace Rcpp {
+namespace traits {
+
+template <bool B, typename T = void>
+struct enable_if {};
+
+template <typename T>
+struct enable_if<true, T> {
+    typedef T type;
+};
+
+}
+}
+
+#endif

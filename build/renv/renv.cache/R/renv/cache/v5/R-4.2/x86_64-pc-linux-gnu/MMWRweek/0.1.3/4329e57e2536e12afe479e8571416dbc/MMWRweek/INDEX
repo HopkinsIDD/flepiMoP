@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:543538e201b7e3f23fd2b6ad7b6800ff42e54ed7743d3054c7ace0c1ec340350
-size 316
+get_start_date          Finds the start date for the year associated
+                        with date.
+MMWRweek                MMWR day, week, and year
+MMWRweek2Date           Convert MMWRweek to Date
+MMWRweekday             Day of week according to MMWR
+start_date              Find start date for a calendar year

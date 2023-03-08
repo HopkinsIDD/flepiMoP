@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bddb85306fbeaa6ceeba6795c873598de8d0fbcb1ad4638246a1df4151a36ebb
-size 375
+## ---- eval = FALSE------------------------------------------------------------
+#  df <- tibble::data_frame(x = 1)
+#  #> Warning message:
+#  #> `data_frame()` is deprecated as of tibble 1.1.0.
+#  #> Please use `tibble()` instead.
+#  #> This warning is displayed once every 8 hours.
+#  #> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.
+

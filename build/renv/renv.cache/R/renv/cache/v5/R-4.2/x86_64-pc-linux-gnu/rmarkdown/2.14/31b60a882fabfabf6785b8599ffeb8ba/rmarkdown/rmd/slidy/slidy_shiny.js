@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c2111772e6a52303794491919fcb1091828e78e4224b2a3f924cbcdcfd7714e3
-size 337
+(function() {
+  if (!window.w3c_slidy) return;
+  if (!window.Shiny) return;
+  if (!window.$) return;
+  // whenever a slide changes, tell shiny to recalculate what is displayed
+  window.w3c_slidy.add_observer(function (slide_num) {
+    // slide_num starts at position 1
+    $(w3c_slidy.slides[slide_num - 1]).trigger("shown");
+  });
+})()

@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:270c2aade4efcdf4e45c378f569b5ee84e1ecb3650c61813b6717c1059210ff2
-size 92
+#ifndef TZDB_TZ_H
+#define TZDB_TZ_H
+
+#include <tzdb/defines.h>
+#include <date/tz.h>
+
+#endif

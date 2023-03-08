@@ -1,3 +1,3 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ff777b7d0276a46fcf2ef00c5c968e27f32cd8499c4aefbe72fa466f9add0aaa
-size 285
+This small Shiny application demonstrates Shiny's automatic UI updates. 
+
+Move the *Number of bins* slider and notice how the `renderPlot` expression is automatically re-evaluated when its dependant, `input$bins`, changes, causing a histogram with a new number of bins to be rendered.

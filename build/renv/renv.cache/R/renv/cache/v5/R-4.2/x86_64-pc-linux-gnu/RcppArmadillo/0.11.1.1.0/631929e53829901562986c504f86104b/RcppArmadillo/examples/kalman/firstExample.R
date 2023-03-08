@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1132c7055876c35c29ea77026997e3b7046165512fbeed2d66a7d4b183079d56
-size 303
+
+library(RcppArmadillo)
+
+cppFunction(code='
+Rcpp::List g(arma::colvec v) {
+     arma::mat op = v * v.t();
+     double ip = arma::as_scalar(v.t() * v);
+     return Rcpp::List::create(Rcpp::Named("outer")=op,
+                               Rcpp::Named("inner")=ip);
+}
+', depends="RcppArmadillo")
+
+g(7:11)

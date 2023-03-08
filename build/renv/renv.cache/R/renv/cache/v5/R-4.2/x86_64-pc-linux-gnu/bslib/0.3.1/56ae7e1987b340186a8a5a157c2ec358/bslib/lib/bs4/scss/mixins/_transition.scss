@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:75a4bc0dfeadb32e37dd8273631a2c46dbc5f446e321f5ea23bf8c5e82ec2e23
-size 681
+// stylelint-disable property-disallowed-list
+@mixin transition($transition...) {
+  @if length($transition) == 0 {
+    $transition: $transition-base;
+  }
+
+  @if length($transition) > 1 {
+    @each $value in $transition {
+      @if $value == null or $value == none {
+        @warn "The keyword 'none' or 'null' must be used as a single argument.";
+      }
+    }
+  }
+
+  @if $enable-transitions {
+    @if nth($transition, 1) != null {
+      transition: $transition;
+    }
+
+    @if $enable-prefers-reduced-motion-media-query and nth($transition, 1) != null and nth($transition, 1) != none {
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+    }
+  }
+}

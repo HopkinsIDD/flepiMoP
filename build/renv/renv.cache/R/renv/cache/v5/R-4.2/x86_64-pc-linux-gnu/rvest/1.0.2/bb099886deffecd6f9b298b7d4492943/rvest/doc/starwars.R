@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b9f1eeee29a71f43b7fa27f0715978be435ed5c2b4ebb260c2916bbd00638291
-size 691
+## ---- echo = FALSE, results = "asis"------------------------------------------
+library(rvest)
+crawl_html <- function(x) {
+  x %>% 
+    gsub("\r", "", .) %>% 
+    gsub("\n\n", "</p><p>", .) %>% 
+    gsub("\n", " ", .) %>% 
+    paste0("<p>", ., "</p>")
+}
+
+film_desc <- function(x) {
+  glue::glue_data(x, "
+  <section>
+    <h2 data-id='{episode_id}'>{title}</h2>
+    <p>Released: {release_date}</p>
+    <p>Director: <span class='director'>{director}</span></p>
+    <div class='crawl'>{crawl_html(opening_crawl)}</div>
+  </section>")
+}
+
+films <- repurrrsive::sw_films
+films <- films[order(sapply(films, "[[", "episode_id"))]
+
+descs <- vapply(films, film_desc, character(1))
+writeLines(descs)
+

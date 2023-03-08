@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:16b6573f891ed1a0b387f73c809b82ca207b6fe9e7c825017f767370f93666af
-size 1723
+chain                   Create a chaining iterator
+enumerate               Create an enumeration object
+hasNext                 Does This Iterator Have A Next Element
+iarray                  Create an iterator over an array
+ibreak                  Create an iterator that can be told to stop
+ichunk                  Create a chunking iterator
+ifilter                 Create a filtering iterator
+ihasNext                Create an iterator that supports the hasNext
+                        method
+ilimit                  Create a limited iterator
+ireadBin                Create an iterator to read binary data from a
+                        connection
+ireaddf                 Create an iterator to read data frames from
+                        files
+irecord                 Record and replay iterators
+irep                    Create a repeating iterator
+irepeat                 Create a repeating iterator
+iRNGStream              Iterators that support parallel RNG
+is.iterator             Utilities for writing iterators
+isplitCols              Create an iterator that splits a matrix into
+                        block columns
+isplitIndices           Create an iterator of indices
+isplitRows              Create an iterator that splits a matrix into
+                        block rows
+isplitVector            Create an iterator that splits a vector
+itertools-package       The itertools Package
+izip                    Create an iterator over multiple iterables
+product                 Create a cartesian product iterator
+recycle                 Create a recycling iterator
+timeout                 Create a timeout iterator
+writedf.combiner        Create an object that contains a combiner
+                        function

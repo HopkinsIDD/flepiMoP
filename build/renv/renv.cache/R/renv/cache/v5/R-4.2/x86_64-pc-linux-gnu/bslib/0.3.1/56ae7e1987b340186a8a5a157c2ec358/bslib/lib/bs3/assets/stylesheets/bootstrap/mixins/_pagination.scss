@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5c59172ffca0a060b44bfb4011a6fa8908fa1acf29843af19d882de1ccea7e92
-size 507
+// Pagination
+
+@mixin pagination-size($padding-vertical, $padding-horizontal, $font-size, $line-height, $border-radius) {
+  > li {
+    > a,
+    > span {
+      padding: $padding-vertical $padding-horizontal;
+      font-size: $font-size;
+      line-height: $line-height;
+    }
+    &:first-child {
+      > a,
+      > span {
+        @include border-left-radius($border-radius);
+      }
+    }
+    &:last-child {
+      > a,
+      > span {
+        @include border-right-radius($border-radius);
+      }
+    }
+  }
+}

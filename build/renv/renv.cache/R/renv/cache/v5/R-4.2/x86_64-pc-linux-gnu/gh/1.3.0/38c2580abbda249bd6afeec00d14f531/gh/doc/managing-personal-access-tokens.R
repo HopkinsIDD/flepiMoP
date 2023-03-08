@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1a891ab7379368c242e81842e15019c545b1ae293b9b6a79f2bae70d190930e9
-size 523
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ----setup--------------------------------------------------------------------
+library(gh)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  gh(endpoint, ..., .token = NULL, ..., .api_url = NULL, ...)
+
+## -----------------------------------------------------------------------------
+gitcreds::gitcreds_cache_envvar("https://github.acme.com")
+

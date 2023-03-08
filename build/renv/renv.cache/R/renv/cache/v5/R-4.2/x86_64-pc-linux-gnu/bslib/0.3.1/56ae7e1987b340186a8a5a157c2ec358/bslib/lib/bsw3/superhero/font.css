@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4ff2b9f29ee0cb073a1fbda0b81a7c5b35f1cb133c9df78d30d05475f1d77d1f
-size 422
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 300;
+  src: url(fonts/S6u9w4BMUTPHh7USSwiPHw.woff) format('woff');
+}
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  src: url(fonts/S6uyw4BMUTPHjx4wWA.woff) format('woff');
+}
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 700;
+  src: url(fonts/S6u9w4BMUTPHh6UVSwiPHw.woff) format('woff');
+}

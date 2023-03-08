@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2ced7d9a4b35a49072443436276a9a8d6dc2ca2a97a2adce8d8485373bd2f845
-size 119
+#ifndef TZDB_SOLAR_HIJRI_H
+#define TZDB_SOLAR_HIJRI_H
+
+#include <tzdb/defines.h>
+#include <date/solar_hijri.h>
+
+#endif

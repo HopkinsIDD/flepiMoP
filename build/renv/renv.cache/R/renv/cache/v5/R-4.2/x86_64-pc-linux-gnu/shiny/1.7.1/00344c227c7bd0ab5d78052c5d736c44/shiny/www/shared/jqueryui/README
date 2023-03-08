@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:563353a30a32bbaf9f5bee577137fbe65ff8e594a7cec5dc8183cba3f5669a84
-size 245
+This a full jQuery UI build, downloaded from:
+https://jqueryui.com/resources/download/jquery-ui-1.12.1.zip
+
+The copy of jQuery that is bundled with the download, under external/, is not
+included because Shiny already has its own copy of jQuery.

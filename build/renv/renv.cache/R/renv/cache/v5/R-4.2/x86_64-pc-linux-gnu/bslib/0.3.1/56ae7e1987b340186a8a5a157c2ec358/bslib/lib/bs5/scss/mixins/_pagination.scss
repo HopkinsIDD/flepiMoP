@@ -1,3 +1,31 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cbae9c208a8bca06deac69bb5e29b96df0fd6417a6ba2a2a399ab4927a89e288
-size 741
+// Pagination
+
+// scss-docs-start pagination-mixin
+@mixin pagination-size($padding-y, $padding-x, $font-size, $border-radius) {
+  .page-link {
+    padding: $padding-y $padding-x;
+    @include font-size($font-size);
+  }
+
+  .page-item {
+    @if $pagination-margin-start == (-$pagination-border-width) {
+      &:first-child {
+        .page-link {
+          @include border-start-radius($border-radius);
+        }
+      }
+
+      &:last-child {
+        .page-link {
+          @include border-end-radius($border-radius);
+        }
+      }
+    } @else {
+      //Add border-radius to all pageLinks in case they have left margin
+      .page-link {
+        @include border-radius($border-radius);
+      }
+    }
+  }
+}
+// scss-docs-end pagination-mixin

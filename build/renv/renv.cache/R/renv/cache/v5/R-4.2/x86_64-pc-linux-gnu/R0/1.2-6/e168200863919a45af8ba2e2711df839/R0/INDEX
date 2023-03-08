@@ -1,3 +1,34 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7e7f17428208ad81fff67e1fc3d75f39b0cc5f46d9df4f9e1d634b370e5dfd18
-size 1937
+check.incid             Check incid in the input
+est.GT                  Find the best-fitting GT distribution for a
+                        series of serial interval
+est.R0.AR               Estimate R0 from attack rate of an epidemic
+est.R0.EG               Estimate R from exponential growth rate
+est.R0.ML               Estimate the reproduction number by maximum
+                        likelihood
+est.R0.SB               Estimate the time dependent reproduction number
+                        using a Bayesian approach
+est.R0.TD               Estimate the time dependent reproduction number
+estimate.R              Estimate R0 for one incidence dataset using
+                        several methods
+generation.time         Generation Time distribution
+Germany.1918            Germany.1918 exemple dataset
+GT.chld.hsld            2009 A/H1N1 observed Generation Time
+                        distribution
+H1N1.serial.interval    H1N1 serial interval sample
+impute.incid            Optimiziation routine for incidence imputation
+plot.R0.S               Plot objects from sensitivity.analysis
+plotfit                 Generic S3 method to plot either "R0.R" and
+                        "R0.sR" objects
+R0-package              Estimation of R0 and Real-Time Reproduction
+                        Number from Epidemics
+sa.GT                   Sensitivity analysis of reproduction ratio with
+                        varying GT distribution
+sa.time                 Sensitivity analysis of basic reproduction
+                        ratio to begin/end dates
+sensitivity.analysis    Sensitivity analysis of basic reproduction
+                        ratio to begin/end dates
+sim.epid                Epidemic outbreak simulation
+sim.epid.indiv          Influenza-like illness simulation
+                        (individual-based model)
+smooth.Rt               Smooth real-time reproduction number over
+                        larger time period

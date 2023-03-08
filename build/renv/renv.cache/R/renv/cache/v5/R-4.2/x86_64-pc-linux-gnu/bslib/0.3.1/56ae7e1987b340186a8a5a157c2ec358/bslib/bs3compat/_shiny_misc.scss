@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e9afd9db772d68e9695d7ef542db3a040dceb39e3e6dbfc773738eaa96751570
-size 351
+// For code inside of showcase mode
+// TODO: this should probably ported to shiny itself
+// if and when shiny-showcase.css is ported to sass
+pre.shiny-code {
+  padding: 0.5 * $spacer;
+}
+
+// BS5 changed float-left -> float-start
+@if $bootstrap-version != 4 {
+  .float-left {
+    @extend .float-start;
+  }
+  .float-right {
+    @extend .float-end;
+  }
+}

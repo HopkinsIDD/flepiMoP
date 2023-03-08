@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:37a6cf0f015390cbf9ccbb0f2d0d89f6df728adaf8cbde140346dac37e3a8b35
-size 338
+markdown-package	markdown
+markdown	markdown
+markdownExtensions	markdownExtensions
+markdownHTMLOptions	markdownHTMLOptions
+markdownToHTML	markdownToHTML
+registeredRenderers	registeredRenderers
+rendererExists	rendererExists
+rendererOutputType	rendererOutputType
+renderMarkdown	renderMarkdown
+rpubsUpload	rpubsUpload
+smartypants	smartypants
