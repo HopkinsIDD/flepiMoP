@@ -23,7 +23,7 @@ which Rscript
 mv slurm-$SLURM_ARRAY_JOB_ID_${SLURM_ARRAY_TASK_ID}.out $FS_RESULTS_PATH/slurm-$SLURM_ARRAY_JOB_ID_${SLURM_ARRAY_TASK_ID}.out
 
 curl \
-  -H "Title: $RUN_INDEX Done ✅" \
+  -H "Title: $FLEPI_RUN_INDEX Done ✅" \
   -H "Priority: urgent" \
   -H "Tags: warning,snail" \
   -d "TODO say how many failure and stuff" \

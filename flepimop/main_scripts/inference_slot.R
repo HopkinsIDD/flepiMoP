@@ -15,14 +15,14 @@ options(readr.num_columns = 0)
 
 option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
-    optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("RUN_INDEX",flepicommon::run_id())),
-    optparse::make_option(c("-s", "--scenarios"), action="store", default=Sys.getenv("MODEL_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
-    optparse::make_option(c("-d", "--deathrates"), action="store", default=Sys.getenv("MODEL_DEATHRATES", 'all'), type='character', help="name of the death scenarios to run, or 'all' to run all of them"),
-    optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
-    optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
-    optparse::make_option(c("-i", "--this_slot"), action="store", default=Sys.getenv("SLOT_INDEX", 1), type='integer', help = "id of this slot"),
-    optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("BLOCK_INDEX",1), type='integer', help = "id of this block"),
-    optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("STOCHASTIC_RUN",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
+    optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
+    optparse::make_option(c("-s", "--scenarios"), action="store", default=Sys.getenv("FLEPI_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
+    optparse::make_option(c("-d", "--deathrates"), action="store", default=Sys.getenv("FLEPI_DEATHRATES", 'all'), type='character', help="name of the death scenarios to run, or 'all' to run all of them"),
+    optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("FLEPI_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
+    optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
+    optparse::make_option(c("-i", "--this_slot"), action="store", default=Sys.getenv("FLEPI_SLOT_INDEX", 1), type='integer', help = "id of this slot"),
+    optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("FLEPI_BLOCK_INDEX",1), type='integer', help = "id of this block"),
+    optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("FLEPI_STOCHASTIC_RUN",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
     optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "First date to include groundtruth for"),
     optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "Last date to include groundtruth for"),
     optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP/")),
@@ -30,7 +30,7 @@ option_list = list(
     optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
     optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
     optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("RUN_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
-    optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
+    optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
     optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid"),
 )
 

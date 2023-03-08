@@ -63,7 +63,7 @@ def user_confirmation(question="Continue?", default=False):
     "--id",
     "--id",
     "run_id",
-    envvar="RUN_INDEX",
+    envvar="FLEPI_RUN_INDEX",
     type=str,
     default=file_paths.run_id(),
     help="Unique identifier for this run",
@@ -176,7 +176,7 @@ def user_confirmation(question="Continue?", default=False):
     "--stochastic/--non-stochastic",
     "--stochastic/--non-stochastic",
     "stochastic",
-    envvar="STOCHASTIC_RUN",
+    envvar="FLEPI_STOCHASTIC_RUN",
     type=bool,
     default=False,
     help="Flag determining whether to run stochastic simulations or not",
@@ -194,7 +194,7 @@ def user_confirmation(question="Continue?", default=False):
     "--stacked-max",
     "--stacked-max",
     "max_stacked_interventions",
-    envvar="MAX_STACK_SIZE",
+    envvar="FLEPI_MAX_STACK_SIZE",
     type=click.IntRange(min=350),
     default=5000,
     help="Maximum number of interventions to allow in a stacked intervention",
@@ -212,7 +212,7 @@ def user_confirmation(question="Continue?", default=False):
     "--reset-chimerics-on-global-accept",
     "--reset-chimerics-on-global-accept",
     "reset_chimerics",
-    envvar="RESET_CHIMERICS",
+    envvar="FLEPI_RESET_CHIMERICS",
     type=bool,
     default=True,
     help="Flag determining whether to reset chimeric values on any global acceptances",
@@ -573,22 +573,22 @@ class BatchJobHandler(object):
             {"name": "DATA_PATH", "value": str(self.data_path)},
             {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
             {"name": "CONFIG_PATH", "value": config_file},
-            {"name": "NUM_SLOTS", "value": str(self.num_jobs)},
+            {"name": "FLEPI_NUM_SLOTS", "value": str(self.num_jobs)},
             {
-                "name": "MAX_STACK_SIZE",
+                "name": "FLEPI_MAX_STACK_SIZE",
                 "value": str(self.max_stacked_interventions),
             },
             {"name": "VALIDATION_DATE", "value": str(self.last_validation_date)},
             {"name": "SIMS_PER_JOB", "value": str(self.sims_per_job)},
-            {"name": "ITERATIONS_PER_SLOT", "value": str(self.sims_per_job)},
+            {"name": "FLEPI_ITERATIONS_PER_SLOT", "value": str(self.sims_per_job)},
             {
                 "name": "RESUME_DISCARD_SEEDING",
                 "value": str(
                     self.resume_discard_seeding
                 ).lower(),  # lower is import here, this is string-compared to "true" in the run script
             },
-            {"name": "STOCHASTIC_RUN", "value": str(self.stochastic)},
-            {"name": "RESET_CHIMERICS", "value": str(self.reset_chimerics)},
+            {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
+            {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
@@ -597,16 +597,16 @@ class BatchJobHandler(object):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()
-            cur_env_vars.append({"name": "MODEL_SCENARIOS", "value": s})
-            cur_env_vars.append({"name": "MODEL_DEATHRATES", "value": d})
-            cur_env_vars.append({"name": "MODEL_PREFIX", "value": f"{config['name']}/{s}/{d}"})
-            cur_env_vars.append({"name": "BLOCK_INDEX", "value": "1"})
-            cur_env_vars.append({"name": "RUN_INDEX", "value": f"{self.run_id}"})
+            cur_env_vars.append({"name": "FLEPI_SCENARIOS", "value": s})
+            cur_env_vars.append({"name": "FLEPI_DEATHRATES", "value": d})
+            cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+            cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
+            cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
                 cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": self.restart_from_location})
                 cur_env_vars.append(
                     {
-                        "name": "OLD_RUN_INDEX",
+                        "name": "OLD_FLEPI_RUN_INDEX",
                         "value": f"{self.restart_from_run_id}",
                     }
                 )
@@ -706,12 +706,12 @@ class BatchJobHandler(object):
                 block_idx = 1
                 while block_idx < self.num_blocks:
                     cur_env_vars = base_env_vars.copy()
-                    cur_env_vars.append({"name": "MODEL_SCENARIOS", "value": s})
-                    cur_env_vars.append({"name": "MODEL_DEATHRATES", "value": d})
-                    cur_env_vars.append({"name": "MODEL_PREFIX", "value": f"{config['name']}/{s}/{d}"})
-                    cur_env_vars.append({"name": "BLOCK_INDEX", "value": f"{block_idx+1}"})
-                    cur_env_vars.append({"name": "RUN_INDEX", "value": f"{self.run_id}"})
-                    cur_env_vars.append({"name": "OLD_RUN_INDEX", "value": f"{self.run_id}"})
+                    cur_env_vars.append({"name": "FLEPI_SCENARIOS", "value": s})
+                    cur_env_vars.append({"name": "FLEPI_DEATHRATES", "value": d})
+                    cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+                    cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"})
+                    cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
+                    cur_env_vars.append({"name": "OLD_FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
                     cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{s3_results_path}/"})
                     cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}_block{block_idx}"})
                     cur_job = batch_client.submit_job(
