@@ -9,6 +9,7 @@
 ##' @param incl_unassigned Includes data unassigned to counties (default is FALSE)
 ##' @return data frame
 ##' @importFrom magrittr %>%
+##' @import cdlTools
 ##'
 download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigned = FALSE){
 
@@ -63,6 +64,7 @@ download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigne
 ##'  $ Confirmed: num [1:198] 3 4 1 3 5 1 3 5 2 3 ...
 ##'  $ Deaths   : num [1:198] 0 0 0 0 0 0 0 0 0 0 ...
 ##'
+##' @importFrom plyr revalue
 ##' @return the case data frame
 ##'
 get_islandareas_data <- function() {
@@ -101,12 +103,12 @@ get_islandareas_data <- function() {
 # For get_USAFacts_data(), this is always the default ("mid"), but the other code is here for posterity.
 #' Title
 #'
-#' @param .x 
-#' @param .y 
-#' @param incid_col_name 
-#' @param date_col_name 
-#' @param cum_col_name 
-#' @param type 
+#' @param .x
+#' @param .y
+#' @param incid_col_name
+#' @param date_col_name
+#' @param cum_col_name
+#' @param type
 #'
 #' @return
 #' @export
@@ -227,13 +229,13 @@ fix_negative_counts <- function(
 # specified by argument "type"
 #' Title
 #'
-#' @param df 
-#' @param cum_col_name 
-#' @param incid_col_name 
-#' @param date_col_name 
-#' @param min_date 
-#' @param max_date 
-#' @param type 
+#' @param df
+#' @param cum_col_name
+#' @param incid_col_name
+#' @param date_col_name
+#' @param min_date
+#' @param max_date
+#' @param type
 #'
 #' @return
 #' @export
@@ -271,8 +273,8 @@ fix_negative_counts_global <- function(
 #
 #' Title
 #'
-#' @param df 
-#' @param state_fips 
+#' @param df
+#' @param state_fips
 #'
 #' @return
 #' @export
@@ -491,7 +493,7 @@ get_CSSE_US_data <- function(case_data_filename = "data/case_data/jhucsse_us_cas
 ##' Downloads the CSSE global case and death count data
 ##'
 ##' @param filename where case data will be stored
-##' @param value_col_name 
+##' @param value_col_name
 ##' @param url URL to CSV on CSSE website
 ##'
 ##' @return data frame
@@ -563,9 +565,9 @@ download_CSSE_global_data <- function(filename, url, value_col_name){
 ##'  $ Province_State  : chr NA NA NA NA ...
 ##'  $ source     : chr "AFG" "AFG" "AFG" "AFG" ...
 ##'
-##' @param case_data_filename 
-##' @param death_data_filename 
-##' @param append_wiki 
+##' @param case_data_filename
+##' @param death_data_filename
+##' @param append_wiki
 ##'
 ##' @return the case and deaths data frame
 ##'
@@ -624,7 +626,7 @@ get_CSSE_global_data <- function(case_data_filename = "data/case_data/jhucsse_ca
 ##' Downloads the Reich Lab's US case and death count data
 ##'
 ##' @param filename where case data will be stored
-##' @param value_col_name 
+##' @param value_col_name
 ##' @param url URL to CSV on Reich Lab website
 ##'
 ##' @return data frame
@@ -676,10 +678,10 @@ download_reichlab_data <- function(filename, url, value_col_name){
 ##'  $ FIPS       : chr "01000" "01000" "01000" ...
 ##'  $ source     : chr "NY" "NY" "NY" "NY" ...
 ##'
-##' @param cum_case_filename 
-##' @param cum_death_filename 
-##' @param inc_case_filename 
-##' @param inc_death_filename 
+##' @param cum_case_filename
+##' @param cum_death_filename
+##' @param inc_case_filename
+##' @param inc_death_filename
 ##'
 ##' @return the case and deaths data frame
 ##'
@@ -733,10 +735,10 @@ get_reichlab_st_data <- function(cum_case_filename = "data/case_data/rlab_cum_ca
 ##'  $ FIPS       : chr "01001" "01001" "01001" ...
 ##'  $ source     : chr "NY" "NY" "NY" "NY" ...
 ##'
-##' @param cum_case_filename 
-##' @param cum_death_filename 
-##' @param inc_case_filename 
-##' @param inc_death_filename 
+##' @param cum_case_filename
+##' @param cum_death_filename
+##' @param inc_case_filename
+##' @param inc_death_filename
 ##'
 ##' @return the case and deaths data frame
 ##'
@@ -782,6 +784,7 @@ get_reichlab_cty_data <- function(cum_case_filename = "data/case_data/rlab_cum_c
 #' @param run_parallel
 #' @param n_cores
 #'
+#' @import covidcast dplyr lubridate doParallel foreach vroom purrr
 #' @return
 #' @export
 #'
@@ -930,11 +933,11 @@ get_covidcast_data <- function(
 ##'
 ##' @param source name of data source: reichlab, usafacts, csse
 ##' @param scale geographic scale: US county, US state, country (csse only), complete (csse only)
-##' @param source_file 
-##' @param incl_unass 
-##' @param fix_negatives 
-##' @param adjust_for_variant 
-##' @param variant_props_file 
+##' @param source_file
+##' @param incl_unass
+##' @param fix_negatives
+##' @param adjust_for_variant
+##' @param variant_props_file
 ##' @param variables vector that may include one or more of the following variable names: Confirmed, Deaths, incidI, incidDeath, (hhsCMU source only: incidH_confirmed, incidH_all, hospCurr_confirmed, hospCurr_all)
 ##'
 ##' @return data frame
@@ -1072,13 +1075,13 @@ get_groundtruth_from_source <- function(
 
 ##' Wrapper function to apply variant adjustment
 ##'
-##' aportions variant to reported outcomes 
+##' aportions variant to reported outcomes
 #'
-#' @param rc 
-#' @param variant_props_file 
+#' @param rc
+#' @param variant_props_file
 #'
 #' @return
-#' 
+#'
 #' @importFrom magrittr %>%
 #' @export
 #'
@@ -1191,8 +1194,8 @@ get_CSSE_US_matchGlobal_data <- function(){
 ##' $ adult_icu_bed_utilization                     <dbl> 0.8258808, 0.8259...
 ##' $ Update                                        <date> 2020-10-01, 2020...
 ##'
-##' @param startdate 
-##' @param enddate 
+##' @param startdate
+##' @param enddate
 ##'
 ##' @return the full hospitalization data frame
 ##'
@@ -1244,8 +1247,8 @@ get_hhsCMU_allHosp_st_data <- function(startdate = "20200101",
 ##' Update is shifted one day back because data was originally reported as previous day hospital admissions
 ##' Returned data preview: Update, FIPS, source, incidH_confirmed, incidH_all
 ##'
-##' @param startdate 
-##' @param enddate 
+##' @param startdate
+##' @param enddate
 ##'
 ##' @export
 get_hhsCMU_incidH_st_data <- function(startdate = "20200101",
@@ -1272,8 +1275,8 @@ get_hhsCMU_incidH_st_data <- function(startdate = "20200101",
 ##'
 ##' Returned data preview: Update, FIPS, source, hospCurr_confirmed, hospCurr_all
 ##'
-##' @param startdate 
-##' @param enddate 
+##' @param startdate
+##' @param enddate
 ##'
 ##' @export
 get_hhsCMU_hospCurr_st_data <- function(startdate = "20200101",
