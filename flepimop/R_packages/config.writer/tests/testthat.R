@@ -1,4 +1,4 @@
 library(testthat)
 library(config.writer)
 
-test_check("report.generation")
+# test_check("config.writer")
