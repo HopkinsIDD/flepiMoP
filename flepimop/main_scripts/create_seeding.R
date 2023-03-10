@@ -264,7 +264,7 @@ incident_cases <- incident_cases[, required_column_names]
 all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
-geodata <- report.generation:::load_geodata_file(
+geodata <- flepicommon::load_geodata_file(
     file.path(config$spatial_setup$base_path, config$spatial_setup$geodata),
     5,
     "0",

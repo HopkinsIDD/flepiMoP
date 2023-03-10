@@ -8,7 +8,8 @@ Imports:
     tigris,
     magrittr,
     yaml,
-    MMWRweek
+    MMWRweek,
+    flepicommon
 Authors@R: 
     person(given = "Juan",
            family = "Dent Hulse",

@@ -705,7 +705,7 @@ initialize_mcmc_first_block <- function(
   }
 
   extension <- gsub(".*[.]", "", global_files[["hosp_filename"]])
-  hosp_data <- report.generation:::read_file_of_type(extension)(global_files[["hosp_filename"]])
+  hosp_data <- flepicommon::read_file_of_type(extension)(global_files[["hosp_filename"]])
 
   ## Refactor me later:
   global_likelihood_data <- likelihood_calculation_function(hosp_data)
