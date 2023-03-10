@@ -1,3 +1,102 @@
+
+##' load_geodata_file
+##'
+##' Convenience function to load the geodata file
+##'
+##' @param filename filename of geodata file
+##' @param geoid_len length of geoid character string
+##' @param geoid_pad what to pad the geoid character string with
+##' @param state_name whether to add column state with the US state name; defaults to TRUE for forecast or scenario hub runs.
+##'
+##' @details
+##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and geoid with the geo IDs of the area. .
+##'
+##' @return a data frame with columns for state USPS, county geoid and population
+##' @examples
+##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
+##' geodata
+##'
+##' @export
+
+load_geodata_file <- function(filename,
+                              geoid_len = 0,
+                              geoid_pad = "0",
+                              state_name = TRUE
+) {
+
+    if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
+    geodata <- readr::read_csv(filename) %>%
+        dplyr::mutate(geoid = as.character(geoid))
+
+    if (!("geoid" %in% names(geodata))) {
+        stop(paste(filename, "does not have a column named geoid"))
+    }
+
+    if (geoid_len > 0) {
+        geodata$geoid <- stringr::str_pad(geodata$geoid, geoid_len, pad = geoid_pad)
+    }
+
+    if(state_name) {
+        geodata <- tigris::fips_codes %>%
+            dplyr::distinct(state, state_name) %>%
+            dplyr::rename(USPS = state) %>%
+            dplyr::rename(state = state_name) %>%
+            dplyr::mutate(state = dplyr::recode(state, "U.S. Virgin Islands" = "Virgin Islands")) %>%
+            dplyr::right_join(geodata)
+    }
+
+    return(geodata)
+}
+
+
+
+
+
+
+#' Depracated function that returns a function to read files of a specific type (or automatically detected type based on extension)
+#' @param extension The file extension to read files of
+#' @param ... Arguments to pass to the reading function
+#' @return A function which will read files with that extension.
+#'  - We use readr::read_csv for csv files
+#'  - We use arrow::read_parquet for parquet files
+#'  - We use a function that detects the extension and calls this function if the auto extension is specified.
+#' @export 
+#' 
+read_file_of_type <- function(extension,...){
+    if(extension == 'csv'){
+        return(function(x){suppressWarnings(readr::read_csv(x,,col_types = cols(
+            .default = col_double(),
+            time=col_date(),
+            uid=col_character(),
+            comp=col_character(),
+            geoid=col_character()
+        )))})
+    }
+    if(extension == 'parquet'){
+        return(function(x){
+            tmp <- arrow::read_parquet(x) 
+            if("POSIXct" %in% class(tmp$time)){
+                tmp$time <- lubridate::as_date(tz="GMT",tmp$time)
+            }
+            tmp
+        })
+    }
+    if(extension == 'auto'){
+        return(function(filename){
+            extension <- gsub("[^.]*\\.","",filename)
+            if(extension == 'auto'){stop("read_file_of_type cannot read files with file extension '.auto'")}
+            read_file_of_type(extension)(filename)
+        })
+    }
+    if(extension == 'shp'){
+        return(sf::st_read)
+    }
+    stop(paste("read_file_of_type cannot read files of type",extension))
+}
+
+
+
+
 ##'
 ##' Download USAFacts data
 ##'

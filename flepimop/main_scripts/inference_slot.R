@@ -1,7 +1,6 @@
 ## Preamble ---------------------------------------------------------------------
 suppressMessages(library(readr))
 suppressWarnings(suppressMessages(library(flepicommon)))
-suppressMessages(library(report.generation))
 suppressMessages(library(stringr))
 suppressMessages(library(foreach))
 suppressMessages(library(magrittr))
@@ -89,7 +88,7 @@ state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spati
 
 
 ##Load information on geographic locations from geodata file.
-suppressMessages(geodata <- report.generation::load_geodata_file(
+suppressMessages(geodata <- flepicommon::load_geodata_file(
     paste(
         config$spatial_setup$base_path,
         config$spatial_setup$geodata, sep = "/"
@@ -460,14 +459,14 @@ for(scenario in scenarios) {
             }
 
             if (config$filtering$do_filtering){
-                sim_hosp <- report.generation:::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
+                sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
                     dplyr::filter(time >= min(obs$date),time <= max(obs$date))
 
                 lhs <- unique(sim_hosp[[obs_nodename]])
                 rhs <- unique(names(data_stats))
                 all_locations <- rhs[rhs %in% lhs]
             } else {
-                sim_hosp <- report.generation:::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']])
+                sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']])
                 all_locations <- unique(sim_hosp[[obs_nodename]])
                 obs <- sim_hosp
                 data_stats <- sim_hosp
