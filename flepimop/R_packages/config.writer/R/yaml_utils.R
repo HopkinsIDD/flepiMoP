@@ -1026,8 +1026,9 @@ print_header <- function (
                ifelse(!is.na(end_date_groundtruth), paste0("end_date_groundtruth: ", end_date_groundtruth, "\n"), ""), 
                "nslots: ", nslots, "\n",
                "\n"
-        )
-        }
+        ))
+}
+
 
 
 
