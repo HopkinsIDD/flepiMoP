@@ -1026,11 +1026,10 @@ print_header <- function (
                ifelse(!is.na(end_date_groundtruth), paste0("end_date_groundtruth: ", end_date_groundtruth, "\n"), ""), 
                "nslots: ", nslots, "\n",
                "\n"
-    )
-}
+        )
+        }
 
 
-               "dt: ", sprintf(fmt = "%#.3f", as.numeric(dt)), "\n", 
 
 
 #' Print Header Section
@@ -1073,9 +1072,9 @@ print_spatial_setup <- function (
 }
 
 
-               
-               
-      
+
+
+
 
 #' Print SEIR Section
 #' @description Print seir section with specified parameters.
@@ -1090,17 +1089,17 @@ print_spatial_setup <- function (
 #' @examples
 #'
 print_compartments <- function (
-                            inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
-                            vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
-                            variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
-                            age_strata = c("age0to17", "age18to64", "age65to100")){
-   
+        inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
+        vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
+        variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
+        age_strata = c("age0to17", "age18to64", "age65to100")){
+    
     compartments <- paste0("compartments:\n", 
-                   "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
-                   "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
-                   "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
-                   "  age_strata: [", cmprt_list(age_strata), "]\n", 
-                   "  transitions:\n")
+                           "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
+                           "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
+                           "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
+                           "  age_strata: [", cmprt_list(age_strata), "]\n", 
+                           "  transitions:\n")
     
     cat(compartments)
 }
@@ -1109,8 +1108,8 @@ print_compartments <- function (
 
 
 
-               
-               
+
+
 #' Print seeding section
 #' @description Prints the seeding section of the configuration file
 #' @param method There are two different seeding methods: 1) based on air importation (FolderDraw) and 2) based on earliest identified cases (PoissonDistributed). FolderDraw is required if the importation section is present and requires folder_path. Otherwise, put PoissonDistributed, which requires lambda_file.
@@ -1144,7 +1143,7 @@ print_seeding <- function (method = "FolderDraw",
                            age_strata_seed = "0_64",
                            seeding_outcome = NULL, # incidH
                            seeding_inflation_ratio = NULL # 200
-                           ){
+){
     
     variant_compartments <- stringr::str_to_upper(variant_compartments)
     seeding_comp <- "\nseeding:\n"
@@ -1373,17 +1372,17 @@ print_filtering_statistics <- function(iterations_per_slot = 300,
 #' @examples
 #'
 print_compartments <- function (
-                            inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
-                            vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
-                            variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
-                            age_strata = c("age0to17", "age18to64", "age65to100")){
-   
+        inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
+        vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
+        variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
+        age_strata = c("age0to17", "age18to64", "age65to100")){
+    
     compartments <- paste0("compartments:\n", 
-                   "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
-                   "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
-                   "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
-                   "  age_strata: [", cmprt_list(age_strata), "]\n", 
-                   "  transitions:\n")
+                           "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
+                           "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
+                           "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
+                           "  age_strata: [", cmprt_list(age_strata), "]\n", 
+                           "  transitions:\n")
     
     cat(compartments)
 }
@@ -1428,23 +1427,24 @@ print_compartments <- function (
 #'            r0_val = 2.3,
 #'            incl_vacc = FALSE)
 #'
-print_seir <- function (resume_modifier = NULL, 
-                        resume_mod_params = NULL,
-                        resume_overwrite_vacc = FALSE,
-                        vacc_timeseries = TRUE,
-                        seir_csv = "seir_R12_v2.csv", 
-                        integration_method = "legacy",
-                        params = params_list,
-                        ve_data = ve_data, 
-                        theta_dist = "fixed", 
-                        nu_list = list(
-                            label = c("nu1","nu2","nu3","nu5"), 
-                            age_stratified = c(TRUE,FALSE,TRUE,TRUE),
-                            value = c(0, 1/(3.5*7), 0, 0),
-                            overlap_operation = c("sum","sum","sum","sum"),
-                            distrib = c("fixed","fixed","fixed","fixed")),
-                        age_strata = c("age0to17", "age18to64", "age65to100"), 
-                        use_descriptions = TRUE){
+print_seir <- function(integration_method = "rk4",
+                       dt = 2.000,
+                       params = params_list,
+                       ve_data = ve_data, 
+                       theta_dist = "fixed", 
+                       nu_list = list(
+                           label = c("nu1","nu2","nu3","nu5"), 
+                           age_stratified = c(TRUE,FALSE,TRUE,TRUE),
+                           value = c(0, 1/(3.5*7), 0, 0),
+                           overlap_operation = c("sum","sum","sum","sum"),
+                           distrib = c("fixed","fixed","fixed","fixed")),
+                       age_strata = c("age0to17", "age18to64", "age65to100"), 
+                       resume_modifier = NULL, 
+                       resume_mod_params = NULL,
+                       resume_overwrite_vacc = FALSE,
+                       vacc_timeseries = TRUE,
+                       seir_csv = "seir_R12_v2.csv", 
+                       use_descriptions = TRUE){
     
     seir_dat <- suppressWarnings(suppressMessages(read_csv(seir_csv, progress = FALSE)))
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = " ", replacement = "")
@@ -1508,8 +1508,12 @@ print_seir <- function (resume_modifier = NULL,
     # Integration method ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
     seir <- paste0("seir:\n", 
-                   "  integration_method: ", integration_method, "\n",
+                   "  integration:\n",
+                   "    method: ", integration_method, "\n",
+                   "    dt: ", sprintf(fmt = "%#.3f", as.numeric(dt)), "\n", 
                    "  parameters:\n")
+    
+    
     
     # Parameters ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
