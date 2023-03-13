@@ -1025,12 +1025,13 @@ print_header <- function (
                ifelse(!is.na(start_date_groundtruth), paste0("start_date_groundtruth: ", start_date_groundtruth, "\n"), ""), 
                ifelse(!is.na(end_date_groundtruth), paste0("end_date_groundtruth: ", end_date_groundtruth, "\n"), ""), 
                "nslots: ", nslots, "\n",
+               "dt: ", sprintf(fmt = "%#.3f", as.numeric(dt)), "\n", 
                "\n"
+	)
     )
 }
 
 
-               "dt: ", sprintf(fmt = "%#.3f", as.numeric(dt)), "\n", 
 
 
 #' Print Header Section
