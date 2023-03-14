@@ -47,7 +47,7 @@ load_config <- function(fname) {
 ##'
 ##'Evaluates an expression, returning a numeric value
 ##'@examples
-##'as_evaled_expression(c("2+2", "9*9")) -> (4, 81)
+##'as_evaled_expression(c("2+2", "9*9"))
 ##'
 ##'@param l the object (scalar or vector) to evaluate
 ##'@return a float evaluation of the expression
