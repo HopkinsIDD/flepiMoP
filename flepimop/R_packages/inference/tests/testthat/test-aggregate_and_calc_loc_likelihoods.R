@@ -37,9 +37,9 @@ get_minimal_setup <- function () {
 
     ##minimal confif information used by function
     config <- list()
-    config$filtering <- list()
-    config$filtering$statistics <- list()
-    config$filtering$statistics$sum_deaths <-
+    config$inference <- list()
+    config$inference$statistics <- list()
+    config$inference$statistics$sum_deaths <-
         list(name="sum_deaths",
              aggregator= "sum",
              period = "1 weeks",
@@ -50,7 +50,7 @@ get_minimal_setup <- function () {
              likelihood = list(
                  dist="sqrtnorm",
                  param=0.1))
-    config$filtering$statistics$sum_conf <-
+    config$inference$statistics$sum_conf <-
         list(name="sum_conf",
              aggregator= "sum",
              period = "1 days",
@@ -72,7 +72,7 @@ get_minimal_setup <- function () {
                            df,
                            "date",
                            "data_var",
-                           stat_list = config$filtering$statistics)
+                           stat_list = config$inference$statistics)
         }) %>%
         setNames(geonames)
 
@@ -183,7 +183,7 @@ test_that("aggregate_and_calc_loc_likelihoods returns a likelihood per location 
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -213,7 +213,7 @@ test_that("likelihood of perfect data is less that likelihood of imperfect data"
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -227,7 +227,7 @@ test_that("likelihood of perfect data is less that likelihood of imperfect data"
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -248,7 +248,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
 
     stuff <- get_minimal_setup()
 
-    stuff$config$filtering$statistics$sum_deaths <- NULL
+    stuff$config$inference$statistics$sum_deaths <- NULL
 
     ##remove deaths as a variable
     for(location in stuff$all_locations) {
@@ -263,7 +263,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -279,7 +279,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -298,7 +298,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -314,7 +314,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -334,7 +334,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
 
     stuff <- get_minimal_setup()
 
-    stuff$configfiltering$statistics$sum_conf <- NULL
+    stuff$configinference$statistics$sum_conf <- NULL
 
     ##remove deaths as a variable
     for(location in stuff$all_locations) {
@@ -349,7 +349,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -365,7 +365,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -384,7 +384,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -400,7 +400,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -428,7 +428,7 @@ test_that("likelihoood insenstive to parameters with no multi-level compoenent o
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -444,7 +444,7 @@ test_that("likelihoood insenstive to parameters with no multi-level compoenent o
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -482,7 +482,7 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -498,7 +498,7 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -513,7 +513,7 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -553,7 +553,7 @@ test_that("likelihood is sensitive to changes to correct hpar parameters when mu
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -570,7 +570,7 @@ test_that("likelihood is sensitive to changes to correct hpar parameters when mu
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -586,7 +586,7 @@ test_that("likelihood is sensitive to changes to correct hpar parameters when mu
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -627,7 +627,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -643,7 +643,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -658,7 +658,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -698,7 +698,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -715,7 +715,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -731,7 +731,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -776,7 +776,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -792,7 +792,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -807,7 +807,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,
@@ -822,7 +822,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
       obs_nodename = stuff$obs_nodename,
-      targets_config = stuff$config[['filtering']][['statistics']],
+      targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
       hosp_file = stuff$hosp_file,

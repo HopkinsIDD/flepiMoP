@@ -1174,11 +1174,11 @@ print_seeding <- function (method = "FolderDraw",
 
 
 
-#' Print filtering and filtering::statistics
-#' @description Set settings for the filtering section and its statistics component
+#' Print inference and inference::statistics
+#' @description Set settings for the inference section and its statistics component
 #'
 #' @param iterations_per_slot number of iterations in a single MCMC inference chain With inference model runs, the number of simulations nslots refers to the number of final model simulations that will be produced. The iterations_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
-#' @param do_filtering whether to perform inference
+#' @param do_inference whether to perform inference
 #' @param data_path file path where observed data are saved
 #' @param gt_source source of data
 #' @param gt_source_statistics
@@ -1200,16 +1200,16 @@ print_seeding <- function (method = "FolderDraw",
 #' @param variant_compartments 
 #'
 #' @details
-#' The filtering section configures the settings for the inference algorithm, while the statistics component determines how the model is calibrated.
+#' The inference section configures the settings for the inference algorithm, while the statistics component determines how the model is calibrated.
 #' With inference model runs, the number of simulations nslots in [print_header()] refers to the number of final model simulations that will be produced. The iterations_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 #' The statistics specified here are used to calibrate the model to empirical data. If multiple statistics are specified, this inference is performed jointly and they are weighted in the likelihood according to the number of data points and the variance of the proposal distribution.
 #' @export
 #'
 #' @examples
-#' print_filtering_statistics()
+#' print_inference_statistics()
 #'
-print_filtering_statistics <- function(iterations_per_slot = 300, 
-                                       do_filtering = TRUE, 
+print_inference_statistics <- function(iterations_per_slot = 300, 
+                                       do_inference = TRUE, 
                                        data_path = "data/us_data.csv", 
                                        gt_source = "csse", 
                                        gt_source_statistics = NULL, misc_data_filename = NULL, 
@@ -1230,9 +1230,9 @@ print_filtering_statistics <- function(iterations_per_slot = 300,
     if (length(stat_names) != length(data_var)) stop("stat_names and data_var must be the same length")
     
     cat(paste0("\n", 
-               "filtering:\n", 
+               "inference:\n", 
                "  iterations_per_slot: ", iterations_per_slot, "\n", 
-               "  do_filtering: ", do_filtering, "\n", 
+               "  do_inference: ", do_inference, "\n", 
                "  data_path: ", data_path, "\n", 
                "  gt_source: \"", gt_source, "\"\n", {
                    if (!is.null(misc_data_filename)) 
@@ -1616,8 +1616,8 @@ print_seir <- function(integration_method = "rk4",
 
 
 
-#' Print filtering::hierarchical_stats_geo
-#' @description Specify and print hierarchical settings as part of the filtering section of the configuration file.
+#' Print inference::hierarchical_stats_geo
+#' @description Specify and print hierarchical settings as part of the inference section of the configuration file.
 #' @param npi_name vector of names of the estimated parameters that will be grouped (e.g., the NPI scenario name or a standardized, combined health outcome name like probability_incidI_incidC)
 #' @param module vector of names of the module where this parameter is estimated (important for finding the appropriate files)
 #' @param geo_group_col geodata column name that should be used to group parameter estimation
@@ -1633,9 +1633,9 @@ print_seir <- function(integration_method = "rk4",
 #' @export
 #'
 #' @examples
-#' print_filtering_hierarchical()
+#' print_inference_hierarchical()
 
-print_filtering_hierarchical <- function(npi_name = c("local_variance", "probability_incidI_incidC"),
+print_inference_hierarchical <- function(npi_name = c("local_variance", "probability_incidI_incidC"),
                                          compartment = TRUE,
                                          variant_compartments = c("WILD", "ALPHA", "DELTA"),
                                          module = c("seir", "hospitalization"),
@@ -1692,7 +1692,7 @@ print_filtering_hierarchical <- function(npi_name = c("local_variance", "probabi
     }
     
 }
-#' print_filtering_prior
+#' print_inference_prior
 #'
 #' @description Set and print prior values for inferred parameters
 #'
@@ -1708,9 +1708,9 @@ print_filtering_hierarchical <- function(npi_name = c("local_variance", "probabi
 #' @export
 #'
 #' @examples
-#' print_filtering_prior()
+#' print_inference_prior()
 #' 
-print_filtering_prior <- function(npi_name = c("local_variance", "Seas_jan", "Seas_feb", "Seas_mar", "Seas_apr",
+print_inference_prior <- function(npi_name = c("local_variance", "Seas_jan", "Seas_feb", "Seas_mar", "Seas_apr",
                                                "Seas_may", "Seas_jun", "Seas_jul", "Seas_aug", "Seas_sep",
                                                "Seas_oct", "Seas_nov", "Seas_dec"),
                                   module = "seir",

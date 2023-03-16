@@ -1,6 +1,6 @@
 # Overview
 
-This documentation describes the new YAML configuration file options that may be used when performing inference on model runs. As compared to previous model releases, there are additions to the `seeding` and `interventions` sections, and there is a new `filtering` section added to the file. 
+This documentation describes the new YAML configuration file options that may be used when performing inference on model runs. As compared to previous model releases, there are additions to the `seeding` and `interventions` sections, and there is a new `inference` section added to the file. 
 
 Models may be calibrated to any available time series data that is also an outcome of the model (COVID-19 confirmed cases, deaths, hospitalization or ICU admissions, hospital or ICU occupancy, and ventilator use). Our typical usage has calibrated the model to deaths, confirmed cases, or both.
 
@@ -91,14 +91,14 @@ Interventions may be specified in the same way as before, or with an added `pert
 | affected_geoids   | optional for ReduceR0 | list of geoids, which must be in geodata        |
 
 
-# New `filtering` section
+# New `inference` section
 
 This section configures the settings for the inference algorithm. The below example shows the settings for some typical default settings, where the model is calibrated to the weekly incident deaths and weekly incident confirmed cases for each geoid.
 
 ```
-filtering:
+inference:
   iterations_per_slot: 350
-  do_filtering: TRUE
+  do_inference: TRUE
   data_path: data/observed_data.csv
   likelihood_directory: importation/likelihood/
   statistics:
@@ -126,21 +126,21 @@ filtering:
         param: [.2]
 ```
 
-## `filtering` settings
+## `inference` settings
 
-With inference model runs, the number of simulations `nslots` refers to the number of final model simulations that will be produced. The `filtering$iterations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
+With inference model runs, the number of simulations `nslots` refers to the number of final model simulations that will be produced. The `inference$iterations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 
 
 | Item              | Required?             | Type/Format                                     | 
 |-------------------|-----------------------|-------------------------------------------------|
 | iterations_per_slot  | **required**    | number of iterations in a single MCMC inference chain |
-| do_filtering          | required        | TRUE if inference should be performed |
+| do_inference          | required        | TRUE if inference should be performed |
 | data_path             | required        | file path where observed data are saved  |
 | likelihood_directory  | required        | folder path where likelihood evaluations will be stored as the inference algorithm runs |
-| statistics            | required        | specifies which data will be used to calibrate the model. see `filtering::statistics::[statistics settings]` for details |
+| statistics            | required        | specifies which data will be used to calibrate the model. see `inference::statistics::[statistics settings]` for details |
 
 
-## `filtering::statistics::[statistics settings]`
+## `inference::statistics::[statistics settings]`
 
 The statistics specified here are used to calibrate the model to empirical data. If multiple statistics are specified, this inference is performed jointly
 and they are weighted in the likelihood according to the number of data points and the variance of the proposal distribution.

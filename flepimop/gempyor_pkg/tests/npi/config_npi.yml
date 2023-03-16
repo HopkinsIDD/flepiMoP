@@ -61459,9 +61459,9 @@ outcomes:
         template: Stacked
         scenarios: ["outcome_interventions"]
 
-filtering:
+inference:
   iterations_per_slot: 100
-  do_filtering: TRUE
+  do_inference: TRUE
   data_path: data/us_data.csv
   gt_source: "csse"
   statistics:

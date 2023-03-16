@@ -398,7 +398,7 @@ get_ground_truth_revised <- function(config, scenario_dir, flepi_path = "../flep
     # source(file.path(flepi_path, "datasetup/build_US_setup.R"))
     source(file.path(flepi_path, "datasetup/build_covid_data.R"))
 
-    gt_data <- readr::read_csv(config$filtering$data_path)
+    gt_data <- readr::read_csv(config$inference$data_path)
 
     # Add cum and us
 
@@ -440,10 +440,10 @@ get_ground_truth_revised <- function(config, scenario_dir, flepi_path = "../flep
         rename(geoid=FIPS, time=date, USPS=source)
 
     write_csv(gt_data_clean, file.path(scenario_dir, "gt_data_clean.csv"))
-    file.remove(config$filtering$data_path)
+    file.remove(config$inference$data_path)
 
     print(paste0("Created new groundtruth data in \n",
-                 file.path(scenario_dir, basename(config$filtering$data_path))))
+                 file.path(scenario_dir, basename(config$inference$data_path))))
 
     return(gt_data_clean)
 }

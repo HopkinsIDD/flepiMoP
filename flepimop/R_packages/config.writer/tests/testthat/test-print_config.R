@@ -43,17 +43,17 @@ generate_config <- function(){
                    incidC_prob_value = c(0.4, 0.4, 0.4),
                    compartment = FALSE)
 
-    print_filtering_statistics(iterations_per_slot = 1000,
+    print_inference_statistics(iterations_per_slot = 1000,
                                compartment = FALSE,
                                gt_column_name = c("death_incid", "confirmed_incid"))
 
-    print_filtering_hierarchical(npi_name = c("local_variance", "probability_incidI_incidC"),
+    print_inference_hierarchical(npi_name = c("local_variance", "probability_incidI_incidC"),
                                  module = c("seir", "hospitalization"),
                                  geo_group_col = "USPS",
                                  transform = c("none", "logit"),
                                  compartment = FALSE)
 
-    print_filtering_prior(dat = interventions,
+    print_inference_prior(dat = interventions,
                           npi_name = c("local_variance", "Seas_jan", "Seas_feb", "Seas_mar",
                                        "Seas_may", "Seas_jun", "Seas_jul", "Seas_aug", "Seas_sep",
                                        "Seas_oct", "Seas_nov", "Seas_dec"),

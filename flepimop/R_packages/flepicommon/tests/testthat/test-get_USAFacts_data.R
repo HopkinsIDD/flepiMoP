@@ -40,7 +40,7 @@ test_that("download_USAFacts_data cases and deaths will join",{
 
   expect_true(any(names(usafacts_case) %in% names(usafacts_death)))
 })
-test_that("filtering by VALIDATION_DATE results in less data",{
+test_that("inference by VALIDATION_DATE results in less data",{
 
   case_data_filename = "data/case_data/USAFacts_case_data.csv"
   USAFACTS_CASE_DATA_URL <- "https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv"

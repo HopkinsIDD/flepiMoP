@@ -40,7 +40,7 @@ test_that("download_CSSE_US_data cases and deaths will join",{
 
   expect_true(any(names(csse_us_case) %in% names(csse_us_death)))
 })
-test_that("filtering by VALIDATION_DATE results in less data",{
+test_that("inference by VALIDATION_DATE results in less data",{
 
   case_data_filename = "data/case_data/jhucsse_us_case_data_crude.csv"
   CSSE_US_CASE_DATA_URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"

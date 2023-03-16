@@ -270,15 +270,15 @@ def launch_batch(
 
     # Update and save the config file with the number of sims to run
     # TODO: does this really save the config file?
-    if "filtering" in config:
-        config["filtering"]["iterations_per_slot"] = sims_per_job
-        if not os.path.exists(pathlib.Path(data_path, config["filtering"]["data_path"])):
+    if "inference" in config:
+        config["inference"]["iterations_per_slot"] = sims_per_job
+        if not os.path.exists(pathlib.Path(data_path, config["inference"]["data_path"])):
             print(
-                f"ERROR: filtering.data_path path {pathlib.Path(data_path, config['filtering']['data_path'])} does not exist!"
+                f"ERROR: inference.data_path path {pathlib.Path(data_path, config['inference']['data_path'])} does not exist!"
             )
             return 1
     else:
-        print(f"WARNING: no filtering section found in {config_file}!")
+        print(f"WARNING: no inference section found in {config_file}!")
 
     if "s3://" in str(restart_from_location):        # ugly hack: str because it might be None
         import boto3
@@ -354,9 +354,9 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
     if num_jobs and sims_per_job and num_blocks:
         return (num_jobs, sims_per_job, num_blocks)
 
-    if "filtering" not in config or "iterations_per_slot" not in config["filtering"]:
-        raise click.UsageError("filtering::iterations_per_slot undefined in config, can't autodetect parameters")
-    iterations_per_slot = int(config["filtering"]["iterations_per_slot"])
+    if "inference" not in config or "iterations_per_slot" not in config["inference"]:
+        raise click.UsageError("inference::iterations_per_slot undefined in config, can't autodetect parameters")
+    iterations_per_slot = int(config["inference"]["iterations_per_slot"])
 
     if num_jobs is None:
         num_jobs = config["nslots"]

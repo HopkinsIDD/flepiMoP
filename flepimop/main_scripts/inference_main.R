@@ -56,7 +56,7 @@ if (all(scenarios == "all")){
 }
 
 if(is.na(opt$iterations_per_slot)) {
-  opt$iterations_per_slot <- config$filtering$iterations_per_slot
+  opt$iterations_per_slot <- config$inference$iterations_per_slot
 }
 
 if(is.na(opt$slots)) {

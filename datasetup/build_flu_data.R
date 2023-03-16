@@ -83,7 +83,7 @@ us_data <- us_data %>%
     filter(date >= lubridate::as_date(config$start_date) & date <= lubridate::as_date(end_date_)) %>%
     filter(!is.na(source))
 
-write_csv(us_data, config$filtering$data_path)
+write_csv(us_data, config$inference$data_path)
 
 
 
@@ -192,13 +192,13 @@ adjust_for_variant <- !is.null(variant_props_file)
 
 if (adjust_for_variant) {
     
-    us_data <- read_csv(config$filtering$data_path)
+    us_data <- read_csv(config$inference$data_path)
     
     tryCatch({
         us_data <- flepicommon::do_variant_adjustment(us_data, variant_props_file)
         us_data <- us_data %>% 
             filter(date >= as_date(config$start_date) & date <= as_date(config$end_date_groundtruth))
-        write_csv(us_data, config$filtering$data_path)
+        write_csv(us_data, config$inference$data_path)
     }, error = function(e) {
         stop(paste0("Could not use variant file |", variant_props_file, 
                     "|, with error message", e$message))
@@ -208,7 +208,7 @@ if (adjust_for_variant) {
 
 
 cat(paste0("Ground truth data saved\n", 
-           "  -- file:      ", config$filtering$data_path,".\n",
+           "  -- file:      ", config$inference$data_path,".\n",
            "  -- outcomes:  ", paste(grep("incid", colnames(us_data), value = TRUE), collapse = ", ")))
 
 

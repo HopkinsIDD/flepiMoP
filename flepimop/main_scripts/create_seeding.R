@@ -68,16 +68,16 @@ seed_variants <- "variant_filename" %in% names(config$seeding)
 
 
 
-## backwards compatibility with configs that don't have filtering$gt_source
+## backwards compatibility with configs that don't have inference$gt_source
 ## parameter will use the previous default data source (USA Facts)
-if (is.null(config$filtering$gt_source)) {
+if (is.null(config$inference$gt_source)) {
     if (is_US_run) {
         gt_source <- "usafacts"
     } else {
         gt_source <- NULL
     }
 } else{
-    gt_source <- config$filtering$gt_source
+    gt_source <- config$inference$gt_source
 }
 if (is.null(config$seeding$delay_incidC)) {
     config$seeding$delay_incidC <- 5
@@ -91,13 +91,13 @@ if (is.null(config$seeding$ratio_incidC)) {
 # ~ Load ground truth data ------------------------------------------------
 #  -- this is already saved from running the `build_[X]_data.R` script at the model setup stage.
 #  
-data_path <- config$filtering$data_path
+data_path <- config$inference$data_path
 if (is.null(data_path)) {
     data_path <- config$seeding$casedata_file
     if (is.null(data_path)) {
         stop(paste(
             "Please provide a ground truth file",
-            " as filtering::data_path or seeding::casedata_file"
+            " as inference::data_path or seeding::casedata_file"
         ))
     }
 }

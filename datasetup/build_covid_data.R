@@ -178,12 +178,12 @@ us_data <- us_data %>%
 
 
 # Save
-write_csv(us_data, config$filtering$data_path)
+write_csv(us_data, config$inference$data_path)
 
 
 
 cat(paste0("Ground truth data saved\n",
-           "  -- file:      ", config$filtering$data_path,".\n",
+           "  -- file:      ", config$inference$data_path,".\n",
            "  -- outcomes:  ", paste(grep("incid", colnames(us_data), value = TRUE), collapse = ", ")))
 
 

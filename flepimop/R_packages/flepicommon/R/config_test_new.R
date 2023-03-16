@@ -311,13 +311,13 @@ validation_list$seeding$folder_path<- function(value,full_config,config_name){
       print("Incorrect folder path: folder path in seeding should have a / in the end")
       return(FALSE)
     }
-    if(full_config$seeding$method=="FolderDraw" & !is.null(full_config$filtering)){
+    if(full_config$seeding$method=="FolderDraw" & !is.null(full_config$inference)){
       if(is.null(full_config$seeding$lambda_file)){
-        print("Lambda File not mentioned even if filtering section present")
+        print("Lambda File not mentioned even if inference section present")
         return(FALSE)
       }      
       if(!file.exists(full_config$seeding$lambda_file)){
-        print("Lambda File does not exist even if filtering section present")
+        print("Lambda File does not exist even if inference section present")
         return(FALSE)
       }
     }
@@ -543,9 +543,9 @@ validation_list$outcomes$interventions<-function(value, full_config,config_name)
   return(TRUE)
 }
 
-###FILTERING
-validation_list$filtering<-list()
-validation_list$filtering$iterations_per_slot<-function(value,full_config,config_name){
+###inference
+validation_list$inference<-list()
+validation_list$inference$iterations_per_slot<-function(value,full_config,config_name){
   if(is.null(value)){
     print("iterations_per_slot undefined in config, can't autodetect parameters")
     return(FALSE)
@@ -561,9 +561,9 @@ validation_list$filtering$iterations_per_slot<-function(value,full_config,config
   return(TRUE)
 }
 
-validation_list$filtering$do_filtering<- function(value,full_config,config_name){
+validation_list$inference$do_inference<- function(value,full_config,config_name){
   if(is.null(value)){
-    print("Mention do_filtering")
+    print("Mention do_inference")
     return(FALSE)
   }
   if(value!=TRUE & value!=FALSE){
@@ -573,28 +573,28 @@ validation_list$filtering$do_filtering<- function(value,full_config,config_name)
   return(TRUE)
 }
 
-validation_list$filtering$data_path<-function(value,full_config,config_name){
+validation_list$inference$data_path<-function(value,full_config,config_name){
   if(is.null(value)){
-    print("Mention correct data path for filtering")
+    print("Mention correct data path for inference")
     return(FALSE)
   }
   if(!file.exists(value)){
-    print("Mentioned data path does not exist for filtering")
+    print("Mentioned data path does not exist for inference")
     return(FALSE)
   }
   return(TRUE)
 }
 
-validation_list$filtering$gt_source<- function(value,config,config_name){
+validation_list$inference$gt_source<- function(value,config,config_name){
   if(is.null(value)){
     print("No source of ground truth source mentioned default assigned ")#Assign default
   }
   return(TRUE)
 }
 
-validation_list$filtering$statistics<- function(value,config,config_name){
+validation_list$inference$statistics<- function(value,config,config_name){
   if(is.null(value)){
-    print("Mention statistics for filtering")
+    print("Mention statistics for inference")
     return(FALSE)
   }
   return(TRUE)

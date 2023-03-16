@@ -100,12 +100,12 @@ obs_nodename <- config$spatial_setup$nodenames
 ##Load simulations per slot from config if not defined on command line
 ##command options take precedence
 if(is.na(opt$iterations_per_slot)){
-    opt$iterations_per_slot <- config$filtering$iterations_per_slot
+    opt$iterations_per_slot <- config$inference$iterations_per_slot
 }
 print(paste("Running",opt$iterations_per_slot,"simulations"))
 
 ##Define data directory and create if it does not exist
-data_path <- config$filtering$data_path
+data_path <- config$inference$data_path
 data_dir <- dirname(data_path)
 if(!dir.exists(data_dir)){
     suppressWarnings(dir.create(data_dir,recursive=TRUE))
@@ -133,26 +133,26 @@ if (all(scenarios == "all")){
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
-if("hierarchical_stats_geo"%in%names(config$filtering)) {
-    hierarchical_stats <- config$filtering$hierarchical_stats_geo
+if("hierarchical_stats_geo"%in%names(config$inference)) {
+    hierarchical_stats <- config$inference$hierarchical_stats_geo
 }
 
 
 ##Create priors if specified
 defined_priors <- list()
-if("priors"%in%names(config$filtering)) {
-    defined_priors <- config$filtering$priors
+if("priors"%in%names(config$inference)) {
+    defined_priors <- config$inference$priors
 }
 
 
 
 ## Runner Script---------------------------------------------------------------------
 
-## backwards compatibility with configs that don't have filtering$gt_source parameter will use the previous default data source (USA Facts)
-if(is.null(config$filtering$gt_source)){
+## backwards compatibility with configs that don't have inference$gt_source parameter will use the previous default data source (USA Facts)
+if(is.null(config$inference$gt_source)){
     gt_source <- "usafacts"
 } else{
-    gt_source <- config$filtering$gt_source
+    gt_source <- config$inference$gt_source
 }
 
 gt_scale <- ifelse(state_level, "US state", "US county")
@@ -181,7 +181,7 @@ if (gt_end_date > lubridate::ymd(config$end_date)) {
 
 # if we want to run inference, do the following:
 
-if (config$filtering$do_filtering){
+if (config$inference$do_inference){
 
     obs <- inference::get_ground_truth(
         data_path = data_path,
@@ -205,7 +205,7 @@ if (config$filtering$do_filtering){
                 df,
                 "date",
                 "data_var",
-                stat_list = config$filtering$statistics,
+                stat_list = config$inference$statistics,
                 start_date = gt_start_date,
                 end_date = gt_end_date
             )
@@ -220,12 +220,12 @@ if (config$filtering$do_filtering){
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]
 
-        ## No references to config$filtering$statistics
+        ## No references to config$inference$statistics
         inference::aggregate_and_calc_loc_likelihoods(
             all_locations = all_locations, # technically different
             modeled_outcome = sim_hosp,
             obs_nodename = obs_nodename,
-            targets_config = config[["filtering"]][["statistics"]],
+            targets_config = config[["inference"]][["statistics"]],
             obs = obs,
             ground_truth_data = data_stats,
             hosp_file = first_global_files[['llik_filename']],
@@ -249,12 +249,12 @@ if (config$filtering$do_filtering){
 
         all_locations <- unique(sim_hosp[[obs_nodename]])
 
-        ## No references to config$filtering$statistics
+        ## No references to config$inference$statistics
         inference::aggregate_and_calc_loc_likelihoods(
             all_locations = all_locations, # technically different
             modeled_outcome = sim_hosp,
             obs_nodename = obs_nodename,
-            targets_config = config[["filtering"]][["statistics"]],
+            targets_config = config[["inference"]][["statistics"]],
             obs = sim_hosp,
             ground_truth_data = sim_hosp,
             hosp_file = first_global_files[['llik_filename']],
@@ -458,7 +458,7 @@ for(scenario in scenarios) {
                 stop("InferenceSimulator failed to run")
             }
 
-            if (config$filtering$do_filtering){
+            if (config$inference$do_inference){
                 sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
                     dplyr::filter(time >= min(obs$date),time <= max(obs$date))
 
@@ -477,7 +477,7 @@ for(scenario in scenarios) {
                 all_locations = all_locations,
                 modeled_outcome = sim_hosp,
                 obs_nodename = obs_nodename,
-                targets_config = config[["filtering"]][["statistics"]],
+                targets_config = config[["inference"]][["statistics"]],
                 obs = obs,
                 ground_truth_data = data_stats,
                 hosp_file = this_global_files[["llik_filename"]],
@@ -511,7 +511,7 @@ for(scenario in scenarios) {
 
 
             proposed_likelihood_data$accept <- ifelse(inference::iterateAccept(global_likelihood, proposed_likelihood) || ((current_index == 0) && (opt$this_block == 1)),1,0)
-            if(all(proposed_likelihood_data$accept == 1) | config$filtering$do_filtering == FALSE) {
+            if(all(proposed_likelihood_data$accept == 1) | config$inference$do_inference == FALSE) {
 
                 print("**** ACCEPT (Recording) ****")
                 if ((opt$this_block == 1) && (current_index == 0)) {

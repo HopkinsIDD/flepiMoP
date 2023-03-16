@@ -34,7 +34,7 @@ single_loc_inference_test <- function(to_fit,
     obs_nodename <- config$spatial_setup$nodenames
     
     # Set number of simulations
-    iterations_per_slot <- config$filtering$iterations_per_slot
+    iterations_per_slot <- config$inference$iterations_per_slot
     
     # SEIR parameters for simulations
     R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
@@ -59,13 +59,13 @@ single_loc_inference_test <- function(to_fit,
                 df,
                 "date",
                 "data_var",
-                stat_list = config$filtering$statistics)
+                stat_list = config$inference$statistics)
         }) %>%
         set_names(geonames)
     
     all_locations <- unique(obs[[obs_nodename]])
     
-    # Filtering loops
+    # Inference loops
     required_packages <- c("dplyr", "magrittr", "xts", "zoo", "purrr", "stringr", "truncnorm",
                            "readr", "flepicommon", "hospitalization", "data.table",
                            "inference")  # packages required for dopar
@@ -119,7 +119,7 @@ single_loc_inference_test <- function(to_fit,
             "time",
             "sim_var",
             end_date = max(obs$date),
-            config$filtering$statistics
+            config$inference$statistics
         )
         
         # Get observation statistics
@@ -128,9 +128,9 @@ single_loc_inference_test <- function(to_fit,
             log_likelihood[[var]] <- logLikStat(
                 obs = data_stats[[1]][[var]]$data_var,
                 sim = initial_sim_stats[[var]]$sim_var,
-                dist = config$filtering$statistics[[var]]$likelihood$dist,
-                param = config$filtering$statistics[[var]]$likelihood$param,
-                add_one = config$filtering$statistics[[var]]$add_one
+                dist = config$inference$statistics[[var]]$likelihood$dist,
+                param = config$inference$statistics[[var]]$likelihood$param,
+                add_one = config$inference$statistics[[var]]$add_one
             )
         }
         # Compute log-likelihoods
@@ -171,7 +171,7 @@ single_loc_inference_test <- function(to_fit,
                 "time",
                 "sim_var",
                 end_date = max(obs$date),
-                config$filtering$statistics
+                config$inference$statistics
             )
             
             # Get observation statistics
@@ -180,9 +180,9 @@ single_loc_inference_test <- function(to_fit,
                 log_likelihood[[var]] <- logLikStat(
                     obs = data_stats[[1]][[var]]$data_var,
                     sim = sim_stats[[var]]$sim_var,
-                    dist = config$filtering$statistics[[var]]$likelihood$dist,
-                    param = config$filtering$statistics[[var]]$likelihood$param,
-                    add_one = config$filtering$statistics[[var]]$add_one
+                    dist = config$inference$statistics[[var]]$likelihood$dist,
+                    param = config$inference$statistics[[var]]$likelihood$param,
+                    add_one = config$inference$statistics[[var]]$add_one
                 )
             }
             # Compute log-likelihoods
@@ -277,7 +277,7 @@ multi_loc_inference_test <- function(to_fit,
     obs_nodename <- config$spatial_setup$nodenames
     
     # Set number of simulations
-    iterations_per_slot <- config$filtering$iterations_per_slot
+    iterations_per_slot <- config$inference$iterations_per_slot
     
     # SEIR parameters for simulations
     R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
@@ -302,13 +302,13 @@ multi_loc_inference_test <- function(to_fit,
                 df,
                 "date",
                 "data_var",
-                stat_list = config$filtering$statistics)
+                stat_list = config$inference$statistics)
         }) %>%
         set_names(geonames)
     
     all_locations <- unique(obs[[obs_nodename]])
     
-    # Filtering loops
+    # Inference loops
     required_packages <- c("dplyr", "magrittr", "xts", "zoo", "purrr", "stringr", "truncnorm",
                            "readr", "flepicommon", "hospitalization", "data.table",
                            "inference", "purrr", "tidyr")  # packages required for dopar
@@ -378,7 +378,7 @@ multi_loc_inference_test <- function(to_fit,
                 "time",
                 "sim_var",
                 #end_date = max(obs$date[obs[[obs_nodename]] == location]),
-                stat_list = config$filtering$statistics
+                stat_list = config$inference$statistics
             )
             
             
@@ -388,9 +388,9 @@ multi_loc_inference_test <- function(to_fit,
                 log_likelihood[[var]] <- inference::logLikStat(
                     obs = data_stats[[location]][[var]]$data_var,
                     sim = initial_sim_stats[[var]]$sim_var,
-                    dist = config$filtering$statistics[[var]]$likelihood$dist,
-                    param = config$filtering$statistics[[var]]$likelihood$param,
-                    add_one = config$filtering$statistics[[var]]$add_one
+                    dist = config$inference$statistics[[var]]$likelihood$dist,
+                    param = config$inference$statistics[[var]]$likelihood$param,
+                    add_one = config$inference$statistics[[var]]$add_one
                 )
             }
             # Compute log-likelihoods
@@ -449,7 +449,7 @@ multi_loc_inference_test <- function(to_fit,
                     "time",
                     "sim_var",
                     #end_date = max(obs$date[obs[[obs_nodename]] == location]),
-                    stat_list = config$filtering$statistics
+                    stat_list = config$inference$statistics
                 )
                 
                 
@@ -459,9 +459,9 @@ multi_loc_inference_test <- function(to_fit,
                     log_likelihood[[var]] <- inference::logLikStat(
                         obs = data_stats[[location]][[var]]$data_var,
                         sim = sim_stats[[var]]$sim_var,
-                        dist = config$filtering$statistics[[var]]$likelihood$dist,
-                        param = config$filtering$statistics[[var]]$likelihood$param,
-                        add_one = config$filtering$statistics[[var]]$add_one
+                        dist = config$inference$statistics[[var]]$likelihood$dist,
+                        param = config$inference$statistics[[var]]$likelihood$param,
+                        add_one = config$inference$statistics[[var]]$add_one
                     )
                 }
                 # Compute log-likelihoods

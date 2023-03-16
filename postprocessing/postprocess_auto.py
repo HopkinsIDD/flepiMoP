@@ -181,12 +181,12 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
     # In[5]:
 
     #gempyor.config.set_file(run_info.config_path)
-    #gt = pd.read_csv(gempyor.config["filtering"]["data_path"].get())
+    #gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
     #gt
     #statistics = {}
     # Ingoring agreegation and all, assuming by week
-    #for stat in gempyor.config["filtering"]["statistics"]:
-    #    statistics[gempyor.config["filtering"]["statistics"][stat]["sim_var"].get()] = gempyor.config["filtering"][
+    #for stat in gempyor.config["inference"]["statistics"]:
+    #    statistics[gempyor.config["inference"]["statistics"][stat]["sim_var"].get()] = gempyor.config["inference"][
     #        "statistics"
     #    ][stat]["data_var"].get()
     #statistics

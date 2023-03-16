@@ -26,7 +26,7 @@ test_that("get_hhsCMU_hospCurr_st_data works",{
   expect_equal(any(is.na(hospCurr$hospCurr_all)), FALSE)
   
 })
-test_that("filtering by VALIDATION_DATE results in less data",{
+test_that("inference by VALIDATION_DATE results in less data",{
 
   big_data <- get_hhsCMU_allHosp_st_data()
 
