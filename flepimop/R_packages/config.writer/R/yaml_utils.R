@@ -1063,7 +1063,8 @@ print_spatial_setup <- function (
                "  census_year: ", census_year, "\n", 
                "  modeled_states:\n"), 
         paste0("   - ", sim_states, "\n"), 
-        paste0("  geodata: ", geodata_file, "\n", 
+        paste0("\n",
+               "  geodata: ", geodata_file, "\n", 
                "  mobility: ", mobility_file, "\n", 
                "  popnodes: ", popnodes, "\n", 
                "  nodenames: ", nodenames, "\n", 
@@ -1382,8 +1383,7 @@ print_compartments <- function (
                            "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
                            "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
                            "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
-                           "  age_strata: [", cmprt_list(age_strata), "]\n", 
-                           "  transitions:\n")
+                           "  age_strata: [", cmprt_list(age_strata), "]\n")
     
     cat(compartments)
 }
@@ -1585,6 +1585,11 @@ print_seir <- function(integration_method = "rk4",
         seir <- paste0(seir, "    ", thetas_name_, ":\n", 
                        print_value(value_dist = theta_dist[i], value_mean = paste0(1, " - ", theta_vals[i])))
     }
+    
+    
+    seir <- paste0(seir,
+                   "\n",
+                   "  transitions:\n")
     
     
     # SEIR STRUCTURE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
