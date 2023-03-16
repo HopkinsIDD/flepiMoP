@@ -1,4 +1,4 @@
-gempyor_pkg/docs/Rinterface.nb.html
+flepimop/gempyor_pkg/docs/Rinterface.nb.html
 flepimop/gempyor_pkg/build/
 .DS_Store
 .Rhistory
@@ -8,8 +8,8 @@ __pycache__/
 *.*.so
 *.egg-info/
 # ^Joseph's stuff
-gempyor_pkg/docs/full_graph*
-gempyor_pkg/docs/readable_graph*
+flepimop/gempyor_pkg/docs/full_graph*
+flepimop/gempyor_pkg/docs/readable_graph*
 Outcomes/test/model_output
 model_output/
 

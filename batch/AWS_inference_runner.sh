@@ -65,10 +65,10 @@ fi
 
 python -m pip install --upgrade pip # needs new pip for toml file
 
-(cd flepiMoP && pip install -e gempyor_pkg)
+(cd flepiMoP && pip install -e flepimop/gempyor_pkg)
 python_install_ret=$?
 if [ $python_install_ret -ne 0 ]; then
-	error_handler "Error code returned from running `pip install -e gempyor_pkg`: $python_install_ret"
+	error_handler "Error code returned from running `pip install -e flepimop/gempyor_pkg`: $python_install_ret"
 fi
 echo "***************** DONE LOADING ENVIRONMENT *****************"
 

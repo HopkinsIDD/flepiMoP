@@ -232,18 +232,18 @@ numba pandas numpy seaborn tqdm matplotlib seaborn click confuse pyarrow sympy d
 ### Normal python
 This command will install the package and all its dependencies (the `-e` makes so that when you pull the pipeline repository again, there is no need for re-installing).
 ```
-pip install -e gempyor_pkg/
+pip install -e flepimop/gempyor_pkg/
 ```
 If the dependencies are already there and you don't want to risk updating them because of your other python projects, do
 ```
-pip install --no-deps -e gempyor_pkg/
+pip install --no-deps -e flepimop/gempyor_pkg/
 ```
 
 ### python in the docker
 In the docker we have to update pip before:
 ```
 /home/app/python_venv/bin/python3.7 -m pip install --upgrade pip # needs new pip for toml file
-pip install -e gempyor_pkg/
+pip install -e flepimop/gempyor_pkg/
 ```
 
 ### Conda (simple)
@@ -252,7 +252,7 @@ If you use conda, let's create a conda environment with everything needed:s
 conda create -n flepimop-env python=3.7
 conda activate flepimop-env
 conda install -c conda-forge jupyterlab ipykernel  dask click confuse matplotlib numba">=0.53" numpy pandas pyarrow pytest scipy seaborn sympy tqdm python-graphviz
-pip install --no-deps -e gempyor_pkg/
+pip install --no-deps -e flepimop/gempyor_pkg/
 ```
 
 ### Conda (complicated)
