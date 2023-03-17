@@ -533,6 +533,433 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 
 
 
+
+#' Print Header Section
+#' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
+#'
+#' @param sim_name name of simulation, typically named after the region/location you are modeling
+#' @param smh_round round of Scenario Modeling Hub, for special adjustments. NA if not SMH.
+#' @param sim_start_date simulation start date, should match that of interventions, with format YYYY-MM-DD (e.g., 2020-01-31)
+#' @param sim_end_date simulation end date with format YYYY-MM-DD (e.g., 2020-01-31)
+#' @param end_date_groundtruth end date of the ground truth that is fit to. NA if not limiting ground truth date
+#' @param nslots number of simulations to run
+#' @param data_path 
+#' @param model_output_path 
+#' @param start_date_groundtruth 
+#' @param setup_name spatial folder name
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'
+print_header <- function (
+        sim_name, 
+        setup_name = "SMH",
+        smh_round = NA, 
+        data_path = "data", 
+        model_output_path = "model_output",
+        sim_start_date, 
+        sim_end_date, 
+        start_date_groundtruth = NA,
+        end_date_groundtruth = NA, 
+        nslots) {
+    
+    cat(
+        paste0("name: ", sim_name, "\n", 
+               "setup_name: ", setup_name, "\n",
+               ifelse(!is.na(smh_round), 
+                      paste0("smh_round: ", smh_round, "\n"), ""), 
+               "data_path: ", data_path, "\n",
+               "model_output_path: ", model_output_path, "\n",
+               "start_date: ", sim_start_date, "\n",
+               "end_date: ", sim_end_date, "\n", 
+               ifelse(!is.na(start_date_groundtruth), paste0("start_date_groundtruth: ", start_date_groundtruth, "\n"), ""), 
+               ifelse(!is.na(end_date_groundtruth), paste0("end_date_groundtruth: ", end_date_groundtruth, "\n"), ""), 
+               "nslots: ", nslots, "\n",
+               "\n"
+        ))
+}
+
+
+
+
+
+#' Print Header Section
+#' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
+#'
+#' @param census_year integer(year)
+#' @param sim_states vector of locations that will be modeled
+#' @param geodata_file path to file relative to base_path. Geodata is a .csv with column headers, with at least two columns: nodenames and popnodes
+#' @param popnodes is the name of a column in geodata that specifies the population of the nodenames column
+#' @param nodenames is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
+#' @param mobility_file path to file relative to base_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the nodenames column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
+#' @param state_level whether this is a state-level run
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'
+print_spatial_setup <- function (
+        census_year = 2019, 
+        sim_states, 
+        geodata_file = "geodata.csv", 
+        mobility_file = "mobility.csv", 
+        popnodes = "pop2019est", 
+        nodenames = "geoid", 
+        state_level = TRUE) {
+    
+    cat(
+        paste0("spatial_setup:\n", 
+               "  census_year: ", census_year, "\n", 
+               "  modeled_states:\n"), 
+        paste0("   - ", sim_states, "\n"), 
+        paste0("\n",
+               "  geodata: ", geodata_file, "\n", 
+               "  mobility: ", mobility_file, "\n", 
+               "  popnodes: ", popnodes, "\n", 
+               "  nodenames: ", nodenames, "\n", 
+               "  state_level: ", state_level, "\n",
+               "\n")
+    )
+}
+
+
+
+
+
+
+#' Print SEIR Section
+#' @description Print seir section with specified parameters.
+#' 
+#' @param vaccine_compartments names of vaccination compartments: defaults to "unvaccinated", "first dose" and "second dose"
+#' @param variant_compartments 
+#' @param age_strata 
+#' @param inf_stages 
+#'
+#' @export
+#'
+#' @examples
+#'
+print_compartments <- function (
+        inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
+        vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
+        variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
+        age_strata = c("age0to17", "age18to64", "age65to100")){
+    
+    compartments <- paste0("compartments:\n", 
+                           "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
+                           "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
+                           "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
+                           "  age_strata: [", cmprt_list(age_strata), "]\n")
+    
+    cat(compartments)
+}
+
+
+
+
+
+#' Print seeding section
+#' @description Prints the seeding section of the configuration file
+#' @param method There are two different seeding methods: 1) based on air importation (FolderDraw) and 2) based on earliest identified cases (PoissonDistributed). FolderDraw is required if the importation section is present and requires folder_path. Otherwise, put PoissonDistributed, which requires lambda_file.
+#' @param seeding_file_type indicates which seeding file type the SEIR model will look for, "seed", which is generated from inference::create_seeding.R, or "impa", which refers to importation
+#' @param folder_path path to folder where importation inference files will be saved
+#' @param lambda_file path to seeding file
+#' @param date_sd standard deviation for the proposal value of the seeding date, in number of days (date_sd )
+#' @param amount_sd
+#' @param variant_filename path to file with variant proportions per day per variant. Variant names: 'wild', 'alpha', 'delta'
+#' @param compartment whether to print config with compartments
+#' @param variant_compartments vector of variant compartment names
+#'
+#' @details
+#' ## The model performns inference on the seeding date and initial number of seeding infections in each geoid with the default settings
+#' ## The method for determining the proposal distribution for the seeding amount is hard-coded in the inference package (R/pkgs/inference/R/functions/perturb_seeding.R). It is pertubed with a normal distribution where the mean of the distribution 10 times the number of confirmed cases on a given date and the standard deviation is 1.
+#'
+#' @export
+#'
+#' @examples
+#'
+print_seeding <- function (method = "FolderDraw", 
+                           seeding_file_type = "seed", 
+                           lambda_file = "data/seeding.csv", 
+                           population_file = "data/seeding_agestrat.csv", 
+                           date_sd = 1, 
+                           amount_sd = 1, 
+                           variant_filename = "data/variant/variant_props_long.csv", 
+                           compartment = TRUE, 
+                           variant_compartments = c("WILD", "ALPHA", "DELTA"), 
+                           vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
+                           age_strata_seed = "0_64",
+                           seeding_outcome = NULL, # incidH
+                           seeding_inflation_ratio = NULL # 200
+){
+    
+    variant_compartments <- stringr::str_to_upper(variant_compartments)
+    seeding_comp <- "\nseeding:\n"
+    if (compartment) {
+        age_strata_seed <- paste0("age", age_strata_seed)
+        seeding_comp <- paste0(seeding_comp, 
+                               "  variant_filename: ", variant_filename, "\n", 
+                               "  seeding_compartments:\n")
+        for (i in 1:length(variant_compartments)) {
+            seeding_comp <- paste0(seeding_comp, "    ", variant_compartments[i], ":\n", 
+                                   "      source_compartment: [\"S\", \"unvaccinated\", \"", stringr::str_to_upper(variant_compartments[1]), "\", \"", age_strata_seed, "\"]\n", 
+                                   "      destination_compartment: [\"E\", \"unvaccinated\", \"", stringr::str_to_upper(variant_compartments[i]), "\", \"", age_strata_seed, "\"]\n")
+        }
+    }
+    seeding <- paste0(seeding_comp, 
+                      "  method: ", method, "\n", 
+                      "  seeding_file_type: ", seeding_file_type, "\n", 
+                      if(!is.null(seeding_outcome)) paste0("  seeding_outcome: ",seeding_outcome, "\n"),
+                      if(!is.null(seeding_inflation_ratio)) paste0("  seeding_inflation_ratio: ", seeding_inflation_ratio, "\n"),
+                      "  lambda_file: ", lambda_file, "\n", 
+                      if (compartment) paste0("  pop_seed_file: ", population_file, "\n"),
+                      "  date_sd: ", date_sd, "\n", 
+                      "  amount_sd: ", amount_sd, "\n", 
+                      "\n")
+    cat(seeding)
+}
+
+
+
+
+
+
+
+
+
+
+#' Print SEIR Section
+#' @description Print seir section with specified parameters.
+#' 
+#' @param resume_modifier 
+#' @param seir_csv 
+#' @param integration_method 
+#' @param params 
+#' @param ve_data 
+#' @param theta_dist 
+#' @param vaccine_compartments names of vaccination compartments: defaults to "unvaccinated", "first dose" and "second dose"
+#' @param variant_compartments 
+#' @param age_strata 
+#' @param age_strata_boosters 
+#' @param inf_stages 
+#' @param use_descriptions 
+#' @param resume_mod_params 
+#' @param resume_overwrite_vacc 
+#' @param vacc_timeseries 
+#' @param nu_list 
+#'
+#' @export
+#'
+#' @examples
+#' print_seir(seir_csv = "seir_R12.csv",
+#'            alpha_val=0.99,
+#'            sigma_val = 1/5.2,
+#'            gamma_dist = "uniform",
+#'            gamma_a = 1/6,
+#'            gamma_b = 1/2.6,
+#'            r0_dist = "fixed",
+#'            r0_val = 2.3,
+#'            incl_vacc = FALSE)
+#'
+print_seir <- function(integration_method = "rk4",
+                       dt = 2.000,
+                       params = params_list,
+                       ve_data = ve_data, 
+                       theta_dist = "fixed", 
+                       nu_list = list(
+                           label = c("nu1","nu2","nu3","nu5"), 
+                           age_stratified = c(TRUE,FALSE,TRUE,TRUE),
+                           value = c(0, 1/(3.5*7), 0, 0),
+                           overlap_operation = c("sum","sum","sum","sum"),
+                           distrib = c("fixed","fixed","fixed","fixed")),
+                       age_strata = c("age0to17", "age18to64", "age65to100"), 
+                       resume_modifier = NULL, 
+                       resume_mod_params = NULL,
+                       resume_overwrite_vacc = FALSE,
+                       vacc_timeseries = TRUE,
+                       seir_csv = "seir_R12_v2.csv", 
+                       use_descriptions = TRUE){
+    
+    seir_dat <- suppressWarnings(suppressMessages(read_csv(seir_csv, progress = FALSE)))
+    seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = " ", replacement = "")
+    seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = "\"", replacement = "")
+    
+    if (!any(is.na(resume_modifier) | is.null(resume_modifier) | resume_modifier == "")) {
+        res_mod = TRUE
+    } else {
+        res_mod = FALSE
+    }
+    if (!any(is.na(resume_mod_params) | is.null(resume_mod_params) | resume_mod_params == "")) {
+        use_res_mod_params = TRUE
+    } else {
+        use_res_mod_params = FALSE
+    }
+    
+    if (res_mod & use_res_mod_params) {
+        
+        resume_mod_rates <- function(rate, resume_mod_params) {
+            if (rate != "1" & !is.na(rate)) {
+                rate_ <- strsplit(rate, ",")[[1]]
+                rate_new <- NULL
+                for (i in 1:length(rate_)) {
+                    
+                    if (grepl("\\*", rate_[i])){
+                        rate_2_ <- strsplit(rate_[i], "\\*")[[1]]
+                        rate_new_2 <- NULL
+                        for (j in 1:length(rate_2_)) {
+                            rate_new_2 <- c(rate_new_2, ifelse(rate_2_[j] == "1", "1", 
+                                                               ifelse(rate_2_[j] %in% resume_mod_params$param, resume_mod_params$param_res[rate_2_[j]==resume_mod_params$param],
+                                                                      rate_2_[j])))
+                        }
+                        rate_new_2 <- paste(rate_new_2, collapse = "*")
+                        rate_new <- c(rate_new, rate_new_2)
+                    } else {
+                        rate_new <- c(rate_new, ifelse(rate_[i] == "1", "1", 
+                                                       ifelse(rate_[i] %in% resume_mod_params$param, resume_mod_params$param_res[rate_[i]==resume_mod_params$param],
+                                                              rate_[i])))
+                    }
+                }
+            } else {
+                rate_new <- rate
+            }
+            rate_new <- paste(rate_new, collapse = ",")
+            return(rate_new)
+        }
+        
+        seir_dat <- seir_dat %>% 
+            mutate(rate_seir = as.vector(sapply(rate_seir, resume_mod_rates, resume_mod_params)), 
+                   rate_vacc = as.vector(sapply(rate_vacc, resume_mod_rates, resume_mod_params)), 
+                   rate_var = as.vector(sapply(rate_var, resume_mod_rates, resume_mod_params)), 
+                   rate_age = as.vector(sapply(rate_age, resume_mod_rates, resume_mod_params))) %>%
+            ungroup()
+    } else {
+        stop("need to implement without res_mod_params")
+    }
+    resume_modifier <- ifelse(is.na(resume_modifier) | is.null(resume_modifier), "", resume_modifier)
+    
+    
+    
+    # Integration method ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
+    seir <- paste0("seir:\n", 
+                   "  integration:\n",
+                   "    method: ", integration_method, "\n",
+                   "    dt: ", sprintf(fmt = "%#.3f", as.numeric(dt)), "\n", 
+                   "  parameters:\n")
+    
+    
+    
+    # Parameters ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
+    # add specified parameters
+    for (i in 1:length(params)) {
+        
+        if(use_res_mod_params){
+            param_name_ <- ifelse(params[[i]]$param %in% resume_mod_params$param, 
+                                  resume_mod_params$param_res[params[[i]]$param==resume_mod_params$param], params[[i]]$param)
+        } else {
+            param_name_ <- params[[i]]$param
+        }
+        
+        seir <- paste0(seir, 
+                       "    ", param_name_, ":\n", 
+                       print_value1(value_type = params[[i]]$type,
+                                    value_dist = params[[i]]$dist, 
+                                    value_mean = params[[i]]$value, 
+                                    value_sd = params[[i]]$sd, 
+                                    value_a = params[[i]]$a, 
+                                    value_b = params[[i]]$b))
+    }
+    
+    # add fixed nu's (fixed vaccination rates)
+    if (!is.na(nu_list$label)){
+        for (j in 1:length(nu_list$label)){
+            
+            if(use_res_mod_params){
+                nu_label_ <- ifelse(nu_list$label[j] %in% resume_mod_params$param, 
+                                    resume_mod_params$param_res[nu_list$label[j]==resume_mod_params$param], nu_list$label[j])
+            } else {
+                nu_label_ <- nu_list$label[j]
+            }
+            
+            if (nu_list$age_stratified[j]){
+                for (i in 1:length(age_strata)) {
+                    seir <- paste0(seir, "    ", nu_label_, ifelse(nu_list$age_stratified[j], age_strata[i], ""), resume_modifier, ": \n", 
+                                   "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n", 
+                                   print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
+                }
+            } else {
+                seir <- paste0(seir, "    ", nu_label_, ": \n", 
+                               "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n", 
+                               print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
+            }
+        }
+    }
+    
+    
+    # add thetas (vaccine effectiveness)
+    thetas <- ve_data %>% pull(theta_name)
+    theta_vals <- ve_data %>% pull(VE)
+    if (!(length(theta_dist) %in% c(1, length(thetas)))) {
+        stop("theta_dist must be assigned 1 value only or a vector of values corresponding to the number of thetas.")
+    }
+    if (length(theta_dist) == 1) {
+        theta_dist <- rep(theta_dist, length(thetas))
+    }
+    for (i in 1:length(thetas)) {
+        
+        if(use_res_mod_params){
+            thetas_name_ <- ifelse(thetas[i] %in% resume_mod_params$param, 
+                                   resume_mod_params$param_res[thetas[i]==resume_mod_params$param], thetas[i])
+        } else {
+            thetas_name_ <- thetas[i]
+        }
+        
+        seir <- paste0(seir, "    ", thetas_name_, ":\n", 
+                       print_value(value_dist = theta_dist[i], value_mean = paste0(1, " - ", theta_vals[i])))
+    }
+    
+    
+    seir <- paste0(seir,
+                   "\n",
+                   "  transitions:\n")
+    
+    
+    # SEIR STRUCTURE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
+    for (i in 1:nrow(seir_dat)) {
+        seir <- paste0(seir, 
+                       ifelse(use_descriptions & !(is.na(seir_dat$description[i]) | 
+                                                       is.null(seir_dat$description[i]) | seir_dat$description[i] == ""),
+                              paste0("# ", seir_dat$transition[i], " - ", seir_dat$description[i], "\n"), ""), 
+                       config.writer::seir_chunk(resume_modifier = resume_modifier, 
+                                                 SEIR_source = strsplit(seir_dat$SEIR_source[i], ",")[[1]], 
+                                                 SEIR_dest = strsplit(seir_dat$SEIR_dest[i], ",")[[1]], 
+                                                 vaccine_compartments_source = strsplit(seir_dat$vaccine_compartments_source[i], ",")[[1]], 
+                                                 vaccine_compartments_dest = strsplit(seir_dat$vaccine_compartments_dest[i], ",")[[1]], 
+                                                 vaccine_infector = strsplit(seir_dat$vaccine_infector[i], ",")[[1]], 
+                                                 variant_compartments_source = strsplit(seir_dat$variant_compartments_source[i], ",")[[1]], 
+                                                 variant_compartments_dest = strsplit(seir_dat$variant_compartments_dest[i], ",")[[1]], 
+                                                 age_strata = strsplit(seir_dat$age_strata[i], ",")[[1]], 
+                                                 rate_seir = strsplit(seir_dat$rate_seir[i], ",")[[1]], 
+                                                 rate_vacc = strsplit(seir_dat$rate_vacc[i], ",")[[1]], 
+                                                 rate_var = strsplit(seir_dat$rate_var[i], ",")[[1]], 
+                                                 rate_age = strsplit(seir_dat$rate_age[i], ",")[[1]]))
+    }
+    cat(seir)
+}
+
+
+
+
+
+
+
+
+
 #' Print Interventions Section
 #'
 #' @description Print transmission and outcomes interventions and stack them
@@ -981,200 +1408,6 @@ print_outcomes <- function (resume_modifier = NULL,
 
 
 
-
-#' Print Header Section
-#' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
-#'
-#' @param sim_name name of simulation, typically named after the region/location you are modeling
-#' @param smh_round round of Scenario Modeling Hub, for special adjustments. NA if not SMH.
-#' @param sim_start_date simulation start date, should match that of interventions, with format YYYY-MM-DD (e.g., 2020-01-31)
-#' @param sim_end_date simulation end date with format YYYY-MM-DD (e.g., 2020-01-31)
-#' @param end_date_groundtruth end date of the ground truth that is fit to. NA if not limiting ground truth date
-#' @param nslots number of simulations to run
-#' @param data_path 
-#' @param model_output_path 
-#' @param start_date_groundtruth 
-#' @param setup_name spatial folder name
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#'
-print_header <- function (
-        sim_name, 
-        setup_name = "SMH",
-        smh_round = NA, 
-        data_path = "data", 
-        model_output_path = "model_output",
-        sim_start_date, 
-        sim_end_date, 
-        start_date_groundtruth = NA,
-        end_date_groundtruth = NA, 
-        nslots) {
-    
-    cat(
-        paste0("name: ", sim_name, "\n", 
-               "setup_name: ", setup_name, "\n",
-               ifelse(!is.na(smh_round), 
-                      paste0("smh_round: ", smh_round, "\n"), ""), 
-               "data_path: ", data_path, "\n",
-               "model_output_path: ", model_output_path, "\n",
-               "start_date: ", sim_start_date, "\n",
-               "end_date: ", sim_end_date, "\n", 
-               ifelse(!is.na(start_date_groundtruth), paste0("start_date_groundtruth: ", start_date_groundtruth, "\n"), ""), 
-               ifelse(!is.na(end_date_groundtruth), paste0("end_date_groundtruth: ", end_date_groundtruth, "\n"), ""), 
-               "nslots: ", nslots, "\n",
-               "\n"
-        ))
-}
-
-
-
-
-
-#' Print Header Section
-#' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
-#'
-#' @param census_year integer(year)
-#' @param sim_states vector of locations that will be modeled
-#' @param geodata_file path to file relative to base_path. Geodata is a .csv with column headers, with at least two columns: nodenames and popnodes
-#' @param popnodes is the name of a column in geodata that specifies the population of the nodenames column
-#' @param nodenames is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
-#' @param mobility_file path to file relative to base_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the nodenames column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
-#' @param state_level whether this is a state-level run
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#'
-print_spatial_setup <- function (
-        census_year = 2019, 
-        sim_states, 
-        geodata_file = "geodata.csv", 
-        mobility_file = "mobility.csv", 
-        popnodes = "pop2019est", 
-        nodenames = "geoid", 
-        state_level = TRUE) {
-    
-    cat(
-        paste0("spatial_setup:\n", 
-               "  census_year: ", census_year, "\n", 
-               "  modeled_states:\n"), 
-        paste0("   - ", sim_states, "\n"), 
-        paste0("\n",
-               "  geodata: ", geodata_file, "\n", 
-               "  mobility: ", mobility_file, "\n", 
-               "  popnodes: ", popnodes, "\n", 
-               "  nodenames: ", nodenames, "\n", 
-               "  state_level: ", state_level, "\n",
-               "\n")
-    )
-}
-
-
-
-
-
-
-#' Print SEIR Section
-#' @description Print seir section with specified parameters.
-#' 
-#' @param vaccine_compartments names of vaccination compartments: defaults to "unvaccinated", "first dose" and "second dose"
-#' @param variant_compartments 
-#' @param age_strata 
-#' @param inf_stages 
-#'
-#' @export
-#'
-#' @examples
-#'
-print_compartments <- function (
-        inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
-        vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
-        variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
-        age_strata = c("age0to17", "age18to64", "age65to100")){
-    
-    compartments <- paste0("compartments:\n", 
-                           "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
-                           "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
-                           "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
-                           "  age_strata: [", cmprt_list(age_strata), "]\n", 
-                           "  transitions:\n")
-    
-    cat(compartments)
-}
-
-
-
-
-
-
-
-#' Print seeding section
-#' @description Prints the seeding section of the configuration file
-#' @param method There are two different seeding methods: 1) based on air importation (FolderDraw) and 2) based on earliest identified cases (PoissonDistributed). FolderDraw is required if the importation section is present and requires folder_path. Otherwise, put PoissonDistributed, which requires lambda_file.
-#' @param seeding_file_type indicates which seeding file type the SEIR model will look for, "seed", which is generated from inference::create_seeding.R, or "impa", which refers to importation
-#' @param folder_path path to folder where importation inference files will be saved
-#' @param lambda_file path to seeding file
-#' @param date_sd standard deviation for the proposal value of the seeding date, in number of days (date_sd )
-#' @param amount_sd
-#' @param variant_filename path to file with variant proportions per day per variant. Variant names: 'wild', 'alpha', 'delta'
-#' @param compartment whether to print config with compartments
-#' @param variant_compartments vector of variant compartment names
-#'
-#' @details
-#' ## The model performns inference on the seeding date and initial number of seeding infections in each geoid with the default settings
-#' ## The method for determining the proposal distribution for the seeding amount is hard-coded in the inference package (R/pkgs/inference/R/functions/perturb_seeding.R). It is pertubed with a normal distribution where the mean of the distribution 10 times the number of confirmed cases on a given date and the standard deviation is 1.
-#'
-#' @export
-#'
-#' @examples
-#'
-print_seeding <- function (method = "FolderDraw", 
-                           seeding_file_type = "seed", 
-                           lambda_file = "data/seeding.csv", 
-                           population_file = "data/seeding_agestrat.csv", 
-                           date_sd = 1, 
-                           amount_sd = 1, 
-                           variant_filename = "data/variant/variant_props_long.csv", 
-                           compartment = TRUE, 
-                           variant_compartments = c("WILD", "ALPHA", "DELTA"), 
-                           vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
-                           age_strata_seed = "0_64",
-                           seeding_outcome = NULL, # incidH
-                           seeding_inflation_ratio = NULL # 200
-){
-    
-    variant_compartments <- stringr::str_to_upper(variant_compartments)
-    seeding_comp <- "\nseeding:\n"
-    if (compartment) {
-        age_strata_seed <- paste0("age", age_strata_seed)
-        seeding_comp <- paste0(seeding_comp, 
-                               "  variant_filename: ", variant_filename, "\n", 
-                               "  seeding_compartments:\n")
-        for (i in 1:length(variant_compartments)) {
-            seeding_comp <- paste0(seeding_comp, "    ", variant_compartments[i], ":\n", 
-                                   "      source_compartment: [\"S\", \"unvaccinated\", \"", stringr::str_to_upper(variant_compartments[1]), "\", \"", age_strata_seed, "\"]\n", 
-                                   "      destination_compartment: [\"E\", \"unvaccinated\", \"", stringr::str_to_upper(variant_compartments[i]), "\", \"", age_strata_seed, "\"]\n")
-        }
-    }
-    seeding <- paste0(seeding_comp, 
-                      "  method: ", method, "\n", 
-                      "  seeding_file_type: ", seeding_file_type, "\n", 
-                      if(!is.null(seeding_outcome)) paste0("  seeding_outcome: ",seeding_outcome, "\n"),
-                      if(!is.null(seeding_inflation_ratio)) paste0("  seeding_inflation_ratio: ", seeding_inflation_ratio, "\n"),
-                      "  lambda_file: ", lambda_file, "\n", 
-                      if (compartment) paste0("  pop_seed_file: ", population_file, "\n"),
-                      "  date_sd: ", date_sd, "\n", 
-                      "  amount_sd: ", amount_sd, "\n", 
-                      "\n")
-    cat(seeding)
-}
-
-
-
 #' Print inference and inference::statistics
 #' @description Set settings for the inference section and its statistics component
 #'
@@ -1211,7 +1444,7 @@ print_seeding <- function (method = "FolderDraw",
 #'
 print_inference_statistics <- function(iterations_per_slot = 300, 
                                        do_inference = TRUE, 
-                                       data_path = "data/us_data.csv", 
+                                       gt_data_path = "data/us_data.csv", 
                                        gt_source = "csse", 
                                        gt_source_statistics = NULL, misc_data_filename = NULL, 
                                        aggregator = "sum", 
@@ -1234,7 +1467,7 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                "inference:\n", 
                "  iterations_per_slot: ", iterations_per_slot, "\n", 
                "  do_inference: ", do_inference, "\n", 
-               "  data_path: ", data_path, "\n", 
+               "  gt_data_path: ", gt_data_path, "\n", 
                "  gt_source: \"", gt_source, "\"\n", {
                    if (!is.null(misc_data_filename)) 
                        paste0("  misc_data_filename: ", misc_data_filename, "\n")
@@ -1353,268 +1586,6 @@ print_inference_statistics <- function(iterations_per_slot = 300,
 }
 
 
-
-
-
-
-
-
-
-
-#' Print SEIR Section
-#' @description Print seir section with specified parameters.
-#' 
-#' @param vaccine_compartments names of vaccination compartments: defaults to "unvaccinated", "first dose" and "second dose"
-#' @param variant_compartments 
-#' @param age_strata 
-#' @param inf_stages 
-#'
-#' @export
-#'
-#' @examples
-#'
-print_compartments <- function (
-        inf_stages = c("S", "E", "I1", "I2", "I3", "R", "W"), 
-        vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"), 
-        variant_compartments = c("WILD", "ALPHA", "DELTA", "OMICRON"), 
-        age_strata = c("age0to17", "age18to64", "age65to100")){
-    
-    compartments <- paste0("compartments:\n", 
-                           "  infection_stage: [", cmprt_list(inf_stages), "] \n", 
-                           "  vaccination_stage: [", cmprt_list(vaccine_compartments), "] \n", 
-                           "  variant_type: [", cmprt_list(variant_compartments), "] \n", 
-                           "  age_strata: [", cmprt_list(age_strata), "]\n")
-    
-    cat(compartments)
-}
-
-
-
-
-
-
-
-
-#' Print SEIR Section
-#' @description Print seir section with specified parameters.
-#' 
-#' @param resume_modifier 
-#' @param seir_csv 
-#' @param integration_method 
-#' @param params 
-#' @param ve_data 
-#' @param theta_dist 
-#' @param vaccine_compartments names of vaccination compartments: defaults to "unvaccinated", "first dose" and "second dose"
-#' @param variant_compartments 
-#' @param age_strata 
-#' @param age_strata_boosters 
-#' @param inf_stages 
-#' @param use_descriptions 
-#' @param resume_mod_params 
-#' @param resume_overwrite_vacc 
-#' @param vacc_timeseries 
-#' @param nu_list 
-#'
-#' @export
-#'
-#' @examples
-#' print_seir(seir_csv = "seir_R12.csv",
-#'            alpha_val=0.99,
-#'            sigma_val = 1/5.2,
-#'            gamma_dist = "uniform",
-#'            gamma_a = 1/6,
-#'            gamma_b = 1/2.6,
-#'            r0_dist = "fixed",
-#'            r0_val = 2.3,
-#'            incl_vacc = FALSE)
-#'
-print_seir <- function(integration_method = "rk4",
-                       dt = 2.000,
-                       params = params_list,
-                       ve_data = ve_data, 
-                       theta_dist = "fixed", 
-                       nu_list = list(
-                           label = c("nu1","nu2","nu3","nu5"), 
-                           age_stratified = c(TRUE,FALSE,TRUE,TRUE),
-                           value = c(0, 1/(3.5*7), 0, 0),
-                           overlap_operation = c("sum","sum","sum","sum"),
-                           distrib = c("fixed","fixed","fixed","fixed")),
-                       age_strata = c("age0to17", "age18to64", "age65to100"), 
-                       resume_modifier = NULL, 
-                       resume_mod_params = NULL,
-                       resume_overwrite_vacc = FALSE,
-                       vacc_timeseries = TRUE,
-                       seir_csv = "seir_R12_v2.csv", 
-                       use_descriptions = TRUE){
-    
-    seir_dat <- suppressWarnings(suppressMessages(read_csv(seir_csv, progress = FALSE)))
-    seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = " ", replacement = "")
-    seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = "\"", replacement = "")
-    
-    if (!any(is.na(resume_modifier) | is.null(resume_modifier) | resume_modifier == "")) {
-        res_mod = TRUE
-    } else {
-        res_mod = FALSE
-    }
-    if (!any(is.na(resume_mod_params) | is.null(resume_mod_params) | resume_mod_params == "")) {
-        use_res_mod_params = TRUE
-    } else {
-        use_res_mod_params = FALSE
-    }
-    
-    if (res_mod & use_res_mod_params) {
-        
-        resume_mod_rates <- function(rate, resume_mod_params) {
-            if (rate != "1" & !is.na(rate)) {
-                rate_ <- strsplit(rate, ",")[[1]]
-                rate_new <- NULL
-                for (i in 1:length(rate_)) {
-                    
-                    if (grepl("\\*", rate_[i])){
-                        rate_2_ <- strsplit(rate_[i], "\\*")[[1]]
-                        rate_new_2 <- NULL
-                        for (j in 1:length(rate_2_)) {
-                            rate_new_2 <- c(rate_new_2, ifelse(rate_2_[j] == "1", "1", 
-                                                               ifelse(rate_2_[j] %in% resume_mod_params$param, resume_mod_params$param_res[rate_2_[j]==resume_mod_params$param],
-                                                                      rate_2_[j])))
-                        }
-                        rate_new_2 <- paste(rate_new_2, collapse = "*")
-                        rate_new <- c(rate_new, rate_new_2)
-                    } else {
-                        rate_new <- c(rate_new, ifelse(rate_[i] == "1", "1", 
-                                                       ifelse(rate_[i] %in% resume_mod_params$param, resume_mod_params$param_res[rate_[i]==resume_mod_params$param],
-                                                              rate_[i])))
-                    }
-                }
-            } else {
-                rate_new <- rate
-            }
-            rate_new <- paste(rate_new, collapse = ",")
-            return(rate_new)
-        }
-        
-        seir_dat <- seir_dat %>% 
-            mutate(rate_seir = as.vector(sapply(rate_seir, resume_mod_rates, resume_mod_params)), 
-                   rate_vacc = as.vector(sapply(rate_vacc, resume_mod_rates, resume_mod_params)), 
-                   rate_var = as.vector(sapply(rate_var, resume_mod_rates, resume_mod_params)), 
-                   rate_age = as.vector(sapply(rate_age, resume_mod_rates, resume_mod_params))) %>%
-            ungroup()
-    } else {
-        stop("need to implement without res_mod_params")
-    }
-    resume_modifier <- ifelse(is.na(resume_modifier) | is.null(resume_modifier), "", resume_modifier)
-    
-    
-    
-    # Integration method ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
-    seir <- paste0("seir:\n", 
-                   "  integration:\n",
-                   "    method: ", integration_method, "\n",
-                   "    dt: ", sprintf(fmt = "%#.3f", as.numeric(dt)), "\n", 
-                   "  parameters:\n")
-    
-    
-    
-    # Parameters ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
-    # add specified parameters
-    for (i in 1:length(params)) {
-        
-        if(use_res_mod_params){
-            param_name_ <- ifelse(params[[i]]$param %in% resume_mod_params$param, 
-                                  resume_mod_params$param_res[params[[i]]$param==resume_mod_params$param], params[[i]]$param)
-        } else {
-            param_name_ <- params[[i]]$param
-        }
-        
-        seir <- paste0(seir, 
-                       "    ", param_name_, ":\n", 
-                       print_value1(value_type = params[[i]]$type,
-                                    value_dist = params[[i]]$dist, 
-                                    value_mean = params[[i]]$value, 
-                                    value_sd = params[[i]]$sd, 
-                                    value_a = params[[i]]$a, 
-                                    value_b = params[[i]]$b))
-    }
-    
-    # add fixed nu's (fixed vaccination rates)
-    if (!is.na(nu_list$label)){
-        for (j in 1:length(nu_list$label)){
-            
-            if(use_res_mod_params){
-                nu_label_ <- ifelse(nu_list$label[j] %in% resume_mod_params$param, 
-                                    resume_mod_params$param_res[nu_list$label[j]==resume_mod_params$param], nu_list$label[j])
-            } else {
-                nu_label_ <- nu_list$label[j]
-            }
-            
-            if (nu_list$age_stratified[j]){
-                for (i in 1:length(age_strata)) {
-                    seir <- paste0(seir, "    ", nu_label_, ifelse(nu_list$age_stratified[j], age_strata[i], ""), resume_modifier, ": \n", 
-                                   "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n", 
-                                   print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
-                }
-            } else {
-                seir <- paste0(seir, "    ", nu_label_, ": \n", 
-                               "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n", 
-                               print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
-            }
-        }
-    }
-    
-    
-    # add thetas (vaccine effectiveness)
-    thetas <- ve_data %>% pull(theta_name)
-    theta_vals <- ve_data %>% pull(VE)
-    if (!(length(theta_dist) %in% c(1, length(thetas)))) {
-        stop("theta_dist must be assigned 1 value only or a vector of values corresponding to the number of thetas.")
-    }
-    if (length(theta_dist) == 1) {
-        theta_dist <- rep(theta_dist, length(thetas))
-    }
-    for (i in 1:length(thetas)) {
-        
-        if(use_res_mod_params){
-            thetas_name_ <- ifelse(thetas[i] %in% resume_mod_params$param, 
-                                   resume_mod_params$param_res[thetas[i]==resume_mod_params$param], thetas[i])
-        } else {
-            thetas_name_ <- thetas[i]
-        }
-        
-        seir <- paste0(seir, "    ", thetas_name_, ":\n", 
-                       print_value(value_dist = theta_dist[i], value_mean = paste0(1, " - ", theta_vals[i])))
-    }
-    
-    
-    seir <- paste0(seir,
-                   "\n",
-                   "  transitions:\n")
-    
-    
-    # SEIR STRUCTURE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
-    for (i in 1:nrow(seir_dat)) {
-        seir <- paste0(seir, 
-                       ifelse(use_descriptions & !(is.na(seir_dat$description[i]) | 
-                                                       is.null(seir_dat$description[i]) | seir_dat$description[i] == ""),
-                              paste0("# ", seir_dat$transition[i], " - ", seir_dat$description[i], "\n"), ""), 
-                       config.writer::seir_chunk(resume_modifier = resume_modifier, 
-                                                 SEIR_source = strsplit(seir_dat$SEIR_source[i], ",")[[1]], 
-                                                 SEIR_dest = strsplit(seir_dat$SEIR_dest[i], ",")[[1]], 
-                                                 vaccine_compartments_source = strsplit(seir_dat$vaccine_compartments_source[i], ",")[[1]], 
-                                                 vaccine_compartments_dest = strsplit(seir_dat$vaccine_compartments_dest[i], ",")[[1]], 
-                                                 vaccine_infector = strsplit(seir_dat$vaccine_infector[i], ",")[[1]], 
-                                                 variant_compartments_source = strsplit(seir_dat$variant_compartments_source[i], ",")[[1]], 
-                                                 variant_compartments_dest = strsplit(seir_dat$variant_compartments_dest[i], ",")[[1]], 
-                                                 age_strata = strsplit(seir_dat$age_strata[i], ",")[[1]], 
-                                                 rate_seir = strsplit(seir_dat$rate_seir[i], ",")[[1]], 
-                                                 rate_vacc = strsplit(seir_dat$rate_vacc[i], ",")[[1]], 
-                                                 rate_var = strsplit(seir_dat$rate_var[i], ",")[[1]], 
-                                                 rate_age = strsplit(seir_dat$rate_age[i], ",")[[1]]))
-    }
-    cat(seir)
-}
 
 
 
@@ -1766,6 +1737,11 @@ print_inference_prior <- function(npi_name = c("local_variance", "Seas_jan", "Se
         cat(paste0("\n"))
     }
 }
+
+
+
+
+
 
 #' Convenience function to repeat string x to match length of vector y
 #'
