@@ -36,8 +36,10 @@ option_list = list(
 parser=optparse::OptionParser(option_list=option_list)
 opt = optparse::parse_args(parser)
 
+# Garbage collection every 1 iteration
+gc_after_a_number <- 1
 
-if(opt[["is-interactive"]]) {
+if (opt[["is-interactive"]]) {
     options(error=recover)
 } else {
     options(
@@ -48,9 +50,9 @@ if(opt[["is-interactive"]]) {
 }
 flepicommon::prettyprint_optlist(opt)
 
-reticulate::use_python(Sys.which(opt$python),require=TRUE)
+reticulate::use_python(Sys.which(opt$python), required = TRUE)
 ## Block loads the config file and geodata
-if(opt$config == ""){
+if (opt$config == ""){
     optparse::print_help(parser)
     stop(paste(
         "Please specify a config YAML file with either -c option or CONFIG_PATH environment variable."
@@ -58,8 +60,8 @@ if(opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-if(('perturbation_sd' %in% names(config$seeding))) {
-    if(('date_sd' %in% names(config$seeding))) {
+if (('perturbation_sd' %in% names(config$seeding))) {
+    if (('date_sd' %in% names(config$seeding))) {
         stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
     }
     config$seeding$date_sd <- config$seeding$perturbation_sd
@@ -71,14 +73,14 @@ if (!('amount_sd' %in% names(config$seeding))) {
     config$seeding$amount_sd <- 1
 }
 
-if(!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
     stop("This filtration method requires the seeding method 'FolderDraw'")
 }
 
-if(!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
     stop("This filtration method requires the seeding method 'FolderDraw'")
 }
-#if(!('lambda_file' %in% names(config$seeding))) {
+#if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
 
@@ -88,18 +90,20 @@ state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spati
 
 
 ##Load information on geographic locations from geodata file.
-suppressMessages(geodata <- flepicommon::load_geodata_file(
-    paste(
-        config$spatial_setup$base_path,
-        config$spatial_setup$geodata, sep = "/"
-    ),
-    geoid_len = opt$geoid_len
-))
+suppressMessages(
+    geodata <- flepicommon::load_geodata_file(
+        paste(
+            config$spatial_setup$base_path,
+            config$spatial_setup$geodata, sep = "/"
+        ),
+        geoid_len = opt$geoid_len
+    )
+)
 obs_nodename <- config$spatial_setup$nodenames
 
 ##Load simulations per slot from config if not defined on command line
 ##command options take precedence
-if(is.na(opt$iterations_per_slot)){
+if (is.na(opt$iterations_per_slot)){
     opt$iterations_per_slot <- config$inference$iterations_per_slot
 }
 print(paste("Running",opt$iterations_per_slot,"simulations"))
@@ -107,14 +111,14 @@ print(paste("Running",opt$iterations_per_slot,"simulations"))
 ##Define data directory and create if it does not exist
 data_path <- config$inference$data_path
 data_dir <- dirname(data_path)
-if(!dir.exists(data_dir)){
+if (!dir.exists(data_dir)){
     suppressWarnings(dir.create(data_dir,recursive=TRUE))
 }
 
 # Parse scenarios arguments
 ##If death rates are specified check their existence
 deathrates <- opt$deathrates
-if(all(deathrates == "all")) {
+if (all(deathrates == "all")) {
     deathrates<- config$outcomes$scenarios
 } else if (!(deathrates %in% config$outcomes$scenarios)) {
     message(paste("Invalid death rate argument:", deathrate, "did not match any of the named args in", paste( p_death, collapse = ", "), "\n"))
@@ -133,14 +137,14 @@ if (all(scenarios == "all")){
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
-if("hierarchical_stats_geo"%in%names(config$inference)) {
+if ("hierarchical_stats_geo"%in%names(config$inference)) {
     hierarchical_stats <- config$inference$hierarchical_stats_geo
 }
 
 
 ##Create priors if specified
 defined_priors <- list()
-if("priors"%in%names(config$inference)) {
+if ("priors"%in%names(config$inference)) {
     defined_priors <- config$inference$priors
 }
 
@@ -149,7 +153,7 @@ if("priors"%in%names(config$inference)) {
 ## Runner Script---------------------------------------------------------------------
 
 ## backwards compatibility with configs that don't have inference$gt_source parameter will use the previous default data source (USA Facts)
-if(is.null(config$inference$gt_source)){
+if (is.null(config$inference$gt_source)){
     gt_source <- "usafacts"
 } else{
     gt_source <- config$inference$gt_source
@@ -300,8 +304,8 @@ for(scenario in scenarios) {
 
         print(paste0("Running deathrate: ", deathrate))
 
-
         reset_chimeric_files <- FALSE
+
         # Data -------------------------------------------------------------------------
         # Load
 
@@ -316,6 +320,7 @@ for(scenario in scenarios) {
         ## trailing separator is always added at the end of the string if specified.
         ## create_prefix(prefix="USA/", "inference", "med", "2022.03.04.10.18.42.CET", sep='/', trailing_separator='.')
         ## would be "USA/inference/med/2022.03.04.10.18.42.CET."
+
         slot_prefix <- flepicommon::create_prefix(config$name,scenario,deathrate,opt$run_id,sep='/',trailing_separator='/')
 
         gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
@@ -343,6 +348,7 @@ for(scenario in scenarios) {
             initialize=TRUE  # Shall we pre-compute now things that are not pertubed by inference
         )
         print("gempyor_inference_runner created successfully.")
+
 
         ## Using the prefixes, create standardized files of each type (e.g., seir) of the form
         ## {variable}/{prefix}{block-1}.{run_id}.{variable}.{ext}
@@ -404,10 +410,10 @@ for(scenario in scenarios) {
         # keep track of running average global acceptance rate, since old global likelihood data not kept in memory. Each geoID has same value for acceptance rate in global case, so we just take the 1st entry
         old_avg_global_accept_rate <- global_likelihood_data$accept_avg[1]
 
-        for( this_index in seq_len(opt$iterations_per_slot)) {
+        for (this_index in seq_len(opt$iterations_per_slot)) {
             print(paste("Running simulation", this_index))
 
-            startTimeCountEach=Sys.time()
+            startTimeCountEach = Sys.time()
 
             ## Create filenames
 
@@ -454,7 +460,7 @@ for(scenario in scenarios) {
                 sim_id2write=this_index,
                 load_ID=TRUE,
                 sim_id2load=this_index)
-            if(err != 0){
+            if (err != 0){
                 stop("InferenceSimulator failed to run")
             }
 
@@ -511,7 +517,7 @@ for(scenario in scenarios) {
 
 
             proposed_likelihood_data$accept <- ifelse(inference::iterateAccept(global_likelihood, proposed_likelihood) || ((current_index == 0) && (opt$this_block == 1)),1,0)
-            if(all(proposed_likelihood_data$accept == 1) | config$inference$do_inference == FALSE) {
+            if (all(proposed_likelihood_data$accept == 1) | config$inference$do_inference == FALSE) {
 
                 print("**** ACCEPT (Recording) ****")
                 if ((opt$this_block == 1) && (current_index == 0)) {
@@ -621,6 +627,13 @@ for(scenario in scenarios) {
 
             endTimeCountEach=difftime(Sys.time(), startTimeCountEach, units = "secs")
             print(paste("Time to run this MCMC iteration is ",formatC(endTimeCountEach,digits=2,format="f")," seconds"))
+
+
+            ## Run garbage collector to clear memory and prevent memory leakage
+            if (this_index %% gc_after_a_number == 0){
+                gc()
+            }
+
         }
 
         endTimeCount=difftime(Sys.time(), startTimeCount, units = "secs")
@@ -635,7 +648,7 @@ for(scenario in scenarios) {
                                                                      global_local_prefix,
                                                                      gf_prefix,
                                                                      global_block_prefix)
-        if(!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
+        if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
         # moves the most recently chimeric accepted parameter values from chimeric/intermediate file to chimeric/final
 
         cpy_res_chimeric <- inference::perform_MCMC_step_copies_chimeric(this_index,
@@ -645,7 +658,7 @@ for(scenario in scenarios) {
                                                                          chimeric_local_prefix,
                                                                          cf_prefix,
                                                                          chimeric_block_prefix)
-        if(!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
+        if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
         #####Write currently accepted files to disk
         #files of the form variables/name/scenario/deathrate/run_id/chimeric/intermediate/slot.block.run_id.variable.parquet
         output_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_block_prefix, opt$this_block)
