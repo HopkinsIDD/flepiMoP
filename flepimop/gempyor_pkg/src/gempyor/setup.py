@@ -82,16 +82,16 @@ class Setup:
 
         self.stoch_traj_flag = stoch_traj_flag
 
-        # SEIR part
         if config["seir"].exists() and (seir_config or parameters_config):
-            if "integration_method" in self.seir_config.keys():
-                self.integration_method = self.seir_config["integration_method"].get()
-                if self.integration_method == "best.current":
-                    self.integration_method = "rk4.jit"
-                if self.integration_method == "rk4":
-                    self.integration_method = "rk4.jit"
-                if self.integration_method not in ["rk4.jit", "legacy"]:
-                    raise ValueError(f"Unknow integration method {self.integration_method}.")
+            if "integration" in self.seir_config.keys():
+                if "method" in self.seir_config["integration"].keys():
+                    self.integration_method = self.seir_config["integration"]["method"].get()
+                    if self.integration_method == "best.current":
+                        self.integration_method = "rk4.jit"
+                    if self.integration_method == "rk4":
+                        self.integration_method = "rk4.jit"
+                    if self.integration_method not in ["rk4.jit", "legacy"]:
+                        raise ValueError(f"Unknow integration method {self.integration_method}.")
             else:
                 self.integration_method = "rk4.jit"
                 logging.info(f"Integration method not provided, assuming type {self.integration_method}")
