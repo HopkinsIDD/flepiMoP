@@ -28,7 +28,7 @@ if (exists("config$inference$gt_source")) {
     opt$gt_data_source <- config$inference$gt_source
 }
 
-outdir <- config$spatial_setup$base_path
+outdir <- config$data_path
 filterUSPS <- config$spatial_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -178,12 +178,12 @@ us_data <- us_data %>%
 
 
 # Save
-write_csv(us_data, config$inference$data_path)
+write_csv(us_data, config$inference$gt_data_path)
 
 
 
 cat(paste0("Ground truth data saved\n",
-           "  -- file:      ", config$inference$data_path,".\n",
+           "  -- file:      ", config$inference$gt_data_path,".\n",
            "  -- outcomes:  ", paste(grep("incid", colnames(us_data), value = TRUE), collapse = ", ")))
 
 
