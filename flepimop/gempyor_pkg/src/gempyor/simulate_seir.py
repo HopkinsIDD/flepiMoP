@@ -10,13 +10,13 @@
 #
 # ```yaml
 # name: <string>
+# setup_name: <string>
 # start_date: <date>
 # end_date: <date>
 # dt: float
 # nslots: <integer> overridden by the -n/--nslots script parameter
 # data_path: <path to directory>
 # spatial_setup:
-#   setup_name: <string>
 #   geodata: <path to file>
 #   mobility: <path to file>
 #   nodenames: <string>
@@ -111,9 +111,9 @@
 #
 # ## Output Data
 #
-# * model_output/{spatial_setup::setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]
-# * model_parameters/{spatial_setup::setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]
-# * model_parameters/{spatial_setup::setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]
+# * model_output/{setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]
+# * model_parameters/{setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]
+# * model_parameters/{setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]
 
 
 ## @cond
@@ -252,7 +252,7 @@ def simulate(
         nslots = config["nslots"].as_number()
 
     spatial_setup = setup.SpatialSetup(
-        setup_name=spatial_config["setup_name"].get(),
+        setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()

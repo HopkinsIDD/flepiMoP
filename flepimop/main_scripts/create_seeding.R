@@ -8,12 +8,12 @@
 # ## Configuration Items
 #
 # ```yaml
+# setup_name: <string>
 # start_date: <date>
 # end_date: <date>
 # data_path: <path to directory>
 
 # spatial_setup:
-#   setup_name: <string>
 #   geodata: <path to file>
 #   nodenames: <string>
 #

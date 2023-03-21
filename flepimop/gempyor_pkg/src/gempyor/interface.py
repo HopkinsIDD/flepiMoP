@@ -81,7 +81,7 @@ class InferenceSimulator:
         self.s = setup.Setup(
             setup_name=config["name"].get() + "_" + str(scenario),
             spatial_setup=setup.SpatialSetup(
-                setup_name=spatial_config["setup_name"].get(),
+                setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
                 mobility_file=spatial_base_path / spatial_config["mobility"].get()
                 if spatial_config["mobility"].exists()
