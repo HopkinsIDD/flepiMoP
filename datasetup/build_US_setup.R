@@ -13,7 +13,7 @@
 #   mobility: <path to file relative to base_path> optional; default is 'mobility.csv'
 #   geodata: <path to file relative to base_path> optional; default is 'geodata.csv'
 #   popnodes: <string> optional; default is 'population'
-# 
+#
 # importation:
 #   census_api_key: <string, optional> default is environment variable CENSUS_API_KEY. Environment variable is preferred so you don't accidentally commit your key.
 # ```
@@ -60,8 +60,8 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
 
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
-# commute_data <- readr::read_csv(paste(opt$p,"sample_data","united-states-commutes","commute_data.csv",sep='/'))
-# census_data <- readr::read_csv(paste(opt$p,"sample_data","united-states-commutes","census_tracts_2010.csv", sep = '/'))
+# commute_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","commute_data.gz.parquet"))
+# census_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","census_tracts_2010.gz.parquet"))
 
 
 # Get census key
@@ -80,8 +80,8 @@ tidycensus::census_api_key(key = census_key)
 # GEODATA (CENSUS DATA) -------------------------------------------------------------
 
 
-census_data <- tidycensus::get_acs(geography="county", state=filterUSPS, 
-                                   variables="B01003_001", year=config$spatial_setup$census_year, 
+census_data <- tidycensus::get_acs(geography="county", state=filterUSPS,
+                                   variables="B01003_001", year=config$spatial_setup$census_year,
                                    keep_geo_vars=TRUE, geometry=FALSE, show_call=TRUE)
 census_data <- census_data %>%
   dplyr::rename(population=estimate, geoid=GEOID) %>%
@@ -90,8 +90,8 @@ census_data <- census_data %>%
 
 # Add USPS column
 data(fips_codes)
-fips_geoid_codes <- dplyr::mutate(fips_codes, geoid=paste0(state_code,county_code)) %>% 
-  dplyr::group_by(geoid) %>% 
+fips_geoid_codes <- dplyr::mutate(fips_codes, geoid=paste0(state_code,county_code)) %>%
+  dplyr::group_by(geoid) %>%
   dplyr::summarize(USPS=unique(state))
 
 census_data <- dplyr::left_join(census_data, fips_geoid_codes, by="geoid")
@@ -117,9 +117,9 @@ census_data <- census_data %>%
 
 
 # Territory populations (except Puerto Rico) taken from from https://www.census.gov/prod/cen2010/cph-2-1.pdf
-terr_census_data <- readr::read_csv(file.path(opt$p,"sample_data","united-states-commutes","census_tracts_island_areas_2010.csv"))
+terr_census_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","census_tracts_island_areas_2010.gz.parquet"))
 
-census_data <- terr_census_data %>% 
+census_data <- terr_census_data %>%
   dplyr::filter(length(filterUSPS) == 0 | ((USPS %in% filterUSPS) & !(USPS %in% census_data)))%>%
   rbind(census_data)
 
@@ -166,7 +166,7 @@ if(state_level & !file.exists(paste0(config$spatial_setup$base_path, "/", config
 
 } else{
 
-  commute_data <- readr::read_csv(paste(opt$p,"sample_data","united-states-commutes","commute_data.csv",sep='/'))
+  commute_data <- arrow::read_parquet(file.path(opt$p,"datasetup","usdata","united-states-commutes","commute_data.gz.parquet"))
   commute_data <- commute_data %>%
     dplyr::mutate(OFIPS = substr(OFIPS,1,5), DFIPS = substr(DFIPS,1,5)) %>%
     dplyr::mutate(OFIPS = name_changer[OFIPS], DFIPS = name_changer[DFIPS]) %>%
@@ -184,7 +184,7 @@ if(state_level & !file.exists(paste0(config$spatial_setup$base_path, "/", config
   }
 
   if(endsWith(mobility_file, '.txt')) {
-    
+
     # Pads 0's for every geoid and itself, so that nothing gets dropped on the pivot
     padding_table <- tibble::tibble(
       OFIPS = census_data$geoid,
@@ -192,8 +192,8 @@ if(state_level & !file.exists(paste0(config$spatial_setup$base_path, "/", config
       FLOW = 0
     )
 
-    rc <- dplyr::bind_rows(padding_table, commute_data) %>% 
-      dplyr::arrange(match(OFIPS, census_data$geoid), match(DFIPS, census_data$geoid)) %>% 
+    rc <- dplyr::bind_rows(padding_table, commute_data) %>%
+      dplyr::arrange(match(OFIPS, census_data$geoid), match(DFIPS, census_data$geoid)) %>%
       tidyr::pivot_wider(OFIPS,names_from=DFIPS,values_from=FLOW, values_fill=c("FLOW"=0),values_fn = list(FLOW=sum))
     if(!isTRUE(all(rc$OFIPS == census_data$geoid))){
       print(rc$OFIPS)
@@ -201,15 +201,15 @@ if(state_level & !file.exists(paste0(config$spatial_setup$base_path, "/", config
       stop("There was a problem generating the mobility matrix")
     }
     write.table(file = file.path(outdir, mobility_file), as.matrix(rc[,-1]), row.names=FALSE, col.names = FALSE, sep = " ")
-    
+
     } else if(endsWith(mobility_file, '.csv')) {
-      
+
       rc <- commute_data
       names(rc) <- c("ori","dest","amount")
-        
+
       rc <- rc[rc$ori != rc$dest,]
       write.csv(file = file.path(outdir, mobility_file), rc, row.names=FALSE)
-      
+
     } else {
       stop("Only .txt and .csv extensions supported for mobility matrix. Please check config's spatial_setup::mobility.")
     }
