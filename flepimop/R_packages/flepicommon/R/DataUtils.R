@@ -995,9 +995,9 @@ get_covidcast_data <- function(
     res <- res %>%
         dplyr::mutate(signal = recode(signal,
                                       "deaths_incidence_num"="incidD",
-                                      "deaths_cumulative_num"="cumC",
+                                      "deaths_cumulative_num"="cumD",
                                       "confirmed_incidence_num"="incidC",
-                                      "confirmed_cumulative_num"="incidC",
+                                      "confirmed_cumulative_num"="cumC",
                                       "confirmed_admissions_covid_1d"="incidH",
                                       "confirmed_admissions_cum"="cumH")) %>%
 
@@ -1025,7 +1025,8 @@ get_covidcast_data <- function(
     return(res)
 }
 
-##'
+
+
 ##' Wrapper function to pull data from different sources
 ##'
 ##' Pulls a groundtruth dataset with the variables specified
@@ -1125,8 +1126,8 @@ get_groundtruth_from_source <- function(
         # define covidcast signals
 
         signals <- NULL
-        if (any(c("incidDeath", "Deaths") %in% variables)) signals <- c(signals, "deaths_incidence_num", "deaths_cumulative_num")
-        if (any(c("incidI", "Confirmed") %in% variables)) signals <- c(signals, "confirmed_incidence_num", "confirmed_cumulative_num")
+        if (any(c("incidDeath", "Deaths", "incidD", "cumD") %in% variables)) signals <- c(signals, "deaths_incidence_num", "deaths_cumulative_num")
+        if (any(c("incidI", "Confirmed", "incidC", "cumC") %in% variables)) signals <- c(signals, "confirmed_incidence_num", "confirmed_cumulative_num")
         if (any(grepl("hosp|incidH", variables))) signals <- c(signals, "confirmed_admissions_covid_1d")
 
         rc <- get_covidcast_data(geo_level = "state",
