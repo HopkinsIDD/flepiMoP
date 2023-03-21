@@ -21,7 +21,7 @@ class Parameters:
         ti: datetime.date,
         tf: datetime.date,
         nodenames: list,
-        config_version: str = "old",
+        config_version: str = "v2",
     ):
         self.pconfig = parameter_config
         self.pnames = []
