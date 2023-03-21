@@ -131,7 +131,7 @@ if (seed_variants) {
                 dplyr::select(date, FIPS, source, incidH) %>%
                 dplyr::left_join(variant_data) %>%
                 dplyr::mutate(incidI = incidH * prop) %>%
-                dplyr::select(-prop) %>%
+                dplyr::select(-prop, -incidH) %>%
                 tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
                 dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
         } else {
@@ -141,10 +141,10 @@ if (seed_variants) {
         }
     } else {
         cases_deaths <- cases_deaths %>%
-            dplyr::select(date, FIPS, source, incidI) %>%
+            dplyr::select(date, FIPS, source, incidC) %>%
             dplyr::left_join(variant_data) %>%
-            dplyr::mutate(incidI = incidI * prop) %>%
-            dplyr::select(-prop) %>%
+            dplyr::mutate(incidI = incidC * prop) %>%
+            dplyr::select(-prop, -incidC) %>%
             tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
             dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
     }
@@ -173,7 +173,7 @@ check_required_names <- function(df, cols, msg) {
 
 # ~ Seeding Compartments --------------------------------------------------
 
-if ("compartments" %in% names(config[["seir"]])) {
+if ("compartments" %in% names(config)) {
 
     if (all(names(config$seeding$seeding_compartments) %in% names(cases_deaths))) {
         required_column_names <- c("FIPS", "Update", names(config$seeding$seeding_compartments))
@@ -201,9 +201,9 @@ if ("compartments" %in% names(config[["seir"]])) {
                     }
                 )
             ) %>%
-            tidyr::separate(source_column, paste("source", names(config$seir$compartments), sep = "_")) %>%
-            tidyr::separate(destination_column, paste("destination", names(config$seir$compartments), sep = "_"))
-        required_column_names <- c("FIPS", "Update", "value", paste("source", names(config$seir$compartments), sep = "_"), paste("destination", names(config$seir$compartments), sep = "_"))
+            tidyr::separate(source_column, paste("source", names(config$compartments), sep = "_")) %>%
+            tidyr::separate(destination_column, paste("destination", names(config$compartments), sep = "_"))
+        required_column_names <- c("FIPS", "Update", "value", paste("source", names(config$compartments), sep = "_"), paste("destination", names(config$compartments), sep = "_"))
         incident_cases <- incident_cases[, required_column_names]
 
         # if (!is.null(config$smh_round)) {
@@ -323,7 +323,7 @@ if (!("no_perturb" %in% colnames(incident_cases))){
 
 # Combine with population seeding for compartments (current hack to get population in)
 
-if ("compartments" %in% names(config[["seir"]]) & "pop_seed_file" %in% names(config[["seeding"]])) {
+if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seeding"]])) {
     seeding_pop <- readr::read_csv(config$seeding$pop_seed_file)
 
     # Add "no_perturb" flag
