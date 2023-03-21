@@ -406,7 +406,7 @@ def test_continuation_resume():
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
-            setup_name=spatial_config["setup_name"].get(),
+            setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
             popnodes_key=spatial_config["popnodes"].get(),
@@ -457,7 +457,7 @@ def test_continuation_resume():
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
-            setup_name=spatial_config["setup_name"].get(),
+            setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
             popnodes_key=spatial_config["popnodes"].get(),
@@ -526,7 +526,7 @@ def test_inference_resume():
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
-            setup_name=spatial_config["setup_name"].get(),
+            setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
             popnodes_key=spatial_config["popnodes"].get(),
@@ -572,7 +572,7 @@ def test_inference_resume():
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
-            setup_name=spatial_config["setup_name"].get(),
+            setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
             popnodes_key=spatial_config["popnodes"].get(),

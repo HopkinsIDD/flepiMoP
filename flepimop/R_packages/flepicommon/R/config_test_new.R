@@ -174,12 +174,12 @@ validation_list$spatial_setup$include_in_report <- function(value, full_config,c
   return(TRUE)
 }
 
-validation_list$spatial_setup$setup_name <- function(value, full_config,config_name) {
+validation_list$setup_name <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No runtype mentioned") #Should display a better error message than nodenames.
     return(FALSE)
   }
-  if (length(strsplit(config_copy$spatial_setup$setup_name,split=" ")[[1]])!=1 | length(config_copy$spatial_setup$setup_name)!=1){
+  if (length(strsplit(config_copy$setup_name,split=" ")[[1]])!=1 | length(config_copy$setup_name)!=1){
     print("Multiple setup_name(run_type) mentioned")
     return(FALSE)
   }
