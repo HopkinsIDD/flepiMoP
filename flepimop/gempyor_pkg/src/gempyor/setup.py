@@ -97,11 +97,7 @@ class Setup:
                 logging.info(f"Integration method not provided, assuming type {self.integration_method}")
 
             if config_version is None:
-                if "compartments" in self.seir_config.keys():
-                    config_version = "v2"
-                else:
-                    config_version = "old"
-
+                config_version = "v2"
                 logging.debug(f"Config version not provided, infering type {config_version}")
 
             if config_version != "old" and config_version != "v2":
