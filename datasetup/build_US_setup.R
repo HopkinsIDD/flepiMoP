@@ -52,7 +52,7 @@ if (length(config) == 0) {
   stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-outdir <- config$spatial_setup$base_path
+outdir <- config$data_path
 filterUSPS <- config$spatial_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -156,13 +156,13 @@ print(paste("Wrote geodata file:", file.path(outdir, geodata_file)))
 # MOBILITY DATA (COMMUTER DATA) ------------------------------------------------------------
 
 
-if(state_level & !file.exists(paste0(config$spatial_setup$base_path, "/", config$spatial_setup$mobility))){
+if(state_level & !file.exists(paste0(config$data_path, "/", config$spatial_setup$mobility))){
 
-  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", paste0(config$spatial_setup$base_path, "/", config$spatial_setup$mobility), "(specified in the config) currently exists. Please check again."))
+  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", paste0(config$data_path, "/", config$spatial_setup$mobility), "(specified in the config) currently exists. Please check again."))
 
-} else if(state_level & file.exists(paste0(config$spatial_setup$base_path, "/", config$spatial_setup$mobility))){
+} else if(state_level & file.exists(paste0(config$data_path, "/", config$spatial_setup$mobility))){
 
-  warning(paste("Using existing state-level mobility file named", paste0(config$spatial_setup$base_path, "/", config$spatial_setup$mobility)))
+  warning(paste("Using existing state-level mobility file named", paste0(config$data_path, "/", config$spatial_setup$mobility)))
 
 } else{
 
