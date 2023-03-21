@@ -93,7 +93,7 @@ state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spati
 suppressMessages(
     geodata <- flepicommon::load_geodata_file(
         paste(
-            config$spatial_setup$base_path,
+            config$data_path,
             config$spatial_setup$geodata, sep = "/"
         ),
         geoid_len = opt$geoid_len
@@ -109,7 +109,7 @@ if (is.na(opt$iterations_per_slot)){
 print(paste("Running",opt$iterations_per_slot,"simulations"))
 
 ##Define data directory and create if it does not exist
-data_path <- config$inference$data_path
+data_path <- config$inference$gt_data_path
 data_dir <- dirname(data_path)
 if (!dir.exists(data_dir)){
     suppressWarnings(dir.create(data_dir,recursive=TRUE))

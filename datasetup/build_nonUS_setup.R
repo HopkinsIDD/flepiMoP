@@ -43,16 +43,16 @@ if (length(config) == 0) {
   stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-outdir <- config$spatial_setup$base_path
+outdir <- config$data_path
 filterADMIN0 <- config$spatial_setup$modeled_states
 
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Read in needed data
-commute_data <- readr::read_csv(file.path(config$spatial_setup$base_path, "geodata", opt$mobility)) %>% 
+commute_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$mobility)) %>% 
   mutate(OGEOID = as.character(OGEOID),
          DGEOID = as.character(DGEOID))
-census_data <- readr::read_csv(file.path(config$spatial_setup$base_path, "geodata", opt$population)) %>%
+census_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$population)) %>%
   mutate(GEOID = as.character(GEOID))
 
 # Filter if needed

@@ -101,7 +101,7 @@ scenario_s3_buckets <- scenario_s3_buckets[scenario_num] # automatically pull fr
 override_pull_from_s3 <- override_pull_from_s3[scenario_num] # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
 
 
-geodata_file_path = file.path(config$spatial_setup$base_path, config$spatial_setup$geodata)
+geodata_file_path = file.path(config$data_path, config$spatial_setup$geodata)
 
 
 
@@ -300,7 +300,7 @@ if (pathogen == "flu"){
     source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
 
-gt_data <- clean_gt_forplots(readr::read_csv(config$inference$data_path))
+gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
 
 if (any(grepl("incidI", colnames(gt_data)))){
   colnames(gt_data) <- gsub("incidI", "incidC", colnames(gt_data))

@@ -31,7 +31,7 @@ if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-outdir <- config$spatial_setup$base_path
+outdir <- config$data_path
 filterUSPS <- config$spatial_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -59,7 +59,7 @@ source("https://raw.githubusercontent.com/cdcepi/Flusight-forecast-data/master/d
 
 # Pull daily hospitalizations for model run
 us_data <- load_flu_hosp_data(temporal_resolution = 'daily', na.rm = TRUE)
-locs <- read_csv(file.path(config$spatial_setup$base_path, config$spatial_setup$geodata))
+locs <- read_csv(file.path(config$data_path, config$spatial_setup$geodata))
 
 # fix string pad issue on left side
 us_data <- us_data %>%
@@ -83,7 +83,7 @@ us_data <- us_data %>%
     filter(date >= lubridate::as_date(config$start_date) & date <= lubridate::as_date(end_date_)) %>%
     filter(!is.na(source))
 
-write_csv(us_data, config$inference$data_path)
+write_csv(us_data, config$inference$gt_data_path)
 
 
 
@@ -100,7 +100,7 @@ adjust_for_variant <- !is.null(variant_props_file)
 # if (adjust_for_variant){
 #     
 #     # Variant Data (need to automate this data pull still)
-#     #variant_data <- read_csv(file.path(config$spatial_setup$base_path, "variant/WHO_NREVSS_Clinical_Labs.csv"), skip = 1)
+#     #variant_data <- read_csv(file.path(config$data_path, "variant/WHO_NREVSS_Clinical_Labs.csv"), skip = 1)
 #     variant_data <- cdcfluview::who_nrevss(region="state", years = 2022)$clinical_labs
 #     
 #     # location data
@@ -192,13 +192,13 @@ adjust_for_variant <- !is.null(variant_props_file)
 
 if (adjust_for_variant) {
     
-    us_data <- read_csv(config$inference$data_path)
+    us_data <- read_csv(config$inference$gt_data_path)
     
     tryCatch({
         us_data <- flepicommon::do_variant_adjustment(us_data, variant_props_file)
         us_data <- us_data %>% 
             filter(date >= as_date(config$start_date) & date <= as_date(config$end_date_groundtruth))
-        write_csv(us_data, config$inference$data_path)
+        write_csv(us_data, config$inference$gt_data_path)
     }, error = function(e) {
         stop(paste0("Could not use variant file |", variant_props_file, 
                     "|, with error message", e$message))
@@ -208,7 +208,7 @@ if (adjust_for_variant) {
 
 
 cat(paste0("Ground truth data saved\n", 
-           "  -- file:      ", config$inference$data_path,".\n",
+           "  -- file:      ", config$inference$gt_data_path,".\n",
            "  -- outcomes:  ", paste(grep("incid", colnames(us_data), value = TRUE), collapse = ", ")))
 
 
