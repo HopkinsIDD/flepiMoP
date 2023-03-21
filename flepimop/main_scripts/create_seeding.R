@@ -91,7 +91,7 @@ if (is.null(config$seeding$ratio_incidC)) {
 # ~ Load ground truth data ------------------------------------------------
 #  -- this is already saved from running the `build_[X]_data.R` script at the model setup stage.
 #  
-data_path <- config$inference$data_path
+data_path <- config$inference$gt_data_path
 if (is.null(data_path)) {
     data_path <- config$seeding$casedata_file
     if (is.null(data_path)) {
@@ -265,7 +265,7 @@ all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
 geodata <- flepicommon::load_geodata_file(
-    file.path(config$spatial_setup$base_path, config$spatial_setup$geodata),
+    file.path(config$data_path, config$spatial_setup$geodata),
     5,
     "0",
     TRUE
