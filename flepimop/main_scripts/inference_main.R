@@ -16,7 +16,7 @@ option_list = list(
   optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("FLEPI_STOCHASTIC_RUN",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
   optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "First date to include groundtruth for"),
   optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "Last date to include groundtruth for"),
-  optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP/")),
+  optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP")),
   optparse::make_option(c("-y", "--python"), action="store", default=Sys.getenv("PYTHON_PATH","python3"), type='character', help="path to python executable"),
   optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
   optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
@@ -65,11 +65,13 @@ if(is.na(opt$slots)) {
 
 cl <- parallel::makeCluster(opt$j)
 doParallel::registerDoParallel(cl)
+print(paste0("Making cluster with ", opt$j, " cores."))
+
 flepicommon::prettyprint_optlist(list(scenarios=scenarios,deathrates=deathrates,slots=seq_len(opt$slots)))
 foreach(scenario = scenarios) %:%
 foreach(deathrate = deathrates) %:%
-foreach(slot = seq_len(opt$slots)) %dopar% {
-  print(paste("Slot",slot,"of",opt$slots))
+foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
+  print(paste("Slot",flepi_slot,"of",opt$slots))
 
 
   ground_truth_start_text <- NULL
@@ -84,15 +86,14 @@ foreach(slot = seq_len(opt$slots)) %dopar% {
   err <- system(
     paste(
       opt$rpath,
-      paste(
-        opt$flepi_path, "flepimop", "main_scripts","inference_slot.R",sep='/'),
+      file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$scenarios,
         "-d", opt$deathrates,
         "-j", opt$jobs,
         "-k", opt$iterations_per_slot,
-        "-i", slot,
+        "-i", flepi_slot,
         "-b", opt$this_block,
         "-t", opt$stoch_traj_flag,
         ground_truth_start_text,
@@ -102,8 +103,8 @@ foreach(slot = seq_len(opt$slots)) %dopar% {
         "-r", opt$rpath,
         "-R", opt[["is-resume"]],
         "-I", opt[["is-interactive"]],
-        "-L", opt$reset_chimeric_on_accept
-      )
+        "-L", opt$reset_chimeric_on_accept,
+      sep = " ")
     )
   if(err != 0){quit("no")}
 }
