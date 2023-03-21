@@ -179,7 +179,7 @@ pull_covidcast_deaths <- function(
     res <- res %>% tibble::as_tibble()
 
     # Fix incidence counts that go negative and NA values or missing dates
-    if (fix_negatives & any(c("Confirmed", "incidI", "Deaths", "incidDeath") %in% colnames(res))){
+    if (fix_negatives & any(c("Confirmed", "incidC", "incidD", "incidI", "Deaths", "incidDeath") %in% colnames(res))){
         res <- fix_negative_counts(res, "Confirmed", "incidI") %>%
             fix_negative_counts("Deaths", "incidDeath")
     }
