@@ -9,6 +9,7 @@ library(tidyr)
 library(tidycensus)
 library(readr)
 library(lubridate)
+library(flepicommon)
 
 
 option_list = list(
@@ -62,7 +63,7 @@ if (any(grepl("csse", opt$gt_data_source))){
 
     us_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
                                                         incl_unass = TRUE,
-                                                        variables = c("Confirmed", "Deaths", "incidI", "incidDeath"),
+                                                        variables = c("incidC", "cumC", "incidD", "cumD"),
                                                         adjust_for_variant = TRUE,
                                                         variant_props_file = config$seeding$variant_filename)
     us_data <- us_data %>%
@@ -92,7 +93,7 @@ if (any(grepl("nchs", opt$gt_data_source))){
 
     nchs_data <- get_covidcast_deaths(scale = "US state",
                                       source = "nchs-mortality",
-                                      fix_negatives = TRUE,
+                                      fix_negatives = FALSE,
                                       adjust_for_variant = FALSE,
                                       variant_props_file = config$seeding$variant_filename)
 
@@ -100,7 +101,7 @@ if (any(grepl("nchs", opt$gt_data_source))){
     # -- do this mainly for seeding. it gets re-aggregated for fitting
     # -- tbis is implemented as a spline fit to cumulative data, from which daily cum and incident are calculated.
 
-    nchs_data <- make_daily_data(data = nchs_data %>% dplyr::select(-signal), current_timescale = "week") #%>%
+    nchs_data <- make_daily_data(data = nchs_data, current_timescale = "week") #%>%
         # mutate(gt_source = "nchs")
 
     gt_data <- append(gt_data, list(nchs_data))

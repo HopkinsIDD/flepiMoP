@@ -168,6 +168,7 @@ pull_covidcast_deaths <- function(
                                       "confirmed_cumulative_num"="cumC",
                                       "confirmed_admissions_covid_1d"="incidH",
                                       "confirmed_admissions_cum"="cumH")) %>%
+        dplyr::select(-signal) %>%
 
         tidyr::pivot_wider(names_from = target, values_from = value) %>%
         dplyr::mutate(Update=lubridate::as_date(Update),
@@ -179,9 +180,10 @@ pull_covidcast_deaths <- function(
     res <- res %>% tibble::as_tibble()
 
     # Fix incidence counts that go negative and NA values or missing dates
-    if (fix_negatives & any(c("incidC", "incidD", "cumD", "cumC") %in% colnames(res))){
-        res <- flepicommon::fix_negative_counts(res, "cumC", "incidI") %>%
-            flepicommon::fix_negative_counts("cumD", "incidD")
+    if (fix_negatives & any(c("incidC", "incidD", "cumD", "cumC") %in% colnames(res))) {
+        res <- res %>%
+            flepicommon::fix_negative_counts(cum_col_name = "cumC", incid_col_name = "incidI") %>%
+            flepicommon::fix_negative_counts(cum_col_name = "cumD", incid_col_name = "incidD")
     }
 
     return(res)
