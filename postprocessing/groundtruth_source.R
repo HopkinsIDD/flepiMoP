@@ -125,12 +125,12 @@ get_covidcast_data <- function(
 
     res <- res %>%
         dplyr::mutate(signal = recode(signal,
-                                      "deaths_incidence_num"="incidDeath",
-                                      "deaths_cumulative_num"="Deaths",
-                                      "confirmed_incidence_num"="incidI",
-                                      "confirmed_cumulative_num"="Confirmed",
+                                      "deaths_incidence_num"="incidD",
+                                      "deaths_cumulative_num"="cumD",
+                                      "confirmed_incidence_num"="incidC",
+                                      "confirmed_cumulative_num"="cumC",
                                       "confirmed_admissions_covid_1d"="incidH",
-                                      "confirmed_admissions_cum"="Hospitalizations")) %>%
+                                      "confirmed_admissions_cum"="cumH")) %>%
 
         tidyr::pivot_wider(names_from = signal, values_from = value) %>%
         dplyr::mutate(Update=lubridate::as_date(Update),
@@ -148,9 +148,9 @@ get_covidcast_data <- function(
     res <- res %>% tibble::as_tibble()
 
     # Fix incidence counts that go negative and NA values or missing dates
-    if (fix_negatives & any(c("Confirmed", "incidI", "Deaths", "incidDeath") %in% colnames(res))){
-        res <- flepicommon::fix_negative_counts(res, "Confirmed", "incidI") %>%
-            flepicommon::fix_negative_counts("Deaths", "incidDeath")
+    if (fix_negatives & any(c("cumC", "incidC", "cumD", "incidD") %in% colnames(res))){
+        res <- flepicommon::fix_negative_counts(res, "cumC", "incidC") %>%
+            flepicommon::fix_negative_counts("cumD", "incidD")
     }
 
     return(res)
@@ -271,8 +271,8 @@ get_rawcoviddata_state_data <- function(fix_negatives = TRUE){
 
     # Fix incidence counts that go negative and NA values or missing dates
     if (fix_negatives){
-        state_dat <- fix_negative_counts(state_dat, "Confirmed", "incidI") %>%
-            fix_negative_counts("Deaths", "incidDeath")
+        state_dat <- fix_negative_counts(state_dat, "cumC", "incidC") %>%
+            fix_negative_counts("cumD", "incidD")
     }
 
     return(state_dat)

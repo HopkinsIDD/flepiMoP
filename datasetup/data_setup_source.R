@@ -179,9 +179,9 @@ pull_covidcast_deaths <- function(
     res <- res %>% tibble::as_tibble()
 
     # Fix incidence counts that go negative and NA values or missing dates
-    if (fix_negatives & any(c("Confirmed", "incidC", "incidD", "incidI", "Deaths", "incidDeath") %in% colnames(res))){
-        res <- flepicommon::fix_negative_counts(res, "Confirmed", "incidI") %>%
-            flepicommon::fix_negative_counts("Deaths", "incidDeath")
+    if (fix_negatives & any(c("incidC", "incidD", "cumD", "cumC") %in% colnames(res))){
+        res <- flepicommon::fix_negative_counts(res, "cumC", "incidI") %>%
+            flepicommon::fix_negative_counts("cumD", "incidD")
     }
 
     return(res)
