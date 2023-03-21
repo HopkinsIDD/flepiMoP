@@ -70,7 +70,7 @@ class InferenceSimulator:
         config.read(user=False)
         config.set_file(config_path)
         spatial_config = config["spatial_setup"]
-        spatial_base_path = spatial_config["base_path"].get()
+        spatial_base_path = config["data_path"].get()
         spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
         np.random.seed(rng_seed)

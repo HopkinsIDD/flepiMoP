@@ -1,11 +1,11 @@
 name: test_inference
 start_date: 2020-04-01
 end_date: 2020-05-15
+data_path: data
 nslots: 1
 dt: 0.25
 
 spatial_setup:
-  base_path: data
   setup_name: test1
   geodata: geodata.csv
   mobility: mobility.csv
@@ -15,7 +15,7 @@ spatial_setup:
   modeled_states:
     - HI
 
-        
+
 outcomes:
   method: delayframe
   param_from_file: True

@@ -1,11 +1,11 @@
 name: minimal
 start_date: 2020-02-01
 end_date: 2020-02-15
+data_path: data
 nslots: 15
 dt: 0.25
 
 spatial_setup:
-  base_path: data
   setup_name: minimal
   geodata: geodata.csv
   mobility: mobility.txt

@@ -7,11 +7,11 @@
 # ## Configuration Items
 #
 # ```yaml
+# data_path: <path to directory>
 # spatial_setup:
-#   base_path: <path to directory>
 #   modeled_states: <list of state postal codes> e.g. MD, CA, NY
-#   mobility: <path to file relative to base_path> optional; default is 'mobility.csv'
-#   geodata: <path to file relative to base_path> optional; default is 'geodata.csv'
+#   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
+#   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
 #   popnodes: <string> optional; default is 'population'
 #
 # importation:
@@ -24,8 +24,8 @@
 #
 # ## Output Data
 #
-# * {spatial_setup::base_path}/{spatial_setup::mobility}
-# * {spatial_setup::base_path}/{spatial_setup::geodata}
+# * {data_path}/{spatial_setup::mobility}
+# * {data_path}/{spatial_setup::geodata}
 #
 
 ## @cond

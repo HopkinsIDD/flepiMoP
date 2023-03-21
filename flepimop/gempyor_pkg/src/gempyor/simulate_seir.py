@@ -14,9 +14,9 @@
 # end_date: <date>
 # dt: float
 # nslots: <integer> overridden by the -n/--nslots script parameter
+# data_path: <path to directory>
 # spatial_setup:
 #   setup_name: <string>
-#   base_path: <path to directory>
 #   geodata: <path to file>
 #   mobility: <path to file>
 #   nodenames: <string>
@@ -100,8 +100,8 @@
 #
 # ## Input Data
 #
-# * <b>{spatial_setup::base_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::nodenames} and {spatial_setup::popnodes}
-# * <b>{spatial_setup::base_path}/{spatial_setup::mobility}</b>
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::nodenames} and {spatial_setup::popnodes}
+# * <b>{data_path}/{spatial_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
 # * {seeding::lambda_file}
@@ -241,7 +241,7 @@ def simulate(
     config.read(user=False)
     config.set_file(config_file)
     spatial_config = config["spatial_setup"]
-    spatial_base_path = spatial_config["base_path"].get()
+    spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
     if not scenarios:

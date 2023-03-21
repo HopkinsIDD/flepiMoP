@@ -1,5 +1,6 @@
 name: USA
 smh_round: R12
+data_path: data
 start_date: 2020-01-01
 end_date: 2022-09-03
 end_date_groundtruth: 2022-03-05
@@ -8,7 +9,6 @@ dt: 2.000
 
 spatial_setup:
   census_year: 2019
-  base_path: data
   modeled_states:
     - AK
     - AL
@@ -192,50 +192,50 @@ seir:
       value:
         distribution: fixed
         value: 1 - 0.40625
-    nu1age0to17: 
+    nu1age0to17:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0
-    nu3age0to17: 
+    nu3age0to17:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0
-    nu1age18to64: 
+    nu1age18to64:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0
-    nu3age18to64: 
+    nu3age18to64:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0
-    nu1age65to100: 
+    nu1age65to100:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0
-    nu3age65to100: 
+    nu3age65to100:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0
-    nu2: 
+    nu2:
       intervention_overlap_operation: sum
       value:
         distribution: fixed
         value: 0.0386100386100386
   compartments:
-    infection_stage: ["S", "E", "I1", "I2", "I3", "R", "W"] 
-    vaccination_stage: ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"] 
-    variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"] 
+    infection_stage: ["S", "E", "I1", "I2", "I3", "R", "W"]
+    vaccination_stage: ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"]
+    variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"]
     age_strata: ["age0to17", "age18to64", "age65to100"]
   transitions:
 # 1a - Susceptibles(S)Exposed(E)toWILD,excludingwaned
-    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -260,8 +260,8 @@ seir:
       ]
 
 # 1b - Susceptibles(S)Exposed(E)toALPHA,excludingwaned
-    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["ALPHA"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["ALPHA"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -286,8 +286,8 @@ seir:
       ]
 
 # 1c - Susceptibles(S)Exposed(E)toDELTA,excludingwaned
-    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["DELTA"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["DELTA"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -312,8 +312,8 @@ seir:
       ]
 
 # 1d - Susceptibles(S)Exposed(E)toOMICRON,excludingwaned
-    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["unvaccinated", "1dose", "2dose"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -338,8 +338,8 @@ seir:
       ]
 
 # 2a - Susceptibles(S)toExposed(E)toWILD/ALPHA/DELTAforwanedonly(separatedfromNo.1-3whentheta_Wvariesbyagegroup)
-    - source: [["S"], ["waned"], "WILD", ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S"], ["waned"], "WILD", ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -362,8 +362,8 @@ seir:
       ]
 
 # 2b - Susceptibles(S)toExposed(E)toOMICRONforwanedonly(separatedfromNo.4whenimmune_escapevarieswithOMICRON)
-    - source: [["S"], ["waned"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["waned"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S"], ["waned"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["waned"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -386,8 +386,8 @@ seir:
       ]
 
 # 3a - Recovered(R)toExposed(E)toOMICRONonly(separatedfromNo.4whentheta_WvarieswithOMICRON)
-    - source: [["R"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], "previousinfection", "OMICRON", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["R"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], "previousinfection", "OMICRON", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -412,8 +412,8 @@ seir:
       ]
 
 # 3b - Recovered(R)toExposed(E)toOMICRONonly(separatedfromNo.4whentheta_WvarieswithOMICRON)
-    - source: [["R"], ["2dose", "previousinfection"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["2dose", "previousinfection"], "OMICRON", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["R"], ["2dose", "previousinfection"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["2dose", "previousinfection"], "OMICRON", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -437,8 +437,8 @@ seir:
       ]
 
 # 4a - Waned(W)toExposed(E),amongunvaccinated/1dose/wanedandallvariantgroups\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW
-    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], "previousinfection", ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], "previousinfection", ["WILD"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -463,8 +463,8 @@ seir:
       ]
 
 # 4b - Waned(W)toExposed(E),amongunvaccinated/1dose/wanedandallvariantgroups\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW
-    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], "previousinfection", "ALPHA", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], "previousinfection", "ALPHA", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -489,8 +489,8 @@ seir:
       ]
 
 # 4c - Waned(W)toExposed(E),amongunvaccinated/1dose/wanedandallvariantgroups\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW
-    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], "previousinfection", "DELTA", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], "previousinfection", "DELTA", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -515,8 +515,8 @@ seir:
       ]
 
 # 4d - Waned(W)toExposed(E),amongunvaccinated/1dose/wanedandallvariantgroups\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW\n#Note:assumesVEofnaturalinfection(thetaW)>firstvaccdose(theta1_*)\n#-unvaccand1dosenotpossibletobeinW
-    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], "previousinfection", "OMICRON", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["unvaccinated", "1dose", "waned"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], "previousinfection", "OMICRON", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -541,8 +541,8 @@ seir:
       ]
 
 # 5a - Recovered(R)toExposed(E)toOMICRONonly(separatedfromNo.4whentheta_WvarieswithOMICRON)
-    - source: [["W"], ["2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -565,8 +565,8 @@ seir:
       ]
 
 # 5b - Waned(W)toExposed(E),among2doseandallvariants
-    - source: [["W"], ["2dose"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["2dose"], "ALPHA", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["2dose"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["2dose"], "ALPHA", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -589,8 +589,8 @@ seir:
       ]
 
 # 5c - Waned(W)toExposed(E),among2doseandallvariants
-    - source: [["W"], ["2dose"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["2dose"], "DELTA", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["2dose"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["2dose"], "DELTA", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -613,8 +613,8 @@ seir:
       ]
 
 # 5d - Waned(W)toExposed(E),among2doseandallvariants
-    - source: [["W"], ["2dose", "previousinfection"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["E"], ["2dose", "previousinfection"], "OMICRON", ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["W"], ["2dose", "previousinfection"], ["WILD", "ALPHA", "DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["E"], ["2dose", "previousinfection"], "OMICRON", ["age0to17", "age18to64", "age65to100"]]
       proportional_to: [
         "source",
         [
@@ -638,63 +638,63 @@ seir:
       ]
 
 # 6a1 - E-I3-RtoI3-R-W,amongallvaccinationandWildandAlphagroups\n#Note:assumesnodifferenceinratesbyvaccinationgroup
-    - source: [["E", "I1", "I2"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["I1", "I2", "I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["E", "I1", "I2"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["I1", "I2", "I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: [["sigma", "3*gamma", "3*gamma"], "1", "1", "1"]
 
 # 6a2 - E-I3-RtoI3-R-W,amongallvaccinationandDeltavariant\n#Note:assumesnodifferenceinratesbyvaccinationgroup
-    - source: [["E", "I1", "I2"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["DELTA"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["I1", "I2", "I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["DELTA"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["E", "I1", "I2"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["DELTA"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["I1", "I2", "I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["DELTA"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: [["sigma_delta", "3*gamma", "3*gamma"], "1", ["1"], "1"]
 
 # 6a3 - E-I3-RtoI3-R-W,amongallvaccinationandOmicron\n#Note:assumesnodifferenceinratesbyvaccinationgroup
-    - source: [["E", "I1", "I2"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["I1", "I2", "I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["E", "I1", "I2"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["I1", "I2", "I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: [["sigma_omicron", "3*gamma", "3*gamma"], "1", ["1"], "1"]
 
-    - source: [["I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["R"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["I3"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["R"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: [["3*gamma"], "1", "1", "1"]
 
 # 7 - MovefromRtoW
-    - source: [["R"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["W"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["R"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["W"], ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: [["epsilon"], "1", "1", "1"]
 
 # 8 - 1doseto2doseand2dosetowaned,amongSERWandallvaccinationgroups
-    - source: [["S", "E", "R", "W"], ["1dose", "2dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["S", "E", "R", "W"], ["2dose", "waned"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S", "E", "R", "W"], ["1dose", "2dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["S", "E", "R", "W"], ["2dose", "waned"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: ["1", ["nu2", "epsilon"], "1", "1"]
 
 # 9 - wanedto2dose,amongSERWandallvaccinationgroups
-    - source: [["S", "E", "R", "W"], ["waned"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["S", "E", "R", "W"], ["2dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S", "E", "R", "W"], ["waned"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["S", "E", "R", "W"], ["2dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: ["1", ["1"], "1", ["nu3age0to17", "nu3age18to64", "nu3age65to100"]]
 
 # 10 - previousinfectionto2dose,amongSERWandallvaccinationgroups
-    - source: [["S", "E", "R", "W"], ["previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["S", "E", "R", "W"], ["2dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S", "E", "R", "W"], ["previousinfection"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["S", "E", "R", "W"], ["2dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: ["1", ["1"], "1", ["nu1age0to17", "nu1age18to64", "nu1age65to100"]]
 
 # 11 - unvaccinatedto1dose,amongSERWandallvaccinationgroups
-    - source: [["S", "E", "R", "W"], ["unvaccinated"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
-      destination: [["S", "E", "R", "W"], ["1dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]] 
+    - source: [["S", "E", "R", "W"], ["unvaccinated"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
+      destination: [["S", "E", "R", "W"], ["1dose"], ["WILD", "ALPHA", "DELTA", "OMICRON"], ["age0to17", "age18to64", "age65to100"]]
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
       rate: ["1", ["1"], "1", ["nu1age0to17", "nu1age18to64", "nu1age65to100"]]
