@@ -1,12 +1,12 @@
 name: USA
 start_date: 2020-01-01
 end_date: 2021-08-07
+data_path: data
 nslots: 300
 dt: 0.25
 
 spatial_setup:
   census_year: 2019
-  base_path: data
   modeled_states:
     - AL
     - AK
@@ -11967,7 +11967,7 @@ outcomes:
           name: icu_curr
       incidVent:
         source: incidICU
-        probability: 
+        probability:
           value:
             distribution: fixed
             value: 0.463

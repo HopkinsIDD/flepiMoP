@@ -186,7 +186,7 @@ def simulate(
     config.read(user=False)
     config.set_file(config_file)
     spatial_config = config["spatial_setup"]
-    spatial_base_path = spatial_config["base_path"].get()
+    spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
     if not scenarios_outcomes:

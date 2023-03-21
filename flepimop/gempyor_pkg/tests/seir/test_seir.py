@@ -402,7 +402,7 @@ def test_continuation_resume():
     stoch_traj_flag = True
 
     spatial_config = config["spatial_setup"]
-    spatial_base_path = pathlib.Path(spatial_config["base_path"].get())
+    spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
@@ -453,7 +453,7 @@ def test_continuation_resume():
     stoch_traj_flag = True
 
     spatial_config = config["spatial_setup"]
-    spatial_base_path = pathlib.Path(spatial_config["base_path"].get())
+    spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
@@ -522,7 +522,7 @@ def test_inference_resume():
     stoch_traj_flag = True
 
     spatial_config = config["spatial_setup"]
-    spatial_base_path = pathlib.Path(spatial_config["base_path"].get())
+    spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(
@@ -568,7 +568,7 @@ def test_inference_resume():
     stoch_traj_flag = True
 
     spatial_config = config["spatial_setup"]
-    spatial_base_path = pathlib.Path(spatial_config["base_path"].get())
+    spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(scenario),
         spatial_setup=setup.SpatialSetup(

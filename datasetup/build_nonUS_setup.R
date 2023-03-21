@@ -7,13 +7,13 @@
 # ## Configuration Items
 #
 # ```yaml
+# data_path: <path to directory>
 # spatial_setup:
-#   base_path: <path to directory>
 #   modeled_states: <list of country ISO3 codes> e.g. ZMB, BGD, CAN
-#   mobility: <path to file relative to base_path> optional; default is 'mobility.csv'
-#   geodata: <path to file relative to base_path> optional; default is 'geodata.csv'
+#   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
+#   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
 #   popnodes: <string> optional; default is 'pop'
-# 
+#
 #
 # ## Input Data
 #
@@ -21,8 +21,8 @@
 #
 # ## Output Data
 #
-# * {spatial_setup::base_path}/{spatial_setup::mobility}
-# * {spatial_setup::base_path}/{spatial_setup::geodata}
+# * {data_path}/{spatial_setup::mobility}
+# * {data_path}/{spatial_setup::geodata}
 #
 
 ## @cond
@@ -49,7 +49,7 @@ filterADMIN0 <- config$spatial_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Read in needed data
-commute_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$mobility)) %>% 
+commute_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$mobility)) %>%
   mutate(OGEOID = as.character(OGEOID),
          DGEOID = as.character(DGEOID))
 census_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$population)) %>%
@@ -85,8 +85,8 @@ t_commute_table <- tibble::tibble(
   FLOW = commute_data$FLOW
 )
 
-rc <- padding_table %>% 
-  dplyr::bind_rows(commute_data) %>% 
+rc <- padding_table %>%
+  dplyr::bind_rows(commute_data) %>%
   dplyr::bind_rows(t_commute_table)
 
 # Make wide if specified

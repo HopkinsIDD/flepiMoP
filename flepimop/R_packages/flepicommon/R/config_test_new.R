@@ -1,5 +1,5 @@
 # checkdate <- function(str) {
-#   tryCatch(as.Date(str), 
+#   tryCatch(as.Date(str),
 #            warning = function(w) return(FALSE))
 # }
 
@@ -86,7 +86,7 @@ validation_list$nslots<- function(value,full_config,config_name){
 ## With Default: Geodata, Mobility, Popnodes, Statelevel
 
 validation_list$spatial_setup <- list()
-validation_list$spatial_setup$base_path <- function(value, full_config,config_name) {
+validation_list$data_path <- function(value, full_config, config_name) {
   if (is.null(value)) {
     print("No base path mentioned in the configuration file")
     return(FALSE)
@@ -315,13 +315,13 @@ validation_list$seeding$folder_path<- function(value,full_config,config_name){
       if(is.null(full_config$seeding$lambda_file)){
         print("Lambda File not mentioned even if inference section present")
         return(FALSE)
-      }      
+      }
       if(!file.exists(full_config$seeding$lambda_file)){
         print("Lambda File does not exist even if inference section present")
         return(FALSE)
       }
     }
-    
+
   }
   return(TRUE)
 }
@@ -331,13 +331,13 @@ validation_list$seeding$lambda_file<- function(value,full_config,config_name){
     if(is.null(value)){
       print("Lambda File not mentioned")
       return(FALSE)
-    }      
+    }
     if(!file.exists(value)){
       print("Lambda File does not exist")
       return(FALSE)
     }
   }
-  return(TRUE)  
+  return(TRUE)
 }
 
 ######SEIR MODEL SPECIFICATIONS##################
@@ -370,9 +370,9 @@ validation_list$seir$parameters<-function(value,full_config,config_name){
     print("No gamma mentioned")
     return(FALSE)
   }
-  
-  #Checks if extra seir parameters are not mentioned depending upon the the 
-  #variants present in seeding$seeeding_compartments 
+
+  #Checks if extra seir parameters are not mentioned depending upon the the
+  #variants present in seeding$seeeding_compartments
   present_variants<-names(full_config$seeding$seeding_compartments)
   all_variants<-c('WILD','ALPHA','DELTA','OMICRON','VARIANT_X')
   absent_variants<-all_variants[!(all_variants %in% present_variants)]
@@ -383,7 +383,7 @@ validation_list$seir$parameters<-function(value,full_config,config_name){
       if(any(grepl(paste('_',tolower(variant),sep=''),parameters))){
         print(paste('Variant', variant,' not mentioned in compartments but has seir transition value'))
         flag=1
-      }      
+      }
     }
     else{
       if(any(grepl(tolower(variant),parameters)) |any(grepl(variant,parameters)) ){
@@ -396,7 +396,7 @@ validation_list$seir$parameters<-function(value,full_config,config_name){
     return(FALSE)
   }
   return(TRUE)
-  
+
 }
 
 validation_list$seir$compartments<- function(value,full_config,config_name){
@@ -435,17 +435,17 @@ validation_list$seir$transitions<-function(value,full_config,config_name){
       print("Incorrect Source or Destination compartments present")
       return(FALSE)
     }
-    
+
     if(!(transitions$source[[i]][2] %in% compartments$vaccination_stage & transitions$destination[[i]][2] %in% compartments$vaccination_stage)){
       print("Incorrect vaccination mentioned in transitions")
       return(FALSE)
     }
-    
+
     if(!(transitions$source[[i]][3] %in% compartments$variant_type & transitions$destination[[i]][3] %in% compartments$variant_type)){
       print("Incorrect variants mentioned in transitions")
       return(FALSE)
     }
-    
+
     if(!(transitions$source[[i]][4] %in% compartments$age_strata & transitions$destination[[i]][4] %in% compartments$age_strata)){
       print("Incorrect Age Strata mentioned in transitions")
       return(FALSE)
@@ -462,7 +462,7 @@ validation_list$seir$transitions<-function(value,full_config,config_name){
 # }
 
 # validation_list$seir$parameters$parallel_structure<-list()
-# 
+#
 # validation_list$seir$compartments <- function(value, full_config) {
 #   if (is.null(value)) {
 #     print("No Compartments mentioned")
@@ -470,7 +470,7 @@ validation_list$seir$transitions<-function(value,full_config,config_name){
 #   }
 #   return(TRUE)
 # }
-# 
+#
 # validation_list$seir$transitions <- function(value, full_config) {
 #   if (is.null(value)) {
 #     print("No transitions mentioned")
@@ -682,7 +682,7 @@ check_config <- function(config, checks = validation_list, original_config = con
       config_is_valid <- FALSE
     }
   }
-  
+
   return(config_is_valid)
 }
 

@@ -1,6 +1,7 @@
 name: minimal
 start_date: 2020-03-15
 end_date: 2020-05-31
+data_path: data
 nslots: 15
 dt: 0.25
 dynfilter_path: data/filter.txt
