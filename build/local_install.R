@@ -8,14 +8,14 @@ local({r <- getOption("repos")
 
 library(devtools)
 
-install.packages(c("covidcast","data.table","vroom","dplyr","RSocrata"), force=TRUE)
+install.packages(c("covidcast","data.table","vroom","dplyr","RSocrata"), quiet=TRUE)
 # devtools::install_github("hrbrmstr/cdcfluview")
 
 # To run if operating in the container
 initial.options <- commandArgs(trailingOnly = FALSE)
 file.arg.name <- "--file="
 script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)]) # get the name of this file, by looking for the option "--file" in the arguments that were used to start this R instance and getting the term that comes after
-pkg.dir <- paste0(dirname(script.name), "../R_packages/") # find the directory that this file is within
+pkg.dir <- paste0(dirname(script.name), "/../flepimop/R_packages/") # find the directory that this file is within
 
 #list of local packages (reorder so flepicommon is installed first)
 loc_pkgs <- list.files(pkg.dir,full.names=TRUE)
