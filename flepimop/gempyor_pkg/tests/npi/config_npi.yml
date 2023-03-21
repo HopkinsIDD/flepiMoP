@@ -1,11 +1,11 @@
 name: USA
+setup_name: FCH
 smh_round: R12
 data_path: data
 start_date: 2020-01-01
 end_date: 2022-09-03
 end_date_groundtruth: 2022-03-05
 nslots: 300
-dt: 2.000
 
 spatial_setup:
   census_year: 2019
@@ -61,7 +61,6 @@ spatial_setup:
     - WI
     - WV
     - WY
-  setup_name: FCH
   geodata: geodata_2019_statelevel.csv
   mobility: mobility_2011-2015_statelevel.csv
   popnodes: pop2019est
@@ -93,7 +92,9 @@ seeding:
   amount_sd: 0
 
 seir:
-  integration_method: legacy
+  integration:
+    method: legacy
+    dt: 2.000
   parameters:
     sigma:
       value:
