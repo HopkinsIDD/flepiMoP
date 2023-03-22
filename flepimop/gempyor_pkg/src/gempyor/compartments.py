@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class Compartments:
     # Minimal object to be easily picklable for // runs
-    def __init__(self, seir_config=None, compartments_file=None, transitions_file=None):
+    def __init__(self, seir_config=None, compartments_config=None, compartments_file=None, transitions_file=None):
 
         self.times_set = 0
 
@@ -22,12 +22,9 @@ class Compartments:
         if (not compartments_file is None) and (not transitions_file is None):
             self.fromFile(compartments_file, transitions_file)
             self.times_set += 1
-        if (self.times_set == 0) and ("compartments" in seir_config.keys()):
-            self.constructFromConfig(seir_config)
+        if (self.times_set == 0) and (compartments_config is not None):
+            self.constructFromConfig(seir_config, compartments_config)
             self.times_set += 1
-        if self.times_set == 0:
-            self.defaultConstruct(seir_config)
-
         return
 
     def __eq__(self, other):
@@ -35,132 +32,7 @@ class Compartments:
             self.compartments == other.compartments
         ).all().all()
 
-    def defaultConstruct(self, seir_config):
-        use_parallel = False
-        if "parameters" in seir_config.keys():
-            if "parallel_structure" in seir_config["parameters"].keys():
-                use_parallel = True
-        n_parallel_compartments = 1
-        if use_parallel:
-            n_parallel_compartments = len(seir_config["parameters"]["parallel_structure"]["compartments"].get())
-        self.compartments = pd.DataFrame({"key": 1, "infection_stage": ["S", "E", "I1", "I2", "I3", "R"]})
-        parallel_frame = None
-        if use_parallel:
-            parallel_frame = pd.DataFrame(
-                {
-                    "key": 1,
-                    "vaccination_stage": seir_config["parameters"]["parallel_structure"]["compartments"].keys(),
-                }
-            )
-        else:
-            parallel_frame = pd.DataFrame({"key": 1, "vaccination_stage": ["unvaccinated"]})
-        self.compartments = pd.merge(self.compartments, parallel_frame)
-        self.compartments = self.compartments.drop(["key"], axis=1)
-        self.compartments["name"] = self.compartments.apply(lambda x: reduce(lambda a, b: a + "_" + b, x), axis=1)
-
-        if not use_parallel:
-            transitions = [
-                {
-                    "source": ["S", "unvaccinated"],
-                    "destination": ["E", "unvaccinated"],
-                    "rate": ["R0 * gamma", 1],
-                    "proportional_to": [
-                        ["S", "unvaccinated"],
-                        [[["I1", "I2", "I3"]], "unvaccinated"],
-                    ],
-                    "proportion_exponent": [["1", "1"], ["alpha", "1"]],
-                },
-                {
-                    "source": [["E"], ["unvaccinated"]],
-                    "destination": [["I1"], ["unvaccinated"]],
-                    "rate": ["sigma", 1],
-                    "proportional_to": [[["E"], ["unvaccinated"]]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-                {
-                    "source": [["I1"], ["unvaccinated"]],
-                    "destination": [["I2"], ["unvaccinated"]],
-                    "rate": ["3 * gamma", 1],
-                    "proportional_to": [[["I1"], ["unvaccinated"]]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-                {
-                    "source": [["I2"], ["unvaccinated"]],
-                    "destination": [["I3"], ["unvaccinated"]],
-                    "rate": ["3 * gamma", 1],
-                    "proportional_to": [[["I2"], ["unvaccinated"]]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-                {
-                    "source": [["I3"], ["unvaccinated"]],
-                    "destination": [["R"], ["unvaccinated"]],
-                    "rate": ["3 * gamma", 1],
-                    "proportional_to": [[["I3"], ["unvaccinated"]]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-            ]
-        else:
-            unique_infections_stages = self.compartments["infection_stage"].unique().tolist()
-            unique_vaccination_stages = self.compartments["vaccination_stage"].unique().tolist()
-            transitions = [
-                {
-                    "source": ["S", unique_vaccination_stages],
-                    "destination": ["E", unique_vaccination_stages],
-                    "rate": ["R0 * gamma", 1],
-                    "proportional_to": [
-                        ["S", unique_vaccination_stages],
-                        [[["I1", "I2", "I3"]], unique_vaccination_stages],
-                    ],
-                    "proportion_exponent": [["1", "1"], ["alpha", "1"]],
-                },
-                {
-                    "source": [["E"], unique_vaccination_stages],
-                    "destination": [["I1"], unique_vaccination_stages],
-                    "rate": ["sigma", 1],
-                    "proportional_to": [[["E"], unique_vaccination_stages]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-                {
-                    "source": [["I1"], unique_vaccination_stages],
-                    "destination": [["I2"], unique_vaccination_stages],
-                    "rate": ["3 * gamma", 1],
-                    "proportional_to": [[["I1"], unique_vaccination_stages]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-                {
-                    "source": [["I2"], unique_vaccination_stages],
-                    "destination": [["I3"], unique_vaccination_stages],
-                    "rate": ["3 * gamma", 1],
-                    "proportional_to": [[["I2"], unique_vaccination_stages]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-                {
-                    "source": [["I3"], unique_vaccination_stages],
-                    "destination": [["R"], unique_vaccination_stages],
-                    "rate": ["3 * gamma", 1],
-                    "proportional_to": [[["I3"], unique_vaccination_stages]],
-                    "proportion_exponent": [["1", "1"]],
-                },
-            ]
-            parallel_transitions = [
-                {
-                    "source": [unique_infections_stages, [transition["from"].get()]],
-                    "destination": [unique_infections_stages, [transition["to"].get()]],
-                    "rate": [f"transition_rate{i}", 1],
-                    "proportional_to": [[unique_infections_stages, [transition["from"].get()]]],
-                    "proportion_exponent": [["1", "1"]],
-                }
-                for i, transition in enumerate(seir_config["parameters"]["parallel_structure"]["transitions"])
-            ]
-
-            transitions = transitions + parallel_transitions
-
-            # raise Warning("This code doesn't actually work")
-
-        self.transitions = self.parse_transitions({"transitions": transitions}, True)
-
-    def parse_compartments(self, seir_config):
-        compartment_config = seir_config["compartments"]
+    def parse_compartments(self, seir_config, compartment_config):
         compartment_frame = None
         for compartment_name, compartment_value in compartment_config.get().items():
             tmp = pd.DataFrame({"key": 1, compartment_name: compartment_value})
@@ -424,8 +296,8 @@ class Compartments:
     def get_ncomp(self) -> int:
         return len(self.compartments)
 
-    def constructFromConfig(self, seir_config):
-        self.parse_compartments(seir_config)
+    def constructFromConfig(self, seir_config, compartment_config):
+        self.parse_compartments(seir_config, compartment_config)
         self.transitions = self.parse_transitions(seir_config, False)
 
     def get_transition_array(self):
