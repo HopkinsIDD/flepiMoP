@@ -272,9 +272,9 @@ def launch_batch(
     # TODO: does this really save the config file?
     if "inference" in config:
         config["inference"]["iterations_per_slot"] = sims_per_job
-        if not os.path.exists(pathlib.Path(data_path, config["inference"]["data_path"])):
+        if not os.path.exists(pathlib.Path(data_path, config["inference"]["gt_data_path"])):
             print(
-                f"ERROR: inference.data_path path {pathlib.Path(data_path, config['inference']['data_path'])} does not exist!"
+                f"ERROR: inference.data_path path {pathlib.Path(data_path, config['inference']['gt_data_path'])} does not exist!"
             )
             return 1
     else:
