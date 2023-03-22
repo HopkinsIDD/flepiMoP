@@ -118,7 +118,8 @@ class Setup:
                 seeding_config=self.seeding_config,
                 initial_conditions_config=self.initial_conditions_config,
             )
-            self.compartments = compartments.Compartments(self.seir_config)
+            # really ugly references to the config globally here.
+            self.compartments = compartments.Compartments(seir_config=self.seir_config, compartments_config = config["compartments"])
 
         # 3. Outcomes
         self.npi_config_outcomes = None
