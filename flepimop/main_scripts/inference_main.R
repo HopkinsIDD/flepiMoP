@@ -71,7 +71,7 @@ flepicommon::prettyprint_optlist(list(scenarios=scenarios,deathrates=deathrates,
 foreach(scenario = scenarios) %:%
 foreach(deathrate = deathrates) %:%
 foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
-  print(paste("Slot",flepi_slot,"of",opt$slots))
+  print(paste("Slot", flepi_slot, "of", opt$slots))
 
 
   ground_truth_start_text <- NULL
