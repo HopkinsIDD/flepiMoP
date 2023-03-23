@@ -203,7 +203,7 @@ make_daily_data <- function(data = nchs_data,
 
     data <- data %>%
         dplyr::select(-starts_with("cum")) %>%
-        mutate(Update = lubridate::floor_date(Update, "weeks", week_start = 1)) %>%
+        mutate(Update = lubridate::floor_date(Update, "weeks")) %>%
         pivot_longer(cols = starts_with("incid"), names_to = "outcome", values_to = "value") %>%
         filter(!is.na(value)) %>%
         group_by(source, FIPS, outcome) %>%
@@ -229,7 +229,7 @@ get_spline_daily <- function(grp_dat) {
     preds <- grp_dat %>%
         dplyr::select(source, FIPS, outcome) %>%
         distinct() %>%
-        expand_grid(Update = seq.Date(min(grp_dat$Update), max(grp_dat$Update), by="1 day")) %>%
+        expand_grid(Update = seq.Date(min(grp_dat$Update), (max(grp_dat$Update)+6), by="1 day")) %>%
         mutate(date_num = as.integer(Update))
     preds <- preds %>% mutate(value = smth(x = date_num))
 

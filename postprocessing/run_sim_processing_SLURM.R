@@ -270,7 +270,8 @@ if (use_local_repo){
   source_loc <- github_url
 }
 print(source_loc)
-source(paste0(source_loc, "/datasetup/data_setup_source.R")) # previously: "/postprocessing/groundtruth_source.R"
+source(paste0(source_loc, "/datasetup/data_setup_source.R"))
+source(paste0(source_loc, "/postprocessing/groundtruth_source.R"))
 source(paste0(source_loc, "/postprocessing/sim_processing_source.R"))
 
 
