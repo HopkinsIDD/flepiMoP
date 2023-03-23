@@ -443,7 +443,7 @@ for(i in 1:length(USPS)){
 }
 
 # OUTPUT FILES ------------------------------------------------------------
-pdf(file = paste0(round_directory, "/", fch_date, "_", pathogen, "_", smh_or_fch, "_R", round_num, "_", scenarios, "_", lubridate::ymd(today()), ".pdf"),
+pdf(file = paste0(round_directory, "/", fch_date, "_", disease, "_", smh_or_fch, "_R", round_num, "_", scenarios, "_", lubridate::ymd(today()), ".pdf"),
     height = 12,
     width = 9)
 plot(all_ll_plot)

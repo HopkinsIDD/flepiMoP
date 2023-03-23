@@ -11,14 +11,14 @@ library(cowplot)
 
 # Pull in geoid data
 geodata <- read.csv("./data/geodata_2019_statelevel.csv")
-if(pathogen == "flu"){
+if(disease == "flu"){
   states <- read.csv("./data/USPS_to_state_name.csv")
   geodata_states <- left_join(x = geodata,
                               y = states,
                               by = "USPS") %>%
     mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
 }
-if(pathogen == "covid19"){
+if(disease == "covid19"){
   states <- read.delim("./data/states.txt", header = TRUE, sep = "\t")
   geodata_states <- left_join(x = geodata,
                               y = states,
@@ -375,7 +375,7 @@ for(i in 1:length(USPS)){
 }
 
 # OUTPUT FILES ------------------------------------------------------------
-pdf(file = paste0(round_directory, "/", fch_date, "_", pathogen, "_", smh_or_fch, "_R", round_num, "_", scenarios, "_", ymd(today()), ".pdf"),
+pdf(file = paste0(round_directory, "/", fch_date, "_", disease, "_", smh_or_fch, "_R", round_num, "_", scenarios, "_", ymd(today()), ".pdf"),
     height = 12,
     width = 9)
 all_ll_plot
