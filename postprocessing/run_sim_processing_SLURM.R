@@ -83,7 +83,7 @@ config <- covidcommon::load_config(opt$config)
 # if using local, make sure its pulled and in same base directory as project
 # Use local if no access to internet or making local changes to code
 use_local_repo <- TRUE 
-github_url <- "https://raw.githubusercontent.com/HopkinsIDD/COVIDScenarioPipeline/main"
+github_url <- "https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/main"
 csp_local_dir <- opt$flepimop_repo
 
 # ~ Round -----------------------------------------------------------------
@@ -265,8 +265,8 @@ if (use_local_repo){
   source_loc <- github_url
 }
 print(source_loc)
-source(paste0(source_loc, "/R/scripts/postprocess/groundtruth_source.R"))
-source(paste0(source_loc, "/R/scripts/postprocess/sim_processing_source.R"))
+source(paste0(source_loc, "/postprocessing/groundtruth_source.R"))
+source(paste0(source_loc, "/postprocessing/sim_processing_source.R"))
 
 
 
