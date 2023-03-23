@@ -101,6 +101,12 @@ if (any(grepl("nchs", opt$gt_data_source))){
     # -- do this mainly for seeding. it gets re-aggregated for fitting
     # -- tbis is implemented as a spline fit to cumulative data, from which daily cum and incident are calculated.
 
+
+    # Limit the data to X weeks before the pulled date
+    if (!exists("config$inference$nchs_weeklag")) { config$inference$nchs_weeklag <- 2}
+    nchs_data <- nchs_data %>% filter(Update < lubridate::floor_date(Sys.Date() - config$inference$nchs_weeklag*7, "weeks"))
+
+
     nchs_data <- make_daily_data(data = nchs_data, current_timescale = "week") #%>%
         # mutate(gt_source = "nchs")
 
