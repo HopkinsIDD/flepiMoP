@@ -308,9 +308,9 @@ data_path <- opt$data_path
 Sys.setenv(CONFIG_PATH = opt$config)
 Sys.setenv(COVID_PATH = source_loc)
 if (pathogen == "flu"){
-  source(paste0(source_loc, "/R/scripts/build_flu_data.R"))
+  source(paste0(source_loc, "/datasetup/build_flu_data.R"))
 } else if (pathogen == "covid19"){
-  source(paste0(source_loc, "/R/scripts/build_covid_data.R"))
+  source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
 
 gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
@@ -504,7 +504,7 @@ if(plot_projections){
                                                     ifelse(is.na(subname), "", subname)))
   
   # Run plotting script
-  source(paste0(source_loc, "/R/scripts/postprocess/plot_predictions.R"))
+  source(paste0(source_loc, "/postprocessing/plot_predictions.R"))
 }
 
 
@@ -535,7 +535,7 @@ print('Processing Complete')
 if(run_diagnostics){
   getwd()
   # Run diagnostics script
-  source(paste0(source_loc, "/R/scripts/postprocess/processing_diagnostics_SLURM.R"))
+  source(paste0(source_loc, "/postprocessing/processing_diagnostics_SLURM.R"))
   
 }
 
