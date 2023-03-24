@@ -75,7 +75,8 @@ gc()
 pull_gt <- opt$pull_gt
 full_fit <- opt$full_fit
 
-config <- covidcommon::load_config(opt$config)
+config <- flepicommon::load_config(opt$config)
+
 
 
 # SETUP -------------------------------------------------------------------
@@ -102,6 +103,8 @@ subdir <- NULL  #used for testing purposes
 
 smh_or_fch <- tolower(smh_or_fch)
 
+
+
 # ~ Scenarios -------------------------------------------------------------
 
 ## THIS HAS TO BE EDITED FOR EVERY ROUND - what are the scenarios
@@ -122,7 +125,7 @@ n_weeks <- 41
 # ~ Config Specifics ------------------------------------------------------
 subname <- NA
 subname_all <- NA
-config_subname <- str_extract(config_name, paste0("(?<=", scenarios[scenario_num], "_).*?(?=\\.yml)"))
+config_subname <- stringr::str_extract(config_name, paste0("(?<=", scenarios[scenario_num], "_).*?(?=\\.yml)"))
 
 
 # ~ Outcomes to Include (for processing and plotting) ---------------------------------------------------
