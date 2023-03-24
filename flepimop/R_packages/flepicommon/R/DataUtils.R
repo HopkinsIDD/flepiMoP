@@ -1154,7 +1154,6 @@ get_groundtruth_from_source <- function(
         rc <- rc %>%
             dplyr::select(rc, Update, FIPS, source, !!variables)
 
-
   } else{
     warning(print(paste("The combination of ", source, "and", scale, "is not valid. Returning NULL object.")))
     rc <- NULL
