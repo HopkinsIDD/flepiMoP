@@ -538,12 +538,14 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 #' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
 #'
 #' @param sim_name name of simulation, typically named after the region/location you are modeling
+#' @param setup_name # SMH, FCH
+#' @param disease # covid19, flu
 #' @param smh_round round of Scenario Modeling Hub, for special adjustments. NA if not SMH.
+#' @param data_path path to setup data directory
 #' @param sim_start_date simulation start date, should match that of interventions, with format YYYY-MM-DD (e.g., 2020-01-31)
 #' @param sim_end_date simulation end date with format YYYY-MM-DD (e.g., 2020-01-31)
 #' @param end_date_groundtruth end date of the ground truth that is fit to. NA if not limiting ground truth date
 #' @param nslots number of simulations to run
-#' @param data_path
 #' @param model_output_dirname
 #' @param start_date_groundtruth
 #' @param setup_name spatial folder name
@@ -556,6 +558,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 print_header <- function (
         sim_name,
         setup_name = "SMH",
+        disease = "covid19"
         smh_round = NA,
         data_path = "data",
         model_output_dirname = "model_output",
@@ -568,6 +571,7 @@ print_header <- function (
     cat(
         paste0("name: ", sim_name, "\n",
                "setup_name: ", setup_name, "\n",
+               "disease: ", disease, "\n",
                ifelse(!is.na(smh_round),
                       paste0("smh_round: ", smh_round, "\n"), ""),
                "data_path: ", data_path, "\n",
