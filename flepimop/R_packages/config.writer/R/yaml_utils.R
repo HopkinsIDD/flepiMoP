@@ -558,7 +558,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 print_header <- function (
         sim_name,
         setup_name = "SMH",
-        disease = "covid19"
+        disease = "covid19",
         smh_round = NA,
         data_path = "data",
         model_output_dirname = "model_output",
