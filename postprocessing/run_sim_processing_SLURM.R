@@ -207,13 +207,13 @@ if (smh_or_fch == "smh" & disease == "flu"){
 
 # COVID-19 Forecasts (COVID-19 FCH: https://github.com/reichlab/covid19-forecast-hub/blob/master/data-processed/README.md#Data-formatting)
 if (smh_or_fch == "fch" & disease == "covid19"){
-
+  
   select_submission_targets <- function(data_comb){
     targets <- c(paste0(1:20, " wk ahead cum death"),
                  paste0(1:20, " wk ahead inc death"),
                  paste0(1:8, " wk ahead inc case"),
                  paste0(0:130, " day ahead inc hosp"))
-
+    
     data_comb <- data_comb %>%
       filter(type != "point-mean" & !(is.na(quantile) & type == "quantile")) %>%
       mutate(quantile = round(quantile, 3)) %>%
@@ -222,16 +222,16 @@ if (smh_or_fch == "fch" & disease == "covid19"){
       select(-any_of(c('scenario_id', 'scenario_name', 'forecast_date', 'age_group')))%>%
       rename(forecast_date = model_projection_date) %>%
       filter(quantile %in% round(c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),3) | is.na(quantile))
-
+    
     data_comb %>%
       filter(str_detect(target, "inc case")) %>%
       filter(quantile %in% c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975) | is.na(quantile)) %>%
       bind_rows(
         data_comb %>% filter(!str_detect(target, "inc case"))) %>%
       mutate(quantile = format(quantile, digits = 3))
-
+    
   }
-
+  
   forecast_date_name <- "forecast_date"
   outcomes_ <- c("I","C","H","D")
   outcomes_time_ <- c("weekly","weekly","daily","weekly")
@@ -322,6 +322,7 @@ if (disease == "flu"){
 } else if (disease == "covid19"){
   source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
+head(gt_data)
 
 gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
 
@@ -454,10 +455,10 @@ print(paste0("Final data saved in:  [  ", file.path(round_directory, paste0(lubr
 # ~ Save Replicates Sample ------------------------------------------------
 
 if (!full_fit & smh_or_fch == "smh" & save_reps){
-
+  
   file_names <- file.path(round_directory, paste0(projection_date, "-JHU_IDD-CovidSP-", scenarios_all, "_100reps.parquet"))
   geodata <- read_csv(geodata_file_path)
-
+  
   file_samp <- lapply(file_names, arrow::read_parquet)
   file_samp <- data.table::rbindlist(file_samp) %>% as_tibble() %>%
     left_join(geodata %>% select(location = USPS, geoid) %>% add_row(location="US", geoid="US")) %>%
@@ -466,25 +467,25 @@ if (!full_fit & smh_or_fch == "smh" & save_reps){
            location = stringr::str_pad(substr(geoid, 1, 2), width=2, side="right", pad = "0")) %>%
     select(-geoid) %>%
     arrange(scenario_id, target_end_date, target, location, age_group)
-
+  
   file_samp_nums <- file_samp %>%
     select(scenario_id, scenario_name, sample) %>%
     distinct() %>% arrange(scenario_id, sample) %>%
     group_by(scenario_id, scenario_name) %>%
     mutate(sample_new = 1:length(sample)) %>%
     ungroup() %>% as_tibble()
-
+  
   file_samp <- file_samp %>%
     full_join(file_samp_nums) %>%
     mutate(sample = sample_new) %>% select(-sample_new) %>%
     arrange(scenario_id, target_end_date, target, location, age_group, sample)
-
+  
   # Remove unwanted targets
   file_samp <- file_samp %>%
     filter(grepl("inc hosp|inc death|cum hosp|cum death", target)) %>%
     filter(!(grepl("inc death|cum death", target) & location != "US"))
   # filter(grepl("inc case|inc hosp|inc death|cum case|cum hosp|cum death", target))
-
+  
   arrow::write_parquet(file_samp,  file.path(round_directory, paste0(projection_date, "-JHU_IDD-CovidSP", "-sample.parquet")))
 }
 
@@ -495,7 +496,7 @@ if (!full_fit & smh_or_fch == "smh" & save_reps){
 # PLOTTING - ALL SCENARIOS -----------------------------------------------------------
 
 if(plot_projections){
-
+  
   sim_end_date <- lubridate::as_date(projection_date) + (n_weeks*7)-1
   keep_all_compartments <- keep_variant_compartments <- FALSE
   quant_values <- c(0.025, 0.25, 0.75, 0.975) #c(0.25, 0.75)
@@ -504,15 +505,15 @@ if(plot_projections){
   cum_wk_outcomes_ <- outcomes_[outcomes_time_=="weekly" & outcomes_cum_]
   plot_cum <- ifelse(any(outcomes_cum_),TRUE,FALSE)
   plot_incid <- TRUE
-
+  
   #data input
   data_comb <- arrow::read_parquet(file.path(round_directory, paste0(projection_date, "-JHU_IDD-CovidSP", ifelse(full_fit,"_FULL",""), "_all.parquet")))
-
+  
   # PDF NAME
   stplot_fname <- file.path(round_directory, paste0(toupper(smh_or_fch), "_all_R",round_num,"_", projection_date,
                                                     ifelse(full_fit, "_FULL",""),
                                                     ifelse(is.na(subname), "", subname)))
-
+  
   # Run plotting script
   source(paste0(source_loc, "/postprocessing/plot_predictions.R"))
 }
@@ -546,7 +547,7 @@ if(run_diagnostics){
   getwd()
   # Run diagnostics script
   source(paste0(source_loc, "/postprocessing/processing_diagnostics_SLURM.R"))
-
+  
 }
 
 print('Diagnostics Complete')
@@ -564,7 +565,7 @@ if(!full_fit){# FCH csv
     files_ <- file.path(round_directory, paste0(lubridate::as_date(ifelse(smh_or_fch=='fch', projection_date, projection_date)),
                                                 "-JHU_IDD-CovidSP.csv"))
   }
-
+  
 }else{# full fit plot
   files_ <- file.path(round_directory, paste0(toupper(smh_or_fch), "_all_R",round_num,"_", projection_date,
                                               ifelse(full_fit, "_FULL",""),
