@@ -17,7 +17,7 @@ option_list = list(
   optparse::make_option(c("-r","--run_processing"), action="store", default=Sys.getenv("PROCESS",FALSE), type='logical', help = "Process the run if true"),
   optparse::make_option(c("-p","--results_path"), action="store", type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-F","--full_fit"), action="store", default=Sys.getenv("FULL_FIT",FALSE), type='logical', help = "Process full fit"),
-  optparse::make_option(c("-i", "--disease"), action="store", default=Sys.getenv("disease", "flu"), type='character', help="Which disease is being run"),
+  optparse::make_option(c("-i", "--disease"), action="store", default=Sys.getenv("DISEASE", "flu"), type='character', help="Which disease is being run"),
   optparse::make_option(c("-g","--pull_gt"), action="store", default=Sys.getenv("PULL_GT",FALSE), type='logical', help = "Pull ground truth"),
   optparse::make_option(c("-n","--run_diagnostics"), action="store", default=Sys.getenv("DIAGNOSTICS",TRUE), type='logical', help = "Run diagnostics"),
   optparse::make_option(c("-f", "--flepimop_repo"), action="store", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo")
@@ -265,7 +265,7 @@ if (smh_or_fch == "smh" & disease == "covid19"){
 #     -- make sure you have the CSP repo in the same base directory as the project directory (i.e., same as COVID19_USA)
 #     -- make sure to pull CSP so have most up-to-date
 # - if github:
-#     -- code is pulled from the https://github.com/HopkinsIDD/COVIDScenarioPipeline repo
+#     -- code is pulled from the https://github.com/HopkinsIDD/flepiMoP repo
 #
 if (use_local_repo){
   source_loc <- csp_local_dir
@@ -316,11 +316,13 @@ data_path <- opt$data_path
 
 Sys.setenv(CONFIG_PATH = opt$config)
 Sys.setenv(FLEPI_PATH = source_loc)
+print(disease)
 if (disease == "flu"){
   source(paste0(source_loc, "/datasetup/build_flu_data.R"))
 } else if (disease == "covid19"){
   source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
+head(gt_data)
 
 gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
 
