@@ -26,7 +26,7 @@ install.packages(loc_pkgs,type='source',repos=NULL)
 
 # to run within a local instance of R studio
 
-#install.packages(list.files("../flepimop/R_packeages/",full.names=TRUE),type='source',repos=NULL) #install from files. Run from flepiMoP folder. Might need to run twice since packages are interdependent and might not be installed in correct order
+#install.packages(list.files("../flepimop/R_packages/",full.names=TRUE),type='source',repos=NULL) #install from files. Run from flepiMoP folder. Might need to run twice since packages are interdependent and might not be installed in correct order
 # devtools::install_github("HopkinsIDD/globaltoolboxlite") #install the covidimportation package from a separate Github repo
 # devtools::install_github("HopkinsIDD/covidImportation")
 #
