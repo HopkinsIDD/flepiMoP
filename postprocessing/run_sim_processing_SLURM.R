@@ -322,7 +322,6 @@ if (disease == "flu"){
 } else if (disease == "covid19"){
   source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
-head(gt_data)
 
 gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
 
