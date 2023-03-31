@@ -93,7 +93,7 @@ def test_parameters_from_config_plus_read_write():
 def test_parameters_quick_draw_old():
     config.clear()
     config.read(user=False)
-    config.set_file(f"{DATA_DIR}/parameters_only.yml")
+    config.set_file(f"{DATA_DIR}/config.yml")
 
     ss = setup.SpatialSetup(
         setup_name="test_seir",
@@ -136,7 +136,7 @@ def test_parameters_quick_draw_old():
 
     ### Check that the object is well constructed:
     print(params.pnames)
-    assert params.pnames == ["alpha", "sigma", "gamma", "R0"]
+    assert params.pnames == ["alpha", "sigma", "gamma", "R0s"]
     assert params.npar == 4
     assert params.intervention_overlap_operation["sum"] == []
     assert params.intervention_overlap_operation["prod"] == [pn.lower() for pn in params.pnames]
@@ -145,14 +145,14 @@ def test_parameters_quick_draw_old():
     print(p_array.shape)
 
     alpha = p_array[params.pnames2pindex["alpha"]]
-    R0s = p_array[params.pnames2pindex["R0"]]
+    R0s = p_array[params.pnames2pindex["R0s"]]
     sigma = p_array[params.pnames2pindex["sigma"]]
     gamma = p_array[params.pnames2pindex["gamma"]]
     # susceptibility_reduction = p_array[parameters.pnames2pindex['']]
     # transmissibility_reduction = p_array[parameters.pnames2pindex['alpha']]
 
     assert alpha.shape == (s.n_days, s.nnodes)
-    assert (alpha == 0.5).all()
+    assert (alpha == 0.9).all()
 
     assert R0s.shape == (s.n_days, s.nnodes)
     assert len(np.unique(R0s)) == 1

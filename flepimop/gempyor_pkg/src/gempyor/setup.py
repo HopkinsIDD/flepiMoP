@@ -100,7 +100,7 @@ class Setup:
                     if self.integration_method not in ["rk4.jit", "legacy"]:
                         raise ValueError(f"Unknow integration method {self.integration_method}.")
                 if "dt" in self.seir_config["integration"].keys() and self.dt is None:
-                    self.dt = float(self.seir_config["integration"]["dt"].get())
+                    self.dt = float(eval(str(self.seir_config["integration"]["dt"].get())))  # ugly way to parse string and formulas
                 elif self.dt is None:
                     self.dt = 2.0
             else:

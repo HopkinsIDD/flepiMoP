@@ -48,7 +48,7 @@ seir:
   transitions:
     - source: ["S", ["unvaccinated", "first_dose", "second_dose"]]
       destination: ["E", ["unvaccinated", "first_dose", "second_dose"]]
-      rate: ["R0 * gamma", 1]
+      rate: ["R0s * gamma", 1]
       proportional_to: [
           ["S", ["unvaccinated", "first_dose", "second_dose"]],
           [[["I1", "I2", "I3"]], ["unvaccinated", "first_dose", "second_dose"]],
