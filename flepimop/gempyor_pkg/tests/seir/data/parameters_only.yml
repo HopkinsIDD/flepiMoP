@@ -13,13 +13,21 @@ spatial_setup:
   nodenames: geoid
 seir:
   parameters:
-    alpha: 0.5
-    sigma: 1 / 5.2
+    alpha:
+      value:
+        distribution: fixed
+        value: 0.5
+    sigma:
+      value:
+        distribution: fixed
+        value:  1 / 5.2
     gamma:
-      distribution: uniform
-      low: 1 / 6
-      high: 1 / 2.6
+      value:
+        distribution: uniform
+        low: 1 / 6
+        high: 1 / 2.6
     R0s:
-      distribution: uniform
-      low: 2
-      high: 3
+      value:
+        distribution: uniform
+        low: 2
+        high: 3

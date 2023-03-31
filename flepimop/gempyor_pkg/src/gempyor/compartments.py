@@ -18,13 +18,15 @@ class Compartments:
         self.times_set = 0
 
         ## Something like this is needed for check script:
-
         if (not compartments_file is None) and (not transitions_file is None):
             self.fromFile(compartments_file, transitions_file)
             self.times_set += 1
         if (self.times_set == 0) and (compartments_config is not None):
             self.constructFromConfig(seir_config, compartments_config)
             self.times_set += 1
+
+        if self.times_set==0:
+            raise ValueError("Compartments object not set, no config or file provided")
         return
 
     def __eq__(self, other):
