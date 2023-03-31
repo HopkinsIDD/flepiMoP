@@ -4,7 +4,6 @@ start_date: 2020-03-15
 end_date: 2020-05-31
 data_path: data
 nslots: 15
-dynfilter_path: data/filter.txt
 
 spatial_setup:
   base_path: data

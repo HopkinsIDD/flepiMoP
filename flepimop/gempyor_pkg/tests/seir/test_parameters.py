@@ -159,7 +159,7 @@ def test_parameters_quick_draw_old():
     assert ((2 <= R0s) & (R0s <= 3)).all()
 
     assert sigma.shape == (s.n_days, s.nnodes)
-    assert (sigma == config["seir"]["parameters"]["sigma"].as_evaled_expression()).all()
+    assert (sigma == config["seir"]["parameters"]["sigma"]["value"]["value"].as_evaled_expression()).all()
 
     assert gamma.shape == (s.n_days, s.nnodes)
     assert len(np.unique(gamma)) == 1
