@@ -22,17 +22,29 @@ seeding:
   lambda_file: data/test1/seeding.csv
   perturbation_sd: 3
 
+compartments:
+  infection_stage": ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage": ["unvaccinated", "first_dose", "second_dose"]
+
 seir:
+  integration:
+    method: legacy
+    dt: 1/6
   parameters:
-    sigma: 1 / 5.2
+    sigma:
+      value:
+        distribution: fixed
+        value: 1 / 5.2
     gamma:
-      distribution: uniform
-      low: 1 / 6
-      high: 1 / 2.6
+      value:
+        distribution: uniform
+        low: 1 / 6
+        high: 1 / 2.6
     R0s:
-      distribution: uniform
-      low: 2
-      high: 3
+      value:
+        distribution: uniform
+        low: 2
+        high: 3
     parallel_structure:
       compartments:
         unvaccinated:
