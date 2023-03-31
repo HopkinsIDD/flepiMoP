@@ -128,7 +128,7 @@ echo "==="
 
 echo "***************** RUNNING inference_slot.R *****************"
 
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p flepiMoP
+Rscript flepiMoP/flepimop/main_scripts/inference_slot.R -p flepiMoP
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
         error_handler "Error code returned from inference_main.R: $dvc_ret"
