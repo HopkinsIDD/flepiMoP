@@ -284,7 +284,7 @@ def launch_batch(
         import boto3
 
         s3 = boto3.resource("s3")
-        bucket = s3.Bucket("idd-inference-runs")
+        bucket = s3.Bucket(s3_bucket)
         prefix = restart_from_location.split("/")[3] + "/model_output/"
         all_files = list(bucket.objects.filter(Prefix=prefix))
         all_files = [f.key for f in all_files]
