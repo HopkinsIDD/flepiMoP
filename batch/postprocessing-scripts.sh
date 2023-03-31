@@ -3,11 +3,11 @@
 
 export FULL_FIT=TRUE
 export DIAGNOSTICS=TRUE
-Rscript $FLEPI_PATH/R/scripts/postprocess/run_sim_processing_SLURM.R -c $CONFIG_PATH -p $FS_RESULTS_PATH
+Rscript $FLEPI_PATH/postprocessing/run_sim_processing_SLURM.R -c $CONFIG_PATH -p $FS_RESULTS_PATH
 
 export FULL_FIT=FALSE
 export DIAGNOSTICS=FALSE
-Rscript $FLEPI_PATH/R/scripts/postprocess/run_sim_processing_SLURM.R -c $CONFIG_PATH -p $FS_RESULTS_PATH 
+Rscript $FLEPI_PATH/postprocessing/run_sim_processing_SLURM.R -c $CONFIG_PATH -p $FS_RESULTS_PATH 
 
 # END: your postprocessing scripts goes here.
 
