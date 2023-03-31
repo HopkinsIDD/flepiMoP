@@ -31,7 +31,7 @@ seir:
     alpha:
       value:
         distribution: fixed
-        value: .
+        value: .9
     sigma:
       value:
         distribution: fixed
@@ -49,8 +49,8 @@ seir:
   transitions:
     - source: ["S", "unvaccinated"]
       destination: ["E", "unvaccinated"]
-      rate: ["R0 * gamma", 1]
-      proportional_to": [
+      rate: ["R0s * gamma", 1]
+      proportional_to: [
           ["S", "unvaccinated"],
           [[["I1", "I2", "I3"]], "unvaccinated"],
       ]

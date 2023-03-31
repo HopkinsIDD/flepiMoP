@@ -26,7 +26,7 @@ compartments:
 seir:
   integration:
     method: legacy
-    dt: 0.2
+    dt: 1/6
   parameters:
     alpha:
       value:
@@ -49,7 +49,7 @@ seir:
   transitions:
     - source: ["S", "unvaccinated"]
       destination: ["E", "unvaccinated"]
-      rate: ["R0 * gamma", 1]
+      rate: ["R0s * gamma", 1]
       proportional_to: [
           ["S", "unvaccinated"],
           [[["I1", "I2", "I3"]], "unvaccinated"],

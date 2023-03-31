@@ -279,7 +279,6 @@ def simulate(
             interactive=interactive,
             write_csv=write_csv,
             write_parquet=write_parquet,
-            dt=config["seir"]["integration"]["dt"].as_number(),
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=config["name"].get() + "/",
