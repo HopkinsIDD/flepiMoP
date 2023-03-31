@@ -7,6 +7,12 @@ end_date: 2022-09-03
 end_date_groundtruth: 2022-03-05
 nslots: 300
 
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R", "W"]
+  vaccination_stage: ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"]
+  variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"]
+  age_strata: ["age0to17", "age18to64", "age65to100"]
+
 spatial_setup:
   census_year: 2019
   modeled_states:
@@ -228,11 +234,6 @@ seir:
       value:
         distribution: fixed
         value: 0.0386100386100386
-  compartments:
-    infection_stage: ["S", "E", "I1", "I2", "I3", "R", "W"]
-    vaccination_stage: ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"]
-    variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"]
-    age_strata: ["age0to17", "age18to64", "age65to100"]
   transitions:
 # 1a - Susceptibles(S)Exposed(E)toWILD,excludingwaned
     - source: [["S"], ["unvaccinated", "1dose", "2dose"], ["WILD"], ["age0to17", "age18to64", "age65to100"]]
