@@ -20,8 +20,8 @@ seeding:
   initial_file_type: "seir"
 
 compartments:
-  infection_stage": ["S", "E", "I1", "I2", "I3", "R"]
-  vaccination_stage": ["unvaccinated"]
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage: ["unvaccinated"]
 
 seir:
   integration:

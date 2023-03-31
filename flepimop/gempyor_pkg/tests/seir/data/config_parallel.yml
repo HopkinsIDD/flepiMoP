@@ -23,8 +23,8 @@ seeding:
   perturbation_sd: 3
 
 compartments:
-  infection_stage": ["S", "E", "I1", "I2", "I3", "R"]
-  vaccination_stage": ["unvaccinated", "first_dose", "second_dose"]
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage: ["unvaccinated", "first_dose", "second_dose"]
 
 seir:
   integration:
@@ -45,6 +45,35 @@ seir:
         distribution: uniform
         low: 2
         high: 3
+  transitions:
+    - source: ["S", ["unvaccinated", "first_dose", "second_dose"]]
+      destination: ["E", ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["R0 * gamma", 1]
+      proportional_to: [
+          ["S", ["unvaccinated", "first_dose", "second_dose"]],
+          [[["I1", "I2", "I3"]], ["unvaccinated", "first_dose", "second_dose"]],
+      ]
+      proportion_exponent: [["1", "1"], ["alpha", "1"]] 
+    - source: [["E"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["I1"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["sigma", 1]
+      proportional_to: [[["E"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I1"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["I2"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I1"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I2"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["I3"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I2"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I3"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["R"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I3"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
     parallel_structure:
       compartments:
         unvaccinated:

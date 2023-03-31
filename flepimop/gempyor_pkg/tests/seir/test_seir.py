@@ -542,7 +542,6 @@ def test_inference_resume():
         interactive=interactive,
         write_csv=write_csv,
         write_parquet=write_parquet,
-        dt=config["seir"]["integration"]["dt"].as_number(),
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
@@ -725,6 +724,7 @@ def test_parallel_compartments_no_vacc():
     first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
+    
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,

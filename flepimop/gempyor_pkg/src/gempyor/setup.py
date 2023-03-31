@@ -37,7 +37,7 @@ class Setup:
         seeding_config={},
         initial_conditions_config={},
         parameters_config={},
-        seir_config={},
+        seir_config=None,
         outcomes_config={},
         outcomes_scenario=None,
         interactive=True,
@@ -81,6 +81,11 @@ class Setup:
         self.mobility = self.spatset.mobility
 
         self.stoch_traj_flag = stoch_traj_flag
+
+        # I'm not really sure if we should impose defaut or make setup really explicit and
+        # have users pass
+        if seir_config is None and config["seir"].exists():
+            self.seir_config = config["seir"]
 
 
         # Set-up the integration method and the time step
