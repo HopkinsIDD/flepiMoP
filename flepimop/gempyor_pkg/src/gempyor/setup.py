@@ -43,7 +43,7 @@ class Setup:
         interactive=True,
         write_csv=False,
         write_parquet=False,
-        dt=1 / 6,  # step size, in days
+        dt=None,  # step size, in days
         first_sim_index=1,
         in_run_id=None,
         in_prefix=None,
@@ -55,7 +55,7 @@ class Setup:
         # 1. Important global variables
         self.setup_name = setup_name
         self.nslots = nslots
-        self.dt = float(dt)
+        self.dt = dt
         self.ti = ti  ## we start at 00:00 on ti
         self.tf = tf  ## we end on 23:59 on tf
         if self.tf <= self.ti:
@@ -82,6 +82,8 @@ class Setup:
 
         self.stoch_traj_flag = stoch_traj_flag
 
+
+        # Set-up the integration method and the time step
         if config["seir"].exists() and (seir_config or parameters_config):
             if "integration" in self.seir_config.keys():
                 if "method" in self.seir_config["integration"].keys():
@@ -92,18 +94,31 @@ class Setup:
                         self.integration_method = "rk4.jit"
                     if self.integration_method not in ["rk4.jit", "legacy"]:
                         raise ValueError(f"Unknow integration method {self.integration_method}.")
+                if "dt" in self.seir_config["integration"].keys() and self.dt is None:
+                    self.dt = float(self.seir_config["integration"]["dt"].get())
+                elif self.dt is None:
+                    self.dt = 2.0
             else:
                 self.integration_method = "rk4.jit"
+                if self.dt is None:
+                    self.dt = 2.0
                 logging.info(f"Integration method not provided, assuming type {self.integration_method}")
+            if self.dt is not None:
+                self.dt = float(self.dt)
 
             if config_version is None:
-                config_version = "v2"
+                config_version = "v3"
                 logging.debug(f"Config version not provided, infering type {config_version}")
 
-            if config_version != "old" and config_version != "v2":
+            if config_version not in ["old", "v2", "v3"]:
                 raise ValueError(
-                    f"Configuration version unknown: {config_version}. "
-                    f"Should be either non-specified (default: 'old'), or set to 'old' or 'v2'."
+                    f"Configuration version unknown: {config_version}. \n"
+                    f"Should be either non-specified (default: 'v3'), or set to 'old' or 'v2'."
+                )
+            elif config_version == "old" or config_version == "v2":
+                raise ValueError(
+                    f"Configuration version 'old' and 'v2' are no longer supported by flepiMoP\n"
+                    f"Please use a 'v3' instead, or use the COVIDScenarioPipeline package. "
                 )
 
             # Think if we really want to hold this up.
