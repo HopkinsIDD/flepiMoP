@@ -140,9 +140,10 @@ class Setup:
                 initial_conditions_config=self.initial_conditions_config,
             )
             # really ugly references to the config globally here.
-            self.compartments = compartments.Compartments(
-                seir_config=self.seir_config, compartments_config=config["compartments"]
-            )
+            if config["compartments"].exists() and self.seir_config is not None:
+                self.compartments = compartments.Compartments(
+                    seir_config=self.seir_config, compartments_config=config["compartments"]
+                )
 
         # 3. Outcomes
         self.npi_config_outcomes = None
