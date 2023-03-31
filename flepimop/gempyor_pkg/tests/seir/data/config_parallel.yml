@@ -45,11 +45,21 @@ seir:
         distribution: uniform
         low: 2
         high: 3
+    transition_rate0:
+      intervention_overlap_operation: "sum"
+      value:
+        distribution: fixed
+        value: 0
+    transition_rate1:
+      intervention_overlap_operation: "sum"
+      value:
+        distribution: fixed
+        value: 0
   transitions:
     - source: ["S", ["unvaccinated", "first_dose", "second_dose"]]
       destination: ["E", ["unvaccinated", "first_dose", "second_dose"]]
       rate: ["R0s * gamma", 1]
-      proportional_to: [
+      proportional_to: [  # This config is quite bad: no susceptibilty reduction
           ["S", ["unvaccinated", "first_dose", "second_dose"]],
           [[["I1", "I2", "I3"]], ["unvaccinated", "first_dose", "second_dose"]],
       ]
@@ -74,41 +84,17 @@ seir:
       rate: ["3 * gamma", 1]
       proportional_to: [[["I3"], ["unvaccinated", "first_dose", "second_dose"]]]
       proportion_exponent: [["1", "1"]]
-    parallel_structure:
-      compartments:
-        unvaccinated:
-          transmissibility_reduction:
-            distribution: fixed
-            value: 0
-          susceptibility_reduction:
-            distribution: fixed
-            value: 0
-        first_dose:
-          transmissibility_reduction:
-            distribution: fixed
-            value: 0
-          susceptibility_reduction:
-            distribution: fixed
-            value: .5
-        second_dose:
-          transmissibility_reduction:
-            distribution: fixed
-            value: 0
-          susceptibility_reduction:
-            distribution: fixed
-            value: 1
-      transitions:
-        - from: unvaccinated
-          to: first_dose
-          rate:
-            distribution: fixed
-            value: 0
-        - from: first_dose
-          to: second_dose
-          rate:
-            distribution: fixed
-            value: 0
-
+    - source: [["S", "E", "I1", "I2", "I3", "R"], ["unvaccinated"]]
+      destination: [["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]
+      rate: ["transition_rate0", 1]
+      proportional_to: [[["S", "E", "I1", "I2", "I3", "R"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]
+      destination: [["S", "E", "I1", "I2", "I3", "R"], ["second_dose"]]
+      rate: ["transition_rate1", 1]
+      proportional_to: [[["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]]
+      proportion_exponent: [["1", "1"]]
+  
 interventions:
   scenarios:
     - Scenario1
@@ -142,7 +128,7 @@ interventions:
         high: .33
     Dose1:
       template: Reduce
-      parameter: "transition_rate 0"
+      parameter: "transition_rate0"
       period_start_date: 2020-04-10
       period_end_date: 2020-04-10
       value:
@@ -150,7 +136,7 @@ interventions:
         value: 0.9
     Dose2:
       template: Reduce
-      parameter: "transition_rate 1"
+      parameter: "transition_rate1"
       period_start_date: 2020-04-11
       period_end_date: 2020-04-11
       value:
