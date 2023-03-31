@@ -19,18 +19,62 @@ seeding:
 initial_conditions:
   method: Default
 
+compartments:
+  infection_stage": ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage": ["unvaccinated"]
+
 seir:
+  integration:
+    method: legacy
+    dt: 1/6
   parameters:
-    alpha: 0.9
-    sigma: 1 / 5.2
+    alpha:
+      value:
+        distribution: fixed
+        value: .9
+    sigma:
+      value:
+        distribution: fixed
+        value: 1 / 5.2
     gamma:
-      distribution: uniform
-      low: 1 / 6
-      high: 1 / 2.6
+      value:
+        distribution: uniform
+        low: 1 / 6
+        high: 1 / 2.6
     R0s:
-      distribution: uniform
-      low: 2
-      high: 3
+      value:
+        distribution: uniform
+        low: 2
+        high: 3
+  transitions:
+    - source: ["S", "unvaccinated"]
+      destination: ["E", "unvaccinated"]
+      rate: ["R0 * gamma", 1]
+      proportional_to": [
+          ["S", "unvaccinated"],
+          [[["I1", "I2", "I3"]], "unvaccinated"],
+      ]
+      proportion_exponent: [["1", "1"], ["alpha", "1"]] 
+    - source: [["E"], ["unvaccinated"]]
+      destination: [["I1"], ["unvaccinated"]]
+      rate: ["sigma", 1]
+      proportional_to: [[["E"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I1"], ["unvaccinated"]]
+      destination: [["I2"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I1"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I2"], ["unvaccinated"]]
+      destination: [["I3"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I2"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I3"], ["unvaccinated"]]
+      destination: [["R"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I3"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
 
 interventions:
   scenarios:

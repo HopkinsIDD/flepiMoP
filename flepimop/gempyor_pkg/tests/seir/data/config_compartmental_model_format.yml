@@ -11,6 +11,10 @@ spatial_setup:
   popnodes: population
   nodenames: geoid
 
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage: ["0dose", "1dose", "2dose"]
+  variant_type: ["var0", "var1"]
 
 seir:
   parameters:
@@ -63,10 +67,6 @@ seir:
       value:
         distribution: fixed
         value: 7
-  compartments:
-    infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
-    vaccination_stage: ["0dose", "1dose", "2dose"]
-    variant_type: ["var0", "var1"]
   transitions:
     - source: ["S", ["0dose", "1dose", "2dose"], "var0"]
       destination: ["E", ["0dose", "1dose", "2dose"], ["var0","var1"]]
