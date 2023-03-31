@@ -25,7 +25,7 @@ class Compartments:
             self.constructFromConfig(seir_config, compartments_config)
             self.times_set += 1
 
-        if self.times_set==0:
+        if self.times_set == 0:
             raise ValueError("Compartments object not set, no config or file provided")
         return
 

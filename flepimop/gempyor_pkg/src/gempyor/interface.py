@@ -103,7 +103,7 @@ class InferenceSimulator:
             interactive=interactive,
             write_csv=write_csv,
             write_parquet=write_parquet,
-            dt=None,                       # default to config value
+            dt=None,  # default to config value
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=in_prefix,

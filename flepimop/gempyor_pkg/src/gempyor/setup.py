@@ -87,7 +87,6 @@ class Setup:
         if seir_config is None and config["seir"].exists():
             self.seir_config = config["seir"]
 
-
         # Set-up the integration method and the time step
         if config["seir"].exists() and (seir_config or parameters_config):
             if "integration" in self.seir_config.keys():
@@ -100,7 +99,9 @@ class Setup:
                     if self.integration_method not in ["rk4.jit", "legacy"]:
                         raise ValueError(f"Unknow integration method {self.integration_method}.")
                 if "dt" in self.seir_config["integration"].keys() and self.dt is None:
-                    self.dt = float(eval(str(self.seir_config["integration"]["dt"].get())))  # ugly way to parse string and formulas
+                    self.dt = float(
+                        eval(str(self.seir_config["integration"]["dt"].get()))
+                    )  # ugly way to parse string and formulas
                 elif self.dt is None:
                     self.dt = 2.0
             else:
@@ -139,7 +140,9 @@ class Setup:
                 initial_conditions_config=self.initial_conditions_config,
             )
             # really ugly references to the config globally here.
-            self.compartments = compartments.Compartments(seir_config=self.seir_config, compartments_config = config["compartments"])
+            self.compartments = compartments.Compartments(
+                seir_config=self.seir_config, compartments_config=config["compartments"]
+            )
 
         # 3. Outcomes
         self.npi_config_outcomes = None
