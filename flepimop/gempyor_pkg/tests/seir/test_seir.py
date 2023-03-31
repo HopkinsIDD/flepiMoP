@@ -721,7 +721,7 @@ def test_parallel_compartments_no_vacc():
     first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
-    
+
     s = setup.Setup(
         setup_name="test_seir",
         spatial_setup=ss,
