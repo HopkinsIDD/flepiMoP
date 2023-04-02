@@ -94,7 +94,8 @@ fch_date <- lubridate::as_date(config$end_date_groundtruth) + 1
 
 # ~ Application -----------------------------------------------------------
 smh_or_fch <- ifelse(grepl("FCH", opt$config), "fch", "smh") #"fch" or "smh"
-if(exists("config$disease")) { opt$disease = config$disease }
+#if(exists("config$disease")) { opt$disease = config$disease }
+opt$disease <- config$disease
 disease <- tolower(opt$disease)
 if (disease %in% c("flu", "influenza")){ disease <- "flu" }
 if (disease %in% c("covid19", "covid", "covid-19")){ disease <- "covid19" }
@@ -322,7 +323,6 @@ if (disease == "flu"){
 } else if (disease == "covid19"){
   source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
-head(gt_data)
 
 gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
 
