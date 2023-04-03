@@ -15,12 +15,12 @@ option_list = list(
   optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",covidcommon::run_id())),
   optparse::make_option(c("-d", "--data_path"), action="store", default=Sys.getenv("DATA_PATH", Sys.getenv("DATA_PATH")), type='character', help="path to data repo"),
   optparse::make_option(c("-r","--run_processing"), action="store", default=Sys.getenv("PROCESS",FALSE), type='logical', help = "Process the run if true"),
-  optparse::make_option(c("-p","--results_path"), action="store", type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
+  optparse::make_option(c("--results_path"), action="store", type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-F","--full_fit"), action="store", default=Sys.getenv("FULL_FIT",FALSE), type='logical', help = "Process full fit"),
   optparse::make_option(c("-i", "--disease"), action="store", default=Sys.getenv("DISEASE", "flu"), type='character', help="Which disease is being run"),
   optparse::make_option(c("-g","--pull_gt"), action="store", default=Sys.getenv("PULL_GT",FALSE), type='logical', help = "Pull ground truth"),
   optparse::make_option(c("-n","--run_diagnostics"), action="store", default=Sys.getenv("DIAGNOSTICS",TRUE), type='logical', help = "Run diagnostics"),
-  optparse::make_option(c("-f", "--flepimop_repo"), action="store", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo")
+  optparse::make_option(c("-p", "--flepimop_repo"), action="store", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
