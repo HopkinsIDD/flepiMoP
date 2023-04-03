@@ -24,7 +24,7 @@ option_list = list(
 )
 
 parser=optparse::OptionParser(option_list=option_list)
-opt = optparse::parse_args(parser)
+opt = optparse::parse_args(parser, convert_hyphens_to_underscores = TRUE)
 
 print("Starting processing")
 if(opt$config == ""){
@@ -44,14 +44,14 @@ if(opt$data_path == ""){
 if(opt$results_path == ""){
   optparse::print_help(parser)
   stop(paste(
-    "Please specify a results path with either -p option or FS_RESULTS_PATH environment variable."
+    "Please specify a results path with either -P option or FS_RESULTS_PATH environment variable."
   ))
 }
 
 if(opt$flepimop_repo == ""){
   optparse::print_help(parser)
   stop(paste(
-    "Please specify a flepiMoP path with -f option or FLEPI_PATH environment variable."
+    "Please specify a flepiMoP path with -p option or FLEPI_PATH environment variable."
   ))
 }
 
