@@ -6,25 +6,19 @@ start_time <- Sys.time()
 library(ellipse)
 library(progress)
 library(cowplot)
+library(arrow)
+library(lubridate)
+library(zoo)
+
+# s3 name
+s3_name <- "idd-inference-runs"
 
 # PULL GEODATA ------------------------------------------------------------
 
 # Pull in geoid data
-geodata <- read.csv("./data/geodata_2019_statelevel.csv")
-if(disease == "flu"){
-  states <- read.csv("./data/USPS_to_state_name.csv")
-  geodata_states <- left_join(x = geodata,
-                              y = states,
-                              by = "USPS") %>%
-    mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
-}
-if(disease == "covid19"){
-  states <- read.delim("./data/states.txt", header = TRUE, sep = "\t")
-  geodata_states <- left_join(x = geodata,
-                              y = states,
-                              by = c("USPS" = "State.Abbreviation")) %>%
-    mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
-}
+geodata_states <- read.csv(paste0("./data/",
+                                  config$spatial_setup$geodata)) %>%
+  mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
 
 # PULL OUTCOMES FROM S3 ---------------------------------------------------
 
@@ -36,9 +30,14 @@ outcomes_list <-
 for (i in 1:length(outcomes_list)) {
   sys_call_s3 <-
     paste0(
-      'aws s3 cp --recursive s3://idd-inference-runs/USA-',
+      'aws s3 cp --recursive s3://',
+      s3_name, "/",
+      config$name,
+      "-",
       scenario_s3_buckets,
-      '/model_output/',
+      '/',
+      "model_output",
+      '/',
       outcomes_list[i],
       ' ',
       scenario_dir,
@@ -53,9 +52,14 @@ for (i in 1:length(outcomes_list)) {
 for (i in 1:length(outcomes_list)) {
   sys_call_s3 <-
     paste0(
-      'aws s3 cp --recursive s3://idd-inference-runs/USA-',
+      'aws s3 cp --recursive s3://',
+      s3_name, "/",
+      config$name,
+      "-",
       scenario_s3_buckets,
-      '/model_output/',
+      '/',
+      "model_output",
+      '/',
       "llik",
       ' ',
       scenario_dir,
@@ -69,7 +73,11 @@ for (i in 1:length(outcomes_list)) {
 # FUNCTIONS ---------------------------------------------------------------
 
 import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
-  dir_ <- paste0(scn_dir, "/", outcome, "/USA/inference/med")
+  dir_ <- paste0(scn_dir, "/",
+                 outcome, "/",
+                 config$name, "/",
+                 config$interventions$scenarios, "/",
+                 config$outcomes$scenarios)
   subdir_ <- paste0(dir_, "/", list.files(dir_),
                     "/",
                     global_opt,
@@ -82,10 +90,14 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
   pb <- txtProgressBar(min=0, max=total, style = 3)
   
   print(paste0("Importing ", outcome, " files (n = ", total, "):"))
-
+  
   for (i in 1:length(subdir_list)) {
     if(any(grepl("parquet", subdir_list))){
       dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/"))
+    }
+    if(outcome == "hosp"){
+      dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/")) %>%
+        select(date, geoid, incidI, incidC, incidH, incidD)
     }
     if(any(grepl("csv", subdir_list))){
       dat <- read.csv(paste(subdir_, subdir_list[i], sep = "/"))
@@ -108,74 +120,83 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
 
 # IMPORT OUTCOMES ---------------------------------------------------------
 
-hnpi <- import_s3_outcome(scenario_dir, "hnpi", "global", "final") %>%
+# Current workaround for issues with `shared` directory
+# work_dir <- scenario_dir
+work_dir <- paste0(getwd(), "/", scenario_dir)
+
+hnpi <- import_s3_outcome(work_dir, "hnpi", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-hpar <- import_s3_outcome(scenario_dir, "hpar", "global", "final") %>%
+hosp <- import_s3_outcome(work_dir, "hosp", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-llik <- import_s3_outcome(scenario_dir, "llik", "global", "final") %>%
+hpar <- import_s3_outcome(work_dir, "hpar", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-global_int_llik <- import_s3_outcome(scenario_dir, "llik", "global", "intermediate") %>%
+llik <- import_s3_outcome(work_dir, "llik", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-chimeric_int_llik <- import_s3_outcome(scenario_dir, "llik", "chimeric", "intermediate") %>%
+global_int_llik <- import_s3_outcome(work_dir, "llik", "global", "intermediate") %>%
   full_join(geodata_states, by = "geoid")
-seed <- import_s3_outcome(scenario_dir, "seed", "global", "final") %>%
+chimeric_int_llik <- import_s3_outcome(work_dir, "llik", "chimeric", "intermediate") %>%
+  full_join(geodata_states, by = "geoid")
+seed <- import_s3_outcome(work_dir, "seed", "global", "final") %>%
   mutate(geoid = stringr::str_pad(place, width = 5, side = "left", pad = "0")) %>%
   full_join(geodata_states, by = "geoid")
-snpi <- import_s3_outcome(scenario_dir, "snpi", "global", "final") %>%
+snpi <- import_s3_outcome(work_dir, "snpi", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-spar <- import_s3_outcome(scenario_dir, "spar", "global", "final")
+spar <- import_s3_outcome(work_dir, "spar", "global", "final")
 
 # DERIVED OBJECTS ---------------------------------------------------------
 
-bind_hnpi_llik <- full_join(x = hnpi, y = llik) %>%
-  pivot_wider(names_from = npi_name, values_from = reduction)
-names_hnpi <- unique(hnpi$npi_name)
+bind_hnpi_llik <- full_join(x = hnpi, y = llik)
 if(all(!is.na(hnpi$npi_name))){
-  var_hnpi_llik <- bind_hnpi_llik %>%
-    dplyr::select(all_of(names_hnpi)) %>%
-    summarize(across(everything(), ~var(.x, na.rm = TRUE))) %>%
-    pivot_longer(cols = all_of(names_hnpi)) %>%
-    filter(value > 0.0001)
+  var_bind_hnpi_llik <- bind_hnpi_llik %>%
+    group_by(npi_name) %>%
+    summarize(var = var(reduction)) %>%
+    filter(var > 0.0001)
+  pivot_bind_hnpi_llik <- bind_hnpi_llik %>%
+    dplyr::filter(npi_name %in% var_bind_hnpi_llik$npi_name) %>%
+    pivot_wider(names_from = npi_name, values_from = reduction)
 }
 
+bind_hosp_llik <- full_join(x = hosp, y = llik) %>%
+  pivot_longer(incidI:incidD, names_to = "outcome", values_to = "value")
+
 bind_hpar_llik <- full_join(x = hpar, y = llik) %>%
-  filter(quantity == "probability") %>%
+  dplyr::filter(quantity == "probability")
+var_bind_hpar_llik <- bind_hpar_llik %>%
+  group_by(outcome) %>%
+  summarize(var = var(value)) %>%
+  filter(var > 0.0001)
+pivot_bind_hpar_llik <- bind_hpar_llik %>%
+  dplyr::filter(outcome %in% var_bind_hpar_llik$outcome) %>%
   pivot_wider(names_from = outcome, values_from = value)
-names_hpar <- unique(hpar$outcome)
-var_hpar_llik <- bind_hpar_llik %>%
-  dplyr::select(all_of(names_hpar)) %>%
-  summarize(across(everything(), ~var(.x, na.rm = TRUE))) %>%
-  pivot_longer(cols = all_of(names_hpar)) %>%
-  filter(value > 0.0001)
 
 int_llik <- rbind(global_int_llik %>%
                     mutate(type = "global"),
                   chimeric_int_llik %>%
                     mutate(type = "chimeric"))
 
-bind_snpi_llik <- full_join(x = snpi, y = llik) %>%
+bind_snpi_llik <- full_join(x = snpi, y = llik)
+var_bind_snpi_llik <- bind_snpi_llik %>%
+  group_by(npi_name) %>%
+  summarize(var = var(reduction)) %>%
+  filter(var > 0.0001)
+pivot_bind_snpi_llik <- bind_snpi_llik %>%
+  dplyr::filter(npi_name %in% var_bind_snpi_llik$npi_name) %>%
   pivot_wider(names_from = npi_name, values_from = reduction)
-names_snpi <- unique(snpi$npi_name)
-var_snpi_llik <- bind_snpi_llik %>%
-  dplyr::select(all_of(names_snpi)) %>%
-  summarize(across(everything(), ~var(.x, na.rm = TRUE))) %>%
-  pivot_longer(cols = all_of(names_snpi)) %>%
-  filter(value > 0.0001)
 
-bind_spar_llik <- full_join(x = spar, y = llik) %>%
+bind_spar_llik <- full_join(x = spar, y = llik)
+var_bind_spar_llik <- bind_spar_llik %>%
+  group_by(parameter) %>%
+  summarize(var = var(value)) %>%
+  filter(var > 0.0001)
+pivot_bind_spar_llik <- bind_spar_llik %>%
+  dplyr::filter(parameter %in% var_bind_spar_llik$parameter) %>%
   pivot_wider(names_from = parameter, values_from = value)
-names_spar <- unique(spar$parameter)
-var_spar_llik <- bind_spar_llik %>%
-  dplyr::select(all_of(names_spar)) %>%
-  summarize(across(everything(), ~var(.x, na.rm = TRUE))) %>%
-  pivot_longer(cols = all_of(names_spar)) %>%
-  filter(value > 0.0001)
-
-# seed %>% filter(destination_vaccination_stage=="immune") %>% pull(amount) %>% sum() / 330000000
 
 # ANALYSES ----------------------------------------------------------------
 
-USPS <- sort(geodata_states$USPS)
+USPS <- geodata_states %>%
+  arrange(USPS) %>%
+  pull(USPS)
 
 # llik
 all_ll_plot <- llik %>%
@@ -194,6 +215,7 @@ accept_plot <- llik %>%
 
 hnpi_plot <- list()
 hnpi_llik_plot <- list()
+hosp_llik_plot <- list()
 hpar_plot <- list()
 hpar_llik_plot <- list()
 int_llik_plot <- list()
@@ -212,42 +234,18 @@ pb2 <- txtProgressBar(min=0, max=length(USPS), style = 3)
 
 for(i in 1:length(USPS)){
   
-  print(paste0("Preparing plots for ", USPS[i]))
+  state <- USPS[i]
+  
+  print(paste0("Preparing plots for ", state))
   
   # hnpi
   if(all(is.na(hnpi$npi_name))){
     print("hnpi files are empty")
   } else {
-    hnpi_plot[[i]] <- hnpi %>%
-      filter(USPS == USPS[i]) %>%
-      ggplot(aes(x = npi_name, y = reduction)) + 
-      geom_violin(scale = "width") +
-      geom_jitter(shape = ".", height = 0, width = 0.2) +
-      theme_bw(base_size = 10) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      labs(title = paste0(USPS[i], " hnpi values"))
-    
-    hnpi_llik_plot[[i]] <- bind_hnpi_llik %>%
-      filter(USPS == USPS[i]) %>%
-      dplyr::select(ll, all_of(var_hnpi_llik$name)) %>%
-      pivot_longer(cols = all_of(var_hnpi_llik$name)) %>%
-      drop_na(value) %>%
-      ggplot(aes(x = value, y = ll)) +
-      geom_point(size = 0.5, alpha = 0.8) +
-      facet_wrap(~name, scales = "free_x") +
-      geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
-      theme_bw(base_size = 10) +
-      labs(y = "log likelihood", title = paste0(USPS[i], " hnpi correlation with likelihood"))
-    }
-  
-  # hpar
-  if(all(is_empty(var_hpar_llik$name))){
-    print("no varying hpar outcomes to plot")
-  } else {
-    hpar_plot[[i]] <- bind_hpar_llik %>%
-      filter(USPS == USPS[i]) %>%
-      dplyr::select(ll, all_of(var_hpar_llik$name)) %>%
-      pivot_longer(cols = all_of(var_hpar_llik$name)) %>%
+    hnpi_plot[[i]] <- pivot_bind_hnpi_llik %>%
+      filter(USPS == state) %>%
+      dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
+      pivot_longer(cols = all_of(var_bind_hnpi_llik$npi_name)) %>%
       drop_na(value) %>%
       ggplot(aes(x = name, y = value)) +
       geom_violin(scale = "width") +
@@ -255,12 +253,82 @@ for(i in 1:length(USPS)){
       theme_bw(base_size = 10) +
       theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
       scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-      labs(x = "parameter", title = paste0(USPS[i], " hpar probability values"))
+      labs(x = "parameter", title = paste0(state, " hnpi values")) +
+      ylim(0, 1)
     
-    hpar_llik_plot[[i]] <- bind_hpar_llik %>%
-      filter(USPS == USPS[i]) %>%
-      dplyr::select(ll, all_of(var_hpar_llik$name)) %>%
-      pivot_longer(cols = all_of(var_hpar_llik$name)) %>%
+    hnpi_llik_plot[[i]] <- pivot_bind_hnpi_llik %>%
+      filter(USPS == state) %>%
+      dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
+      pivot_longer(cols = all_of(var_bind_hnpi_llik$npi_name)) %>%
+      drop_na(value) %>%
+      ggplot(aes(x = value, y = ll)) +
+      geom_point(size = 0.5, alpha = 0.8) +
+      facet_wrap(~name, scales = "free_x") +
+      geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
+      theme_bw(base_size = 10) +
+      labs(y = "log likelihood", title = paste0(state, " hnpi correlation with likelihood"))
+  }
+  
+  # hosp
+  state_llik_rank <- llik %>%
+    dplyr::filter(USPS == state) %>%
+    mutate(rank = rank(desc(ll))) %>%
+    arrange(rank)
+  
+  filter_state_hosp <- bind_hosp_llik %>%
+    filter(USPS == state,
+           slot %in% c(head(state_llik_rank, 5)$slot, tail(state_llik_rank, 5)$slot)) %>%
+    mutate(llik_bin = case_when(slot %in% head(state_llik_rank, 5)$slot ~ "top",
+                                slot %in% tail(state_llik_rank, 5)$slot ~ "bottom"))
+  
+  filter_gt_data <- gt_data %>%
+    filter(USPS == state) %>%
+    select(USPS, geoid, time, dplyr::contains("incid") & !dplyr::contains("_")) %>%
+    pivot_longer(dplyr::contains('incid'), names_to = "outcome", values_to = "value") %>%
+    rename(date = time) %>%
+    mutate(week = lubridate::week(date)) %>%
+    group_by(outcome, week) %>%
+    mutate(rollmean = zoo::rollmean(x = value, k = 7, fill = NA))
+  
+  hosp_llik_plot[[i]] <- ggplot() +
+    geom_line(data = filter_state_hosp,
+              aes(x = as.POSIXct(date), y = value, group = slot, color = ll, linetype = llik_bin)) +
+    scale_x_datetime(date_breaks = "1 month", date_labels = "%b %Y", name = "date") +
+    scale_y_sqrt(name = "count") +
+    scale_linetype_manual(values = c(2, 1), name = "likelihood\nbin") +
+    scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
+    theme_bw(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
+    ggtitle(paste0(state, " incidence")) +
+    facet_grid(outcome~., scales = "free_y") +
+    geom_point(data = filter_gt_data,
+               aes(x = as.POSIXct(date), y = value),
+               pch = 1,
+               size = 0.25, color = "grey50") +
+    geom_line(data = filter_gt_data %>% drop_na(rollmean),
+              aes(x = as.POSIXct(date), y = rollmean), color = "red")
+  
+  # hpar
+  if(all(is_empty(var_bind_hpar_llik$name))){
+    print("no varying hpar outcomes to plot")
+  } else {
+    hpar_plot[[i]] <- pivot_bind_hpar_llik %>%
+      filter(USPS == state) %>%
+      dplyr::select(ll, all_of(var_bind_hpar_llik$outcome)) %>%
+      pivot_longer(cols = all_of(var_bind_hpar_llik$outcome)) %>%
+      drop_na(value) %>%
+      ggplot(aes(x = name, y = value)) +
+      geom_violin(scale = "width") +
+      geom_jitter(aes(group = name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.8) +
+      theme_bw(base_size = 10) +
+      theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
+      scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+      labs(x = "parameter", title = paste0(state, " hpar probability values"))
+    
+    hpar_llik_plot[[i]] <- pivot_bind_hpar_llik %>%
+      filter(USPS == state) %>%
+      dplyr::select(ll, all_of(var_bind_hpar_llik$outcome)) %>%
+      pivot_longer(cols = all_of(var_bind_hpar_llik$outcome)) %>%
       drop_na(value) %>%
       ggplot(aes(x = value, y = ll)) +
       geom_point(size = 0.5, alpha = 0.8) +
@@ -268,36 +336,37 @@ for(i in 1:length(USPS)){
       geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
       theme_bw(base_size = 10) +
       theme(strip.text = element_text(size = 4)) +
-      labs(y = "log likelihood", title = paste0(USPS[i], " hpar correlation with likelihood"))
+      labs(y = "log likelihood", title = paste0(state, " hpar correlation with likelihood"))
   }
   
   # llik
   int_llik_plot[[i]] <- int_llik %>%
-    filter(USPS == USPS[i],
+    filter(USPS == state,
            between(slot, 1, 8)) %>%
     ggplot() +
+    geom_point(aes(x = block, y = ll, linetype = type, color = factor(slot))) +
     geom_step(aes(x = block, y = ll, linetype = type, color = factor(slot))) +
     scale_color_brewer(palette = "Dark2", name = "slot") +
     theme_bw(base_size = 10) +
-    labs(y = "log likelihood", title = paste0(USPS[i], " global and chimeric intermediate likelihoods"))
+    labs(y = "log likelihood", title = paste0(state, " global and chimeric intermediate likelihoods"))
   
   # seed
   seed_plot[[i]] <- seed %>% 
     filter(destination_infection_stage == "E",
-           USPS == USPS[i]) %>%
+           USPS == state) %>%
     ggplot(aes(x = as.Date(date), y = amount, color = destination_variant_type)) +
     geom_count(alpha = 0.8) +
-    scale_x_date(date_labels = "%Y-%m-%d") +
+    scale_x_date(date_breaks = "1 week", date_labels = "%Y-%m-%d") +
     scale_color_brewer(palette = "Dark2", name = "variant") +
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-    labs(x = "seeding date", title = paste0(USPS[i], " seeding across all slots"))
+    labs(x = "seeding date", title = paste0(state, " seeding across all slots"))
   
   # snpi
-  snpi_plot[[i]] <- bind_snpi_llik %>%
-    filter(USPS == USPS[i]) %>%
-    dplyr::select(ll, all_of(var_snpi_llik$name)) %>%
-    pivot_longer(cols = all_of(var_snpi_llik$name)) %>%
+  snpi_plot[[i]] <- pivot_bind_snpi_llik %>%
+    filter(USPS == state) %>%
+    dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
+    pivot_longer(cols = all_of(var_bind_snpi_llik$npi_name)) %>%
     drop_na(value) %>%
     ggplot(aes(x = name, y = value)) +
     geom_violin(scale = "width") +
@@ -305,25 +374,25 @@ for(i in 1:length(USPS)){
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-    labs(x = "reduction", title = paste0(USPS[i], " snpi reduction values"))
+    labs(x = "reduction", title = paste0(state, " snpi reduction values"))
   
-  snpi_llik_plot[[i]] <- bind_snpi_llik %>%
-    filter(USPS == USPS[i]) %>%
-    dplyr::select(ll, all_of(var_snpi_llik$name)) %>%
-    pivot_longer(cols = all_of(var_snpi_llik$name)) %>%
+  snpi_llik_plot[[i]] <- pivot_bind_snpi_llik %>%
+    filter(USPS == state) %>%
+    dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
+    pivot_longer(cols = all_of(var_bind_snpi_llik$npi_name)) %>%
     drop_na(value) %>%
     ggplot(aes(x = value, y = ll)) +
     geom_point(size = 0.5, alpha = 0.8) +
     facet_wrap(~name, scales = "free_x") +
     geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
     theme_bw(base_size = 10) +
-    labs(y = "log likelihood", title = paste0(USPS[i], " snpi correlation with likelihood"))
+    labs(y = "log likelihood", title = paste0(state, " snpi correlation with likelihood"))
   
   # spar
-  spar_plot[[i]] <- bind_spar_llik %>%
-    filter(USPS == USPS[i]) %>%
-    dplyr::select(ll, all_of(var_spar_llik$name)) %>%
-    pivot_longer(cols = all_of(var_spar_llik$name)) %>%
+  spar_plot[[i]] <- pivot_bind_spar_llik %>%
+    filter(USPS == state) %>%
+    dplyr::select(ll, all_of(var_bind_spar_llik$parameter)) %>%
+    pivot_longer(cols = all_of(var_bind_spar_llik$parameter)) %>%
     drop_na(value) %>%
     ggplot(aes(x = name, y = value)) +
     geom_violin(scale = "width") +
@@ -331,19 +400,20 @@ for(i in 1:length(USPS)){
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-    labs(x = "parameter", title = paste0(USPS[i], " spar parameter values"))
+    labs(x = "parameter", title = paste0(state, " spar parameter values")) +
+    ylim(0, 1)
   
-  spar_llik_plot[[i]] <- bind_spar_llik %>%
-    filter(USPS == USPS[i]) %>%
-    dplyr::select(ll, all_of(var_spar_llik$name)) %>%
-    pivot_longer(cols = all_of(var_spar_llik$name)) %>%
+  spar_llik_plot[[i]] <- pivot_bind_spar_llik %>%
+    filter(USPS == state) %>%
+    dplyr::select(ll, all_of(var_bind_spar_llik$parameter)) %>%
+    pivot_longer(cols = all_of(var_bind_spar_llik$parameter)) %>%
     drop_na(value) %>%
     ggplot(aes(x = value, y = ll)) +
     geom_point(size = 0.5, alpha = 0.8) +
     facet_wrap(~name, scales = "free_x") +
     geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
     theme_bw(base_size = 10) +
-    labs(y = "log likelihood", title = paste0(USPS[i], " spar correlation with likelihood"))
+    labs(y = "log likelihood", title = paste0(state, " spar correlation with likelihood"))
   
   # Combined output plots
   state_plot1[[i]] <- plot_grid(int_llik_plot[[i]],
@@ -356,7 +426,7 @@ for(i in 1:length(USPS)){
                                   hnpi_llik_plot[[i]],
                                   nrow = 2, ncol = 1)
   }
-  if(all(is_empty(var_hpar_llik$name))){
+  if(all(is_empty(var_bind_hpar_llik$name))){
     state_plot3[[i]] <- NA
   } else {
     state_plot3[[i]] <- plot_grid(hpar_plot[[i]],
@@ -375,13 +445,14 @@ for(i in 1:length(USPS)){
 }
 
 # OUTPUT FILES ------------------------------------------------------------
-pdf(file = paste0(round_directory, "/", fch_date, "_", disease, "_", smh_or_fch, "_R", round_num, "_", scenarios, "_", ymd(today()), ".pdf"),
+pdf(file = paste0(round_directory, "/", fch_date, "_", pathogen, "_", smh_or_fch, "_R", round_num, "_", scenarios, "_", lubridate::ymd(today()), ".pdf"),
     height = 12,
     width = 9)
-all_ll_plot
-accept_plot
+plot(all_ll_plot)
+plot(accept_plot)
 for(i in 1:length(USPS)){
-  print(paste0("Outputting plots for ", USPS[i]))
+  state <- USPS[i]
+  print(paste0("Outputting plots for ", state))
   plot(state_plot1[[i]])
   if(all(!is.na(state_plot2[[i]]))){
     plot(state_plot2[[i]])
@@ -391,6 +462,7 @@ for(i in 1:length(USPS)){
   }
   plot(state_plot4[[i]])
   plot(state_plot5[[i]])
+  plot(hosp_llik_plot[[i]])
 }
 dev.off()
 
