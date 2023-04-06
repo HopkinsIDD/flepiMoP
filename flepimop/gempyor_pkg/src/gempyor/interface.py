@@ -70,7 +70,7 @@ class InferenceSimulator:
         config.read(user=False)
         config.set_file(config_path)
         spatial_config = config["spatial_setup"]
-        spatial_base_path = spatial_config["base_path"].get()
+        spatial_base_path = config["data_path"].get()
         spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
         np.random.seed(rng_seed)
@@ -81,7 +81,7 @@ class InferenceSimulator:
         self.s = setup.Setup(
             setup_name=config["name"].get() + "_" + str(scenario),
             spatial_setup=setup.SpatialSetup(
-                setup_name=spatial_config["setup_name"].get(),
+                setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
                 mobility_file=spatial_base_path / spatial_config["mobility"].get()
                 if spatial_config["mobility"].exists()
@@ -103,7 +103,7 @@ class InferenceSimulator:
             interactive=interactive,
             write_csv=write_csv,
             write_parquet=write_parquet,
-            dt=config["dt"].as_number(),
+            dt=None,  # default to config value
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=in_prefix,

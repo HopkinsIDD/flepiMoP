@@ -9,6 +9,7 @@ library(tidyr)
 library(tidycensus)
 library(readr)
 library(lubridate)
+library(flepicommon)
 
 
 option_list = list(
@@ -28,7 +29,7 @@ if (exists("config$inference$gt_source")) {
     opt$gt_data_source <- config$inference$gt_source
 }
 
-outdir <- config$spatial_setup$base_path
+outdir <- config$data_path
 filterUSPS <- config$spatial_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -62,7 +63,7 @@ if (any(grepl("csse", opt$gt_data_source))){
 
     us_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
                                                         incl_unass = TRUE,
-                                                        variables = c("Confirmed", "Deaths", "incidI", "incidDeath"),
+                                                        variables = c("incidC", "cumC", "incidD", "cumD"),
                                                         adjust_for_variant = TRUE,
                                                         variant_props_file = config$seeding$variant_filename)
     us_data <- us_data %>%
@@ -92,7 +93,7 @@ if (any(grepl("nchs", opt$gt_data_source))){
 
     nchs_data <- get_covidcast_deaths(scale = "US state",
                                       source = "nchs-mortality",
-                                      fix_negatives = TRUE,
+                                      fix_negatives = FALSE,
                                       adjust_for_variant = FALSE,
                                       variant_props_file = config$seeding$variant_filename)
 
@@ -100,7 +101,13 @@ if (any(grepl("nchs", opt$gt_data_source))){
     # -- do this mainly for seeding. it gets re-aggregated for fitting
     # -- tbis is implemented as a spline fit to cumulative data, from which daily cum and incident are calculated.
 
-    nchs_data <- make_daily_data(data = nchs_data %>% dplyr::select(-signal), current_timescale = "week") #%>%
+
+    # Limit the data to X weeks before the pulled date
+    if (!exists("config$inference$nchs_weeklag")) { config$inference$nchs_weeklag <- 2}
+    nchs_data <- nchs_data %>% filter(Update < lubridate::floor_date(Sys.Date() - config$inference$nchs_weeklag*7, "weeks"))
+
+
+    nchs_data <- make_daily_data(data = nchs_data, current_timescale = "week") #%>%
         # mutate(gt_source = "nchs")
 
     gt_data <- append(gt_data, list(nchs_data))
@@ -178,12 +185,12 @@ us_data <- us_data %>%
 
 
 # Save
-write_csv(us_data, config$inference$data_path)
+write_csv(us_data, config$inference$gt_data_path)
 
 
 
 cat(paste0("Ground truth data saved\n",
-           "  -- file:      ", config$inference$data_path,".\n",
+           "  -- file:      ", config$inference$gt_data_path,".\n",
            "  -- outcomes:  ", paste(grep("incid", colnames(us_data), value = TRUE), collapse = ", ")))
 
 

@@ -21,7 +21,7 @@ class Parameters:
         ti: datetime.date,
         tf: datetime.date,
         nodenames: list,
-        config_version: str = "old",
+        config_version: str = "v2",
     ):
         self.pconfig = parameter_config
         self.pnames = []
@@ -31,7 +31,7 @@ class Parameters:
         self.pnames2pindex = {}
         self.intervention_overlap_operation = {"sum": [], "prod": []}
 
-        if config_version == "v2":
+        if config_version == "v3":
             self.pnames = self.pconfig.keys()
             self.npar = len(self.pnames)
             if self.npar != len(set([name.lower() for name in self.pnames])):

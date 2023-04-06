@@ -24,7 +24,7 @@ def test_check_transitions_parquet_creation():
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
     original_compartments_file = f"{DATA_DIR}/parsed_compartment_compartments.parquet"
     original_transitions_file = f"{DATA_DIR}/parsed_compartment_transitions.parquet"
-    lhs = compartments.Compartments(seir_config=config["seir"])
+    lhs = compartments.Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
     rhs = compartments.Compartments(
         seir_config=config["seir"],
         compartments_file=original_compartments_file,
@@ -43,7 +43,7 @@ def test_check_transitions_parquet_writing_and_loading():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
-    lhs = compartments.Compartments(seir_config=config["seir"])
+    lhs = compartments.Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
     temp_compartments_file = f"{DATA_DIR}/parsed_compartment_compartments.test.parquet"
     temp_transitions_file = f"{DATA_DIR}/parsed_compartment_transitions.test.parquet"
     lhs.toFile(compartments_file=temp_compartments_file, transitions_file=temp_transitions_file)
@@ -78,7 +78,7 @@ def test_Setup_has_compartments_component():
         spatial_setup=ss,
         nslots=1,
         npi_scenario="None",
-        config_version="old",
+        config_version="v3",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seir_config=config["seir"],
@@ -100,7 +100,7 @@ def test_Setup_has_compartments_component():
         spatial_setup=ss,
         nslots=1,
         npi_scenario="None",
-        config_version="v2",
+        config_version="v3",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seir_config=config["seir"],

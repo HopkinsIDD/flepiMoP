@@ -8,10 +8,6 @@ library(progress)
 library(cowplot)
 library(arrow)
 library(lubridate)
-library(zoo)
-
-# s3 name
-s3_name <- "idd-inference-runs"
 
 # PULL GEODATA ------------------------------------------------------------
 
@@ -19,56 +15,6 @@ s3_name <- "idd-inference-runs"
 geodata_states <- read.csv(paste0("./data/",
                                   config$spatial_setup$geodata)) %>%
   mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
-
-# PULL OUTCOMES FROM S3 ---------------------------------------------------
-
-# List of outcomes to pull
-outcomes_list <-
-  c("hnpi", "hpar", "llik", "seed", "seir", "snpi", "spar")
-
-# Download all final outcomes from AWS buckets
-for (i in 1:length(outcomes_list)) {
-  sys_call_s3 <-
-    paste0(
-      'aws s3 cp --recursive s3://',
-      s3_name, "/",
-      config$name,
-      "-",
-      scenario_s3_buckets,
-      '/',
-      "model_output",
-      '/',
-      outcomes_list[i],
-      ' ',
-      scenario_dir,
-      '/',
-      outcomes_list[i],
-      ' --exclude="*" --include="*/final/*"'
-    )
-  system(sys_call_s3)
-}
-
-# Download intermediate likelihoods from AWS buckets
-for (i in 1:length(outcomes_list)) {
-  sys_call_s3 <-
-    paste0(
-      'aws s3 cp --recursive s3://',
-      s3_name, "/",
-      config$name,
-      "-",
-      scenario_s3_buckets,
-      '/',
-      "model_output",
-      '/',
-      "llik",
-      ' ',
-      scenario_dir,
-      '/',
-      "llik",
-      ' --exclude="*" --include="*/intermediate/*"'
-    )
-  system(sys_call_s3)
-}
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -84,13 +30,13 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
                     "/",
                     final_opt)
   subdir_list <- list.files(subdir_)
-  
+
   out_ <- NULL
   total <- length(subdir_list)
-  pb <- txtProgressBar(min=0, max=total, style = 3)
+    pb <- txtProgressBar(min=0, max=total, style = 3)
   
   print(paste0("Importing ", outcome, " files (n = ", total, "):"))
-  
+
   for (i in 1:length(subdir_list)) {
     if(any(grepl("parquet", subdir_list))){
       dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/"))
@@ -120,28 +66,30 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
 
 # IMPORT OUTCOMES ---------------------------------------------------------
 
-# Current workaround for issues with `shared` directory
-# work_dir <- scenario_dir
-work_dir <- paste0(getwd(), "/", scenario_dir)
+# List of outcomes to pull
+outcomes_list <-
+  c("hnpi", "hpar", "llik", "seed", "seir", "snpi", "spar")
 
-hnpi <- import_s3_outcome(work_dir, "hnpi", "global", "final") %>%
+scenario_dir <- file.path(scenario_dir, config$model_output_dirname)
+
+hnpi <- import_s3_outcome(scenario_dir, "hnpi", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-hosp <- import_s3_outcome(work_dir, "hosp", "global", "final") %>%
+hosp <- import_s3_outcome(scenario_dir, "hosp", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-hpar <- import_s3_outcome(work_dir, "hpar", "global", "final") %>%
+hpar <- import_s3_outcome(scenario_dir, "hpar", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-llik <- import_s3_outcome(work_dir, "llik", "global", "final") %>%
+llik <- import_s3_outcome(scenario_dir, "llik", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-global_int_llik <- import_s3_outcome(work_dir, "llik", "global", "intermediate") %>%
+global_int_llik <- import_s3_outcome(scenario_dir, "llik", "global", "intermediate") %>%
   full_join(geodata_states, by = "geoid")
-chimeric_int_llik <- import_s3_outcome(work_dir, "llik", "chimeric", "intermediate") %>%
+chimeric_int_llik <- import_s3_outcome(scenario_dir, "llik", "chimeric", "intermediate") %>%
   full_join(geodata_states, by = "geoid")
-seed <- import_s3_outcome(work_dir, "seed", "global", "final") %>%
+seed <- import_s3_outcome(scenario_dir, "seed", "global", "final") %>%
   mutate(geoid = stringr::str_pad(place, width = 5, side = "left", pad = "0")) %>%
   full_join(geodata_states, by = "geoid")
-snpi <- import_s3_outcome(work_dir, "snpi", "global", "final") %>%
+snpi <- import_s3_outcome(scenario_dir, "snpi", "global", "final") %>%
   full_join(geodata_states, by = "geoid")
-spar <- import_s3_outcome(work_dir, "spar", "global", "final")
+spar <- import_s3_outcome(scenario_dir, "spar", "global", "final")
 
 # DERIVED OBJECTS ---------------------------------------------------------
 

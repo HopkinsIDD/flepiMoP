@@ -1,7 +1,13 @@
 
 # START: your postprocessing scripts goes here.
 
+export FULL_FIT=TRUE
+export DIAGNOSTICS=TRUE
+Rscript $FLEPI_PATH/postprocessing/run_sim_processing_SLURM.R -c $CONFIG_PATH 
 
+export FULL_FIT=FALSE
+export DIAGNOSTICS=FALSE
+Rscript $FLEPI_PATH/postprocessing/run_sim_processing_SLURM.R -c $CONFIG_PATH
 
 # END: your postprocessing scripts goes here.
 

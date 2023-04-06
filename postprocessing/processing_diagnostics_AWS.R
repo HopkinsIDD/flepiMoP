@@ -17,7 +17,7 @@ s3_name <- "idd-inference-runs"
 
 # Pull in geoid data
 geodata_states <- read.csv(paste0("./data/",
-                                  config$spatial_setup$geodata)) %>%
+                           config$spatial_setup$geodata)) %>%
   mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
 
 # PULL OUTCOMES FROM S3 ---------------------------------------------------
@@ -267,7 +267,7 @@ for(i in 1:length(USPS)){
       geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
       theme_bw(base_size = 10) +
       labs(y = "log likelihood", title = paste0(state, " hnpi correlation with likelihood"))
-  }
+    }
   
   # hosp
   state_llik_rank <- llik %>%
@@ -307,7 +307,7 @@ for(i in 1:length(USPS)){
                size = 0.25, color = "grey50") +
     geom_line(data = filter_gt_data %>% drop_na(rollmean),
               aes(x = as.POSIXct(date), y = rollmean), color = "red")
-  
+    
   # hpar
   if(all(is_empty(var_bind_hpar_llik$name))){
     print("no varying hpar outcomes to plot")

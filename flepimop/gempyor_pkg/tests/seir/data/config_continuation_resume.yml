@@ -1,13 +1,12 @@
 name: minimal
+setup_name: minimal
 start_date: 2020-03-15
 end_date: 2020-05-31
+data_path: data
 nslots: 15
-dt: 0.25
-dynfilter_path: data/filter.txt
 
 spatial_setup:
   base_path: data
-  setup_name: minimal
   geodata: geodata.csv
   mobility: mobility.txt
   popnodes: population
@@ -19,18 +18,62 @@ initial_conditions:
   #folder_path: importation/minimal/
   initial_file_type: "seir"
 
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage: ["unvaccinated"]
+
 seir:
+  integration:
+    method: legacy
+    dt: 0.2
   parameters:
-    alpha: 0.5
-    sigma: 1 / 5.2
+    alpha:
+      value:
+        distribution: fixed
+        value: .5
+    sigma:
+      value:
+        distribution: fixed
+        value: 1 / 5.2
     gamma:
-      distribution: uniform
-      low: 1 / 6
-      high: 1 / 2.6
+      value:
+        distribution: uniform
+        low: 1 / 6
+        high: 1 / 2.6
     R0s:
-      distribution: uniform
-      low: 2
-      high: 3
+      value:
+        distribution: uniform
+        low: 2
+        high: 3
+  transitions:
+    - source: ["S", "unvaccinated"]
+      destination: ["E", "unvaccinated"]
+      rate: ["R0s * gamma", 1]
+      proportional_to: [
+          ["S", "unvaccinated"],
+          [[["I1", "I2", "I3"]], "unvaccinated"],
+      ]
+      proportion_exponent: [["1", "1"], ["alpha", "1"]] 
+    - source: [["E"], ["unvaccinated"]]
+      destination: [["I1"], ["unvaccinated"]]
+      rate: ["sigma", 1]
+      proportional_to: [[["E"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I1"], ["unvaccinated"]]
+      destination: [["I2"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I1"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I2"], ["unvaccinated"]]
+      destination: [["I3"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I2"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I3"], ["unvaccinated"]]
+      destination: [["R"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I3"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
 
 interventions:
   scenarios:

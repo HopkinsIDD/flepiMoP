@@ -10,13 +10,13 @@
 #
 # ```yaml
 # name: <string>
+# setup_name: <string>
 # start_date: <date>
 # end_date: <date>
 # dt: float
 # nslots: <integer> overridden by the -n/--nslots script parameter
+# data_path: <path to directory>
 # spatial_setup:
-#   setup_name: <string>
-#   base_path: <path to directory>
 #   geodata: <path to file>
 #   mobility: <path to file>
 #   nodenames: <string>
@@ -100,8 +100,8 @@
 #
 # ## Input Data
 #
-# * <b>{spatial_setup::base_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::nodenames} and {spatial_setup::popnodes}
-# * <b>{spatial_setup::base_path}/{spatial_setup::mobility}</b>
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::nodenames} and {spatial_setup::popnodes}
+# * <b>{data_path}/{spatial_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
 # * {seeding::lambda_file}
@@ -111,9 +111,9 @@
 #
 # ## Output Data
 #
-# * model_output/{spatial_setup::setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]
-# * model_parameters/{spatial_setup::setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]
-# * model_parameters/{spatial_setup::setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]
+# * model_output/{setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]
+# * model_parameters/{setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]
+# * model_parameters/{setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]
 
 
 ## @cond
@@ -241,7 +241,7 @@ def simulate(
     config.read(user=False)
     config.set_file(config_file)
     spatial_config = config["spatial_setup"]
-    spatial_base_path = spatial_config["base_path"].get()
+    spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
     if not scenarios:
@@ -252,7 +252,7 @@ def simulate(
         nslots = config["nslots"].as_number()
 
     spatial_setup = setup.SpatialSetup(
-        setup_name=spatial_config["setup_name"].get(),
+        setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()
@@ -279,7 +279,6 @@ def simulate(
             interactive=interactive,
             write_csv=write_csv,
             write_parquet=write_parquet,
-            dt=config["dt"].as_number(),
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=config["name"].get() + "/",
