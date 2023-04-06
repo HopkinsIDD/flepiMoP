@@ -1,7 +1,7 @@
 
 
 # NOTES FOR USER -----------------------------------------------------------
-#' 1. Set pathogen, application, and processing options in the "SETUP" block.
+#' 1. Set disease, application, and processing options in the "SETUP" block.
 #' 2. Modify submission specifics in the "SUBMISSION SPECIFICS" block for any hub requirements.
 #' 3. Be sure to specify if this is a forecast ("fch") or scenario projection ("smh")
 #' 4. Make sure the flepiMoP repo (https://github.com/HopkinsIDD/flepiMoP) is in the same directory as this repo
@@ -35,7 +35,7 @@ config_subname <- "2022_Jan15"
 
 # ~ Application -----------------------------------------------------------
 smh_or_fch <- "fch" #"fch" or "smh"
-pathogen <- "flu" # covid19 or flu
+disease <- "flu" # covid19 or flu
 repo <- "../../shared/SMH_Flu"
 subdir <- NULL  #used for testing purposes
 
@@ -101,7 +101,7 @@ scenario_s3_buckets <- scenario_s3_buckets[scenario_num] # automatically pull fr
 override_pull_from_s3 <- override_pull_from_s3[scenario_num] # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
 
 
-geodata_file_path = file.path(config$spatial_setup$base_path, config$spatial_setup$geodata)
+geodata_file_path = file.path(config$data_path, config$spatial_setup$geodata)
 
 
 
@@ -114,7 +114,7 @@ geodata_file_path = file.path(config$spatial_setup$base_path, config$spatial_set
 ## -- "outcomes_" are for processing. we want more than we submit for diagnostics.
 
 # Flu Forecasts (FluSight: https://github.com/cdcepi/Flusight-forecast-data/blob/master/data-forecasts/README.md)
-if (smh_or_fch == "fch" & pathogen == "flu"){
+if (smh_or_fch == "fch" & disease == "flu"){
     select_submission_targets <- function(data_comb){
         data_comb %>%
             filter(grepl("inc hosp", target)) %>%
@@ -129,7 +129,7 @@ if (smh_or_fch == "fch" & pathogen == "flu"){
 }
 
 # Flu Projections (Flu SMH: https://github.com/midas-network/flu-scenario-modeling-hub)
-if (smh_or_fch == "smh" & pathogen == "flu"){
+if (smh_or_fch == "smh" & disease == "flu"){
     select_submission_targets <- function(data_comb){
         data_comb %>%
             filter(grepl("inc hosp|inc death|cum hosp|cum death|peak size|peak time", target)) %>%
@@ -144,7 +144,7 @@ if (smh_or_fch == "smh" & pathogen == "flu"){
 }
 
 # COVID-19 Forecasts (COVID-19 FCH: https://github.com/reichlab/covid19-forecast-hub/blob/master/data-processed/README.md#Data-formatting)
-if (smh_or_fch == "fch" & pathogen == "covid19"){
+if (smh_or_fch == "fch" & disease == "covid19"){
 
     select_submission_targets <- function(data_comb){
         targets <- c(paste0(1:20, " wk ahead cum death"),
@@ -178,7 +178,7 @@ if (smh_or_fch == "fch" & pathogen == "covid19"){
 }
 
 # COVID-19 Projections (COVID-19 SMH: https://github.com/midas-network/covid-scenario-modeling-hub)
-if (smh_or_fch == "smh" & pathogen == "covid19"){
+if (smh_or_fch == "smh" & disease == "covid19"){
     select_submission_targets <- function(data_comb){
         data_comb %>%
             filter(grepl("inc hosp|inc death|cum hosp|cum death|peak size|peak time", target))
@@ -294,13 +294,13 @@ if (any(pull_from_s3)) {
 
 Sys.setenv(CONFIG_PATH = config_name)
 Sys.setenv(FLEPI_PATH = source_loc)
-if (pathogen == "flu"){
+if (disease == "flu"){
     source(paste0(source_loc, "/datasetup/build_flu_data.R"))
-} else if (pathogen == "covid19"){
+} else if (disease == "covid19"){
     source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
 
-gt_data <- clean_gt_forplots(readr::read_csv(config$inference$data_path))
+gt_data <- clean_gt_forplots(readr::read_csv(config$inference$gt_data_path))
 
 if (any(grepl("incidI", colnames(gt_data)))){
   colnames(gt_data) <- gsub("incidI", "incidC", colnames(gt_data))
@@ -541,7 +541,7 @@ if(plot_projections){
 # FINAL INFO -----------------------------------------------------------
 
 cat(paste0(
-    "Pathogen: ", toupper(pathogen), "\n",
+    "disease: ", toupper(disease), "\n",
     "Save Directory: ", round_directory, "\n",
     "SMH/FCH: ", smh_or_fch, "\n",
     "Forecast Date: ", forecast_date, "\n",

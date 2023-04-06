@@ -60,8 +60,8 @@ load_geodata_file <- function(filename,
 #'  - We use readr::read_csv for csv files
 #'  - We use arrow::read_parquet for parquet files
 #'  - We use a function that detects the extension and calls this function if the auto extension is specified.
-#' @export 
-#' 
+#' @export
+#'
 read_file_of_type <- function(extension,...){
     if(extension == 'csv'){
         return(function(x){suppressWarnings(readr::read_csv(x,,col_types = cols(
@@ -74,7 +74,7 @@ read_file_of_type <- function(extension,...){
     }
     if(extension == 'parquet'){
         return(function(x){
-            tmp <- arrow::read_parquet(x) 
+            tmp <- arrow::read_parquet(x)
             if("POSIXct" %in% class(tmp$time)){
                 tmp$time <- lubridate::as_date(tz="GMT",tmp$time)
             }
@@ -994,12 +994,12 @@ get_covidcast_data <- function(
 
     res <- res %>%
         dplyr::mutate(signal = recode(signal,
-                                      "deaths_incidence_num"="incidDeath",
-                                      "deaths_cumulative_num"="Deaths",
-                                      "confirmed_incidence_num"="incidI",
-                                      "confirmed_cumulative_num"="Confirmed",
+                                      "deaths_incidence_num"="incidD",
+                                      "deaths_cumulative_num"="cumD",
+                                      "confirmed_incidence_num"="incidC",
+                                      "confirmed_cumulative_num"="cumC",
                                       "confirmed_admissions_covid_1d"="incidH",
-                                      "confirmed_admissions_cum"="Hospitalizations")) %>%
+                                      "confirmed_admissions_cum"="cumH")) %>%
 
         tidyr::pivot_wider(names_from = signal, values_from = value) %>%
         dplyr::mutate(Update=lubridate::as_date(Update),
@@ -1017,15 +1017,16 @@ get_covidcast_data <- function(
     res <- res %>% tibble::as_tibble()
 
     # Fix incidence counts that go negative and NA values or missing dates
-    if (fix_negatives & any(c("Confirmed", "incidI", "Deaths", "incidDeath") %in% colnames(res))){
-        res <- fix_negative_counts(res, "Confirmed", "incidI") %>%
-            fix_negative_counts("Deaths", "incidDeath")
+    if (fix_negatives & any(c("incidC", "incidH", "incidH") %in% colnames(res))){
+        res <- fix_negative_counts(res, "cumC", "incidC") %>%
+            fix_negative_counts("cumD", "incidD")
     }
 
     return(res)
 }
 
-##'
+
+
 ##' Wrapper function to pull data from different sources
 ##'
 ##' Pulls a groundtruth dataset with the variables specified
@@ -1125,8 +1126,8 @@ get_groundtruth_from_source <- function(
         # define covidcast signals
 
         signals <- NULL
-        if (any(c("incidDeath", "Deaths") %in% variables)) signals <- c(signals, "deaths_incidence_num", "deaths_cumulative_num")
-        if (any(c("incidI", "Confirmed") %in% variables)) signals <- c(signals, "confirmed_incidence_num", "confirmed_cumulative_num")
+        if (any(c("incidDeath", "Deaths", "incidD", "cumD") %in% variables)) signals <- c(signals, "deaths_incidence_num", "deaths_cumulative_num")
+        if (any(c("incidI", "Confirmed", "incidC", "cumC") %in% variables)) signals <- c(signals, "confirmed_incidence_num", "confirmed_cumulative_num")
         if (any(grepl("hosp|incidH", variables))) signals <- c(signals, "confirmed_admissions_covid_1d")
 
         rc <- get_covidcast_data(geo_level = "state",
@@ -1152,7 +1153,6 @@ get_groundtruth_from_source <- function(
 
         rc <- rc %>%
             dplyr::select(rc, Update, FIPS, source, !!variables)
-
 
   } else{
     warning(print(paste("The combination of ", source, "and", scale, "is not valid. Returning NULL object.")))

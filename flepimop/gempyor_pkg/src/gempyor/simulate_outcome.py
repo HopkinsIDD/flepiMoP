@@ -45,7 +45,7 @@
 
 
 # ## Output Data
-# * {output_path}/model_output/{spatial_setup::setup_name}_[scenario]/[simulation ID].hosp.parquet
+# * {output_path}/model_output/{setup_name}_[scenario]/[simulation ID].hosp.parquet
 
 
 ## @cond
@@ -186,7 +186,7 @@ def simulate(
     config.read(user=False)
     config.set_file(config_file)
     spatial_config = config["spatial_setup"]
-    spatial_base_path = spatial_config["base_path"].get()
+    spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
     if not scenarios_outcomes:
@@ -198,7 +198,7 @@ def simulate(
     print(f"Simulations to be run: {nslots}")
 
     spatial_setup = setup.SpatialSetup(
-        setup_name=spatial_config["setup_name"].get(),
+        setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()

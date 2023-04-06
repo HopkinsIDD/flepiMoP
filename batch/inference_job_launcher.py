@@ -151,7 +151,7 @@ def user_confirmation(question="Continue?", default=False):
     "--memory",
     "memory",
     type=click.IntRange(min=1000, max=24000),
-    default=12000,
+    default=8000,
     show_default=True,
     help="The amount of RAM in megabytes needed per CPU running simulations",
 )
@@ -272,9 +272,9 @@ def launch_batch(
     # TODO: does this really save the config file?
     if "inference" in config:
         config["inference"]["iterations_per_slot"] = sims_per_job
-        if not os.path.exists(pathlib.Path(data_path, config["inference"]["data_path"])):
+        if not os.path.exists(pathlib.Path(data_path, config["inference"]["gt_data_path"])):
             print(
-                f"ERROR: inference.data_path path {pathlib.Path(data_path, config['inference']['data_path'])} does not exist!"
+                f"ERROR: inference.data_path path {pathlib.Path(data_path, config['inference']['gt_data_path'])} does not exist!"
             )
             return 1
     else:
@@ -284,7 +284,7 @@ def launch_batch(
         import boto3
 
         s3 = boto3.resource("s3")
-        bucket = s3.Bucket("idd-inference-runs")
+        bucket = s3.Bucket(s3_bucket)
         prefix = restart_from_location.split("/")[3] + "/model_output/"
         all_files = list(bucket.objects.filter(Prefix=prefix))
         all_files = [f.key for f in all_files]
@@ -369,7 +369,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
             geoid_fname = (
-                pathlib.Path(data_path, config["spatial_setup"]["base_path"]) / config["spatial_setup"]["geodata"]
+                pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
             )
             with open(geoid_fname) as geoid_fp:
                 num_geoids = sum(1 for line in geoid_fp)
@@ -686,7 +686,7 @@ class BatchJobHandler(object):
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
-                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={64000}M --time={120} --job-name=post-{cur_job_name} {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_inference.run"""
+                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={64000}M --time={120} --job-name=post-{cur_job_name} {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")

@@ -8,12 +8,12 @@
 # ## Configuration Items
 #
 # ```yaml
+# setup_name: <string>
 # start_date: <date>
 # end_date: <date>
-#
+# data_path: <path to directory>
+
 # spatial_setup:
-#   setup_name: <string>
-#   base_path: <path to directory>
 #   geodata: <path to file>
 #   nodenames: <string>
 #
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{spatial_setup::base_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
 #
 # ## Output Data
 #
@@ -90,8 +90,8 @@ if (is.null(config$seeding$ratio_incidC)) {
 
 # ~ Load ground truth data ------------------------------------------------
 #  -- this is already saved from running the `build_[X]_data.R` script at the model setup stage.
-#  
-data_path <- config$inference$data_path
+#
+data_path <- config$inference$gt_data_path
 if (is.null(data_path)) {
     data_path <- config$seeding$casedata_file
     if (is.null(data_path)) {
@@ -118,20 +118,20 @@ print(paste("Successfully pulled", gt_source, "data for seeding."))
 # ~ Seeding Variants ------------------------------------------------------
 
 if (seed_variants) {
-    
+
     variant_data <- readr::read_csv(config$seeding$variant_filename)
-    
+
     # rename date columns in data for joining
     colnames(variant_data)[colnames(variant_data) == "Update"] ="date"
     colnames(cases_deaths)[colnames(cases_deaths) == "Update"] ="date"
-    
+
     if (!is.null(config$seeding$seeding_outcome)){
         if (config$seeding$seeding_outcome=="incidH"){
             cases_deaths <- cases_deaths %>%
                 dplyr::select(date, FIPS, source, incidH) %>%
                 dplyr::left_join(variant_data) %>%
                 dplyr::mutate(incidI = incidH * prop) %>%
-                dplyr::select(-prop) %>%
+                dplyr::select(-prop, -incidH) %>%
                 tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
                 dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
         } else {
@@ -141,10 +141,10 @@ if (seed_variants) {
         }
     } else {
         cases_deaths <- cases_deaths %>%
-            dplyr::select(date, FIPS, source, incidI) %>%
+            dplyr::select(date, FIPS, source, incidC) %>%
             dplyr::left_join(variant_data) %>%
-            dplyr::mutate(incidI = incidI * prop) %>%
-            dplyr::select(-prop) %>%
+            dplyr::mutate(incidI = incidC * prop) %>%
+            dplyr::select(-prop, -incidC) %>%
             tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
             dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
     }
@@ -173,8 +173,8 @@ check_required_names <- function(df, cols, msg) {
 
 # ~ Seeding Compartments --------------------------------------------------
 
-if ("compartments" %in% names(config[["seir"]])) {
-    
+if ("compartments" %in% names(config)) {
+
     if (all(names(config$seeding$seeding_compartments) %in% names(cases_deaths))) {
         required_column_names <- c("FIPS", "Update", names(config$seeding$seeding_compartments))
         check_required_names(
@@ -201,11 +201,11 @@ if ("compartments" %in% names(config[["seir"]])) {
                     }
                 )
             ) %>%
-            tidyr::separate(source_column, paste("source", names(config$seir$compartments), sep = "_")) %>%
-            tidyr::separate(destination_column, paste("destination", names(config$seir$compartments), sep = "_"))
-        required_column_names <- c("FIPS", "Update", "value", paste("source", names(config$seir$compartments), sep = "_"), paste("destination", names(config$seir$compartments), sep = "_"))
+            tidyr::separate(source_column, paste("source", names(config$compartments), sep = "_")) %>%
+            tidyr::separate(destination_column, paste("destination", names(config$compartments), sep = "_"))
+        required_column_names <- c("FIPS", "Update", "value", paste("source", names(config$compartments), sep = "_"), paste("destination", names(config$compartments), sep = "_"))
         incident_cases <- incident_cases[, required_column_names]
-        
+
         # if (!is.null(config$smh_round)) {
         #     if (config$smh_round=="R11"){
         #         incident_cases_om <- incident_cases %>%
@@ -219,8 +219,8 @@ if ("compartments" %in% names(config[["seir"]])) {
         #             tibble::as_tibble()
         #     }
         # }
-        
-        
+
+
     } else if ("seeding_compartments" %in% names(config$seeding) ) {
         stop(paste(
             "Could not find all compartments.  Looking for",
@@ -246,7 +246,7 @@ if ("compartments" %in% names(config[["seir"]])) {
     incident_cases$destination_infection_stage <- "E"
     incident_cases$source_infection_stage <- "S"
     required_column_names <- c("FIPS", "Update", "value", "source_infection_stage", "destination_infection_stage")
-    
+
     if ("parallel_structure" %in% names(config[["seir"]][["parameters"]])) {
         parallel_compartments <- config[["seir"]][["parameters"]][["parallel_structure"]][["compartments"]]
     } else {
@@ -265,7 +265,7 @@ all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
 geodata <- flepicommon::load_geodata_file(
-    file.path(config$spatial_setup$base_path, config$spatial_setup$geodata),
+    file.path(config$data_path, config$spatial_setup$geodata),
     5,
     "0",
     TRUE
@@ -323,9 +323,9 @@ if (!("no_perturb" %in% colnames(incident_cases))){
 
 # Combine with population seeding for compartments (current hack to get population in)
 
-if ("compartments" %in% names(config[["seir"]]) & "pop_seed_file" %in% names(config[["seeding"]])) {
+if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seeding"]])) {
     seeding_pop <- readr::read_csv(config$seeding$pop_seed_file)
-    
+
     # Add "no_perturb" flag
     if (!("no_perturb" %in% colnames(seeding_pop))){
         seeding_pop$no_perturb <- TRUE
@@ -333,7 +333,7 @@ if ("compartments" %in% names(config[["seir"]]) & "pop_seed_file" %in% names(con
     seeding_pop <- seeding_pop %>%
         dplyr::filter(place %in% all_geoids) %>%
         dplyr::select(!!!colnames(incident_cases))
-    
+
     incident_cases <- incident_cases %>%
         dplyr::bind_rows(seeding_pop) %>%
         dplyr::arrange(place, date)
@@ -343,7 +343,7 @@ if ("compartments" %in% names(config[["seir"]]) & "pop_seed_file" %in% names(con
 
 # Limit seeding to on or after the config start date and before the config end date
 if (max(incident_cases$date) < lubridate::as_date(config$start_date)){
-    
+
     incident_cases <- incident_cases %>%
         group_by(place) %>%
         filter(date == min(date)) %>%
@@ -352,7 +352,7 @@ if (max(incident_cases$date) < lubridate::as_date(config$start_date)){
         mutate(date = lubridate::as_date(config$start_date),
                amount = 0)
 } else {
-    
+
     # keep all seeding -- dont filter away before sim date
     if (opt$keep_all_seeding){
         incident_cases <- incident_cases %>%
