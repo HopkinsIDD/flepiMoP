@@ -16,7 +16,7 @@ option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
     optparse::make_option(c("-p", "--path"), action="store", default=Sys.getenv("FLEPI_PATH", "flepiMoP"), type='character', help="path to the flepiMoP directory"),
     optparse::make_option(c("-w", "--wide_form"), action="store",default=FALSE,type='logical',help="Whether to generate the old wide format mobility or the new long format"),
-    optparse::make_option(c("-s", "--gt_data_source"), action="store",default=Sys.getenv("GT_DATA_SOURCE", "csse_case, nchs_death, hhs_hosp"),type='character',help="sources of gt data")
+    optparse::make_option(c("-s", "--gt_data_source"), action="store",default=Sys.getenv("GT_DATA_SOURCE", "csse_case, fluview_death, hhs_hosp"),type='character',help="sources of gt data")
 )
 opt = optparse::parse_args(optparse::OptionParser(option_list=option_list))
 
@@ -116,6 +116,165 @@ if (any(grepl("nchs", opt$gt_data_source))){
 
 
 
+
+
+# pi_mortality <- function(coverage_area = c("national", "state", "region"),
+#                              years = NULL){
+#
+#     require(cdcfluview)
+#
+#     coverage_area <- match.arg(tolower(coverage_area), choices = c("national", "state", "region"))
+#     us_states <- read.csv("https://gis.cdc.gov/grasp/fluview/Flu7References/Data/USStates.csv", stringsAsFactors = FALSE)
+#     us_states <- setNames(us_states, c("region_name", "subgeoid", "state_abbr"))
+#     us_states <- us_states[, c("region_name", "subgeoid")]
+#     us_states$subgeoid <- as.character(us_states$subgeoid)
+#     meta <- jsonlite::fromJSON("https://gis.cdc.gov/grasp/flu7/GetPhase07InitApp?appVersion=Public")
+#     mapcode_df <- setNames(meta$nchs_mapcode[, c("mapcode", "description")], c("map_code", "callout"))
+#     mapcode_df$map_code <- as.character(mapcode_df$map_code)
+#     geo_df <- meta$nchs_geo_dim
+#     geo_df$geoid <- as.character(geo_df$geoid)
+#     age_df <- setNames(meta$nchs_ages, c("ageid", "age_label"))
+#     age_df$ageid <- as.character(age_df$ageid)
+#     sum_df <- meta$nchs_summary
+#     sum_df$seasonid <- as.character(sum_df$seasonid)
+#     sum_df$ageid <- as.character(sum_df$ageid)
+#     sum_df$geoid <- as.character(sum_df$geoid)
+#
+#     available_seasons <- sort(meta$seasons$seasonid)
+#     if (is.null(years)) {
+#         years <- available_seasons
+#     } else {
+#         years <- as.numeric(years)
+#         years <- ifelse(years > 1996, years - 1960, years)
+#         years <- sort(unique(years))
+#         years <- years[years %in% available_seasons]
+#         if (length(years) == 0) {
+#             years <- rev(sort(meta$seasons$seasonid))[1]
+#             curr_season_descr <- meta$seasons[meta$seasons$seasonid ==
+#                 years, "description"]
+#             message(sprintf("No valid years specified, defaulting to this flu season => ID: %s [%s]",
+#                 years, curr_season_descr))
+#         }
+#     }
+#     res <- httr::POST(url = "https://gis.cdc.gov/grasp/flu7/PostPhase07DownloadData",
+#         httr::user_agent(.cdcfluview_ua), httr::add_headers(Origin = "https://gis.cdc.gov",
+#             Accept = "application/json, text/plain, */*", Referer = "https://gis.cdc.gov/grasp/fluview/mortality.html"),
+#         encode = "json", body = list(AppVersion = "Public",
+#             AreaParameters = list(list(ID = .geoid_map[coverage_area])),
+#             SeasonsParameters = lapply(years, function(.x) {
+#                 list(ID = as.integer(.x))
+#             }), AgegroupsParameters = list(list(ID = "1"))),
+#         httr::timeout(.httr_timeout))
+#
+#     httr::stop_for_status(res)
+#     res <- httr::content(res, as = "parsed", flatten = TRUE)
+#     suppressWarnings(suppressMessages(xdf <- dplyr::bind_rows(res$seasons) %>%
+#         dplyr::left_join(mapcode_df, "map_code") %>%
+#             dplyr::left_join(geo_df, "geoid") %>%
+#             dplyr::left_join(age_df, "ageid") %>%
+#             dplyr::left_join(dplyr::mutate(mmwrid_map, mmwrid = as.character(mmwrid)), "mmwrid")))
+#     xdf <- dplyr::mutate(xdf, coverage_area = coverage_area)
+#     if (coverage_area == "state") {
+#         xdf <- dplyr::left_join(xdf, us_states, "subgeoid")
+#     } else if (coverage_area == "region") {
+#         xdf$region_name <- sprintf("Region %s", xdf$subgeoid)
+#     } else {
+#         xdf$region_name <- "national"
+#     }
+#     xdf <- xdf[, c("seasonid", "baseline", "threshold", "percent_pni",
+#         "percent_complete", "number_influenza", "number_pneumonia", "number_covid19",
+#         "all_deaths", "Total_PnI", "weeknumber", "geo_description",
+#         "age_label", "wk_start", "wk_end", "year_wk_num", "mmwrid",
+#         "coverage_area", "region_name", "callout")]
+#     xdf$baseline <- to_num(xdf$baseline)/100
+#     xdf$threshold <- to_num(xdf$threshold)/100
+#     xdf$percent_pni <- to_num(xdf$percent_pni)/100
+#     xdf$percent_complete <- to_num(xdf$percent_complete)/100
+#     xdf$number_influenza <- to_num(xdf$number_influenza)
+#     xdf$number_pneumonia <- to_num(xdf$number_pneumonia)
+#     xdf$all_deaths <- to_num(xdf$all_deaths)
+#     xdf$Total_PnI <- to_num(xdf$Total_PnI)
+#     xdf <- xdf %>% dplyr::rename(week_start = wk_start, week_end = wk_end, year_week_num = year_wk_num)
+#     xdf <- .mcga(xdf)
+#     return(xdf)
+# }
+#
+#
+#
+
+
+
+
+
+
+
+# devtools::install_github("https://github.com/shauntruelove/cdcfluview")
+
+# install.packages("cdcfluview")
+
+# ~ Pull Deaths from NCHS via FluView -------------------------------------------------
+
+if (any(grepl("fluview", opt$gt_data_source))){
+
+    # cdcfluview::
+    # fluview_data <- cdcfluview::pi_mortality(coverage_area = "state", years = 2019:2023)
+
+    if (file.exists(file.path("data_other/nchs_deaths.csv"))){
+
+        # downloaded deaths from https://gis.cdc.gov/grasp/fluview/mortality.html
+        fluview_data <- read_csv(file.path("data_other/nchs_deaths.csv"))
+        colnames(fluview_data) <- tolower(colnames(fluview_data))
+        fluview_data <- fluview_data %>% select(state = `sub area`, season, week, incidD = `num covid-19 deaths`) %>%
+            mutate(data_source = "fluview") %>%
+            mutate(incidD = as.integer(incidD)) %>%
+            mutate(year = ifelse(week >= 40, as.integer(substr(season, 1, 4)), as.integer(paste0("20", substr(season, 6,9))))) %>%
+            left_join(
+                tibble(Update = seq.Date(from = as_date("2019-10-01"), to=as_date("2023-12-01"), by = "1 weeks")) %>%
+                    mutate(week = lubridate::epiweek(Update),
+                           year = lubridate::epiyear(Update),
+                           Update = MMWRweek::MMWRweek2Date(MMWRyear = year, MMWRweek = week, MMWRday = 1))) %>%
+            left_join(
+                tibble(state = c(state.name, "District of Columbia"),
+                       source = c(state.abb, "DC")))
+
+    } else {
+
+        stop(cat(paste0(
+            "STOP! FluView NCHS data is not found.\n",
+            "  (1) Please download from `https://gis.cdc.gov/grasp/fluview/mortality.htmland`, and \n",
+            "  (2) Save as `data_other/nchs_data.csv`, \n",
+            "  (3) In a directory called `data_other` in your project directory.")
+        ))
+    }
+
+
+    census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
+    fluview_data <- fluview_data %>%
+        left_join(census_data %>% dplyr::select(source = USPS, FIPS = geoid)) %>%
+        dplyr::select(Update, source, FIPS, incidD)
+
+
+    # Distribute from weekly to daily
+    # -- do this mainly for seeding. it gets re-aggregated for fitting
+    # -- tbis is implemented as a spline fit to cumulative data, from which daily cum and incident are calculated.
+
+    # Limit the data to X weeks before the pulled date
+    if (!exists("config$inference$nchs_weeklag")) { config$inference$nchs_weeklag <- 2}
+    fluview_data <- fluview_data %>% filter(Update < lubridate::floor_date(Sys.Date() - config$inference$nchs_weeklag*7, "weeks"))
+
+    fluview_data <- make_daily_data(data = fluview_data, current_timescale = "week") #%>%
+    # mutate(gt_source = "nchs")
+    # fluview_data <- fluview_data %>%
+        # filter(source %in% config$spatial_setup$modeled_states)
+               # Update >= config$start_date,
+               # Update <= config$end_date_groundtruth)
+    gt_data <- append(gt_data, list(fluview_data))
+
+}
+
+
+
+
 # ~ Pull HHS hospitalization  -------------------
 
 if (any(grepl("hhs", opt$gt_data_source))){
@@ -144,7 +303,6 @@ if (any(grepl("hhs", opt$gt_data_source))){
     }
 
     # us_hosp <- us_hosp %>% mutate(gt_source = "csse")
-
     gt_data <- append(gt_data, list(us_hosp))
 }
 
