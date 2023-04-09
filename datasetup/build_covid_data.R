@@ -229,7 +229,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
             mutate(incidD = as.integer(incidD)) %>%
             mutate(year = ifelse(week >= 40, as.integer(substr(season, 1, 4)), as.integer(paste0("20", substr(season, 6,9))))) %>%
             left_join(
-                tibble(Update = seq.Date(from = as_date("2019-10-01"), to=as_date("2023-12-01"), by = "1 weeks")) %>%
+                tibble(Update = seq.Date(from = as_date("2019-06-01"), to=as_date(Sys.Date() + 21), by = "1 weeks")) %>%
                     mutate(week = lubridate::epiweek(Update),
                            year = lubridate::epiyear(Update),
                            Update = MMWRweek::MMWRweek2Date(MMWRyear = year, MMWRweek = week, MMWRday = 1))) %>%
@@ -247,6 +247,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
         ))
     }
 
+    max(fluview_data$Update)
 
     census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
     fluview_data <- fluview_data %>%
