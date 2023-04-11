@@ -751,7 +751,6 @@ print_seeding <- function (method = "FolderDraw",
 #' @param inf_stages
 #' @param use_descriptions
 #' @param resume_mod_params
-#' @param resume_overwrite_vacc
 #' @param vacc_timeseries
 #' @param nu_list
 #'
@@ -782,7 +781,6 @@ print_seir <- function(integration_method = "rk4",
                        age_strata = c("age0to17", "age18to64", "age65to100"),
                        resume_modifier = NULL,
                        resume_mod_params = NULL,
-                       resume_overwrite_vacc = FALSE,
                        vacc_timeseries = TRUE,
                        seir_csv = "seir_R12_v2.csv",
                        use_descriptions = TRUE){
