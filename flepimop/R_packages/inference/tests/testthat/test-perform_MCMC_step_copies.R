@@ -8,7 +8,7 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","scenario","deathrate",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
     gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
     gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
     global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(slot,"%09d"), sep='.',
@@ -69,7 +69,7 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","scenario","deathrate",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
     gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
     gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
     global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(slot,"%09d"), sep='.',
@@ -129,7 +129,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","scenario","deathrate",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
     cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
     ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
     chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(slot,"%09d"), sep='.',
@@ -190,7 +190,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","scenario","deathrate",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
     cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
     ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
     chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(slot,"%09d"), sep='.',

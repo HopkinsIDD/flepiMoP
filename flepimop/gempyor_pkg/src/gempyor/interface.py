@@ -45,8 +45,8 @@ class InferenceSimulator:
         run_id="test_run_id",
         prefix="test_prefix",
         first_sim_index=1,
-        scenario="inference",
-        deathrate="med",
+        npi_scenario="inference",
+        outcome_scenario="med",
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
@@ -55,8 +55,8 @@ class InferenceSimulator:
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
     ):
-        self.scenario = scenario
-        self.deathrate = deathrate
+        self.npi_scenario = npi_scenario
+        self.outcome_scenario = outcome_scenario
 
         in_run_id = run_id
         if out_run_id is None:
@@ -79,7 +79,7 @@ class InferenceSimulator:
         write_csv = False
         write_parquet = True
         self.s = setup.Setup(
-            setup_name=config["name"].get() + "_" + str(scenario),
+            setup_name=config["name"].get() + "_" + str(npi_scenario),
             spatial_setup=setup.SpatialSetup(
                 setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -90,14 +90,14 @@ class InferenceSimulator:
                 nodenames_key=spatial_config["nodenames"].get(),
             ),
             nslots=nslots,
-            npi_scenario=scenario,
+            npi_scenario=npi_scenario,
             npi_config_seir=config["interventions"]["settings"][scenario],
             seeding_config=config["seeding"],
             initial_conditions_config=config["initial_conditions"],
             parameters_config=config["seir"]["parameters"],
             seir_config=config["seir"],
             outcomes_config=config["outcomes"] if config["outcomes"].exists() else None,
-            outcomes_scenario=deathrate,
+            outcomes_scenario=outcome_scenario,
             ti=config["start_date"].as_date(),
             tf=config["end_date"].as_date(),
             interactive=interactive,
@@ -394,8 +394,8 @@ def paramred_parallel(run_spec, snpi_fn):
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
-        scenario="inference",  # NPIs scenario to use
-        deathrate="med",  # Outcome scenario to use
+        npi_scenario="inference",  # NPIs scenario to use
+        outcome_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
         spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in spatial_setup$
     )
@@ -420,8 +420,8 @@ def paramred_parallel_config(run_spec, dummy):
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
-        scenario="inference",  # NPIs scenario to use
-        deathrate="med",  # Outcome scenario to use
+        npi_scenario="inference",  # NPIs scenario to use
+        outcome_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
         spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in spatial_setup$
     )
