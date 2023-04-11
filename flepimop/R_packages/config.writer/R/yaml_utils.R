@@ -791,12 +791,12 @@ print_seir <- function(integration_method = "rk4",
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = " ", replacement = "")
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = "\"", replacement = "")
 
-    if (!any(is.na(resume_modifier) | is.null(resume_modifier) | resume_modifier == "")) {
+    if (any(!(is.na(resume_modifier) | is.null(resume_modifier) | resume_modifier == ""))) {
         res_mod = TRUE
     } else {
         res_mod = FALSE
     }
-    if (!any(is.na(resume_mod_params) | is.null(resume_mod_params) | resume_mod_params == "")) {
+    if (any(!(is.na(resume_mod_params) | is.null(resume_mod_params) | resume_mod_params == ""))) {
         use_res_mod_params = TRUE
     } else {
         use_res_mod_params = FALSE
