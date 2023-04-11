@@ -252,8 +252,8 @@ gempyor_simulator &lt;- gempyor$InferenceSimulator(
                           run_id=&quot;test_run_id&quot;,
                           prefix=&quot;test_prefix/&quot;,
                           first_sim_index=1,
-                          scenario=&quot;inference&quot;,   # NPIs scenario to use
-                          deathrate=&quot;med&quot;,        # Outcome scenario to use
+                          npi_scenario=&quot;inference&quot;,   # NPIs scenario to use
+                          outcome_scenario=&quot;med&quot;,        # Outcome scenario to use
                           stoch_traj_flag=FALSE,      
                           spatial_path_prefix = &#39;../tests/npi/&#39; # prefix where to find the folder indicated in spatial_setup
 )</code></pre>
@@ -261,8 +261,8 @@ gempyor_simulator &lt;- gempyor$InferenceSimulator(
 <pre><code>  run_id=&quot;test_run_id&quot;,   # an ommited argument will be left at its default value
   prefix=&quot;test_prefix&quot;,
   first_sim_index=1,
-  scenario=&quot;inference&quot;,
-  deathrate=&quot;med&quot;,
+  npi_scenario=&quot;inference&quot;,
+  outcome_scenario=&quot;med&quot;,
   stoch_traj_flag=False,
   rng_seed=None,
   nslots=1,
