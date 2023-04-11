@@ -837,9 +837,9 @@ print_seir <- function(integration_method = "rk4",
                    rate_var = as.vector(sapply(rate_var, resume_mod_rates, resume_mod_params)),
                    rate_age = as.vector(sapply(rate_age, resume_mod_rates, resume_mod_params))) %>%
             ungroup()
-    } else {
-        stop("need to implement without res_mod_params")
+
     }
+
     resume_modifier <- ifelse(is.na(resume_modifier) | is.null(resume_modifier), "", resume_modifier)
 
 
