@@ -47,7 +47,7 @@ def test_outcome_scenario():
     hosp.set_index("time", drop=True, inplace=True)
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
@@ -56,13 +56,13 @@ def test_outcome_scenario():
                     assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -203,7 +203,7 @@ def test_outcome_scenario_subclasses():
 
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1 * len(
                     subclasses
@@ -220,13 +220,13 @@ def test_outcome_scenario_subclasses():
                     ] * 0.1 * len(subclasses)
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -235,7 +235,7 @@ def test_outcome_scenario_subclasses():
     for cl in subclasses:
         for i, place in enumerate(geoid):
             for dt in hosp.index:
-                if dt == date_data:
+                if dt.date() == date_data:
                     assert hosp[hosp["geoid"] == place][f"incidH{cl}"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                     assert hosp[hosp["geoid"] == place][f"incidD{cl}"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
                     assert (
@@ -249,12 +249,12 @@ def test_outcome_scenario_subclasses():
                         )
                     assert hosp[hosp["geoid"] == place][f"hosp_curr{cl}"][dt + datetime.timedelta(7 + 8)] == 0
 
-                elif dt < date_data:
+                elif dt.date() < date_data:
                     assert hosp[hosp["geoid"] == place][f"incidH{cl}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD{cl}"][dt + datetime.timedelta(2)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidICU{cl}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"hosp_curr{cl}"][dt + datetime.timedelta(7)] == 0
-                elif dt > (date_data + datetime.timedelta(7)):
+                elif dt.date() > (date_data + datetime.timedelta(7)):
                     assert hosp[hosp["geoid"] == place][f"incidH{cl}"][dt] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD{cl}"][dt - datetime.timedelta(4)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidICU{cl}"][dt] == 0
@@ -461,7 +461,7 @@ def test_outcomes_npi():
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
@@ -470,13 +470,13 @@ def test_outcomes_npi():
                     assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -633,7 +633,7 @@ def test_outcomes_npi_custom_pname():
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
@@ -642,13 +642,13 @@ def test_outcomes_npi_custom_pname():
                     assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -821,7 +821,7 @@ def test_outcomes_pcomp():
         hosp = hosp_f
         for i, place in enumerate(geoid):
             for dt in hosp.index:
-                if dt == date_data:
+                if dt.date() == date_data:
                     assert hosp[hosp["geoid"] == place][f"incidI_{p_comp}"][dt] == diffI[i] * p_compmult[k]
                     assert (
                         hosp[hosp["geoid"] == place][f"incidH_{p_comp}"][dt + datetime.timedelta(7)]
@@ -846,13 +846,13 @@ def test_outcomes_pcomp():
                         )
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-                elif dt < date_data:
+                elif dt.date() < date_data:
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidI_{p_comp}"][dt] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD_{p_comp}"][dt + datetime.timedelta(2)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidICU_{p_comp}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7)] == 0
-                elif dt > (date_data + datetime.timedelta(7)):
+                elif dt.date() > (date_data + datetime.timedelta(7)):
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}"][dt] == 0
                     assert hosp[hosp["geoid"] == place][f"incidI_{p_comp}"][dt - datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD_{p_comp}"][dt - datetime.timedelta(4)] == 0
