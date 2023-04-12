@@ -97,7 +97,7 @@ class InferenceSimulator:
             parameters_config=config["seir"]["parameters"],
             seir_config=config["seir"],
             outcomes_config=config["outcomes"] if config["outcomes"].exists() else None,
-            outcomes_scenario=outcome_scenario,
+            outcome_scenario=outcome_scenario,
             ti=config["start_date"].as_date(),
             tf=config["end_date"].as_date(),
             interactive=interactive,

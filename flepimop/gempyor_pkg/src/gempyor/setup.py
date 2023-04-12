@@ -39,7 +39,7 @@ class Setup:
         parameters_config={},
         seir_config=None,
         outcomes_config={},
-        outcomes_scenario=None,
+        outcome_scenario=None,
         interactive=True,
         write_csv=False,
         write_parquet=False,
@@ -72,7 +72,7 @@ class Setup:
         self.write_csv = write_csv
         self.write_parquet = write_parquet
         self.first_sim_index = first_sim_index
-        self.outcomes_scenario = outcomes_scenario
+        self.outcome_scenario = outcome_scenario
 
         self.spatset = spatial_setup
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
@@ -148,8 +148,8 @@ class Setup:
         # 3. Outcomes
         self.npi_config_outcomes = None
         if self.outcomes_config:
-            if self.outcomes_config["interventions"]["settings"][self.outcomes_scenario].exists():
-                self.npi_config_outcomes = self.outcomes_config["interventions"]["settings"][self.outcomes_scenario]
+            if self.outcomes_config["interventions"]["settings"][self.outcome_scenario].exists():
+                self.npi_config_outcomes = self.outcomes_config["interventions"]["settings"][self.outcome_scenario]
 
         # 4. Inputs and outputs
         if in_run_id is None:
