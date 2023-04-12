@@ -109,10 +109,10 @@ if (is.na(opt$iterations_per_slot)){
 print(paste("Running",opt$iterations_per_slot,"simulations"))
 
 ##Define data directory and create if it does not exist
-data_path <- config$inference$gt_data_path
-data_dir <- dirname(data_path)
+gt_data_path <- config$inference$gt_data_path
+data_dir <- dirname(config$data_path)
 if (!dir.exists(data_dir)){
-    suppressWarnings(dir.create(data_dir,recursive=TRUE))
+    suppressWarnings(dir.create(data_dir, recursive = TRUE))
 }
 
 # Parse scenarios arguments
@@ -187,18 +187,30 @@ if (gt_end_date > lubridate::ymd(config$end_date)) {
 
 if (config$inference$do_inference){
 
-    obs <- inference::get_ground_truth(
-        data_path = data_path,
-        fips_codes = fips_codes_,
-        fips_column_name = obs_nodename,
-        start_date = gt_start_date,
-        end_date = gt_end_date,
-        gt_source = gt_source,
-        gt_scale = gt_scale,
-        variant_filename = config$seeding$variant_filename
-    )
+    # obs <- inference::get_ground_truth(
+    #     data_path = data_path,
+    #     fips_codes = fips_codes_,
+    #     fips_column_name = obs_nodename,
+    #     start_date = gt_start_date,
+    #     end_date = gt_end_date,
+    #     gt_source = gt_source,
+    #     gt_scale = gt_scale,
+    #     variant_filename = config$seeding$variant_filename
+    # )
+
+    obs <- suppressMessages(
+        readr::read_csv(config$inference$gt_data_path,
+                        col_types = readr::cols(FIPS = readr::col_character(),
+                                                date = readr::col_date(),
+                                                source = readr::col_character(),
+                                                .default = readr::col_double()), )) %>%
+        dplyr::filter(FIPS %in% fips_codes_, date >= gt_start_date, date <= gt_end_date) %>%
+        dplyr::right_join(tidyr::expand_grid(FIPS = unique(.$FIPS), date = unique(.$date))) %>%
+        dplyr::mutate_if(is.numeric, dplyr::coalesce, 0) %>%
+        dplyr::rename(!!obs_nodename := FIPS)
 
     geonames <- unique(obs[[obs_nodename]])
+
 
     ## Compute statistics
     data_stats <- lapply(

@@ -751,7 +751,6 @@ print_seeding <- function (method = "FolderDraw",
 #' @param inf_stages
 #' @param use_descriptions
 #' @param resume_mod_params
-#' @param resume_overwrite_vacc
 #' @param vacc_timeseries
 #' @param nu_list
 #'
@@ -782,7 +781,6 @@ print_seir <- function(integration_method = "rk4",
                        age_strata = c("age0to17", "age18to64", "age65to100"),
                        resume_modifier = NULL,
                        resume_mod_params = NULL,
-                       resume_overwrite_vacc = FALSE,
                        vacc_timeseries = TRUE,
                        seir_csv = "seir_R12_v2.csv",
                        use_descriptions = TRUE){
@@ -791,12 +789,12 @@ print_seir <- function(integration_method = "rk4",
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = " ", replacement = "")
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = "\"", replacement = "")
 
-    if (!any(is.na(resume_modifier) | is.null(resume_modifier) | resume_modifier == "")) {
+    if (any(!(is.na(resume_modifier) | is.null(resume_modifier) | resume_modifier == ""))) {
         res_mod = TRUE
     } else {
         res_mod = FALSE
     }
-    if (!any(is.na(resume_mod_params) | is.null(resume_mod_params) | resume_mod_params == "")) {
+    if (any(!(is.na(resume_mod_params) | is.null(resume_mod_params) | resume_mod_params == ""))) {
         use_res_mod_params = TRUE
     } else {
         use_res_mod_params = FALSE
@@ -839,9 +837,9 @@ print_seir <- function(integration_method = "rk4",
                    rate_var = as.vector(sapply(rate_var, resume_mod_rates, resume_mod_params)),
                    rate_age = as.vector(sapply(rate_age, resume_mod_rates, resume_mod_params))) %>%
             ungroup()
-    } else {
-        stop("need to implement without res_mod_params")
+
     }
+
     resume_modifier <- ifelse(is.na(resume_modifier) | is.null(resume_modifier), "", resume_modifier)
 
 
