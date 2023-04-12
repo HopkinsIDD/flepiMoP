@@ -69,7 +69,7 @@ def test_full_npis_read_write():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcom_scenario="med",
+        outcome_scenario="med",
         npi_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=106,
