@@ -336,10 +336,10 @@ def launch_batch(
         s3_upload,
     )
 
-    scenarios = config["interventions"]["scenarios"]
-    p_death_names = config["outcomes"]["scenarios"]
+    npi_scenarios = config["interventions"]["scenarios"]
+    outcome_scenarios = config["outcomes"]["scenarios"]
 
-    handler.launch(job_name, config_file, scenarios, p_death_names)
+    handler.launch(job_name, config_file, npi_scenarios, outcome_scenarios)
 
     # Set job_name as environmental variable so it can be pulled for pushing to git
     os.environ["job_name"] = job_name
@@ -545,7 +545,7 @@ class BatchJobHandler(object):
         if remove_source:
             os.remove(source)
 
-    def launch(self, job_name, config_file, scenarios, p_death_names):
+    def launch(self, job_name, config_file, npi_scenarios, outcome_scenarios):
         s3_results_path = f"s3://{self.s3_bucket}/{job_name}"
 
         if self.batch_system == "slurm":
@@ -593,12 +593,12 @@ class BatchJobHandler(object):
         with open(config_file) as f:
             config = yaml.full_load(f)
 
-        for ctr, (s, d) in enumerate(itertools.product(scenarios, p_death_names)):
+        for ctr, (s, d) in enumerate(itertools.product(npi_scenarios, outcome_scenarios)):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()
-            cur_env_vars.append({"name": "FLEPI_SCENARIOS", "value": s})
-            cur_env_vars.append({"name": "FLEPI_DEATHRATES", "value": d})
+            cur_env_vars.append({"name": "FLEPI_NPI_SCENARIOS", "value": s})
+            cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
             cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
@@ -706,8 +706,8 @@ class BatchJobHandler(object):
                 block_idx = 1
                 while block_idx < self.num_blocks:
                     cur_env_vars = base_env_vars.copy()
-                    cur_env_vars.append({"name": "FLEPI_SCENARIOS", "value": s})
-                    cur_env_vars.append({"name": "FLEPI_DEATHRATES", "value": d})
+                    cur_env_vars.append({"name": "FLEPI_NPI_SCENARIOS", "value": s})
+                    cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
                     cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
                     cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"})
                     cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})

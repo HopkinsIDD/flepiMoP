@@ -103,7 +103,7 @@ class SeedingAndIC:
             for pl_idx, pl in enumerate(setup.spatset.nodenames):  #
                 if pl in list(ic_df["place"]):
                     states_pl = ic_df[ic_df["place"] == pl]
-                    for comp_idx, comp_name in setup.compartments.compartments["name"].iteritems():
+                    for comp_idx, comp_name in setup.compartments.compartments["name"].items():
                         y0[comp_idx, pl_idx] = float(states_pl[states_pl["comp"] == comp_name]["amount"])
                 elif self.seeding_config["ignore_missing"].get():
                     print(f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population")
@@ -120,7 +120,7 @@ class SeedingAndIC:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
 
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
-            for comp_idx, comp_name in setup.compartments.compartments["name"].iteritems():
+            for comp_idx, comp_name in setup.compartments.compartments["name"].items():
                 ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
                 for pl_idx, pl in enumerate(setup.spatset.nodenames):
                     if pl in ic_df.columns:
