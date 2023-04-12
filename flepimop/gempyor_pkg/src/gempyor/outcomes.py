@@ -121,7 +121,7 @@ def read_parameters_from_config(s: setup.Setup):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
-        outcomes_config = s.outcomes_config["settings"][s.outcomes_scenario]
+        outcomes_config = s.outcomes_config["settings"][s.outcome_scenario]
         if s.outcomes_config["param_from_file"].get():
             # Load the actual csv file
             branching_file = s.outcomes_config["param_place_file"].as_str()

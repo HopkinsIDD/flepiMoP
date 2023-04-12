@@ -38,7 +38,7 @@ config.set_file("config.yml")
 
 run_id = 333
 index = 1
-deathrate = "high_death_rate"
+outcome_scenario = "high_death_rate"
 prefix = ""
 stoch_traj_flag = True
 
@@ -50,7 +50,7 @@ outcomes.run_delayframe_outcomes(
     int(index),
     run_id,
     prefix,  # output
-    deathrate,
+    outcome_scenario,
     nslots=1,
     n_jobs=1,
     stoch_traj_flag=stoch_traj_flag,
