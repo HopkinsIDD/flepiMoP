@@ -32,13 +32,13 @@ combine_and_format_sims <- function(outcome_vars = "incid",
                                     death_filter = opt$death_filter) {
 
     res_geoid_all <- arrow::open_dataset(sprintf("%shosp",scenario_dir),
-                                         partitioning = c("location", "scenario", "death_rate", "config", "lik_type", "is_final")) %>%
-        select(time, geoid, death_rate, starts_with(outcome_vars)) %>%
+                                         partitioning = c("location", "npi_scenario", "outcome_scenario", "config", "lik_type", "is_final")) %>%
+        select(time, geoid, outcome_scenario, starts_with(outcome_vars)) %>%
         filter(time>=forecast_date & time<=end_date) %>%
         collect() %>%
-        filter(stringr::str_detect(death_rate, death_filter)) %>%
+        filter(stringr::str_detect(outcome_scenario, death_filter)) %>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, geoid, death_rate) %>%
+        group_by(time, geoid, outcome_scenario) %>%
         dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
         ungroup()
 
@@ -59,14 +59,14 @@ combine_and_format_sims <- function(outcome_vars = "incid",
 
     if(!keep_all_compartments & !keep_variant_compartments & !keep_vacc_compartments){
         res_geoid_all <- res_geoid_all %>%
-            select(time, geoid, death_rate, sim_num, all_of(cols_aggr))
+            select(time, geoid, outcome_scenario, sim_num, all_of(cols_aggr))
 
     } else if (keep_variant_compartments){
         # pull out just the variant outcomes
         cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", variants_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
         cols_vars <- cols_vars[cols_vars %in% colnames(res_geoid_all)]
         res_geoid_all <- res_geoid_all %>%
-            select(time, geoid, death_rate, sim_num, all_of(cols_vars))
+            select(time, geoid, outcome_scenario, sim_num, all_of(cols_vars))
     } else if (keep_all_compartments){
         # remove the aggregate outcomes
         res_geoid_all <- res_geoid_all %>%
@@ -76,7 +76,7 @@ combine_and_format_sims <- function(outcome_vars = "incid",
         cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", vacc_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
         cols_vars <- cols_vars[cols_vars %in% colnames(res_geoid_all)]
         res_geoid_all <- res_geoid_all %>%
-            select(time, geoid, death_rate, sim_num, all_of(cols_vars))
+            select(time, geoid, outcome_scenario, sim_num, all_of(cols_vars))
     }
 
 
@@ -96,7 +96,7 @@ combine_and_format_sims <- function(outcome_vars = "incid",
 
     # ~ Add US totals
     res_us <- res_state %>%
-        group_by(time, sim_num, death_rate) %>%
+        group_by(time, sim_num, outcome_scenario) %>%
         summarise(across(starts_with("incid"), sum)) %>%
         as_tibble() %>%
         mutate(USPS = "US")
@@ -122,17 +122,17 @@ load_simulations <- function(geodata,
 
     res_geoid <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
                                      partitioning =c("location",
-                                                     "scenario",
-                                                     "death_rate",
+                                                     "npi_scenario",
+                                                     "outcome_scenario",
                                                      "config",
                                                      "lik_type",
                                                      "is_final")) %>%
-        select(time, geoid, starts_with("incid"), death_rate)%>%
+        select(time, geoid, starts_with("incid"), outcome_scenario)%>%
         filter(time>=forecast_date & time<=end_date)%>%
         collect() %>%
-        filter(stringr::str_detect(death_rate, death_filter))%>%
+        filter(stringr::str_detect(outcome_scenario, death_filter))%>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, geoid, death_rate) %>%
+        group_by(time, geoid, outcome_scenario) %>%
         dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
         ungroup() %>%
         pivot_longer(cols=starts_with("incid"),
@@ -150,7 +150,7 @@ load_simulations <- function(geodata,
     }
 
     # res_geoid <- res_geoid %>%
-    #   group_by(time, geoid, death_rate, variant, vacc, agestrat, sim_num)%>%
+    #   group_by(time, geoid, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
     #   #summarise(across(starts_with("incid"), sum)) %>%
     #   summarise(incidD=sum(incidD), incidH=sum(incidH), incidC=sum(incidC))%>%
     #   as_tibble()
@@ -234,7 +234,7 @@ trans_sims_wide <- function(geodata,
     }
 
     # res_geoid <- res_geoid %>%
-    #   group_by(time, geoid, death_rate, variant, vacc, agestrat, sim_num)%>%
+    #   group_by(time, geoid, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
     #   #summarise(across(starts_with("incid"), sum)) %>%
     #   summarise(incidD=sum(incidD), incidH=sum(incidH), incidC=sum(incidC))%>%
     #   as_tibble()
@@ -304,17 +304,17 @@ load_simulations_orig <- function(geodata,
 
     res_geoid <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
                                      partitioning =c("location",
-                                                     "scenario",
-                                                     "death_rate",
+                                                     "npi_scenario",
+                                                     "outcome_scenario",
                                                      "config",
                                                      "lik_type",
                                                      "is_final")) %>%
-        select(time, geoid, starts_with("incid"), death_rate)%>%
+        select(time, geoid, starts_with("incid"), outcome_scenario)%>%
         filter(time>=forecast_date & time<=end_date)%>%
         collect() %>%
-        filter(stringr::str_detect(death_rate, death_filter))%>%
+        filter(stringr::str_detect(outcome_scenario, death_filter))%>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, geoid, death_rate) %>%
+        group_by(time, geoid, outcome_scenario) %>%
         dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
         ungroup() %>%
         pivot_longer(cols=starts_with("incid"),
@@ -333,7 +333,7 @@ load_simulations_orig <- function(geodata,
     }
 
     # res_geoid <- res_geoid %>%
-    #   group_by(time, geoid, death_rate, variant, vacc, agestrat, sim_num)%>%
+    #   group_by(time, geoid, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
     #   #summarise(across(starts_with("incid"), sum)) %>%
     #   summarise(incidD=sum(incidD), incidH=sum(incidH), incidC=sum(incidC))%>%
     #   as_tibble()
@@ -1192,15 +1192,15 @@ process_sims <- function(
         # Pull Likelihood for pruning runs
         res_llik <- arrow::open_dataset(sprintf("%s/llik",opt$args),
                                         partitioning =c("location",
-                                                        "scenario",
-                                                        "death_rate",
+                                                        "npi_scenario",
+                                                        "outcome_scenario",
                                                         "config",
                                                         "lik_type",
                                                         "is_final")) %>%
-            select(filename, geoid, scenario, death_rate, ll)%>%
+            select(filename, geoid, npi_scenario, outcome_scenario, ll)%>%
             collect() %>%
             distinct() %>%
-            filter(stringr::str_detect(death_rate, opt$death_filter))%>%
+            filter(stringr::str_detect(outcome_scenario, opt$death_filter))%>%
             separate(filename, into=c(letters[1:9]), sep= "[/]", remove=FALSE) %>%
             mutate(sim_id = as.integer(substr(i, 1, 9))) %>%
             as_tibble()
@@ -1237,7 +1237,7 @@ process_sims <- function(
         n_excl <- ceiling(nrow(sim_ids)*(1-likelihood_prune_percentkeep))
 
         res_lik_ests <- res_lik_ests %>%
-            group_by(geoid, scenario, death_rate) %>%
+            group_by(geoid, npi_scenario, outcome_scenario) %>%
             arrange(ll) %>%
             mutate(rank = seq_along(geoid),
                    excl_rank = rank<=n_excl) %>%
@@ -1255,7 +1255,7 @@ process_sims <- function(
         res_lik_excl <- res_lik_ests %>%
             select(geoid, sim_id, exclude=excl_rank, ll, lik)
 
-        res_state <- res_state %>% left_join(res_lik_excl) #%>% select(-death_rate)
+        res_state <- res_state %>% left_join(res_lik_excl) #%>% select(-outcome_scenario)
 
         # Save it
         # arrow::write_parquet(res_state_indivs, file.path(opt$outdir, opt$indiv_sims))
@@ -1263,7 +1263,7 @@ process_sims <- function(
         res_state <- res_state %>%
             filter(!exclude) %>%
             select(-sim_id, -exclude) %>%
-            group_by(time, geoid, USPS, death_rate) %>%
+            group_by(time, geoid, USPS, outcome_scenario) %>%
             dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
             ungroup()
 
