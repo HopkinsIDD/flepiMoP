@@ -88,7 +88,7 @@ import yaml
     is_flag=True,
     default=False,
     show_default=True,
-    help="Launch a different batch job for each scenario",
+    help="Launch a different batch job for each NPI scenario",
 )
 @click.option(
     "-v",
@@ -134,14 +134,14 @@ def launch_batch(
     config["nslots"] = slots_per_job
 
     if parallelize_scenarios:
-        scenarios = config["interventions"]["scenarios"]
-        for s in scenarios:
-            scenario_job_name = f"{job_name}_{s}"
+        npi_scenarios = config["interventions"]["scenarios"]
+        for s in npi_scenarios:
+            npi_scenario_job_name = f"{job_name}_{s}"
             config["interventions"]["scenarios"] = [s]
             with open(config_file, "w") as f:
                 yaml.dump(config, f, sort_keys=False)
             launch_job_inner(
-                scenario_job_name,
+                npi_scenario_job_name,
                 config_file,
                 num_jobs,
                 slots_per_job,
@@ -153,7 +153,7 @@ def launch_batch(
                 vcpu,
                 memory,
             )
-        config["interventions"]["scenarios"] = scenarios
+        config["interventions"]["scenarios"] = npi_scenarios
         with open(config_file, "w") as f:
             yaml.dump(config, f, sort_keys=False)
     else:

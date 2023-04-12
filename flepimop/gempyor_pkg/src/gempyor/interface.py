@@ -91,7 +91,7 @@ class InferenceSimulator:
             ),
             nslots=nslots,
             npi_scenario=npi_scenario,
-            npi_config_seir=config["interventions"]["settings"][scenario],
+            npi_config_seir=config["interventions"]["settings"][npi_scenario],
             seeding_config=config["seeding"],
             initial_conditions_config=config["initial_conditions"],
             parameters_config=config["seir"]["parameters"],
