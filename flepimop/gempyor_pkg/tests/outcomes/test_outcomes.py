@@ -30,14 +30,14 @@ subclasses = ["_A", "_B"]
 os.chdir(os.path.dirname(__file__))
 
 
-def test_outcomes_scenario():
+def test_outcome_scenario():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
     inference_simulator = gempyor.InferenceSimulator(
         config_path=f"{config_path_prefix}config.yml",
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
     )
 
@@ -47,7 +47,7 @@ def test_outcomes_scenario():
     hosp.set_index("time", drop=True, inplace=True)
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
@@ -56,13 +56,13 @@ def test_outcomes_scenario():
                     assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -123,14 +123,14 @@ def test_outcomes_scenario():
         )
 
 
-def test_outcomes_scenario_with_load():
+def test_outcome_scenario_with_load():
     os.chdir(os.path.dirname(__file__))
     inference_simulator = gempyor.InferenceSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
         run_id=2,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
     )
 
@@ -166,7 +166,7 @@ def test_outcomes_read_write_hpar():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=3,
     )
@@ -183,7 +183,7 @@ def test_outcomes_read_write_hpar():
     assert (hosp_read == hosp_wrote).all().all()
 
 
-def test_outcomes_scenario_subclasses():
+def test_outcome_scenario_subclasses():
     os.chdir(os.path.dirname(__file__))
 
     inference_simulator = gempyor.InferenceSimulator(
@@ -191,7 +191,7 @@ def test_outcomes_scenario_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=10,
     )
@@ -203,7 +203,7 @@ def test_outcomes_scenario_subclasses():
 
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1 * len(
                     subclasses
@@ -220,13 +220,13 @@ def test_outcomes_scenario_subclasses():
                     ] * 0.1 * len(subclasses)
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -235,7 +235,7 @@ def test_outcomes_scenario_subclasses():
     for cl in subclasses:
         for i, place in enumerate(geoid):
             for dt in hosp.index:
-                if dt == date_data:
+                if dt.date() == date_data:
                     assert hosp[hosp["geoid"] == place][f"incidH{cl}"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                     assert hosp[hosp["geoid"] == place][f"incidD{cl}"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
                     assert (
@@ -249,12 +249,12 @@ def test_outcomes_scenario_subclasses():
                         )
                     assert hosp[hosp["geoid"] == place][f"hosp_curr{cl}"][dt + datetime.timedelta(7 + 8)] == 0
 
-                elif dt < date_data:
+                elif dt.date() < date_data:
                     assert hosp[hosp["geoid"] == place][f"incidH{cl}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD{cl}"][dt + datetime.timedelta(2)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidICU{cl}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"hosp_curr{cl}"][dt + datetime.timedelta(7)] == 0
-                elif dt > (date_data + datetime.timedelta(7)):
+                elif dt.date() > (date_data + datetime.timedelta(7)):
                     assert hosp[hosp["geoid"] == place][f"incidH{cl}"][dt] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD{cl}"][dt - datetime.timedelta(4)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidICU{cl}"][dt] == 0
@@ -328,7 +328,7 @@ def test_outcomes_scenario_subclasses():
             # assert((hpar[(hpar['geoid']== place) & (hpar['outcome']== f'incidH{cl}')]['source'] == f'incidI').all())
 
 
-def test_outcomes_scenario_with_load_subclasses():
+def test_outcome_scenario_with_load_subclasses():
     os.chdir(os.path.dirname(__file__))
 
     inference_simulator = gempyor.InferenceSimulator(
@@ -336,7 +336,7 @@ def test_outcomes_scenario_with_load_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=11,
     )
@@ -379,7 +379,7 @@ def test_outcomes_read_write_hpar_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=12,
     )
@@ -391,7 +391,7 @@ def test_outcomes_read_write_hpar_subclasses():
         run_id=12,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=13,
     )
@@ -450,7 +450,7 @@ def test_outcomes_npi():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -461,7 +461,7 @@ def test_outcomes_npi():
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
@@ -470,13 +470,13 @@ def test_outcomes_npi():
                     assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -546,7 +546,7 @@ def test_outcomes_read_write_hnpi():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -573,7 +573,7 @@ def test_outcomes_read_write_hnpi2():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -597,7 +597,7 @@ def test_outcomes_read_write_hnpi2():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=107,
     )
@@ -622,7 +622,7 @@ def test_outcomes_npi_custom_pname():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -633,7 +633,7 @@ def test_outcomes_npi_custom_pname():
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(geoid):
         for dt in hosp.index:
-            if dt == date_data:
+            if dt.date() == date_data:
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == diffI[i]
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
@@ -642,13 +642,13 @@ def test_outcomes_npi_custom_pname():
                     assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-            elif dt < date_data:
+            elif dt.date() < date_data:
                 assert hosp[hosp["geoid"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
                 assert hosp[hosp["geoid"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
-            elif dt > (date_data + datetime.timedelta(7)):
+            elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["geoid"] == place]["incidH"][dt] == 0
                 assert hosp[hosp["geoid"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
                 assert hosp[hosp["geoid"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
@@ -718,7 +718,7 @@ def test_outcomes_read_write_hnpi_custom_pname():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -754,7 +754,7 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -771,7 +771,7 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=107,
     )
@@ -798,7 +798,7 @@ def test_outcomes_pcomp():
         run_id=110,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=111,
     )
@@ -821,7 +821,7 @@ def test_outcomes_pcomp():
         hosp = hosp_f
         for i, place in enumerate(geoid):
             for dt in hosp.index:
-                if dt == date_data:
+                if dt.date() == date_data:
                     assert hosp[hosp["geoid"] == place][f"incidI_{p_comp}"][dt] == diffI[i] * p_compmult[k]
                     assert (
                         hosp[hosp["geoid"] == place][f"incidH_{p_comp}"][dt + datetime.timedelta(7)]
@@ -846,13 +846,13 @@ def test_outcomes_pcomp():
                         )
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7 + 8)] == 0
 
-                elif dt < date_data:
+                elif dt.date() < date_data:
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidI_{p_comp}"][dt] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD_{p_comp}"][dt + datetime.timedelta(2)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidICU_{p_comp}"][dt + datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7)] == 0
-                elif dt > (date_data + datetime.timedelta(7)):
+                elif dt.date() > (date_data + datetime.timedelta(7)):
                     assert hosp[hosp["geoid"] == place][f"incidH_{p_comp}"][dt] == 0
                     assert hosp[hosp["geoid"] == place][f"incidI_{p_comp}"][dt - datetime.timedelta(7)] == 0
                     assert hosp[hosp["geoid"] == place][f"incidD_{p_comp}"][dt - datetime.timedelta(4)] == 0
@@ -943,7 +943,7 @@ def test_outcomes_pcomp_read_write():
         run_id=111,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
         out_run_id=112,
     )

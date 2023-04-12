@@ -390,7 +390,7 @@ def test_continuation_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config.yml")
-    scenario = "Scenario1"
+    npi_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
     interactive = False
@@ -404,7 +404,7 @@ def test_continuation_resume():
     spatial_config = config["spatial_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
-        setup_name=config["name"].get() + "_" + str(scenario),
+        setup_name=config["name"].get() + "_" + str(npi_scenario),
         spatial_setup=setup.SpatialSetup(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -413,8 +413,8 @@ def test_continuation_resume():
             nodenames_key=spatial_config["nodenames"].get(),
         ),
         nslots=nslots,
-        npi_scenario=scenario,
-        npi_config_seir=config["interventions"]["settings"][scenario],
+        npi_scenario=npi_scenario,
+        npi_config_seir=config["interventions"]["settings"][npi_scenario],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         seir_config=config["seir"],
@@ -440,7 +440,7 @@ def test_continuation_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config_continuation_resume.yml")
-    scenario = "Scenario1"
+    npi_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
     interactive = False
@@ -454,7 +454,7 @@ def test_continuation_resume():
     spatial_config = config["spatial_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
-        setup_name=config["name"].get() + "_" + str(scenario),
+        setup_name=config["name"].get() + "_" + str(npi_scenario),
         spatial_setup=setup.SpatialSetup(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -463,8 +463,8 @@ def test_continuation_resume():
             nodenames_key=spatial_config["nodenames"].get(),
         ),
         nslots=nslots,
-        npi_scenario=scenario,
-        npi_config_seir=config["interventions"]["settings"][scenario],
+        npi_scenario=npi_scenario,
+        npi_config_seir=config["interventions"]["settings"][npi_scenario],
         seeding_config=config["seeding"],
         initial_conditions_config=config["initial_conditions"],
         parameters_config=config["seir"]["parameters"],
@@ -508,7 +508,7 @@ def test_inference_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config.yml")
-    scenario = "Scenario1"
+    npi_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
     interactive = False
@@ -522,7 +522,7 @@ def test_inference_resume():
     spatial_config = config["spatial_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
-        setup_name=config["name"].get() + "_" + str(scenario),
+        setup_name=config["name"].get() + "_" + str(npi_scenario),
         spatial_setup=setup.SpatialSetup(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -531,8 +531,8 @@ def test_inference_resume():
             nodenames_key=spatial_config["nodenames"].get(),
         ),
         nslots=nslots,
-        npi_scenario=scenario,
-        npi_config_seir=config["interventions"]["settings"][scenario],
+        npi_scenario=npi_scenario,
+        npi_config_seir=config["interventions"]["settings"][npi_scenario],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -554,7 +554,7 @@ def test_inference_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config_inference_resume.yml")
-    scenario = "Scenario1"
+    npi_scenario = "Scenario1"
     nslots = 1
     interactive = False
     write_csv = False
@@ -567,7 +567,7 @@ def test_inference_resume():
     spatial_config = config["spatial_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
-        setup_name=config["name"].get() + "_" + str(scenario),
+        setup_name=config["name"].get() + "_" + str(npi_scenario),
         spatial_setup=setup.SpatialSetup(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -576,8 +576,8 @@ def test_inference_resume():
             nodenames_key=spatial_config["nodenames"].get(),
         ),
         nslots=nslots,
-        npi_scenario=scenario,
-        npi_config_seir=config["interventions"]["settings"][scenario],
+        npi_scenario=npi_scenario,
+        npi_config_seir=config["interventions"]["settings"][npi_scenario],
         seeding_config=config["seeding"],
         initial_conditions_config=config["initial_conditions"],
         parameters_config=config["seir"]["parameters"],

@@ -142,13 +142,13 @@ from gempyor.utils import config
 )
 @click.option(
     "-s",
-    "--scenario",
-    "scenarios",
-    envvar="FLEPI_SCENARIOS",
+    "--npi_scenario",
+    "npi_scenarios",
+    envvar="FLEPI_NPI_SCENARIOS",
     type=str,
     default=[],
     multiple=True,
-    help="override the scenario(s) run for this simulation [supports multiple scenarios: `-s Wuhan -s None`]",
+    help="override the NPI scenario(s) run for this simulation [supports multiple NPI scenarios: `-s Wuhan -s None`]",
 )
 @click.option(
     "-n",
@@ -226,7 +226,7 @@ def simulate(
     config_file,
     in_run_id,
     out_run_id,
-    scenarios,
+    npi_scenarios,
     nslots,
     jobs,
     interactive,
@@ -244,9 +244,9 @@ def simulate(
     spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
-    if not scenarios:
-        scenarios = config["interventions"]["scenarios"].as_str_seq()
-    print(f"Scenarios to be run: {', '.join(scenarios)}")
+    if not npi_scenarios:
+        npi_scenarios = config["interventions"]["scenarios"].as_str_seq()
+    print(f"NPI Scenarios to be run: {', '.join(npi_scenarios)}")
 
     if not nslots:
         nslots = config["nslots"].as_number()
@@ -262,14 +262,14 @@ def simulate(
     )
 
     start = time.monotonic()
-    for scenario in scenarios:
+    for npi_scenario in npi_scenarios:
 
         s = setup.Setup(
-            setup_name=config["name"].get() + "/" + str(scenario) + "/",
+            setup_name=config["name"].get() + "/" + str(npi_scenario) + "/",
             spatial_setup=spatial_setup,
             nslots=nslots,
-            npi_scenario=scenario,
-            npi_config_seir=config["interventions"]["settings"][scenario],
+            npi_scenario=npi_scenario,
+            npi_config_seir=config["interventions"]["settings"][npi_scenario],
             seeding_config=config["seeding"],
             initial_conditions_config=config["initial_conditions"],
             parameters_config=config["seir"]["parameters"],
@@ -283,13 +283,13 @@ def simulate(
             in_run_id=in_run_id,
             in_prefix=config["name"].get() + "/",
             out_run_id=out_run_id,
-            out_prefix=config["name"].get() + "/" + str(scenario) + "/" + out_run_id + "/",
+            out_prefix=config["name"].get() + "/" + str(npi_scenario) + "/" + out_run_id + "/",
             stoch_traj_flag=stoch_traj_flag,
         )
 
         print(
             f"""
->> Scenario: {scenario} from config {config_file}
+>> Scenario: {npi_scenario} from config {config_file}
 >> Starting {s.nslots} model runs beginning from {s.first_sim_index} on {jobs} processes
 >> Setup *** {s.setup_name} *** from {s.ti} to {s.tf}
     """

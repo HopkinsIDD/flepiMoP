@@ -52,8 +52,8 @@ gempyor_simulator <- gempyor$InferenceSimulator(
                           run_id="test_run_id",
                           prefix="test_prefix/",
                           first_sim_index=1,
-                          scenario="inference",   # NPIs scenario to use
-                          deathrate="med",        # Outcome scenario to use
+                          npi_scenario="inference",   # NPIs scenario to use
+                          outcome_scenario="med",        # Outcome scenario to use
                           stoch_traj_flag=FALSE,      
                           spatial_path_prefix = '../tests/npi/' # prefix where to find the folder indicated in spatial_setup
 )
@@ -63,8 +63,8 @@ Here we specified that the data folder specified in the config lies in the `test
   run_id="test_run_id",   # an ommited argument will be left at its default value
   prefix="test_prefix",
   first_sim_index=1,
-  scenario="inference",
-  deathrate="med",
+  npi_scenario="inference",
+  outcome_scenario="med",
   stoch_traj_flag=False,
   rng_seed=None,
   nslots=1,

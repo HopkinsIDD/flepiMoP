@@ -29,7 +29,7 @@ if True:
         run_id=1,
         prefix="",
         first_sim_index=1,
-        deathrate="high_death_rate",
+        outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
     )
 
