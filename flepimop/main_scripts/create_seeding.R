@@ -97,7 +97,7 @@ if (is.null(data_path)) {
     if (is.null(data_path)) {
         stop(paste(
             "Please provide a ground truth file",
-            " as inference::data_path or seeding::casedata_file"
+            " as inference::gt_data_path or seeding::casedata_file"
         ))
     }
 }
