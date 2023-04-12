@@ -30,7 +30,7 @@ subclasses = ["_A", "_B"]
 os.chdir(os.path.dirname(__file__))
 
 
-def test_outcomes_scenario():
+def test_outcome_scenario():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
     inference_simulator = gempyor.InferenceSimulator(
         config_path=f"{config_path_prefix}config.yml",
@@ -123,7 +123,7 @@ def test_outcomes_scenario():
         )
 
 
-def test_outcomes_scenario_with_load():
+def test_outcome_scenario_with_load():
     os.chdir(os.path.dirname(__file__))
     inference_simulator = gempyor.InferenceSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
@@ -183,7 +183,7 @@ def test_outcomes_read_write_hpar():
     assert (hosp_read == hosp_wrote).all().all()
 
 
-def test_outcomes_scenario_subclasses():
+def test_outcome_scenario_subclasses():
     os.chdir(os.path.dirname(__file__))
 
     inference_simulator = gempyor.InferenceSimulator(
@@ -328,7 +328,7 @@ def test_outcomes_scenario_subclasses():
             # assert((hpar[(hpar['geoid']== place) & (hpar['outcome']== f'incidH{cl}')]['source'] == f'incidI').all())
 
 
-def test_outcomes_scenario_with_load_subclasses():
+def test_outcome_scenario_with_load_subclasses():
     os.chdir(os.path.dirname(__file__))
 
     inference_simulator = gempyor.InferenceSimulator(
