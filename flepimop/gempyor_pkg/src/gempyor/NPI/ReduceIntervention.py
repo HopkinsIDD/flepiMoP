@@ -1,19 +1,11 @@
 import collections
-import warnings
-
 import confuse
-import numpy as np
-import datetime
 import pandas as pd
-import re
-import os
-
+import numpy as np
+from . import helpers
 from .base import NPIBase
 
 debug_print = False
-
-"Cap on # of reduction metadata entries to store in memory"
-
 
 class ReduceIntervention(NPIBase):
     def __init__(
@@ -210,4 +202,11 @@ class ReduceIntervention(NPIBase):
             npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
         )
         self.parameters["parameter"] = self.param_name
-        self.parameters["reduction"] = self.dist(size=self.parameters.shape[0])
+
+        spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        if spatial_groups["ungrouped"]:
+            self.parameters.loc[spatial_groups["ungrouped"], "reduction"] = self.dist(size=len(spatial_groups["ungrouped"]))
+        if spatial_groups["grouped"]:
+            for group in spatial_groups["grouped"]:
+                drawn_value = self.dist(size=1)*np.ones(len(group))
+                self.parameters.loc[group, "reduction"] = drawn_value

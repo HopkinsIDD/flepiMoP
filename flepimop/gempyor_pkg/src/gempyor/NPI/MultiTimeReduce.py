@@ -143,6 +143,9 @@ class MultiTimeReduce(NPIBase):
                 end_dates = [self.end_date]
             spatial_groups = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
             #print(self.name, spatial_groups)
+
+            # unfortunately, we cannot use .loc here, because it is not possible to assign a list of list
+            # to a subset of a dataframe... so we iterate.
             for geoid in spatial_groups["ungrouped"]:
                 self.parameters.at[geoid, "start_date"] = start_dates
                 self.parameters.at[geoid, "end_date"] = end_dates
