@@ -130,6 +130,10 @@ class Reduce(NPIBase):
         loaded_df.index = loaded_df.geoid
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
 
+        self.affected_geoids = set(self.geoids)
+        if npi_config["affected_geoids"].exists() and npi_config["affected_geoids"].get() != "all":
+            self.affected_geoids = {str(n.get()) for n in npi_config["affected_geoids"]}
+
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
         self.parameters["npi_name"] = self.name
         self.parameters["parameter"] = self.param_name
@@ -151,8 +155,6 @@ class Reduce(NPIBase):
         #    self.parameters["end_date"] = [datetime.date.fromisoformat(date) for date in self.parameters["end_date"]]
         # else:
         #    self.parameters["start_date"] = self.end_date
-
-        self.affected_geoids = set(self.parameters.index)
 
         # parameter name is picked from config too: (before: )
         # self.param_name = self.parameters["parameter"].unique()[0]  # [0] to convert ndarray to str
