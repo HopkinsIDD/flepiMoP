@@ -118,8 +118,6 @@ class MultiTimeReduce(NPIBase):
 
     def __createFromConfig(self, npi_config):
         # Get name of the parameter to reduce
-
-        # JK : This could have broken something
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
         self.affected_geoids = self.__get_affected_geoids(npi_config)
@@ -169,17 +167,23 @@ class MultiTimeReduce(NPIBase):
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.geoid
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
-        self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
+        self.affected_geoids = self.__get_affected_geoids(npi_config)
+
+        self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
+        self.parameters["npi_name"] = self.name
+        self.parameters["parameter"] = self.param_name
+
+        # self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
         # self.parameters["start_date"] = [[datetime.date.fromisoformat(date) for date in strdate.split(",")] for strdate in self.parameters["start_date"]]
         # self.parameters["end_date"] =   [[datetime.date.fromisoformat(date) for date in strdate.split(",")] for strdate in self.parameters["end_date"]]
         # self.affected_geoids = set(self.parameters.index)
 
-        self.affected_geoids = self.__get_affected_geoids(npi_config)
         if self.sanitize:
             if len(self.affected_geoids) != len(self.parameters):
                 print(f"loading {self.name} and we got {len(self.parameters)} geoids")
                 print(f"getting from config that it affects {len(self.affected_geoids)}")
 
+        self.spatial_groups = []
         for grp_config in npi_config["groups"]:
             affected_geoids_grp = self.__get_affected_geoids_grp(grp_config)
             # Create reduction
@@ -192,16 +196,32 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            for geoid in affected_geoids_grp:
-                if not geoid in self.parameters.index:
+            this_spatial_group = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
+            self.spatial_groups.append(this_spatial_group)
+
+            for geoid in this_spatial_group["ungrouped"]:
+                if not geoid in loaded_df.index:
                     self.parameters.at[geoid, "start_date"] = start_dates
                     self.parameters.at[geoid, "end_date"] = end_dates
                     dist = npi_config["value"].as_random_distribution()
                     self.parameters.at[geoid, "reduction"] = dist(size=1)
-                    self.parameters.at[geoid, "npi_name"] = self.name
-                    self.parameters.at[geoid, "parameter"] = self.param_name
-                self.parameters.at[geoid, "start_date"] = start_dates
-                self.parameters.at[geoid, "end_date"] = end_dates
+                else:
+                    self.parameters.at[geoid, "start_date"] = start_dates
+                    self.parameters.at[geoid, "end_date"] = end_dates
+                    self.parameters.at[geoid, "reduction"] = loaded_df.at[geoid, "reduction"]
+            for group in this_spatial_group["grouped"]:
+                if ",".join(group) in loaded_df.index:  # ordered, so it's ok
+                    for geoid in group:
+                        self.parameters.at[geoid, "start_date"] = start_dates
+                        self.parameters.at[geoid, "end_date"] = end_dates
+                        self.parameters.at[geoid, "reduction"] = loaded_df.at[",".join(group), "reduction"]
+                else:
+                    dist = npi_config["value"].as_random_distribution()
+                    drawn_value = dist(size=1)
+                    for geoid in group:
+                        self.parameters.at[geoid, "start_date"] = start_dates
+                        self.parameters.at[geoid, "end_date"] = end_dates
+                        self.parameters.at[geoid, "reduction"] = drawn_value
 
         self.parameters = self.parameters.loc[list(self.affected_geoids)]
         # self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids) ]
