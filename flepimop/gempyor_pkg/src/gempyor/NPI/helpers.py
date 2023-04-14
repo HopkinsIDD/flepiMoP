@@ -25,9 +25,11 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
     """
     Spatial groups are defined in the config file as a list (of lists).
     They have the same value.
+    grouped is a list of lists of geoids
+    ungrouped is a list of geoids
+    geoids are sorted within each group
     """
-    # grouped is a list of lists of geoids
-    # ungrouped is a list of geoids
+
     spatial_groups = {"grouped": [], "ungrouped": []}
 
     if not grp_config["spatial_groups"].exists():

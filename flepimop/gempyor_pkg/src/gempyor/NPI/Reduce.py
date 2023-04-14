@@ -129,7 +129,12 @@ class Reduce(NPIBase):
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.geoid
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
-        self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
+
+        self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
+        self.parameters["npi_name"] = self.name
+        self.parameters["parameter"] = self.param_name
+
+        # self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
         # dates are picked from config
         self.parameters["start_date"] = (
             npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
@@ -148,11 +153,22 @@ class Reduce(NPIBase):
         #    self.parameters["start_date"] = self.end_date
 
         self.affected_geoids = set(self.parameters.index)
+
         # parameter name is picked from config too: (before: )
         # self.param_name = self.parameters["parameter"].unique()[0]  # [0] to convert ndarray to str
         # now:
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
-        self.parameters["parameter"] = self.param_name
+        # TODO: to be consistent with MTR, we want to also draw the values for the geoids
+        # that are not in the loaded_df.
+
+        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        if self.spatial_groups["ungrouped"]:
+            self.parameters.loc[self.spatial_groups["ungrouped"], "reduction"] = loaded_df.loc[
+                self.spatial_groups["ungrouped"], "reduction"
+            ]
+        if self.spatial_groups["grouped"]:
+            for group in self.spatial_groups["grouped"]:
+                self.parameters.loc[group, "reduction"] = loaded_df.loc[",".join(group), "reduction"]
 
     def getReduction(self, param, default=0.0):
         "Return the reduction for this param, `default` if no reduction defined"
