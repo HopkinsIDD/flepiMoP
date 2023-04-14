@@ -204,9 +204,5 @@ class ReduceIntervention(NPIBase):
         self.parameters["parameter"] = self.param_name
 
         self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
-        if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "reduction"] = self.dist(size=len(self.spatial_groups["ungrouped"]))
         if self.spatial_groups["grouped"]:
-            for group in self.spatial_groups["grouped"]:
-                drawn_value = self.dist(size=1)*np.ones(len(group))
-                self.parameters.loc[group, "reduction"] = drawn_value
+            raise ValueError("Spatial groups are not supported for ReduceIntervention interventions")
