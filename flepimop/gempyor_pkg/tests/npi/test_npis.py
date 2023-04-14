@@ -102,3 +102,16 @@ def test_full_npis_read_write():
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
     hnpi_wrote = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.107.hnpi.parquet").to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
+
+
+def test_spatial_groups_isolation():
+    inference_simulator = gempyor.InferenceSimulator(
+        config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
+        run_id=105,
+        prefix="",
+        first_sim_index=1,
+        outcome_scenario="med",
+        npi_scenario="inference",
+        stoch_traj_flag=False,
+        out_run_id=105,
+    )

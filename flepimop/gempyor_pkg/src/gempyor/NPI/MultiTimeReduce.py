@@ -141,12 +141,18 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            print(self.name)
-            helpers.get_spatial_groups(grp_config, affected_geoids_grp)
-            for geoid in affected_geoids_grp:
+            spatial_groups = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
+            #print(self.name, spatial_groups)
+            for geoid in spatial_groups["ungrouped"]:
                 self.parameters.at[geoid, "start_date"] = start_dates
                 self.parameters.at[geoid, "end_date"] = end_dates
                 self.parameters.at[geoid, "reduction"] = dist(size=1)
+            for group in spatial_groups["grouped"]:
+                drawn_value = dist(size=1)
+                for geoid in group:
+                    self.parameters.at[geoid, "start_date"] = start_dates
+                    self.parameters.at[geoid, "end_date"] = end_dates
+                    self.parameters.at[geoid, "reduction"] = drawn_value
 
     def __get_affected_geoids_grp(self, grp_config):
         if grp_config["affected_geoids"].get() == "all":
