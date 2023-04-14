@@ -116,9 +116,15 @@ class Reduce(NPIBase):
             npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
         )
         self.parameters["parameter"] = self.param_name
-        #print(self.name, helpers.get_spatial_groups(grp_config, affected_geoids_grp))
-        
-        self.parameters["reduction"] = self.dist(size=self.parameters.shape[0])
+        spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        if spatial_groups["ungrouped"]:
+            self.parameters.loc[spatial_groups["ungrouped"], "reduction"] = self.dist(size=len(spatial_groups["ungrouped"]))
+        if spatial_groups["grouped"]:
+            for group in spatial_groups["grouped"]:
+                drawn_value = self.dist(size=1)*np.ones(len(group))
+                self.parameters.loc[group, "reduction"] = drawn_value
+
+
 
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.geoid
