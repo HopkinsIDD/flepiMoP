@@ -115,6 +115,8 @@ def test_spatial_groups_isolation():
         stoch_traj_flag=False,
         out_run_id=105,
     )
+
+    # Test build from config
     npi = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
 
     # all independent: r1

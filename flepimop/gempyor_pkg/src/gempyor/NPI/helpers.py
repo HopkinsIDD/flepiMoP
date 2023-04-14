@@ -41,8 +41,6 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
                 set(affected_geoids) - set(flatten_list_of_lists(spatial_groups["grouped"]))
             )
 
-    print("spatial_groups", spatial_groups)
-
     # flatten the list of lists of grouped geoids, so we can do some checks
     flat_grouped_list = flatten_list_of_lists(spatial_groups["grouped"])
     # check that all geoids are either grouped or ungrouped
