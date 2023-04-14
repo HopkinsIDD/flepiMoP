@@ -56,6 +56,7 @@ def get_all_filenames(file_type, all_runs, finals_only=False, intermediates_only
 def slack_multiple_files_deprecated(slack_token, message, file_list, channel):
     import logging
     from slack_sdk import WebClient
+
     client = WebClient(slack_token)
     logging.basicConfig(level=logging.DEBUG)
     logging.basicConfig(level=logging.DEBUG)
@@ -78,6 +79,7 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     # ],
     import logging
     from slack_sdk import WebClient
+
     client = WebClient(slack_token)
     logging.basicConfig(level=logging.DEBUG)
     file_uploads = [{"file": f, "title": f.split(".")[0]} for f in file_list]
@@ -180,16 +182,16 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
 
     # In[5]:
 
-    #gempyor.config.set_file(run_info.config_path)
-    #gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
-    #gt
-    #statistics = {}
+    # gempyor.config.set_file(run_info.config_path)
+    # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
+    # gt
+    # statistics = {}
     # Ingoring agreegation and all, assuming by week
-    #for stat in gempyor.config["inference"]["statistics"]:
+    # for stat in gempyor.config["inference"]["statistics"]:
     #    statistics[gempyor.config["inference"]["statistics"][stat]["sim_var"].get()] = gempyor.config["inference"][
     #        "statistics"
     #    ][stat]["data_var"].get()
-    #statistics
+    # statistics
 
     # ## Analyze llik files
 
@@ -282,7 +284,7 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
     # In[9]:
 
     file_list = []
-    #f or f in Path(str(".")).rglob(f"./pplot/*"): # this took all the files also very deep into subdirectories
+    # f or f in Path(str(".")).rglob(f"./pplot/*"): # this took all the files also very deep into subdirectories
     for f in glob.glob(f"pplot/*"):
         file_list.append(str(f))
 

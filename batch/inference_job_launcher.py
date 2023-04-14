@@ -280,7 +280,7 @@ def launch_batch(
     else:
         print(f"WARNING: no inference section found in {config_file}!")
 
-    if "s3://" in str(restart_from_location):        # ugly hack: str because it might be None
+    if "s3://" in str(restart_from_location):  # ugly hack: str because it might be None
         import boto3
 
         s3 = boto3.resource("s3")
@@ -368,9 +368,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
-            geoid_fname = (
-                pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
-            )
+            geoid_fname = pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
             with open(geoid_fname) as geoid_fp:
                 num_geoids = sum(1 for line in geoid_fp)
 
@@ -508,15 +506,18 @@ class BatchJobHandler(object):
                 or q == "renv.cache"
                 or q == "sample_data"
                 or q == "build"
-                or q == "renv"               # joseph: I added this to fix a bug, hopefully it doesn't break anything
+                or q == "renv"  # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
                 tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("flepiMoP", q))
             elif q == "sample_data":
                 for r in os.listdir(os.path.join(self.flepi_path, "sample_data")):
                     if r != "united-states-commutes":
-                        tar.add(os.path.join(self.flepi_path, "sample_data", r), arcname=os.path.join("flepiMoP", "sample_data", r))
-                        #tar.add(os.path.join("flepiMoP", "sample_data", r))
+                        tar.add(
+                            os.path.join(self.flepi_path, "sample_data", r),
+                            arcname=os.path.join("flepiMoP", "sample_data", r),
+                        )
+                        # tar.add(os.path.join("flepiMoP", "sample_data", r))
         for p in os.listdir(self.data_path):
             if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "flepiMoP"):
                 tar.add(
