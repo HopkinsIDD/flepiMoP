@@ -141,16 +141,16 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            spatial_groups = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
+            self.spatial_groups = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
             #print(self.name, spatial_groups)
 
             # unfortunately, we cannot use .loc here, because it is not possible to assign a list of list
             # to a subset of a dataframe... so we iterate.
-            for geoid in spatial_groups["ungrouped"]:
+            for geoid in self.spatial_groups["ungrouped"]:
                 self.parameters.at[geoid, "start_date"] = start_dates
                 self.parameters.at[geoid, "end_date"] = end_dates
                 self.parameters.at[geoid, "reduction"] = dist(size=1)
-            for group in spatial_groups["grouped"]:
+            for group in self.spatial_groups["grouped"]:
                 drawn_value = dist(size=1)
                 for geoid in group:
                     self.parameters.at[geoid, "start_date"] = start_dates
@@ -234,9 +234,11 @@ class MultiTimeReduce(NPIBase):
         return default
 
     def getReductionToWrite(self):
+        print(self.parameters)
         df = self.parameters
         df.index.name = "geoid"
         df["start_date"] = df["start_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l]))
         df["end_date"] = df["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l]))
+
         df = df.reset_index()
         return df
