@@ -27,7 +27,8 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
     They have the same value.
     grouped is a list of lists of geoids
     ungrouped is a list of geoids
-    geoids are sorted within each group
+    the list are ordered, and this is important so we can get back and forth
+    from the written to disk part that is comma separated
     """
 
     spatial_groups = {"grouped": [], "ungrouped": []}
@@ -58,6 +59,12 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
         )
 
     spatial_groups["grouped"] = make_list_of_list(spatial_groups["grouped"])
+
+    # sort the lists
+    spatial_groups["grouped"] = [sorted(x) for x in spatial_groups["grouped"]]
+    spatial_groups["ungrouped"] = sorted(spatial_groups["ungrouped"])
+
+
 
     return spatial_groups
 
