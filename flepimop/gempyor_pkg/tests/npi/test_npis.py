@@ -16,16 +16,9 @@ from pathlib import Path
 # import seaborn as sns
 import pyarrow.parquet as pq
 import pyarrow as pa
-from gempyor import file_paths, setup, outcomes, seir
+from gempyor import file_paths, outcomes
 
 config_path_prefix = ""
-
-### To generate files for this test, see notebook Test Outcomes  playbook.ipynb in COVID19_Maryland
-
-geoid = ["15005", "15007", "15009", "15001", "15003"]
-diffI = np.arange(5) * 2
-date_data = datetime.date(2020, 4, 15)
-subclasses = ["_A", "_B"]
 
 os.chdir(os.path.dirname(__file__))
 

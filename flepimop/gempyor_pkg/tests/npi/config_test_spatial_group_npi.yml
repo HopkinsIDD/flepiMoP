@@ -97,6 +97,144 @@ seeding:
   date_sd: 1
   amount_sd: 0
 
+seir:
+  integration:
+    method: legacy
+    dt: 2.000
+  parameters:
+    sigma:
+      value:
+        distribution: fixed
+        value: 0.192307692307692
+    sigma_delta:
+      value:
+        distribution: fixed
+        value: 0.25
+    sigma_omicron:
+      value:
+        distribution: fixed
+        value: 0.333333333333333
+    alpha:
+      value:
+        distribution: fixed
+        value: 0.975
+    r0:
+      value:
+        distribution: fixed
+        value: 2.3
+    gamma:
+      value:
+        distribution: uniform
+        low: 0.222222222222222
+        high: 0.333333333333333
+    epsilon:
+      value:
+        distribution: fixed
+        value: 0.00547945205479452
+    chi1:
+      value:
+        distribution: fixed
+        value: 1.5
+    chi2:
+      value:
+        distribution: fixed
+        value: 2.4
+    chi3:
+      value:
+        distribution: fixed
+        value: 3
+    theta1_WILD:
+      value:
+        distribution: fixed
+        value: 1 - 0.6
+    theta2_WILD:
+      value:
+        distribution: fixed
+        value: 1 - 0.85
+    theta1_ALPHA:
+      value:
+        distribution: fixed
+        value: 1 - 0.6
+    theta2_ALPHA:
+      value:
+        distribution: fixed
+        value: 1 - 0.85
+    thetaW_age0to17:
+      value:
+        distribution: fixed
+        value: 1 - 0.55
+    thetaW_age18to64:
+      value:
+        distribution: fixed
+        value: 1 - 0.55
+    thetaW_age65to100:
+      value:
+        distribution: fixed
+        value: 1 - 0.48
+    theta1_DELTA:
+      value:
+        distribution: fixed
+        value: 1 - 0.5
+    theta2_DELTA:
+      value:
+        distribution: fixed
+        value: 1 - 0.8
+    thetaW_OMICRON_age0to17:
+      value:
+        distribution: fixed
+        value: 1 - 0.275
+    thetaW_OMICRON_age18to64:
+      value:
+        distribution: fixed
+        value: 1 - 0.275
+    thetaW_OMICRON_age65to100:
+      value:
+        distribution: fixed
+        value: 1 - 0.24
+    theta1_OMICRON:
+      value:
+        distribution: fixed
+        value: 1 - 0.25
+    theta2_OMICRON:
+      value:
+        distribution: fixed
+        value: 1 - 0.40625
+    nu1age0to17:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0
+    nu3age0to17:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0
+    nu1age18to64:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0
+    nu3age18to64:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0
+    nu1age65to100:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0
+    nu3age65to100:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0
+    nu2:
+      intervention_overlap_operation: sum
+      value:
+        distribution: fixed
+        value: 0.0386100386100386
+
 
 interventions:
   scenarios:
@@ -130,7 +268,7 @@ interventions:
     two_groups:
       template: Reduce
       parameter: r0
-      affected_geoids: ["01000", "02000", "04000", "06000"]
+      affected_geoids: "all"
       spatial_groups: 
         - ["01000", "02000"]
         - ["04000", "06000"]
@@ -166,8 +304,8 @@ interventions:
       template: MultiTimeReduce
       parameter: r0
       groups:
-        - affected_geoids: "all"
-          spatial_groups: ["01000", "02000"]
+        - affected_geoids: ["09000", "10000"]
+          spatial_groups: ["09000", "10000"]
           periods:
             - start_date: 2020-12-01
               end_date: 2020-12-31
@@ -191,8 +329,8 @@ interventions:
       template: MultiTimeReduce
       parameter: r0
       groups:
-        - affected_geoids: "all"
-          spatial_groups: ["01000", "02000"]
+        - affected_geoids: ["09000", "10000"]
+          spatial_groups: ["09000", "10000"]
           periods:
             - start_date: 2020-12-01
               end_date: 2020-12-31
