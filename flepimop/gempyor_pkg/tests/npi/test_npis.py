@@ -240,8 +240,8 @@ def test_spatial_groups():
     assert (npi_read.getReductionDF() == npi_wrote.getReductionDF()).all().all()
 
     assert (npi_wrote.getReduction("r1") == npi_read.getReduction("r1")).all().all()
-    assert (npi_wrote.getReduction("r2") == npi_read.getReduction("r1")).all().all()
-    assert (npi_wrote.getReduction("r3") == npi_read.getReduction("r1")).all().all()
-    assert (npi_wrote.getReduction("r4") == npi_read.getReduction("r1")).all().all()
-    assert (npi_wrote.getReduction("r5") == npi_read.getReduction("r1")).all().all()
+    assert (npi_wrote.getReduction("r2") == npi_read.getReduction("r2")).all().all()
+    assert (npi_wrote.getReduction("r3") == npi_read.getReduction("r3")).all().all()
+    assert (npi_wrote.getReduction("r4") == npi_read.getReduction("r4")).all().all()
+    assert (npi_wrote.getReduction("r5") == npi_read.getReduction("r5")).all().all()
 
