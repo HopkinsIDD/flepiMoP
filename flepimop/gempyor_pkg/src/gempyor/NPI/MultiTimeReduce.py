@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-import datetime
-
+from . import helpers
 from .base import NPIBase
 
 
@@ -142,6 +141,8 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
+            print(self.name)
+            helpers.get_spatial_groups(grp_config, affected_geoids_grp)
             for geoid in affected_geoids_grp:
                 self.parameters.at[geoid, "start_date"] = start_dates
                 self.parameters.at[geoid, "end_date"] = end_dates

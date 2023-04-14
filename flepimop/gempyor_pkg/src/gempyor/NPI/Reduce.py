@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import datetime
+from . import helpers
 
 from .base import NPIBase
 
@@ -116,6 +116,8 @@ class Reduce(NPIBase):
             npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
         )
         self.parameters["parameter"] = self.param_name
+        print(self.name)
+        helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
         self.parameters["reduction"] = self.dist(size=self.parameters.shape[0])
 
     def __createFromDf(self, loaded_df, npi_config):
