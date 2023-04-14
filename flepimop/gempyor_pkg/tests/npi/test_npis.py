@@ -116,7 +116,7 @@ def test_spatial_groups_isolation():
         out_run_id=105,
     )
 
-    # Test build from config
+    # Test build from config, value of the reduction array
     npi = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
 
     # all independent: r1
@@ -134,17 +134,51 @@ def test_spatial_groups_isolation():
     assert len(npi.getReduction("r3").loc[["04000", "06000"], "2020-04-15"].unique()) == 1
 
     # one group: r4
-    assert len(npi.getReduction("r4")["2020-04-15"].unique()) == 4 # 0 for these not included, 1 unique for the group, and two for the rest
+    assert (
+        len(npi.getReduction("r4")["2020-04-15"].unique()) == 4
+    )  # 0 for these not included, 1 unique for the group, and two for the rest
     assert npi.getReduction("r4").isna().sum().sum() == 0
     assert len(npi.getReduction("r4").loc[["01000", "02000"], "2020-04-15"].unique()) == 1
     assert len(npi.getReduction("r4").loc[["04000", "06000"], "2020-04-15"].unique()) == 2
     assert (npi.getReduction("r4").loc[["05000", "08000"], "2020-04-15"] == 0).all()
-    
+
     # mtr group: r5
     assert npi.getReduction("r5").isna().sum().sum() == 0
     assert len(npi.getReduction("r5")["2020-12-15"].unique()) == 2
     assert len(npi.getReduction("r5")["2020-10-15"].unique()) == 4
-    assert len(npi.getReduction("r5").loc[["01000","04000"], "2020-10-15"].unique()) == 1
-    assert len(npi.getReduction("r5").loc[["02000","06000"], "2020-10-15"].unique()) == 2
+    assert len(npi.getReduction("r5").loc[["01000", "04000"], "2020-10-15"].unique()) == 1
+    assert len(npi.getReduction("r5").loc[["02000", "06000"], "2020-10-15"].unique()) == 2
 
+    # test the dataframes that are wrote.
+    npi_df = npi.getReductionDF()
 
+    # all independent: r1
+    df = npi_df[npi_df["npi_name"] == "all_independent"]
+    assert len(df) == inference_simulator.s.nnodes
+    for g in df["geoid"]:
+        assert "," not in g
+
+    # all the same: r2
+    df = npi_df[npi_df["npi_name"] == "all_together"]
+    assert len(df) == 1
+    assert set(df["geoid"].iloc[0].split(",")) == set(inference_simulator.s.spatset.nodenames)
+    assert len(df["geoid"].iloc[0].split(",")) == inference_simulator.s.nnodes
+
+    # two groups: r3
+    df = npi_df[npi_df["npi_name"] == "two_groups"]
+    assert len(df) == inference_simulator.s.nnodes - 2
+    for g in ["01000", "02000", "04000", "06000"]:
+        assert g not in df["geoid"]
+    assert len(df[df["geoid"] == "01000,02000"]) == 1
+    assert len(df[df["geoid"] == "04000,06000"]) == 1
+
+    # mtr group: r5
+    df = npi_df[npi_df["npi_name"] == "mt_reduce"]
+    assert len(df) == 4
+    assert df.geoid.to_list() == ["09000,10000", "02000", "06000", "01000,04000"]
+    assert df[df["geoid"] == "09000,10000"]["start_date"].iloc[0] == "2020-12-01,2021-12-01"
+    assert (
+        df[df["geoid"] == "01000,04000"]["start_date"].iloc[0]
+        == df[df["geoid"] == "06000"]["start_date"].iloc[0]
+        == "2020-10-01,2021-10-01"
+    )
