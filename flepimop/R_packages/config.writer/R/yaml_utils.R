@@ -77,8 +77,7 @@
 #'
 #' @examples
 #'
-collapse_intervention<- function(dat
-){
+collapse_intervention<- function(dat){
     #TODO: add number to repeated names
     #TODO add a check that all end_dates are the same
     mtr <- dat %>%
@@ -89,7 +88,13 @@ collapse_intervention<- function(dat
         dplyr::group_by(dplyr::across(-period)) %>%
         dplyr::summarize(period = paste0(period, collapse="\n            ")) %>%
         dplyr::group_by(dplyr::across(-geoid)) %>%
-        dplyr::summarize(geoid = paste0(geoid, collapse='", "')) %>%
+        {if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+            dplyr::summarize(geoid = paste0(geoid, collapse='", "'),
+                             spatial_groups = paste0(spatial_groups, collapse='", "'))
+        } else {
+            dplyr::summarize(geoid = paste0(geoid, collapse='", "'))
+        }
+        } %>%
         dplyr::mutate(period = paste0("            ", period))
 
     reduce <- dat %>%
@@ -129,44 +134,52 @@ collapse_intervention<- function(dat
 #'
 #' @examples
 #'
-
 yaml_mtr_template <- function(dat){
     template <- unique(dat$template)
     geoid_all <- any(unique(dat$geoid)=="all")
     inference <- !any(is.na(dat$pert_dist))
 
-    if(template=="MultiTimeReduce" & geoid_all){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: MultiTimeReduce\n",
-            "      parameter: ", dat$parameter, "\n",
-            "      groups:\n",
-            '        - affected_geoids: "all"\n'
-        ))
-
-        for(j in 1:nrow(dat)){
-            cat(paste0('          periods:\n',
-                       dat$period[j], '\n'
-            ))
-        }
-    }
-
-    if(template=="MultiTimeReduce" & !geoid_all){
-        cat(paste0(
-            "    ", dat$name[1], ":\n",
-            "      template: MultiTimeReduce\n",
-            "      parameter: ", dat$parameter[1], "\n",
-            "      groups:\n"
-        ))
-
-        for(j in 1:nrow(dat)){
+    if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+        if(template=="MultiTimeReduce" & geoid_all){
             cat(paste0(
-                '        - affected_geoids: ["', dat$geoid[j], '"]\n',
-                '          periods:\n',
-                dat$period[j], '\n'
+                "    ", dat$name, ":\n",
+                "      template: MultiTimeReduce\n",
+                "      parameter: ", dat$parameter, "\n",
+                "      groups:\n",
+                '        - affected_geoids: "all"\n'
             ))
+            if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+                cat(paste0(
+                    '          spatial_groups: "all"\n'            ))
+            }
+
+            for(j in 1:nrow(dat)){
+                cat(paste0('          periods:\n',
+                           dat$period[j], '\n'
+                ))
+            }
         }
-    }
+
+        if(template=="MultiTimeReduce" & !geoid_all){
+            cat(paste0(
+                "    ", dat$name[1], ":\n",
+                "      template: MultiTimeReduce\n",
+                "      parameter: ", dat$parameter[1], "\n",
+                "      groups:\n"
+            ))
+
+            for(j in 1:nrow(dat)){
+                cat(paste0(
+                    '        - affected_geoids: ["', dat$geoid[j], '"]\n'))
+                if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+                    cat(paste0(
+                        '          spatial_groups: ["', dat$spatial_groups[j], '"]\n'))
+                }
+                    '          periods:\n',
+                    dat$period[j], '\n'
+                ))
+            }
+        }
 
     cat(
         print_value(value_dist = dat$value_dist[1],
@@ -334,69 +347,32 @@ print_value1 <- function (value_type, value_dist,
 #'
 #' @examples
 #'
-yaml_reduce_template<- function(dat
-){
-    #if(!dat$template %in% c("ReduceR0", "ReduceIntervention", "Reduce")){stop(paste0("Intervention template should be 'ReduceR0' or 'ReduceIntervention', but is ", dat$template))}
+yaml_reduce_template<- function(dat){
 
-    if(dat$template == "ReduceR0" & dat$geoid != "all"){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: ", dat$template,"\n",
-            '      affected_geoids: ["', dat$geoid, '"]\n',
-            dat$period
-        ))
-    }
-
-    if(dat$template == "ReduceR0" & dat$geoid == "all"){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: ", dat$template,"\n",
-            '      affected_geoids: "', dat$geoid, '"\n',
-            dat$period
-        ))
-    }
-
-    if(dat$template == "Reduce" & dat$geoid != "all"){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: ", dat$template,"\n",
-            "      parameter: ", dat$parameter, "\n",
-            '      affected_geoids: ["', dat$geoid, '"]\n',
-            dat$period
-        ))
-    }
-
-    if(dat$template == "Reduce" & dat$geoid == "all"){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: ", dat$template,"\n",
-            "      parameter: ", dat$parameter, "\n",
-            '      affected_geoids: "', dat$geoid, '"\n',
-            dat$period
-        ))
-    }
-
-    if(dat$template == "ReduceIntervention" & dat$geoid != "all"){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: ", dat$template,"\n",
-            "      parameter: ", dat$parameter, "\n",
-            '      affected_geoids: ["', dat$geoid, '"]\n',
-            dat$period,
-            "      baseline_scenario: ", dat$baseline_scenario, "\n"
-        ))
-    }
-
-    if(dat$template == "ReduceIntervention" & dat$geoid == "all"){
-        cat(paste0(
-            "    ", dat$name, ":\n",
-            "      template: ", dat$template,"\n",
-            "      parameter: ", dat$parameter, "\n",
-            '      affected_geoids: "', dat$geoid, '"\n',
-            dat$period,
-            "      baseline_scenario: ", dat$baseline_scenario, "\n"
-        ))
-    }
+    cat(paste0(
+        "    ", dat$name, ":\n",
+        "      template: ", dat$template,"\n",
+        if(dat$template %in% c("Reduce", "ReduceIntervention")){
+            paste0("      parameter: ", dat$parameter, "\n")
+        },
+        if(all(dat$geoid == "all")){
+            '      affected_geoids: "all"\n'
+        } else {
+            paste0('      affected_geoids: ["', dat$geoid, '"]\n')
+        },
+        if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+            if(all(dat$spatial_groups == "all")){
+                '      spatial_groups: "all"\n'
+            } else {
+                paste0('      spatial_groups: \n',
+                       paste(sapply(X=dat$spatial_groups, function(x = X) paste0('        - ["', paste(x, collapse = '", "'), '"]\n')), collapse = ""))
+            }
+        },
+        dat$period,
+        if(dat$template == "ReduceIntervention"){
+            paste0("      baseline_scenario: ", dat$baseline_scenario, "\n")
+        }
+    ))
 
     cat(
         print_value(value_dist = dat$value_dist[1],
@@ -992,8 +968,7 @@ print_interventions <- function (
         if (dat$template[i] == "MultiTimeReduce") {
             dat %>% dplyr::filter(name == dat$name[i]) %>% yaml_mtr_template(.)
             dat <- dat %>% dplyr::filter(name != dat$name[i] | dplyr::row_number() == i)
-        }
-        else {
+        } else {
             yaml_reduce_template(dat[i, ])
         }
     }
@@ -1012,8 +987,7 @@ print_interventions <- function (
                     yaml_mtr_template(.)
                 outcome_dat <- outcome_dat %>%
                     dplyr::filter(name != outcome_dat$name[i] | dplyr::row_number() == i)
-            }
-            else {
+            } else {
                 yaml_reduce_template(outcome_dat[i, ])
             }
         }
