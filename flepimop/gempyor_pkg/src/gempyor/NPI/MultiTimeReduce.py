@@ -129,6 +129,7 @@ class MultiTimeReduce(NPIBase):
         self.parameters["npi_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
+        self.spatial_groups = []
         for grp_config in npi_config["groups"]:
             affected_geoids_grp = self.__get_affected_geoids_grp(grp_config)
             # Create reduction
@@ -141,16 +142,17 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            self.spatial_groups = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
-            #print(self.name, spatial_groups)
+            this_spatial_group = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
+            self.spatial_groups.append(this_spatial_group)
+            # print(self.name, this_spatial_groups)
 
             # unfortunately, we cannot use .loc here, because it is not possible to assign a list of list
             # to a subset of a dataframe... so we iterate.
-            for geoid in self.spatial_groups["ungrouped"]:
+            for geoid in this_spatial_group["ungrouped"]:
                 self.parameters.at[geoid, "start_date"] = start_dates
                 self.parameters.at[geoid, "end_date"] = end_dates
                 self.parameters.at[geoid, "reduction"] = dist(size=1)
-            for group in self.spatial_groups["grouped"]:
+            for group in this_spatial_group["grouped"]:
                 drawn_value = dist(size=1)
                 for geoid in group:
                     self.parameters.at[geoid, "start_date"] = start_dates
@@ -234,27 +236,40 @@ class MultiTimeReduce(NPIBase):
         return default
 
     def getReductionToWrite(self):
+        df_list = []
         # self.parameters.index is a list of geoids
-        # spatially ungrouped dataframe
-        df = self.parameters[self.parameters.index.isin(self.spatial_groups["ungrouped"])].copy()
-        df.index.name = "geoid"
-        df["start_date"] = df["start_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l]))
-        df["end_date"] = df["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l]))
-        
-        # spatially grouped dataframe. They are nested within multitime reduce groups,
-        # so we can set the same dates for allof them
-        for group in self.spatial_groups["grouped"]:
-            # we use the first geoid to represent the group
-            df_group = self.parameters[self.parameters.index == group[0]].copy()
+        for this_spatial_groups in self.spatial_groups:
+            # spatially ungrouped dataframe
+            df_ungroup = self.parameters[self.parameters.index.isin(this_spatial_groups["ungrouped"])].copy()
+            df_ungroup.index.name = "geoid"
+            df_ungroup["start_date"] = df_ungroup["start_date"].apply(
+                lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])
+            )
+            df_ungroup["end_date"] = df_ungroup["end_date"].apply(
+                lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])
+            )
+            df_list.append(df_ungroup)
+            # spatially grouped dataframe. They are nested within multitime reduce groups,
+            # so we can set the same dates for allof them
+            for group in this_spatial_groups["grouped"]:
+                # we use the first geoid to represent the group
+                df_group = self.parameters[self.parameters.index == group[0]].copy()
 
-            row_group = pd.DataFrame.from_dict({
-                "geoid": ",".join(group), 
-                "npi_name": df_group["npi_name"], 
-                "parameter": df_group["parameter"], 
-                "start_date": df_group["start_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])), 
-                "end_date": df_group["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])),
-                "reduction": df_group["reduction"]}).set_index("geoid")
-            df = pd.concat([df, row_group])
+                row_group = pd.DataFrame.from_dict(
+                    {
+                        "geoid": ",".join(group),
+                        "npi_name": df_group["npi_name"],
+                        "parameter": df_group["parameter"],
+                        "start_date": df_group["start_date"].apply(
+                            lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])
+                        ),
+                        "end_date": df_group["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])),
+                        "reduction": df_group["reduction"],
+                    }
+                ).set_index("geoid")
+                df_list.append(row_group)
+
+        df = pd.concat(df_list)
 
         df = df.reset_index()
         return df

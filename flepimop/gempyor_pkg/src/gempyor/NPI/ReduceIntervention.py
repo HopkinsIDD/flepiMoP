@@ -7,6 +7,7 @@ from .base import NPIBase
 
 debug_print = False
 
+
 class ReduceIntervention(NPIBase):
     def __init__(
         self,

@@ -47,16 +47,14 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
     if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(affected_geoids):
         print("set of grouped and ungrouped geoids", set(flat_grouped_list + spatial_groups["ungrouped"]))
         print("set of affected geoids             ", set(affected_geoids))
-        raise ValueError(
-            f"The two above sets are differs for for intervention with config \n {grp_config}"
-        )
+        raise ValueError(f"The two above sets are differs for for intervention with config \n {grp_config}")
     if len(set(flat_grouped_list + spatial_groups["ungrouped"])) != len(
         flat_grouped_list + spatial_groups["ungrouped"]
     ):
         raise ValueError(
             f"spatial_group error. for intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped geoids"
         )
-    
+
     spatial_groups["grouped"] = make_list_of_list(spatial_groups["grouped"])
 
     return spatial_groups
@@ -70,10 +68,11 @@ def flatten_list_of_lists(list_of_lists):
         return list_of_lists
     return [item for sublist in list_of_lists for item in sublist]
 
+
 def make_list_of_list(this_list):
-    """ if the list contains its' values, nest it into another list """
+    """if the list contains its' values, nest it into another list"""
     if not this_list:
-        return this_list # empty list
+        return this_list  # empty list
     elif isinstance(this_list[0], list):
         return this_list
     else:
