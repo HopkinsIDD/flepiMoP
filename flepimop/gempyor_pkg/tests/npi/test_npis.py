@@ -47,7 +47,10 @@ def test_full_npis_read_write():
     #    inference_simulator.s, load_ID=False, sim_id2load=None, config=config
     # )
 
+    
+    
     inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
+
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
     hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
@@ -183,18 +186,32 @@ def test_spatial_groups():
         == "2020-10-01,2021-10-01"
     )
 
+def test_spatial_groups():
+    inference_simulator = gempyor.InferenceSimulator(
+        config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
+        run_id=105,
+        prefix="",
+        first_sim_index=1,
+        outcome_scenario="med",
+        npi_scenario="inference",
+        stoch_traj_flag=False,
+        out_run_id=105,
+    )
+
+    # Test build from config, value of the reduction array
+    npi = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
+
+
     inference_simulator.s.write_simID(ftype="snpi", sim_id=1, df=npi_df)
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.105.snpi.parquet").to_pandas()
-    snpi_read["reduction"] = np.random.random(len(snpi_read)) * 2 - 1
+    snpi_read["reduction"] = np.random.random(len(snpi_read)) * 5 - 1
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(105, "", 1, "hnpi", "parquet"))
 
 
-    random.seed(10)
-
     inference_simulator = gempyor.InferenceSimulator(
-        config_path=f"{config_path_prefix}config_npi.yml",
+        config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
@@ -209,4 +226,8 @@ def test_spatial_groups():
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.105.snpi.parquet").to_pandas()
     snpi_wrote = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.106.snpi.parquet").to_pandas()
+    
+    # now the order can change, so we need to sort by geoid and start_date
+    snpi_wrote.sort_values(by=["geoid", "start_date"], inplace=True)
+    snpi_read.sort_values(by=["geoid", "start_date"], inplace=True)
     assert (snpi_read == snpi_wrote).all().all()

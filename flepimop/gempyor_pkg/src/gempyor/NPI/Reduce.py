@@ -133,7 +133,8 @@ class Reduce(NPIBase):
         self.affected_geoids = set(self.geoids)
         if npi_config["affected_geoids"].exists() and npi_config["affected_geoids"].get() != "all":
             self.affected_geoids = {str(n.get()) for n in npi_config["affected_geoids"]}
-
+        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
+        
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
         self.parameters["npi_name"] = self.name
         self.parameters["parameter"] = self.param_name
@@ -159,7 +160,7 @@ class Reduce(NPIBase):
         # parameter name is picked from config too: (before: )
         # self.param_name = self.parameters["parameter"].unique()[0]  # [0] to convert ndarray to str
         # now:
-        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
+        
         # TODO: to be consistent with MTR, we want to also draw the values for the geoids
         # that are not in the loaded_df.
 
