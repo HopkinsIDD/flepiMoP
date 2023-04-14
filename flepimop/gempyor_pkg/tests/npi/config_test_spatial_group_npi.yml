@@ -1,0 +1,220 @@
+name: USA
+setup_name: FCH
+smh_round: R12
+data_path: data
+start_date: 2020-01-01
+end_date: 2022-09-03
+end_date_groundtruth: 2022-03-05
+nslots: 300
+
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R", "W"]
+  vaccination_stage: ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"]
+  variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"]
+  age_strata: ["age0to17", "age18to64", "age65to100"]
+
+spatial_setup:
+  census_year: 2019
+  modeled_states:
+    - AK
+    - AL
+    - AR
+    - AZ
+    - CA
+    - CO
+    - CT
+    - DC
+    - DE
+    - FL
+    - GA
+    - HI
+    - IA
+    - ID
+    - IL
+    - IN
+    - KS
+    - KY
+    - LA
+    - MA
+    - MD
+    - ME
+    - MI
+    - MN
+    - MO
+    - MS
+    - MT
+    - NC
+    - ND
+    - NE
+    - NH
+    - NJ
+    - NM
+    - NV
+    - NY
+    - OH
+    - OK
+    - OR
+    - PA
+    - RI
+    - SC
+    - SD
+    - TN
+    - TX
+    - UT
+    - VA
+    - VT
+    - WA
+    - WI
+    - WV
+    - WY
+  geodata: geodata_2019_statelevel.csv
+  mobility: mobility_2011-2015_statelevel.csv
+  popnodes: pop2019est
+  nodenames: geoid
+  include_in_report: include_in_report
+  state_level: TRUE
+
+seeding:
+  variant_filename: data/variant/variant_props_long.csv
+  seeding_compartments:
+    WILD:
+      source_compartment: ["S", "unvaccinated", "WILD", "age18to64"]
+      destination_compartment: ["E", "unvaccinated", "WILD", "age18to64"]
+    ALPHA:
+      source_compartment: ["S", "unvaccinated", "WILD", "age18to64"]
+      destination_compartment: ["E", "unvaccinated", "ALPHA", "age18to64"]
+    DELTA:
+      source_compartment: ["S", "unvaccinated", "WILD", "age18to64"]
+      destination_compartment: ["E", "unvaccinated", "DELTA", "age18to64"]
+    OMICRON:
+      source_compartment: ["S", "unvaccinated", "WILD", "age18to64"]
+      destination_compartment: ["E", "unvaccinated", "OMICRON", "age18to64"]
+  method: FolderDraw
+  seeding_file_type: seed
+  folder_path: importation/minimal/
+  lambda_file: data/seeding_territories.csv
+  pop_seed_file: data/seeding_agestrat.csv
+  date_sd: 1
+  amount_sd: 0
+
+
+interventions:
+  scenarios:
+    - inference
+  settings:
+    all_independent:
+      template: Reduce
+      parameter: r0
+      affected_geoids: "all"
+      period_start_date: 2020-01-01
+      period_end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
+    all_together:
+      template: Reduce
+      parameter: chi3
+      affected_geoids: "all"
+      spatial_groups: "all"
+      period_start_date: 2020-01-01
+      period_end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
+    two_groups:
+      template: Reduce
+      parameter: r0
+      affected_geoids: ["01000", "02000", "04000", "06000"]
+      spatial_groups: 
+        - ["01000", "02000"]
+        - ["04000", "06000"]
+      period_start_date: 2020-04-04
+      period_end_date: 2020-04-30
+      value:
+        distribution: truncnorm
+        mean: 0.55
+        sd: 0.025
+        a: 0
+        b: 0.9
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
+    one_group:
+      template: Reduce
+      parameter: r0
+      affected_geoids: ["01000", "02000", "04000", "06000"]
+      spatial_groups: 
+        - ["01000", "02000"]
+      period_start_date: 2020-04-04
+      period_end_date: 2020-04-30
+      value:
+        distribution: truncnorm
+        mean: 0.55
+        sd: 0.025
+        a: 0
+        b: 0.9
+    mt_reduce:
+      template: MultiTimeReduce
+      parameter: r0
+      groups:
+        - affected_geoids: "all"
+          spatial_groups: ["01000", "02000"]
+          periods:
+            - start_date: 2020-12-01
+              end_date: 2020-12-31
+            - start_date: 2021-12-01
+              end_date: 2021-12-31
+        - affected_geoids: ["01000", "02000", "04000", "06000"]
+          spatial_groups: ["01000","04000"]
+          periods:
+            - start_date: 2021-08-16
+              end_date: 2021-11-23
+            - start_date: 2022-01-03
+              end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: -0.133
+        sd: 0.05
+        a: -1
+        b: 1
+
+    scn_error:
+      template: MultiTimeReduce
+      parameter: r0
+      groups:
+        - affected_geoids: "all"
+          spatial_groups: ["01000", "02000"]
+          periods:
+            - start_date: 2020-12-01
+              end_date: 2020-12-31
+            - start_date: 2021-12-01
+              end_date: 2021-12-31
+        - affected_geoids: ["01000", "02000", "04000", "06000"]
+          spatial_groups: ["10000"]
+          periods:
+            - start_date: 2021-08-16
+              end_date: 2021-11-23
+            - start_date: 2022-01-03
+              end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: -0.133
+        sd: 0.05
+        a: -1
+        b: 1
+
+    inference:
+      template: Stacked
+      scenarios: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
+    error:
+      template: Stacked
+      scenarios: ["scn_error"]
