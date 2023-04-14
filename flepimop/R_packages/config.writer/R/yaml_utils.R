@@ -139,47 +139,48 @@ yaml_mtr_template <- function(dat){
     geoid_all <- any(unique(dat$geoid)=="all")
     inference <- !any(is.na(dat$pert_dist))
 
-    if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
-        if(template=="MultiTimeReduce" & geoid_all){
+    if(template=="MultiTimeReduce" & geoid_all){
+        cat(paste0(
+            "    ", dat$name, ":\n",
+            "      template: MultiTimeReduce\n",
+            "      parameter: ", dat$parameter, "\n",
+            "      groups:\n",
+            '        - affected_geoids: "all"\n'
+        ))
+        if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
             cat(paste0(
-                "    ", dat$name, ":\n",
-                "      template: MultiTimeReduce\n",
-                "      parameter: ", dat$parameter, "\n",
-                "      groups:\n",
-                '        - affected_geoids: "all"\n'
+                '          spatial_groups: "all"\n'))
+        }
+
+        for(j in 1:nrow(dat)){
+            cat(paste0('          periods:\n',
+                       dat$period[j], '\n'
             ))
+        }
+    }
+
+    if(template=="MultiTimeReduce" & !geoid_all){
+        cat(paste0(
+            "    ", dat$name[1], ":\n",
+            "      template: MultiTimeReduce\n",
+            "      parameter: ", dat$parameter[1], "\n",
+            "      groups:\n"
+        ))
+
+        for(j in 1:nrow(dat)){
+            cat(paste0(
+                '        - affected_geoids: ["', dat$geoid[j], '"]\n'))
+
             if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
                 cat(paste0(
-                    '          spatial_groups: "all"\n'            ))
+                    '          spatial_groups: ["', dat$spatial_groups[j], '"]\n'))
             }
-
-            for(j in 1:nrow(dat)){
-                cat(paste0('          periods:\n',
-                           dat$period[j], '\n'
-                ))
-            }
-        }
-
-        if(template=="MultiTimeReduce" & !geoid_all){
             cat(paste0(
-                "    ", dat$name[1], ":\n",
-                "      template: MultiTimeReduce\n",
-                "      parameter: ", dat$parameter[1], "\n",
-                "      groups:\n"
+                '          periods:\n',
+                dat$period[j], '\n'
             ))
-
-            for(j in 1:nrow(dat)){
-                cat(paste0(
-                    '        - affected_geoids: ["', dat$geoid[j], '"]\n'))
-                if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
-                    cat(paste0(
-                        '          spatial_groups: ["', dat$spatial_groups[j], '"]\n'))
-                }
-                    '          periods:\n',
-                    dat$period[j], '\n'
-                ))
-            }
         }
+    }
 
     cat(
         print_value(value_dist = dat$value_dist[1],
