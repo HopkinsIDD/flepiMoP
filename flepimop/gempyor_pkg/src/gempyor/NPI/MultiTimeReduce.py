@@ -246,8 +246,7 @@ class MultiTimeReduce(NPIBase):
         for group in self.spatial_groups["grouped"]:
             # we use the first geoid to represent the group
             df_group = self.parameters[self.parameters.index == group[0]].copy()
-            print(df_group)
-            print([d for d in df_group["start_date"]])
+
             row_group = pd.DataFrame.from_dict({
                 "geoid": ",".join(group), 
                 "npi_name": df_group["npi_name"], 
@@ -255,7 +254,7 @@ class MultiTimeReduce(NPIBase):
                 "start_date": df_group["start_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])), 
                 "end_date": df_group["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])),
                 "reduction": df_group["reduction"]}).set_index("geoid")
-            df = df.append(row_group)
+            df = pd.concat([df, row_group])
 
         df = df.reset_index()
         return df
