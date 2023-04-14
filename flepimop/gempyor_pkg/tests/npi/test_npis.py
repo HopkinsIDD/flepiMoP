@@ -206,7 +206,7 @@ def test_spatial_groups():
     inference_simulator.s.write_simID(ftype="snpi", sim_id=1, df=npi_df)
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.105.snpi.parquet").to_pandas()
-    snpi_read["reduction"] = np.random.random(len(snpi_read)) * 50 - 1
+    snpi_read["reduction"] = np.random.random(len(snpi_read)) * 2 - 1
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(106, "", 1, "snpi", "parquet"))
 
@@ -232,3 +232,16 @@ def test_spatial_groups():
     snpi_wrote = snpi_wrote.sort_values(by=["geoid", "start_date"]).reset_index(drop=True)
     snpi_read = snpi_read.sort_values(by=["geoid", "start_date"]).reset_index(drop=True)
     assert (snpi_read == snpi_wrote).all().all()
+
+
+    npi_read = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_read)
+    npi_wrote = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_wrote)
+
+    assert (npi_read.getReductionDF() == npi_wrote.getReductionDF()).all().all()
+
+    assert (npi_wrote.getReduction("r1") == npi_read.getReduction("r1")).all().all()
+    assert (npi_wrote.getReduction("r2") == npi_read.getReduction("r1")).all().all()
+    assert (npi_wrote.getReduction("r3") == npi_read.getReduction("r1")).all().all()
+    assert (npi_wrote.getReduction("r4") == npi_read.getReduction("r1")).all().all()
+    assert (npi_wrote.getReduction("r5") == npi_read.getReduction("r1")).all().all()
+
