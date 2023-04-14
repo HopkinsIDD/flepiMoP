@@ -45,6 +45,7 @@ class Setup:
         write_parquet=False,
         dt=None,  # step size, in days
         first_sim_index=1,
+        model_output_path='.'
         in_run_id=None,
         in_prefix=None,
         out_run_id=None,
@@ -160,12 +161,16 @@ class Setup:
             out_run_id = file_paths.run_id()
         self.out_run_id = out_run_id
 
+
+        # TODO: these default do no make sense
         if in_prefix is None:
-            in_prefix = f"model_output/{setup_name}/{in_run_id}/"
+            in_prefix = f"{setup_name}/{in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
-            out_prefix = f"model_output/{setup_name}/{npi_scenario}/{out_run_id}/"
+            out_prefix = f"{setup_name}/{npi_scenario}/{out_run_id}/"
         self.out_prefix = out_prefix
+
+        self.model_output_path = model_output_path
 
         if self.write_csv or self.write_parquet:
             self.timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -222,6 +227,7 @@ class Setup:
             index=sim_id + self.first_sim_index - 1,
             ftype=ftype,
             extension=extension,
+            model_output_path=self.model_output_path,
         )
         return fn
 
