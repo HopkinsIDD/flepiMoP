@@ -150,7 +150,7 @@ yaml_mtr_template <- function(dat){
             ))
             if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
                 cat(paste0(
-                    '          spatial_groups: "all"\n'            ))
+                    '          spatial_groups: "all"\n'))
             }
 
             for(j in 1:nrow(dat)){
@@ -171,10 +171,12 @@ yaml_mtr_template <- function(dat){
             for(j in 1:nrow(dat)){
                 cat(paste0(
                     '        - affected_geoids: ["', dat$geoid[j], '"]\n'))
+
                 if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
                     cat(paste0(
                         '          spatial_groups: ["', dat$spatial_groups[j], '"]\n'))
                 }
+                cat(paste0(
                     '          periods:\n',
                     dat$period[j], '\n'
                 ))
