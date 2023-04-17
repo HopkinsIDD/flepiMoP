@@ -115,7 +115,7 @@ def user_confirmation(question="Continue?", default=False):
     "--fs-folder",
     "fs_folder",
     type=str,
-    default="/data/struelo1/flepimop-runs",
+    default="/scratch4/struelo1/flepimop-runs",
     show_default=True,
     help="The file system folder to use for keeping the job outputs",
 )
