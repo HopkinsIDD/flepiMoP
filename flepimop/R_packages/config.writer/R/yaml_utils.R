@@ -86,16 +86,22 @@ collapse_intervention<- function(dat){
                       start_date=paste0("- start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n              ", start_date:end_date) %>%
         dplyr::group_by(dplyr::across(-period)) %>%
-        dplyr::summarize(period = paste0(period, collapse="\n            ")) %>%
-        dplyr::group_by(dplyr::across(-geoid)) %>%
-        {if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+        dplyr::summarize(period = paste0(period, collapse="\n            "))
+
+    if (!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))) {
+
+        mtr <- mtr %>%
+            dplyr::group_by(dplyr::across(-geoid)) %>%
             dplyr::summarize(geoid = paste0(geoid, collapse='", "'),
-                             spatial_groups = paste0(spatial_groups, collapse='", "'))
-        } else {
-            dplyr::summarize(geoid = paste0(geoid, collapse='", "'))
-        }
-        } %>%
-        dplyr::mutate(period = paste0("            ", period))
+                             spatial_groups = paste0(spatial_groups, collapse='", "')) %>%
+            dplyr::mutate(period = paste0("            ", period))
+
+    } else {
+        mtr <- mtr %>%
+            dplyr::group_by(dplyr::across(-geoid)) %>%
+            dplyr::summarize(geoid = paste0(geoid, collapse='", "')) %>%
+            dplyr::mutate(period = paste0("            ", period))
+    }
 
     reduce <- dat %>%
         dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
