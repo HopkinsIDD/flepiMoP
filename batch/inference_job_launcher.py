@@ -592,7 +592,7 @@ class BatchJobHandler(object):
                 "name": "FLEPI_MAX_STACK_SIZE",
                 "value": str(self.max_stacked_interventions),
             },
-            {"name": "VALIDATION_DATE", "value": str(self.last_validation_date)},
+            {"name": "VALIDATION_DATE", "value": str(self.last_validation_date.date())},
             {"name": "SIMS_PER_JOB", "value": str(self.sims_per_job)},
             {"name": "FLEPI_ITERATIONS_PER_SLOT", "value": str(self.sims_per_job)},
             {
