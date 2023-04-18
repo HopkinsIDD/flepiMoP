@@ -88,7 +88,7 @@ collapse_intervention<- function(dat){
         dplyr::group_by(dplyr::across(-period)) %>%
         dplyr::summarize(period = paste0(period, collapse="\n            "))
 
-    if (!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))) {
+    if (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups))) {
 
         mtr <- mtr %>%
             dplyr::group_by(dplyr::across(-geoid)) %>%
@@ -104,7 +104,7 @@ collapse_intervention<- function(dat){
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::select(USPS, geoid, contains("spatial_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
         dplyr::filter(template %in% c("ReduceR0", "Reduce", "ReduceIntervention")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
@@ -120,13 +120,10 @@ collapse_intervention<- function(dat){
                                               TRUE ~ name),
                       name = stringr::str_remove(name, "^_"))
 
-    dat <- dplyr::bind_rows(mtr,
-                            reduce) %>%
-        dplyr::ungroup() %>%
-        dplyr::group_by(category) %>%
-        dplyr::arrange(period)  %>%
-        dplyr::ungroup() %>%
-        dplyr::arrange(category, geoid)
+    dat <- dplyr::bind_rows(mtr, reduce) %>%
+        dplyr::mutate(interv_order = dplyr::recode(category, "universal_npi" = 1, "local_variance" = 2, "seasonal" = 3, "NPI" = 4, "incidCshift" = 5)) %>%
+        dplyr::arrange(interv_order, USPS, category, geoid, parameter) %>%
+        dplyr::ungroup()
 
     return(dat)
 }
