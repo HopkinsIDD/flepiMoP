@@ -30,14 +30,14 @@ option_list = list(
     optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
     optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("RUN_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
     optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
+    optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
+    optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
     optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
 opt = optparse::parse_args(parser)
 
-# Garbage collection every 1 iteration
-gc_after_a_number <- 1
 
 if (opt[["is-interactive"]]) {
     options(error=recover)
@@ -119,19 +119,19 @@ if (!dir.exists(data_dir)){
 ##If outcome scenarios are specified check their existence
 outcome_scenarios <- opt$outcome_scenarios
 if(all(outcome_scenarios == "all")) {
-  outcome_scenarios<- config$outcomes$scenarios
+    outcome_scenarios<- config$outcomes$scenarios
 } else if (!(outcome_scenarios %in% config$outcomes$scenarios)){
-  message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
-  quit("yes", status=1)
+    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
+    quit("yes", status=1)
 }
 
 ##If intervention scenarios are specified check their existence
 npi_scenarios <- opt$npi_scenarios
 if (all(npi_scenarios == "all")){
-  npi_scenarios <- config$interventions$scenarios
+    npi_scenarios <- config$interventions$scenarios
 } else if (!all(npi_scenarios %in% config$interventions$scenarios)) {
-  message(paste("Invalid intervention scenario arguments: [",paste(setdiff(npi_scenarios, config$interventions$scenarios)), "] did not match any of the named args in ", paste(config$interventions$scenarios, collapse = ", "), "\n"))
-  quit("yes", status=1)
+    message(paste("Invalid intervention scenario arguments: [",paste(setdiff(npi_scenarios, config$interventions$scenarios)), "] did not match any of the named args in ", paste(config$interventions$scenarios, collapse = ", "), "\n"))
+    quit("yes", status=1)
 }
 
 
@@ -640,9 +640,37 @@ for(npi_scenario in npi_scenarios) {
             endTimeCountEach=difftime(Sys.time(), startTimeCountEach, units = "secs")
             print(paste("Time to run this MCMC iteration is ",formatC(endTimeCountEach,digits=2,format="f")," seconds"))
 
+            # memory profiler to diagnose memory creep
+
+            if (run_mem_profiling){
+
+                if (this_index %% memprof_after_a_number == 0 | this_index == 1){
+                    tot_objs_ <- as.numeric(object.size(x=lapply(ls(all.names = TRUE), get)) * 9.31e-10)
+                    tot_mem_ <- sum(gc_[,2]) / 1000
+                    curr_obj_sizes <- data.frame('object' = ls()) %>%
+                        dplyr::mutate(size_unit = object %>% sapply(. %>% get() %>% object.size %>% format(., unit = 'Mb')),
+                                      size = as.numeric(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[1])),
+                                      unit = factor(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[2]), levels = c('Gb', 'Mb', 'Kb', 'bytes'))) %>%
+                        dplyr::arrange(unit, dplyr::desc(size)) %>%
+                        dplyr::select(-size_unit) %>% dplyr::as_tibble() %>%
+                        dplyr::mutate(unit = as.character(unit))
+                    curr_obj_sizes <- curr_obj_sizes %>%
+                        dplyr::add_row(object = c("TOTAL_MEMORY", "TOTAL_OBJECTS"),
+                                       size = c(tot_mem_, tot_objs_),
+                                       unit = c("Gb", "Gb"),
+                                       .before = 1)
+
+                    this_global_memprofile <- inference::create_filename_list(opt$run_id, global_local_prefix, this_index,
+                                                                              types = "memprof", extensions = "parquet")
+                    arrow::write_parquet(curr_obj_sizes, this_global_memprofile[['memprof_filename']])
+                    rm(curr_obj_sizes)
+                }
+
+            }
 
             ## Run garbage collector to clear memory and prevent memory leakage
-            if (this_index %% gc_after_a_number == 0){
+            # gc_after_a_number <- 1 ## # Garbage collection every 1 iteration
+            if (this_index %% 1 == 0){
                 gc()
             }
 
