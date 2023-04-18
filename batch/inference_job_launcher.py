@@ -156,6 +156,15 @@ def user_confirmation(question="Continue?", default=False):
     help="The amount of RAM in megabytes needed per CPU running simulations",
 )
 @click.option(
+    "-t",
+    "--time-per-sim",
+    "time-per-sim",
+    type=click.float_range(min=0.0, max=1000.0),
+    default=3.0,
+    show_default=True,
+    help="The time (in minute) each simulation is expected to take, it is used to compute the time limit, so provide an upper-bound that accounts for downloading & uploading, initialization, etc.",
+)
+@click.option(
     "-r",
     "--restart-from-location",
     "restart_from_location",
@@ -241,6 +250,7 @@ def launch_batch(
     job_queue_prefix,
     vcpus,
     memory,
+    time_per_sim,
     restart_from_location,
     restart_from_run_id,
     stochastic,
@@ -326,6 +336,7 @@ def launch_batch(
         job_queue_prefix,
         vcpus,
         memory,
+        time_per_sim,
         restart_from_location,
         restart_from_run_id,
         stochastic,
@@ -429,6 +440,7 @@ class BatchJobHandler(object):
         job_queue_prefix,
         vcpus,
         memory,
+        time_per_sim,
         restart_from_location,
         restart_from_run_id,
         stochastic,
@@ -452,6 +464,7 @@ class BatchJobHandler(object):
         self.job_queue_prefix = job_queue_prefix
         self.vcpus = vcpus
         self.memory = memory
+        self.time_per_sim = time_per_sim
         self.restart_from_location = restart_from_location
         self.restart_from_run_id = restart_from_run_id
         self.stochastic = stochastic
@@ -651,8 +664,8 @@ class BatchJobHandler(object):
                     export_str += f"""{envar["name"]}="{envar["value"]}","""
                 export_str = export_str[:-1]
 
-                # time is 5 minutes per simulation TODO: allow longer job with an option.
-                time_limit = self.sims_per_job * 5
+                # add 5 minutes of overhead
+                time_limit = int(self.sims_per_job * self.time_per_sim) + 5 
 
                 # submit job (idea: use slumpy to get the "depend on")
                 # command = [
