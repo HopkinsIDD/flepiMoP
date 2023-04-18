@@ -158,8 +158,8 @@ def user_confirmation(question="Continue?", default=False):
 @click.option(
     "-t",
     "--time-per-sim",
-    "time-per-sim",
-    type=click.float_range(min=0.0, max=1000.0),
+    "time_per_sim",
+    type=click.FloatRange(min=0.0, max=1000.0),
     default=3.0,
     show_default=True,
     help="The time (in minute) each simulation is expected to take, it is used to compute the time limit, so provide an upper-bound that accounts for downloading & uploading, initialization, etc.",
