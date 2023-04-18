@@ -642,9 +642,9 @@ for(npi_scenario in npi_scenarios) {
 
             # memory profiler to diagnose memory creep
 
-            if (run_mem_profiling){
+            if (opt$memory_profiling){
 
-                if (this_index %% memprof_after_a_number == 0 | this_index == 1){
+                if (this_index %% opt$memory_profiling_iters == 0 | this_index == 1){
                     tot_objs_ <- as.numeric(object.size(x=lapply(ls(all.names = TRUE), get)) * 9.31e-10)
                     tot_mem_ <- sum(gc_[,2]) / 1000
                     curr_obj_sizes <- data.frame('object' = ls()) %>%
