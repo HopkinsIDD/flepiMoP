@@ -61,28 +61,28 @@ if (any(grepl("csse", opt$gt_data_source))){
     csse_target <- tolower(gsub("csse_", "", csse_target[grepl("csse", csse_target)]))
 
 
-    us_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
+    csse_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
                                                         incl_unass = TRUE,
                                                         variables = c("incidC", "cumC", "incidD", "cumD"),
                                                         adjust_for_variant = TRUE,
                                                         variant_props_file = config$seeding$variant_filename)
-    us_data <- us_data %>%
+    csse_data <- csse_data %>%
         mutate(FIPS = stringr::str_pad(FIPS, width=5, side="right", pad="0")) %>%
         filter(Update >= as_date(config$start_date) & Update <= as_date(end_date_)) %>%
         # mutate(gt_source = "csse") %>%
         filter()
-    colnames(us_data) <- gsub("Deaths", "cumD", colnames(us_data))
-    colnames(us_data) <- gsub("incidDeath", "incidD", colnames(us_data))
-    colnames(us_data) <- gsub("Confirmed", "cumC", colnames(us_data))
-    colnames(us_data) <- gsub("incidI", "incidC", colnames(us_data))
+    colnames(csse_data) <- gsub("Deaths", "cumD", colnames(csse_data))
+    colnames(csse_data) <- gsub("incidDeath", "incidD", colnames(csse_data))
+    colnames(csse_data) <- gsub("Confirmed", "cumC", colnames(csse_data))
+    colnames(csse_data) <- gsub("incidI", "incidC", colnames(csse_data))
 
     if (!any(grepl("case", csse_target))){
-        us_data <- us_data %>% select(-c(starts_with("incidC"), starts_with("cumC")))
+        csse_data <- csse_data %>% select(-c(starts_with("incidC"), starts_with("cumC")))
     }
     if (!any(grepl("death", csse_target))){
-        us_data <- us_data %>% select(-c(starts_with("incidD"), starts_with("cumD")))
+        csse_data <- csse_data %>% select(-c(starts_with("incidD"), starts_with("cumD")))
     }
-    gt_data <- append(gt_data, list(us_data))
+    gt_data <- append(gt_data, list(csse_data))
 }
 
 
@@ -226,16 +226,21 @@ if (any(grepl("fluview", opt$gt_data_source))){
         colnames(fluview_data) <- tolower(colnames(fluview_data))
         fluview_data <- fluview_data %>% select(state = `sub area`, season, week, incidD = `num covid-19 deaths`) %>%
             mutate(data_source = "fluview") %>%
+            mutate(incidD = gsub(",", "", incidD)) %>%
             mutate(incidD = as.integer(incidD)) %>%
             mutate(year = ifelse(week >= 40, as.integer(substr(season, 1, 4)), as.integer(paste0("20", substr(season, 6,9))))) %>%
             left_join(
-                tibble(Update = seq.Date(from = as_date("2019-06-01"), to=as_date(Sys.Date() + 21), by = "1 weeks")) %>%
+                tibble(Update = seq.Date(from = as_date("2019-12-01"), to=as_date(Sys.Date() + 21), by = "1 weeks")) %>%
                     mutate(week = lubridate::epiweek(Update),
                            year = lubridate::epiyear(Update),
                            Update = MMWRweek::MMWRweek2Date(MMWRyear = year, MMWRweek = week, MMWRday = 1))) %>%
+            filter(!is.na(Update)) %>%
+            mutate(state = ifelse(grepl("New York", state), "New York", state)) %>%
             left_join(
                 tibble(state = c(state.name, "District of Columbia"),
-                       source = c(state.abb, "DC")))
+                       source = c(state.abb, "DC"))) %>%
+            group_by(across(-incidD)) %>%
+            summarise(incidD = sum(incidD))
 
     } else {
 
@@ -281,9 +286,13 @@ if (any(grepl("fluview", opt$gt_data_source))){
 if (any(grepl("hhs", opt$gt_data_source))){
 
     us_hosp <- flepicommon::get_hhsCMU_incidH_st_data()
+
+    us_hosp <- get_covidcast_hhs_hosp(geo_level = "state",
+                                      limit_date = Sys.Date())
+
     us_hosp <- us_hosp %>%
-        dplyr::select(-incidH_all) %>%
-        rename(incidH = incidH_confirmed) %>%
+        # dplyr::select(-incidH_all) %>%
+        # rename(incidH = incidH_confirmed) %>%
         mutate(FIPS = stringr::str_pad(FIPS, width=5, side="right", pad="0")) %>%
         filter(Update >= as_date(config$start_date) & Update <= as_date(end_date_))
 
@@ -336,10 +345,11 @@ us_data <- us_data %>%
 
 
 
-# ~ Fix Zeros -------------------------------------------------------------
+# ~ Fix non-numeric -------------------------------------------------------------
+#  -- leave NAs so its not assuming an NA is a 0 and fitting to it
 
 us_data <- us_data %>%
-    mutate(across(starts_with("incid"), ~ replace_na(.x, 0))) %>%
+    # mutate(across(starts_with("incid"), ~ replace_na(.x, 0))) %>%
     mutate(across(starts_with("incid"), ~ as.numeric(.x)))
 
 
