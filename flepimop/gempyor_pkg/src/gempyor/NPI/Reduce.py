@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import datetime
+from . import helpers
 
 from .base import NPIBase
 
@@ -116,12 +116,30 @@ class Reduce(NPIBase):
             npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
         )
         self.parameters["parameter"] = self.param_name
-        self.parameters["reduction"] = self.dist(size=self.parameters.shape[0])
+        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        if self.spatial_groups["ungrouped"]:
+            self.parameters.loc[self.spatial_groups["ungrouped"], "reduction"] = self.dist(
+                size=len(self.spatial_groups["ungrouped"])
+            )
+        if self.spatial_groups["grouped"]:
+            for group in self.spatial_groups["grouped"]:
+                drawn_value = self.dist(size=1) * np.ones(len(group))
+                self.parameters.loc[group, "reduction"] = drawn_value
 
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.geoid
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
-        self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
+
+        self.affected_geoids = set(self.geoids)
+        if npi_config["affected_geoids"].exists() and npi_config["affected_geoids"].get() != "all":
+            self.affected_geoids = {str(n.get()) for n in npi_config["affected_geoids"]}
+        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
+        
+        self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
+        self.parameters["npi_name"] = self.name
+        self.parameters["parameter"] = self.param_name
+
+        # self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
         # dates are picked from config
         self.parameters["start_date"] = (
             npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
@@ -139,12 +157,21 @@ class Reduce(NPIBase):
         # else:
         #    self.parameters["start_date"] = self.end_date
 
-        self.affected_geoids = set(self.parameters.index)
         # parameter name is picked from config too: (before: )
         # self.param_name = self.parameters["parameter"].unique()[0]  # [0] to convert ndarray to str
         # now:
-        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
-        self.parameters["parameter"] = self.param_name
+        
+        # TODO: to be consistent with MTR, we want to also draw the values for the geoids
+        # that are not in the loaded_df.
+
+        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        if self.spatial_groups["ungrouped"]:
+            self.parameters.loc[self.spatial_groups["ungrouped"], "reduction"] = loaded_df.loc[
+                self.spatial_groups["ungrouped"], "reduction"
+            ]
+        if self.spatial_groups["grouped"]:
+            for group in self.spatial_groups["grouped"]:
+                self.parameters.loc[group, "reduction"] = loaded_df.loc[",".join(group), "reduction"]
 
     def getReduction(self, param, default=0.0):
         "Return the reduction for this param, `default` if no reduction defined"
@@ -153,9 +180,28 @@ class Reduce(NPIBase):
         return default
 
     def getReductionToWrite(self):
-        df = self.parameters
+        # spatially ungrouped dataframe
+        df = self.parameters[self.parameters.index.isin(self.spatial_groups["ungrouped"])].copy()
         df.index.name = "geoid"
         df["start_date"] = df["start_date"].astype("str")
         df["end_date"] = df["end_date"].astype("str")
+
+        # spatially grouped dataframe
+        for group in self.spatial_groups["grouped"]:
+            # we use the first geoid to represent the group
+            df_group = self.parameters[self.parameters.index == group[0]].copy()
+
+            row_group = pd.DataFrame.from_dict(
+                {
+                    "geoid": ",".join(group),
+                    "npi_name": df_group["npi_name"],
+                    "parameter": df_group["parameter"],
+                    "start_date": df_group["start_date"].astype("str"),
+                    "end_date": df_group["end_date"].astype("str"),
+                    "reduction": df_group["reduction"],
+                }
+            ).set_index("geoid")
+            df = pd.concat([df, row_group])
+
         df = df.reset_index()
         return df
