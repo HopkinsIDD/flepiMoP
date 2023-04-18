@@ -1,0 +1,172 @@
+name: USA
+setup_name: FCH
+smh_round: R12
+data_path: data
+start_date: 2020-01-01
+end_date: 2022-09-03
+end_date_groundtruth: 2022-03-05
+nslots: 300
+
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R", "W"]
+  vaccination_stage: ["unvaccinated", "1dose", "2dose", "waned", "previousinfection"]
+  variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"]
+  age_strata: ["age0to17", "age18to64", "age65to100"]
+
+spatial_setup:
+  geodata: geodata_2019_statelevel.csv
+  mobility: mobility_2011-2015_statelevel.csv
+  popnodes: pop2019est
+  nodenames: geoid
+  include_in_report: include_in_report
+  state_level: TRUE
+
+
+
+seir:
+  integration:
+    method: legacy
+    dt: 2.000
+  parameters:
+    r1:
+      value:
+        distribution: fixed
+        value: 1
+    r2:
+      value:
+        distribution: fixed
+        value: 2
+    r3:
+      value:
+        distribution: fixed
+        value: 3
+    r4:
+      value:
+        distribution: fixed
+        value: 4
+    r5:
+      value:
+        distribution: fixed
+        value: 5
+
+interventions:
+  scenarios:
+    - inference
+  settings:
+    all_independent:
+      template: Reduce
+      parameter: r1
+      affected_geoids: "all"
+      period_start_date: 2020-01-01
+      period_end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
+    all_together:
+      template: Reduce
+      parameter: r2
+      affected_geoids: "all"
+      spatial_groups: "all"
+      period_start_date: 2020-01-01
+      period_end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
+    two_groups:
+      template: Reduce
+      parameter: r3
+      affected_geoids: "all"
+      spatial_groups: 
+        - ["01000", "02000"]
+        - ["04000", "06000"]
+      period_start_date: 2020-04-04
+      period_end_date: 2022-04-30
+      value:
+        distribution: truncnorm
+        mean: 0.55
+        sd: 0.025
+        a: 0
+        b: 0.9
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
+    one_group:
+      template: Reduce
+      parameter: r4
+      affected_geoids: ["01000", "02000", "04000", "06000"]
+      spatial_groups: 
+        - ["01000", "02000"]
+      period_start_date: 2020-04-04
+      period_end_date: 2020-04-30
+      value:
+        distribution: truncnorm
+        mean: 0.55
+        sd: 0.025
+        a: 0
+        b: 0.9
+
+    mt_reduce:
+      template: MultiTimeReduce
+      parameter: r5
+      groups:
+        - affected_geoids: ["09000", "10000"]
+          spatial_groups: ["09000", "10000"]
+          periods:
+            - start_date: 2020-12-01
+              end_date: 2020-12-31
+            - start_date: 2021-12-01
+              end_date: 2021-12-31
+        - affected_geoids: ["01000", "02000", "04000", "06000"]
+          spatial_groups: ["01000","04000"]
+          periods:
+            - start_date:  2020-10-01
+              end_date:  2020-10-31
+            - start_date: 2021-10-01
+              end_date: 2021-10-31
+      value:
+        distribution: truncnorm
+        mean: -0.133
+        sd: 0.05
+        a: -1
+        b: 1
+
+    scn_error:
+      template: MultiTimeReduce
+      parameter: r1
+      groups:
+        - affected_geoids: ["09000", "10000"]
+          spatial_groups: ["09000", "10000"]
+          periods:
+            - start_date: 2020-12-01
+              end_date: 2020-12-31
+            - start_date: 2021-12-01
+              end_date: 2021-12-31
+        - affected_geoids: ["01000", "02000", "04000", "06000"]
+          spatial_groups: ["10000"]
+          periods:
+            - start_date: 2021-08-16
+              end_date: 2021-11-23
+            - start_date: 2022-01-03
+              end_date: 2022-09-03
+      value:
+        distribution: truncnorm
+        mean: -0.133
+        sd: 0.05
+        a: -1
+        b: 1
+
+    inference:
+      template: Stacked
+      scenarios: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
+    error:
+      template: Stacked
+      scenarios: ["scn_error"]

@@ -1,18 +1,11 @@
 import collections
-import warnings
-
 import confuse
-import numpy as np
-import datetime
 import pandas as pd
-import re
-import os
-
+import numpy as np
+from . import helpers
 from .base import NPIBase
 
 debug_print = False
-
-"Cap on # of reduction metadata entries to store in memory"
 
 
 class ReduceIntervention(NPIBase):
@@ -210,4 +203,7 @@ class ReduceIntervention(NPIBase):
             npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
         )
         self.parameters["parameter"] = self.param_name
-        self.parameters["reduction"] = self.dist(size=self.parameters.shape[0])
+
+        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        if self.spatial_groups["grouped"]:
+            raise ValueError("Spatial groups are not supported for ReduceIntervention interventions")
