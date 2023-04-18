@@ -192,6 +192,89 @@ pull_covidcast_deaths <- function(
 
 
 
+get_covidcast_hhs_hosp <- function(
+        geo_level = "state",
+        limit_date = Sys.Date()) {
+
+    loc_dictionary <- readr::read_csv("https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-locations/locations.csv")
+    loc_abbr <- loc_dictionary %>% dplyr::filter(!is.na(abbreviation))
+    loc_dictionary <- loc_dictionary %>%
+        dplyr::mutate(state_fips = substr(location, 1, 2)) %>%
+        dplyr::select(-abbreviation) %>%
+        dplyr::full_join(loc_abbr %>%
+        dplyr::select(abbreviation, state_fips = location))
+    # loc_dictionary_name <- suppressWarnings(setNames(
+    #     c(rep(loc_dictionary$location_name, 2), "US",
+    #       rep(loc_dictionary$location_name[-1], 2),
+    #       rep(loc_dictionary$location_name, 2), "New York"),
+    #     c(loc_dictionary$location, tolower(loc_dictionary$abbreviation), "US",
+    #       na.omit(as.numeric(loc_dictionary$location)), as.character(na.omit(as.numeric(loc_dictionary$location))),
+    #     tolower(loc_dictionary$location_name), toupper(loc_dictionary$location_name), "new york state")))
+    # loc_dictionary_abbr <- setNames(loc_dictionary$abbreviation, loc_dictionary$location)
+
+    if (geo_level == "county") {
+        years_ <- lubridate::year("2020-01-01"):lubridate::year(limit_date)
+        start_dates <- sort(c(lubridate::as_date(paste0(years_, "-01-01")), lubridate::as_date(paste0(years_, "-07-01"))))
+        start_dates <- start_dates[start_dates <= limit_date]
+        end_dates <- sort(c(lubridate::as_date(paste0(years_, "-06-30")), lubridate::as_date(paste0(years_, "-12-31")), limit_date))
+        end_dates <- end_dates[end_dates <= limit_date]
+    } else {
+        start_dates <- lubridate::as_date("2020-01-01")
+        end_dates <- lubridate::as_date(limit_date)
+    }
+
+    start_dates_ <- start_dates
+    start_dates_[1] <- lubridate::as_date("2020-02-01")
+
+    df <- covidcast::covidcast_signal(
+        data_source = "hhs",
+        signal = "confirmed_admissions_covid_1d",
+        geo_type = geo_level,
+        start_day = lubridate::as_date(start_dates_),
+        end_day = lubridate::as_date(end_dates))
+
+    df <- df %>% mutate(state_abbr = toupper(geo_value)) %>%
+        dplyr::select(-geo_value) %>%
+        dplyr::left_join(loc_dictionary %>%
+                             dplyr::select(state_abbr = abbreviation, geo_value = location) %>%
+                             dplyr::filter(stringr::str_length(geo_value) == 2))
+
+    df <- df %>% dplyr::rename(date = time_value)
+    df_cum <- df %>% dplyr::mutate(value = tidyr::replace_na(value, 0)) %>%
+        dplyr::arrange(state_abbr, geo_value, date) %>%
+        dplyr::group_by(data_source, signal, geo_value, state_abbr) %>%
+        dplyr::mutate(value = cumsum(value)) %>%
+        dplyr::ungroup() %>% dplyr::mutate(signal = "confirmed_admissions_cum")
+    df <- rbind(df, df_cum)
+
+    df <- df %>% dplyr::select(signal, Update = date, source = state_abbr, FIPS = geo_value, value)
+
+    df <- df %>%
+        dplyr::mutate(signal = recode(signal,
+                                      deaths_incidence_num = "incidD",
+                                      deaths_cumulative_num = "cumD",
+                                      confirmed_incidence_num = "incidC",
+                                      confirmed_cumulative_num = "cumC",
+                                      confirmed_admissions_covid_1d = "incidH",
+                                      confirmed_admissions_cum = "cumH")) %>%
+        tidyr::pivot_wider(names_from = signal, values_from = value) %>%
+        dplyr::mutate(Update = lubridate::as_date(Update),
+                      FIPS = stringr::str_replace(FIPS, stringr::fixed(".0"), ""),
+                      FIPS = paste0(FIPS, "000")) %>%
+        dplyr::filter(as.Date(Update) <= as.Date(Sys.time())) %>%
+        dplyr::distinct()
+
+    validation_date <- Sys.getenv("VALIDATION_DATE")
+    if (validation_date != "") {
+        print(paste("(DataUtils.R) Limiting CSSE US data to:", validation_date, sep = " "))
+        df <- dplyr::filter(df, Update < validation_date)
+    }
+    df <- df %>% tibble::as_tibble()
+
+    return(df)
+}
+
+
 
 
 
