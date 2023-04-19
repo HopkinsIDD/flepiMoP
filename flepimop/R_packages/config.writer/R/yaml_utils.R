@@ -765,7 +765,7 @@ print_seir <- function(integration_method = "rk4",
                        seir_csv = "seir_R12_v2.csv",
                        use_descriptions = TRUE){
 
-    seir_dat <- suppressWarnings(suppressMessages(read_csv(seir_csv, progress = FALSE)))
+    seir_dat <- suppressWarnings(suppressMessages(read_csv(seir_csv, progress = FALSE, col_types = "cccccccccccccc")))
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = " ", replacement = "")
     seir_dat[colnames(seir_dat != "description")] <- apply(seir_dat[colnames(seir_dat != "description")], 2, gsub, pattern = "\"", replacement = "")
 
