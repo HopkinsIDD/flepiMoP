@@ -646,7 +646,7 @@ for(npi_scenario in npi_scenarios) {
 
                 if (this_index %% opt$memory_profiling_iters == 0 | this_index == 1){
                     tot_objs_ <- as.numeric(object.size(x=lapply(ls(all.names = TRUE), get)) * 9.31e-10)
-                    tot_mem_ <- sum(gc_[,2]) / 1000
+                    tot_mem_ <- sum(gc()[,2]) / 1000
                     curr_obj_sizes <- data.frame('object' = ls()) %>%
                         dplyr::mutate(size_unit = object %>% sapply(. %>% get() %>% object.size %>% format(., unit = 'Mb')),
                                       size = as.numeric(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[1])),
