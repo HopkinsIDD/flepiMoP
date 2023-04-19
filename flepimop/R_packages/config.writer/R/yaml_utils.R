@@ -121,7 +121,7 @@ collapse_intervention<- function(dat){
                       name = stringr::str_remove(name, "^_"))
 
     dat <- dplyr::bind_rows(mtr, reduce) %>%
-        dplyr::mutate(interv_order = dplyr::recode(category, "universal_npi" = 1, "local_variance" = 2, "seasonal" = 3, "NPI" = 4, "incidCshift" = 5)) %>%
+        dplyr::mutate(interv_order = dplyr::recode(category, "universal_npi" = 1, "local_var" = 2, "seasonal" = 3, "NPI" = 4, "incidCshift" = 5)) %>%
         dplyr::arrange(interv_order, USPS, category, geoid, parameter) %>%
         dplyr::ungroup()
 
