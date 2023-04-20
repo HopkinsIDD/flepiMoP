@@ -603,6 +603,8 @@ class BatchJobHandler(object):
             },
             {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
+            {"name": "FLEPI_MEM_PROFILE", "value": os.getenv("FLEPI_MEM_PROFILE", default="FALSE")},
+            {"name": "FLEPI_MEM_PROF_ITERS", "value": os.getenv("FLEPI_MEM_PROF_ITERS", default="50")},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
