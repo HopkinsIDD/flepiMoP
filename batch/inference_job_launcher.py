@@ -234,6 +234,14 @@ def user_confirmation(question="Continue?", default=False):
     default=True,
     help="Flag determining whether we also save runs to s3 for slurm runs",
 )
+@click.option(
+    "-s",
+    "--slack-channel",
+    "slack_channel",
+    envvar="SLACK_CHANNEL",
+    type=str,
+    help="Slack channel, either 'csp-production' or 'debug', or anything else to disable slack",
+)
 def launch_batch(
     batch_system,
     config_file,
@@ -259,6 +267,7 @@ def launch_batch(
     last_validation_date,
     reset_chimerics,
     s3_upload,
+    slack_channel,
 ):
 
     config = None
@@ -345,6 +354,7 @@ def launch_batch(
         last_validation_date,
         reset_chimerics,
         s3_upload,
+        slack_channel,
     )
 
     npi_scenarios = config["interventions"]["scenarios"]
@@ -449,6 +459,7 @@ class BatchJobHandler(object):
         last_validation_date,
         reset_chimerics,
         s3_upload,
+        slack_channel,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -473,6 +484,7 @@ class BatchJobHandler(object):
         self.last_validation_date = last_validation_date
         self.reset_chimerics = reset_chimerics
         self.s3_upload = s3_upload
+        self.slack_channel = slack_channel
 
     def build_job_metadata(self, job_name):
         """
@@ -605,6 +617,7 @@ class BatchJobHandler(object):
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
             {"name": "FLEPI_MEM_PROFILE", "value": os.getenv("FLEPI_MEM_PROFILE", default="FALSE")},
             {"name": "FLEPI_MEM_PROF_ITERS", "value": os.getenv("FLEPI_MEM_PROF_ITERS", default="50")},
+            {"name": "SLACK_CHANNEL", "value": self.slack_channel},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
