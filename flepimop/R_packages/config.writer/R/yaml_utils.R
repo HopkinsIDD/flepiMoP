@@ -1088,6 +1088,8 @@ print_outcomes <- function (resume_modifier = NULL,
                             vaccine_compartments = c("unvaccinated","1dose", "2dose", "waned"), age_strata = c("0_64", "65_100"),
                             outcomes_included = c("incidH", "incidD", "incidC", "incidI"),
                             incidItoCparam = "incidItoC_all",
+                            incidItoHparam = "incidItoH_all",
+                            incidItoDparam = "incidItoD_all",
                             intervention_params = NULL,
                             incl_interventions = TRUE,
                             incl_hosp_curr = FALSE) {
@@ -1153,12 +1155,14 @@ print_outcomes <- function (resume_modifier = NULL,
             "    ", ifr, ":\n")
 
         for (i in 1:nrow(outcomes_base_data)){
+
             if ("incidH" %in% outcomes_included){
+
                 incidH <- paste0(incidH,
                                  "      incidH_", outcomes_base_data$var_compartment[i], ":\n",
                                  "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
                                  "        probability:\n",
-                                 if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"incidH_total\"\n"),
+                                 if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoHparam, "\"\n"),
                                  print_value(value_dist = incidH_prob_dist,
                                              value_mean = incidH_prob_value * outcomes_base_data$incidH[i],
                                              indent_space = 10),
@@ -1167,68 +1171,107 @@ print_outcomes <- function (resume_modifier = NULL,
                                         paste0(
                                             "        duration:\n", print_value(value_dist = incidH_duration_dist, value_mean = incidH_duration_value, indent_space = 10),
                                             "          name: hosp_curr_", paste0(outcomes_base_data$var_compartment[i]), "\n"), ""))
+
+
+                if ("incidI" %in% outcomes_included){
+                    incidH <- paste0(incidH,
+                                     "      incidH_", outcomes_base_data$var_compartment[i], ":\n",
+                                     "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
+                                     "        probability:\n",
+                                     if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoHparam, "\"\n"),
+                                     print_value(value_dist = incidH_prob_dist,
+                                                 value_mean = incidH_prob_value * outcomes_base_data$incidH[i],
+                                                 indent_space = 10),
+                                     "        delay:\n", print_value(value_dist = incidH_delay_dist, value_mean = incidH_delay_value, indent_space = 10),
+                                     ifelse(incl_hosp_curr,
+                                            paste0(
+                                                "        duration:\n", print_value(value_dist = incidH_duration_dist, value_mean = incidH_duration_value, indent_space = 10),
+                                                "          name: hosp_curr_", paste0(outcomes_base_data$var_compartment[i]), "\n"), ""))
+                } else {
+                    incidH <- paste0(incidH,
+                                     "      incidH_", outcomes_base_data$var_compartment[i],
+                                     ":\n", "        source:\n", "          incidence:\n",
+                                     "            infection_stage: \"I1\"\n",
+                                     "            vaccination_stage: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                                     "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                                     "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                                     "        probability:\n",
+                                     if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoHparam, "\"\n"),
+                                     print_value(value_dist = incidH_prob_dist,
+                                                 value_mean = incidH_prob_value * outcomes_base_data$incidH[i],
+                                                 indent_space = 10),
+                                     "        delay:\n", print_value(value_dist = incidH_delay_dist, value_mean = incidH_delay_value, indent_space = 10),
+                                     ifelse(incl_hosp_curr,
+                                            paste0(
+                                                "        duration:\n", print_value(value_dist = incidH_duration_dist, value_mean = incidH_duration_value, indent_space = 10),
+                                                "          name: hosp_curr_", paste0(outcomes_base_data$var_compartment[i]), "\n"), ""))
+                }
             }
 
-            if ("incidI" %in% outcomes_included){
-                incidD <- paste0(incidD,
-                                 "      incidD_", outcomes_base_data$var_compartment[i], ":\n",
-                                 "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
-                                 "        probability:\n",
-                                 if ("incidD" %in% intervention_params) paste0("          intervention_param_name: \"incidD_total\"\n"),
-                                 print_value(value_dist = incidD_prob_dist,
-                                             value_mean = incidD_prob_value * outcomes_base_data$incidD[i],
-                                             indent_space = 10),
-                                 "        delay:\n", print_value(value_dist = incidD_delay_dist, value_mean = incidD_delay_value, indent_space = 10))
-            } else {
-                incidD <- paste0(incidD,
-                                 "      incidD_", outcomes_base_data$var_compartment[i],
-                                 ":\n", "        source:\n", "          incidence:\n",
-                                 "            infection_stage: \"I1\"\n",
-                                 "            vaccination_stage: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
-                                 "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
-                                 "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
-                                 "        probability:\n",
-                                 if ("incidD" %in% intervention_params) paste0("          intervention_param_name: \"incidD_total\"\n"),
-                                 print_value(value_dist = incidD_prob_dist,
-                                             value_mean = incidD_prob_value * outcomes_base_data$incidD[i],
-                                             indent_space = 10),
-                                 "        delay:\n", print_value(value_dist = incidD_delay_dist, value_mean = incidD_delay_value, indent_space = 10))
+            if ("incidD" %in% outcomes_included){
+                if ("incidI" %in% outcomes_included){
+                    incidD <- paste0(incidD,
+                                     "      incidD_", outcomes_base_data$var_compartment[i], ":\n",
+                                     "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
+                                     "        probability:\n",
+                                     if ("incidD" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoDparam, "\"\n"),
+                                     print_value(value_dist = incidD_prob_dist,
+                                                 value_mean = incidD_prob_value * outcomes_base_data$incidD[i],
+                                                 indent_space = 10),
+                                     "        delay:\n", print_value(value_dist = incidD_delay_dist, value_mean = incidD_delay_value, indent_space = 10))
+                } else {
+                    incidD <- paste0(incidD,
+                                     "      incidD_", outcomes_base_data$var_compartment[i],
+                                     ":\n", "        source:\n", "          incidence:\n",
+                                     "            infection_stage: \"I1\"\n",
+                                     "            vaccination_stage: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                                     "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                                     "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                                     "        probability:\n",
+                                     if ("incidD" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoDparam, "\"\n"),
+                                     print_value(value_dist = incidD_prob_dist,
+                                                 value_mean = incidD_prob_value * outcomes_base_data$incidD[i],
+                                                 indent_space = 10),
+                                     "        delay:\n", print_value(value_dist = incidD_delay_dist, value_mean = incidD_delay_value, indent_space = 10))
+                }
             }
 
+            if ("incidC" %in% outcomes_included){
 
-            if ("incidI" %in% outcomes_included){
-                incidC <- paste0(incidC,
-                                 "      incidC_", outcomes_base_data$var_compartment[i], ":\n",
-                                 "        source: incidI_", outcomes_base_data$var_compartment[i],  "\n",
-                                 "        probability:\n",
-                                 if ("incidC" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoCparam, "\"\n"),
-                                 print_value(value_dist = incidC_prob_dist,
-                                             value_mean = incidC_prob_value * outcomes_base_data$incidC[i],
-                                             value_sd = incidC_prob_sd,
-                                             value_a = incidC_prob_a,
-                                             value_b = incidC_prob_b,
-                                             indent_space = 10),
-                                 incidC_pert[i],
-                                 "        delay:\n", print_value(value_dist = incidC_delay_dist, value_mean = incidC_delay_value, indent_space = 10))
-            } else {
-                incidC <- paste0(incidC,
-                                 "      incidC_", outcomes_base_data$var_compartment[i], ":\n",
-                                 "        source:\n",
-                                 "          incidence:\n",
-                                 "            infection_stage: \"I1\"\n",
-                                 "            vaccination_stage: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
-                                 "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
-                                 "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
-                                 "        probability:\n",
-                                 if ("incidC" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoCparam, "\"\n"),
-                                 print_value(value_dist = incidC_prob_dist,
-                                             value_mean = incidC_prob_value * outcomes_base_data$incidC[i],
-                                             value_sd = incidC_prob_sd,
-                                             value_a = incidC_prob_a,
-                                             value_b = incidC_prob_b,
-                                             indent_space = 10),
-                                 incidC_pert[i],
-                                 "        delay:\n", print_value(value_dist = incidC_delay_dist, value_mean = incidC_delay_value, indent_space = 10))
+                if ("incidI" %in% outcomes_included){
+                    incidC <- paste0(incidC,
+                                     "      incidC_", outcomes_base_data$var_compartment[i], ":\n",
+                                     "        source: incidI_", outcomes_base_data$var_compartment[i],  "\n",
+                                     "        probability:\n",
+                                     if ("incidC" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoCparam, "\"\n"),
+                                     print_value(value_dist = incidC_prob_dist,
+                                                 value_mean = incidC_prob_value * outcomes_base_data$incidC[i],
+                                                 value_sd = incidC_prob_sd,
+                                                 value_a = incidC_prob_a,
+                                                 value_b = incidC_prob_b,
+                                                 indent_space = 10),
+                                     incidC_pert[i],
+                                     "        delay:\n", print_value(value_dist = incidC_delay_dist, value_mean = incidC_delay_value, indent_space = 10))
+                } else {
+                    incidC <- paste0(incidC,
+                                     "      incidC_", outcomes_base_data$var_compartment[i], ":\n",
+                                     "        source:\n",
+                                     "          incidence:\n",
+                                     "            infection_stage: \"I1\"\n",
+                                     "            vaccination_stage: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                                     "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                                     "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                                     "        probability:\n",
+                                     if ("incidC" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoCparam, "\"\n"),
+                                     print_value(value_dist = incidC_prob_dist,
+                                                 value_mean = incidC_prob_value * outcomes_base_data$incidC[i],
+                                                 value_sd = incidC_prob_sd,
+                                                 value_a = incidC_prob_a,
+                                                 value_b = incidC_prob_b,
+                                                 indent_space = 10),
+                                     incidC_pert[i],
+                                     "        delay:\n", print_value(value_dist = incidC_delay_dist, value_mean = incidC_delay_value, indent_space = 10))
+                }
             }
 
             if ("incidI" %in% outcomes_included){
