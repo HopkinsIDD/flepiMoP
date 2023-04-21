@@ -154,7 +154,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
 ##' @param obs Vector of observed statistics
 ##' @param sim Vector of simulated statistics
 ##' @param distr Distribution to use for likelihood calculation
-##' @param param a list opf parameters to the distibution
+##' @param param a list of parameters to the distibution
 ##' @param add_one Whether to add one to simulations to avoid Infs
 ##' @return NULL
 #' @export
@@ -165,24 +165,34 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
   if (add_one) {
     sim[sim == 0] = 1
   }
-
+  
   if(distr == "pois") {
     rc <- dpois(round(obs), sim, log = T)
   } else if (distr == "norm") {
     rc <- dnorm(obs, sim, sd = param[[1]], log = T)
   } else  if (distr == "norm_cov") {
-    rc <- dnorm(obs, sim, sd = pmax(obs,5)*param[[1]], log = T)
+    rc <- dnorm(obs, sim, sd = pmax(sim,5)*param[[1]], log = T)
+    #rc <- dnorm(obs, sim, sd = pmax(obs,5)*param[[1]], log = T) #had this form up until 4/20/2023
   }  else if (distr == "nbinom") {
     rc <- dnbinom(obs, mu=sim, size = param[[1]], log = T)
   } else if (distr == "sqrtnorm") {
+    rc <- dnorm(sqrt(obs), sqrt(sim), sd=param[[1]], log = T)
     ##rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(sim)*param[[1]], log = T)
-    rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(obs,5))*param[[1]], log = T)
-  } else if (distr == "sqrtnorm_scale_sim") { #param 1 is cov, param 2 is multipler
-    rc <- dnorm(sqrt(obs), sqrt(sim*param[[2]]), sd=sqrt(pmax(obs,5)*param[[2]])*param[[1]],log=T)
+    ## rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(obs,5))*param[[1]], log = T) #had this form up until 4/20/2023
+  } else if (distr == "sqrtnorm_cov") { #renamed 4/20/2023, used to be called sqrt_norm
+    rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(sim,5))*param[[1]], log = T)
+    #rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(obs,5))*param[[1]], log = T) # changed 4/20/2023
+  }else if (distr == "sqrtnorm_scale_sim") { #param 1 is cov, param 2 is multipler
+    rc <- dnorm(sqrt(obs), sqrt(sim*param[[2]]), sd=sqrt(pmax(sim,5)*param[[2]])*param[[1]],log=T)
+    #rc <- dnorm(sqrt(obs), sqrt(sim*param[[2]]), sd=sqrt(pmax(obs,5)*param[[2]])*param[[1]],log=T) # changed 4/20/2023
+  } else if (distr == "lognorm"){
+    # lognormal where the mode (MLE) is the simulated value
+    obs[obs == 0] = 1 # can't have zeros for lognormal, would give loglikelihood of negative infinity
+    rc <- dlnorm(obs, meanlog = log(sim) + param[[1]]^2, sdlog = param[[1]], log = T) # mean is adjusted so that sim is the mode
   } else {
     stop("Invalid stat specified")
   }
-
+  
   return(rc)
 }
 
