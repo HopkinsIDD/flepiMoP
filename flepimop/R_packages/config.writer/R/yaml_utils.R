@@ -1157,22 +1157,6 @@ print_outcomes <- function (resume_modifier = NULL,
         for (i in 1:nrow(outcomes_base_data)){
 
             if ("incidH" %in% outcomes_included){
-
-                incidH <- paste0(incidH,
-                                 "      incidH_", outcomes_base_data$var_compartment[i], ":\n",
-                                 "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
-                                 "        probability:\n",
-                                 if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoHparam, "\"\n"),
-                                 print_value(value_dist = incidH_prob_dist,
-                                             value_mean = incidH_prob_value * outcomes_base_data$incidH[i],
-                                             indent_space = 10),
-                                 "        delay:\n", print_value(value_dist = incidH_delay_dist, value_mean = incidH_delay_value, indent_space = 10),
-                                 ifelse(incl_hosp_curr,
-                                        paste0(
-                                            "        duration:\n", print_value(value_dist = incidH_duration_dist, value_mean = incidH_duration_value, indent_space = 10),
-                                            "          name: hosp_curr_", paste0(outcomes_base_data$var_compartment[i]), "\n"), ""))
-
-
                 if ("incidI" %in% outcomes_included){
                     incidH <- paste0(incidH,
                                      "      incidH_", outcomes_base_data$var_compartment[i], ":\n",
@@ -1237,7 +1221,6 @@ print_outcomes <- function (resume_modifier = NULL,
             }
 
             if ("incidC" %in% outcomes_included){
-
                 if ("incidI" %in% outcomes_included){
                     incidC <- paste0(incidC,
                                      "      incidC_", outcomes_base_data$var_compartment[i], ":\n",
