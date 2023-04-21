@@ -159,42 +159,47 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
 ##' @return NULL
 #' @export
 logLikStat <- function(obs, sim, distr, param, add_one = F) {
+  
   if(length(obs) != length(sim)){
     stop(sprintf("Expecting sim (%d) and obs (%d) to be the same length",length(sim),length(obs)))
   }
   if (add_one) {
-    sim[sim == 0] = 1
+    eval <- sim+obs != 0 # do not evaluate likelihood if both simulated and observed value are zero. Assign likelihood = 1
+    sim[sim == 0 & eval == 1] = 1 # if simulated value is 0, but data is 1, change sim to 1 and evaluate likelihood
+    #sim[sim == 0] = 1  # removed 4/20/2023
+  }else{
+    eval <- rep(1,length(obs))
   }
   
+  rc <- rep(0,length(obs))
+  rc[!eval] <- 0 # assign likelihood of 1 (log likelihood 0) if both simulated and observed value is zero
+  
   if(distr == "pois") {
-    rc <- dpois(round(obs), sim, log = T)
+    rc[eval] <- dpois(round(obs[eval]), sim[eval], log = T)
   } else if (distr == "norm") {
-    rc <- dnorm(obs, sim, sd = param[[1]], log = T)
+    rc[eval] <- dnorm(obs[eval], sim[eval], sd = param[[1]], log = T)
   } else  if (distr == "norm_cov") {
-    rc <- dnorm(obs, sim, sd = pmax(sim,5)*param[[1]], log = T)
-    #rc <- dnorm(obs, sim, sd = pmax(obs,5)*param[[1]], log = T) #had this form up until 4/20/2023
-  }  else if (distr == "nbinom") {
-    rc <- dnbinom(obs, mu=sim, size = param[[1]], log = T)
-  } else if (distr == "sqrtnorm") {
-    rc <- dnorm(sqrt(obs), sqrt(sim), sd=param[[1]], log = T)
-    ##rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(sim)*param[[1]], log = T)
-    ## rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(obs,5))*param[[1]], log = T) #had this form up until 4/20/2023
+    rc[eval] <- dnorm(obs[eval], sim[eval], sd = pmax(sim[eval],5)*param[[1]], log = T)
+  }  else if (distr == "nbinom") { # param 1 is dispersion parameter k
+    rc[eval] <- dnbinom(obs[eval], mu=sim[eval], size = param[[1]], log = T)
+  } else if (distr == "sqrtnorm") { # added 4/20/2023
+    rc[eval] <- dnorm(sqrt(obs[eval]), sqrt(sim[eval]), sd=param[[1]], log = T)
   } else if (distr == "sqrtnorm_cov") { #renamed 4/20/2023, used to be called sqrt_norm
-    rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(sim,5))*param[[1]], log = T)
-    #rc <- dnorm(sqrt(obs), sqrt(sim), sd=sqrt(pmax(obs,5))*param[[1]], log = T) # changed 4/20/2023
+    rc[eval] <- dnorm(sqrt(obs[eval]), sqrt(sim[eval]), sd=sqrt(pmax(sim[eval],5))*param[[1]], log = T)
   }else if (distr == "sqrtnorm_scale_sim") { #param 1 is cov, param 2 is multipler
-    rc <- dnorm(sqrt(obs), sqrt(sim*param[[2]]), sd=sqrt(pmax(sim,5)*param[[2]])*param[[1]],log=T)
-    #rc <- dnorm(sqrt(obs), sqrt(sim*param[[2]]), sd=sqrt(pmax(obs,5)*param[[2]])*param[[1]],log=T) # changed 4/20/2023
+    rc[eval] <- dnorm(sqrt(obs[eval]), sqrt(sim[eval]*param[[2]]), sd=sqrt(pmax(sim[eval],5)*param[[2]])*param[[1]],log=T)
   } else if (distr == "lognorm"){
     # lognormal where the mode (MLE) is the simulated value
-    obs[obs == 0] = 1 # can't have zeros for lognormal, would give loglikelihood of negative infinity
-    rc <- dlnorm(obs, meanlog = log(sim) + param[[1]]^2, sdlog = param[[1]], log = T) # mean is adjusted so that sim is the mode
+    obs[obs == 0 & eval == 1] = 1 # if observed value is 0 but simulated is 1, change data to 1 and evaluate likelihood. 
+    # can't have zeros for lognormal, would give loglikelihood of negative infinity
+    rc[eval] <- dlnorm(obs[eval], meanlog = log(sim[eval]) + param[[1]]^2, sdlog = param[[1]], log = T) # mean is adjusted so that sim is the mode
   } else {
     stop("Invalid stat specified")
   }
   
   return(rc)
 }
+
 
 
 ##'
