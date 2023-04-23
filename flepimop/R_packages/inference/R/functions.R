@@ -155,7 +155,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
 ##' @param sim Vector of simulated statistics
 ##' @param distr Distribution to use for likelihood calculation
 ##' @param param a list of parameters to the distibution
-##' @param add_one Whether to add one to simulations to avoid Infs
+##' @param add_one Whether to add one to simulations to avoid Infs, and treat sim = obs = 0 as prob = 1
 ##' @return NULL
 #' @export
 logLikStat <- function(obs, sim, distr, param, add_one = F) {
@@ -165,14 +165,13 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
   }
   if (add_one) {
     eval <- sim+obs != 0 # do not evaluate likelihood if both simulated and observed value are zero. Assign likelihood = 1
-    sim[sim == 0 & eval == 1] = 1 # if simulated value is 0, but data is 1, change sim to 1 and evaluate likelihood
+    sim[sim == 0 & eval == 1] = 1 # if simulated value is 0, but data is non zero, change sim to 1 and evaluate likelihood
     #sim[sim == 0] = 1  # removed 4/20/2023
   }else{
-    eval <- rep(1,length(obs))
+    eval <- as.logical(rep(1,length(obs)))
   }
   
-  rc <- rep(0,length(obs))
-  rc[!eval] <- 0 # assign likelihood of 1 (log likelihood 0) if both simulated and observed value is zero
+  rc <- rep(0,length(obs)) 
   
   if(distr == "pois") {
     rc[eval] <- dpois(round(obs[eval]), sim[eval], log = T)
