@@ -318,9 +318,9 @@ data_path <- opt$data_path
 Sys.setenv(CONFIG_PATH = opt$config)
 Sys.setenv(FLEPI_PATH = source_loc)
 print(disease)
-if (disease == "flu"){
+if (disease == "flu" & pull_gt){
   source(paste0(source_loc, "/datasetup/build_flu_data.R"))
-} else if (disease == "covid19"){
+} else if (disease == "covid19" & pull_gt){
   source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
 
