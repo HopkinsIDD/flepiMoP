@@ -677,10 +677,13 @@ print_seeding <- function (method = "FolderDraw",
                            vaccine_compartments = c("unvaccinated", "1dose", "2dose", "waned"),
                            age_strata_seed = "0_64",
                            seeding_outcome = NULL, # incidH
-                           seeding_inflation_ratio = NULL # 200
-){
+                           seeding_inflation_ratio = NULL, # 200
+                           capitalize_variants = TRUE ){
 
-    variant_compartments <- stringr::str_to_upper(variant_compartments)
+    if (capitalize_variants) {
+        variant_compartments <- stringr::str_to_upper(variant_compartments)
+    }
+
     seeding_comp <- "\nseeding:\n"
     if (compartment) {
         age_strata_seed <- paste0("age", age_strata_seed)
@@ -689,8 +692,8 @@ print_seeding <- function (method = "FolderDraw",
                                "  seeding_compartments:\n")
         for (i in 1:length(variant_compartments)) {
             seeding_comp <- paste0(seeding_comp, "    ", variant_compartments[i], ":\n",
-                                   "      source_compartment: [\"S\", \"unvaccinated\", \"", stringr::str_to_upper(variant_compartments[1]), "\", \"", age_strata_seed, "\"]\n",
-                                   "      destination_compartment: [\"E\", \"unvaccinated\", \"", stringr::str_to_upper(variant_compartments[i]), "\", \"", age_strata_seed, "\"]\n")
+                                   "      source_compartment: [\"S\", \"unvaccinated\", \"", variant_compartments[1], "\", \"", age_strata_seed, "\"]\n",
+                                   "      destination_compartment: [\"E\", \"unvaccinated\", \"", variant_compartments[i], "\", \"", age_strata_seed, "\"]\n")
         }
     }
     seeding <- paste0(seeding_comp,
@@ -1069,6 +1072,7 @@ print_interventions <- function (
 #'
 print_outcomes <- function (resume_modifier = NULL,
                             dat = NULL, ifr = NULL, outcomes_base_data = NULL,
+                            param_from_file = TRUE,
                             outcomes_parquet_file = "usa-geoid-params-output_statelevel.parquet",
                             incidH_prob_dist = "fixed", incidH_prob_value = 0.0175,
                             incidH_delay_dist = "fixed", incidH_delay_value = 7, incidH_duration_dist = "fixed",
@@ -1147,7 +1151,7 @@ print_outcomes <- function (resume_modifier = NULL,
         outcomes <- paste0(
             "outcomes:\n",
             "  method: delayframe\n",
-            "  param_from_file: TRUE\n",
+            "  param_from_file: ", param_from_file, "\n",
             "  param_place_file: \"", outcomes_parquet_file, "\"\n",
             "  scenarios:\n",
             "    - ", ifr, "\n",
@@ -1465,7 +1469,8 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                                        ll_dist = c("sqrtnorm", "pois"),
                                        ll_param = 0.4, final_print = FALSE,
                                        compartment = TRUE,
-                                       variant_compartments = c("WILD", "ALPHA", "DELTA")) {
+                                       variant_compartments = c("WILD", "ALPHA", "DELTA"),
+                                       capitalize_variants = TRUE) {
 
     if (length(stat_names) != length(data_var)) stop("stat_names and data_var must be the same length")
 
@@ -1492,17 +1497,19 @@ print_inference_statistics <- function(iterations_per_slot = 300,
         sim_var <- sim_var[!(sim_var %in% sim_var_compartment)]
         data_var <- data_var[!(data_var %in% data_var_compartment)]
 
-        variant_compartments <- stringr::str_to_upper(variant_compartments)
+        if (capitalize_variants) {
+            variant_compartments <- stringr::str_to_upper(variant_compartments)
+        }
 
         if (!(any(c(is.null(stat_names_compartment), is.na(stat_names_compartment))))){
             stat_names_compartment <- paste(rep(stat_names_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
-            sim_var_compartment <- paste(rep(sim_var_compartment, each = length(variant_compartments)), stringr::str_to_upper(variant_compartments), sep = "_")
+            sim_var_compartment <- paste(rep(sim_var_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
             data_var_compartment <- paste(rep(data_var_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
             for (i in 1:length(variant_compartments)) {
                 stat_names_compartment <- c(stat_names_compartment[stringr::str_detect(stat_names_compartment, variant_compartments[i], negate = TRUE)],
                                             stat_names_compartment[stringr::str_detect(stat_names_compartment, variant_compartments[i], negate = FALSE)])
-                sim_var_compartment <- c(sim_var_compartment[stringr::str_detect(sim_var_compartment, stringr::str_to_upper(variant_compartments[i]), negate = TRUE)],
-                                         sim_var_compartment[stringr::str_detect(sim_var_compartment, stringr::str_to_upper(variant_compartments[i]), negate = FALSE)])
+                sim_var_compartment <- c(sim_var_compartment[stringr::str_detect(sim_var_compartment, variant_compartments[i], negate = TRUE)],
+                                         sim_var_compartment[stringr::str_detect(sim_var_compartment, variant_compartments[i], negate = FALSE)])
                 data_var_compartment <- c(data_var_compartment[stringr::str_detect(data_var_compartment, variant_compartments[i], negate = TRUE)],
                                           data_var_compartment[stringr::str_detect(data_var_compartment, variant_compartments[i], negate = FALSE)])
             }
@@ -1624,9 +1631,11 @@ print_inference_hierarchical <- function(npi_name = c("local_variance", "probabi
                                          geo_group_col = "USPS",
                                          transform = c("none", "logit"),
                                          empty_print = FALSE,
-                                         final_print = FALSE){
-
-    variant_compartments <- stringr::str_to_upper(variant_compartments)
+                                         final_print = FALSE,
+                                         capitalize_variants = TRUE){
+    if (capitalize_variants) {
+        variant_compartments <- stringr::str_to_upper(variant_compartments)
+    }
 
     if(compartment){
         not_variance <- npi_name!="local_variance"
