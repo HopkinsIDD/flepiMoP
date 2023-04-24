@@ -156,6 +156,15 @@ def user_confirmation(question="Continue?", default=False):
     help="The amount of RAM in megabytes needed per CPU running simulations",
 )
 @click.option(
+    "-t",
+    "--time-per-sim",
+    "time_per_sim",
+    type=click.FloatRange(min=0.0, max=1000.0),
+    default=3.0,
+    show_default=True,
+    help="The time (in minute) each simulation is expected to take, it is used to compute the time limit, so provide an upper-bound that accounts for downloading & uploading, initialization, etc.",
+)
+@click.option(
     "-r",
     "--restart-from-location",
     "restart_from_location",
@@ -225,6 +234,15 @@ def user_confirmation(question="Continue?", default=False):
     default=True,
     help="Flag determining whether we also save runs to s3 for slurm runs",
 )
+@click.option(
+    "-s",
+    "--slack-channel",
+    "slack_channel",
+    envvar="SLACK_CHANNEL",
+    default="cspproduction",
+    type=click.Choice(['cspproduction', 'debug', 'noslack']),
+    help="Slack channel, either 'csp-production' or 'debug', or 'noslack' to disable slack",
+)
 def launch_batch(
     batch_system,
     config_file,
@@ -241,6 +259,7 @@ def launch_batch(
     job_queue_prefix,
     vcpus,
     memory,
+    time_per_sim,
     restart_from_location,
     restart_from_run_id,
     stochastic,
@@ -249,6 +268,7 @@ def launch_batch(
     last_validation_date,
     reset_chimerics,
     s3_upload,
+    slack_channel,
 ):
 
     config = None
@@ -326,6 +346,7 @@ def launch_batch(
         job_queue_prefix,
         vcpus,
         memory,
+        time_per_sim,
         restart_from_location,
         restart_from_run_id,
         stochastic,
@@ -334,6 +355,7 @@ def launch_batch(
         last_validation_date,
         reset_chimerics,
         s3_upload,
+        slack_channel,
     )
 
     npi_scenarios = config["interventions"]["scenarios"]
@@ -429,6 +451,7 @@ class BatchJobHandler(object):
         job_queue_prefix,
         vcpus,
         memory,
+        time_per_sim,
         restart_from_location,
         restart_from_run_id,
         stochastic,
@@ -437,6 +460,7 @@ class BatchJobHandler(object):
         last_validation_date,
         reset_chimerics,
         s3_upload,
+        slack_channel,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -452,6 +476,7 @@ class BatchJobHandler(object):
         self.job_queue_prefix = job_queue_prefix
         self.vcpus = vcpus
         self.memory = memory
+        self.time_per_sim = time_per_sim
         self.restart_from_location = restart_from_location
         self.restart_from_run_id = restart_from_run_id
         self.stochastic = stochastic
@@ -460,6 +485,7 @@ class BatchJobHandler(object):
         self.last_validation_date = last_validation_date
         self.reset_chimerics = reset_chimerics
         self.s3_upload = s3_upload
+        self.slack_channel = slack_channel
 
     def build_job_metadata(self, job_name):
         """
@@ -579,7 +605,7 @@ class BatchJobHandler(object):
                 "name": "FLEPI_MAX_STACK_SIZE",
                 "value": str(self.max_stacked_interventions),
             },
-            {"name": "VALIDATION_DATE", "value": str(self.last_validation_date)},
+            {"name": "VALIDATION_DATE", "value": str(self.last_validation_date.date())},
             {"name": "SIMS_PER_JOB", "value": str(self.sims_per_job)},
             {"name": "FLEPI_ITERATIONS_PER_SLOT", "value": str(self.sims_per_job)},
             {
@@ -590,6 +616,9 @@ class BatchJobHandler(object):
             },
             {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
+            {"name": "FLEPI_MEM_PROFILE", "value": str(os.getenv("FLEPI_MEM_PROFILE", default="FALSE"))},
+            {"name": "FLEPI_MEM_PROF_ITERS", "value": str(os.getenv("FLEPI_MEM_PROF_ITERS", default="50"))},
+            {"name": "SLACK_CHANNEL", "value": str(self.slack_channel)},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
@@ -604,7 +633,7 @@ class BatchJobHandler(object):
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
-                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": self.restart_from_location})
+                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{self.restart_from_location}"})
                 cur_env_vars.append(
                     {
                         "name": "OLD_FLEPI_RUN_INDEX",
@@ -651,8 +680,8 @@ class BatchJobHandler(object):
                     export_str += f"""{envar["name"]}="{envar["value"]}","""
                 export_str = export_str[:-1]
 
-                # time is 5 minutes per simulation TODO: allow longer job with an option.
-                time_limit = self.sims_per_job * 5
+                # add 5 minutes of overhead
+                time_limit = int(self.sims_per_job * self.time_per_sim) + 5 
 
                 # submit job (idea: use slumpy to get the "depend on")
                 # command = [
