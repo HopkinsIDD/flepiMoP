@@ -1590,7 +1590,7 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                    "      likelihood:\n",
                    "        dist: ", ll_dist[i], "\n"))
         if (ll_dist[i] != "pois") {
-            cat(paste0("        param: [", ll_param[i], "]\n"))
+            cat(paste0("        param: ", ll_param[i], "\n"))
         }
     }
     if (final_print) {
