@@ -239,8 +239,9 @@ def user_confirmation(question="Continue?", default=False):
     "--slack-channel",
     "slack_channel",
     envvar="SLACK_CHANNEL",
-    type=str,
-    help="Slack channel, either 'csp-production' or 'debug', or anything else to disable slack",
+    default="cspproduction",
+    type=click.Choice(['cspproduction', 'debug', 'noslack']),
+    help="Slack channel, either 'csp-production' or 'debug', or 'noslack' to disable slack",
 )
 def launch_batch(
     batch_system,
@@ -617,7 +618,7 @@ class BatchJobHandler(object):
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
             {"name": "FLEPI_MEM_PROFILE", "value": str(os.getenv("FLEPI_MEM_PROFILE", default="FALSE"))},
             {"name": "FLEPI_MEM_PROF_ITERS", "value": str(os.getenv("FLEPI_MEM_PROF_ITERS", default="50"))},
-            {"name": "SLACK_CHANNEL", "value": self.slack_channel},
+            {"name": "SLACK_CHANNEL", "value": str(self.slack_channel)},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
@@ -632,7 +633,7 @@ class BatchJobHandler(object):
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
-                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": self.restart_from_location})
+                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{self.restart_from_location}"})
                 cur_env_vars.append(
                     {
                         "name": "OLD_FLEPI_RUN_INDEX",
