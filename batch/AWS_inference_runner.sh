@@ -151,12 +151,12 @@ done
 		export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,index=$FLEPI_BLOCK_INDEX,ftype='$type',extension='csv', model_output_path='$FLEPI_MODEL_OUTPUT_PATH'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
-	for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+	for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
 do
 	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,index=$FLEPI_BLOCK_INDEX,ftype='$type',extension='parquet', model_output_path='$FLEPI_MODEL_OUTPUT_PATH'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
 done
-	for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+	for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
 do
 	export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', index=$FLEPI_SLOT_INDEX,ftype='$type',extension='parquet', model_output_path='$FLEPI_MODEL_OUTPUT_PATH'))")
 	aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME

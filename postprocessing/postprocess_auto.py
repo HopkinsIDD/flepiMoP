@@ -16,10 +16,8 @@ import matplotlib.dates as mdates
 import matplotlib.cbook as cbook
 from matplotlib.backends.backend_pdf import PdfPages
 
-channelid_cspproduction = "C011YTUBJ7R"
-channelid_chadi = "UFV770AE8"  # to debug
-channelid_debug = "C04MAQWLEAW"
-
+channelids = {"cspproduction": "C011YTUBJ7R",
+              "debug": "C04MAQWLEAW"}
 
 class RunInfo:
     def __init__(self, run_id, config_path=None, folder_path=None):
@@ -56,6 +54,7 @@ def get_all_filenames(file_type, all_runs, finals_only=False, intermediates_only
 def slack_multiple_files_deprecated(slack_token, message, file_list, channel):
     import logging
     from slack_sdk import WebClient
+
     client = WebClient(slack_token)
     logging.basicConfig(level=logging.DEBUG)
     logging.basicConfig(level=logging.DEBUG)
@@ -78,6 +77,7 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     # ],
     import logging
     from slack_sdk import WebClient
+
     client = WebClient(slack_token)
     logging.basicConfig(level=logging.DEBUG)
     file_uploads = [{"file": f, "title": f.split(".")[0]} for f in file_list]
@@ -137,6 +137,14 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     help="Slack token",
 )
 @click.option(
+    "-s",
+    "--slack-channel",
+    "slack_channel",
+    envvar="SLACK_CHANNEL",
+    type=str,
+    help="Slack channel, either 'csp-production' or 'debug'",
+)
+@click.option(
     "-m",
     "--max_files",
     type=click.IntRange(min=1),
@@ -150,7 +158,7 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     default=30,
     help="Maximum number of files to load for in depth plot and individual sim plot",
 )
-def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, max_files, max_files_deep):
+def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, slack_channel, max_files, max_files_deep):
     print("Generating plots")
     print(f">> config {config_path} for run_id {run_id}")
     print(f">> job name {job_name}, path {fs_results_path}")
@@ -180,16 +188,16 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
 
     # In[5]:
 
-    #gempyor.config.set_file(run_info.config_path)
-    #gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
-    #gt
-    #statistics = {}
+    # gempyor.config.set_file(run_info.config_path)
+    # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
+    # gt
+    # statistics = {}
     # Ingoring agreegation and all, assuming by week
-    #for stat in gempyor.config["inference"]["statistics"]:
+    # for stat in gempyor.config["inference"]["statistics"]:
     #    statistics[gempyor.config["inference"]["statistics"][stat]["sim_var"].get()] = gempyor.config["inference"][
     #        "statistics"
     #    ][stat]["data_var"].get()
-    #statistics
+    # statistics
 
     # ## Analyze llik files
 
@@ -282,13 +290,19 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
     # In[9]:
 
     file_list = []
-    #f or f in Path(str(".")).rglob(f"./pplot/*"): # this took all the files also very deep into subdirectories
+    # f or f in Path(str(".")).rglob(f"./pplot/*"): # this took all the files also very deep into subdirectories
     for f in glob.glob(f"pplot/*"):
         file_list.append(str(f))
 
     print(f"list of files to be sent over slack: {file_list}")
 
-    channel = channelid_cspproduction
+    if "production" in slack_channel.lower():
+        channel=channelids["cspproduction"]
+    elif "debug" in slack_channel.lower():
+        channel=channelids["debug"]
+    else:
+        print("no channel specified, not sending anything to slack")
+        channel=None
 
     # slack_multiple_files(
     #    slack_token=slack_token,
@@ -296,14 +310,14 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, ma
     #    fileList=flist,
     #    channel=channelid_chadi,
     # )
-
-    r = slack_multiple_files_v2(
-        slack_token=slack_token,
-        message=f"""FlepiMoP run `{run_id}` (job `{job_name}`) has successfully completed 🎉🤖. \n \nPlease find below a little analysis of the llik files, and I'll try to be more helpful in the future.""",
-        file_list=file_list,
-        channel=channel,
-    )
-    print(f"api response: {r}")
+    if channel is not None:
+        r = slack_multiple_files_v2(
+            slack_token=slack_token,
+            message=f"""FlepiMoP run `{run_id}` (job `{job_name}`) has successfully completed 🎉🤖. \n \nPlease find below a little analysis of the llik files, and I'll try to be more helpful in the future.""",
+            file_list=file_list,
+            channel=channel,
+        )
+        print(f"api response: {r}")
 
 
 if __name__ == "__main__":

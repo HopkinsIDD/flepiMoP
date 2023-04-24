@@ -115,7 +115,7 @@ def user_confirmation(question="Continue?", default=False):
     "--fs-folder",
     "fs_folder",
     type=str,
-    default="/data/struelo1/flepimop-runs",
+    default="/scratch4/struelo1/flepimop-runs",
     show_default=True,
     help="The file system folder to use for keeping the job outputs",
 )
@@ -154,6 +154,15 @@ def user_confirmation(question="Continue?", default=False):
     default=8000,
     show_default=True,
     help="The amount of RAM in megabytes needed per CPU running simulations",
+)
+@click.option(
+    "-t",
+    "--time-per-sim",
+    "time_per_sim",
+    type=click.FloatRange(min=0.0, max=1000.0),
+    default=3.0,
+    show_default=True,
+    help="The time (in minute) each simulation is expected to take, it is used to compute the time limit, so provide an upper-bound that accounts for downloading & uploading, initialization, etc.",
 )
 @click.option(
     "-r",
@@ -225,6 +234,15 @@ def user_confirmation(question="Continue?", default=False):
     default=True,
     help="Flag determining whether we also save runs to s3 for slurm runs",
 )
+@click.option(
+    "-s",
+    "--slack-channel",
+    "slack_channel",
+    envvar="SLACK_CHANNEL",
+    default="cspproduction",
+    type=click.Choice(['cspproduction', 'debug', 'noslack']),
+    help="Slack channel, either 'csp-production' or 'debug', or 'noslack' to disable slack",
+)
 def launch_batch(
     batch_system,
     config_file,
@@ -241,6 +259,7 @@ def launch_batch(
     job_queue_prefix,
     vcpus,
     memory,
+    time_per_sim,
     restart_from_location,
     restart_from_run_id,
     stochastic,
@@ -249,6 +268,7 @@ def launch_batch(
     last_validation_date,
     reset_chimerics,
     s3_upload,
+    slack_channel,
 ):
 
     config = None
@@ -280,7 +300,7 @@ def launch_batch(
     else:
         print(f"WARNING: no inference section found in {config_file}!")
 
-    if "s3://" in str(restart_from_location):        # ugly hack: str because it might be None
+    if "s3://" in str(restart_from_location):  # ugly hack: str because it might be None
         import boto3
 
         s3 = boto3.resource("s3")
@@ -326,6 +346,7 @@ def launch_batch(
         job_queue_prefix,
         vcpus,
         memory,
+        time_per_sim,
         restart_from_location,
         restart_from_run_id,
         stochastic,
@@ -334,6 +355,7 @@ def launch_batch(
         last_validation_date,
         reset_chimerics,
         s3_upload,
+        slack_channel,
     )
 
     npi_scenarios = config["interventions"]["scenarios"]
@@ -368,9 +390,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
-            geoid_fname = (
-                pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
-            )
+            geoid_fname = pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
             with open(geoid_fname) as geoid_fp:
                 num_geoids = sum(1 for line in geoid_fp)
 
@@ -431,6 +451,7 @@ class BatchJobHandler(object):
         job_queue_prefix,
         vcpus,
         memory,
+        time_per_sim,
         restart_from_location,
         restart_from_run_id,
         stochastic,
@@ -439,6 +460,7 @@ class BatchJobHandler(object):
         last_validation_date,
         reset_chimerics,
         s3_upload,
+        slack_channel,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -454,6 +476,7 @@ class BatchJobHandler(object):
         self.job_queue_prefix = job_queue_prefix
         self.vcpus = vcpus
         self.memory = memory
+        self.time_per_sim = time_per_sim
         self.restart_from_location = restart_from_location
         self.restart_from_run_id = restart_from_run_id
         self.stochastic = stochastic
@@ -462,6 +485,7 @@ class BatchJobHandler(object):
         self.last_validation_date = last_validation_date
         self.reset_chimerics = reset_chimerics
         self.s3_upload = s3_upload
+        self.slack_channel = slack_channel
 
     def build_job_metadata(self, job_name):
         """
@@ -508,15 +532,18 @@ class BatchJobHandler(object):
                 or q == "renv.cache"
                 or q == "sample_data"
                 or q == "build"
-                or q == "renv"               # joseph: I added this to fix a bug, hopefully it doesn't break anything
+                or q == "renv"  # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
                 tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("flepiMoP", q))
             elif q == "sample_data":
                 for r in os.listdir(os.path.join(self.flepi_path, "sample_data")):
                     if r != "united-states-commutes":
-                        tar.add(os.path.join(self.flepi_path, "sample_data", r), arcname=os.path.join("flepiMoP", "sample_data", r))
-                        #tar.add(os.path.join("flepiMoP", "sample_data", r))
+                        tar.add(
+                            os.path.join(self.flepi_path, "sample_data", r),
+                            arcname=os.path.join("flepiMoP", "sample_data", r),
+                        )
+                        # tar.add(os.path.join("flepiMoP", "sample_data", r))
         for p in os.listdir(self.data_path):
             if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "flepiMoP"):
                 tar.add(
@@ -578,7 +605,7 @@ class BatchJobHandler(object):
                 "name": "FLEPI_MAX_STACK_SIZE",
                 "value": str(self.max_stacked_interventions),
             },
-            {"name": "VALIDATION_DATE", "value": str(self.last_validation_date)},
+            {"name": "VALIDATION_DATE", "value": str(self.last_validation_date.date())},
             {"name": "SIMS_PER_JOB", "value": str(self.sims_per_job)},
             {"name": "FLEPI_ITERATIONS_PER_SLOT", "value": str(self.sims_per_job)},
             {
@@ -589,6 +616,9 @@ class BatchJobHandler(object):
             },
             {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
+            {"name": "FLEPI_MEM_PROFILE", "value": str(os.getenv("FLEPI_MEM_PROFILE", default="FALSE"))},
+            {"name": "FLEPI_MEM_PROF_ITERS", "value": str(os.getenv("FLEPI_MEM_PROF_ITERS", default="50"))},
+            {"name": "SLACK_CHANNEL", "value": str(self.slack_channel)},
         ]
         with open(config_file) as f:
             config = yaml.full_load(f)
@@ -603,7 +633,7 @@ class BatchJobHandler(object):
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
-                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": self.restart_from_location})
+                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{self.restart_from_location}"})
                 cur_env_vars.append(
                     {
                         "name": "OLD_FLEPI_RUN_INDEX",
@@ -650,8 +680,8 @@ class BatchJobHandler(object):
                     export_str += f"""{envar["name"]}="{envar["value"]}","""
                 export_str = export_str[:-1]
 
-                # time is 5 minutes per simulation TODO: allow longer job with an option.
-                time_limit = self.sims_per_job * 5
+                # add 5 minutes of overhead
+                time_limit = int(self.sims_per_job * self.time_per_sim) + 5 
 
                 # submit job (idea: use slumpy to get the "depend on")
                 # command = [
@@ -686,7 +716,7 @@ class BatchJobHandler(object):
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
-                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={64000}M --time={120} --job-name=post-{cur_job_name} {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
+                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={32000}M --time={120} --job-name=post-{cur_job_name} {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
