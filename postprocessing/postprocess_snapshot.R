@@ -108,25 +108,25 @@ import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt){
 res_dir <- opt$results_path
 
 model_outputs <- list.files(res_dir)[match(opt$select_outputs,list.files(res_dir))]
-model_outputs <- ifelse(!("llik" %in% opt$select_outputs), c(model_outputs, "llik"), model_outputs)
+if("llik" %in% model_outputs){
+  opts <- c("global", "chimeric")
+  int_llik <- lapply(opts, function(i) setDT(import_model_outputs(res_dir, "llik", i, "intermediate")))
+}else{
+  model_outputs <- c(model_outputs, "llik")
+}
 
 outputs_global <- lapply(model_outputs, function(i) setDT(import_model_outputs(res_dir, i, 'global', 'final')))
 names(outputs_global) <- model_outputs
 
-if("llik" %in% model_outputs){
-  opts <- c("global", "chimeric")
-  int_llik <- lapply(opts, function(i) setDT(import_model_outputs(res_dir, "llik", i, "intermediate")))
-}
 
-pdf(paste0("mod_outputs_", opt$run_id,".pdf"), width = 15, height = 12)
 
 ## HOSP --------------------------------------------------------------------
 # Compare inference statistics sim_var to data_var
 if("hosp" %in% model_outputs){
+  
+  pdf(paste0("hosp_mod_outputs_", opt$run_id,".pdf"), width = 15, height = 12)
   fit_stats <- names(config$inference$statistics)
-  hosp_plots <- list()
-  hosp_quants <- list()
-  hosp_allslots <- list()
+  
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, config$spatial_setup$nodenames,"slot")
@@ -161,6 +161,7 @@ if("hosp" %in% model_outputs){
     #   theme(legend.position="none")
     # )
   }
+  dev.off()
 }
 
 
@@ -182,8 +183,30 @@ if("llik" %in% model_outputs){
 
 ## SEED --------------------------------------------------------------------
 if("seed" %in% model_outputs){
-  print("TO DO")
+  pdf(paste0("seed_mod_outputs_", opt$run_id,".pdf"), width = 8, height = 8)
   
+  dest <- unname(config$seeding$seeding_compartments)
+  source_comp <- lapply(dest, function(i) i$source_compartment)
+  dest_comp <- lapply(dest, function(i) i$destination_compartment)
+  compartments <- names(config$compartments)
+  destination_columns <- paste0("destination_", compartments)
+
+  tmp_ <- paste("+", destination_columns, collapse = "")
+  facet_formula <- paste("~", substr(tmp_, 2, nchar(tmp_)))
+  
+  for(i in unique(outputs_global$seed$place)){
+    print(outputs_global$seed %>%
+      .[place == i] %>%
+        ggplot(aes(x = as.Date(date), y = amount)) +
+        facet_wrap(as.formula(facet_formula), scales = 'free', ncol=1, 
+                   labeller = label_wrap_gen(multi_line=FALSE)) +
+        geom_count(alpha = 0.8) +
+        labs(x = 'date', title = i) +
+        theme_classic()
+    )
+  }
+  
+  dev.off()
 }
 
 ## SEIR --------------------------------------------------------------------
