@@ -217,6 +217,9 @@ if("seir" %in% model_outputs){
 
 ## SNPI --------------------------------------------------------------------
 if("snpi" %in% model_outputs){
+  
+  pdf(paste0("snpi_mod_outputs_", opt$run_id,".pdf"), width = 15, height = 12)
+  
   node_names <- unique(outputs_global$snpi %>% .[ , get(config$spatial_setup$nodenames)])
   num_nodes <- length(node_names)
   pgs <- ceiling(num_nodes / 6)
@@ -236,6 +239,7 @@ if("snpi" %in% model_outputs){
             labs(x = "parameter")
     )
   }
+  dev.off()
 }
 
 ## SPAR --------------------------------------------------------------------
@@ -244,4 +248,3 @@ if("spar" %in% model_outputs){
   
 }
 
-dev.off()
