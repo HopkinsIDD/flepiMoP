@@ -24,6 +24,8 @@ echo "***************** LOADING ENVIRONMENT *****************"
 #PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
 #. $PYTHON_VENV_DIR/bin/activate
 
+source /var/python/3.10/virtualenv/bin/activate
+
 # set optimized S3 configuration
 aws configure set default.s3.max_concurrent_requests 100
 aws configure set default.s3.max_queue_size 100

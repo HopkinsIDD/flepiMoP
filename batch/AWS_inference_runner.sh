@@ -26,6 +26,8 @@ echo "***************** LOADING ENVIRONMENT *****************"
 #PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
 #s. $PYTHON_VENV_DIR/bin/activate
 
+source /var/python/3.10/virtualenv/bin/activate
+
 echo $PATH
 echo $PYTHON_VERSION
 echo $VIRTUAL_ENV
