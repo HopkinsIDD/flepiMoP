@@ -60,6 +60,11 @@ geodata <- read.csv(file.path(config$data_path, config$spatial_setup$geodata))
 gt_data <- data.table::fread(config$inference$gt_data_path) %>%
   .[, geoid := stringr::str_pad(FIPS, width = 5, side = "left", pad = "0")]
 
+# store list of files to save
+files_ <- c()
+dir.create("pplot")
+
+
 # FUNCTIONS ---------------------------------------------------------------
 
 import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt){
@@ -109,8 +114,8 @@ res_dir <- opt$results_path
 
 model_outputs <- list.files(res_dir)[match(opt$select_outputs,list.files(res_dir))]
 if("llik" %in% model_outputs){
-  opts <- c("global", "chimeric")
-  int_llik <- lapply(opts, function(i) setDT(import_model_outputs(res_dir, "llik", i, "intermediate")))
+  # opts <- c("global", "chimeric").  ## NOT DOING ANYTHING WITH INT YET, TO DO
+  # int_llik <- lapply(opts, function(i) setDT(import_model_outputs(res_dir, "llik", i, "intermediate")))
 }else{
   model_outputs <- c(model_outputs, "llik")
 }
@@ -124,7 +129,8 @@ names(outputs_global) <- model_outputs
 # Compare inference statistics sim_var to data_var
 if("hosp" %in% model_outputs){
   
-  pdf(paste0("hosp_mod_outputs_", opt$run_id,".pdf"), width = 15, height = 12)
+  fname <- paste0("pplot/hosp_mod_outputs_", opt$run_id,".pdf")
+  pdf(fname, width = 15, height = 12)
   fit_stats <- names(config$inference$statistics)
   
   for(i in 1:length(fit_stats)){
@@ -162,17 +168,41 @@ if("hosp" %in% model_outputs){
     # )
   }
   dev.off()
+  
+  files_ <- c(files_, fname)
 }
 
 
 ## HNPI --------------------------------------------------------------------
 if("hnpi" %in% model_outputs){
-  print("TO DO")
+  
+  fname <- paste0("pplot/hnpi_mod_outputs_", opt$run_id,".pdf")
+  pdf(fname, width = 15, height = 45)
+  
+  hnpi_plots <- lapply(unique(outputs_global$hnpi %>% .[, get(config$spatial_setup$nodenames)]),
+         function(i){
+           outputs_global$hnpi %>%
+             .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
+             .[get(config$spatial_setup$nodenames) == i] %>%
+             ggplot(aes(npi_name,reduction)) + 
+             geom_violin() +
+             geom_jitter(aes(group = npi_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
+             facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+             scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+             theme_classic()
+         }
+  )
+  
+  print(do.call("grid.arrange", c(hnpi_plots, ncol=4)))
+  dev.off()
+  
+  files_ <- c(files_,fname)
 }
 
 ## HPAR --------------------------------------------------------------------
 if("hpar" %in% model_outputs){
-  print("TO DO")
+
+  
 }
 
 ## LLIK --------------------------------------------------------------------
@@ -183,7 +213,9 @@ if("llik" %in% model_outputs){
 
 ## SEED --------------------------------------------------------------------
 if("seed" %in% model_outputs){
-  pdf(paste0("seed_mod_outputs_", opt$run_id,".pdf"), width = 8, height = 8)
+  
+  fname <- paste0("pplot/seed_mod_outputs_", opt$run_id,".pdf")
+  pdf(fname, width = 15, height = 45)
   
   dest <- unname(config$seeding$seeding_compartments)
   source_comp <- lapply(dest, function(i) i$source_compartment)
@@ -194,19 +226,36 @@ if("seed" %in% model_outputs){
   tmp_ <- paste("+", destination_columns, collapse = "")
   facet_formula <- paste("~", substr(tmp_, 2, nchar(tmp_)))
   
-  for(i in unique(outputs_global$seed$place)){
-    print(outputs_global$seed %>%
-      .[place == i] %>%
-        ggplot(aes(x = as.Date(date), y = amount)) +
-        facet_wrap(as.formula(facet_formula), scales = 'free', ncol=1, 
-                   labeller = label_wrap_gen(multi_line=FALSE)) +
-        geom_count(alpha = 0.8) +
-        labs(x = 'date', title = i) +
-        theme_classic()
-    )
-  }
+  seed_plots <- lapply(unique(setDT(geodata) %>% .[, get(config$spatial_setup$nodenames)]),
+                       function(i){
+                         outputs_global$seed %>%
+                           .[place == i] %>%
+                           ggplot(aes(x = as.Date(date), y = amount)) +
+                           facet_wrap(as.formula(facet_formula), scales = 'free', ncol=1,
+                                      labeller = label_wrap_gen(multi_line=FALSE)) +
+                           geom_count(alpha = 0.8) +
+                           labs(x = 'date', title = i) +
+                           theme_classic()
+                       }
+  )
+  
+  print(do.call("grid.arrange", c(seed_plots, ncol=4)))
+  
+  # 
+  # for(i in unique(outputs_global$seed$place)){
+  #   print(outputs_global$seed %>%
+  #     .[place == i] %>%
+  #       ggplot(aes(x = as.Date(date), y = amount)) +
+  #       facet_wrap(as.formula(facet_formula), scales = 'free', ncol=1, 
+  #                  labeller = label_wrap_gen(multi_line=FALSE)) +
+  #       geom_count(alpha = 0.8) +
+  #       labs(x = 'date', title = i) +
+  #       theme_classic()
+  #   )
+  # }
   
   dev.off()
+  files_ <- c(files_, fname)
 }
 
 ## SEIR --------------------------------------------------------------------
@@ -218,28 +267,50 @@ if("seir" %in% model_outputs){
 ## SNPI --------------------------------------------------------------------
 if("snpi" %in% model_outputs){
   
-  pdf(paste0("snpi_mod_outputs_", opt$run_id,".pdf"), width = 15, height = 12)
+  fname <- paste0("pplot/snpi_mod_outputs_", opt$run_id,".pdf")
+  pdf(fname, width = 25, height = 50)
   
   node_names <- unique(outputs_global$snpi %>% .[ , get(config$spatial_setup$nodenames)])
-  num_nodes <- length(node_names)
-  pgs <- ceiling(num_nodes / 6)
   
-  for(i in 1:pgs){
-    print(outputs_global$snpi %>%
-            .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
-            ggplot(aes(npi_name,reduction)) + 
-            geom_violin() + 
-            geom_jitter(aes(group = npi_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.4) +
-            facet_wrap_paginate(~get(config$spatial_setup$nodenames),
-                                scales = 'free', drop = TRUE, 
-                                ncol = 2, nrow = 3, page = i) +
-            theme_bw(base_size = 10) +
-            theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
-            scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-            labs(x = "parameter")
-    )
-  }
+  snpi_plots <- lapply(node_names,
+                       function(i){
+                         if(!grepl(',', i)){
+                           outputs_global$snpi %>%
+                             .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
+                             .[get(config$spatial_setup$nodenames) == i] %>%
+                             ggplot(aes(npi_name,reduction)) + 
+                             geom_violin() + 
+                             geom_jitter(aes(group = npi_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
+                             theme_bw(base_size = 10) +
+                             theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
+                             scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+                             labs(x = "parameter")
+                         }else{
+                           nodes_ <- unlist(strsplit(i,","))
+                           ll_across_nodes <- 
+                             outputs_global$llik %>% 
+                             .[get(config$spatial_setup$nodenames) %in% nodes_] %>%
+                             .[, .(ll_sum = sum(ll)), by = .(slot)]
+                           
+                           outputs_global$snpi %>%
+                             .[get(config$spatial_setup$nodenames) == i] %>%
+                             .[ll_across_nodes, on = c("slot")] %>%
+                             ggplot(aes(npi_name,reduction)) + 
+                             geom_violin() + 
+                             geom_jitter(aes(group = npi_name, color = ll_sum), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
+                             theme_bw(base_size = 10) +
+                             theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
+                             scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+                             labs(x = "parameter")
+                           }
+                       }
+                       )
+  
+  print(do.call("grid.arrange", c(snpi_plots, ncol=4)))
+  
   dev.off()
+  
+  files_ <- c(files_, fname)
 }
 
 ## SPAR --------------------------------------------------------------------
@@ -247,4 +318,11 @@ if("spar" %in% model_outputs){
   print("TO DO")
   
 }
+
+
+## MOVE FILES TO /pplot --------------------------------------------------------------------
+
+# file.copy(from = files_,
+#           to = file.path(data_path, "pplot",basename(files_)),
+#           overwrite = TRUE)
 
