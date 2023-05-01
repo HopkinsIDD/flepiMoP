@@ -531,7 +531,6 @@ class BatchJobHandler(object):
                 or q == "covid-dashboard-app"
                 or q == "renv.cache"
                 or q == "sample_data"
-                or q == "build"
                 or q == "renv"  # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
@@ -681,8 +680,7 @@ class BatchJobHandler(object):
                 export_str = export_str[:-1]
 
                 # add 5 minutes of overhead
-                time_limit = int(self.sims_per_job * self.time_per_sim) + 5 
-
+                time_limit = int(self.sims_per_job * self.time_per_sim) + 5
                 # submit job (idea: use slumpy to get the "depend on")
                 # command = [
                 #    "sbatch",
