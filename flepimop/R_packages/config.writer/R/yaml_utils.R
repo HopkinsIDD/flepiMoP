@@ -753,7 +753,7 @@ print_seeding <- function (method = "FolderDraw",
 print_seir <- function(integration_method = "rk4",
                        dt = 2.000,
                        params = params_list,
-                       ve_data = ve_data,
+                       ve_data = NULL,
                        theta_dist = "fixed",
                        nu_list = list(
                            label = c("nu1","nu2","nu3","nu5"),
@@ -815,10 +815,11 @@ print_seir <- function(integration_method = "rk4",
         }
 
         seir_dat <- seir_dat %>%
-            mutate(rate_seir = as.vector(sapply(rate_seir, resume_mod_rates, resume_mod_params)),
-                   rate_vacc = as.vector(sapply(rate_vacc, resume_mod_rates, resume_mod_params)),
-                   rate_var = as.vector(sapply(rate_var, resume_mod_rates, resume_mod_params)),
-                   rate_age = as.vector(sapply(rate_age, resume_mod_rates, resume_mod_params))) %>%
+            mutate(dplyr::across(dplyr::starts_with("rate_"), ~ sapply(.x, resume_mod_rates, resume_mod_params))) %>%
+            # mutate(rate_seir = as.vector(sapply(rate_seir, resume_mod_rates, resume_mod_params)),
+            #        rate_vacc = as.vector(sapply(rate_vacc, resume_mod_rates, resume_mod_params)),
+            #        rate_var = as.vector(sapply(rate_var, resume_mod_rates, resume_mod_params)),
+            #        rate_age = as.vector(sapply(rate_age, resume_mod_rates, resume_mod_params))) %>%
             ungroup()
 
     }
@@ -886,27 +887,28 @@ print_seir <- function(integration_method = "rk4",
 
 
     # add thetas (vaccine effectiveness)
-    thetas <- ve_data %>% pull(theta_name)
-    theta_vals <- ve_data %>% pull(VE)
-    if (!(length(theta_dist) %in% c(1, length(thetas)))) {
-        stop("theta_dist must be assigned 1 value only or a vector of values corresponding to the number of thetas.")
-    }
-    if (length(theta_dist) == 1) {
-        theta_dist <- rep(theta_dist, length(thetas))
-    }
-    for (i in 1:length(thetas)) {
-
-        if(use_res_mod_params){
-            thetas_name_ <- ifelse(thetas[i] %in% resume_mod_params$param,
-                                   resume_mod_params$param_res[thetas[i]==resume_mod_params$param], thetas[i])
-        } else {
-            thetas_name_ <- thetas[i]
+    if (!is.null(ve_data)){
+        thetas <- ve_data %>% pull(theta_name)
+        theta_vals <- ve_data %>% pull(VE)
+        if (!(length(theta_dist) %in% c(1, length(thetas)))) {
+            stop("theta_dist must be assigned 1 value only or a vector of values corresponding to the number of thetas.")
         }
+        if (length(theta_dist) == 1) {
+            theta_dist <- rep(theta_dist, length(thetas))
+        }
+        for (i in 1:length(thetas)) {
 
-        seir <- paste0(seir, "    ", thetas_name_, ":\n",
-                       print_value(value_dist = theta_dist[i], value_mean = paste0(1, " - ", theta_vals[i])))
+            if(use_res_mod_params){
+                thetas_name_ <- ifelse(thetas[i] %in% resume_mod_params$param,
+                                       resume_mod_params$param_res[thetas[i]==resume_mod_params$param], thetas[i])
+            } else {
+                thetas_name_ <- thetas[i]
+            }
+
+            seir <- paste0(seir, "    ", thetas_name_, ":\n",
+                           print_value(value_dist = theta_dist[i], value_mean = paste0(1, " - ", theta_vals[i])))
+        }
     }
-
 
     seir <- paste0(seir,
                    "\n",
@@ -1808,15 +1810,19 @@ cmprt_list <- function(compartments = c("S","E","I","R")){
 #' @examples
 cmprt_bracketing <- function(source, dest){
 
-    source_part <- cmprt_list(source)
-    dest_part <- cmprt_list(dest)
-    if(length(source)>=length(dest)){
-        source_part <- paste0("[", source_part,"]")
+    if (is.null(source) | is.null(dest)) {
+        return(NULL)
+    } else {
+        source_part <- cmprt_list(source)
+        dest_part <- cmprt_list(dest)
+        if(length(source)>=length(dest)){
+            source_part <- paste0("[", source_part,"]")
+        }
+        if(length(dest)>=length(source)){
+            dest_part <- paste0("[", dest_part,"]")
+        }
+        return(list(source_part, dest_part))
     }
-    if(length(dest)>=length(source)){
-        dest_part <- paste0("[", dest_part,"]")
-    }
-    return(list(source_part, dest_part))
 }
 
 
@@ -1830,13 +1836,18 @@ cmprt_bracketing <- function(source, dest){
 #'
 #' @examples
 cmprt_rate_bracketing <- function(rate, length_comprt){
-    rate_part <- cmprt_list(rate)
-    if(length(rate)==length_comprt){
-        rate_part <- paste0("[", rate_part,"]")
-    }
-    return(rate_part)
-}
 
+    if (is.null(rate)) {
+        return(NULL)
+    } else {
+
+        rate_part <- cmprt_list(rate)
+        if(length(rate)==length_comprt){
+            rate_part <- paste0("[", rate_part,"]")
+        }
+        return(rate_part)
+    }
+}
 
 #' Title
 #'
@@ -1894,34 +1905,35 @@ seir_chunk <- function(resume_modifier = NULL,
         stop("rate_age needs to be length==1 or the same length as age_strata")}
 
     tmp <- paste0(
-        "    - source: [", seir_parts[[1]], ", ", vacc_parts[[1]], ", ", variant_parts[[1]], ifelse(incl_agestrat, paste0(", ", "[", cmprt_list(age_strata),"]"), ""), "] \n",
-        "      destination: [", seir_parts[[2]], ", ", vacc_parts[[2]], ", ", variant_parts[[2]], ifelse(incl_agestrat, paste0(", ", "[", cmprt_list(age_strata),"]"), ""), "] \n",
+        "    - source: [", paste(c(seir_parts[[1]], vacc_parts[[1]], variant_parts[[1]]), collapse = ", "), ifelse(incl_agestrat, paste0(", ", "[", cmprt_list(age_strata),"]"), ""), "] \n",
+        "      destination: [", paste(c(seir_parts[[2]], vacc_parts[[2]], variant_parts[[2]]), collapse = ", "), ifelse(incl_agestrat, paste0(", ", "[", cmprt_list(age_strata),"]"), ""), "] \n",
         ifelse(any(!is.null(vaccine_infector) & !is.na(vaccine_infector)),
                paste0(
                    "      proportional_to: [\n",
                    "        \"source\",\n",
                    "        [\n",
                    "          [",paste(rep("[\"I1\",\"I2\",\"I3\"]", length(SEIR_source)), collapse = ",\n           "),"],\n",
-                   "          [",paste(rep(paste0("[",cmprt_list(vaccine_infector),"]"), length(vaccine_compartments_source)), collapse=",\n           "),"],\n",
+                   ifelse(!is.null(vaccine_compartments_source), paste0(
+                       "          [",paste(rep(paste0("[",cmprt_list(vaccine_infector),"]"), length(vaccine_compartments_source)), collapse=",\n           "),"],\n"), ""),
+                   ifelse(!(is.null(variant_compartments_dest) | is.null(variant_compartments_source)), paste0(
                    "          [",paste(rep(paste0("[\"",paste(variant_compartments_dest, collapse = "\"], [\""),"\"]"),
                                            ifelse(length(variant_compartments_dest)>=length(variant_compartments_source),
-                                                  1, max(c(length(variant_compartments_source),length(variant_compartments_dest))))), collapse=", "),"],\n",
-                   "          [",paste(rep(paste0("[",cmprt_list(age_strata),"]"), length(age_strata)), collapse=",\n           "),"]\n",
+                                                  1, max(c(length(variant_compartments_source),length(variant_compartments_dest))))), collapse=", "),"],\n"), ""),
+                   ifelse(!is.null(age_strata), paste0(
+                   "          [",paste(rep(paste0("[",cmprt_list(age_strata),"]"), length(age_strata)), collapse=",\n           "),"]\n"), ""),
                    "        ]\n",
                    "      ]\n",
                    "      proportion_exponent: [\n",
                    "        [",rate_propexp_parts, ",\"1\",\"1\",\"1\"],\n",
                    "        [",rate_alpha_parts, ",\"1\",\"1\",\"1\"]]\n",
                    "      rate: [\n",
-                   "        ",rate_seir_parts,",\n",
-                   "        ",rate_vacc_parts,",\n",
-                   "        ",rate_var_parts,",\n",
-                   "        ",rate_age_parts,"\n",
+                   paste0(sapply(X = c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts),
+                              function(x = X){ paste0("        ",x,",\n")}) ),
                    "      ]\n"),
                paste0(
                    "      proportional_to: [\"source\"]\n",
                    "      proportion_exponent: [[\"1\",\"1\",\"1\",\"1\"]]\n",
-                   "      rate: [",rate_seir_parts,", ", rate_vacc_parts,", ", rate_var_parts,", ", rate_age_parts,"]\n")),
+                   "      rate: [", paste(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts), collapse = ", "), "]\n")),
         "\n")
 
     return(tmp)
