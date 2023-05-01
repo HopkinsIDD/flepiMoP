@@ -9,12 +9,12 @@ set -x
 # S3_RESULTS_PATH location in S3 to store the results
 
 # setup the python environment
-HOME=/home/app
-PYENV_ROOT=$HOME/.pyenv
-PYTHON_VERSION=3.7.6
-PYTHON_VENV_DIR=$HOME/python_venv
-PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
-. $PYTHON_VENV_DIR/bin/activate
+# HOME=/home/app
+# PYENV_ROOT=$HOME/.pyenv
+# PYTHON_VERSION=3.7.6
+# PYTHON_VENV_DIR=$HOME/python_venv
+# PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+# . $PYTHON_VENV_DIR/bin/activate
 
 # set optimized S3 configuration
 aws configure set default.s3.max_concurrent_requests 100

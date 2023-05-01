@@ -17,12 +17,20 @@ if [ $failure_count -gt 100 ]; then
 fi
 echo "***************** LOADING ENVIRONMENT *****************"
 # setup the python environment
-HOME=/home/app
-PYENV_ROOT=$HOME/.pyenv
-PYTHON_VERSION=3.7.6
-PYTHON_VENV_DIR=$HOME/python_venv
-PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
-. $PYTHON_VENV_DIR/bin/activate
+# joseph: the rewrite of the path breaks everything. I'm commenting it out for now. 
+# it seems like these line should not be executed.
+#HOME=/home/app
+#PYENV_ROOT=$HOME/.pyenv
+#PYTHON_VERSION=3.7.6
+#PYTHON_VENV_DIR=$HOME/python_venv
+#PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+#s. $PYTHON_VENV_DIR/bin/activate
+
+source /var/python/3.10/virtualenv/bin/activate
+
+echo $PATH
+echo $PYTHON_VERSION
+echo $VIRTUAL_ENV
 
 # set optimized S3 configuration
 aws configure set default.s3.max_concurrent_requests 100
