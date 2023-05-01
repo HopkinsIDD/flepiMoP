@@ -23,7 +23,7 @@ loc_pkgs <- list.files(pkg.dir,full.names=TRUE)
 loc_pkgs <- loc_pkgs[c(which(grepl("flepicommon", loc_pkgs)), which(!grepl("flepicommon", loc_pkgs)))]
 
 # Install them
-install.packages(loc_pkgs,type='source',repos=NULL)
+install.packages(loc_pkgs,type='source',repos=NULL, dependencies = TRUE)
 
 # To run within a local instance of R studio -----
 

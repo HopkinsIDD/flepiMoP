@@ -84,13 +84,13 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
                     "/",
                     final_opt)
   subdir_list <- list.files(subdir_)
-  
+
   out_ <- NULL
   total <- length(subdir_list)
   pb <- txtProgressBar(min=0, max=total, style = 3)
-  
+
   print(paste0("Importing ", outcome, " files (n = ", total, "):"))
-  
+
   for (i in 1:length(subdir_list)) {
     if(any(grepl("parquet", subdir_list))){
       dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/"))
@@ -110,7 +110,7 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
       dat$block <- as.numeric(str_sub(subdir_list[i], start = 11, end = 19))
     }
     out_ <- rbind(out_, dat)
-    
+
     # Increase the amount the progress bar is filled by setting the value to i.
     setTxtProgressBar(pb, value = i)
   }
@@ -233,11 +233,11 @@ state_plot5 <- list()
 pb2 <- txtProgressBar(min=0, max=length(USPS), style = 3)
 
 for(i in 1:length(USPS)){
-  
+
   state <- USPS[i]
-  
+
   print(paste0("Preparing plots for ", state))
-  
+
   # hnpi
   if(all(is.na(hnpi$npi_name))){
     print("hnpi files are empty")
@@ -253,9 +253,8 @@ for(i in 1:length(USPS)){
       theme_bw(base_size = 10) +
       theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
       scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-      labs(x = "parameter", title = paste0(state, " hnpi values")) +
-      ylim(0, 1)
-    
+      labs(x = "parameter", title = paste0(state, " hnpi values"))
+
     hnpi_llik_plot[[i]] <- pivot_bind_hnpi_llik %>%
       filter(USPS == state) %>%
       dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
@@ -268,19 +267,19 @@ for(i in 1:length(USPS)){
       theme_bw(base_size = 10) +
       labs(y = "log likelihood", title = paste0(state, " hnpi correlation with likelihood"))
     }
-  
+
   # hosp
   state_llik_rank <- llik %>%
     dplyr::filter(USPS == state) %>%
     mutate(rank = rank(desc(ll))) %>%
     arrange(rank)
-  
+
   filter_state_hosp <- bind_hosp_llik %>%
     filter(USPS == state,
            slot %in% c(head(state_llik_rank, 5)$slot, tail(state_llik_rank, 5)$slot)) %>%
     mutate(llik_bin = case_when(slot %in% head(state_llik_rank, 5)$slot ~ "top",
                                 slot %in% tail(state_llik_rank, 5)$slot ~ "bottom"))
-  
+
   filter_gt_data <- gt_data %>%
     filter(USPS == state) %>%
     select(USPS, geoid, time, dplyr::contains("incid") & !dplyr::contains("_")) %>%
@@ -289,7 +288,7 @@ for(i in 1:length(USPS)){
     mutate(week = lubridate::week(date)) %>%
     group_by(outcome, week) %>%
     mutate(rollmean = zoo::rollmean(x = value, k = 7, fill = NA))
-  
+
   hosp_llik_plot[[i]] <- ggplot() +
     geom_line(data = filter_state_hosp,
               aes(x = as.POSIXct(date), y = value, group = slot, color = ll, linetype = llik_bin)) +
@@ -307,7 +306,7 @@ for(i in 1:length(USPS)){
                size = 0.25, color = "grey50") +
     geom_line(data = filter_gt_data %>% drop_na(rollmean),
               aes(x = as.POSIXct(date), y = rollmean), color = "red")
-    
+
   # hpar
   if(all(is_empty(var_bind_hpar_llik$name))){
     print("no varying hpar outcomes to plot")
@@ -324,7 +323,7 @@ for(i in 1:length(USPS)){
       theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
       scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
       labs(x = "parameter", title = paste0(state, " hpar probability values"))
-    
+
     hpar_llik_plot[[i]] <- pivot_bind_hpar_llik %>%
       filter(USPS == state) %>%
       dplyr::select(ll, all_of(var_bind_hpar_llik$outcome)) %>%
@@ -338,7 +337,7 @@ for(i in 1:length(USPS)){
       theme(strip.text = element_text(size = 4)) +
       labs(y = "log likelihood", title = paste0(state, " hpar correlation with likelihood"))
   }
-  
+
   # llik
   int_llik_plot[[i]] <- int_llik %>%
     filter(USPS == state,
@@ -349,9 +348,9 @@ for(i in 1:length(USPS)){
     scale_color_brewer(palette = "Dark2", name = "slot") +
     theme_bw(base_size = 10) +
     labs(y = "log likelihood", title = paste0(state, " global and chimeric intermediate likelihoods"))
-  
+
   # seed
-  seed_plot[[i]] <- seed %>% 
+  seed_plot[[i]] <- seed %>%
     filter(destination_infection_stage == "E",
            USPS == state) %>%
     ggplot(aes(x = as.Date(date), y = amount, color = destination_variant_type)) +
@@ -361,7 +360,7 @@ for(i in 1:length(USPS)){
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     labs(x = "seeding date", title = paste0(state, " seeding across all slots"))
-  
+
   # snpi
   snpi_plot[[i]] <- pivot_bind_snpi_llik %>%
     filter(USPS == state) %>%
@@ -375,7 +374,7 @@ for(i in 1:length(USPS)){
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
     labs(x = "reduction", title = paste0(state, " snpi reduction values"))
-  
+
   snpi_llik_plot[[i]] <- pivot_bind_snpi_llik %>%
     filter(USPS == state) %>%
     dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
@@ -387,7 +386,7 @@ for(i in 1:length(USPS)){
     geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
     theme_bw(base_size = 10) +
     labs(y = "log likelihood", title = paste0(state, " snpi correlation with likelihood"))
-  
+
   # spar
   spar_plot[[i]] <- pivot_bind_spar_llik %>%
     filter(USPS == state) %>%
@@ -400,9 +399,8 @@ for(i in 1:length(USPS)){
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-    labs(x = "parameter", title = paste0(state, " spar parameter values")) +
-    ylim(0, 1)
-  
+    labs(x = "parameter", title = paste0(state, " spar parameter values"))
+
   spar_llik_plot[[i]] <- pivot_bind_spar_llik %>%
     filter(USPS == state) %>%
     dplyr::select(ll, all_of(var_bind_spar_llik$parameter)) %>%
@@ -414,7 +412,7 @@ for(i in 1:length(USPS)){
     geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
     theme_bw(base_size = 10) +
     labs(y = "log likelihood", title = paste0(state, " spar correlation with likelihood"))
-  
+
   # Combined output plots
   state_plot1[[i]] <- plot_grid(int_llik_plot[[i]],
                                 seed_plot[[i]],
@@ -439,7 +437,7 @@ for(i in 1:length(USPS)){
   state_plot5[[i]] <- plot_grid(spar_plot[[i]],
                                 spar_llik_plot[[i]],
                                 nrow = 2, ncol = 1)
-  
+
   # Increase the amount the progress bar is filled by setting the value to i.
   setTxtProgressBar(pb2, value = i)
 }
