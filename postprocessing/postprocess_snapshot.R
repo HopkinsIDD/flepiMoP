@@ -9,6 +9,9 @@ suppressMessages(library(dplyr))
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 suppressMessages(library(ggforce))
+suppressMessages(library(ggforce))
+suppressMessages(library(gridExtra))
+
 
 options(readr.num_columns = 0)
 
@@ -64,6 +67,7 @@ gt_data <- data.table::fread(config$inference$gt_data_path) %>%
 files_ <- c()
 dir.create("pplot")
 
+pdf.options(useDingbats = TRUE)
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -212,7 +216,7 @@ if("llik" %in% model_outputs){
 }
 
 ## SEED --------------------------------------------------------------------
-if("seed" %in% model_outputs){
+if("seed" %in% model_outputs){ ## TO DO: MODIFIED FOR WHEN LOTS MORE SEEDING COMPARTMENTS
   
   fname <- paste0("pplot/seed_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = 15, height = 45)
@@ -268,7 +272,7 @@ if("seir" %in% model_outputs){
 if("snpi" %in% model_outputs){
   
   fname <- paste0("pplot/snpi_mod_outputs_", opt$run_id,".pdf")
-  pdf(fname, width = 25, height = 50)
+  pdf(fname, width = 30, height = 50)
   
   node_names <- unique(outputs_global$snpi %>% .[ , get(config$spatial_setup$nodenames)])
   
