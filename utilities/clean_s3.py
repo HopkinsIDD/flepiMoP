@@ -18,10 +18,14 @@ for page in pages:
     for cp in page["CommonPrefixes"]:
         prefix = cp["Prefix"]
         # Find the date, not always this easy: prefix.split('-')[1].replace('/','')
-        m = re.search(r"\d", prefix)
-        timestamp = prefix[m.start() : m.start() + 15]
-        rundate = datetime.datetime.strptime(timestamp, "%Y%m%dT%H%M%S")
-        if rundate < datetime.datetime.now() - datetime.timedelta(weeks=8):
+        try:
+            m = re.search(r"\d", prefix)
+            timestamp = prefix[m.start() : m.start() + 15]
+            rundate = datetime.datetime.strptime(timestamp, "%Y%m%dT%H%M%S")
+        except:
+            print(f"- Could not parse date for {prefix}, skipping")
+            continue
+        if rundate < datetime.datetime.now() - datetime.timedelta(weeks=2):
             print(f"- Will prun files in {prefix}, rundate {rundate}")
             to_prun.append(prefix)
         else:
