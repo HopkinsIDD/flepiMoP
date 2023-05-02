@@ -49,6 +49,11 @@ source(file.path(opt$path, "datasetup/data_setup_source.R"))
 end_date_ <- config$end_date_groundtruth
 if (is.null(end_date_)) end_date_ <- config$end_date
 
+# add CSSE case data to every pull for use as seeding data
+if (!grepl("case", opt$gt_data_source)){
+    opt$gt_data_source <- paste0("csse_case, ", opt$gt_data_source)
+}
+
 gt_data <- list()
 
 # ~ Pull Data from Covidcast -------------------

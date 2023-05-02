@@ -453,13 +453,11 @@ for(npi_scenario in npi_scenarios) {
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hpar <- inference::perturb_hpar_from_file(initial_hpar, config$interventions$settings, chimeric_likelihood_data)
-            proposed_spar <- initial_spar
-            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_scenario]])
 
 
             ## Write files that need to be written for other code to read
             # writes to file  of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.block.iter.run_id.variable.ext
-            write.csv(proposed_seeding,this_global_files[['seed_filename']], row.names = FALSE)
+            write.csv(proposed_seeding, this_global_files[['seed_filename']], row.names = FALSE)
             arrow::write_parquet(proposed_snpi,this_global_files[['snpi_filename']])
             arrow::write_parquet(proposed_hnpi,this_global_files[['hnpi_filename']])
             arrow::write_parquet(proposed_spar,this_global_files[['spar_filename']])
