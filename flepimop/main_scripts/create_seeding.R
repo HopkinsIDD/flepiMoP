@@ -380,5 +380,6 @@ write.csv(
 )
 
 print(paste("Saved seeding to", config$seeding$lambda_file))
+head(incident_cases)
 
 ## @endcond
