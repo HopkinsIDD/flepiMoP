@@ -57,7 +57,7 @@ print(paste('Processing run ',opt$results_path))
 config <- covidcommon::load_config(opt$config)
 
 # Pull in geoid data
-geodata <- read.csv(file.path(config$data_path, config$spatial_setup$geodata))
+geodata <- setDT(read.csv(file.path(config$data_path, config$spatial_setup$geodata)))
 
 ## gt_data MUST exist directly after a run
 gt_data <- data.table::fread(config$inference$gt_data_path) %>%
@@ -145,13 +145,23 @@ if("hosp" %in% model_outputs){
     print(outputs_global$hosp %>%
       .[, ..cols_sim] %>%
       .[, date := lubridate::as_date(date)] %>%
+      { if(config$spatial_setup$nodenames == 'geoid'){
+        .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+      } %>% 
+      { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+      } %>%
       .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$nodenames)] %>%
       ggplot() + 
       geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
       geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
       geom_line(aes(x = date, y = V3)) + 
       geom_point(data = gt_data %>%
-                   .[, ..cols_data] ,
+                   .[, ..cols_data] %>%
+                   { if(config$spatial_setup$nodenames == 'geoid'){
+                     .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+                   } %>% 
+                   { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+                   } ,
                  aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
       facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
       labs(x = 'date', y = fit_stats[i]) +
@@ -187,7 +197,12 @@ if("hnpi" %in% model_outputs){
          function(i){
            outputs_global$hnpi %>%
              .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
+             { if(config$spatial_setup$nodenames == 'geoid'){
+               .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+             } %>% 
              .[get(config$spatial_setup$nodenames) == i] %>%
+             { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+             } %>%
              ggplot(aes(npi_name,reduction)) + 
              geom_violin() +
              geom_jitter(aes(group = npi_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
@@ -279,6 +294,9 @@ if("snpi" %in% model_outputs){
   snpi_plots <- lapply(node_names,
                        function(i){
                          if(!grepl(',', i)){
+                           
+                           i_lab <- ifelse(config$spatial_setup$nodenames == 'geoid', geodata[geoid == i, USPS], i)
+                             
                            outputs_global$snpi %>%
                              .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
                              .[get(config$spatial_setup$nodenames) == i] %>%
@@ -288,7 +306,7 @@ if("snpi" %in% model_outputs){
                              theme_bw(base_size = 10) +
                              theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
                              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-                             labs(x = "parameter")
+                             labs(x = "parameter", title = i_lab)
                          }else{
                            nodes_ <- unlist(strsplit(i,","))
                            ll_across_nodes <- 
