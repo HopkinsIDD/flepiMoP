@@ -20,7 +20,7 @@ option_list = list(
   optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",covidcommon::run_id())),
   optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-p", "--flepimop-repo"), action="store", dest = "flepimop_repo", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo"),
-  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS",c("hosp", "snpi", "llik")), type='character', help="path to the flepimop repo")
+  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, snpi, hnpi, llik"), type='character', help="path to the flepimop repo")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -52,6 +52,8 @@ if(opt$flepimop_repo == ""){
 
 print(paste('Processing run ',opt$results_path))
 
+opt$select_outputs <- strsplit(opt$select_outputs, ', ')[[1]]
+print(opt$select_outputs)
 ## SETUP -----------------------------------------------------------------------
 
 config <- covidcommon::load_config(opt$config)
