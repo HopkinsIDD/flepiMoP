@@ -573,8 +573,7 @@ initialize_mcmc_first_block <- function(
   chimeric_prefix,
   gempyor_inference_runner,
   likelihood_calculation_function,
-  is_resume = FALSE
-) {
+  is_resume = FALSE) {
 
   ## Only works on these files:
   global_types <- c("seed", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik")
