@@ -311,7 +311,7 @@ names(incident_cases)[1:3] <- c("place", "date", "amount")
 incident_cases <- incident_cases %>%
     dplyr::filter(!is.na(amount) | !is.na(date))
 
-lambda_dir <- dirname(config$seeding$lambda_file)
+lambda_dir <- dirname(config$seeding$added_seeding$added_lambda_file)
 if (!dir.exists(lambda_dir)) {
     suppressWarnings(dir.create(lambda_dir, recursive = TRUE))
 }
@@ -343,10 +343,16 @@ if (!("no_perturb" %in% colnames(incident_cases))){
 
 
 # Limit seeding to on or after the added seeding start  and end dates date
+if (!is.null(config$seeding$added_seeding$start_date)){
+    incident_cases <- incident_cases %>% filter(date >= lubridate::as_date(config$seeding$added_seeding$start_date))
+}
+if (!is.null(config$seeding$added_seeding$end_date)){
+    incident_cases <- incident_cases %>% filter(date <= lubridate::as_date(config$seeding$added_seeding$end_date))
+}
+if (!is.null(config$seeding$added_seeding$filter_remove_variants)){
+    incident_cases <- incident_cases %>% filter(!(destination_variant_type %>% config$seeding$added_seeding$filter_remove_variants))
+}
 
-incident_cases <- incident_cases %>%
-    filter(date >= lubridate::as_date(config$seeding$added_seeding$start_date) &
-           date <= lubridate::as_date(config$seeding$added_seeding$end_date))
 
 # Save it
 
