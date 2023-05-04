@@ -44,8 +44,7 @@ library(purrr)
 
 option_list <- list(
     optparse::make_option(c("-c", "--config"), action = "store", default = Sys.getenv("CONFIG_PATH"), type = "character", help = "path to the config file"),
-    optparse::make_option(c("-k", "--keep_all_seeding"), action="store",default=TRUE,type='logical',help="Whether to filter away seeding prior to the start date of the simulation."),
-    optparse::make_option(c("-a", "--added_seeding"), action="store",default=FALSE,type='logical',help="Whether to filter away seeding prior to the start date of the simulation.")
+    optparse::make_option(c("-k", "--keep_all_seeding"), action="store",default=TRUE,type='logical',help="Whether to filter away seeding prior to the start date of the simulation.")
 )
 
 opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
@@ -322,65 +321,42 @@ if (!("no_perturb" %in% colnames(incident_cases))){
     incident_cases$no_perturb <- FALSE
 }
 
-# Combine with population seeding for compartments (current hack to get population in)
 
-if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seeding"]])) {
-    seeding_pop <- readr::read_csv(config$seeding$pop_seed_file)
-
-    # Add "no_perturb" flag
-    if (!("no_perturb" %in% colnames(seeding_pop))){
-        seeding_pop$no_perturb <- TRUE
-    }
-    seeding_pop <- seeding_pop %>%
-        dplyr::filter(place %in% all_geoids) %>%
-        dplyr::select(!!!colnames(incident_cases))
-
-    incident_cases <- incident_cases %>%
-        dplyr::bind_rows(seeding_pop) %>%
-        dplyr::arrange(place, date)
-}
-
-
-
-# Limit seeding to on or after the config start date and before the config end date
-if (max(incident_cases$date) < lubridate::as_date(config$start_date)){
-
-    incident_cases <- incident_cases %>%
-        group_by(place) %>%
-        filter(date == min(date)) %>%
-        distinct() %>%
-        ungroup() %>%
-        mutate(date = lubridate::as_date(config$start_date),
-               amount = 0)
-} else {
-
-    # keep all seeding -- dont filter away before sim date
-    if (opt$keep_all_seeding){
-        incident_cases <- incident_cases %>%
-            mutate(date = lubridate::as_date(ifelse(date < lubridate::as_date(config$start_date),
-                                                    lubridate::as_date(config$start_date), lubridate::as_date(date)))) %>%
-            filter(date <= config$end_date) %>%
-            # group_by(across(c(-amount))) %>%
-            # summarise(amount = sum(amount, na.rm = TRUE)) %>%
-            as_tibble()
-    } else {
-        incident_cases <- incident_cases %>%
-            filter(date >= config$start_date & date <= config$end_date)
-    }
-}
+# DONT NEED TO DO THIS for added seeding. should be in original
+# # Combine with population seeding for compartments (current hack to get population in)
+#
+# if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seeding"]])) {
+#     seeding_pop <- readr::read_csv(config$seeding$pop_seed_file)
+#
+#     # Add "no_perturb" flag
+#     if (!("no_perturb" %in% colnames(seeding_pop))){
+#         seeding_pop$no_perturb <- TRUE
+#     }
+#     seeding_pop <- seeding_pop %>%
+#         dplyr::filter(place %in% all_geoids) %>%
+#         dplyr::select(!!!colnames(incident_cases))
+#
+#     incident_cases <- incident_cases %>%
+#         dplyr::bind_rows(seeding_pop) %>%
+#         dplyr::arrange(place, date)
+# }
 
 
+# Limit seeding to on or after the added seeding start  and end dates date
 
+incident_cases <- incident_cases %>%
+    filter(date >= lubridate::as_date(config$seeding$added_seeding$start_date) &
+           date <= lubridate::as_date(config$seeding$added_seeding$end_date))
 
 # Save it
 
 write.csv(
     incident_cases,
-    file = file.path(config$seeding$lambda_file),
+    file = file.path(config$seeding$added_seeding$added_lambda_file),
     row.names = FALSE
 )
 
-print(paste("Saved seeding to", config$seeding$lambda_file))
+print(paste("Saved seeding to", config$seeding$added_seeding$added_lambda_file))
 head(incident_cases)
 
 ## @endcond

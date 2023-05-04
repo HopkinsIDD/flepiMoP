@@ -673,6 +673,33 @@ initialize_mcmc_first_block <- function(
     }
   }
 
+  # additional seeding for new variants or introductions to add to fitted seeding (for resumes)
+  if (!is.null(config$seeding$added_seeding) & is_resume & block <= 1){
+    if(!file.exists(config$seeding$added_seeding$added_lambda_file)) {
+      err <- system(paste(
+        opt$rpath,
+        paste(opt$flepi_path, "flepimop", "main_scripts", "create_seeding_added.R", sep = "/"),
+        "-c", opt$config
+      ))
+      if (err != 0) {
+        stop("Could not run added seeding")
+      }
+    }
+
+    # load and add to original seeding
+    seed_new <-  readr::read_csv(global_files[["seed_filename"]])
+    added_seeding <- readr::read_csv(config$seeding$added_seeding$added_lambda_file)
+    if (config$seeding$added_seeding$filter_previous_seedingdates){
+        seed_new <- seed_new %>%
+            dplyr::filter(date < lubridate::as_date(config$seeding$added_seeding$start_date) &
+                       date > lubridate::as_date(config$seeding$added_seeding$end_date))
+    }
+    seed_new <- seed_new %>% dplyr::bind_rows(added_seeding)
+
+    readr::write_csv(seed_new, global_files[["seed_filename"]])
+  }
+
+
   ## seir, snpi, spar
   checked_par_files <- c("snpi_filename", "spar_filename", "hnpi_filename", "hpar_filename")
   checked_sim_files <- c("seir_filename", "hosp_filename")
