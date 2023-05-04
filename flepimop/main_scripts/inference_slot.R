@@ -387,11 +387,6 @@ for(npi_scenario in npi_scenarios) {
         seeding_col_types <- NULL
         suppressMessages(initial_seeding <- readr::read_csv(first_chimeric_files[['seed_filename']], col_types=seeding_col_types))
 
-        if (!is.null(config$seeding$added_seeding)){
-
-
-        }
-
         if (opt$stoch_traj_flag) {
             initial_seeding$amount <- as.integer(round(initial_seeding$amount))
         }
