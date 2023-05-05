@@ -350,7 +350,7 @@ if (!is.null(config$seeding$added_seeding$end_date)){
     incident_cases <- incident_cases %>% filter(date <= lubridate::as_date(config$seeding$added_seeding$end_date))
 }
 if (!is.null(config$seeding$added_seeding$filter_remove_variants)){
-    incident_cases <- incident_cases %>% filter(!(destination_variant_type %>% config$seeding$added_seeding$filter_remove_variants))
+    incident_cases <- incident_cases %>% filter(!(destination_variant_type %in% config$seeding$added_seeding$filter_remove_variants))
 }
 
 
