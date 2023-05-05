@@ -65,7 +65,7 @@ def perform_targz(to_prun, do_it_for_real=False):
     with open("torun2targz.sh", "w") as script_file, open("torun2deletes3files.sh", "w") as script2_file, open("push2gdalist", "w") as gdalist:
         for run in to_prun:
             print(f"target directory: {run}...", end="")
-            command = f"aws s3 cp  --recursive  s3://{bucket}/{run} {destinationdir}/{run}"
+            command = f"aws s3 sync  s3://{bucket}/{run} {destinationdir}/{run}"
             command1a = f"aws s3 cp  s3://{bucket}/{run[:-1]}-copy.sh {destinationdir}"
             command1b = f"aws s3 cp  s3://{bucket}/{run[:-1]}-runner.sh {destinationdir}"
             command1c = f"aws s3 cp  s3://{bucket}/{run[:-1]}.tar.gz {destinationdir}"
