@@ -26,14 +26,14 @@ create_prefix <- function(...,prefix='',sep='-',trailing_separator=""){
     stop("scenario elements cannot contain the seperator")
   }
   prefix <- paste0(prefix,do.call(purrr::partial(sprintf,fmt=paste(formats,collapse = sep)),values),trailing_separator)
-  
+
   return(prefix)
 }
 
 ## Function for creating file names from their components
 ##' @export
-create_file_name <- function(run_id,prefix,index,type,extension='parquet',create_directory = TRUE){
-  rc <- sprintf("model_output/%s/%s%09d.%s.%s.%s",type,prefix,index,run_id,type,extension)
+create_file_name <- function(run_id,prefix,index,type,extension='parquet',create_directory = TRUE, model_output_dir = "model_output"){
+  rc <- sprintf("%s/%s/%s%09d.%s.%s.%s",model_output_dir,type,prefix,index,run_id,type,extension)
   if(create_directory){
     if(!dir.exists(dirname(rc))){
       dir.create(dirname(rc), recursive = TRUE)

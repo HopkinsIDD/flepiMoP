@@ -541,7 +541,8 @@ create_filename_list <- function(
   prefix,
   index,
   types = c("seed", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik"),
-  extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
+  extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet"),
+  model_output_dir = "model_output"
 ) {
   if(length(types) != length(extensions)){
     stop("Please specify the same number of types and extensions.  Given",length(types),"and",length(extensions))
@@ -550,7 +551,7 @@ create_filename_list <- function(
     x=types,
     y=extensions,
     function(x,y){
-      flepicommon::create_file_name(run_id = run_id,prefix = prefix,index = index,type = x,extension = y, create_directory = TRUE)
+      flepicommon::create_file_name(run_id = run_id,prefix = prefix,index = index,type = x,extension = y, create_directory = TRUE, model_output_dir)
     }
   )
   names(rc) <- paste(names(rc),"filename",sep='_')
@@ -583,14 +584,22 @@ initialize_mcmc_first_block <- function(
   chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet")
   non_llik_types <- paste(c("seed", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
 
+  if (config$initial_conditions$initial_file_type == "init") {
+    global_types <- c(global_types, "init")
+    global_extensions <- c(global_extensions, "parquet")
+  }
+
+
   global_files <- create_filename_list(run_id, global_prefix, block - 1, global_types, global_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
   chimeric_files <- create_filename_list(run_id, chimeric_prefix, block - 1, chimeric_types, chimeric_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.(block-1).run_ID.variable.ext
 
   global_check <- sapply(global_files, file.exists)
   chimeric_check <- sapply(chimeric_files, file.exists)
-  ## If this isn't the first block, all of the files should definitely exist
-  if (block > 1) {
 
+  ## If this isn't the first block, all of the files should definitely exist
+  ##
+  # --->  need to do something with init files and maybe seeding
+  if (block > 1) {
     if (any(!global_check)) {
       stop(paste(
         "Could not find file",
@@ -635,6 +644,27 @@ initialize_mcmc_first_block <- function(
     }
   }
 
+  if (config$initial_conditions$initial_file_type == "init") {
+    print(global_check)
+    important_global_check <- global_check[
+      (names(global_check) %in% c("init_filename"))
+    ]
+    if (!all(important_global_check)) {
+      all_file_types <- names(important_global_check)
+      missing_file_types <- names(important_global_check)[!important_global_check]
+      missing_files <- global_files[missing_file_types]
+      stop(paste(
+        "For InitialConditionsFolderDraw, init files must be present.",
+        "Could not find the following file types:",
+        paste(missing_file_types, collapse = ", "),
+        "\nWas expecting the following files:",
+        paste(all_file_types, collapse = ", "),
+        "\nLooking for them in these files",
+        paste(missing_files, collapse = ", ")
+      ))
+    }
+  }
+
   if (any(global_check)) {
     warning(paste(
       "Found file",
@@ -653,7 +683,8 @@ initialize_mcmc_first_block <- function(
     ))
   }
 
-  global_file_names <- names(global_files[!global_check]) # names are of the form "variable_filename", only files that DONT already exist will be in this list
+  # names are of the form "variable_filename", only files that DONT already exist will be in this list
+  global_file_names <- names(global_files[!global_check])
 
   ## seed
   if ("seed_filename" %in% global_file_names) {
@@ -672,6 +703,29 @@ initialize_mcmc_first_block <- function(
       stop("Could not copy seeding")
     }
   }
+
+  ## seir continuation resume transformation
+  if (!is.null(config$initial_conditions$init_transformation_script) & block == 1) {
+      err <- system(paste(
+        opt$rpath,
+        file.path(opt$flepi_path, config$initial_conditions$init_transformation_script),
+        "--res_config", opt$res_config,
+        "-c", opt$config,
+        "-p", opt$flepi_path,
+        "-e", opt$imm_esc_prop,
+        "--init_file_name", global_files[["init_filename"]]
+      ))
+      if (err != 0) {
+        stop("Could not run init file setup")
+      }
+    }
+    err <- !(file.copy(config$seeding$lambda_file, global_files[["seed_filename"]]))
+    if (err != 0) {
+      stop("Could not copy init files")
+    }
+  }
+
+
 
   ## seir, snpi, spar
   checked_par_files <- c("snpi_filename", "spar_filename", "hnpi_filename", "hpar_filename")

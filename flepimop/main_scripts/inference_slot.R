@@ -14,6 +14,7 @@ options(readr.num_columns = 0)
 
 option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
+    optparse::make_option(c("--res_config"), action = "store", default = Sys.getenv("RESUMED_CONFIG_PATH"), type = "character", help = "path to the previous config file"),
     optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
     optparse::make_option(c("-s", "--npi_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
     optparse::make_option(c("-d", "--outcome_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenarios to run, or 'all' to run all of them"),
@@ -32,7 +33,8 @@ option_list = list(
     optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
     optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
     optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
-    optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid")
+    optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid"),
+    optparse::make_option(c("-e", "--imm_esc_prop"), action="store", type='numeric', default = Sys.getenv("IMM_ESC_PROP", .35), help="annual percent of immune escape")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -60,30 +62,32 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-if (('perturbation_sd' %in% names(config$seeding))) {
-    if (('date_sd' %in% names(config$seeding))) {
-        stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
+if(!is.null(config$seeding)){
+
+    if (('perturbation_sd' %in% names(config$seeding))) {
+        if (('date_sd' %in% names(config$seeding))) {
+            stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
+        }
+        config$seeding$date_sd <- config$seeding$perturbation_sd
     }
-    config$seeding$date_sd <- config$seeding$perturbation_sd
-}
-if (!('date_sd' %in% names(config$seeding))) {
-    stop("Neither the key seeding::perturbation_sd nor the key seeding::date_sd are present in the config file, but one is required.")
-}
-if (!('amount_sd' %in% names(config$seeding))) {
-    config$seeding$amount_sd <- 1
-}
+    if (!('date_sd' %in% names(config$seeding))) {
+        stop("Neither the key seeding::perturbation_sd nor the key seeding::date_sd are present in the config file, but one is required.")
+    }
+    if (!('amount_sd' %in% names(config$seeding))) {
+        config$seeding$amount_sd <- 1
+    }
 
-if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-    stop("This filtration method requires the seeding method 'FolderDraw'")
-}
+    if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+        stop("This filtration method requires the seeding method 'FolderDraw'")
+    }
 
-if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-    stop("This filtration method requires the seeding method 'FolderDraw'")
+    if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+        stop("This filtration method requires the seeding method 'FolderDraw'")
+    }
+    #if (!('lambda_file' %in% names(config$seeding))) {
+    #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
+    #}
 }
-#if (!('lambda_file' %in% names(config$seeding))) {
-#  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
-#}
-
 
 # Aggregation to state level if in config
 state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
@@ -357,7 +361,7 @@ for(npi_scenario in npi_scenarios) {
             npi_scenario=npi_scenario,
             outcome_scenario=outcome_scenario,
             stoch_traj_flag=opt$stoch_traj_flag,
-            initialize=TRUE  # Shall we pre-compute now things that are not pertubed by inference
+            initialize=TRUE  # Shall we pre-compute now things that are not perturbed by inference
         )
         print("gempyor_inference_runner created successfully.")
 
