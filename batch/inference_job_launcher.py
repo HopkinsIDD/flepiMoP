@@ -32,6 +32,7 @@ def user_confirmation(question="Continue?", default=False):
 @click.command()
 @click.option("--aws", "batch_system", flag_value="aws", default=True)
 @click.option("--slurm", "batch_system", flag_value="slurm")
+@click.option("--local", "batch_system", flag_value="local")
 @click.option(
     "-c",
     "--config",
@@ -399,7 +400,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
                 sims_per_job = max(60 - math.sqrt(num_geoids), 10)
                 sims_per_job = 5 * int(math.ceil(sims_per_job / 5))  # multiple of 5
                 num_blocks = int(math.ceil(iterations_per_slot / sims_per_job))
-            elif batch_system == "slurm":
+            elif batch_system == "slurm" or batch_system == "local":
                 # now launch full sims:
                 sims_per_job = iterations_per_slot
                 num_blocks = 1
@@ -728,6 +729,16 @@ class BatchJobHandler(object):
                     raise Exception("sbatch command failed")
                 postprod_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING POST-PROCESSING JOB. Slurm job id is {postprod_job_id}")
+
+            elif self.batch_system == "local":
+                cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}"})
+                print(f"--- env var to set ---")
+                for envar in cur_env_vars:  # set env vars as enviroment variables
+                    os.environ[envar["name"]] = envar["value"]
+                    print(f"""export {envar["name"]}="{envar["value"]}" """)
+                print(f"--- end env var to set ---")
+
+
 
             # On aws: create all other jobs + the copy job. slurm script is only one block and copies itself at the end.
             if self.batch_system == "aws":
