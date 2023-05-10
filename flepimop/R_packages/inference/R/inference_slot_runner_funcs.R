@@ -565,7 +565,7 @@ create_filename_list <- function(
 ##'@param global_prefix the prefix to use for global files
 ##'@param chimeric_prefix the prefix to use for chimeric files
 ##'@param gempyor_inference_runner An already initialized copy of python inference runner
-##' @export
+##'@export
 initialize_mcmc_first_block <- function(
   run_id,
   block,
