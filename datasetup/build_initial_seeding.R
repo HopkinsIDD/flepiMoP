@@ -30,7 +30,6 @@ if (length(config) == 0) {
 
 # RUN INITIAL SEEDING -----------------------------------------------------
 
-
 ## Run initial seeding
 if(!file.exists(config$seeding$lambda_file)) {
     err <- system(paste(
