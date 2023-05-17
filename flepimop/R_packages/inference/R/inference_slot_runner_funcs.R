@@ -688,7 +688,18 @@ initialize_mcmc_first_block <- function(
     # load and add to original seeding
     seed_new <-  readr::read_csv(global_files[["seed_filename"]])
     added_seeding <- readr::read_csv(config$seeding$added_seeding$added_lambda_file)
-    if (config$seeding$added_seeding$filter_previous_seedingdates){
+
+    if (!is.null(config$seeding$added_seeding$fix_original_seeding) &&
+        config$seeding$added_seeding$fix_original_seeding){
+        seed_new$no_perturb <- TRUE
+    }
+    if (!is.null(config$seeding$added_seeding$fix_added_seeding)  &&
+        config$seeding$added_seeding$fix_added_seeding)){
+        added_seeding$no_perturb <- TRUE
+    }
+
+    if (!is.null(config$seeding$added_seeding$filter_previous_seedingdates) &&
+        config$seeding$added_seeding$filter_previous_seedingdates){
         seed_new <- seed_new %>%
             dplyr::filter(date < lubridate::as_date(config$seeding$added_seeding$start_date) &
                        date > lubridate::as_date(config$seeding$added_seeding$end_date))
