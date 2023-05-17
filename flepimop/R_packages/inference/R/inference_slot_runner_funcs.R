@@ -694,7 +694,7 @@ initialize_mcmc_first_block <- function(
         seed_new$no_perturb <- TRUE
     }
     if (!is.null(config$seeding$added_seeding$fix_added_seeding)  &&
-        config$seeding$added_seeding$fix_added_seeding)){
+        config$seeding$added_seeding$fix_added_seeding){
         added_seeding$no_perturb <- TRUE
     }
 
