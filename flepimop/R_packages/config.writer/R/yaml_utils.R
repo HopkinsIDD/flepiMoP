@@ -665,7 +665,7 @@ print_compartments <- function (
 #'
 #' @examples
 #'
-print_seeding <- function (method = "FolderDraw",
+print_seeding <- function(method = "FolderDraw",
                            seeding_file_type = "seed",
                            lambda_file = "data/seeding.csv",
                            population_file = "data/seeding_agestrat.csv",
@@ -678,7 +678,16 @@ print_seeding <- function (method = "FolderDraw",
                            age_strata_seed = "0_64",
                            seeding_outcome = NULL, # incidH
                            seeding_inflation_ratio = NULL, # 200
-                           capitalize_variants = TRUE ){
+                           capitalize_variants = TRUE,
+                           additional_seeding = FALSE,
+                           start_date_addedseed = NULL,
+                           end_date_addedseed = NULL,
+                           added_lambda_file = "data/seeding_territories_R17_phase2_added.csv",
+                           filter_previous_seedingdates = FALSE,
+                           filter_remove_variants = c("WILD"),
+                           fix_original_seeding = FALSE,
+                           fix_added_seeding = FALSE
+                           ){
 
     if (capitalize_variants) {
         variant_compartments <- stringr::str_to_upper(variant_compartments)
@@ -705,6 +714,15 @@ print_seeding <- function (method = "FolderDraw",
                       if (compartment) paste0("  pop_seed_file: ", population_file, "\n"),
                       "  date_sd: ", date_sd, "\n",
                       "  amount_sd: ", amount_sd, "\n",
+                      if(additional_seeding) paste0(
+                      "  added_seeding: \n",
+                      "    start_date: ", start_date_addedseed, "\n",
+                      "    end_date: ", end_date_addedseed, "\n",
+                      "    added_lambda_file: ", added_lambda_file, "\n",
+                      "    filter_previous_seedingdates: ", filter_previous_seedingdates, "\n",
+                      "    filter_remove_variants: ", filter_remove_variants, "\n",
+                      "    fix_original_seeding: ", fix_original_seeding, "\n",
+                      "    fix_added_seeding: ", fix_added_seeding, "\n"),
                       "\n")
     cat(seeding)
 }
@@ -1927,13 +1945,13 @@ seir_chunk <- function(resume_modifier = NULL,
                    "        [",rate_propexp_parts, ",\"1\",\"1\",\"1\"],\n",
                    "        [",rate_alpha_parts, ",\"1\",\"1\",\"1\"]]\n",
                    "      rate: [\n",
-                   paste0(sapply(X = c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts),
+                   paste0(sapply(X = na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)),
                               function(x = X){ paste0("        ",x,",\n")}) ),
                    "      ]\n"),
                paste0(
                    "      proportional_to: [\"source\"]\n",
                    "      proportion_exponent: [[\"1\",\"1\",\"1\",\"1\"]]\n",
-                   "      rate: [", paste(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts), collapse = ", "), "]\n")),
+                   "      rate: [", glue::glue_collapse(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "), "]\n")),
         "\n")
 
     return(tmp)
