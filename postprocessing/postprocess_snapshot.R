@@ -73,7 +73,10 @@ pdf.options(useDingbats = TRUE)
 
 # FUNCTIONS ---------------------------------------------------------------
 
-import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt){
+import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt,
+                                 lim_hosp = c("date", 
+                                              sapply(1:length(names(config$inference$statistics)), function(i) purrr::flatten(config$inference$statistics[i])$sim_var),
+                                              config$spatial_setup$nodenames)){
   dir_ <- paste0(scn_dir, "/",
                  outcome, "/",
                  config$name, "/",
@@ -96,7 +99,8 @@ import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt){
       dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/"))
     }
     if(outcome == "hosp"){
-      dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/")) 
+      dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/")) %>%
+        select(all_of(lim_hosp))
     }
     if(any(grepl("csv", subdir_list))){
       dat <- read.csv(paste(subdir_, subdir_list[i], sep = "/"))
@@ -116,7 +120,8 @@ import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt){
 
 # IMPORT OUTCOMES ---------------------------------------------------------
 
-res_dir <- opt$results_path
+res_dir <- file.path(opt$results_path, config$model_output_dirname)
+print(res_dir)
 
 model_outputs <- list.files(res_dir)[match(opt$select_outputs,list.files(res_dir))]
 if("llik" %in% model_outputs){
@@ -125,10 +130,13 @@ if("llik" %in% model_outputs){
 }else{
   model_outputs <- c(model_outputs, "llik")
 }
+start_time <- Sys.time()
 
 outputs_global <- lapply(model_outputs, function(i) setDT(import_model_outputs(res_dir, i, 'global', 'final')))
 names(outputs_global) <- model_outputs
 
+end_time <- Sys.time()
+print(end_time - start_time)
 
 
 ## HOSP --------------------------------------------------------------------
