@@ -352,6 +352,10 @@ def launch_batch(
             raise Exception(
                 "No auto-detection of run_id from local folder, please specify --continuation_run_id (or fixme)"
             )
+    if continuation and continuation_location is None:
+        continuation_location = restart_from_location
+        contination_run_id = contination_run_id
+        print("Continuation enabled but no continuation location provided. Assuming that continuation location is the same as resume location")
         
     
 
