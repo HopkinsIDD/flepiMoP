@@ -720,9 +720,8 @@ class BatchJobHandler(object):
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION", "value": f"TRUE"})
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION_RUN_ID", "value": f"{self.continuation_run_id}"})
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION_LOCATION", "value": f"{self.continuation_location}"})
-
-                ## TODO TOmorrow: ensure that the continuation run id is the same as the run id of the job that is being resumed if it is specified well.
-
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION_FTYPE", "value": f"{config['initial_conditions']['initial_file_type']}"})
+                
             # First job:
             if self.batch_system == "aws":
                 cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}_block0"})
