@@ -244,6 +244,32 @@ def user_confirmation(question="Continue?", default=False):
     type=click.Choice(['cspproduction', 'debug', 'noslack']),
     help="Slack channel, either 'csp-production' or 'debug', or 'noslack' to disable slack",
 )
+@click.option(
+    "--continuation/--no-continuation",
+    "--continuation/--no-continuation",
+    "continuation",
+    envvar="FLEPI_CONTINUATION",
+    type=bool,
+    default=False,
+    help="Flag determining whether to use the resumed run /seir/files (or the provided /init/ial files bucket) as initial conditions for the next run",
+)
+@click.option(
+    "--continuation-location",
+    "--continuation-location",
+    "continuation_location",
+    type=str,
+    default=None,
+    envvar="CONTINUATION_LOCATION",
+    help="The location (folder or an S3 bucket) from which to pull the /init/ files (if not set, uses the resume location seir files)",
+)
+@click.option(
+    "--continuation-run-id",
+    "--continuation-run-id",
+    "contination_run_id",
+    type=str,
+    default=None,
+    help="The run_id of the run we are continuing from",
+)
 def launch_batch(
     batch_system,
     config_file,
@@ -270,6 +296,9 @@ def launch_batch(
     reset_chimerics,
     s3_upload,
     slack_channel,
+    continuation,
+    continuation_location,
+    contination_run_id,
 ):
 
     config = None
@@ -302,35 +331,29 @@ def launch_batch(
         print(f"WARNING: no inference section found in {config_file}!")
 
     if "s3://" in str(restart_from_location):  # ugly hack: str because it might be None
-        import boto3
-
-        s3 = boto3.resource("s3")
-        bucket = s3.Bucket(s3_bucket)
-        prefix = restart_from_location.split("/")[3] + "/model_output/"
-        all_files = list(bucket.objects.filter(Prefix=prefix))
-        all_files = [f.key for f in all_files]
-        if restart_from_run_id is None:
-            print("WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎...")
-            restart_from_run_id = all_files[0].split("/")[6]
-
-            if user_confirmation(question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True):
-                print(f"great, continuing with run_id {restart_from_run_id}...")
-            else:
-                raise ValueError(f"Abording, please specify --restart_from_run_id manually.")
-
-        final_llik = [f for f in all_files if ("llik" in f) and ("final" in f)]
-
-        if len(final_llik) != num_jobs:
-            print(
-                f"WARNING: number of good slots in resume_location: ({len(final_llik)}) does not match number of jobs ({num_jobs})."
-            )
-            if (num_jobs - len(final_llik)) > 50:
-                user_confirmation(question=f"Difference > 50. Should we continue ?")
+        restart_from_run_id = aws_countfiles_autodetect_runid(s3_bucket=s3_bucket, 
+                                                              restart_from_location=restart_from_location, 
+                                                              restart_from_run_id=restart_from_run_id,
+                                                              num_jobs=num_jobs,
+                                                              strict=False)
     else:
         if restart_from_run_id is None and restart_from_location is not None:
             raise Exception(
                 "No auto-detection of run_id from local folder, please specify --restart_from_run_id (or fixme)"
             )
+    if "s3://" in str(continuation_location):
+        contination_run_id = aws_countfiles_autodetect_runid(s3_bucket=s3_bucket, 
+                                                              restart_from_location=continuation_location, 
+                                                              restart_from_run_id=contination_run_id,
+                                                              num_jobs=num_jobs,
+                                                              strict=True)
+    else:
+        if contination_run_id is None and continuation_location is not None:
+            raise Exception(
+                "No auto-detection of run_id from local folder, please specify --continuation_run_id (or fixme)"
+            )
+        
+    
 
     handler = BatchJobHandler(
         batch_system,
@@ -357,6 +380,9 @@ def launch_batch(
         reset_chimerics,
         s3_upload,
         slack_channel,
+        continuation,
+        continuation_location,
+        contination_run_id,
     )
 
     npi_scenarios = config["interventions"]["scenarios"]
@@ -435,6 +461,42 @@ def get_aws_job_queues(job_queue_prefix):
     return sorted(queues_with_jobs, key=queues_with_jobs.get)
 
 
+def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_from_run_id, num_jobs, strict=False):
+    import boto3
+
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(s3_bucket)
+    prefix = restart_from_location.split("/")[3] + "/model_output/"
+    all_files = list(bucket.objects.filter(Prefix=prefix))
+    all_files = [f.key for f in all_files]
+    if restart_from_run_id is None:
+        print("WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎...")
+        restart_from_run_id = all_files[0].split("/")[6]
+
+        if user_confirmation(question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True):
+            print(f"great, continuing with run_id {restart_from_run_id}...")
+        else:
+            raise ValueError(f"Abording, please specify --restart_from_run_id manually.")
+
+    final_llik = [f for f in all_files if ("llik" in f) and ("final" in f)]
+    if len(final_llik) == 0:  # hacky: there might be a bucket with no llik files, e.g if init.
+        final_llik =  [f for f in all_files if ("init" in f) and ("final" in f)]
+
+    if len(final_llik) != num_jobs:
+        if strict:
+            raise ValueError(
+                f"number of good slots in resume_location: ({len(final_llik)}) does not match number of jobs ({num_jobs})."
+            )
+        else:
+            print(
+                f"WARNING: number of good slots in resume_location: ({len(final_llik)}) does not match number of jobs ({num_jobs})."
+            )
+            if (num_jobs - len(final_llik)) > 50:
+                user_confirmation(question=f"Difference > 50. Should we continue ?")
+    
+    return restart_from_run_id
+
+
 class BatchJobHandler(object):
     def __init__(
         self,
@@ -462,6 +524,9 @@ class BatchJobHandler(object):
         reset_chimerics,
         s3_upload,
         slack_channel,
+        continuation,
+        continuation_location,
+        contination_run_id,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -487,6 +552,9 @@ class BatchJobHandler(object):
         self.reset_chimerics = reset_chimerics
         self.s3_upload = s3_upload
         self.slack_channel = slack_channel
+        self.continuation = continuation
+        self.continuation_location = continuation_location
+        self.contination_run_id = contination_run_id
 
     def build_job_metadata(self, job_name):
         """
@@ -643,6 +711,13 @@ class BatchJobHandler(object):
                 cur_env_vars.append({"name": "RESUME_RUN", "value": f"TRUE"})
             else:
                 cur_env_vars.append({"name": "RESUME_RUN", "value": f"FALSE"})
+
+            if self.continuation:
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION", "value": f"TRUE"})
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION_RUN_ID", "value": f"{self.continuation_run_id}"})
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION_LOCATION", "value": f"{self.continuation_location}"})
+
+                ## TODO TOmorrow: ensure that the continuation run id is the same as the run id of the job that is being resumed if it is specified well.
 
             # First job:
             if self.batch_system == "aws":
