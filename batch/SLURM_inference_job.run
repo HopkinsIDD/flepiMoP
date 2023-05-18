@@ -37,13 +37,13 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
 		export RESUME_RUN_INDEX=$OLD_FLEPI_RUN_INDEX
 		echo "RESUME_DISCARD_SEEDING is set to $RESUME_DISCARD_SEEDING"
 		if [[ $RESUME_DISCARD_SEEDING == "true" ]]; then
-			export PARQUET_TYPES="spar snpi hpar hnpi"
+			export PARQUET_TYPES="spar snpi hpar hnpi init"
 		else
-			export PARQUET_TYPES="seed spar snpi hpar hnpi"
+			export PARQUET_TYPES="seed spar snpi hpar hnpi init"
 		fi
 	else                                 # if we are not in the first block, we need to resume from the last job, with seeding an all.
 		export RESUME_RUN_INDEX=$FLEPI_RUN_INDEX
-		export PARQUET_TYPES="seed spar snpi seir hpar hnpi hosp llik"
+		export PARQUET_TYPES="seed spar snpi seir hpar hnpi hosp llik init"
 	fi
 	for filetype in $PARQUET_TYPES
 	do
@@ -76,8 +76,29 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
 			fi
 		done
 	done
-	ls -ltr model_output
+	
 fi
+
+if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
+    export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX-1,'$FLEPI_CONTINUATION_FTYPE','$extension'))")
+    # in filename is always a seir file
+    export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_CONTINUATION_RUN_ID','$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID/global/final/',$FLEPI_SLOT_INDEX,'seir','$extension'))")
+    if [[ $FLEPI_CONTINUATION_LOCATION == *"s3://"* ]]; then
+        aws s3 cp --quiet $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $OUT_FILENAME
+    else
+        # cp does not create directorys, so we make the directories first
+        export $OUT_FILENAME_DIR="$(dirname "${OUT_FILENAME}")"
+        mkdir -p $OUT_FILENAME_DIR
+        cp $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $OUT_FILENAME
+    fi
+    if [[ -f $OUT_FILENAME ]]; then
+        echo "CONTINUATION: Copy successful for file of type $filetype ($IN_FILENAME -> $OUT_FILENAME)"
+    else
+        echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $OUT_FILENAME)"
+    fi
+fi
+
+ls -ltr model_output
 echo "***************** DONE FETCHING RESUME FILES *****************"
 
 echo "***************** RUNNING INFERENCE_MAIN.R *****************"
@@ -110,7 +131,7 @@ echo "***************** DONE RUNNING INFERENCE_SLOT.R *****************"
 echo "***************** UPLOADING RESULT TO S3 (OR NOT) *****************"
 ## copy to s3 if necessary:
 if [[ $S3_UPLOAD == "true" ]]; then
-    for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+    for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "init"
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/chimeric/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
@@ -125,12 +146,12 @@ if [[ $S3_UPLOAD == "true" ]]; then
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','csv'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
-        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
+        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof" "init"
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
-        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
+        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof" "init"
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
@@ -146,7 +167,7 @@ echo "***************** DONE UPLOADING RESULT TO S3 (OR NOT) *****************"
 
 # TODO: MV here ? what to do about integration_dump.pkl e.g ?
 echo "***************** COPYING RESULTS TO RESULT DIRECTORY *****************"
-for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "init"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/chimeric/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
@@ -167,14 +188,14 @@ do
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
-for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
+for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof" "init"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
-    for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
+    for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof" "init"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
