@@ -96,6 +96,7 @@ class SeedingAndIC:
             ic_df = pd.read_csv(
                 self.initial_conditions_config["states_file"].as_str(),
                 converters={"place": lambda x: str(x)},
+                skipinitialspace=True
             )
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
@@ -148,6 +149,7 @@ class SeedingAndIC:
                 self.seeding_config["lambda_file"].as_str(),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
+                skipinitialspace=True
             )
             dupes = seeding[seeding.duplicated(["place", "date"])].index + 1
             if not dupes.empty:
@@ -158,6 +160,7 @@ class SeedingAndIC:
                     ftype=setup.seeding_config["seeding_file_type"],
                     sim_id=sim_id,
                     extension_override="csv",
+                    skipinitialspace=True
                 ),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
