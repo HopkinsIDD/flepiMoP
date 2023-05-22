@@ -160,10 +160,10 @@ class SeedingAndIC:
                     ftype=setup.seeding_config["seeding_file_type"],
                     sim_id=sim_id,
                     extension_override="csv",
-                    skipinitialspace=True
                 ),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
+                skipinitialspace=True
             )
         elif method == "NoSeeding":
             seeding = pd.DataFrame(columns=["date", "place"])
