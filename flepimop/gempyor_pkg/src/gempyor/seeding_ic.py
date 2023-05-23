@@ -11,6 +11,7 @@ import logging
 from . import compartments
 from . import setup
 import numba as nb
+from utils import read_df
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +114,13 @@ class SeedingAndIC:
                     raise ValueError(
                         f"place {pl} does not exist in seeding::states_file. You can set ignore_missing=TRUE to bypass this error"
                     )
-
-        elif method == "InitialConditionsFolderDraw":
-            ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+        elif method == "InitialConditionsFolderDraw" or method == "FromFile":
+            if method == "InitialConditionsFolderDraw":
+                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+            elif method == "FromFile":
+                ic_df = read_df(
+                    self.initial_conditions_config["initial_conditions_file"].get(),
+                )  
             ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
@@ -165,6 +170,12 @@ class SeedingAndIC:
                 parse_dates=["date"],
                 skipinitialspace=True
             )
+        elif method == "FromFile":
+            seeding = pd.read_csv(self.seeding_config["seeding_file"].get(),
+                converters={"place": lambda x: str(x)},
+                parse_dates=["date"],
+                skipinitialspace=True
+            )
         elif method == "NoSeeding":
             seeding = pd.DataFrame(columns=["date", "place"])
             return _DataFrame2NumbaDict(df=seeding, amounts=[], setup=setup)
@@ -179,7 +190,7 @@ class SeedingAndIC:
             amounts = np.random.poisson(seeding["amount"])
         elif method == "NegativeBinomialDistributed":
             amounts = np.random.negative_binomial(n=5, p=5 / (seeding["amount"] + 5))
-        elif method == "FolderDraw":
+        elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
@@ -193,9 +204,10 @@ class SeedingAndIC:
             "SetInitialConditions",
             "InitialConditionsFolderDraw",
             "NoSeeding",
+            "FromFile"
         ]:
             raise NotImplementedError(
-                f"Seeding method in inference run must be FolderDraw, SetInitialConditions, or InitialConditionsFolderDraw [got: {method}]"
+                f"Seeding method in inference run must be FolderDraw, SetInitialConditions, FromFile or InitialConditionsFolderDraw [got: {method}]"
             )
         return self.draw_seeding(sim_id=sim_id, setup=setup)
 
