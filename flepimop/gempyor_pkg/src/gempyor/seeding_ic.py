@@ -11,7 +11,7 @@ import logging
 from . import compartments
 from . import setup
 import numba as nb
-from utils import read_df
+from .utils import read_df
 
 logger = logging.getLogger(__name__)
 
