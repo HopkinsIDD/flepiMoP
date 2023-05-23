@@ -97,7 +97,7 @@ class SeedingAndIC:
             ic_df = pd.read_csv(
                 self.initial_conditions_config["states_file"].as_str(),
                 converters={"place": lambda x: str(x)},
-                skipinitialspace=True
+                skipinitialspace=True,
             )
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
@@ -120,7 +120,7 @@ class SeedingAndIC:
             elif method == "FromFile":
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
-                )  
+                )
             ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
@@ -154,7 +154,7 @@ class SeedingAndIC:
                 self.seeding_config["lambda_file"].as_str(),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
-                skipinitialspace=True
+                skipinitialspace=True,
             )
             dupes = seeding[seeding.duplicated(["place", "date"])].index + 1
             if not dupes.empty:
@@ -168,13 +168,14 @@ class SeedingAndIC:
                 ),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
-                skipinitialspace=True
+                skipinitialspace=True,
             )
         elif method == "FromFile":
-            seeding = pd.read_csv(self.seeding_config["seeding_file"].get(),
+            seeding = pd.read_csv(
+                self.seeding_config["seeding_file"].get(),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
-                skipinitialspace=True
+                skipinitialspace=True,
             )
         elif method == "NoSeeding":
             seeding = pd.DataFrame(columns=["date", "place"])
@@ -199,13 +200,7 @@ class SeedingAndIC:
         method = "NoSeeding"
         if "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
-        if method not in [
-            "FolderDraw",
-            "SetInitialConditions",
-            "InitialConditionsFolderDraw",
-            "NoSeeding",
-            "FromFile"
-        ]:
+        if method not in ["FolderDraw", "SetInitialConditions", "InitialConditionsFolderDraw", "NoSeeding", "FromFile"]:
             raise NotImplementedError(
                 f"Seeding method in inference run must be FolderDraw, SetInitialConditions, FromFile or InitialConditionsFolderDraw [got: {method}]"
             )

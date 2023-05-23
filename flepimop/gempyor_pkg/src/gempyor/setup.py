@@ -259,12 +259,16 @@ class Setup:
 class SpatialSetup:
     def __init__(self, *, setup_name, geodata_file, mobility_file, popnodes_key, nodenames_key):
         self.setup_name = setup_name
-        self.data = pd.read_csv(geodata_file, converters={nodenames_key: lambda x: str(x).strip()}, skipinitialspace=True)  # geoids and populations, strip whitespaces
+        self.data = pd.read_csv(
+            geodata_file, converters={nodenames_key: lambda x: str(x).strip()}, skipinitialspace=True
+        )  # geoids and populations, strip whitespaces
         self.nnodes = len(self.data)  # K = # of locations
 
         # popnodes_key is the name of the column in geodata_file with populations
         if popnodes_key not in self.data:
-            raise ValueError(f"popnodes_key: {popnodes_key} does not correspond to a column in geodata: {self.data.columns}")
+            raise ValueError(
+                f"popnodes_key: {popnodes_key} does not correspond to a column in geodata: {self.data.columns}"
+            )
         self.popnodes = self.data[popnodes_key].to_numpy()  # population
         if len(np.argwhere(self.popnodes == 0)):
             raise ValueError(
