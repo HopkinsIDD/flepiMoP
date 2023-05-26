@@ -291,7 +291,7 @@ seir_dat_changing <- seir_dat %>%
 # SEIR static (where we are not messing with the SEIR compartments)
 
 seir_dat_static <- seir_dat_static %>%
-    select(-date_cl, -mc_name) %>%
+    select(-mc_name) %>%
     filter(mc_value_type == "prevalence") %>%
     mutate(mc_vaccination_stage = ifelse(mc_vaccination_stage == "3dose", "vaccinated", "unvaccinated")) %>%
     mutate(mc_variant_type = "ALL") %>%
@@ -329,7 +329,7 @@ if (gradual_waning){
         mutate(mc_variant_type = "ALL")
 
     seir_dat_Wgrad <- seir_dat_Wgrad %>%
-        select(-date_cl, -mc_infection_stage, -mc_name) %>%
+        select(-mc_infection_stage, -mc_name) %>%
         as_tibble() %>%
         pivot_longer(cols = -c(prob_immune:mc_age_strata), names_to = "loc", values_to = "n") %>%
         group_by(prob_immune, date, mc_value_type, mc_variant_type, mc_vaccination_stage, mc_age_strata, loc) %>%
@@ -368,7 +368,7 @@ seir_dat_changing <- seir_dat_changing %>%
 
 # aggregate
 seir_dat_changing <- seir_dat_changing %>%
-    select(-date_cl, -mc_infection_stage, -mc_name, -prob_immune) %>%
+    select(-mc_infection_stage, -mc_name, -prob_immune) %>%
     pivot_longer(cols = -c(prob_immune_nom:mc_age_strata, date), names_to = "loc", values_to = "n") %>%
     group_by(prob_immune_nom, date, mc_value_type, mc_vaccination_stage, mc_age_strata, loc) %>%
     summarise(n = sum(n, na.rm=TRUE)) %>%
