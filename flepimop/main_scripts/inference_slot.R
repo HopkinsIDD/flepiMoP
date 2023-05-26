@@ -77,9 +77,7 @@ if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw')))
     stop("This filtration method requires the seeding method 'FolderDraw'")
 }
 
-if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-    stop("This filtration method requires the seeding method 'FolderDraw'")
-}
+
 #if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
