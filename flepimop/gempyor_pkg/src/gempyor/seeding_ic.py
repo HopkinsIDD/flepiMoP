@@ -88,10 +88,10 @@ class SeedingAndIC:
 
         allow_missing_nodes = False
         allow_missing_compartments = False
-        if self.initial_conditions_config["allow_missing_nodes"].exist():
+        if self.initial_conditions_config["allow_missing_nodes"].exists():
             if self.initial_conditions_config["allow_missing_nodes"].get():
                 allow_missing_nodes=True
-        if self.initial_conditions_config["allow_missing_compartments"].exist():
+        if self.initial_conditions_config["allow_missing_compartments"].exists():
             if self.initial_conditions_config["allow_missing_compartments"].get():
                 allow_missing_compartments=True
 
