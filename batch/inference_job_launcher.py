@@ -354,7 +354,7 @@ def launch_batch(
             )
     if continuation and continuation_location is None:
         continuation_location = restart_from_location
-        continuation_run_id = continuation_run_id
+        continuation_run_id = restart_from_run_id
         print("Continuation enabled but no continuation location provided. Assuming that continuation location is the same as resume location")
         
     
