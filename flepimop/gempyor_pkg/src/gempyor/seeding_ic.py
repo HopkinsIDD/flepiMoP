@@ -85,7 +85,16 @@ class SeedingAndIC:
         method = "Default"
         if "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
-        print("ok in init")
+
+        allow_missing_nodes = False
+        allow_missing_compartments = False
+        if self.initial_conditions_config["allow_missing_nodes"].exist():
+            if self.initial_conditions_config["allow_missing_nodes"].get():
+                allow_missing_nodes=True
+        if self.initial_conditions_config["allow_missing_compartments"].exist():
+            if self.initial_conditions_config["allow_missing_compartments"].get():
+                allow_missing_compartments=True
+
         if method == "Default":
             ## JK : This could be specified in the config
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
@@ -100,19 +109,19 @@ class SeedingAndIC:
                 skipinitialspace=True,
             )
             if ic_df.empty:
-                raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
+                raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for pl_idx, pl in enumerate(setup.spatset.nodenames):  #
                 if pl in list(ic_df["place"]):
                     states_pl = ic_df[ic_df["place"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
                         y0[comp_idx, pl_idx] = float(states_pl[states_pl["comp"] == comp_name]["amount"])
-                elif self.seeding_config["ignore_missing"].get():
+                elif allow_missing_nodes:
                     print(f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population")
                     y0[0, pl_idx] = setup.popnodes[pl_idx]
                 else:
                     raise ValueError(
-                        f"place {pl} does not exist in seeding::states_file. You can set ignore_missing=TRUE to bypass this error"
+                        f"place {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
@@ -124,31 +133,31 @@ class SeedingAndIC:
             ic_df["date"] = ic_df["date"].astype(str)
             ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
-                raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
-
+                raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
+            print(ic_df)
             for comp_idx, comp_name in setup.compartments.compartments["name"].items():
-                print(comp_name)
                 ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
                 for pl_idx, pl in enumerate(setup.spatset.nodenames):
-                    print(ic_df_compartment[pl])
                     if pl in ic_df.columns:
-                        try:
-                            y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
-                        except:
-                            raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}.")
-                    elif setup.seeding_config["ignore_missing"].get():
+                        if ic_df_compartment[pl].empty:
+                            if allow_missing_compartments:    
+                                y0[comp_idx, pl_idx] = 0
+                            else:
+                                raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}.")
+                        else:
+                            y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])    
+                    elif allow_missing_nodes:
                         logging.warning(
                             f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population"
                         )
                         y0[0, pl_idx] = setup.popnodes[pl_idx]
                     else:
                         raise ValueError(
-                            f"place {pl} does not exist in seeding::states_file. You can set ignore_missing=TRUE to bypass this error"
+                            f"place {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
-        print("done in init")
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
