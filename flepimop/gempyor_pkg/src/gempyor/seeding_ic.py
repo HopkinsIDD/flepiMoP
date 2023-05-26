@@ -85,7 +85,7 @@ class SeedingAndIC:
         method = "Default"
         if "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
-
+        print("ok in init")
         if method == "Default":
             ## JK : This could be specified in the config
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
@@ -125,12 +125,19 @@ class SeedingAndIC:
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
 
+            print(ic_df)
+
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for comp_idx, comp_name in setup.compartments.compartments["name"].items():
+                print(comp_name)
                 ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
                 for pl_idx, pl in enumerate(setup.spatset.nodenames):
+                    print(ic_df_compartment[pl])
                     if pl in ic_df.columns:
-                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
+                        try:
+                            y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
+                        except:
+                            raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}.")
                     elif setup.seeding_config["ignore_missing"].get():
                         logging.warning(
                             f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population"
@@ -142,6 +149,7 @@ class SeedingAndIC:
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
+        print("done in init")
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
