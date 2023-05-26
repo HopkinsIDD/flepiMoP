@@ -60,21 +60,25 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-if (('perturbation_sd' %in% names(config$seeding))) {
-    if (('date_sd' %in% names(config$seeding))) {
-        stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
+if (seeding %in% names(config$seeding)) {
+    if (('perturbation_sd' %in% names(config$seeding))) {
+        if (('date_sd' %in% names(config$seeding))) {
+            stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
+        }
+        config$seeding$date_sd <- config$seeding$perturbation_sd
     }
-    config$seeding$date_sd <- config$seeding$perturbation_sd
-}
-if (!('date_sd' %in% names(config$seeding))) {
-    stop("Neither the key seeding::perturbation_sd nor the key seeding::date_sd are present in the config file, but one is required.")
-}
-if (!('amount_sd' %in% names(config$seeding))) {
-    config$seeding$amount_sd <- 1
-}
+    if (!('date_sd' %in% names(config$seeding))) {
+        stop("Neither the key seeding::perturbation_sd nor the key seeding::date_sd are present in the config file, but one is required.")
+    }
+    if (!('amount_sd' %in% names(config$seeding))) {
+        config$seeding$amount_sd <- 1
+    }
 
-if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-    stop("This filtration method requires the seeding method 'FolderDraw'")
+    if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+        stop("This filtration method requires the seeding method 'FolderDraw'")
+    }
+} else {
+    print("/!\ No seeding: section found in config >> not fitting seeding.")
 }
 
 
