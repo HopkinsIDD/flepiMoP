@@ -60,11 +60,9 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-<<<<<<< HEAD
-if ("seeding" %in% names(config)) {
-=======
+
 if (!is.null(config$seeding)){
->>>>>>> origin/seeding_fix
+
     if (('perturbation_sd' %in% names(config$seeding))) {
         if (('date_sd' %in% names(config$seeding))) {
             stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
@@ -81,17 +79,14 @@ if (!is.null(config$seeding)){
     if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
         stop("This filtration method requires the seeding method 'FolderDraw'")
     }
-<<<<<<< HEAD
 } else {
     print("/!\ No seeding: section found in config >> not fitting seeding.")
 }
-
 
 #if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
 
-=======
 
     if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
         stop("This filtration method requires the seeding method 'FolderDraw'")
