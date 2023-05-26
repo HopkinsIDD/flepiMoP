@@ -291,7 +291,7 @@ seir_dat_changing <- seir_dat %>%
 # SEIR static (where we are not messing with the SEIR compartments)
 
 seir_dat_static <- seir_dat_static %>%
-    select(-date_cl, -mc_name) %>%
+    select(-mc_name) %>%
     filter(mc_value_type == "prevalence") %>%
     mutate(mc_vaccination_stage = ifelse(mc_vaccination_stage == "3dose", "vaccinated", "unvaccinated")) %>%
     mutate(mc_variant_type = "ALL") %>%
@@ -368,7 +368,7 @@ seir_dat_changing <- seir_dat_changing %>%
 
 # aggregate
 seir_dat_changing <- seir_dat_changing %>%
-    select(-date_cl, -mc_infection_stage, -mc_name, -prob_immune) %>%
+    select(-mc_infection_stage, -mc_name, -prob_immune) %>%
     pivot_longer(cols = -c(prob_immune_nom:mc_age_strata, date), names_to = "loc", values_to = "n") %>%
     group_by(prob_immune_nom, date, mc_value_type, mc_vaccination_stage, mc_age_strata, loc) %>%
     summarise(n = sum(n, na.rm=TRUE)) %>%
@@ -402,10 +402,25 @@ seir_dat_changing <- seir_dat_changing %>%
 #     theme_bw() +
 #     facet_wrap(~mc_age_strata, ncol = 1)
 
-
 # Move all the S, R, W to the immune ladder Xs
+seir_dat_changing <- seir_dat_changing %>%
+    dplyr::mutate(mc_infection_stage = paste0("X", round(prob_immune_nom*10)))
+
+# add any missing compartments
+seir_dat_changing <- seir_dat_changing %>%
+    full_join(
+            expand_grid(date = unique(seir_dat_changing$date),
+                        mc_value_type = unique(seir_dat_changing$mc_value_type),
+                        mc_vaccination_stage = config$compartments$vaccination_stage,
+                        mc_age_strata = config$compartments$age_strata,
+                        loc = unique(seir_dat_changing$loc),
+                        mc_infection_stage = config$compartments$infection_stage[!(config$compartments$infection_stage %in% c("E", "I1", "I2", "I3"))])
+        ) %>%
+            dplyr::arrange(date, mc_age_strata, loc, mc_infection_stage) %>%
+    mutate(n = ifelse(is.na(n), 0, n))
+
+
 seir_dat_changing_final <- seir_dat_changing %>%
-    dplyr::mutate(mc_infection_stage = paste0("X", round(prob_immune_nom*10))) %>%
     dplyr::mutate(mc_variant_type = "ALL") %>%
     dplyr::mutate(mc_name = paste("mc", mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
     tidyr::pivot_wider(names_from = loc, values_from = n)
