@@ -82,6 +82,15 @@ if (!is.null(config$seeding)){
     print("⚠️ No seeding: section found in config >> not fitting seeding.")
 }
 
+if (!is.null(config$initial_conditions)){
+    if ('init_transformation_script' %in% names(config$initial_conditions)) {
+        # fixme: so brittle in case of trailing /
+        init_transformation_script_file <- paste(opt$flepi_path, config$initial_conditions$init_transformation_script, sep = "/")
+        print(paste("Calling init_transformation_script: ", init_transformation_script_file))
+        source(init_transformation_script_file)
+    }
+}
+
 #if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
