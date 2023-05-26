@@ -76,10 +76,10 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
 			fi
 		done
 	done
-	
 fi
 
 if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
+    echo "Where doing a continuation"
     export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX-1,'$FLEPI_CONTINUATION_FTYPE','$extension'))")
     # in filename is always a seir file
     export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_CONTINUATION_RUN_ID','$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID/global/final/',$FLEPI_SLOT_INDEX,'seir','$extension'))")
