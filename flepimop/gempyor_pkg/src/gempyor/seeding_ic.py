@@ -121,11 +121,10 @@ class SeedingAndIC:
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
                 )
+            ic_df["date"] = ic_df["date"].astype(str)
             ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
-
-            print(ic_df)
 
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for comp_idx, comp_name in setup.compartments.compartments["name"].items():
