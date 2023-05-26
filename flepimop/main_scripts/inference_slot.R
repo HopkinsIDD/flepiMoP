@@ -79,7 +79,7 @@ if (!is.null(config$seeding)){
         stop("This filtration method requires the seeding method 'FolderDraw'")
     }
 } else {
-    print("/!\ No seeding: section found in config >> not fitting seeding.")
+    print("⚠️ No seeding: section found in config >> not fitting seeding.")
 }
 
 #if (!('lambda_file' %in% names(config$seeding))) {

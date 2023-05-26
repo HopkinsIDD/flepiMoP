@@ -265,7 +265,7 @@ def user_confirmation(question="Continue?", default=False):
 @click.option(
     "--continuation-run-id",
     "--continuation-run-id",
-    "contination_run_id",
+    "continuation_run_id",
     type=str,
     default=None,
     help="The run_id of the run we are continuing from",
@@ -298,7 +298,7 @@ def launch_batch(
     slack_channel,
     continuation,
     continuation_location,
-    contination_run_id,
+    continuation_run_id,
 ):
 
     config = None
@@ -342,19 +342,19 @@ def launch_batch(
                 "No auto-detection of run_id from local folder, please specify --restart_from_run_id (or fixme)"
             )
     if "s3://" in str(continuation_location):
-        contination_run_id = aws_countfiles_autodetect_runid(s3_bucket=s3_bucket, 
+        continuation_run_id = aws_countfiles_autodetect_runid(s3_bucket=s3_bucket, 
                                                               restart_from_location=continuation_location, 
-                                                              restart_from_run_id=contination_run_id,
+                                                              restart_from_run_id=continuation_run_id,
                                                               num_jobs=num_jobs,
                                                               strict=True)
     else:
-        if contination_run_id is None and continuation_location is not None:
+        if continuation_run_id is None and continuation_location is not None:
             raise Exception(
                 "No auto-detection of run_id from local folder, please specify --continuation_run_id (or fixme)"
             )
     if continuation and continuation_location is None:
         continuation_location = restart_from_location
-        contination_run_id = contination_run_id
+        continuation_run_id = continuation_run_id
         print("Continuation enabled but no continuation location provided. Assuming that continuation location is the same as resume location")
         
     
@@ -386,7 +386,7 @@ def launch_batch(
         slack_channel,
         continuation,
         continuation_location,
-        contination_run_id,
+        continuation_run_id,
     )
 
     npi_scenarios = config["interventions"]["scenarios"]
@@ -530,7 +530,7 @@ class BatchJobHandler(object):
         slack_channel,
         continuation,
         continuation_location,
-        contination_run_id,
+        continuation_run_id,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -558,7 +558,7 @@ class BatchJobHandler(object):
         self.slack_channel = slack_channel
         self.continuation = continuation
         self.continuation_location = continuation_location
-        self.contination_run_id = contination_run_id
+        self.continuation_run_id = continuation_run_id
 
     def build_job_metadata(self, job_name):
         """
