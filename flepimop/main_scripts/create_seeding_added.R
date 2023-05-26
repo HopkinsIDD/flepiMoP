@@ -46,7 +46,6 @@ option_list <- list(
     optparse::make_option(c("-c", "--config"), action = "store", default = Sys.getenv("CONFIG_PATH"), type = "character", help = "path to the config file"),
     optparse::make_option(c("-k", "--keep_all_seeding"), action="store",default=TRUE,type='logical',help="Whether to filter away seeding prior to the start date of the simulation.")
 )
-
 opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
 
 gt_source <- NULL
