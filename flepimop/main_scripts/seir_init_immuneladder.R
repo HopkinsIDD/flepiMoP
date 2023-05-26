@@ -272,11 +272,11 @@ seir_dat_cols <- colnames(seir_dat)
 
 seir_dat <- seir_dat %>%
     filter(mc_value_type == "prevalence") %>%
-    mutate(date_cl = lubridate::as_date(date)) %>%
-    filter(date_cl == transition_date) %>%
-    group_by(across(c(-date))) %>%
-    filter(date == max(date)) %>%
-    ungroup() %>%
+    mutate(date = lubridate::as_date(date)) %>%
+    filter(date == transition_date) %>%
+    # group_by(across(c(-date))) %>%
+    # filter(date == max(date)) %>%
+    # ungroup() %>%
     filter(mc_variant_type != "VARIANTX")
 
 
