@@ -60,7 +60,7 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-if (seeding %in% names(config$seeding)) {
+if ("seeding" %in% names(config)) {
     if (('perturbation_sd' %in% names(config$seeding))) {
         if (('date_sd' %in% names(config$seeding))) {
             stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
