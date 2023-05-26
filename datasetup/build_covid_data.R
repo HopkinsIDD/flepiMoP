@@ -67,10 +67,10 @@ if (any(grepl("csse", opt$gt_data_source))){
 
 
     csse_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
-                                                        incl_unass = TRUE,
-                                                        variables = c("incidC", "cumC", "incidD", "cumD"),
-                                                        adjust_for_variant = TRUE,
-                                                        variant_props_file = config$seeding$variant_filename)
+                                                          incl_unass = TRUE,
+                                                          variables = c("incidC", "cumC", "incidD", "cumD"),
+                                                          adjust_for_variant = FALSE,
+                                                          variant_props_file = NULL)
     csse_data <- csse_data %>%
         mutate(FIPS = stringr::str_pad(FIPS, width=5, side="right", pad="0")) %>%
         filter(Update >= as_date(config$start_date) & Update <= as_date(end_date_)) %>%
@@ -87,6 +87,26 @@ if (any(grepl("csse", opt$gt_data_source))){
     if (!any(grepl("death", csse_target))){
         csse_data <- csse_data %>% select(-c(starts_with("incidD"), starts_with("cumD")))
     }
+
+
+    # Apply variants
+    if (!is.null(config$seeding$variant_filename)){
+        variant_props_file <- config$seeding$variant_filename
+        adjust_for_variant <- !is.null(variant_props_file)
+        head(read_csv(variant_props_file))
+
+        if (adjust_for_variant) {
+
+            tryCatch({
+                csse_data_vars <- flepicommon::do_variant_adjustment(csse_data, variant_props_file)
+            }, error = function(e) {
+                stop(paste0("Could not use variant file |", variant_props_file,
+                            "|, with error message", e$message))
+            })
+        }
+        csse_data <- csse_data_vars
+    }
+
     gt_data <- append(gt_data, list(csse_data))
 }
 
@@ -113,7 +133,7 @@ if (any(grepl("nchs", opt$gt_data_source))){
 
 
     nchs_data <- make_daily_data(data = nchs_data, current_timescale = "week") #%>%
-        # mutate(gt_source = "nchs")
+    # mutate(gt_source = "nchs")
 
     gt_data <- append(gt_data, list(nchs_data))
 
@@ -276,9 +296,9 @@ if (any(grepl("fluview", opt$gt_data_source))){
     fluview_data <- make_daily_data(data = fluview_data, current_timescale = "week") #%>%
     # mutate(gt_source = "nchs")
     # fluview_data <- fluview_data %>%
-        # filter(source %in% config$spatial_setup$modeled_states)
-               # Update >= config$start_date,
-               # Update <= config$end_date_groundtruth)
+    # filter(source %in% config$spatial_setup$modeled_states)
+    # Update >= config$start_date,
+    # Update <= config$end_date_groundtruth)
     gt_data <- append(gt_data, list(fluview_data))
 
 }
@@ -302,19 +322,22 @@ if (any(grepl("hhs", opt$gt_data_source))){
         filter(Update >= as_date(config$start_date) & Update <= as_date(end_date_))
 
     # Apply variants
-    variant_props_file <- config$seeding$variant_filename
-    adjust_for_variant <- !is.null(variant_props_file)
+    if (!is.null(config$seeding$variant_filename)){
+        variant_props_file <- config$seeding$variant_filename
+        adjust_for_variant <- !is.null(variant_props_file)
 
-    head(read_csv(variant_props_file))
+        head(read_csv(variant_props_file))
 
-    if (adjust_for_variant) {
+        if (adjust_for_variant) {
 
-        tryCatch({
-            us_hosp <- flepicommon::do_variant_adjustment(us_hosp, variant_props_file)
-        }, error = function(e) {
-            stop(paste0("Could not use variant file |", variant_props_file,
-                        "|, with error message", e$message))
-        })
+            tryCatch({
+                us_hosp_var <- flepicommon::do_variant_adjustment(us_hosp, variant_props_file)
+            }, error = function(e) {
+                stop(paste0("Could not use variant file |", variant_props_file,
+                            "|, with error message", e$message))
+            })
+            us_hosp <- us_hosp_var
+        }
     }
 
     # us_hosp <- us_hosp %>% mutate(gt_source = "csse")
