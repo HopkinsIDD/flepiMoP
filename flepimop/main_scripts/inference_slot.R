@@ -62,7 +62,6 @@ config = flepicommon::load_config(opt$config)
 
 
 if (!is.null(config$seeding)){
-
     if (('perturbation_sd' %in% names(config$seeding))) {
         if (('date_sd' %in% names(config$seeding))) {
             stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
@@ -86,16 +85,6 @@ if (!is.null(config$seeding)){
 #if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
-
-
-    if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-        stop("This filtration method requires the seeding method 'FolderDraw'")
-    }
-    #if (!('lambda_file' %in% names(config$seeding))) {
-    #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
-    #}
-}
->>>>>>> origin/seeding_fix
 
 # Aggregation to state level if in config
 state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
