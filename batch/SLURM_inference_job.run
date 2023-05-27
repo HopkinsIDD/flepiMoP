@@ -96,8 +96,8 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     else
         echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $INIT_FILENAME)"
     fi
+    Rscript $FLEPI_PATH/flepimop/main_scripts/seir_init_immuneladder.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
 fi
-Rscript
 
 ls -ltr model_output
 echo "***************** DONE FETCHING RESUME FILES *****************"
