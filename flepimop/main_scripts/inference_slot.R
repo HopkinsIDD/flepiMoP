@@ -399,6 +399,7 @@ for(npi_scenario in npi_scenarios) {
         initial_hnpi <- arrow::read_parquet(first_chimeric_files[['hnpi_filename']])
         initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
         initial_hpar <- arrow::read_parquet(first_chimeric_files[['hpar_filename']])
+        initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
         chimeric_likelihood_data <- arrow::read_parquet(first_chimeric_files[['llik_filename']])
         global_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']])
 
@@ -458,6 +459,7 @@ for(npi_scenario in npi_scenarios) {
             proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$interventions$settings)
             proposed_spar <- initial_spar
             proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_scenario]])
+            proposed_init <- initial_init
             # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
@@ -474,6 +476,7 @@ for(npi_scenario in npi_scenarios) {
             arrow::write_parquet(proposed_hnpi,this_global_files[['hnpi_filename']])
             arrow::write_parquet(proposed_spar,this_global_files[['spar_filename']])
             arrow::write_parquet(proposed_hpar,this_global_files[['hpar_filename']])
+            arrow::write_parquet(proposed_init,this_global_files[['init_filename']])
 
             ## Update the prefix
             gempyor_inference_runner$update_prefix(new_prefix=global_local_prefix)

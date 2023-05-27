@@ -235,6 +235,12 @@ perform_MCMC_step_copies_global <- function(current_index,
             overwrite = TRUE
         )
 
+        rc$init_gf <- file.copy(
+            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'init','parquet'),
+            flepicommon::create_file_name(run_id,gf_prefix,slot,'init','parquet'),
+            overwrite = TRUE
+        )
+
         rc$seir_gf <- file.copy(
             flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
             flepicommon::create_file_name(run_id,gf_prefix,slot,'seir','parquet'),
@@ -282,6 +288,11 @@ perform_MCMC_step_copies_global <- function(current_index,
             flepicommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
         )
 
+        rc$init_block <- file.copy(
+            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'init','parquet'),
+            flepicommon::create_file_name(run_id,global_block_prefix,block,'init','parquet')
+        )
+
         rc$seir_block <- file.copy(
             flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
             flepicommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
@@ -323,6 +334,12 @@ perform_MCMC_step_copies_global <- function(current_index,
             flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seed','csv'),
             flepicommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
         )
+
+        rc$init_prevblk <- file.copy(
+            flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'init','parquet'),
+            flepicommon::create_file_name(run_id,global_block_prefix,block,'init','parquet')
+        )
+
 
         rc$seir_prevblk <- file.copy(
             flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seir','parquet'),
@@ -400,7 +417,7 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
             overwrite = TRUE
         )
 
-        # No chimeric SEIR or HOSP files
+        # No chimeric SEIR or HOSP files, nor INIT file for now
 
         # rc$seir_gf <- file.copy(
         #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
@@ -493,15 +510,16 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
             flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
         )
 
-        rc$seir_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seir','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
-        )
-
-        rc$hosp_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'hosp','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
-        )
+        # Joseph: commented these as well
+        # rc$seir_prevblk <- file.copy(
+        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seir','parquet'),
+        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
+        # )
+ 
+        # rc$hosp_prevblk <- file.copy(
+        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'hosp','parquet'),
+        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
+        # )
 
         rc$llik_prevblk <- file.copy(
             flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'llik','parquet'),
@@ -540,8 +558,8 @@ create_filename_list <- function(
         run_id,
         prefix,
         index,
-        types = c("seed", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik"),
-        extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
+        types = c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik"),
+        extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
 ) {
     if(length(types) != length(extensions)){
         stop("Please specify the same number of types and extensions.  Given",length(types),"and",length(extensions))
@@ -576,11 +594,11 @@ initialize_mcmc_first_block <- function(
         is_resume = FALSE) {
 
     ## Only works on these files:
-    global_types <- c("seed", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik")
-    global_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
+    global_types <- c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik")
+    global_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
     chimeric_types <- c("seed", "snpi", "hnpi", "spar", "hpar", "llik")
     chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet")
-    non_llik_types <- paste(c("seed", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
+    non_llik_types <- paste(c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
 
     global_files <- create_filename_list(run_id, global_prefix, block - 1, global_types, global_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
     chimeric_files <- create_filename_list(run_id, chimeric_prefix, block - 1, chimeric_types, chimeric_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.(block-1).run_ID.variable.ext
@@ -612,7 +630,7 @@ initialize_mcmc_first_block <- function(
         }
         return(TRUE)
     }
-
+    # TODO: no check has been added for init files below
     if (is_resume) {
         print(global_check)
         important_global_check <- global_check[
