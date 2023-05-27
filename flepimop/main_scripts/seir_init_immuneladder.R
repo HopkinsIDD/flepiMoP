@@ -56,7 +56,7 @@ option_list <- list(
     optparse::make_option(c("--res_config"), action = "store", default = Sys.getenv("RESUMED_CONFIG_PATH"), type = "character", help = "path to the previous config file"),
     optparse::make_option(c("-c", "--config"), action = "store", default = Sys.getenv("CONFIG_PATH"), type = "character", help = "path to the config file"),
     optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', default = Sys.getenv("FLEPI_PATH", "flepiMoP/"), help="path to the flepiMoP directory"),
-    optparse::make_option(c("--init_file_name"), action="store", type='character', default = default = Sys.getenv("INIT_FILENAME"), help="init file global intermediate name"),
+    optparse::make_option(c("--init_file_name"), action="store", type='character', default = Sys.getenv("INIT_FILENAME"), help="init file global intermediate name"),
     optparse::make_option(c("-e", "--imm_esc_prop"), action="store", type='numeric', default = Sys.getenv("IMM_ESC_PROP", .35), help="annual percent of immune escape")
 )
 opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
