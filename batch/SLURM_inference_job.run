@@ -79,24 +79,25 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
 fi
 
 if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
-    echo "Where doing a continuation"
-    export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX-1,'$FLEPI_CONTINUATION_FTYPE','$extension'))")
+    echo "We are doing a continuation"
+    export INIT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX-1,'$FLEPI_CONTINUATION_FTYPE','$extension'))")
     # in filename is always a seir file
     export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_CONTINUATION_RUN_ID','$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID/global/final/',$FLEPI_SLOT_INDEX,'seir','$extension'))")
     if [[ $FLEPI_CONTINUATION_LOCATION == *"s3://"* ]]; then
-        aws s3 cp --quiet $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $OUT_FILENAME
+        aws s3 cp --quiet $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $INIT_FILENAME
     else
         # cp does not create directorys, so we make the directories first
-        export $OUT_FILENAME_DIR="$(dirname "${OUT_FILENAME}")"
+        export $OUT_FILENAME_DIR="$(dirname "${INIT_FILENAME}")"
         mkdir -p $OUT_FILENAME_DIR
-        cp $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $OUT_FILENAME
+        cp $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $INIT_FILENAME
     fi
-    if [[ -f $OUT_FILENAME ]]; then
-        echo "CONTINUATION: Copy successful for file of type $filetype ($IN_FILENAME -> $OUT_FILENAME)"
+    if [[ -f $INIT_FILENAME ]]; then
+        echo "CONTINUATION: Copy successful for file of type $filetype ($IN_FILENAME -> $INIT_FILENAME)"
     else
-        echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $OUT_FILENAME)"
+        echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $INIT_FILENAME)"
     fi
 fi
+Rscript
 
 ls -ltr model_output
 echo "***************** DONE FETCHING RESUME FILES *****************"
