@@ -896,6 +896,8 @@ class BatchJobHandler(object):
             print(f" >> Final output will be: {fs_results_path}/model_output/")
             if self.s3_upload:
                 print(f" >> Final output will be uploaded to {s3_results_path}/model_output/")
+        if self.continuation:
+            print(f" >> Continuing from run id is {self.continuation_run_id} located in {self.continuation_location}")
         print(f" >> Run id is {self.run_id}")
         print(f" >> config is {config_file.split('/')[-1]}")
         flepimop_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
