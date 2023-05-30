@@ -135,9 +135,19 @@ class SeedingAndIC:
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
-            print(ic_df)
+
             for comp_idx, comp_name in setup.compartments.compartments["name"].items():
-                ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
+                # rely on all the mc's instead of mc_name to avoid errors due to e.g order.
+                # before: only 
+                # ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
+                filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
+                ic_df_compartment = ic_df.copy()
+                for mc_name, mc_value in filters.iteritems():
+                    ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_"+mc_name] == mc_value]
+
+                if len(ic_df_compartment) > 1:
+                    raise ValueError(f"ERROR: Several ({len(ic_df_compartment)}) rows are matches for compartment {mc_name} in init file: filter {filters} returned {ic_df_compartment}")
+
                 for pl_idx, pl in enumerate(setup.spatset.nodenames):
                     if pl in ic_df.columns:
                         if ic_df_compartment[pl].empty:
