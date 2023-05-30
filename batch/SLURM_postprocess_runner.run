@@ -26,7 +26,7 @@ curl \
   -H "Title: $FLEPI_RUN_INDEX Done ✅" \
   -H "Priority: urgent" \
   -H "Tags: warning,snail" \
-  -d "TODO say how many failure and stuff" \
+  -d "Hopefully the results look alright" \
   ntfy.sh/flepimop_alerts
 
 # get the slack credentials
