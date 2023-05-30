@@ -172,6 +172,17 @@ class SeedingAndIC:
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
+        
+        # check that the inputed values sums to the node_population:
+        error = False
+        for pl_idx, pl in enumerate(setup.spatset.nodenames):
+            n_y0 = y0[:, pl_idx].sum()
+            n_pop = setup.popnodes[pl_idx]
+            if abs(n_y0-n_pop) > 1:
+                error = True
+                print(f"ERROR: place {pl} (idx: pl_idx) has a population from initial condition of {n_y0} while population from geodata is {n_pop} (absolute difference should be < 1, here is {abs(n_y0-n_pop)})") 
+        if error:
+            raise ValueError()
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
