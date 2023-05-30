@@ -364,7 +364,8 @@ seir_dat_changing <- seir_dat_changing %>%
 # dropping any vaccination for dose other than bivalent after this.
 # Make everyone a single "ALL" variant
 seir_dat_changing <- seir_dat_changing %>%
-    mutate(mc_vaccination_stage = ifelse(mc_vaccination_stage == "3dose", "vaccinated", "unvaccinated")) %>%
+    mutate(mc_vaccination_stage = ifelse(mc_vaccination_stage == "3dose" | (mc_vaccination_stage == "2dose" & mc_infection_stage == "R"),
+                                         "vaccinated", "unvaccinated")) %>%
     mutate(mc_variant_type = "ALL")
 
 # aggregate
