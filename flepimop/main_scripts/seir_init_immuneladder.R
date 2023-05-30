@@ -268,6 +268,7 @@ seir_resume_file <- opt$init_file_name
 transition_date <- lubridate::as_date(config$start_date)
 
 seir_dat <- arrow::read_parquet(seir_resume_file)
+seir_dat <- seir_dat %>% dplyr::select(tidyselect::starts_with("date"), tidyselect::starts_with("mc_"), tidyselect::everything())
 seir_dat_cols <- colnames(seir_dat)
 
 seir_dat <- seir_dat %>%
@@ -422,10 +423,13 @@ seir_dat_changing <- seir_dat_changing %>%
 
 seir_dat_changing_final <- seir_dat_changing %>%
     dplyr::mutate(mc_variant_type = "ALL") %>%
-    dplyr::mutate(mc_name = paste("mc", mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
-    tidyr::pivot_wider(names_from = loc, values_from = n)
-
-seir_dat_changing_final <- seir_dat_changing_final %>% dplyr::select(tidyselect::any_of(seir_dat_cols))
+    dplyr::select(-prob_immune_nom) %>%
+    dplyr::group_by(dplyr::across(c(-n))) %>%
+    dplyr::summarise(n = sum(n, na.rm = TRUE)) %>%
+    dplyr::as_tibble() %>%
+    dplyr::mutate(mc_name = paste(mc_infection_stage, mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
+    tidyr::pivot_wider(names_from = loc, values_from = n) %>%
+    dplyr::select(tidyselect::any_of(seir_dat_cols))
 
 
 # # CHECK
@@ -451,8 +455,8 @@ seir_dat_changing_final <- seir_dat_changing_final %>% dplyr::select(tidyselect:
 # Combine back with the seir that was not changed
 
 seir_dat_final <- seir_dat_changing_final %>%
-    bind_rows(seir_dat_static) %>%
-    filter(mc_value_type == "prevalence")
+    dplyr::bind_rows(seir_dat_static) %>%
+    dplyr::filter(mc_value_type == "prevalence")
 
 # #check all
 # apply(seir_dat_final %>% dplyr::select(starts_with("mc_")), 2, unique)
