@@ -28,6 +28,9 @@ which Rscript
 export PATH=~/aws-cli/bin:$PATH
 echo "***************** DONE LOADING ENVIRONMENT *****************"
 
+# If running from zsh, this ensure the compatibility of using space separated words as bash array
+setopt shwordsplit
+
 
 echo "***************** FETCHING RESUME FILES *****************"
 ### In case of resume, download or move the right files
@@ -223,5 +226,6 @@ echo "DONE EVERYTHING."
 # --> THIS DOES NOT WORK
 #mv slurm-$SLURM_ARRAY_JOB_ID_${SLURM_ARRAY_TASK_ID}.out $FS_RESULTS_PATH/slurm-$SLURM_ARRAY_JOB_ID_${SLURM_ARRAY_TASK_ID}.out
 
+unsetopt shwordsplit
 
 wait
