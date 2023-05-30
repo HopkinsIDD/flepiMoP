@@ -145,18 +145,22 @@ class SeedingAndIC:
                 for mc_name, mc_value in filters.iteritems():
                     ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_"+mc_name] == mc_value]
 
+
                 if len(ic_df_compartment) > 1:
+                    #ic_df_compartment = ic_df_compartment.iloc[0]
                     raise ValueError(f"ERROR: Several ({len(ic_df_compartment)}) rows are matches for compartment {mc_name} in init file: filter {filters} returned {ic_df_compartment}")
+                elif ic_df_compartment.empty:
+                    if allow_missing_compartments:
+                        ic_df_compartment = pd.DataFrame(0, columns=ic_df_compartment.columns, index = [0])
+                    else:
+                        raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}.")
+                elif (ic_df_compartment["mc_name"].iloc[0] != comp_name):
+                    print(f"WARNING: init file mc_name {ic_df_compartment['mc_name'].iloc[0]} does not match compartment mc_name {comp_name}")
+
 
                 for pl_idx, pl in enumerate(setup.spatset.nodenames):
                     if pl in ic_df.columns:
-                        if ic_df_compartment[pl].empty:
-                            if allow_missing_compartments:    
-                                y0[comp_idx, pl_idx] = 0
-                            else:
-                                raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}.")
-                        else:
-                            y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])    
+                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])    
                     elif allow_missing_nodes:
                         logging.warning(
                             f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population"
