@@ -142,7 +142,7 @@ class SeedingAndIC:
                 # ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
                 filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
                 ic_df_compartment = ic_df.copy()
-                for mc_name, mc_value in filters.iteritems():
+                for mc_name, mc_value in filters.items():
                     ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_"+mc_name] == mc_value]
 
 
