@@ -130,7 +130,12 @@ class SeedingAndIC:
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
                 )
+
+            # annoying conversion because sometime the parquet columns get attributed a timezone...
+            ic_df["date"] = pd.to_datetime(ic_df["date"], utc=True) # force date to be UTC
+            ic_df["date"] = ic_df["date"].dt.date
             ic_df["date"] = ic_df["date"].astype(str)
+
             ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
