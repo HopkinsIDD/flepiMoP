@@ -52,7 +52,7 @@ def get_all_filenames(file_type, fs_results_path="to_prune/",  finals_only=False
 def generate_pdf(fs_results_path, best_n):
     print("pruning by llik")
     fs_results_path = "to_prune/"
-    best_n = 265
+    best_n = 150
 
     llik_filenames = get_all_filenames("llik", fs_results_path ,finals_only=True)
 
