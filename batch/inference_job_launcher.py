@@ -775,7 +775,7 @@ class BatchJobHandler(object):
                 #    f"--job-name={cur_job_name}",
                 #    f"{os.path.dirname(os.path.realpath(__file__))}/inference_job.run",
                 # ]
-                command = f"sbatch {export_str} --array=1-{self.num_jobs} --mem={self.memory}M --time={time_limit} --job-name={cur_job_name} --output=log/inference_{self.run_id}_{cur_job_name}_%a.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_inference_job.run"
+                command = f"sbatch {export_str} --array=1-{self.num_jobs} --mem={self.memory}M --time={time_limit} --job-name={cur_job_name} --output=log_inference_{self.run_id}_{cur_job_name}_%a.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_inference_job.run"
 
                 print("slurm command to be run >>>>>>>> ")
                 print(command)
@@ -793,7 +793,7 @@ class BatchJobHandler(object):
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
-                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={12000}M --time={60} --job-name=post-{cur_job_name} --output=log/postprod_{self.run_id}_{cur_job_name}.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
+                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={12000}M --time={60} --job-name=post-{cur_job_name} --output=log_postprod_{self.run_id}_{cur_job_name}.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
