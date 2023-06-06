@@ -122,9 +122,9 @@ echo "Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R --config $CONFI
                                                                  --python python
                                                                  --rpath Rscript
                                                                  --is-resume $RESUME_RUN # Is this run a resume
-                                                                 --is-interactive FALSE # Is this run an interactive run" > $LOG_FILE 2>&1 &
+                                                                 --is-interactive FALSE # Is this run an interactive run" #> $LOG_FILE 2>&1 &
 
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p $FLEPI_PATH --config $CONFIG_PATH --run_id $FLEPI_RUN_INDEX --npi_scenarios $FLEPI_NPI_SCENARIOS --outcome_scenarios $FLEPI_OUTCOME_SCENARIOS --jobs 1 --iterations_per_slot $FLEPI_ITERATIONS_PER_SLOT --this_slot $FLEPI_SLOT_INDEX --this_block 1 --stoch_traj_flag $FLEPI_STOCHASTIC_RUN --is-resume $RESUME_RUN --is-interactive FALSE > $LOG_FILE 2>&1
+Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p $FLEPI_PATH --config $CONFIG_PATH --run_id $FLEPI_RUN_INDEX --npi_scenarios $FLEPI_NPI_SCENARIOS --outcome_scenarios $FLEPI_OUTCOME_SCENARIOS --jobs 1 --iterations_per_slot $FLEPI_ITERATIONS_PER_SLOT --this_slot $FLEPI_SLOT_INDEX --this_block 1 --stoch_traj_flag $FLEPI_STOCHASTIC_RUN --is-resume $RESUME_RUN --is-interactive FALSE #> $LOG_FILE 2>&1
 dvc_ret=$?
 if [[ $dvc_ret -ne 0 ]]; then
         echo "Error code returned from inference_slot.R: $dvc_ret"
