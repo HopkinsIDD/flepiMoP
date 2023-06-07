@@ -37,3 +37,8 @@ mkdir pplot
 
 source $FLEPI_PATH/batch/postprocessing-scripts.sh
 
+cp -R pplot $FS_RESULTS_PATH
+if [[ $S3_UPLOAD == "true" ]]; then
+    aws s3 cp --quiet pplot $S3_RESULTS_PATH/pplot
+fi
+
