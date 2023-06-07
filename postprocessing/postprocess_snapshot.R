@@ -17,7 +17,7 @@ options(readr.num_columns = 0)
 
 option_list = list(
   optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"),
-  optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",covidcommon::run_id())),
+  optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
   optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-p", "--flepimop-repo"), action="store", dest = "flepimop_repo", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo"),
   optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, snpi, hnpi, llik"), type='character', help="path to the flepimop repo")
@@ -56,7 +56,7 @@ opt$select_outputs <- strsplit(opt$select_outputs, ', ')[[1]]
 print(opt$select_outputs)
 ## SETUP -----------------------------------------------------------------------
 
-config <- covidcommon::load_config(opt$config)
+config <- flepicommon::load_config(opt$config)
 
 # Pull in geoid data
 geodata <- setDT(read.csv(file.path(config$data_path, config$spatial_setup$geodata)))
