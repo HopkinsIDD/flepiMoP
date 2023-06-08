@@ -58,7 +58,7 @@ if(opt$flepimop_repo == ""){
 print(paste('Processing run ',opt$run_id))
 
 
-config <- covidcommon::load_config(opt$config)
+config <- flepicommon::load_config(opt$config)
 
 
 
