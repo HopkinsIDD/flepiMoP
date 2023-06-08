@@ -6,7 +6,7 @@ import glob, os, sys
 from pathlib import Path
 
 import pyarrow.parquet as pq
-import click
+#import click
 
 
 
