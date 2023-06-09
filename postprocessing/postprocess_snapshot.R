@@ -401,7 +401,7 @@ if("snpi" %in% model_outputs){
   
   gg_cols <- 4
   num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$nodenames)]))
-  pdf_dims <- data.frame(width = gg_cols*3, length = num_nodes/gg_cols * 2)
+  pdf_dims <- data.frame(width = gg_cols*4, length = num_nodes/gg_cols * 3)
   
   fname <- paste0("pplot/snpi_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
