@@ -464,6 +464,19 @@ for(npi_scenario in npi_scenarios) {
             if (!is.null(config$initial_conditions)){
                 proposed_init <- initial_init
             }
+
+            # since the first iteration is accepted by default, we don't perturb it
+            if ((opt$this_block == 1) && (current_index == 0)) {
+                proposed_snpi <- initial_snpi
+                proposed_hnpi <- initial_hnpi
+                proposed_spar <- initial_spar
+                proposed_hpar <- initial_hpar
+                if (!is.null(config$initial_conditions)){
+                    proposed_init <- initial_init
+                }
+                proposed_seeding <- initial_seeding
+            }
+            
             # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
