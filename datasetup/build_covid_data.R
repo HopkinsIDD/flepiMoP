@@ -310,8 +310,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 
 if (any(grepl("hhs", opt$gt_data_source))){
 
-    us_hosp <- flepicommon::get_hhsCMU_incidH_st_data()
-
+    # us_hosp <- flepicommon::get_hhsCMU_incidH_st_data()
     us_hosp <- get_covidcast_hhs_hosp(geo_level = "state",
                                       limit_date = Sys.Date())
 
