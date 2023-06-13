@@ -21,7 +21,7 @@ option_list = list(
   optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
   optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-p", "--flepimop-repo"), action="store", dest = "flepimop_repo", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo"),
-  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, snpi, hnpi, llik"), type='character', help="path to the flepimop repo")
+  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, hpar, snpi, hnpi, llik"), type='character', help="path to the flepimop repo")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -401,7 +401,7 @@ if("snpi" %in% model_outputs){
   
   gg_cols <- 4
   num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$nodenames)]))
-  pdf_dims <- data.frame(width = gg_cols*3, length = num_nodes/gg_cols * 2)
+  pdf_dims <- data.frame(width = gg_cols*4, length = num_nodes/gg_cols * 3)
   
   fname <- paste0("pplot/snpi_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
