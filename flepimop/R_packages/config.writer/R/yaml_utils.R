@@ -1951,7 +1951,8 @@ seir_chunk <- function(resume_modifier = NULL,
                paste0(
                    "      proportional_to: [\"source\"]\n",
                    "      proportion_exponent: [[\"1\",\"1\",\"1\",\"1\"]]\n",
-                   "      rate: [", glue::glue_collapse(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "), "]\n")),
+                   "      rate: [", paste(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "), "]\n")),
+                   # "      rate: [", glue::glue_collapse(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "), "]\n")),
         "\n")
 
     return(tmp)
