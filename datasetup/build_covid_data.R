@@ -54,6 +54,10 @@ if (!grepl("case", opt$gt_data_source)){
     opt$gt_data_source <- paste0("csse_case, ", opt$gt_data_source)
 }
 
+# whether to adjust for variants
+adjust_for_variant <- !is.null(config$seeding$variant_filename)
+
+
 gt_data <- list()
 
 # ~ Pull Data from Covidcast -------------------
@@ -69,7 +73,7 @@ if (any(grepl("csse", opt$gt_data_source))){
     csse_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
                                                         incl_unass = TRUE,
                                                         variables = c("incidC", "cumC", "incidD", "cumD"),
-                                                        adjust_for_variant = TRUE,
+                                                        adjust_for_variant = adjust_for_variant,
                                                         variant_props_file = config$seeding$variant_filename)
     csse_data <- csse_data %>%
         mutate(FIPS = stringr::str_pad(FIPS, width=5, side="right", pad="0")) %>%
