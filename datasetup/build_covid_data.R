@@ -16,7 +16,8 @@ option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
     optparse::make_option(c("-p", "--path"), action="store", default=Sys.getenv("FLEPI_PATH", "flepiMoP"), type='character', help="path to the flepiMoP directory"),
     optparse::make_option(c("-w", "--wide_form"), action="store",default=FALSE,type='logical',help="Whether to generate the old wide format mobility or the new long format"),
-    optparse::make_option(c("-s", "--gt_data_source"), action="store",default=Sys.getenv("GT_DATA_SOURCE", "csse_case, fluview_death, hhs_hosp"),type='character',help="sources of gt data")
+    optparse::make_option(c("-s", "--gt_data_source"), action="store",default=Sys.getenv("GT_DATA_SOURCE", "csse_case, fluview_death, hhs_hosp"),type='character',help="sources of gt data"),
+    optparse::make_option(c("-d", "--delphi_api_key"), action="store",default=Sys.getenv("DELPHI_API_KEY", NULL),type='character',help="API key for Delphi Epidata API (see https://cmu-delphi.github.io/delphi-epidata/)")
 )
 opt = optparse::parse_args(optparse::OptionParser(option_list=option_list))
 
@@ -41,6 +42,34 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 # source data functions
 source(file.path(opt$path, "datasetup/data_setup_source.R"))
 
+
+
+
+
+# SET DELPHI API KEY ------------------------------------------------------
+
+if (any(grepl("nchs|hhs", opt$gt_data_source))){
+    if (!is.null(opt$delphi_api_key)){
+        options(covidcast.auth = opt$delphi_api_key)
+    } else if (!is.null(config$inference$delphi_api_key)){
+        options(covidcast.auth = config$inference$delphi_api_key)
+    } else {
+        newkey <- readline(prompt = "Please enter your Delphi API key before proceeding:")
+        #check
+        key_correct_len <- nchar(newkey) > 10 & nchar(newkey) < 20
+        # cli <- covidcast::covidcast_signal(data_source = "fb-survey", signal = "smoothed_cli",
+        #                 start_day = "2020-05-01", end_day = "2020-05-01",
+        #                 geo_type = "state")
+        if (!key_correct_len){
+            cat(paste0("**Incorrect API Key.**\n
+                       Please register for a Delphi Epidata API key before proceeding.\n
+                       Go to `https://cmu-delphi.github.io/delphi-epidata/` to register."))
+            stop()
+        } else {
+            options(covidcast.auth = newkey)
+        }
+    }
+}
 
 
 
@@ -71,10 +100,10 @@ if (any(grepl("csse", opt$gt_data_source))){
 
 
     csse_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
-                                                        incl_unass = TRUE,
-                                                        variables = c("incidC", "cumC", "incidD", "cumD"),
-                                                        adjust_for_variant = adjust_for_variant,
-                                                        variant_props_file = config$seeding$variant_filename)
+                                                          incl_unass = TRUE,
+                                                          variables = c("incidC", "cumC", "incidD", "cumD"),
+                                                          adjust_for_variant = adjust_for_variant,
+                                                          variant_props_file = config$seeding$variant_filename)
     csse_data <- csse_data %>%
         mutate(FIPS = stringr::str_pad(FIPS, width=5, side="right", pad="0")) %>%
         filter(Update >= as_date(config$start_date) & Update <= as_date(end_date_)) %>%
@@ -117,7 +146,7 @@ if (any(grepl("nchs", opt$gt_data_source))){
 
 
     nchs_data <- make_daily_data(data = nchs_data, current_timescale = "week") #%>%
-        # mutate(gt_source = "nchs")
+    # mutate(gt_source = "nchs")
 
     gt_data <- append(gt_data, list(nchs_data))
 
@@ -280,9 +309,9 @@ if (any(grepl("fluview", opt$gt_data_source))){
     fluview_data <- make_daily_data(data = fluview_data, current_timescale = "week") #%>%
     # mutate(gt_source = "nchs")
     # fluview_data <- fluview_data %>%
-        # filter(source %in% config$spatial_setup$modeled_states)
-               # Update >= config$start_date,
-               # Update <= config$end_date_groundtruth)
+    # filter(source %in% config$spatial_setup$modeled_states)
+    # Update >= config$start_date,
+    # Update <= config$end_date_groundtruth)
     gt_data <- append(gt_data, list(fluview_data))
 
 }
