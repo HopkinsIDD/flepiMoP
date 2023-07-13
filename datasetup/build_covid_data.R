@@ -339,8 +339,6 @@ if (any(grepl("hhs", opt$gt_data_source))){
     variant_props_file <- config$seeding$variant_filename
     adjust_for_variant <- !is.null(variant_props_file)
 
-    head(read_csv(variant_props_file))
-
     if (adjust_for_variant) {
 
         tryCatch({
