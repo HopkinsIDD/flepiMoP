@@ -17,7 +17,7 @@ option_list = list(
     optparse::make_option(c("-p", "--path"), action="store", default=Sys.getenv("FLEPI_PATH", "flepiMoP"), type='character', help="path to the flepiMoP directory"),
     optparse::make_option(c("-w", "--wide_form"), action="store",default=FALSE,type='logical',help="Whether to generate the old wide format mobility or the new long format"),
     optparse::make_option(c("-s", "--gt_data_source"), action="store",default=Sys.getenv("GT_DATA_SOURCE", "csse_case, fluview_death, hhs_hosp"),type='character',help="sources of gt data"),
-    optparse::make_option(c("-d", "--delphi_api_key"), action="store",default=Sys.getenv("DELPHI_API_KEY", NULL),type='character',help="API key for Delphi Epidata API (see https://cmu-delphi.github.io/delphi-epidata/)")
+    optparse::make_option(c("-d", "--delphi_api_key"), action="store",default=Sys.getenv("DELPHI_API_KEY"),type='character',help="API key for Delphi Epidata API (see https://cmu-delphi.github.io/delphi-epidata/)")
 )
 opt = optparse::parse_args(optparse::OptionParser(option_list=option_list))
 
@@ -50,8 +50,10 @@ source(file.path(opt$path, "datasetup/data_setup_source.R"))
 
 if (any(grepl("nchs|hhs", opt$gt_data_source))){
     if (!is.null(opt$delphi_api_key)){
+        cat(paste0("Using Environment variable for Delphi API key: ", opt$delphi_api_key))
         options(covidcast.auth = opt$delphi_api_key)
     } else if (!is.null(config$inference$delphi_api_key)){
+        cat(paste0("Using Config variable for Delphi API key: ", config$inference$delphi_api_key))
         options(covidcast.auth = config$inference$delphi_api_key)
     } else {
         newkey <- readline(prompt = "Please enter your Delphi API key before proceeding:")
@@ -66,6 +68,7 @@ if (any(grepl("nchs|hhs", opt$gt_data_source))){
                        Go to `https://cmu-delphi.github.io/delphi-epidata/` to register."))
             stop()
         } else {
+            cat(paste0("Using Input variable for Delphi API key: ", newkey))
             options(covidcast.auth = newkey)
         }
     }
