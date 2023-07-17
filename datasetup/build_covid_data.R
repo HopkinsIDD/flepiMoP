@@ -17,7 +17,7 @@ option_list = list(
     optparse::make_option(c("-p", "--path"), action="store", default=Sys.getenv("FLEPI_PATH", "flepiMoP"), type='character', help="path to the flepiMoP directory"),
     optparse::make_option(c("-w", "--wide_form"), action="store",default=FALSE,type='logical',help="Whether to generate the old wide format mobility or the new long format"),
     optparse::make_option(c("-s", "--gt_data_source"), action="store",default=Sys.getenv("GT_DATA_SOURCE", "csse_case, fluview_death, hhs_hosp"),type='character',help="sources of gt data"),
-    optparse::make_option(c("-d", "--gt_api_key"), action="store",default=Sys.getenv("GT_API_KEY"),type='character',help="API key for Delphi Epidata API (see https://cmu-delphi.github.io/delphi-epidata/)")
+    optparse::make_option(c("-d", "--delphi_api_key"), action="store",default=Sys.getenv("DELPHI_API_KEY"),type='character',help="API key for Delphi Epidata API (see https://cmu-delphi.github.io/delphi-epidata/)")
 )
 opt = optparse::parse_args(optparse::OptionParser(option_list=option_list))
 
@@ -49,9 +49,9 @@ source(file.path(opt$path, "datasetup/data_setup_source.R"))
 # SET DELPHI API KEY ------------------------------------------------------
 
 if (any(grepl("nchs|hhs", opt$gt_data_source))){
-    if (!is.null(opt$gt_api_key)){
-        cat(paste0("Using Environment variable for Delphi API key: ", opt$gt_api_key))
-        options(covidcast.auth = opt$gt_api_key)
+    if (!is.null(opt$delphi_api_key)){
+        cat(paste0("Using Environment variable for Delphi API key: ", opt$delphi_api_key))
+        options(covidcast.auth = opt$delphi_api_key)
     } else if (!is.null(config$inference$gt_api_key)){
         cat(paste0("Using Config variable for Delphi API key: ", config$inference$gt_api_key))
         options(covidcast.auth = config$inference$gt_api_key)
