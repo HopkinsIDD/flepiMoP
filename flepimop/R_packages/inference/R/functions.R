@@ -398,9 +398,11 @@ perturb_snpi <- function(snpi, intervention_settings) {
       snpi_new <- snpi[["reduction"]][ind] + pert_dist(sum(ind))
 
       ##check that this is in bounds (equivalent to having a positive probability)
-      in_bounds_index <- flepicommon::as_density_distribution(
-        intervention_settings[[intervention]][['value']]
-      )(snpi_new) > 0
+      # in_bounds_index <- flepicommon::as_density_distribution(
+      #   intervention_settings[[intervention]][['value']]
+      # )(snpi_new) > 0
+      # Above version fails for some use case: https://iddynamicsjhu.slack.com/archives/C04UYU4V7SN/p1686000150041659
+      in_bounds_index <- flepicommon::check_within_bounds(snpi_new, intervention_settings[[intervention]][['value']])
 
       ##return all in bounds proposals
       snpi$reduction[ind][in_bounds_index] <- snpi_new[in_bounds_index]
@@ -440,9 +442,10 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
       hnpi_new <- hnpi[["reduction"]][ind] + pert_dist(sum(ind))
 
       ##check that this is in bounds (equivalent to having a positive probability)
-      in_bounds_index <- flepicommon::as_density_distribution(
-        intervention_settings[[intervention]][['value']]
-      )(hnpi_new) > 0
+      # in_bounds_index <- flepicommon::as_density_distribution(
+      #   intervention_settings[[intervention]][['value']]
+      # )(hnpi_new) > 0
+      in_bounds_index <- flepicommon::check_within_bounds(hnpi_new, intervention_settings[[intervention]][['value']])
 
       ##return all in bounds proposals
       hnpi$reduction[ind][in_bounds_index] <- hnpi_new[in_bounds_index]
@@ -493,7 +496,8 @@ perturb_hpar <- function(hpar, intervention_settings) {
         }
 
         ## Check that this is in the support of the original distribution
-        in_bounds_index <- flepicommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
+        # in_bounds_index <- flepicommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
+        in_bounds_index <- flepicommon::check_within_bounds(hpar_new, intervention_quantity[['value']])
         hpar$value[ind][in_bounds_index] <- hpar_new[in_bounds_index]
       }
     }
@@ -664,9 +668,10 @@ perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
         snpi_new <- snpi[["reduction"]][this_npi_ind] + pert_dist(1)
         
         ##check that this is in bounds (equivalent to having a positive probability)
-        in_bounds_index <- flepicommon::as_density_distribution(
-          intervention_settings[[intervention]][['value']]
-        )(snpi_new) > 0
+        # in_bounds_index <- flepicommon::as_density_distribution(
+        #   intervention_settings[[intervention]][['value']]
+        # )(snpi_new) > 0
+        in_bounds_index <- flepicommon::check_within_bounds(snpi_new, intervention_settings[[intervention]][['value']])
         
         ## include this perturbed parameter if it is in bounds
         snpi$reduction[this_npi_ind][in_bounds_index] <- snpi_new[in_bounds_index]
@@ -758,10 +763,11 @@ perturb_hnpi_from_file  <- function(hnpi, intervention_settings, llik){
         hnpi_new <- hnpi[["reduction"]][this_npi_ind] + pert_dist(1)
         
         ##check that this is in bounds (equivalent to having a positive probability)
-        in_bounds_index <- flepicommon::as_density_distribution(
-          intervention_settings[[intervention]][['value']]
-        )(hnpi_new) > 0
-        
+        # in_bounds_index <- flepicommon::as_density_distribution(
+        #   intervention_settings[[intervention]][['value']]
+        # )(hnpi_new) > 0
+        in_bounds_index <- flepicommon::check_within_bounds(hnpi_new, intervention_settings[[intervention]][['value']])
+
         ## include this perturbed parameter if it is in bounds
         hnpi$reduction[this_npi_ind][in_bounds_index] <- hnpi_new[in_bounds_index]
         

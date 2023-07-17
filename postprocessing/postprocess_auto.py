@@ -163,109 +163,92 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
     print(f">> config {config_path} for run_id {run_id}")
     print(f">> job name {job_name}, path {fs_results_path}")
     print(f">> max files (normal, deeep): {max_files}, {max_files_deep}")
-    all_runs = {
-        run_id: RunInfo(run_id, config_path),
-    }
 
-    # In[4]:
+    try:
+        all_runs = {
+            run_id: RunInfo(run_id, config_path),
+        }
 
-    for run_name, run_info in all_runs.items():
-        run_id = run_info.run_id
-        config_filepath = run_info.config_path
-        run_info.gempyor_simulator = gempyor.InferenceSimulator(
-            config_path=config_filepath,
-            run_id=run_id,
-            # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
-            first_sim_index=1,
-            npi_scenario="inference",  # NPIs scenario to use
-            outcome_scenario="med",  # Outcome scenario to use
-            stoch_traj_flag=False,
-            spatial_path_prefix="./",  # prefix where to find the folder indicated in spatial_setup$
+        # In[4]:
+
+        for run_name, run_info in all_runs.items():
+            run_id = run_info.run_id
+            config_filepath = run_info.config_path
+            run_info.gempyor_simulator = gempyor.InferenceSimulator(
+                config_path=config_filepath,
+                run_id=run_id,
+                # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
+                first_sim_index=1,
+                npi_scenario="inference",  # NPIs scenario to use
+                outcome_scenario="med",  # Outcome scenario to use
+                stoch_traj_flag=False,
+                spatial_path_prefix="./",  # prefix where to find the folder indicated in spatial_setup$
+            )
+            run_info.folder_path = f"{fs_results_path}/model_output"
+
+        node_names = run_info.gempyor_simulator.s.spatset.nodenames
+
+        # In[5]:
+
+        # gempyor.config.set_file(run_info.config_path)
+        # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
+        # gt
+        # statistics = {}
+        # Ingoring agreegation and all, assuming by week
+        # for stat in gempyor.config["inference"]["statistics"]:
+        #    statistics[gempyor.config["inference"]["statistics"][stat]["sim_var"].get()] = gempyor.config["inference"][
+        #        "statistics"
+        #    ][stat]["data_var"].get()
+        # statistics
+
+        # ## Analyze llik files
+
+        # In[6]:
+
+        llik_filenames = get_all_filenames("llik", all_runs, intermediates_only=True)
+
+        # In[7]:
+
+        resultST = {}
+
+        for run_name, run_info in all_runs.items():
+            resultST[run_name] = []
+            file_list = llik_filenames[run_name][:max_files]
+            for filename in file_list:
+                slot = int(filename.split("/")[-1].split(".")[0])
+                block = int(filename.split("/")[-1].split(".")[1])
+                sim_str = filename.split("/")[-1].split(".")[2]  # not necessarily a sim number now
+                if sim_str.isdigit():
+                    sim = int(sim_str)
+                    if block == 1 and (sim == 1 or sim % 5 == 0):  ## first block, only one
+                        df_raw = pq.read_table(filename).to_pandas()
+                        df_raw["slot"] = slot
+                        df_raw["sim"] = sim
+                        df_raw["ID"] = run_name
+                        df_raw = df_raw.drop("filename", axis=1)
+                        # df_csv = df_csv.groupby(['slot','sim', 'ID', 'geoid']).sum().reset_index()
+                        # df_csv = df_csv[['ll','sim', 'slot', 'ID','geoid']]
+                        resultST[run_name].append(df_raw)
+        full_df = pd.concat(resultST[run_name])
+        full_df
+
+        # In[22]:
+
+        full_df.groupby(["sim", "slot"]).sum()
+
+        # In[23]:
+
+        fig, axes = plt.subplots(len(node_names) + 1, 4, figsize=(4 * 4, len(node_names) * 3), sharex=True)
+
+        colors = ["b", "r", "y", "c"]
+        icl = 0
+
+        idp = 0
+        all_nn = (
+            full_df.groupby(["sim", "slot"])
+            .sum()
+            .reset_index()[["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
         )
-        run_info.folder_path = f"{fs_results_path}/model_output"
-
-    node_names = run_info.gempyor_simulator.s.spatset.nodenames
-
-    # In[5]:
-
-    # gempyor.config.set_file(run_info.config_path)
-    # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
-    # gt
-    # statistics = {}
-    # Ingoring agreegation and all, assuming by week
-    # for stat in gempyor.config["inference"]["statistics"]:
-    #    statistics[gempyor.config["inference"]["statistics"][stat]["sim_var"].get()] = gempyor.config["inference"][
-    #        "statistics"
-    #    ][stat]["data_var"].get()
-    # statistics
-
-    # ## Analyze llik files
-
-    # In[6]:
-
-    llik_filenames = get_all_filenames("llik", all_runs, intermediates_only=True)
-
-    # In[7]:
-
-    resultST = {}
-
-    for run_name, run_info in all_runs.items():
-        resultST[run_name] = []
-        file_list = llik_filenames[run_name][:max_files]
-        for filename in file_list:
-            slot = int(filename.split("/")[-1].split(".")[0])
-            block = int(filename.split("/")[-1].split(".")[1])
-            sim_str = filename.split("/")[-1].split(".")[2]  # not necessarily a sim number now
-            if sim_str.isdigit():
-                sim = int(sim_str)
-                if block == 1 and (sim == 1 or sim % 5 == 0):  ## first block, only one
-                    df_raw = pq.read_table(filename).to_pandas()
-                    df_raw["slot"] = slot
-                    df_raw["sim"] = sim
-                    df_raw["ID"] = run_name
-                    df_raw = df_raw.drop("filename", axis=1)
-                    # df_csv = df_csv.groupby(['slot','sim', 'ID', 'geoid']).sum().reset_index()
-                    # df_csv = df_csv[['ll','sim', 'slot', 'ID','geoid']]
-                    resultST[run_name].append(df_raw)
-    full_df = pd.concat(resultST[run_name])
-    full_df
-
-    # In[22]:
-
-    full_df.groupby(["sim", "slot"]).sum()
-
-    # In[23]:
-
-    fig, axes = plt.subplots(len(node_names) + 1, 4, figsize=(4 * 4, len(node_names) * 3), sharex=True)
-
-    colors = ["b", "r", "y", "c"]
-    icl = 0
-
-    idp = 0
-    all_nn = (
-        full_df.groupby(["sim", "slot"])
-        .sum()
-        .reset_index()[["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
-    )
-    for ift, feature in enumerate(["ll", "accept", "accept_avg", "accept_prob"]):
-        lls = all_nn.pivot(index="sim", columns="slot", values=feature)
-        if feature == "accept":
-            lls = lls.cumsum()
-            feature = "accepts, cumulative"
-        axes[idp, ift].fill_between(
-            lls.index, lls.quantile(0.025, axis=1), lls.quantile(0.975, axis=1), alpha=0.1, color=colors[icl]
-        )
-        axes[idp, ift].fill_between(
-            lls.index, lls.quantile(0.25, axis=1), lls.quantile(0.75, axis=1), alpha=0.1, color=colors[icl]
-        )
-        axes[idp, ift].plot(lls.index, lls.median(axis=1), marker="o", label=run_id, color=colors[icl])
-        axes[idp, ift].plot(lls.index, lls.iloc[:, 0:max_files_deep], color="k", lw=0.3)
-        axes[idp, ift].set_title(f"National, {feature}")
-        axes[idp, ift].grid()
-
-    for idp, nn in enumerate(node_names):
-        idp = idp + 1
-        all_nn = full_df[full_df["geoid"] == nn][["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
         for ift, feature in enumerate(["ll", "accept", "accept_avg", "accept_prob"]):
             lls = all_nn.pivot(index="sim", columns="slot", values=feature)
             if feature == "accept":
@@ -279,13 +262,34 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
             )
             axes[idp, ift].plot(lls.index, lls.median(axis=1), marker="o", label=run_id, color=colors[icl])
             axes[idp, ift].plot(lls.index, lls.iloc[:, 0:max_files_deep], color="k", lw=0.3)
-            axes[idp, ift].set_title(f"{nn}, {feature}")
+            axes[idp, ift].set_title(f"National, {feature}")
             axes[idp, ift].grid()
-            if idp == len(node_names) - 1:
-                axes[idp, ift].set_xlabel("sims")
-            # ax.ticklabel_format(style='sci', scilimits=(-1,2), axis='y')
-    fig.tight_layout()
-    plt.savefig(f"pplot/llik_{run_id}_{job_name}.pdf")
+
+        for idp, nn in enumerate(node_names):
+            idp = idp + 1
+            all_nn = full_df[full_df["geoid"] == nn][["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
+            for ift, feature in enumerate(["ll", "accept", "accept_avg", "accept_prob"]):
+                lls = all_nn.pivot(index="sim", columns="slot", values=feature)
+                if feature == "accept":
+                    lls = lls.cumsum()
+                    feature = "accepts, cumulative"
+                axes[idp, ift].fill_between(
+                    lls.index, lls.quantile(0.025, axis=1), lls.quantile(0.975, axis=1), alpha=0.1, color=colors[icl]
+                )
+                axes[idp, ift].fill_between(
+                    lls.index, lls.quantile(0.25, axis=1), lls.quantile(0.75, axis=1), alpha=0.1, color=colors[icl]
+                )
+                axes[idp, ift].plot(lls.index, lls.median(axis=1), marker="o", label=run_id, color=colors[icl])
+                axes[idp, ift].plot(lls.index, lls.iloc[:, 0:max_files_deep], color="k", lw=0.3)
+                axes[idp, ift].set_title(f"{nn}, {feature}")
+                axes[idp, ift].grid()
+                if idp == len(node_names) - 1:
+                    axes[idp, ift].set_xlabel("sims")
+                # ax.ticklabel_format(style='sci', scilimits=(-1,2), axis='y')
+        fig.tight_layout()
+        plt.savefig(f"pplot/llik_{run_id}_{job_name}.pdf")
+    except:
+        pass
 
     # In[9]:
 
