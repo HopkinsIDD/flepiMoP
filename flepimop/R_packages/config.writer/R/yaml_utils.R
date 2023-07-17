@@ -1459,6 +1459,7 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                                        gt_data_path = "data/us_data.csv",
                                        gt_source = "csse",
                                        gt_source_statistics = NULL, misc_data_filename = NULL,
+                                       gt_api_key = NULL;
                                        aggregator = "sum",
                                        period = "1 weeks",
                                        stat_names = c("sum_deaths", "sum_confirmed"),
