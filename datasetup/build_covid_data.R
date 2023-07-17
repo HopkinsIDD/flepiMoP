@@ -101,7 +101,6 @@ if (any(grepl("csse", opt$gt_data_source))){
     csse_target <- unlist(strsplit(opt$gt_data_source, ", "))
     csse_target <- tolower(gsub("csse_", "", csse_target[grepl("csse", csse_target)]))
 
-
     csse_data <- flepicommon::get_groundtruth_from_source(source = gt_source, scale = gt_scale,
                                                           incl_unass = TRUE,
                                                           variables = c("incidC", "cumC", "incidD", "cumD"),
