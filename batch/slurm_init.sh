@@ -7,6 +7,7 @@ module load slurm
 module load anaconda3/2022.05
 conda activate flepimop-env
 export CENSUS_API_KEY="6a98b751a5a7a6fc365d14fa8e825d5785138935"  # joseph's key
+source /scratch4/struelo1/flepimop-code/slack_credentials.sh
 # export COVID_STOCHASTIC=false
 # export COVID_RESET_CHIMERICS=TRUE
 # export COVID_PATH=/scratch4/struelo1/flepimop-code/$USER/COVIDScenarioPipeline
