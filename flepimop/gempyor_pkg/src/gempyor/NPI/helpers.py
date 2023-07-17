@@ -64,8 +64,6 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
     spatial_groups["grouped"] = [sorted(x) for x in spatial_groups["grouped"]]
     spatial_groups["ungrouped"] = sorted(spatial_groups["ungrouped"])
 
-
-
     return spatial_groups
 
 

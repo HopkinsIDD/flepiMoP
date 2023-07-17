@@ -128,12 +128,12 @@ if [ $S3_UPLOAD == "true" ]; then
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','csv'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
-        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
     done
-        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+        for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','parquet'))")
         aws s3 cp --quiet $FILENAME $S3_RESULTS_PATH/$FILENAME
@@ -170,14 +170,14 @@ do
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
-for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
-    for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
+    for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
