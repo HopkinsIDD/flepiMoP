@@ -1476,7 +1476,8 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                                        do_inference = TRUE,
                                        gt_data_path = "data/us_data.csv",
                                        gt_source = "csse",
-                                       gt_source_statistics = NULL, misc_data_filename = NULL,
+                                       gt_source_statistics = NULL,
+                                       misc_data_filename = NULL,
                                        gt_api_key = NULL;
                                        aggregator = "sum",
                                        period = "1 weeks",
@@ -1500,11 +1501,14 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                "  iterations_per_slot: ", iterations_per_slot, "\n",
                "  do_inference: ", do_inference, "\n",
                "  gt_data_path: ", gt_data_path, "\n",
-               "  gt_source: \"", gt_source, "\"\n", {
-                   if (!is.null(misc_data_filename))
-                       paste0("  misc_data_filename: ", misc_data_filename, "\n")
-                   else (paste0(""))
-               }, "  statistics:\n"))
+               "  gt_source: \"", gt_source, "\"\n",
+               if (!is.null(misc_data_filename)) {
+                   paste0("  misc_data_filename: ", misc_data_filename, "\n")
+               },
+               if (!is.null(gt_api_key)) {
+                   paste0("  gt_api_key \"", gt_api_key, "\"\n",
+               },
+               "  statistics:\n"))
 
     if (compartment) {
 
