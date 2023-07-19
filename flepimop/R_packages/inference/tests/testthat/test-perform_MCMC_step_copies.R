@@ -136,7 +136,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
                                                       trailing_separator='.')
     chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(slot,"%09d"), sep='.',
                                                       trailing_separator='.')
-    
+
     ##To be save make a directory
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
@@ -149,9 +149,9 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     spar_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet')
     hnpi_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet')
     hpar_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet')
-    
-    
-    
+
+
+
     ##create the copy from  files
     arrow::write_parquet(data.frame(file="seed"), seed_src)
     arrow::write_parquet(data.frame(file="seir"), seir_src)
@@ -161,10 +161,10 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     arrow::write_parquet(data.frame(file="spar"), spar_src)
     arrow::write_parquet(data.frame(file="hnpi"), hnpi_src)
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
-    
+
     ##print(hosp_src)
     ##print(flepicommon::create_file_name(run_id,cf_prefix,slot,'hosp','parquet'))
-    
+
     res <- perform_MCMC_step_copies_chimeric(current_index,
                                            slot,
                                            block,
@@ -172,15 +172,15 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
                                            chimeric_local_prefix,
                                            cf_prefix,
                                            chimeric_block_prefix)
-    
-    
+
+
     expect_equal(prod(unlist(res)),1)
-    
+
     ##clean up
     setwd("..")
     unlink("MCMC_step_copy_test", recursive=TRUE)
-    
-    
+
+
 })
 
 
@@ -197,7 +197,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
                                                       trailing_separator='.')
     chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(slot,"%09d"), sep='.',
                                                       trailing_separator='.')
-    
+
     ##To be save make a direectory
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
@@ -210,9 +210,9 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     spar_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'spar','parquet')
     hnpi_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hnpi','parquet')
     hpar_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hpar','parquet')
-    
-    
-    
+
+
+
     ##create the copy from  files
     arrow::write_parquet(data.frame(file="seed"), seed_src)
     arrow::write_parquet(data.frame(file="seir"), seir_src)
@@ -222,10 +222,10 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     arrow::write_parquet(data.frame(file="spar"), spar_src)
     arrow::write_parquet(data.frame(file="hnpi"), hnpi_src)
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
-    
+
     print(hosp_src)
     print(flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet'))
-    
+
     res <- perform_MCMC_step_copies_chimeric(current_index,
                                            slot,
                                            block,
@@ -233,14 +233,14 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
                                            chimeric_local_prefix,
                                            cf_prefix,
                                            chimeric_block_prefix)
-    
-    
+
+
     expect_equal(prod(unlist(res)),1)
-    
+
     ##clean up
     setwd("..")
     unlink("MCMC_step_copy_test", recursive=TRUE)
-    
-    
+
+
 })
 
