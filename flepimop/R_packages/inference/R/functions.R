@@ -159,7 +159,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
 ##' @return NULL
 #' @export
 logLikStat <- function(obs, sim, distr, param, add_one = F) {
-  
+
   if(length(obs) != length(sim)){
     stop(sprintf("Expecting sim (%d) and obs (%d) to be the same length",length(sim),length(obs)))
   }
@@ -170,9 +170,9 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
   }else{
     eval <- as.logical(rep(1,length(obs)))
   }
-  
-  rc <- rep(0,length(obs)) 
-  
+
+  rc <- rep(0,length(obs))
+
   if(distr == "pois") {
     rc[eval] <- dpois(round(obs[eval]), sim[eval], log = T)
   } else if (distr == "norm") {
@@ -189,13 +189,13 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
     rc[eval] <- dnorm(sqrt(obs[eval]), sqrt(sim[eval]*param[[2]]), sd=sqrt(pmax(sim[eval],5)*param[[2]])*param[[1]],log=T)
   } else if (distr == "lognorm"){
     # lognormal where the mode (MLE) is the simulated value
-    obs[obs == 0 & eval == 1] = 1 # if observed value is 0 but simulated is 1, change data to 1 and evaluate likelihood. 
+    obs[obs == 0 & eval == 1] = 1 # if observed value is 0 but simulated is 1, change data to 1 and evaluate likelihood.
     # can't have zeros for lognormal, would give loglikelihood of negative infinity
     rc[eval] <- dlnorm(obs[eval], meanlog = log(sim[eval]) + param[[1]]^2, sdlog = param[[1]], log = T) # mean is adjusted so that sim is the mode
   } else {
     stop("Invalid stat specified")
   }
-  
+
   return(rc)
 }
 
@@ -398,9 +398,11 @@ perturb_snpi <- function(snpi, intervention_settings) {
       snpi_new <- snpi[["reduction"]][ind] + pert_dist(sum(ind))
 
       ##check that this is in bounds (equivalent to having a positive probability)
-      in_bounds_index <- flepicommon::as_density_distribution(
-        intervention_settings[[intervention]][['value']]
-      )(snpi_new) > 0
+      # in_bounds_index <- flepicommon::as_density_distribution(
+      #   intervention_settings[[intervention]][['value']]
+      # )(snpi_new) > 0
+      # Above version fails for some use case: https://iddynamicsjhu.slack.com/archives/C04UYU4V7SN/p1686000150041659
+      in_bounds_index <- flepicommon::check_within_bounds(snpi_new, intervention_settings[[intervention]][['value']])
 
       ##return all in bounds proposals
       snpi$reduction[ind][in_bounds_index] <- snpi_new[in_bounds_index]
@@ -440,9 +442,10 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
       hnpi_new <- hnpi[["reduction"]][ind] + pert_dist(sum(ind))
 
       ##check that this is in bounds (equivalent to having a positive probability)
-      in_bounds_index <- flepicommon::as_density_distribution(
-        intervention_settings[[intervention]][['value']]
-      )(hnpi_new) > 0
+      # in_bounds_index <- flepicommon::as_density_distribution(
+      #   intervention_settings[[intervention]][['value']]
+      # )(hnpi_new) > 0
+      in_bounds_index <- flepicommon::check_within_bounds(hnpi_new, intervention_settings[[intervention]][['value']])
 
       ##return all in bounds proposals
       hnpi$reduction[ind][in_bounds_index] <- hnpi_new[in_bounds_index]
@@ -493,7 +496,8 @@ perturb_hpar <- function(hpar, intervention_settings) {
         }
 
         ## Check that this is in the support of the original distribution
-        in_bounds_index <- flepicommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
+        # in_bounds_index <- flepicommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
+        in_bounds_index <- flepicommon::check_within_bounds(hpar_new, intervention_quantity[['value']])
         hpar$value[ind][in_bounds_index] <- hpar_new[in_bounds_index]
       }
     }
@@ -540,7 +544,7 @@ accept_reject_new_seeding_npis <- function(
   accept <- ratio > runif(length(ratio), 0, 1)
 
   orig_lls$ll[accept] <- prop_lls$ll[accept]
-  
+
   orig_lls$accept <- as.numeric(accept) # added column for acceptance decision
   orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
 
@@ -594,31 +598,31 @@ iterateAccept <- function(ll_ref, ll_new) {
 add_perturb_column_snpi <- function(snpi, intervention_settings) {
 
   snpi$perturb_sd <- 0 # create a column in the parameter data frame to hold the perturbation sd
-  
+
   ##Loop over all interventions
   for (intervention in names(intervention_settings)) {
     ##Only perform perturbations on interventions where it is specified to do so.
-    
+
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
-      
+
       ##find the npi with this name
       ind <- (snpi[["npi_name"]] == intervention)
       if(!any(ind)){
         next
       }
-      
+
       if(!'sd' %in% names(intervention_settings[[intervention]][['perturbation']])){
         stop("Cannot add perturbation sd to column unless 'sd' values exists in config$interventions$settings$this_intervention$perturbation")
       }
-      
+
       pert_sd <-intervention_settings[[intervention]][['perturbation']][['sd']]
       #print(paste0(intervention," initial perturbation sd is ",pert_sd))
-      
+
       snpi$perturb_sd[ind] <- pert_sd # update perturbation
-      
+
     }
   }
-  
+
   return(snpi)
 }
 
@@ -630,51 +634,52 @@ add_perturb_column_snpi <- function(snpi, intervention_settings) {
 ##' @param snpi the original npis.
 ##' @param intervention_settings a list of perturbation specifications
 ##' @param llik log likelihood values
-##' 
+##'
 ##' @return a perturbed data frame
 ##' @export
 perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
-  
+
 
   ##Loop over all interventions
   for (intervention in names(intervention_settings)) {
-    
+
     ##Only perform perturbations on interventions where it is specified to do so.
-    
+
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
-      
+
       ##find all the npi with this name (might be one for each geoID)
       ind <- (snpi[["npi_name"]] == intervention)
       if(!any(ind)){
         next
       }
-      
+
       ## for each of them generate the perturbation and update their value
       for (this_npi_ind in which(ind)){ # for each geoid that has this interventions
-        
+
         this_geoid <- snpi[["geoid"]][this_npi_ind]
-        this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid] 
-        his_accept_prob <- llik$accept_prob[llik$geoid==this_geoid] 
+        this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid]
+        his_accept_prob <- llik$accept_prob[llik$geoid==this_geoid]
         this_intervention_setting<- intervention_settings[[intervention]]
-        
+
         ##get the random distribution from flepicommon package
         pert_dist <- flepicommon::as_random_distribution(this_intervention_setting$perturbation)
-        
+
         ##add the perturbation...for now always parameterized in terms of a "reduction"
         snpi_new <- snpi[["reduction"]][this_npi_ind] + pert_dist(1)
-        
+
         ##check that this is in bounds (equivalent to having a positive probability)
-        in_bounds_index <- flepicommon::as_density_distribution(
-          intervention_settings[[intervention]][['value']]
-        )(snpi_new) > 0
-        
+        # in_bounds_index <- flepicommon::as_density_distribution(
+        #   intervention_settings[[intervention]][['value']]
+        # )(snpi_new) > 0
+        in_bounds_index <- flepicommon::check_within_bounds(snpi_new, intervention_settings[[intervention]][['value']])
+
         ## include this perturbed parameter if it is in bounds
         snpi$reduction[this_npi_ind][in_bounds_index] <- snpi_new[in_bounds_index]
-        
+
       }
     }
   }
-  
+
   return(snpi)
 }
 
@@ -687,33 +692,33 @@ perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
 ##' @return data frame with perturb_sd column added
 ##' @export
 add_perturb_column_hnpi <- function(hnpi, intervention_settings) {
-  
+
   hnpi$perturb_sd <- 0 # create a column in the parameter data frame to hold the perturbation sd
-  
+
   ##Loop over all interventions
   for (intervention in names(intervention_settings)) {
     ##Only perform perturbations on interventions where it is specified to do so.
-    
+
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
-      
+
       ##find the npi with this name
       ind <- (hnpi[["npi_name"]] == intervention)
       if(!any(ind)){
         next
       }
-      
+
       if(!'sd' %in% names(intervention_settings[[intervention]][['perturbation']])){
         stop("Cannot add perturbation sd to column unless 'sd' values exists in config$interventions$settings$this_intervention$perturbation")
       }
-      
+
       pert_sd <-intervention_settings[[intervention]][['perturbation']][['sd']]
       #print(paste0(intervention," initial perturbation sd is ",pert_sd))
-      
+
       hnpi$perturb_sd[ind] <- pert_sd # update perturbation
-      
+
     }
   }
-  
+
   return(hnpi)
 }
 
@@ -725,50 +730,51 @@ add_perturb_column_hnpi <- function(hnpi, intervention_settings) {
 ##' @param hnpi the original npis.
 ##' @param intervention_settings a list of perturbation specifications
 ##' @param llik log likelihood values
-##' 
+##'
 ##' @return a perturbed data frame
 ##' @export
 perturb_hnpi_from_file  <- function(hnpi, intervention_settings, llik){
-  
-  
+
+
   ##Loop over all interventions
   for (intervention in names(intervention_settings)) {
-    
+
     ##Only perform perturbations on interventions where it is specified to do so.
-    
+
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
-      
+
       ##find all the npi with this name (might be one for each geoID)
       ind <- (hnpi[["npi_name"]] == intervention)
       if(!any(ind)){
         next
       }
-      
+
       ## for each of them generate the perturbation and update their value
       for (this_npi_ind in which(ind)){ # for each geoid that has this interventions
-        
+
         this_geoid <- hnpi[["geoid"]][this_npi_ind]
-        this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid] 
+        this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid]
         this_intervention_setting<- intervention_settings[[intervention]]
-        
+
         ##get the random distribution from flepicommon package
         pert_dist <- flepicommon::as_random_distribution(this_intervention_setting$perturbation)
-        
+
         ##add the perturbation...for now always parameterized in terms of a "reduction"
         hnpi_new <- hnpi[["reduction"]][this_npi_ind] + pert_dist(1)
-        
+
         ##check that this is in bounds (equivalent to having a positive probability)
-        in_bounds_index <- flepicommon::as_density_distribution(
-          intervention_settings[[intervention]][['value']]
-        )(hnpi_new) > 0
-        
+        # in_bounds_index <- flepicommon::as_density_distribution(
+        #   intervention_settings[[intervention]][['value']]
+        # )(hnpi_new) > 0
+        in_bounds_index <- flepicommon::check_within_bounds(hnpi_new, intervention_settings[[intervention]][['value']])
+
         ## include this perturbed parameter if it is in bounds
         hnpi$reduction[this_npi_ind][in_bounds_index] <- hnpi_new[in_bounds_index]
-        
+
       }
     }
   }
-  
+
   return(hnpi)
 }
 

@@ -11,6 +11,7 @@ import logging
 from . import compartments
 from . import setup
 import numba as nb
+from .utils import read_df
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,15 @@ class SeedingAndIC:
         if "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
 
+        allow_missing_nodes = False
+        allow_missing_compartments = False
+        if "allow_missing_nodes" in self.initial_conditions_config.keys():
+            if self.initial_conditions_config["allow_missing_nodes"].get():
+                allow_missing_nodes=True
+        if "allow_missing_compartments" in self.initial_conditions_config.keys():
+            if self.initial_conditions_config["allow_missing_compartments"].get():
+                allow_missing_compartments=True
+
         if method == "Default":
             ## JK : This could be specified in the config
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
@@ -96,46 +106,88 @@ class SeedingAndIC:
             ic_df = pd.read_csv(
                 self.initial_conditions_config["states_file"].as_str(),
                 converters={"place": lambda x: str(x)},
+                skipinitialspace=True,
             )
             if ic_df.empty:
-                raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
+                raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for pl_idx, pl in enumerate(setup.spatset.nodenames):  #
                 if pl in list(ic_df["place"]):
                     states_pl = ic_df[ic_df["place"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
                         y0[comp_idx, pl_idx] = float(states_pl[states_pl["comp"] == comp_name]["amount"])
-                elif self.seeding_config["ignore_missing"].get():
+                elif allow_missing_nodes:
                     print(f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population")
                     y0[0, pl_idx] = setup.popnodes[pl_idx]
                 else:
                     raise ValueError(
-                        f"place {pl} does not exist in seeding::states_file. You can set ignore_missing=TRUE to bypass this error"
+                        f"place {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
                     )
+        elif method == "InitialConditionsFolderDraw" or method == "FromFile":
+            if method == "InitialConditionsFolderDraw":
+                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+            elif method == "FromFile":
+                ic_df = read_df(
+                    self.initial_conditions_config["initial_conditions_file"].get(),
+                )
 
-        elif method == "InitialConditionsFolderDraw":
-            ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+            # annoying conversion because sometime the parquet columns get attributed a timezone...
+            ic_df["date"] = pd.to_datetime(ic_df["date"], utc=True) # force date to be UTC
+            ic_df["date"] = ic_df["date"].dt.date
+            ic_df["date"] = ic_df["date"].astype(str)
+
             ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
-                raise ValueError(f"There is no entry for initial time ti in the provided seeding::states_file.")
-
+                raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
+
             for comp_idx, comp_name in setup.compartments.compartments["name"].items():
-                ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
+                # rely on all the mc's instead of mc_name to avoid errors due to e.g order.
+                # before: only 
+                # ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
+                filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
+                ic_df_compartment = ic_df.copy()
+                for mc_name, mc_value in filters.items():
+                    ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_"+mc_name] == mc_value]
+
+
+                if len(ic_df_compartment) > 1:
+                    #ic_df_compartment = ic_df_compartment.iloc[0]
+                    raise ValueError(f"ERROR: Several ({len(ic_df_compartment)}) rows are matches for compartment {mc_name} in init file: filter {filters} returned {ic_df_compartment}")
+                elif ic_df_compartment.empty:
+                    if allow_missing_compartments:
+                        ic_df_compartment = pd.DataFrame(0, columns=ic_df_compartment.columns, index = [0])
+                    else:
+                        raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}.")
+                elif (ic_df_compartment["mc_name"].iloc[0] != comp_name):
+                    print(f"WARNING: init file mc_name {ic_df_compartment['mc_name'].iloc[0]} does not match compartment mc_name {comp_name}")
+
+
                 for pl_idx, pl in enumerate(setup.spatset.nodenames):
                     if pl in ic_df.columns:
-                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
-                    elif setup.seeding_config["ignore_missing"].get():
+                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])    
+                    elif allow_missing_nodes:
                         logging.warning(
                             f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population"
                         )
                         y0[0, pl_idx] = setup.popnodes[pl_idx]
                     else:
                         raise ValueError(
-                            f"place {pl} does not exist in seeding::states_file. You can set ignore_missing=TRUE to bypass this error"
+                            f"place {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
+        
+        # check that the inputed values sums to the node_population:
+        error = False
+        for pl_idx, pl in enumerate(setup.spatset.nodenames):
+            n_y0 = y0[:, pl_idx].sum()
+            n_pop = setup.popnodes[pl_idx]
+            if abs(n_y0-n_pop) > 100:
+                error = True
+                print(f"ERROR: place {pl} (idx: pl_idx) has a population from initial condition of {n_y0} while population from geodata is {n_pop} (absolute difference should be < 1, here is {abs(n_y0-n_pop)})") 
+        if False:
+            raise ValueError()
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
@@ -148,6 +200,7 @@ class SeedingAndIC:
                 self.seeding_config["lambda_file"].as_str(),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
+                skipinitialspace=True,
             )
             dupes = seeding[seeding.duplicated(["place", "date"])].index + 1
             if not dupes.empty:
@@ -161,6 +214,14 @@ class SeedingAndIC:
                 ),
                 converters={"place": lambda x: str(x)},
                 parse_dates=["date"],
+                skipinitialspace=True,
+            )
+        elif method == "FromFile":
+            seeding = pd.read_csv(
+                self.seeding_config["seeding_file"].get(),
+                converters={"place": lambda x: str(x)},
+                parse_dates=["date"],
+                skipinitialspace=True,
             )
         elif method == "NoSeeding":
             seeding = pd.DataFrame(columns=["date", "place"])
@@ -176,7 +237,7 @@ class SeedingAndIC:
             amounts = np.random.poisson(seeding["amount"])
         elif method == "NegativeBinomialDistributed":
             amounts = np.random.negative_binomial(n=5, p=5 / (seeding["amount"] + 5))
-        elif method == "FolderDraw":
+        elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
@@ -185,14 +246,9 @@ class SeedingAndIC:
         method = "NoSeeding"
         if "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
-        if method not in [
-            "FolderDraw",
-            "SetInitialConditions",
-            "InitialConditionsFolderDraw",
-            "NoSeeding",
-        ]:
+        if method not in ["FolderDraw", "SetInitialConditions", "InitialConditionsFolderDraw", "NoSeeding", "FromFile"]:
             raise NotImplementedError(
-                f"Seeding method in inference run must be FolderDraw, SetInitialConditions, or InitialConditionsFolderDraw [got: {method}]"
+                f"Seeding method in inference run must be FolderDraw, SetInitialConditions, FromFile or InitialConditionsFolderDraw [got: {method}]"
             )
         return self.draw_seeding(sim_id=sim_id, setup=setup)
 

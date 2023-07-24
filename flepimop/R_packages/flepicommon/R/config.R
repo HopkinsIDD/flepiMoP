@@ -127,6 +127,25 @@ as_density_distribution <- function(obj) {
   }
 }
 
+check_within_bounds <- function(value, obj) {
+  # Using & so it's vectorized for a vector of value with a single distribution
+  if (obj$distribution == "uniform") {
+    return(value >= as_evaled_expression(obj$low) & value <= as_evaled_expression(obj$high))
+  } else if (obj$distribution == "poisson") {
+    return(value >= 0 & is.integer(value))
+  } else if (obj$distribution == "binomial") {
+    return(value >= 0 & is.integer(value) & value <= as_evaled_expression(obj$size))
+  } else if (obj$distribution == "lognormal") {
+    return(value > 0)
+  } else if (obj$distribution == "truncnorm") {
+    return(value >= as_evaled_expression(obj$a) & value <= as_evaled_expression(obj$b))
+  } else if (obj$distribution == "fixed") {
+    return(value == as_evaled_expression(obj$value))
+  } else {
+    stop("unknown distribution")
+  }
+}
+
 #' @name prettyprint_optlist
 #' @description Print a list of options such that it does not take the whole screen
 #' Display `name : value` \n for all elements.

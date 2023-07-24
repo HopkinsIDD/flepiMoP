@@ -47,10 +47,7 @@ def test_full_npis_read_write():
     #    inference_simulator.s, load_ID=False, sim_id2load=None, config=config
     # )
 
-    
-    
     inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
-
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
     hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
@@ -186,6 +183,7 @@ def test_spatial_groups():
         == "2020-10-01,2021-10-01"
     )
 
+
 def test_spatial_groups():
 
     inference_simulator = gempyor.InferenceSimulator(
@@ -210,7 +208,6 @@ def test_spatial_groups():
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(106, "", 1, "snpi", "parquet"))
 
-
     inference_simulator = gempyor.InferenceSimulator(
         config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
         run_id=106,
@@ -227,15 +224,18 @@ def test_spatial_groups():
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.106.snpi.parquet").to_pandas()
     snpi_wrote = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.107.snpi.parquet").to_pandas()
-    
+
     # now the order can change, so we need to sort by geoid and start_date
     snpi_wrote = snpi_wrote.sort_values(by=["geoid", "start_date"]).reset_index(drop=True)
     snpi_read = snpi_read.sort_values(by=["geoid", "start_date"]).reset_index(drop=True)
     assert (snpi_read == snpi_wrote).all().all()
 
-
-    npi_read = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_read)
-    npi_wrote = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_wrote)
+    npi_read = seir.build_npi_SEIR(
+        inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_read
+    )
+    npi_wrote = seir.build_npi_SEIR(
+        inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_wrote
+    )
 
     assert (npi_read.getReductionDF() == npi_wrote.getReductionDF()).all().all()
 
@@ -244,4 +244,3 @@ def test_spatial_groups():
     assert (npi_wrote.getReduction("r3") == npi_read.getReduction("r3")).all().all()
     assert (npi_wrote.getReduction("r4") == npi_read.getReduction("r4")).all().all()
     assert (npi_wrote.getReduction("r5") == npi_read.getReduction("r5")).all().all()
-
