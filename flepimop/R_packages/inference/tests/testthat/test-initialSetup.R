@@ -41,8 +41,8 @@ test_that("initialize_mcmc_first_block works for block > 1",{
       "test_run",
       "global",
       1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed", "init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
@@ -83,8 +83,8 @@ test_that("initialize_mcmc_first_block works for block < 1",{
       "test_run",
       "global",
       -1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed","init",  "seir", "snpi", "spar", "hosp", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
@@ -118,8 +118,8 @@ test_that("initialize_mcmc_first_block works for block < 1",{
       "test_run",
       "global",
       -1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed","init", "seir", "snpi", "spar", "hosp", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
