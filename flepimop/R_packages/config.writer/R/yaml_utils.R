@@ -1506,7 +1506,7 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                    paste0("  misc_data_filename: ", misc_data_filename, "\n")
                },
                if (!is.null(gt_api_key)) {
-                   paste0("  gt_api_key \"", gt_api_key, "\"\n",
+                   paste0("  gt_api_key \"", gt_api_key, "\"\n")
                },
                "  statistics:\n"))
 
