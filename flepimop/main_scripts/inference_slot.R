@@ -60,30 +60,33 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-if (('perturbation_sd' %in% names(config$seeding))) {
-    if (('date_sd' %in% names(config$seeding))) {
-        stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
+
+if (!is.null(config$seeding)){
+    if (('perturbation_sd' %in% names(config$seeding))) {
+        if (('date_sd' %in% names(config$seeding))) {
+            stop("Both the key seeding::perturbation_sd and the key seeding::date_sd are present in the config file, but only one allowed.")
+        }
+        config$seeding$date_sd <- config$seeding$perturbation_sd
     }
-    config$seeding$date_sd <- config$seeding$perturbation_sd
-}
-if (!('date_sd' %in% names(config$seeding))) {
-    stop("Neither the key seeding::perturbation_sd nor the key seeding::date_sd are present in the config file, but one is required.")
-}
-if (!('amount_sd' %in% names(config$seeding))) {
-    config$seeding$amount_sd <- 1
+    if (!('date_sd' %in% names(config$seeding))) {
+        stop("Neither the key seeding::perturbation_sd nor the key seeding::date_sd are present in the config file, but one is required.")
+    }
+    if (!('amount_sd' %in% names(config$seeding))) {
+        config$seeding$amount_sd <- 1
+    }
+
+    if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+        stop("This filtration method requires the seeding method 'FolderDraw'")
+    }
+} else {
+    print("⚠️ No seeding: section found in config >> not fitting seeding.")
 }
 
-if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-    stop("This filtration method requires the seeding method 'FolderDraw'")
-}
 
-if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
-    stop("This filtration method requires the seeding method 'FolderDraw'")
-}
+
 #if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
-
 
 # Aggregation to state level if in config
 state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
@@ -384,15 +387,21 @@ for(npi_scenario in npi_scenarios) {
         current_index <- 0
 
         ### Load initial files (were created within function initialize_mcmc_first_block)
-        seeding_col_types <- NULL
-        suppressMessages(initial_seeding <- readr::read_csv(first_chimeric_files[['seed_filename']], col_types=seeding_col_types))
-        if (opt$stoch_traj_flag) {
-            initial_seeding$amount <- as.integer(round(initial_seeding$amount))
-        }
+        # if (!is.null(config$seeding)){
+            seeding_col_types <- NULL
+            suppressMessages(initial_seeding <- readr::read_csv(first_chimeric_files[['seed_filename']], col_types=seeding_col_types))
+
+            if (opt$stoch_traj_flag) {
+                initial_seeding$amount <- as.integer(round(initial_seeding$amount))
+            }
+        # }
         initial_snpi <- arrow::read_parquet(first_chimeric_files[['snpi_filename']])
         initial_hnpi <- arrow::read_parquet(first_chimeric_files[['hnpi_filename']])
         initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
         initial_hpar <- arrow::read_parquet(first_chimeric_files[['hpar_filename']])
+        if (!is.null(config$initial_conditions)){
+            initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
+        }
         chimeric_likelihood_data <- arrow::read_parquet(first_chimeric_files[['llik_filename']])
         global_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']])
 
@@ -437,18 +446,37 @@ for(npi_scenario in npi_scenarios) {
 
             ### Do perturbations from accepted parameters to get proposed parameters ----
 
-            proposed_seeding <- inference::perturb_seeding(
-                seeding = initial_seeding,
-                date_sd = config$seeding$date_sd,
-                date_bounds = c(gt_start_date, gt_end_date),
-                amount_sd = config$seeding$amount_sd,
-                continuous = !(opt$stoch_traj_flag)
-            )
-
+            if (!is.null(config$seeding)){
+                proposed_seeding <- inference::perturb_seeding(
+                    seeding = initial_seeding,
+                    date_sd = config$seeding$date_sd,
+                    date_bounds = c(gt_start_date, gt_end_date),
+                    amount_sd = config$seeding$amount_sd,
+                    continuous = !(opt$stoch_traj_flag)
+                )
+            } else {
+                proposed_seeding <- initial_seeding
+            }
             proposed_snpi <- inference::perturb_snpi(initial_snpi, config$interventions$settings)
             proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$interventions$settings)
             proposed_spar <- initial_spar
             proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_scenario]])
+            if (!is.null(config$initial_conditions)){
+                proposed_init <- initial_init
+            }
+
+            # since the first iteration is accepted by default, we don't perturb it
+            if ((opt$this_block == 1) && (current_index == 0)) {
+                proposed_snpi <- initial_snpi
+                proposed_hnpi <- initial_hnpi
+                proposed_spar <- initial_spar
+                proposed_hpar <- initial_hpar
+                if (!is.null(config$initial_conditions)){
+                    proposed_init <- initial_init
+                }
+                proposed_seeding <- initial_seeding
+            }
+            
             # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
@@ -457,11 +485,17 @@ for(npi_scenario in npi_scenarios) {
 
             ## Write files that need to be written for other code to read
             # writes to file  of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.block.iter.run_id.variable.ext
-            write.csv(proposed_seeding, this_global_files[['seed_filename']], row.names = FALSE)
+            # if (!is.null(config$seeding)){
+                write.csv(proposed_seeding, this_global_files[['seed_filename']], row.names = FALSE)
+            # }
+
             arrow::write_parquet(proposed_snpi,this_global_files[['snpi_filename']])
             arrow::write_parquet(proposed_hnpi,this_global_files[['hnpi_filename']])
             arrow::write_parquet(proposed_spar,this_global_files[['spar_filename']])
             arrow::write_parquet(proposed_hpar,this_global_files[['hpar_filename']])
+            if (!is.null(config$initial_conditions)){
+                arrow::write_parquet(proposed_init,this_global_files[['init_filename']])
+            }
 
             ## Update the prefix
             gempyor_inference_runner$update_prefix(new_prefix=global_local_prefix)
