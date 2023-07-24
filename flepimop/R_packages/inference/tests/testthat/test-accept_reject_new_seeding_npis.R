@@ -177,3 +177,4 @@ test_that("only middle block is accepted when appropriate",{
 
 
 })
+
