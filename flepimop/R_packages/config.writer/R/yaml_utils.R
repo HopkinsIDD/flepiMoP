@@ -281,6 +281,8 @@ print_value <- function(value_dist,
 #' @param value_sd
 #' @param value_a
 #' @param value_b
+#' @param intervention_type
+#' @param intervention_operation
 #' @param param_name
 #' @param indent_space
 #'
@@ -288,48 +290,59 @@ print_value <- function(value_dist,
 #' @export
 #'
 #' @examples
-print_value1 <- function (value_type, value_dist,
-                          value_mean,
-                          value_sd,
-                          value_a, value_b,
-                          param_name = "value",
-                          indent_space = 6) {
-
+print_value1 <- function(value_type, value_dist, value_mean,
+                          value_sd, value_a, value_b,
+                          intervention_type = NULL,
+                          intervention_operation = NULL,
+                          param_name = "value", indent_space = 6) {
 
     space <- rep(" ", indent_space) %>% paste0(collapse = "")
     space2 <- rep(" ", indent_space + 2) %>% paste0(collapse = "")
     space3 <- rep(" ", indent_space + 4) %>% paste0(collapse = "")
 
-
+    print_val <- ""
     if (value_type == "timeseries" && !is.null(value_type)){
-        print_val <- paste0(space, "timeserie: ", value_mean$timeserie, "\n")
+        print_val <- paste0(print_val,
+                            space, "timeserie: ", value_mean$timeserie, "\n")
 
     } else {
+
+        if (!is.null(intervention_type) & !is.null(intervention_operation)){
+            print_val <- paste0(print_val,
+                                space, intervention_type, ": ", intervention_operation, "\n")
+        }
+
         if (value_dist == "fixed") {
             if (is.na(value_mean)) {
                 stop("Intervention value must be specified for \"fixed\" distributions")
             }
-            print_val <- paste0(space, param_name, ":\n", space2,
-                                "distribution: fixed\n", space2, "value: ", value_mean,
-                                "\n")
+            print_val <- paste0(print_val,
+                                space, param_name, ":\n",
+                                space2, "distribution: fixed\n",
+                                space2, "value: ", value_mean, "\n")
         }
         if (value_dist == "truncnorm") {
             if (any(is.na(value_mean), is.na(value_sd), is.na(value_a),
                     is.na(value_b))) {
                 stop("Intervention mean, sd, a, and b must be specified for \"truncnorm\" distributions")
             }
-            print_val <- paste0(space, "", param_name, ":\n", space2,
-                                "distribution: truncnorm\n", space2, "mean: ", value_mean,
-                                "\n", space2, "sd: ", value_sd, "\n", space2, "a: ",
-                                value_a, "\n", space2, "b: ", value_b, "\n")
+            print_val <- paste0(print_val,
+                                space, "", param_name, ":\n",
+                                space2, "distribution: truncnorm\n",
+                                space2, "mean: ", value_mean, "\n",
+                                space2, "sd: ", value_sd, "\n",
+                                space2, "a: ", value_a, "\n",
+                                space2, "b: ", value_b, "\n")
         }
         if (value_dist == "uniform") {
             if (any(is.na(value_a), is.na(value_b))) {
                 stop("Intervention a and b must be specified for \"uniform\" distributions")
             }
-            print_val <- paste0(space, param_name, ":\n", space2,
-                                "distribution: uniform\n", space2, "low: ", value_a,
-                                "\n", space2, "high: ", value_b, "\n")
+            print_val <- paste0(print_val,
+                                space, param_name, ":\n",
+                                space2, "distribution: uniform\n",
+                                space2, "low: ", value_a, "\n",
+                                space2, "high: ", value_b, "\n")
         }
         if (is.na(value_dist)) {
             print_val = ""
@@ -337,7 +350,6 @@ print_value1 <- function (value_type, value_dist,
     }
     return(print_val)
 }
-
 
 
 
