@@ -645,21 +645,37 @@ print_compartments <- function (
 
 
 
-#' Print seeding section
+#' Print Seeding Section of the config
 #' @description Prints the seeding section of the configuration file
 #' @param method There are two different seeding methods: 1) based on air importation (FolderDraw) and 2) based on earliest identified cases (PoissonDistributed). FolderDraw is required if the importation section is present and requires folder_path. Otherwise, put PoissonDistributed, which requires lambda_file.
 #' @param seeding_file_type indicates which seeding file type the SEIR model will look for, "seed", which is generated from inference::create_seeding.R, or "impa", which refers to importation
 #' @param folder_path path to folder where importation inference files will be saved
 #' @param lambda_file path to seeding file
+#' @param population_file
 #' @param date_sd standard deviation for the proposal value of the seeding date, in number of days (date_sd )
 #' @param amount_sd
 #' @param variant_filename path to file with variant proportions per day per variant. Variant names: 'wild', 'alpha', 'delta'
 #' @param compartment whether to print config with compartments
 #' @param variant_compartments vector of variant compartment names
+#' @param vaccine_compartments
+#' @param age_strata_seed
+#' @param seeding_outcome
+#' @param seeding_inflation_ratio
+#' @param capitalize_variants
+#' @param additional_seeding
+#' @param start_date_addedseed
+#' @param end_date_addedseed
+#' @param added_lambda_file
+#' @param filter_previous_seedingdates
+#' @param filter_remove_variants
+#' @param fix_original_seeding
+#' @param fix_added_seeding
 #'
 #' @details
 #' ## The model performns inference on the seeding date and initial number of seeding infections in each geoid with the default settings
 #' ## The method for determining the proposal distribution for the seeding amount is hard-coded in the inference package (R/pkgs/inference/R/functions/perturb_seeding.R). It is pertubed with a normal distribution where the mean of the distribution 10 times the number of confirmed cases on a given date and the standard deviation is 1.
+#'
+#' @return
 #'
 #' @export
 #'
@@ -745,28 +761,16 @@ print_seeding <- function(method = "FolderDraw",
 #' @param params
 #' @param ve_data
 #' @param theta_dist
-#' @param vaccine_compartments names of vaccination compartments: defaults to "unvaccinated", "first dose" and "second dose"
-#' @param variant_compartments
 #' @param age_strata
-#' @param age_strata_boosters
-#' @param inf_stages
 #' @param use_descriptions
 #' @param resume_mod_params
 #' @param vacc_timeseries
 #' @param nu_list
+#' @param dt
 #'
 #' @export
 #'
 #' @examples
-#' print_seir(seir_csv = "seir_R12.csv",
-#'            alpha_val=0.99,
-#'            sigma_val = 1/5.2,
-#'            gamma_dist = "uniform",
-#'            gamma_a = 1/6,
-#'            gamma_b = 1/2.6,
-#'            r0_dist = "fixed",
-#'            r0_val = 2.3,
-#'            incl_vacc = FALSE)
 #'
 print_seir <- function(integration_method = "rk4",
                        dt = 2.000,
@@ -803,33 +807,42 @@ print_seir <- function(integration_method = "rk4",
 
     if (res_mod & use_res_mod_params) {
 
-        resume_mod_rates <- function(rate, resume_mod_params) {
-            if (rate != "1" & !is.na(rate)) {
-                rate_ <- strsplit(rate, ",")[[1]]
-                rate_new <- NULL
-                for (i in 1:length(rate_)) {
+        # resume_mod_rates <- function(rate, resume_mod_params) {
+        #
+        #     if (rate != "1" & !is.na(rate)) {
+        #         rate_ <- strsplit(rate, ",")[[1]]
+        #         rate_new <- NULL
+        #         for (i in 1:length(rate_)) {
+        #
+        #             if (grepl("\\*", rate_[i])){
+        #                 rate_2_ <- strsplit(rate_[i], "\\*")[[1]]
+        #                 rate_new_2 <- NULL
+        #                 for (j in 1:length(rate_2_)) {
+        #                     rate_new_2 <- c(rate_new_2, ifelse(rate_2_[j] == "1", "1",
+        #                                                        ifelse(rate_2_[j] %in% resume_mod_params$param, resume_mod_params$param_res[rate_2_[j]==resume_mod_params$param],
+        #                                                               rate_2_[j])))
+        #                 }
+        #                 rate_new_2 <- paste(rate_new_2, collapse = "*")
+        #                 rate_new <- c(rate_new, rate_new_2)
+        #             } else {
+        #                 rate_new <- c(rate_new, ifelse(rate_[i] == "1", "1",
+        #                                                ifelse(rate_[i] %in% resume_mod_params$param, resume_mod_params$param_res[rate_[i]==resume_mod_params$param],
+        #                                                       rate_[i])))
+        #             }
+        #         }
+        #     } else {
+        #         rate_new <- rate
+        #     }
+        #     rate_new <- paste(rate_new, collapse = ",")
+        #     return(rate_new)
+        # }
 
-                    if (grepl("\\*", rate_[i])){
-                        rate_2_ <- strsplit(rate_[i], "\\*")[[1]]
-                        rate_new_2 <- NULL
-                        for (j in 1:length(rate_2_)) {
-                            rate_new_2 <- c(rate_new_2, ifelse(rate_2_[j] == "1", "1",
-                                                               ifelse(rate_2_[j] %in% resume_mod_params$param, resume_mod_params$param_res[rate_2_[j]==resume_mod_params$param],
-                                                                      rate_2_[j])))
-                        }
-                        rate_new_2 <- paste(rate_new_2, collapse = "*")
-                        rate_new <- c(rate_new, rate_new_2)
-                    } else {
-                        rate_new <- c(rate_new, ifelse(rate_[i] == "1", "1",
-                                                       ifelse(rate_[i] %in% resume_mod_params$param, resume_mod_params$param_res[rate_[i]==resume_mod_params$param],
-                                                              rate_[i])))
-                    }
-                }
-            } else {
-                rate_new <- rate
+        resume_mod_rates <- function(rate, resume_mod_params) {
+
+            for (r in 1:nrow(resume_mod_params)){
+                rate <- gsub(resume_mod_params$param[r], resume_mod_params$param_res[r], rate)
             }
-            rate_new <- paste(rate_new, collapse = ",")
-            return(rate_new)
+            return(rate)
         }
 
         seir_dat <- seir_dat %>%
@@ -875,7 +888,9 @@ print_seir <- function(integration_method = "rk4",
                                     value_mean = params[[i]]$value,
                                     value_sd = params[[i]]$sd,
                                     value_a = params[[i]]$a,
-                                    value_b = params[[i]]$b))
+                                    value_b = params[[i]]$b,
+                                    intervention_type = params[[i]]$intervention_type,
+                                    intervention_operation = params[[i]]$intervention_operation))
     }
 
     # add fixed nu's (fixed vaccination rates)
@@ -934,7 +949,7 @@ print_seir <- function(integration_method = "rk4",
 
 
     # SEIR STRUCTURE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+    resume_modifier <- ""
     for (i in 1:nrow(seir_dat)) {
         seir <- paste0(seir,
                        ifelse(use_descriptions & !(is.na(seir_dat$description[i]) |
