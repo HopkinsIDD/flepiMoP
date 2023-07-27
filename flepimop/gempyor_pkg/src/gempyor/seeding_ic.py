@@ -183,10 +183,10 @@ class SeedingAndIC:
         for pl_idx, pl in enumerate(setup.spatset.nodenames):
             n_y0 = y0[:, pl_idx].sum()
             n_pop = setup.popnodes[pl_idx]
-            if abs(n_y0-n_pop) > 100:
+            if abs(n_y0-n_pop) < 1:
                 error = True
                 print(f"ERROR: place {pl} (idx: pl_idx) has a population from initial condition of {n_y0} while population from geodata is {n_pop} (absolute difference should be < 1, here is {abs(n_y0-n_pop)})") 
-        if False:
+        if error:
             raise ValueError()
         return y0
 
