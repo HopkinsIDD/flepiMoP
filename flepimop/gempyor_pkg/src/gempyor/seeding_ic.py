@@ -100,8 +100,7 @@ class SeedingAndIC:
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             y0[0, :] = setup.popnodes
         elif method == "SetInitialConditions":
-            #       - Does not support the new way of doing compartiment indexing
-            logger.critical("Untested method SetInitialConditions !!! Please report this messsage.")
+            #  TODO Think about     - Does not support the new way of doing compartiment indexing
             ic_df = pd.read_csv(
                 self.initial_conditions_config["states_file"].as_str(),
                 converters={"place": lambda x: str(x)},
@@ -117,7 +116,7 @@ class SeedingAndIC:
                         ic_df_compartment_val = states_pl[states_pl["comp"] == comp_name]["amount"]
                         if len(ic_df_compartment_val) > 1:
                             raise ValueError(f"ERROR: Several ({len(ic_df_compartment_val)}) rows are matches for compartment {comp_name} in init file: filters returned {ic_df_compartment_val}")
-                        elif ic_df_compartment.empty:
+                        elif ic_df_compartment_val.empty:
                             if allow_missing_compartments:
                                 ic_df_compartment_val = 0.0
                             else:
@@ -125,7 +124,7 @@ class SeedingAndIC:
                                                  Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions")
                         y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_nodes:
-                    print(f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population")
+                    logger.critical(f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})")
                     y0[0, pl_idx] = setup.popnodes[pl_idx]
                 else:
                     raise ValueError(
@@ -175,9 +174,7 @@ class SeedingAndIC:
                     if pl in ic_df.columns:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])    
                     elif allow_missing_nodes:
-                        logging.warning(
-                            f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population"
-                        )
+                        logger.critical(f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})")
                         y0[0, pl_idx] = setup.popnodes[pl_idx]
                     else:
                         raise ValueError(
