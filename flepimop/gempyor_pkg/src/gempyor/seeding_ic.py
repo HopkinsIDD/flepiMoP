@@ -100,7 +100,6 @@ class SeedingAndIC:
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             y0[0, :] = setup.popnodes
         elif method == "SetInitialConditions":
-            # TODO: this format should allow not complete configurations
             #       - Does not support the new way of doing compartiment indexing
             logger.critical("Untested method SetInitialConditions !!! Please report this messsage.")
             ic_df = pd.read_csv(
@@ -115,7 +114,16 @@ class SeedingAndIC:
                 if pl in list(ic_df["place"]):
                     states_pl = ic_df[ic_df["place"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
-                        y0[comp_idx, pl_idx] = float(states_pl[states_pl["comp"] == comp_name]["amount"])
+                        ic_df_compartment_val = states_pl[states_pl["comp"] == comp_name]["amount"]
+                        if len(ic_df_compartment_val) > 1:
+                            raise ValueError(f"ERROR: Several ({len(ic_df_compartment_val)}) rows are matches for compartment {comp_name} in init file: filters returned {ic_df_compartment_val}")
+                        elif ic_df_compartment.empty:
+                            if allow_missing_compartments:
+                                ic_df_compartment_val = 0.0
+                            else:
+                                raise ValueError(f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
+                                                 Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions")
+                        y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_nodes:
                     print(f"WARNING: State load does not exist for node {pl}, assuming fully susceptible population")
                     y0[0, pl_idx] = setup.popnodes[pl_idx]
@@ -236,6 +244,7 @@ class SeedingAndIC:
         if method == "PoissonDistributed":
             amounts = np.random.poisson(seeding["amount"])
         elif method == "NegativeBinomialDistributed":
+            raise ValueError("Seeding method 'NegativeBinomialDistributed' is not supported by flepiMoP anymore.")
             amounts = np.random.negative_binomial(n=5, p=5 / (seeding["amount"] + 5))
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
