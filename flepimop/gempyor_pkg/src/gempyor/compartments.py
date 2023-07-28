@@ -304,7 +304,7 @@ class Compartments:
 
     def get_transition_array(self):
         with Timer("SEIR.compartments"):
-            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int")
+            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int64")
             for cit, colname in enumerate(("source", "destination")):
                 for it, elem in enumerate(self.transitions[colname]):
                     elem = reduce(lambda a, b: a + "_" + b, elem)
