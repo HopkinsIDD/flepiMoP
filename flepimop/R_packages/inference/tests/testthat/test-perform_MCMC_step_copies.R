@@ -21,6 +21,7 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
     setwd("MCMC_step_copy_test")
     ##get file names
     seed_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv')
+    init_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'init','parquet')
     seir_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet')
     hosp_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet')
     llik_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet')
@@ -32,7 +33,8 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
 
 
     ##create the copy from  files
-    arrow::write_parquet(data.frame(file="seed"), seed_src)
+    readr::write_csv(data.frame(file="seed"), seed_src)
+    arrow::write_parquet(data.frame(file="init"), init_src)
     arrow::write_parquet(data.frame(file="seir"), seir_src)
     arrow::write_parquet(data.frame(file="hosp"), hosp_src)
     arrow::write_parquet(data.frame(file="llik"), llik_src)
@@ -59,7 +61,6 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
     setwd("..")
     unlink("MCMC_step_copy_test", recursive=TRUE)
 
-
 })
 
 
@@ -82,6 +83,7 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     setwd("MCMC_step_copy_test")
     ##get file names
     seed_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'seed','csv')
+    init_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'init','parquet')
     seir_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'seir','parquet')
     hosp_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'hosp','parquet')
     llik_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'llik','parquet')
@@ -90,10 +92,9 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     hnpi_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'hnpi','parquet')
     hpar_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'hpar','parquet')
 
-
-
     ##create the copy from  files
-    arrow::write_parquet(data.frame(file="seed"), seed_src)
+    readr::write_csv(data.frame(file="seed"), seed_src)
+    arrow::write_parquet(data.frame(file="init"), init_src)
     arrow::write_parquet(data.frame(file="seir"), seir_src)
     arrow::write_parquet(data.frame(file="hosp"), hosp_src)
     arrow::write_parquet(data.frame(file="llik"), llik_src)
@@ -120,8 +121,8 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     setwd("..")
     unlink("MCMC_step_copy_test", recursive=TRUE)
 
-
 })
+
 
 test_that("MCMC step copies (chimeric) are correctly performed when we are not at the start of a block", {
     ##some information on our phantom runs
@@ -136,7 +137,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
                                                       trailing_separator='.')
     chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(slot,"%09d"), sep='.',
                                                       trailing_separator='.')
-    
+
     ##To be save make a directory
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
@@ -149,9 +150,9 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     spar_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet')
     hnpi_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet')
     hpar_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet')
-    
-    
-    
+
+
+
     ##create the copy from  files
     arrow::write_parquet(data.frame(file="seed"), seed_src)
     arrow::write_parquet(data.frame(file="seir"), seir_src)
@@ -161,10 +162,10 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     arrow::write_parquet(data.frame(file="spar"), spar_src)
     arrow::write_parquet(data.frame(file="hnpi"), hnpi_src)
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
-    
+
     ##print(hosp_src)
     ##print(flepicommon::create_file_name(run_id,cf_prefix,slot,'hosp','parquet'))
-    
+
     res <- perform_MCMC_step_copies_chimeric(current_index,
                                            slot,
                                            block,
@@ -172,15 +173,15 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
                                            chimeric_local_prefix,
                                            cf_prefix,
                                            chimeric_block_prefix)
-    
-    
+
+
     expect_equal(prod(unlist(res)),1)
-    
+
     ##clean up
     setwd("..")
     unlink("MCMC_step_copy_test", recursive=TRUE)
-    
-    
+
+
 })
 
 
@@ -197,7 +198,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
                                                       trailing_separator='.')
     chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(slot,"%09d"), sep='.',
                                                       trailing_separator='.')
-    
+
     ##To be save make a direectory
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
@@ -210,9 +211,9 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     spar_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'spar','parquet')
     hnpi_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hnpi','parquet')
     hpar_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hpar','parquet')
-    
-    
-    
+
+
+
     ##create the copy from  files
     arrow::write_parquet(data.frame(file="seed"), seed_src)
     arrow::write_parquet(data.frame(file="seir"), seir_src)
@@ -222,10 +223,10 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     arrow::write_parquet(data.frame(file="spar"), spar_src)
     arrow::write_parquet(data.frame(file="hnpi"), hnpi_src)
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
-    
+
     print(hosp_src)
     print(flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet'))
-    
+
     res <- perform_MCMC_step_copies_chimeric(current_index,
                                            slot,
                                            block,
@@ -233,14 +234,14 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
                                            chimeric_local_prefix,
                                            cf_prefix,
                                            chimeric_block_prefix)
-    
-    
+
+
     expect_equal(prod(unlist(res)),1)
-    
+
     ##clean up
     setwd("..")
     unlink("MCMC_step_copy_test", recursive=TRUE)
-    
-    
+
+
 })
 
