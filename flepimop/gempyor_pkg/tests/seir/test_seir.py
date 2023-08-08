@@ -35,6 +35,9 @@ def test_check_values():
 
         seeding[0, 0] = 1
 
+        # if np.all(seeding == 0):
+        #    warnings.warn("provided seeding has only value 0", UserWarning)
+
         if np.all(modinf.mobility.data < 1):
             warnings.warn("highest mobility value is less than 1", UserWarning)
 
