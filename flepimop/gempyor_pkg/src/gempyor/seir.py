@@ -23,7 +23,7 @@ def steps_SEIR(
     seeding_data,
     seeding_amounts,
 ):
-    assert type(s.mobility) == scipy.sparse.csr.csr_matrix
+    assert type(s.mobility) == scipy.sparse.csr_matrix
     mobility_data = s.mobility.data
     mobility_data = mobility_data.astype("float64")
     assert type(s.compartments.compartments.shape[0]) == int
