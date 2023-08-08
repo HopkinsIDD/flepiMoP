@@ -295,7 +295,7 @@ incident_cases <- incident_cases %>%
         .x %>%
             dplyr::arrange(Update) %>%
             dplyr::filter(value > 0) %>%
-            .[seq_len(min(nrow(.x), 5)), ] %>%
+            .[seq_len(min(nrow(.x), 1)), ] %>%
             dplyr::mutate(
                 Update = Update - lubridate::days(config[["seeding"]][["seeding_delay"]]),
                 value = config[["seeding"]][["seeding_inflation_ratio"]] * value + .05
