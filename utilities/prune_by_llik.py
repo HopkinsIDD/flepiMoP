@@ -52,7 +52,7 @@ def get_all_filenames(file_type, fs_results_path="to_prune/",  finals_only=False
 # def generate_pdf(fs_results_path, best_n):
 print("pruning by llik")
 fs_results_path = "to_prune/"
-best_n = 150
+best_n = 100
 llik_filenames = get_all_filenames("llik", fs_results_path ,finals_only=True)
 # In[7]:
 resultST = []
@@ -62,6 +62,7 @@ for filename in llik_filenames:
     df_raw["slot"] = slot
     df_raw["filename"] = filename # so it contains the /final/ filename
     resultST.append(df_raw)
+
 full_df = pd.concat(resultST).set_index(["slot"])
 sorted_llik = full_df.groupby(["slot"]).sum().sort_values("ll", ascending=False)
 best_slots = sorted_llik.head(best_n).index.values
@@ -90,7 +91,10 @@ print(f"Top {best_n} slots by llik are:")
 for slot in best_slots:
     print(f" - {slot:4}, llik: {sorted_llik.loc[slot]['ll']:0.3f}")
 files_to_keep = list(full_df.loc[best_slots]["filename"].unique())
-all_files = list(full_df["filename"].unique())
+all_files = sorted(list(full_df["filename"].unique())
+                   
+prune_method = "replace"
+prune_method = "delete"
 
 output_folder = "pruned/"
 def copy_path(src, dst):
@@ -98,25 +102,40 @@ def copy_path(src, dst):
     import shutil
     print(f"copying {src} to {dst}")
     shutil.copy(src, dst)
-file_types= ["llik", "seed", "snpi", "hnpi", "spar", "hpar", "init"] # TODO: init here but don't fail if not found
-for fn in all_files:
-    print(f"processing {fn}")
-    if fn in files_to_keep:
+file_types= ["llik", "seed", "snpi", "hnpi", "spar", "hpar", "init", "hosp", "seir"] # TODO: init here but don't fail if not found
+
+if prune_method == "replace":
+    print("Using the replace prune method")
+    for fn in all_files:
+        print(f"processing {fn}")
+        if fn in files_to_keep:
+            for file_type in file_types:
+                src = fn.replace("llik", file_type)
+                dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
+                if file_type == "seed":
+                    src = src.replace(".parquet", ".csv")
+                    dst = dst.replace(".parquet", ".csv")
+                copy_path(src=src, dst=dst)
+        else:
+            file_to_keep = np.random.choice(files_to_keep)
+            for file_type in file_types:
+                src = file_to_keep.replace("llik", file_type)
+                dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
+                if file_type == "seed":
+                    src = src.replace(".parquet", ".csv")
+                    dst = dst.replace(".parquet", ".csv")
+                copy_path(src=src, dst=dst)
+
+elif prune_method == "delete":
+    print("Using the delete prune method")
+    for i, fn in enumerate(all_files[:best_n]):
+        print(f"processing {fn}")
         for file_type in file_types:
-            src = fn.replace("llik", file_type)
+            src = files_to_keep[i].replace("llik", file_type)
             dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
             if file_type == "seed":
                 src = src.replace(".parquet", ".csv")
                 dst = dst.replace(".parquet", ".csv")
             copy_path(src=src, dst=dst)
-    else:
-        file_to_keep = np.random.choice(files_to_keep)
-        for file_type in file_types:
-            src = file_to_keep.replace("llik", file_type)
-            dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
-            if file_type == "seed":
-                src = src.replace(".parquet", ".csv")
-                dst = dst.replace(".parquet", ".csv")
-            copy_path(src=src, dst=dst) 
 #if __name__ == "__main__":
 #    generate_pdf()
