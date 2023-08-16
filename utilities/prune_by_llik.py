@@ -91,7 +91,7 @@ print(f"Top {best_n} slots by llik are:")
 for slot in best_slots:
     print(f" - {slot:4}, llik: {sorted_llik.loc[slot]['ll']:0.3f}")
 files_to_keep = list(full_df.loc[best_slots]["filename"].unique())
-all_files = sorted(list(full_df["filename"].unique())
+all_files = sorted(list(full_df["filename"].unique()))
                    
 prune_method = "replace"
 prune_method = "delete"
@@ -102,7 +102,7 @@ def copy_path(src, dst):
     import shutil
     print(f"copying {src} to {dst}")
     shutil.copy(src, dst)
-file_types= ["llik", "seed", "snpi", "hnpi", "spar", "hpar", "init", "hosp", "seir"] # TODO: init here but don't fail if not found
+file_types= ["llik", "seed", "snpi", "hnpi", "spar", "hpar", "hosp", "seir"] # TODO: init here but don't fail if not found
 
 if prune_method == "replace":
     print("Using the replace prune method")
@@ -137,5 +137,6 @@ elif prune_method == "delete":
                 src = src.replace(".parquet", ".csv")
                 dst = dst.replace(".parquet", ".csv")
             copy_path(src=src, dst=dst)
+
 #if __name__ == "__main__":
 #    generate_pdf()
