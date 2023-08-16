@@ -7,19 +7,24 @@ from gempyor import file_paths
 
 FAKE_TIME = datetime.datetime(2023,8,9,16,00,0)
 
+'''
 @pytest.fixture(scope="module")
 def mock_datetime_now(monkeypatch):
 	datetime_mock = MagicMock(wraps=datetime.datetime)
 	datetime_mock.now.return_value = FAKE_TIME
 	monkeypatch.setattr(datetime, "datetime", datetime_mock)
-
 @pytest.fixture(scope="module")
 def test_datetime(mock_datetime_now):
 	assert datetime.datetime.now() == FAKE_TIME
+'''
 
-def test_run_id():
+def test_run_id(monkeypatch):
+	datetime_mock = MagicMock(wraps=datetime.datetime)
+	datetime_mock.now.return_value = FAKE_TIME
+	monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
 	run_id = file_paths.run_id()
-	assert run_id == datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d.%H:%M:%S.%Z")
+	assert run_id == datetime.datetime.strftime(FAKE_TIME, "%Y.%m.%d.%H:%M:%S.%Z")
 
 @pytest.fixture(scope="module")
 def set_run_id():
@@ -33,13 +38,12 @@ tmp_path = "/tmp"
         ('test0002','seed'),
         ('test0003','seed'),
         ('test0004','seed'),
-        ('test0001','seed'),
-        ('test0002','seed'),
-        ('test0003','seed'),
-        ('test0004','seed'),
+        ('test0005','hosp'),
+        ('test0006','hosp'),
+        ('test0007','hosp'),
+        ('test0008','hosp'),
 ])
 def test_create_dir_name(set_run_id, prefix, ftype):
-	#run_id = set_run_id()
 	os.chdir(tmp_path)
 	os.path.exists(file_paths.create_dir_name(set_run_id, prefix, ftype))	
 
@@ -72,4 +76,3 @@ def test_create_file_name(set_run_id, prefix, index, ftype, extension, create_di
 def test_create_file_name_without_extension(set_run_id, prefix, index, ftype, create_directory):
 	os.chdir(tmp_path)
 	os.path.isfile(file_paths.create_file_name_without_extension(set_run_id, prefix, int(index), ftype, create_directory))	
-
