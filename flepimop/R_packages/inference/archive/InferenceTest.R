@@ -31,7 +31,7 @@ single_loc_inference_test <- function(to_fit,
     registerDoSNOW(cl)
     
     # Column name that stores spatial unique id
-    obs_nodename <- config$spatial_setup$nodenames
+    obs_subpop <- config$spatial_setup$subpop
     
     # Set number of simulations
     iterations_per_slot <- config$inference$iterations_per_slot
@@ -48,13 +48,13 @@ single_loc_inference_test <- function(to_fit,
     sim_times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     
     # Get unique geonames
-    geonames <- unique(obs[[obs_nodename]])
+    geonames <- unique(obs[[obs_subpop]])
     
     # Compute statistics of observations
     data_stats <- lapply(
         geonames,
         function(x) {
-            df <- obs[obs[[obs_nodename]] == x, ]
+            df <- obs[obs[[obs_subpop]] == x, ]
             getStats(
                 df,
                 "date",
@@ -63,7 +63,7 @@ single_loc_inference_test <- function(to_fit,
         }) %>%
         set_names(geonames)
     
-    all_locations <- unique(obs[[obs_nodename]])
+    all_locations <- unique(obs[[obs_subpop]])
     
     # Inference loops
     required_packages <- c("dplyr", "magrittr", "xts", "zoo", "purrr", "stringr", "truncnorm",
@@ -274,7 +274,7 @@ multi_loc_inference_test <- function(to_fit,
     
     N <- length(S0s)
     # Column name that stores spatial unique id
-    obs_nodename <- config$spatial_setup$nodenames
+    obs_subpop <- config$spatial_setup$subpop
     
     # Set number of simulations
     iterations_per_slot <- config$inference$iterations_per_slot
@@ -291,13 +291,13 @@ multi_loc_inference_test <- function(to_fit,
     sim_times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     
     # Get unique geonames
-    geonames <- unique(obs[[obs_nodename]])
+    geonames <- unique(obs[[obs_subpop]])
     
     # Compute statistics of observations
     data_stats <- lapply(
         geonames,
         function(x) {
-            df <- obs[obs[[obs_nodename]] == x, ]
+            df <- obs[obs[[obs_subpop]] == x, ]
             getStats(
                 df,
                 "date",
@@ -306,7 +306,7 @@ multi_loc_inference_test <- function(to_fit,
         }) %>%
         set_names(geonames)
     
-    all_locations <- unique(obs[[obs_nodename]])
+    all_locations <- unique(obs[[obs_subpop]])
     
     # Inference loops
     required_packages <- c("dplyr", "magrittr", "xts", "zoo", "purrr", "stringr", "truncnorm",
@@ -371,13 +371,13 @@ multi_loc_inference_test <- function(to_fit,
         initial_likelihood_data <- list()
         for(location in all_locations) {
             
-            local_sim_hosp <- dplyr::filter(initial_sim_hosp, !!rlang::sym(obs_nodename) == location) %>%
+            local_sim_hosp <- dplyr::filter(initial_sim_hosp, !!rlang::sym(obs_subpop) == location) %>%
                 dplyr::filter(time %in% unique(obs$date[obs$subpop == location]))
             initial_sim_stats <- inference::getStats(
                 local_sim_hosp,
                 "time",
                 "sim_var",
-                #end_date = max(obs$date[obs[[obs_nodename]] == location]),
+                #end_date = max(obs$date[obs[[obs_subpop]] == location]),
                 stat_list = config$inference$statistics
             )
             
@@ -442,13 +442,13 @@ multi_loc_inference_test <- function(to_fit,
             current_likelihood_data <- list()
             
             for(location in all_locations) {
-                local_sim_hosp <- dplyr::filter(sim_hosp, !!rlang::sym(obs_nodename) == location) %>%
+                local_sim_hosp <- dplyr::filter(sim_hosp, !!rlang::sym(obs_subpop) == location) %>%
                     dplyr::filter(time %in% unique(obs$date[obs$subpop == location]))
                 sim_stats <- inference::getStats(
                     local_sim_hosp,
                     "time",
                     "sim_var",
-                    #end_date = max(obs$date[obs[[obs_nodename]] == location]),
+                    #end_date = max(obs$date[obs[[obs_subpop]] == location]),
                     stat_list = config$inference$statistics
                 )
                 

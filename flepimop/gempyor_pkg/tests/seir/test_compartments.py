@@ -70,7 +70,7 @@ def test_Setup_has_compartments_component():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="subpop",
+        subpop_key="subpop",
     )
 
     s = setup.Setup(

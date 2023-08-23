@@ -5,7 +5,7 @@
 ##'
 ##' @param all_locations all of the locations to calculate likelihood for
 ##' @param modeled_outcome  the hospital data for the simulations
-##' @param obs_nodename the name of the column containing locations.
+##' @param obs_subpop the name of the column containing locations.
 ##' @param config the full configuration setup
 ##' @param obs the full observed data
 ##' @param ground_truth_data the data we are going to compare to aggregated to the right statistic
@@ -24,7 +24,7 @@
 aggregate_and_calc_loc_likelihoods <- function(
         all_locations,
         modeled_outcome,
-        obs_nodename,
+        obs_subpop,
         targets_config,
         obs,
         ground_truth_data,
@@ -51,7 +51,7 @@ aggregate_and_calc_loc_likelihoods <- function(
             ## Filter to this location
             dplyr::filter(
                 modeled_outcome,
-                !!rlang::sym(obs_nodename) == location,
+                !!rlang::sym(obs_subpop) == location,
                 time %in% unique(obs$date[obs$subpop == location])
             ) %>%
             ## Reformat into form the algorithm is looking for
@@ -90,7 +90,7 @@ aggregate_and_calc_loc_likelihoods <- function(
             accept_avg = 0, # running average acceptance decision
             accept_prob = 0 # probability of acceptance of proposal
         )
-        names(likelihood_data)[names(likelihood_data) == 'subpop'] <- obs_nodename
+        names(likelihood_data)[names(likelihood_data) == 'subpop'] <- obs_subpop
     }
 
     #' @importFrom magrittr %>%
@@ -138,7 +138,7 @@ aggregate_and_calc_loc_likelihoods <- function(
 
 
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_nodename) %>%
+        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             tidyr::replace_na(list(likadj = 0)) %>% ##avoid unmatched location problems
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
@@ -184,7 +184,7 @@ aggregate_and_calc_loc_likelihoods <- function(
         }
 
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_nodename) %>%
+        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
     }

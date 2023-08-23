@@ -11,7 +11,7 @@ spatial_setup:
   geodata: geodata.csv
   mobility: mobility.txt
   popnodes: population
-  nodenames: subpop
+  subpop: subpop
 
 seeding:
   method: InitialConditionsFolderDraw

@@ -77,7 +77,7 @@ pdf.options(useDingbats = TRUE)
 import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt,
                                  lim_hosp = c("date", 
                                               sapply(1:length(names(config$inference$statistics)), function(i) purrr::flatten(config$inference$statistics[i])$sim_var),
-                                              config$spatial_setup$nodenames)){
+                                              config$spatial_setup$subpop)){
   dir_ <- paste0(scn_dir, "/",
                  outcome, "/",
                  config$name, "/",
@@ -145,7 +145,7 @@ print(end_time - start_time)
 if("hosp" %in% model_outputs){
   
   gg_cols <- 8
-  num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$nodenames)]))
+  num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$subpop)]))
   pdf_dims <- data.frame(width = gg_cols*2, length = num_nodes/gg_cols * 2)
   
   fname <- paste0("pplot/hosp_mod_outputs_", opt$run_id,".pdf")
@@ -154,31 +154,31 @@ if("hosp" %in% model_outputs){
   
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
-    cols_sim <- c("date", statistics$sim_var, config$spatial_setup$nodenames,"slot")
-    cols_data <- c("date", config$spatial_setup$nodenames, statistics$data_var)
+    cols_sim <- c("date", statistics$sim_var, config$spatial_setup$subpop,"slot")
+    cols_data <- c("date", config$spatial_setup$subpop, statistics$data_var)
     ## summarize slots 
     print(outputs_global$hosp %>%
       .[, ..cols_sim] %>%
       .[, date := lubridate::as_date(date)] %>%
-      { if(config$spatial_setup$nodenames == 'subpop'){
+      { if(config$spatial_setup$subpop == 'subpop'){
         .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
       } %>% 
-      { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+      { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
       } %>%
-      .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$nodenames)] %>%
+      .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$subpop)] %>%
       ggplot() + 
       geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
       geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
       geom_line(aes(x = date, y = V3)) + 
       geom_point(data = gt_data %>%
                    .[, ..cols_data] %>%
-                   { if(config$spatial_setup$nodenames == 'subpop'){
+                   { if(config$spatial_setup$subpop == 'subpop'){
                      .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                    } %>% 
-                   { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+                   { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                    } ,
                  aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
-      facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free', ncol = gg_cols) +
+      facet_wrap(~get(config$spatial_setup$subpop), scales = 'free', ncol = gg_cols) +
       labs(x = 'date', y = fit_stats[i], title = statistics$sim_var) +
       theme_classic()
     )
@@ -187,7 +187,7 @@ if("hosp" %in% model_outputs){
     # print(outputs_global$hosp %>% 
     #   ggplot() +
     #   geom_line(aes(lubridate::as_date(date), get(sim_var), group = as.factor(slot)), alpha = 0.1) + 
-    #   facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+    #   facet_wrap(~get(config$spatial_setup$subpop), scales = 'free') +
     #   geom_point(data = gt_data %>%
     #                .[, ..cols_data],
     #              aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
@@ -200,28 +200,28 @@ if("hosp" %in% model_outputs){
     print(outputs_global$hosp %>%
             .[, ..cols_sim] %>%
             .[, date := lubridate::as_date(date)] %>%
-            { if(config$spatial_setup$nodenames == 'subpop'){
+            { if(config$spatial_setup$subpop == 'subpop'){
               .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
             } %>% 
-            { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+            { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
             } %>%
-            .[, csum := cumsum(get(statistics$sim_var)), by = .(get(config$spatial_setup$nodenames), slot)] %>%
-            .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$nodenames)] %>%
+            .[, csum := cumsum(get(statistics$sim_var)), by = .(get(config$spatial_setup$subpop), slot)] %>%
+            .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$subpop)] %>%
             ggplot() + 
             geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
             geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
             geom_line(aes(x = date, y = V3)) + 
             geom_point(data = gt_data %>%
                          .[, ..cols_data] %>%
-                         { if(config$spatial_setup$nodenames == 'subpop'){
+                         { if(config$spatial_setup$subpop == 'subpop'){
                            .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                          } %>% 
-                         { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+                         { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                          } %>%
-                         .[, csum := cumsum(replace_na(get(statistics$data_var), 0)) , by = .(get(config$spatial_setup$nodenames))]
+                         .[, csum := cumsum(replace_na(get(statistics$data_var), 0)) , by = .(get(config$spatial_setup$subpop))]
                          ,
                        aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) + 
-            facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free', ncol = gg_cols) +
+            facet_wrap(~get(config$spatial_setup$subpop), scales = 'free', ncol = gg_cols) +
             labs(x = 'date', y = fit_stats[i], title = paste0("cumulative ", statistics$sim_var)) +
             theme_classic()
     )
@@ -238,31 +238,31 @@ if("hosp" %in% model_outputs){
 
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
-    cols_sim <- c("date", statistics$sim_var, config$spatial_setup$nodenames,"slot")
-    cols_data <- c("date", config$spatial_setup$nodenames, statistics$data_var)
+    cols_sim <- c("date", statistics$sim_var, config$spatial_setup$subpop,"slot")
+    cols_data <- c("date", config$spatial_setup$subpop, statistics$data_var)
     if("llik" %in% model_outputs){
       llik_rank <- copy(outputs_global$llik) %>% 
-        .[, .SD[order(ll)], eval(config$spatial_setup$nodenames)] 
-      high_low_llik <- rbindlist(list(data.table(llik_rank, key = eval(config$spatial_setup$nodenames)) %>%
-                                        .[, head(.SD,5), by = eval(config$spatial_setup$nodenames)] %>% 
+        .[, .SD[order(ll)], eval(config$spatial_setup$subpop)] 
+      high_low_llik <- rbindlist(list(data.table(llik_rank, key = eval(config$spatial_setup$subpop)) %>%
+                                        .[, head(.SD,5), by = eval(config$spatial_setup$subpop)] %>% 
                                         .[, llik_bin := "top"], 
-                                      data.table(llik_rank, key = eval(config$spatial_setup$nodenames)) %>%
-                                        .[, tail(.SD,5), by = eval(config$spatial_setup$nodenames)]%>% 
+                                      data.table(llik_rank, key = eval(config$spatial_setup$subpop)) %>%
+                                        .[, tail(.SD,5), by = eval(config$spatial_setup$subpop)]%>% 
                                         .[, llik_bin := "bottom"])
       )
       
       high_low_hosp_llik <- copy(outputs_global$hosp) %>% 
-        .[high_low_llik, on = c("slot", eval(config$spatial_setup$nodenames))]
+        .[high_low_llik, on = c("slot", eval(config$spatial_setup$subpop))]
       
-      hosp_llik_plots <- lapply(unique(high_low_hosp_llik %>% .[, get(config$spatial_setup$nodenames)]),
+      hosp_llik_plots <- lapply(unique(high_low_hosp_llik %>% .[, get(config$spatial_setup$subpop)]),
                            function(e){
                              high_low_hosp_llik %>%
                                .[, date := lubridate::as_date(date)] %>%
-                               { if(config$spatial_setup$nodenames == 'subpop'){
+                               { if(config$spatial_setup$subpop == 'subpop'){
                                  .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                } %>% 
-                               .[get(config$spatial_setup$nodenames) == e] %>%
-                               { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+                               .[get(config$spatial_setup$subpop) == e] %>%
+                               { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                } %>%
                                ggplot() +
                                geom_line(aes(lubridate::as_date(date), get(statistics$data_var), 
@@ -271,14 +271,14 @@ if("hosp" %in% model_outputs){
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
                                geom_point(data = gt_data %>%
                                             .[, ..cols_data] %>%
-                                            { if(config$spatial_setup$nodenames == 'subpop'){
+                                            { if(config$spatial_setup$subpop == 'subpop'){
                                               .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                             } %>% 
-                                            .[get(config$spatial_setup$nodenames) == e] %>%
-                                            { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+                                            .[get(config$spatial_setup$subpop) == e] %>%
+                                            { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                             } ,
                                           aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
-                               facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free', ncol = gg_cols) +
+                               facet_wrap(~get(config$spatial_setup$subpop), scales = 'free', ncol = gg_cols) +
                                labs(x = 'date', y = fit_stats[i]) + #, title = paste0("top 5, bottom 5 lliks, ", statistics$sim_var)) +
                                theme_classic() +
                                guides(linetype = 'none')
@@ -299,27 +299,27 @@ if("hosp" %in% model_outputs){
 if("hnpi" %in% model_outputs){
   
   gg_cols <- 4
-  num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$nodenames)]))
+  num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$subpop)]))
   pdf_dims <- data.frame(width = gg_cols*3, length = num_nodes/gg_cols * 2)
   
   fname <- paste0("pplot/hnpi_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
   
   
-  hnpi_plots <- lapply(sort(unique(outputs_global$hnpi %>% .[, get(config$spatial_setup$nodenames)])),
+  hnpi_plots <- lapply(sort(unique(outputs_global$hnpi %>% .[, get(config$spatial_setup$subpop)])),
          function(i){
            outputs_global$hnpi %>%
-             .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
-             { if(config$spatial_setup$nodenames == 'subpop'){
+             .[outputs_global$llik, on = c(config$spatial_setup$subpop, "slot")] %>%
+             { if(config$spatial_setup$subpop == 'subpop'){
                .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
              } %>% 
-             .[get(config$spatial_setup$nodenames) == i] %>%
-             { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
+             .[get(config$spatial_setup$subpop) == i] %>%
+             { if(config$spatial_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
              } %>%
              ggplot(aes(npi_name,reduction)) + 
              geom_violin() +
              geom_jitter(aes(group = npi_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
-             facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+             facet_wrap(~get(config$spatial_setup$subpop), scales = 'free') +
              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
              theme_classic()
          }
@@ -358,7 +358,7 @@ if("seed" %in% model_outputs){ ## TO DO: MODIFIED FOR WHEN LOTS MORE SEEDING COM
   tmp_ <- paste("+", destination_columns, collapse = "")
   facet_formula <- paste("~", substr(tmp_, 2, nchar(tmp_)))
   
-  seed_plots <- lapply(sort(unique(setDT(geodata) %>% .[, get(config$spatial_setup$nodenames)])),
+  seed_plots <- lapply(sort(unique(setDT(geodata) %>% .[, get(config$spatial_setup$subpop)])),
                        function(i){
                          outputs_global$seed %>%
                            .[place == i] %>%
@@ -400,24 +400,24 @@ if("seir" %in% model_outputs){
 if("snpi" %in% model_outputs){
   
   gg_cols <- 4
-  num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$nodenames)]))
+  num_nodes <- length(unique(outputs_global$hosp %>% .[,get(config$spatial_setup$subpop)]))
   pdf_dims <- data.frame(width = gg_cols*4, length = num_nodes/gg_cols * 3)
   
   fname <- paste0("pplot/snpi_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
 
-  node_names <- unique(sort(outputs_global$snpi %>% .[ , get(config$spatial_setup$nodenames)]))
+  node_names <- unique(sort(outputs_global$snpi %>% .[ , get(config$spatial_setup$subpop)]))
   node_names <- c(node_names[str_detect(node_names,",")], node_names[!str_detect(node_names,",")])
   
   snpi_plots <- lapply(node_names,
                        function(i){
                          if(!grepl(',', i)){
                            
-                           i_lab <- ifelse(config$spatial_setup$nodenames == 'subpop', geodata[subpop == i, USPS], i)
+                           i_lab <- ifelse(config$spatial_setup$subpop == 'subpop', geodata[subpop == i, USPS], i)
                              
                            outputs_global$snpi %>%
-                             .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
-                             .[get(config$spatial_setup$nodenames) == i] %>%
+                             .[outputs_global$llik, on = c(config$spatial_setup$subpop, "slot")] %>%
+                             .[get(config$spatial_setup$subpop) == i] %>%
                              ggplot(aes(npi_name,reduction)) + 
                              geom_violin() + 
                              geom_jitter(aes(group = npi_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
@@ -429,11 +429,11 @@ if("snpi" %in% model_outputs){
                            nodes_ <- unlist(strsplit(i,","))
                            ll_across_nodes <- 
                              outputs_global$llik %>% 
-                             .[get(config$spatial_setup$nodenames) %in% nodes_] %>%
+                             .[get(config$spatial_setup$subpop) %in% nodes_] %>%
                              .[, .(ll_sum = sum(ll)), by = .(slot)]
                            
                            outputs_global$snpi %>%
-                             .[get(config$spatial_setup$nodenames) == i] %>%
+                             .[get(config$spatial_setup$subpop) == i] %>%
                              .[ll_across_nodes, on = c("slot")] %>%
                              ggplot(aes(npi_name,reduction)) + 
                              geom_violin() + 

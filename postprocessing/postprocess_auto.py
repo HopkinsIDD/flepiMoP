@@ -186,7 +186,7 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
             )
             run_info.folder_path = f"{fs_results_path}/model_output"
 
-        node_names = run_info.gempyor_simulator.s.spatset.nodenames
+        node_names = run_info.gempyor_simulator.s.spatset.subpop
 
         # In[5]:
 

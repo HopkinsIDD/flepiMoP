@@ -28,7 +28,7 @@ def test_parameters_from_config_plus_read_write():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="subpop",
+        subpop_key="subpop",
     )
 
     index = 1
@@ -59,7 +59,7 @@ def test_parameters_from_config_plus_read_write():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
     n_days = 10
@@ -69,7 +69,7 @@ def test_parameters_from_config_plus_read_write():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
     p_draw = p.parameters_quick_draw(n_days=10, nnodes=5)
@@ -82,7 +82,7 @@ def test_parameters_from_config_plus_read_write():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
     p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nnodes=nnodes)
@@ -100,7 +100,7 @@ def test_parameters_quick_draw_old():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="subpop",
+        subpop_key="subpop",
     )
     index = 1
     run_id = "test_parameter"
@@ -130,7 +130,7 @@ def test_parameters_quick_draw_old():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
 
@@ -174,7 +174,7 @@ def test_parameters_from_timeserie_file():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="subpop",
+        subpop_key="subpop",
     )
     index = 1
     run_id = "test_parameter"
@@ -204,7 +204,7 @@ def test_parameters_from_timeserie_file():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
     n_days = 10
@@ -214,7 +214,7 @@ def test_parameters_from_timeserie_file():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
     p_draw = p.parameters_quick_draw(n_days=10, nnodes=5)
@@ -227,7 +227,7 @@ def test_parameters_from_timeserie_file():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        nodenames=s.spatset.nodenames,
+        subpop=s.spatset.subpop,
         config_version="v3",
     )
     p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nnodes=nnodes)

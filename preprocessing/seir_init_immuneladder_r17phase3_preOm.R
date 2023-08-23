@@ -15,7 +15,7 @@
 
 # spatial_setup:
 #   geodata: <path to file>
-#   nodenames: <string>
+#   subpop: <string>
 #
 # seeding:
 #   lambda_file: <path to file>
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the subpop
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
