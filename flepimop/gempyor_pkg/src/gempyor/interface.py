@@ -87,7 +87,7 @@ class InferenceSimulator:
                 if spatial_config["mobility"].exists()
                 else None,
                 popnodes_key=spatial_config["popnodes"].get(),
-                nodenames_key=spatial_config["nodenames"].get(),
+                subpop_key=spatial_config["subpop"].get(),
             ),
             nslots=nslots,
             npi_scenario=npi_scenario,
@@ -374,7 +374,7 @@ class InferenceSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, subpop in enumerate(self.s.spatset.nodenames):
+        for i, subpop in enumerate(self.s.spatset.subpop):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
                 columns=self.s.parameters.pnames,

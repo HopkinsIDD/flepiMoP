@@ -161,7 +161,7 @@ def test_spatial_groups():
     # all the same: r2
     df = npi_df[npi_df["npi_name"] == "all_together"]
     assert len(df) == 1
-    assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.s.spatset.nodenames)
+    assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.s.spatset.subpop)
     assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.s.nnodes
 
     # two groups: r3

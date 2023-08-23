@@ -15,7 +15,7 @@
 
 # spatial_setup:
 #   geodata: <path to file>
-#   nodenames: <string>
+#   subpop: <string>
 #
 # seeding:
 #   lambda_file: <path to file>
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the subpop
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
@@ -159,7 +159,7 @@ if ("date" %in% names(cases_deaths)) {
     cases_deaths$Update <- cases_deaths$date
     warning("Changing Update name in seeding. This is a hack")
 }
-obs_nodename <- config$spatial_setup$nodenames
+obs_subpop <- config$spatial_setup$subpop
 required_column_names <- NULL
 
 check_required_names <- function(df, cols, msg) {
@@ -270,7 +270,7 @@ geodata <- flepicommon::load_geodata_file(
     TRUE
 )
 
-all_subpop <- geodata[[config$spatial_setup$nodenames]]
+all_subpop <- geodata[[config$spatial_setup$subpop]]
 
 
 

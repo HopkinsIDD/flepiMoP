@@ -82,7 +82,7 @@ validation_list$nslots<- function(value,full_config,config_name){
 ##Checking if the following values are present or not.
 ##If they do not have an assigned default value then the execution will be stopped.
 ##If they have a default then A statement will be printed and test will continue
-## NO Default: Base Path, Modeled States, Year. Nodenames
+## No Default: Base Path, Modeled States, Year. subpop
 ## With Default: Geodata, Mobility, Popnodes, Statelevel
 
 validation_list$spatial_setup <- list()
@@ -153,9 +153,9 @@ validation_list$spatial_setup$census_year <- function(value, full_config,config_
   return(TRUE)
 }
 
-validation_list$spatial_setup$nodenames <- function(value, full_config,config_name) {
+validation_list$spatial_setup$subpop <- function(value, full_config,config_name) {
   if (is.null(value)) {
-    print("No Nodenames mentioned") #Should display a better error message than nodenames.
+    print("No subpops mentioned") #Should display a better error message than subpop.
     return(FALSE)
   }
   return(TRUE)
@@ -163,7 +163,7 @@ validation_list$spatial_setup$nodenames <- function(value, full_config,config_na
 
 validation_list$spatial_setup$popnodes <- function(value, full_config,config_name) {
   if (is.null(value)) {
-    print("No Population Nodes mentioned") #Should display a better error message than nodenames.
+    print("No Population Nodes mentioned") #Should display a better error message than subpop.
     return(FALSE)
   }
   return(TRUE)
@@ -176,7 +176,7 @@ validation_list$spatial_setup$include_in_report <- function(value, full_config,c
 
 validation_list$setup_name <- function(value, full_config,config_name) {
   if (is.null(value)) {
-    print("No runtype mentioned") #Should display a better error message than nodenames.
+    print("No runtype mentioned") #Should display a better error message than subpop.
     return(FALSE)
   }
   if (length(strsplit(config_copy$setup_name,split=" ")[[1]])!=1 | length(config_copy$setup_name)!=1){

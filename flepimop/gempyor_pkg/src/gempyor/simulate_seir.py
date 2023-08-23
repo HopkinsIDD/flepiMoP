@@ -19,7 +19,7 @@
 # spatial_setup:
 #   geodata: <path to file>
 #   mobility: <path to file>
-#   nodenames: <string>
+#   subpop: <string>
 #   popnodes: <string>
 #
 # seir:
@@ -100,7 +100,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::nodenames} and {spatial_setup::popnodes}
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::subpop} and {spatial_setup::popnodes}
 # * <b>{data_path}/{spatial_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
@@ -258,7 +258,7 @@ def simulate(
         if spatial_config["mobility"].exists()
         else None,
         popnodes_key=spatial_config["popnodes"].get(),
-        nodenames_key=spatial_config["nodenames"].get(),
+        subpop_key=spatial_config["subpop"].get(),
     )
 
     start = time.monotonic()

@@ -204,7 +204,7 @@ def simulate(
         if spatial_config["mobility"].exists()
         else None,
         popnodes_key=spatial_config["popnodes"].get(),
-        nodenames_key=spatial_config["nodenames"].get(),
+        subpop_key=spatial_config["subpop"].get(),
     )
 
     start = time.monotonic()
