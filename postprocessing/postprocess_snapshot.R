@@ -59,12 +59,12 @@ print(opt$select_outputs)
 
 config <- flepicommon::load_config(opt$config)
 
-# Pull in geoid data
+# Pull in subpop data
 geodata <- setDT(read.csv(file.path(config$data_path, config$spatial_setup$geodata)))
 
 ## gt_data MUST exist directly after a run
 gt_data <- data.table::fread(config$inference$gt_data_path) %>%
-  .[, geoid := stringr::str_pad(FIPS, width = 5, side = "left", pad = "0")]
+  .[, subpop := stringr::str_pad(FIPS, width = 5, side = "left", pad = "0")]
 
 # store list of files to save
 files_ <- c()
@@ -160,10 +160,10 @@ if("hosp" %in% model_outputs){
     print(outputs_global$hosp %>%
       .[, ..cols_sim] %>%
       .[, date := lubridate::as_date(date)] %>%
-      { if(config$spatial_setup$nodenames == 'geoid'){
-        .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+      { if(config$spatial_setup$nodenames == 'subpop'){
+        .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
       } %>% 
-      { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+      { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
       } %>%
       .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$nodenames)] %>%
       ggplot() + 
@@ -172,10 +172,10 @@ if("hosp" %in% model_outputs){
       geom_line(aes(x = date, y = V3)) + 
       geom_point(data = gt_data %>%
                    .[, ..cols_data] %>%
-                   { if(config$spatial_setup$nodenames == 'geoid'){
-                     .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+                   { if(config$spatial_setup$nodenames == 'subpop'){
+                     .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                    } %>% 
-                   { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+                   { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
                    } ,
                  aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
       facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free', ncol = gg_cols) +
@@ -200,10 +200,10 @@ if("hosp" %in% model_outputs){
     print(outputs_global$hosp %>%
             .[, ..cols_sim] %>%
             .[, date := lubridate::as_date(date)] %>%
-            { if(config$spatial_setup$nodenames == 'geoid'){
-              .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+            { if(config$spatial_setup$nodenames == 'subpop'){
+              .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
             } %>% 
-            { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+            { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
             } %>%
             .[, csum := cumsum(get(statistics$sim_var)), by = .(get(config$spatial_setup$nodenames), slot)] %>%
             .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$nodenames)] %>%
@@ -213,10 +213,10 @@ if("hosp" %in% model_outputs){
             geom_line(aes(x = date, y = V3)) + 
             geom_point(data = gt_data %>%
                          .[, ..cols_data] %>%
-                         { if(config$spatial_setup$nodenames == 'geoid'){
-                           .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+                         { if(config$spatial_setup$nodenames == 'subpop'){
+                           .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                          } %>% 
-                         { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+                         { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
                          } %>%
                          .[, csum := cumsum(replace_na(get(statistics$data_var), 0)) , by = .(get(config$spatial_setup$nodenames))]
                          ,
@@ -258,11 +258,11 @@ if("hosp" %in% model_outputs){
                            function(e){
                              high_low_hosp_llik %>%
                                .[, date := lubridate::as_date(date)] %>%
-                               { if(config$spatial_setup$nodenames == 'geoid'){
-                                 .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+                               { if(config$spatial_setup$nodenames == 'subpop'){
+                                 .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                } %>% 
                                .[get(config$spatial_setup$nodenames) == e] %>%
-                               { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+                               { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
                                } %>%
                                ggplot() +
                                geom_line(aes(lubridate::as_date(date), get(statistics$data_var), 
@@ -271,11 +271,11 @@ if("hosp" %in% model_outputs){
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
                                geom_point(data = gt_data %>%
                                             .[, ..cols_data] %>%
-                                            { if(config$spatial_setup$nodenames == 'geoid'){
-                                              .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+                                            { if(config$spatial_setup$nodenames == 'subpop'){
+                                              .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                             } %>% 
                                             .[get(config$spatial_setup$nodenames) == e] %>%
-                                            { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+                                            { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
                                             } ,
                                           aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
                                facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free', ncol = gg_cols) +
@@ -310,11 +310,11 @@ if("hnpi" %in% model_outputs){
          function(i){
            outputs_global$hnpi %>%
              .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%
-             { if(config$spatial_setup$nodenames == 'geoid'){
-               .[geodata %>% .[, geoid := stringr::str_pad(geoid, width = 5, side = "left", pad = "0")], on = .(geoid)]} 
+             { if(config$spatial_setup$nodenames == 'subpop'){
+               .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
              } %>% 
              .[get(config$spatial_setup$nodenames) == i] %>%
-             { if(config$spatial_setup$nodenames == 'geoid'){ .[, geoid := USPS]} 
+             { if(config$spatial_setup$nodenames == 'subpop'){ .[, subpop := USPS]} 
              } %>%
              ggplot(aes(npi_name,reduction)) + 
              geom_violin() +
@@ -413,7 +413,7 @@ if("snpi" %in% model_outputs){
                        function(i){
                          if(!grepl(',', i)){
                            
-                           i_lab <- ifelse(config$spatial_setup$nodenames == 'geoid', geodata[geoid == i, USPS], i)
+                           i_lab <- ifelse(config$spatial_setup$nodenames == 'subpop', geodata[subpop == i, USPS], i)
                              
                            outputs_global$snpi %>%
                              .[outputs_global$llik, on = c(config$spatial_setup$nodenames, "slot")] %>%

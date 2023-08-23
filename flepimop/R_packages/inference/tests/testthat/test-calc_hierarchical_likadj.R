@@ -7,7 +7,7 @@ test_that("penalty is  based on selected stat", {
     npi2 <- runif (6,-1,1)
 
     ##makes data frame with stats
-    infer_frame <- data.frame(geoid=rep(c("01001","01002","01003",
+    infer_frame <- data.frame(subpop=rep(c("01001","01002","01003",
                                           "06001", "06002", "06003"),2),
                               npi_name=rep(c("npi 1", "npi 2"), each=6),
                               reduction=c(npi1,npi2))
@@ -16,7 +16,7 @@ test_that("penalty is  based on selected stat", {
 
 
     ##make geodata dataframe
-    geodata <- data.frame(geoid=c("01001","01002","01003",
+    geodata <- data.frame(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 
@@ -46,7 +46,7 @@ test_that("NPIs with equal values have highe LL than npis with different values"
     npi2 <- rep(runif (1,-1,1),6)
 
     ##makes data frame with stats
-    infer_frame <- data.frame(geoid=rep(c("01001","01002","01003",
+    infer_frame <- data.frame(subpop=rep(c("01001","01002","01003",
                                           "06001", "06002", "06003"),2),
                               npi_name=rep(c("npi 1", "npi 2"), each=6),
                               reduction=c(npi1,npi2))
@@ -55,7 +55,7 @@ test_that("NPIs with equal values have highe LL than npis with different values"
 
 
     ##make geodata dataframe
-    geodata <- data.frame(geoid=c("01001","01002","01003",
+    geodata <- data.frame(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 
@@ -81,7 +81,7 @@ test_that("Groups with equal values have highe LL than npis with different value
     npi2 <- c(rep(runif(1,-1,1),3),runif(3,-1,1))
 
     ##makes data frame with stats
-    infer_frame <- data.frame(geoid=rep(c("01001","01002","01003",
+    infer_frame <- data.frame(subpop=rep(c("01001","01002","01003",
                                           "06001", "06002", "06003"),2),
                               npi_name=rep(c("npi 1", "npi 2"), each=6),
                               reduction=c(npi1,npi2))
@@ -90,7 +90,7 @@ test_that("Groups with equal values have highe LL than npis with different value
 
 
     ##make geodata dataframe
-    geodata <- data.frame(geoid=c("01001","01002","01003",
+    geodata <- data.frame(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 
@@ -127,7 +127,7 @@ test_that("equal values use minimum variance", {
     npi1 <- rep(1,3)
 
     ##makes data frame with stats
-    infer_frame <- dplyr::tibble(geoid=c("01001","01002","01003"),
+    infer_frame <- dplyr::tibble(subpop=c("01001","01002","01003"),
                               npi_name=rep("npi 1", 3),
                               reduction=npi1)
 
@@ -135,7 +135,7 @@ test_that("equal values use minimum variance", {
 
 
     ##make geodata dataframe
-    geodata <- dplyr::tibble(geoid=c("01001","01002","01003",
+    geodata <- dplyr::tibble(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 
@@ -155,13 +155,13 @@ test_that("transforms give the appropriate likelihoods", {
 
     # val <-  c(0.25698943, 0.23411552, 0.09412548)
     ##makes data frame with stats
-    infer_frame <- dplyr::tibble(geoid=c("01001","01002","01003"),
+    infer_frame <- dplyr::tibble(subpop=c("01001","01002","01003"),
                               npi_name=rep("val1", each=3),
                               value=val)
 
 
     ##make geodata dataframe
-    geodata <- dplyr::tibble(geoid=c("01001","01002","01003",
+    geodata <- dplyr::tibble(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 
@@ -197,18 +197,18 @@ test_that("transforms give the appropriate likelihoods", {
 })
 
 
-test_that("sensible things are returned whern there is only 1 geoid in a location", {
+test_that("sensible things are returned whern there is only 1 subpop in a location", {
     
     val<- runif(4,0,1)
 
     ##makes data frame with stats
-    infer_frame <- dplyr::tibble(geoid=c("01001", "06001", "06002","06003"),
+    infer_frame <- dplyr::tibble(subpop=c("01001", "06001", "06002","06003"),
                               npi_name=rep("val1", 4),
                               value=val)
 
 
     ##make geodata dataframe
-    geodata <- dplyr::tibble(geoid=c("01001","01002","01003",
+    geodata <- dplyr::tibble(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 
@@ -222,8 +222,8 @@ test_that("sensible things are returned whern there is only 1 geoid in a locatio
     
     ##print(adj)
     
-    ##make sure that the one geoid thing is zero
-    expect_true(!is.na(adj$likadj[adj$geoid=="01001"]))
+    ##make sure that the one subpop thing is zero
+    expect_true(!is.na(adj$likadj[adj$subpop=="01001"]))
     
 })
 
@@ -234,13 +234,13 @@ test_that("logit transform does not blow up on 0 or 1", {
     val[2] <- 1
 
     ##makes data frame with stats
-    infer_frame <- dplyr::tibble(geoid=c("01001","01002","01003"),
+    infer_frame <- dplyr::tibble(subpop=c("01001","01002","01003"),
                               npi_name=rep("val1", each=3),
                               value=val)
 
 
     ##make geodata dataframe
-    geodata <- dplyr::tibble(geoid=c("01001","01002","01003",
+    geodata <- dplyr::tibble(subpop=c("01001","01002","01003",
                                   "06001", "06002","06003"),
                           USPS=rep(c("HI","CA"), each=3))
 

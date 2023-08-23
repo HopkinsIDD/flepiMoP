@@ -10,7 +10,7 @@ spatial_setup:
   geodata: geodata.csv
   mobility: mobility.txt
   popnodes: population
-  nodenames: geoid
+  nodenames: subpop
 
 initial_conditions:
   method: InitialConditionsFolderDraw

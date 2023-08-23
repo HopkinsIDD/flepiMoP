@@ -20,7 +20,7 @@ class Stacked(NPIBase):
         *,
         npi_config,
         global_config,
-        geoids,
+        subpop,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
     ):
@@ -29,7 +29,7 @@ class Stacked(NPIBase):
         self.start_date = global_config["start_date"].as_date()
         self.end_date = global_config["end_date"].as_date()
 
-        self.geoids = geoids
+        self.subpop = subpop
         self.param_name = []
         self.reductions = {}  # {param: 1 for param in REDUCE_PARAMS}
         self.reduction_params = collections.deque()
@@ -59,7 +59,7 @@ class Stacked(NPIBase):
             sub_npi = NPIBase.execute(
                 npi_config=scenario_npi_config,
                 global_config=global_config,
-                geoids=geoids,
+                subpop=subpop,
                 loaded_df=loaded_df,
             )
 

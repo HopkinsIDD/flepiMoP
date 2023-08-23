@@ -39,7 +39,7 @@ generate_config <- function(){
 
     print_outcomes(dat = interventions,
                    ifr = "med",
-                   outcomes_parquet_file="usa-geoid-params-output_statelevel.parquet",
+                   outcomes_parquet_file="usa-subpop-params-output_statelevel.parquet",
                    incidC_prob_value = c(0.4, 0.4, 0.4),
                    compartment = FALSE)
 

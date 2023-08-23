@@ -374,13 +374,13 @@ class InferenceSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, geoid in enumerate(self.s.spatset.nodenames):
+        for i, subpop in enumerate(self.s.spatset.nodenames):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
                 columns=self.s.parameters.pnames,
                 index=pd.date_range(self.s.ti, self.s.tf, freq="D"),
             )
-            a["geoid"] = geoid
+            a["subpop"] = subpop
             full_df = pd.concat([full_df, a])
 
         # for R, duplicate names are not allowed in index:

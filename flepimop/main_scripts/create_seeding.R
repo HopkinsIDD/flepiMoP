@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the subpop
 #
 # ## Output Data
 #
@@ -153,8 +153,8 @@ if (seed_variants) {
 
 ## Check some data attributes:
 ## This is a hack:
-if ("geoid" %in% names(cases_deaths)) {
-    cases_deaths$FIPS <- cases_deaths$geoid
+if ("subpop" %in% names(cases_deaths)) {
+    cases_deaths$FIPS <- cases_deaths$subpop
     warning("Changing FIPS name in seeding. This is a hack")
 }
 if ("date" %in% names(cases_deaths)) {
@@ -272,12 +272,12 @@ geodata <- flepicommon::load_geodata_file(
     TRUE
 )
 
-all_geoids <- geodata[[config$spatial_setup$nodenames]]
+all_subpop <- geodata[[config$spatial_setup$nodenames]]
 
 
 
 incident_cases <- incident_cases %>%
-    dplyr::filter(FIPS %in% all_geoids) %>%
+    dplyr::filter(FIPS %in% all_subpop) %>%
     dplyr::select(!!!required_column_names)
 incident_cases <- incident_cases %>% filter(value>0)
 
@@ -332,7 +332,7 @@ if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seed
         seeding_pop$no_perturb <- TRUE
     }
     seeding_pop <- seeding_pop %>%
-        dplyr::filter(place %in% all_geoids) %>%
+        dplyr::filter(place %in% all_subpop) %>%
         dplyr::select(!!!colnames(incident_cases))
 
     incident_cases <- incident_cases %>%

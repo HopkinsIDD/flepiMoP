@@ -21,12 +21,12 @@ def reduce_parameter(
         raise ValueError(f"Unknown method to do NPI reduction, got {method}")
 
 
-def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
+def get_spatial_groups(grp_config, subpop: list) -> dict:
     """
     Spatial groups are defined in the config file as a list (of lists).
     They have the same value.
-    grouped is a list of lists of geoids
-    ungrouped is a list of geoids
+    grouped is a list of lists of subpop
+    ungrouped is a list of subpop
     the list are ordered, and this is important so we can get back and forth
     from the written to disk part that is comma separated
     """
@@ -34,28 +34,28 @@ def get_spatial_groups(grp_config, affected_geoids: list) -> dict:
     spatial_groups = {"grouped": [], "ungrouped": []}
 
     if not grp_config["spatial_groups"].exists():
-        spatial_groups["ungrouped"] = affected_geoids
+        spatial_groups["ungrouped"] = subpop
     else:
         if grp_config["spatial_groups"].get() == "all":
-            spatial_groups["grouped"] = [affected_geoids]
+            spatial_groups["grouped"] = [subpop]
         else:
             spatial_groups["grouped"] = grp_config["spatial_groups"].get()
             spatial_groups["ungrouped"] = list(
-                set(affected_geoids) - set(flatten_list_of_lists(spatial_groups["grouped"]))
+                set(subpop) - set(flatten_list_of_lists(spatial_groups["grouped"]))
             )
 
-    # flatten the list of lists of grouped geoids, so we can do some checks
+    # flatten the list of lists of grouped subpop, so we can do some checks
     flat_grouped_list = flatten_list_of_lists(spatial_groups["grouped"])
-    # check that all geoids are either grouped or ungrouped
-    if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(affected_geoids):
-        print("set of grouped and ungrouped geoids", set(flat_grouped_list + spatial_groups["ungrouped"]))
-        print("set of affected geoids             ", set(affected_geoids))
+    # check that all subpop are either grouped or ungrouped
+    if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(subpop):
+        print("set of grouped and ungrouped subpop", set(flat_grouped_list + spatial_groups["ungrouped"]))
+        print("set of affected subpop             ", set(subpop))
         raise ValueError(f"The two above sets are differs for for intervention with config \n {grp_config}")
     if len(set(flat_grouped_list + spatial_groups["ungrouped"])) != len(
         flat_grouped_list + spatial_groups["ungrouped"]
     ):
         raise ValueError(
-            f"spatial_group error. for intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped geoids"
+            f"spatial_group error. for intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped subpop"
         )
 
     spatial_groups["grouped"] = make_list_of_list(spatial_groups["grouped"])

@@ -1,4 +1,4 @@
-USPS,geoid,start_date,end_date,month,year,prob,prob_base,var,prob_redux,month_num,scenario
+USPS,subpop,start_date,end_date,month,year,prob,prob_base,var,prob_redux,month_num,scenario
 DE,10000,2021-01-01,2021-01-31,Jan,2021,0.006144628617372787,0.00682136946726949,rr_death_inf,0.9008,1,2
 DE,10000,2021-02-01,2021-02-28,Feb,2021,0.0056954013310463025,0.00682136946726949,rr_death_inf,0.8349,2,2
 DE,10000,2021-03-01,2021-03-31,Mar,2021,0.00452485652648077,0.00682136946726949,rr_death_inf,0.6633,3,2

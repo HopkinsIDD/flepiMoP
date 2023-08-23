@@ -47,7 +47,7 @@ generate_processed <- function(geodata_path,
     vacc_dat <- set_vacc_rates_params(vacc_path = vaccination_path,
                                       sim_end_date = sim_end,
                                       vacc_start_date="2021-01-01",
-                                      incl_geoid = NULL,
+                                      incl_subpop = NULL,
                                       scenario = vacc_scenario,
                                       compartment = FALSE)
 
@@ -68,7 +68,7 @@ generate_processed <- function(geodata_path,
                                            sim_start_date = sim_start,
                                            sim_end_date = sim_end,
                                            inference = FALSE,
-                                           incl_geoid = NULL,
+                                           incl_subpop = NULL,
                                            scenario = vacc_scenario,
                                            v_dist="truncnorm",
                                            v_sd = 0.01, v_a = 0, v_b = 1,
@@ -105,7 +105,7 @@ test_that("Interventions processing works", {
                                         outcomes_path = "outcome_adj.csv")
 
     interventions <- readr::read_csv("processed_intervention_data.csv") %>%
-        dplyr::filter(USPS %in% c("all", "KS", "DE", "") | geoid == "all") %>%
+        dplyr::filter(USPS %in% c("all", "KS", "DE", "") | subpop == "all") %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b,
                                     ~ifelse(stringr::str_detect(name, "variant") & start_date < as.Date("2021-06-15") |
                                                 stringr::str_detect(name, "variant", negate = TRUE) , .x, NA_real_)),

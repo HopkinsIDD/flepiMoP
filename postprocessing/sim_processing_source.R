@@ -31,68 +31,68 @@ combine_and_format_sims <- function(outcome_vars = "incid",
                                     geodata,
                                     death_filter = opt$death_filter) {
 
-    res_geoid_all <- arrow::open_dataset(sprintf("%shosp",scenario_dir),
+    res_subpop_all <- arrow::open_dataset(sprintf("%shosp",scenario_dir),
                                          partitioning = c("location", "npi_scenario", "outcome_scenario", "config", "lik_type", "is_final")) %>%
-        select(time, geoid, outcome_scenario, starts_with(outcome_vars)) %>%
+        select(time, subpop, outcome_scenario, starts_with(outcome_vars)) %>%
         filter(time>=forecast_date & time<=end_date) %>%
         collect() %>%
         filter(stringr::str_detect(outcome_scenario, death_filter)) %>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, geoid, outcome_scenario) %>%
-        dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
+        group_by(time, subpop, outcome_scenario) %>%
+        dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
         ungroup()
 
     if (quick_run){
-        res_geoid_all <- res_geoid_all %>% filter(sim_num %in% 1:20)
+        res_subpop_all <- res_subpop_all %>% filter(sim_num %in% 1:20)
     }
     gc()
 
     # ~ Subset if testing
     if (testing){
-        res_geoid_all <- res_geoid_all %>% filter(sim_num %in% sample(.$sim_num, 10, replace = FALSE))
+        res_subpop_all <- res_subpop_all %>% filter(sim_num %in% sample(.$sim_num, 10, replace = FALSE))
     }
 
 
     # pull out just the total outcomes of interest
     cols_aggr <- expand_grid(a="incid",b=outcomes_) %>% mutate(d=paste0(a,b)) %>% pull(d)
-    cols_aggr <- cols_aggr[cols_aggr %in% colnames(res_geoid_all)]
+    cols_aggr <- cols_aggr[cols_aggr %in% colnames(res_subpop_all)]
 
     if(!keep_all_compartments & !keep_variant_compartments & !keep_vacc_compartments){
-        res_geoid_all <- res_geoid_all %>%
-            select(time, geoid, outcome_scenario, sim_num, all_of(cols_aggr))
+        res_subpop_all <- res_subpop_all %>%
+            select(time, subpop, outcome_scenario, sim_num, all_of(cols_aggr))
 
     } else if (keep_variant_compartments){
         # pull out just the variant outcomes
         cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", variants_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
-        cols_vars <- cols_vars[cols_vars %in% colnames(res_geoid_all)]
-        res_geoid_all <- res_geoid_all %>%
-            select(time, geoid, outcome_scenario, sim_num, all_of(cols_vars))
+        cols_vars <- cols_vars[cols_vars %in% colnames(res_subpop_all)]
+        res_subpop_all <- res_subpop_all %>%
+            select(time, subpop, outcome_scenario, sim_num, all_of(cols_vars))
     } else if (keep_all_compartments){
         # remove the aggregate outcomes
-        res_geoid_all <- res_geoid_all %>%
+        res_subpop_all <- res_subpop_all %>%
             select(-all_of(cols_vars), -all_of(cols_aggr))
     } else if (keep_vacc_compartments){
         # pull out just the variant outcomes
         cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", vacc_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
-        cols_vars <- cols_vars[cols_vars %in% colnames(res_geoid_all)]
-        res_geoid_all <- res_geoid_all %>%
-            select(time, geoid, outcome_scenario, sim_num, all_of(cols_vars))
+        cols_vars <- cols_vars[cols_vars %in% colnames(res_subpop_all)]
+        res_subpop_all <- res_subpop_all %>%
+            select(time, subpop, outcome_scenario, sim_num, all_of(cols_vars))
     }
 
 
     # Merge in Geodata
 
     if(county_level){
-        res_state <- res_geoid_all %>%
-            inner_join(geodata %>% select(geoid, USPS)) %>%
+        res_state <- res_subpop_all %>%
+            inner_join(geodata %>% select(subpop, USPS)) %>%
             group_by_at(c("USPS", "time", "sim_num", compartment_types)) %>%
             summarise(across(starts_with("incid"), sum)) %>%
             as_tibble()
     } else {
-        res_state <- res_geoid_all %>%
-            inner_join(geodata %>% select(geoid, USPS))
+        res_state <- res_subpop_all %>%
+            inner_join(geodata %>% select(subpop, USPS))
     }
-    rm(res_geoid_all)
+    rm(res_subpop_all)
 
     # ~ Add US totals
     res_us <- res_state %>%
@@ -120,44 +120,44 @@ load_simulations <- function(geodata,
                              keep_compartments = TRUE,
                              testing = FALSE){
 
-    res_geoid <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
+    res_subpop <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
                                      partitioning =c("location",
                                                      "npi_scenario",
                                                      "outcome_scenario",
                                                      "config",
                                                      "lik_type",
                                                      "is_final")) %>%
-        select(time, geoid, starts_with("incid"), outcome_scenario)%>%
+        select(time, subpop, starts_with("incid"), outcome_scenario)%>%
         filter(time>=forecast_date & time<=end_date)%>%
         collect() %>%
         filter(stringr::str_detect(outcome_scenario, death_filter))%>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, geoid, outcome_scenario) %>%
-        dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
+        group_by(time, subpop, outcome_scenario) %>%
+        dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
         ungroup() %>%
         pivot_longer(cols=starts_with("incid"),
                      names_to = c("outcome",compartment_types),
                      names_pattern = "(.*)_(.*)_(.*)_(.*)", values_to = "value") %>%
         filter(!is.na(outcome))
 
-    res_geoid <- res_geoid %>%
+    res_subpop <- res_subpop %>%
         pivot_wider(names_from = outcome, values_from = value)
 
     # Subset for testing
     if(testing){
-        res_geoid <- res_geoid %>% filter(sim_num %in% 1:10)
-        res_geoid_long <- res_geoid_long %>% filter(sim_num %in% 1:10)
+        res_subpop <- res_subpop %>% filter(sim_num %in% 1:10)
+        res_subpop_long <- res_subpop_long %>% filter(sim_num %in% 1:10)
     }
 
-    # res_geoid <- res_geoid %>%
-    #   group_by(time, geoid, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
+    # res_subpop <- res_subpop %>%
+    #   group_by(time, subpop, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
     #   #summarise(across(starts_with("incid"), sum)) %>%
     #   summarise(incidD=sum(incidD), incidH=sum(incidH), incidC=sum(incidC))%>%
     #   as_tibble()
 
     if(county_level){
-        res_state <- res_geoid %>%
-            inner_join(geodata %>% select(geoid, USPS)) %>%
+        res_state <- res_subpop %>%
+            inner_join(geodata %>% select(subpop, USPS)) %>%
             group_by_at(c("USPS", "time", "sim_num", compartment_types)) %>%
             # summarize(incidI=sum(incidI),
             #           incidD=sum(incidD),
@@ -166,14 +166,14 @@ load_simulations <- function(geodata,
             summarise(across(starts_with("incid"), sum)) %>%
             as_tibble()
     } else {
-        res_state <- res_geoid %>%
-            inner_join(geodata %>% select(geoid, USPS))
+        res_state <- res_subpop %>%
+            inner_join(geodata %>% select(subpop, USPS))
 
         if (keep_compartments){
-            res_state_long <- res_geoid_long %>%
-                inner_join(geodata %>% select(geoid, USPS))
+            res_state_long <- res_subpop_long %>%
+                inner_join(geodata %>% select(subpop, USPS))
         }
-        rm(res_geoid_long, res_geoid)
+        rm(res_subpop_long, res_subpop)
     }
 
     # ADD US TOTAL
@@ -223,25 +223,25 @@ trans_sims_wide <- function(geodata,
                             keep_compartments = TRUE,
                             testing = FALSE){
 
-    res_geoid_long <- res_geoid
-    res_geoid <- res_geoid %>%
+    res_subpop_long <- res_subpop
+    res_subpop <- res_subpop %>%
         pivot_wider(names_from = outcome, values_from = value)
 
     # Subset for testing
     if(testing){
-        res_geoid <- res_geoid %>% filter(sim_num %in% 1:10)
-        res_geoid_long <- res_geoid_long %>% filter(sim_num %in% 1:10)
+        res_subpop <- res_subpop %>% filter(sim_num %in% 1:10)
+        res_subpop_long <- res_subpop_long %>% filter(sim_num %in% 1:10)
     }
 
-    # res_geoid <- res_geoid %>%
-    #   group_by(time, geoid, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
+    # res_subpop <- res_subpop %>%
+    #   group_by(time, subpop, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
     #   #summarise(across(starts_with("incid"), sum)) %>%
     #   summarise(incidD=sum(incidD), incidH=sum(incidH), incidC=sum(incidC))%>%
     #   as_tibble()
 
     if(county_level){
-        res_state <- res_geoid %>%
-            inner_join(geodata %>% select(geoid, USPS)) %>%
+        res_state <- res_subpop %>%
+            inner_join(geodata %>% select(subpop, USPS)) %>%
             group_by_at(c("USPS", "time", "sim_num", compartment_types)) %>%
             # summarize(incidI=sum(incidI),
             #           incidD=sum(incidD),
@@ -250,14 +250,14 @@ trans_sims_wide <- function(geodata,
             summarise(across(starts_with("incid"), sum)) %>%
             as_tibble()
     } else {
-        res_state <- res_geoid %>%
-            inner_join(geodata %>% select(geoid, USPS))
+        res_state <- res_subpop %>%
+            inner_join(geodata %>% select(subpop, USPS))
 
         if (keep_compartments){
-            res_state_long <- res_geoid_long %>%
-                inner_join(geodata %>% select(geoid, USPS))
+            res_state_long <- res_subpop_long %>%
+                inner_join(geodata %>% select(subpop, USPS))
         }
-        rm(res_geoid_long, res_geoid)
+        rm(res_subpop_long, res_subpop)
     }
 
     # ADD US TOTAL
@@ -302,45 +302,45 @@ load_simulations_orig <- function(geodata,
                                   keep_compartments = TRUE,
                                   testing = FALSE){
 
-    res_geoid <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
+    res_subpop <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
                                      partitioning =c("location",
                                                      "npi_scenario",
                                                      "outcome_scenario",
                                                      "config",
                                                      "lik_type",
                                                      "is_final")) %>%
-        select(time, geoid, starts_with("incid"), outcome_scenario)%>%
+        select(time, subpop, starts_with("incid"), outcome_scenario)%>%
         filter(time>=forecast_date & time<=end_date)%>%
         collect() %>%
         filter(stringr::str_detect(outcome_scenario, death_filter))%>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, geoid, outcome_scenario) %>%
-        dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
+        group_by(time, subpop, outcome_scenario) %>%
+        dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
         ungroup() %>%
         pivot_longer(cols=starts_with("incid"),
                      names_to = c("outcome",compartment_types),
                      names_pattern = "(.*)_(.*)_(.*)_(.*)", values_to = "value") %>%
         filter(!is.na(outcome))
 
-    res_geoid_long <- res_geoid
-    res_geoid <- res_geoid %>%
+    res_subpop_long <- res_subpop
+    res_subpop <- res_subpop %>%
         pivot_wider(names_from = outcome, values_from = value)
 
     # Subset for testing
     if(testing){
-        res_geoid <- res_geoid %>% filter(sim_num %in% 1:10)
-        res_geoid_long <- res_geoid_long %>% filter(sim_num %in% 1:10)
+        res_subpop <- res_subpop %>% filter(sim_num %in% 1:10)
+        res_subpop_long <- res_subpop_long %>% filter(sim_num %in% 1:10)
     }
 
-    # res_geoid <- res_geoid %>%
-    #   group_by(time, geoid, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
+    # res_subpop <- res_subpop %>%
+    #   group_by(time, subpop, outcome_scenario, variant, vacc, agestrat, sim_num)%>%
     #   #summarise(across(starts_with("incid"), sum)) %>%
     #   summarise(incidD=sum(incidD), incidH=sum(incidH), incidC=sum(incidC))%>%
     #   as_tibble()
 
     if(county_level){
-        res_state <- res_geoid %>%
-            inner_join(geodata %>% select(geoid, USPS)) %>%
+        res_state <- res_subpop %>%
+            inner_join(geodata %>% select(subpop, USPS)) %>%
             group_by_at(c("USPS", "time", "sim_num", compartment_types)) %>%
             # summarize(incidI=sum(incidI),
             #           incidD=sum(incidD),
@@ -349,14 +349,14 @@ load_simulations_orig <- function(geodata,
             summarise(across(starts_with("incid"), sum)) %>%
             as_tibble()
     } else {
-        res_state <- res_geoid %>%
-            inner_join(geodata %>% select(geoid, USPS))
+        res_state <- res_subpop %>%
+            inner_join(geodata %>% select(subpop, USPS))
 
         if (keep_compartments){
-            res_state_long <- res_geoid_long %>%
-                inner_join(geodata %>% select(geoid, USPS))
+            res_state_long <- res_subpop_long %>%
+                inner_join(geodata %>% select(subpop, USPS))
         }
-        rm(res_geoid_long, res_geoid)
+        rm(res_subpop_long, res_subpop)
     }
 
     # ADD US TOTAL
@@ -437,7 +437,7 @@ get_ground_truth_revised <- function(config, scenario_dir, flepi_path = "../flep
         rename(time=date, USPS=source)
 
     gt_data_clean <- gt_data %>%
-        rename(geoid=FIPS, time=date, USPS=source)
+        rename(subpop=FIPS, time=date, USPS=source)
 
     write_csv(gt_data_clean, file.path(scenario_dir, "gt_data_clean.csv"))
     file.remove(config$inference$gt_data_path)
@@ -472,10 +472,10 @@ calibrate_outcome <- function(outcome_calib = "incidH",
 
     # get gt to calibrate to
     if (weekly_outcome){
-        gt_calib <- get_weekly_incid(gt_data %>% dplyr::select(time, geoid, USPS, !!sym(outcome_calib)) %>% mutate(sim_num = 0),
+        gt_calib <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, !!sym(outcome_calib)) %>% mutate(sim_num = 0),
                                      outcomes = outcome_calib_base)
     } else {
-        gt_calib <- get_daily_incid(gt_data %>% dplyr::select(time, geoid, USPS, !!sym(outcome_calib)) %>% mutate(sim_num = 0),
+        gt_calib <- get_daily_incid(gt_data %>% dplyr::select(time, subpop, USPS, !!sym(outcome_calib)) %>% mutate(sim_num = 0),
                                      outcomes = outcome_calib_base)
     }
 
@@ -493,7 +493,7 @@ calibrate_outcome <- function(outcome_calib = "incidH",
         inc_calib <- incid_sims_formatted %>% filter(outcome %in% outcome_calib)
     }else{
         # repull data with one week earlier to calibrate to if not full run
-        res_geoid_all_calib <- combine_and_format_sims(
+        res_subpop_all_calib <- combine_and_format_sims(
             outcome_vars = outcome_calib,
             scenario_dir = scenario_dir,
             quick_run = quick_run,
@@ -511,10 +511,10 @@ calibrate_outcome <- function(outcome_calib = "incidH",
             death_filter = death_filter)
 
         if (weekly_outcome) {
-            inc_calib <- get_weekly_incid(res_geoid_all_calib, outcomes = outcome_calib_base)
+            inc_calib <- get_weekly_incid(res_subpop_all_calib, outcomes = outcome_calib_base)
             inc_calib <- format_weekly_outcomes(inc_calib, point_est = 0.5, opt)
         } else {
-            inc_calib <- get_daily_incid(res_geoid_all_calib, outcomes = outcome_calib_base)
+            inc_calib <- get_daily_incid(res_subpop_all_calib, outcomes = outcome_calib_base)
             inc_calib <- format_daily_outcomes(inc_calib, point_est = 0.5, opt)
         }
     }
@@ -1139,7 +1139,7 @@ process_sims <- function(
     # Load Data ---------------------------------------------------------------
 
     # ~ Geodata
-    geodata <- suppressMessages(readr::read_csv(opt$geodata, col_types = readr::cols(geoid=readr::col_character())))
+    geodata <- suppressMessages(readr::read_csv(opt$geodata, col_types = readr::cols(subpop=readr::col_character())))
 
     # ~ Ground truth
     if (!exists("gt_data")){
@@ -1197,7 +1197,7 @@ process_sims <- function(
                                                         "config",
                                                         "lik_type",
                                                         "is_final")) %>%
-            select(filename, geoid, npi_scenario, outcome_scenario, ll)%>%
+            select(filename, subpop, npi_scenario, outcome_scenario, ll)%>%
             collect() %>%
             distinct() %>%
             filter(stringr::str_detect(outcome_scenario, opt$death_filter))%>%
@@ -1206,22 +1206,22 @@ process_sims <- function(
             as_tibble()
 
 
-        res_llik %>% filter(geoid=='06000') %>%
+        res_llik %>% filter(subpop=='06000') %>%
             ggplot(aes(x=sim_id, y=ll)) +
             geom_point()
 
-        res_llik %>% filter(geoid=='06000') %>%
+        res_llik %>% filter(subpop=='06000') %>%
             ggplot(aes(y=ll)) +
             geom_histogram()
 
-        res_llik %>% filter(geoid=='06000') %>%
+        res_llik %>% filter(subpop=='06000') %>%
             mutate(lik = log(-ll)) %>%
             ggplot(aes(y=lik)) +
             geom_histogram()
 
         res_lik_ests <- res_llik %>%
             mutate(lik = log(-ll)) %>%
-            group_by(geoid) %>%
+            group_by(subpop) %>%
             mutate(mean_ll = mean(ll),
                    median_ll = median(ll),
                    low_ll = quantile(ll, 0.025),
@@ -1237,14 +1237,14 @@ process_sims <- function(
         n_excl <- ceiling(nrow(sim_ids)*(1-likelihood_prune_percentkeep))
 
         res_lik_ests <- res_lik_ests %>%
-            group_by(geoid, npi_scenario, outcome_scenario) %>%
+            group_by(subpop, npi_scenario, outcome_scenario) %>%
             arrange(ll) %>%
-            mutate(rank = seq_along(geoid),
+            mutate(rank = seq_along(subpop),
                    excl_rank = rank<=n_excl) %>%
             ungroup()
 
         # res_lik_ests %>%
-        #   group_by(geoid) %>%
+        #   group_by(subpop) %>%
         #   summarise(n_excl_ll = sum(below025_ll),
         #             n_excl_lik = sum(below025_lik)) %>% View
         # res_lik_ests %>%
@@ -1253,7 +1253,7 @@ process_sims <- function(
         #             n_excl_lik = sum(below025_lik)) %>% View
 
         res_lik_excl <- res_lik_ests %>%
-            select(geoid, sim_id, exclude=excl_rank, ll, lik)
+            select(subpop, sim_id, exclude=excl_rank, ll, lik)
 
         res_state <- res_state %>% left_join(res_lik_excl) #%>% select(-outcome_scenario)
 
@@ -1263,8 +1263,8 @@ process_sims <- function(
         res_state <- res_state %>%
             filter(!exclude) %>%
             select(-sim_id, -exclude) %>%
-            group_by(time, geoid, USPS, outcome_scenario) %>%
-            dplyr::mutate(sim_num = as.character(seq_along(geoid))) %>%
+            group_by(time, subpop, USPS, outcome_scenario) %>%
+            dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
             ungroup()
 
     }
@@ -1338,7 +1338,7 @@ process_sims <- function(
     # outcomes_cum_gt_ <- outcomes_cum_[outcomes_!="I"]
     #
     # gt_data_2 <- gt_data_2 %>%
-    #   select(USPS, geoid, time, paste0("incid", outcomes_gt_), paste0("cum", outcomes_[outcomes_cum_gt_]))
+    #   select(USPS, subpop, time, paste0("incid", outcomes_gt_), paste0("cum", outcomes_[outcomes_cum_gt_]))
 
     # ~ Weekly Outcomes -----------------------------------------------------------
 

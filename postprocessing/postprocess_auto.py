@@ -226,8 +226,8 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
                         df_raw["sim"] = sim
                         df_raw["ID"] = run_name
                         df_raw = df_raw.drop("filename", axis=1)
-                        # df_csv = df_csv.groupby(['slot','sim', 'ID', 'geoid']).sum().reset_index()
-                        # df_csv = df_csv[['ll','sim', 'slot', 'ID','geoid']]
+                        # df_csv = df_csv.groupby(['slot','sim', 'ID', 'subpop']).sum().reset_index()
+                        # df_csv = df_csv[['ll','sim', 'slot', 'ID','subpop']]
                         resultST[run_name].append(df_raw)
         full_df = pd.concat(resultST[run_name])
         full_df
@@ -267,7 +267,7 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
 
         for idp, nn in enumerate(node_names):
             idp = idp + 1
-            all_nn = full_df[full_df["geoid"] == nn][["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
+            all_nn = full_df[full_df["subpop"] == nn][["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
             for ift, feature in enumerate(["ll", "accept", "accept_avg", "accept_prob"]):
                 lls = all_nn.pivot(index="sim", columns="slot", values=feature)
                 if feature == "accept":

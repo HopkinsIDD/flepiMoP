@@ -7,25 +7,25 @@ context("aggregate_and_calc_loc_likelihoods")
 ##'
 get_minimal_setup <- function () {
 
-    #3geoids
-    geoids <- c("06001", "06002", "06003", "32001","32002","32003")
+    #3subpop
+    subpop <- c("06001", "06002", "06003", "32001","32002","32003")
     USPS <- c(rep("CA",3), rep("NY",3))
 
     ##list of lcations to consider...all of them
-    all_locations <- geoids
+    all_locations <- subpop
 
-    obs_nodename <- "geoid"
+    obs_nodename <- "subpop"
 
 
-    ##Generate observed data per geoid  the simulated data will be compared too
+    ##Generate observed data per subpop  the simulated data will be compared too
     ##TODO
     times <- seq(as.Date("2020-02-15"),as.Date("2020-06-30"), by="days")
     day <- 1:length(times)
 
     obs_sims <- list()
-    for (i in 1:length(geoids)) {
+    for (i in 1:length(subpop)) {
         obs_sims[[i]] <- dplyr::tibble(date = times,
-                              geoid = geoids[i],
+                              subpop = subpop[i],
                               death_incid = rpois(length(day), 1000*dnorm(day, 32, 10)),
                               confirmed_incid = rpois(length(day), 10000*dnorm(day, 32, 10)))
     }
@@ -76,7 +76,7 @@ get_minimal_setup <- function () {
         }) %>%
         setNames(geonames)
 
-    ##Simulated data per geoid, multiple vars. Just perturb obs  by default
+    ##Simulated data per subpop, multiple vars. Just perturb obs  by default
     sim_hosp <- obs %>%
         dplyr::rename(incidD = death_incid, incidC = confirmed_incid) %>%
         dplyr::mutate(incidD = incidD + rpois(length(incidD), incidD))%>%
@@ -84,7 +84,7 @@ get_minimal_setup <- function () {
         dplyr::rename(time=date)
 
     ##the observed node name.
-    obs_nodename <- "geoid"
+    obs_nodename <- "subpop"
 
 
 
@@ -100,26 +100,26 @@ get_minimal_setup <- function () {
 
 
     ##geodata data frame
-    geodata <- dplyr::tibble(geoid = geoids,
+    geodata <- dplyr::tibble(subpop = subpop,
                       USPS = USPS)
 
 
     ##The file containing information on the given npis. Creating 2 by default.
-    npi1 <- dplyr::tibble(geoid=geoids,
+    npi1 <- dplyr::tibble(subpop=subpop,
                    npi_name = "local_variance",
                    start_date = "2020-01-01",
                    end_date = "2020-06-30",
                    parameter = "r0",
                    reduction = runif(6,-.5, .5))
 
-    npi2A <- dplyr::tibble(geoid = geoids[1:3],
+    npi2A <- dplyr::tibble(subpop = subpop[1:3],
                     npi_name = "full_lockdown_CA",
                     start_date = "2020-03-25",
                     end_date = "2020-06-01",
                     parameter = "r0",
                     reduction = runif(3,-.8, -.5))
 
-    npi2B <- dplyr::tibble(geoid = geoids[4:6],
+    npi2B <- dplyr::tibble(subpop = subpop[4:6],
                     npi_name = "full_lockdown_NY",
                     start_date = "2020-03-15",
                     end_date = "2020-05-22",
@@ -129,14 +129,14 @@ get_minimal_setup <- function () {
     snpi <- dplyr::bind_rows(npi1, npi2A, npi2B)
 
     ##The file containing information on the given hospitalization npis. Creating 2 by default.
-    npi1 <- dplyr::tibble(geoid=geoids,
+    npi1 <- dplyr::tibble(subpop=subpop,
                    npi_name = "local_variance",
                    start_date = "2020-01-01",
                    end_date = "2020-06-30",
                    parameter = "hosp::inf",
                    reduction = runif(6,-.5, .5))
 
-    npi2 <- dplyr::tibble(geoid = geoids[1:3],
+    npi2 <- dplyr::tibble(subpop = subpop[1:3],
                     npi_name = "full_lockdown_CA",
                     start_date = "2020-03-25",
                     end_date = "2020-06-01",
@@ -147,11 +147,11 @@ get_minimal_setup <- function () {
     hnpi <- dplyr::bind_rows(npi1, npi2)
 
     ##Set up hospitalizatoin params.
-    hpar1 <- dplyr::tibble(geoid=geoids,
+    hpar1 <- dplyr::tibble(subpop=subpop,
                     parameter="p_confirmed_inf",
                     value=0.1)
 
-    hpar2 <- dplyr::tibble(geoid=geoids,
+    hpar2 <- dplyr::tibble(subpop=subpop,
                     parameter="p_hosp_inf",
                     value=.07)
 

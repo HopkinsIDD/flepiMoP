@@ -32,7 +32,7 @@ option_list = list(
     optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
     optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
     optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
-    optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid")
+    optparse::make_option(c("-g", "--subpop_len"), action="store", default=Sys.getenv("SUBPOP_LENGTH", 5), type='integer', help = "number of digits in subpop")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -99,7 +99,7 @@ suppressMessages(
             config$data_path,
             config$spatial_setup$geodata, sep = "/"
         ),
-        geoid_len = opt$geoid_len
+        subpop_len = opt$subpop_len
     )
 )
 obs_nodename <- config$spatial_setup$nodenames
@@ -476,7 +476,7 @@ for(npi_scenario in npi_scenarios) {
                 }
                 proposed_seeding <- initial_seeding
             }
-            
+
             # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)

@@ -55,7 +55,7 @@ gt_data_2 <- gt_data_2 %>% mutate(cumH = 0) # incidH is only cumulative from sta
 gt_cl <- NULL
 if (any(outcomes_time_=="weekly")) {
   # Incident
-  gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, geoid, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
+  gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
                                       outcomes = outcomes_gt_[outcomes_time_gt_=="weekly"]) 
   
   # Cumulative
@@ -81,7 +81,7 @@ if (any(outcomes_time_=="weekly")) {
 }
 if (any(outcomes_time_=="daily")) {
   # Incident
-  gt_data_st_day <- get_daily_incid(gt_data %>% dplyr::select(time, geoid, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="daily"])) %>% mutate(sim_num = 0),
+  gt_data_st_day <- get_daily_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="daily"])) %>% mutate(sim_num = 0),
                                     outcomes = outcomes_gt_[outcomes_time_gt_=="daily"]) 
   
   # Cumulative

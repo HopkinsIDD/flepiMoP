@@ -4,7 +4,7 @@
 #'
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
-#' @param incl_geoid
+#' @param incl_subpop
 #' @param v_dist type of distribution for reduction
 #' @param v_mean reduction mean
 #' @param v_sd reduction sd
@@ -16,7 +16,7 @@
 #' @param p_sd perturbation sd
 #' @param p_a perturbation a
 #' @param p_b perturbation b
-#' @param compartment 
+#' @param compartment
 #'
 #' @return data frame with columns for
 #' @export
@@ -28,7 +28,7 @@
 #'
 set_incidH_params <- function(start_date=Sys.Date()-42,
                               sim_end_date=Sys.Date()+60,
-                              incl_geoid = NULL,
+                              incl_subpop = NULL,
                               inference = TRUE,
                               v_dist="truncnorm",
                               v_mean =  0, v_sd = 0.1, v_a = -1, v_b = 1, # TODO: add check on limits
@@ -37,19 +37,19 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
 ){
     start_date <- as.Date(start_date)
     sim_end_date <- as.Date(sim_end_date)
-    
+
     template = "Reduce"
     param_val <- "incidH::probability"
-    
-    if(is.null(incl_geoid)){
-        affected_geoids = "all"
+
+    if(is.null(incl_subpop)){
+        affected_subpop = "all"
     } else{
-        affected_geoids = paste0(incl_geoid, collapse='", "')
+        affected_subpop = paste0(incl_subpop, collapse='", "')
     }
-    
-    
+
+
     local_var <- dplyr::tibble(USPS = "",
-                               geoid = affected_geoids,
+                               subpop = affected_subpop,
                                name = "incidH_adj",
                                type = "outcome",
                                category = "incidH_adjustment",
@@ -71,8 +71,8 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
                                pert_b = p_b) %>%
         dplyr::mutate(pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
                       dplyr::across(pert_mean:pert_b, ~ifelse(inference, as.numeric(.x), NA_real_))) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
-    
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+
     return(local_var)
 }
 
@@ -82,7 +82,7 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
 #' @param npi_cutoff_date only interventions that start before or on npi_cuttof_date are included
-#' @param redux_geoids string or vector of characters indicating which geoids will have an intervention with the ReduceIntervention template; it accepts "all". If any values are specified, the intervention in the geoid with the maximum start date will be selected. It defaults to NULL. .
+#' @param redux_subpop string or vector of characters indicating which subpop will have an intervention with the ReduceIntervention template; it accepts "all". If any values are specified, the intervention in the subpop with the maximum start date will be selected. It defaults to NULL. .
 #' @param v_dist type of distribution for reduction
 #' @param v_mean reduction mean
 #' @param v_sd reduction sd
@@ -111,20 +111,20 @@ set_npi_params_old <- function(intervention_file,
                                sim_end_date=Sys.Date()+60,
                                npi_cutoff_date=Sys.Date()-7,
                                inference = TRUE,
-                               redux_geoids = NULL,
+                               redux_subpop = NULL,
                                v_dist = "truncnorm", v_mean=0.6, v_sd=0.05, v_a=0.0, v_b=0.9,
                                p_dist = "truncnorm", p_mean=0, p_sd=0.05, p_a=-1, p_b=1,
                                compartment = TRUE){
-    
+
     param_val <- ifelse(compartment, "r0", "R0")
     sim_start_date <- lubridate::ymd(sim_start_date)
     sim_end_date <- lubridate::ymd(sim_end_date)
     npi_cuttoff_date <- lubridate::ymd(npi_cutoff_date)
-    
+
     npi <- intervention_file %>%
         dplyr::filter(start_date <= npi_cutoff_date) %>%
         dplyr::filter(start_date >= sim_start_date | end_date > sim_start_date) %>% # add warning about npi period <7 days?
-        dplyr::group_by(USPS, geoid) %>%
+        dplyr::group_by(USPS, subpop) %>%
         dplyr::mutate(end_date = dplyr::case_when(is.na(end_date) | end_date == max(end_date) |
                                                       end_date > sim_end_date ~ sim_end_date,
                                                   TRUE ~ end_date),
@@ -143,42 +143,42 @@ set_npi_params_old <- function(intervention_file,
                       baseline_scenario = "",
                       parameter = dplyr::if_else(template=="MultiTimeReduce", param_val, NA_character_)
         )
-    
+
     if(any(stringr::str_detect(npi$name, "^\\d$"))) stop("Intervention names must include at least one non-numeric character.")
-    
+
     npi <- npi %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)),
                       pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
-    
-    if(!is.null(redux_geoids)){
-        if(redux_geoids == 'all'){
-            redux_geoids <- unique(npi$geoid)
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+
+    if(!is.null(redux_subpop)){
+        if(redux_subpop == 'all'){
+            redux_subpop <- unique(npi$subpop)
         }
-        
+
         npi <- npi %>%
-            dplyr::filter(geoid %in% redux_geoids) %>%
-            dplyr::group_by(geoid) %>%
+            dplyr::filter(subpop %in% redux_subpop) %>%
+            dplyr::group_by(subpop) %>%
             dplyr::filter(start_date == max(start_date)) %>%
             dplyr::mutate(category = "base_npi",
                           name = paste0(name, "_last")) %>%
             dplyr::bind_rows(
                 npi %>%
-                    dplyr::group_by(geoid) %>%
-                    dplyr::filter(start_date != max(start_date) |! geoid %in% redux_geoids)
+                    dplyr::group_by(subpop) %>%
+                    dplyr::filter(start_date != max(start_date) |! subpop %in% redux_subpop)
             ) %>%
             dplyr::ungroup()
     }
-    
+
     npi <- npi %>%
         dplyr::ungroup() %>%
         dplyr::add_count(name) %>%
         dplyr::mutate(template = dplyr::if_else(n==1 & template == "MultiTimeReduce", "Reduce", template),
                       parameter = dplyr::if_else(n==1 & template == "Reduce", param_val, parameter)) %>%
         dplyr::select(-n)
-    
+
     return(npi)
-    
+
 }
 
 
@@ -189,7 +189,7 @@ set_npi_params_old <- function(intervention_file,
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
 #' @param npi_cutoff_date only interventions that start before or on npi_cuttof_date are included
-#' @param redux_geoids string or vector of characters indicating which geoids will have an intervention with the ReduceIntervention template; it accepts "all". If any values are specified, the intervention in the geoid with the maximum start date will be selected. It defaults to NULL. .
+#' @param redux_subpop string or vector of characters indicating which subpop will have an intervention with the ReduceIntervention template; it accepts "all". If any values are specified, the intervention in the subpop with the maximum start date will be selected. It defaults to NULL. .
 #' @param v_dist type of distribution for reduction
 #' @param v_mean reduction mean
 #' @param v_sd reduction sd
@@ -213,47 +213,47 @@ set_npi_params_old <- function(intervention_file,
 #'
 #' npi_dat <- set_npi_params(intervention_file = npi_dat, sim_start_date = "2020-01-15", sim_end_date = "2021-07-30")
 #'
-set_npi_params <- function (intervention_file, sim_start_date = as.Date("2020-01-31"), 
-                            sim_end_date = Sys.Date() + 60, npi_cutoff_date = Sys.Date() - 7, 
-                            inference = TRUE, redux_geoids = NULL, v_dist = "truncnorm", 
-                            v_mean = 0.6, v_sd = 0.05, v_a = 0, v_b = 0.9, p_dist = "truncnorm", 
+set_npi_params <- function (intervention_file, sim_start_date = as.Date("2020-01-31"),
+                            sim_end_date = Sys.Date() + 60, npi_cutoff_date = Sys.Date() - 7,
+                            inference = TRUE, redux_subpop = NULL, v_dist = "truncnorm",
+                            v_mean = 0.6, v_sd = 0.05, v_a = 0, v_b = 0.9, p_dist = "truncnorm",
                             p_mean = 0, p_sd = 0.05, p_a = -1, p_b = 1, compartment = TRUE) {
-    
+
     param_val <- ifelse(compartment, "r0", "R0")
     sim_start_date <- lubridate::ymd(sim_start_date)
     sim_end_date <- lubridate::ymd(sim_end_date)
     npi_cuttoff_date <- lubridate::ymd(npi_cutoff_date)
-    npi <- intervention_file %>% 
-        dplyr::filter(start_date <= npi_cutoff_date) %>% 
-        dplyr::filter(start_date >= sim_start_date |  end_date > sim_start_date | is.na(end_date)) %>% 
-        dplyr::group_by(USPS, geoid) %>% 
-        dplyr::mutate(end_date = dplyr::case_when(is.na(end_date) | end_date == max(end_date) | end_date > sim_end_date ~ sim_end_date, TRUE ~ end_date), 
-                      value_dist = v_dist, 
-                      value_mean = v_mean, value_sd = v_sd, value_a = v_a, 
-                      value_b = v_b, pert_dist = p_dist, pert_mean = p_mean, 
-                      pert_sd = p_sd, pert_a = p_a, pert_b = p_b, type = "transmission", 
+    npi <- intervention_file %>%
+        dplyr::filter(start_date <= npi_cutoff_date) %>%
+        dplyr::filter(start_date >= sim_start_date |  end_date > sim_start_date | is.na(end_date)) %>%
+        dplyr::group_by(USPS, subpop) %>%
+        dplyr::mutate(end_date = dplyr::case_when(is.na(end_date) | end_date == max(end_date) | end_date > sim_end_date ~ sim_end_date, TRUE ~ end_date),
+                      value_dist = v_dist,
+                      value_mean = v_mean, value_sd = v_sd, value_a = v_a,
+                      value_b = v_b, pert_dist = p_dist, pert_mean = p_mean,
+                      pert_sd = p_sd, pert_a = p_a, pert_b = p_b, type = "transmission",
                       category = "NPI", baseline_scenario = "", parameter = dplyr::if_else(template == "MultiTimeReduce", param_val, NA_character_))
-    if (any(stringr::str_detect(npi$name, "^\\d$"))) 
+    if (any(stringr::str_detect(npi$name, "^\\d$")))
         stop("Intervention names must include at least one non-numeric character.")
-    npi <- npi %>% dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)), pert_dist = ifelse(inference, pert_dist, NA_character_)) %>% 
-        dplyr::select(USPS, geoid, 
-                      start_date, end_date, name, template, type, category, 
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"), 
+    npi <- npi %>% dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)), pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
+        dplyr::select(USPS, subpop,
+                      start_date, end_date, name, template, type, category,
+                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
-    if (!is.null(redux_geoids)) {
-        if (redux_geoids == "all") {
-            redux_geoids <- unique(npi$geoid)
+    if (!is.null(redux_subpop)) {
+        if (redux_subpop == "all") {
+            redux_subpop <- unique(npi$subpop)
         }
-        npi <- npi %>% dplyr::filter(geoid %in% redux_geoids) %>% 
-            dplyr::group_by(geoid) %>% dplyr::filter(start_date == max(start_date)) %>%
-            dplyr::mutate(category = "base_npi", name = paste0(name, "_last")) %>% 
-            dplyr::bind_rows(npi %>% dplyr::group_by(geoid) %>% dplyr::filter(start_date != max(start_date) | !geoid %in% redux_geoids)) %>% 
+        npi <- npi %>% dplyr::filter(subpop %in% redux_subpop) %>%
+            dplyr::group_by(subpop) %>% dplyr::filter(start_date == max(start_date)) %>%
+            dplyr::mutate(category = "base_npi", name = paste0(name, "_last")) %>%
+            dplyr::bind_rows(npi %>% dplyr::group_by(subpop) %>% dplyr::filter(start_date != max(start_date) | !subpop %in% redux_subpop)) %>%
             dplyr::ungroup()
     }
-    npi <- npi %>% dplyr::ungroup() %>% 
-        dplyr::add_count(name) %>% 
-        dplyr::mutate(template = dplyr::if_else(n == 1 & template == "MultiTimeReduce", "Reduce", template), 
-                      parameter = dplyr::if_else(n == 1 & template == "Reduce", param_val, parameter)) %>% 
+    npi <- npi %>% dplyr::ungroup() %>%
+        dplyr::add_count(name) %>%
+        dplyr::mutate(template = dplyr::if_else(n == 1 & template == "MultiTimeReduce", "Reduce", template),
+                      parameter = dplyr::if_else(n == 1 & template == "Reduce", param_val, parameter)) %>%
         dplyr::select(-n)
     return(npi)
 }
@@ -301,14 +301,14 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                                    p_dist="truncnorm",
                                    p_mean = 0, p_sd = 0.05, p_a = -1, p_b = 1,
                                    compartment = TRUE){
-    
+
     sim_start_date <- as.Date(sim_start_date)
     sim_end_date <- as.Date(sim_end_date)
-    
+
     param_val <- ifelse(compartment, "r0", "R0")
-    
+
     years_ <- unique(lubridate::year(seq(sim_start_date, sim_end_date, 1)))
-    
+
     seas <- tidyr::expand_grid(
         tidyr::tibble(month= tolower(month.abb),
                       month_num = 1:12,
@@ -333,7 +333,7 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                       category = "seasonal",
                       template = template,
                       baseline_scenario = "",
-                      geoid = "all",
+                      subpop = "all",
                       name = paste0("Seas_", month),
                       pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
                       dplyr::across(pert_sd:pert_a, ~ifelse(inference, as.numeric(.x), NA_real_))
@@ -347,8 +347,8 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                       end_date = dplyr::if_else(end_date > sim_end_date, sim_end_date, end_date),
                       start_date = dplyr::if_else(start_date < sim_start_date, sim_start_date, start_date)
         ) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
-    
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+
     return(seas)
 }
 
@@ -367,7 +367,7 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
 #' @param p_sd perturbation sd
 #' @param p_a perturbation a
 #' @param p_b perturbation b
-#' @param compartment 
+#' @param compartment
 #'
 #' @return data frame with columns for
 #' @export
@@ -383,18 +383,18 @@ set_localvar_params <- function(sim_start_date=as.Date("2020-03-31"),
                                 v_dist="truncnorm",
                                 v_mean =  0, v_sd = 0.05, v_a = -1, v_b = 1, # TODO: add check on limits
                                 p_dist="truncnorm",
-                                p_mean = 0, p_sd = 0.05, p_a = -1, p_b = 1, 
+                                p_mean = 0, p_sd = 0.05, p_a = -1, p_b = 1,
                                 compartment = TRUE
 ){
     sim_start_date <- as.Date(sim_start_date)
     sim_end_date <- as.Date(sim_end_date)
-    
+
     template = "Reduce"
     param_val <- ifelse(compartment, "r0", "R0")
-    affected_geoids = "all"
-    
+    affected_subpop = "all"
+
     local_var <- dplyr::tibble(USPS = "",
-                               geoid = "all",
+                               subpop = "all",
                                name = "local_variance",
                                type = "transmission",
                                category = "local_variance",
@@ -404,7 +404,7 @@ set_localvar_params <- function(sim_start_date=as.Date("2020-03-31"),
                                end_date = sim_end_date,
                                template = template,
                                param = param_val,
-                               affected_geoids = affected_geoids,
+                               affected_subpop = affected_subpop,
                                value_dist = v_dist,
                                value_mean = v_mean,
                                value_sd = v_sd,
@@ -417,15 +417,15 @@ set_localvar_params <- function(sim_start_date=as.Date("2020-03-31"),
                                pert_b = p_b) %>%
         dplyr::mutate(pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
                       dplyr::across(pert_mean:pert_b, ~ifelse(inference, as.numeric(.x), NA_real_))) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
-    
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+
     return(local_var)
 }
 
 #' Generate NPI reduction interventions
 #'
 #' @param npi_file output from set_npi_params
-#' @param incl_geoid vector of geoids to include; NULL will generate interventions for all geographies
+#' @param incl_subpop vector of subpop to include; NULL will generate interventions for all geographies
 #' @param projection_start_date first date without data to fit
 #' @param redux_end_date end date for reduction interventions; default NULL uses sim_end_date in npi_file
 #' @param redux_level reduction to intervention effectiveness; used to estimate mean value of reduction by month
@@ -452,41 +452,41 @@ set_redux_params <- function(npi_file,
                              v_b=1,
                              compartment = TRUE
 ){
-    
+
     projection_start_date <- as.Date(projection_start_date)
     param_val <- ifelse(compartment, "r0", "R0")
-    
+
     if(!is.null(redux_end_date)){
         redux_end_date <- as.Date(redux_end_date)
-        
+
         if(redux_end_date > max(npi_file$end_date)) stop("The end date for reduction interventions should be less than or equal to the sim_end_date in the npi_file.")
-        
+
     }
-    
+
     og <- npi_file %>%
         dplyr::filter(category == "base_npi") %>%
-        dplyr::group_by(USPS, geoid) %>%
+        dplyr::group_by(USPS, subpop) %>%
         dplyr::mutate(end_date = dplyr::if_else(is.null(redux_end_date), end_date, redux_end_date))
-    
+
     if(any(projection_start_date < unique(og$start_date))){warning("Some interventions start after the projection_start_date")}
-    
+
     months_start <- seq(lubridate::floor_date(projection_start_date, "month"), max(og$end_date), by="month")
     months_start[1] <- projection_start_date
-    
+
     months_end <- lubridate::ceiling_date(months_start, "months")-1
     months_end[length(months_end)] <- max(og$end_date)
-    
+
     month_n <- length(months_start)
-    
+
     reduction <- rep(redux_level/month_n, month_n) %>% cumsum()
-    
+
     redux <- dplyr::tibble(
         start_date = months_start,
         end_date = months_end,
         month = lubridate::month(months_start, label=TRUE, abbr=TRUE) %>% tolower(),
         value_mean = reduction, # TODO: reduction to value_mean
         type = rep("transmission", month_n),
-        geoid = og$geoid %>% paste0(collapse = '", "')) %>%
+        subpop = og$subpop %>% paste0(collapse = '", "')) %>%
         mutate(USPS = "",
                category = "NPI_redux",
                name = paste0(category, '_', month),
@@ -502,8 +502,8 @@ set_redux_params <- function(npi_file,
                pert_sd = NA_real_,
                pert_a = NA_real_,
                pert_b = NA_real_) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
-    
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+
     return(redux)
 }
 
@@ -514,7 +514,7 @@ set_redux_params <- function(npi_file,
 #' @param vacc_path path to vaccination rates
 #' @param vacc_start_date simulation start date
 #' @param sim_end_date simulation end date
-#' @param incl_geoid vector of geoids to include
+#' @param incl_subpop vector of subpop to include
 #' @param scenario_num which baseline scenario will be selected from the vaccination rate file
 #' @param compartment
 #'
@@ -523,45 +523,45 @@ set_redux_params <- function(npi_file,
 #'
 #' @examples
 #'
-set_vacc_rates_params <- function (vacc_path, 
-                                   vacc_start_date = "2021-01-01", 
-                                   sim_end_date = Sys.Date() + 60, 
-                                   incl_geoid = NULL, 
-                                   scenario_num = 1, 
+set_vacc_rates_params <- function (vacc_path,
+                                   vacc_start_date = "2021-01-01",
+                                   sim_end_date = Sys.Date() + 60,
+                                   incl_subpop = NULL,
+                                   scenario_num = 1,
                                    compartment = TRUE) {
-    
+
     vacc_start_date <- as.Date(vacc_start_date)
     sim_end_date <- as.Date(sim_end_date)
-    vacc <- readr::read_csv(vacc_path) %>% dplyr::filter(!is.na(month) & 
+    vacc <- readr::read_csv(vacc_path) %>% dplyr::filter(!is.na(month) &
                                                              scenario == scenario_num)
-    if (!is.null(incl_geoid)) {
-        vacc <- vacc %>% dplyr::filter(geoid %in% incl_geoid)
+    if (!is.null(incl_subpop)) {
+        vacc <- vacc %>% dplyr::filter(subpop %in% incl_subpop)
     }
-    vacc <- vacc %>% dplyr::filter(start_date <= sim_end_date) %>% 
+    vacc <- vacc %>% dplyr::filter(start_date <= sim_end_date) %>%
         dplyr::mutate(end_date = lubridate::as_date(ifelse(end_date > sim_end_date, sim_end_date, end_date))) %>%
-        dplyr::rename(value_mean = vacc_rate) %>% 
-        dplyr::mutate(geoid = as.character(geoid), month = lubridate::month(start_date, label = TRUE), 
-                      type = "transmission", category = "vaccination", 
-                      name = paste0("Dose1_", tolower(month), lubridate::year(start_date)), 
-                      template = "Reduce",  baseline_scenario = "", 
+        dplyr::rename(value_mean = vacc_rate) %>%
+        dplyr::mutate(subpop = as.character(subpop), month = lubridate::month(start_date, label = TRUE),
+                      type = "transmission", category = "vaccination",
+                      name = paste0("Dose1_", tolower(month), lubridate::year(start_date)),
+                      template = "Reduce",  baseline_scenario = "",
                       value_mean = round(value_mean, 5),
-                      value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_, 
-                      value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_, 
-                      pert_sd = NA_real_, pert_a = NA_real_, pert_b = NA_real_) 
-    
+                      value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_,
+                      value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_,
+                      pert_sd = NA_real_, pert_a = NA_real_, pert_b = NA_real_)
+
     if(compartment){
         vacc <- vacc %>% mutate(parameter = rate_param)
     } else {
         vacc <- vacc %>% mutate(parameter = "transition_rate 0")
     }
-    
+
     if("age_group" %in% colnames(vacc)){
         vacc <- vacc %>% mutate(name = paste0(name, "_age", age_group))
     }
     vacc <- vacc %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, 
-                      template, type, category, parameter, baseline_scenario, 
-                      tidyselect::starts_with("value_"), tidyselect::starts_with("pert_")) %>% 
+        dplyr::select(USPS, subpop, start_date, end_date, name,
+                      template, type, category, parameter, baseline_scenario,
+                      tidyselect::starts_with("value_"), tidyselect::starts_with("pert_")) %>%
         dplyr::filter(start_date >= vacc_start_date & value_mean > 0)
     return(vacc)
 }
@@ -573,7 +573,7 @@ set_vacc_rates_params <- function (vacc_path,
 #' @param vacc_path path to vaccination rates
 #' @param vacc_start_date simulation start date
 #' @param sim_end_date simulation end date
-#' @param incl_geoid vector of geoids to include
+#' @param incl_subpop vector of subpop to include
 #' @param scenario_num which baseline scenario will be selected from the vaccination rate file
 #' @param compartment
 #' @param rate_param
@@ -583,44 +583,44 @@ set_vacc_rates_params <- function (vacc_path,
 #'
 #' @examples
 #'
-set_vacc_rates_params_dose3 <- function (vacc_path, 
-                                         vacc_start_date = "2021-01-01", sim_end_date = Sys.Date() + 60, 
-                                         incl_geoid = NULL, 
+set_vacc_rates_params_dose3 <- function (vacc_path,
+                                         vacc_start_date = "2021-01-01", sim_end_date = Sys.Date() + 60,
+                                         incl_subpop = NULL,
                                          rate_groups = c("nu_3y","nu_3o"),
-                                         scenario_num = 1, 
+                                         scenario_num = 1,
                                          compartment = TRUE,
                                          rate_param=NA) {
-    
+
     vacc_start_date <- as.Date(vacc_start_date)
     sim_end_date <- as.Date(sim_end_date)
-    vacc <- readr::read_csv(vacc_path) %>% dplyr::filter(!is.na(month) & 
+    vacc <- readr::read_csv(vacc_path) %>% dplyr::filter(!is.na(month) &
                                                              scenario == scenario_num)
-    if (!is.null(incl_geoid)) {
-        vacc <- vacc %>% dplyr::filter(geoid %in% incl_geoid)
+    if (!is.null(incl_subpop)) {
+        vacc <- vacc %>% dplyr::filter(subpop %in% incl_subpop)
     }
-    
+
     if(compartment){
         vacc <- vacc %>% mutate(parameter=rate_param)
     } else {
         vacc <- vacc %>% mutate(parameter="transition_rate 0")
     }
-    
-    vacc <- vacc %>% dplyr::filter(start_date <= sim_end_date) %>% 
-        dplyr::mutate(end_date = lubridate::as_date(ifelse(end_date > 
-                                                               sim_end_date, sim_end_date, end_date))) %>% dplyr::rename(value_mean = vacc_rate) %>% 
-        dplyr::mutate(geoid = as.character(geoid), month = lubridate::month(start_date, 
-                                                                            label = TRUE), type = "transmission", category = "vaccination", 
-                      name = paste0("Dose3_", tolower(month), lubridate::year(start_date), "_",age_group), 
-                      template = "Reduce", 
-                      baseline_scenario = "", 
-                      value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_, 
-                      value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_, 
-                      pert_sd = NA_real_, pert_a = NA_real_, pert_b = NA_real_) %>% 
-        dplyr::select(USPS, geoid, start_date, end_date, name, 
-                      template, type, category, parameter, baseline_scenario, 
-                      tidyselect::starts_with("value_"), tidyselect::starts_with("pert_")) %>% 
+
+    vacc <- vacc %>% dplyr::filter(start_date <= sim_end_date) %>%
+        dplyr::mutate(end_date = lubridate::as_date(ifelse(end_date >
+                                                               sim_end_date, sim_end_date, end_date))) %>% dplyr::rename(value_mean = vacc_rate) %>%
+        dplyr::mutate(subpop = as.character(subpop), month = lubridate::month(start_date,
+                                                                            label = TRUE), type = "transmission", category = "vaccination",
+                      name = paste0("Dose3_", tolower(month), lubridate::year(start_date), "_",age_group),
+                      template = "Reduce",
+                      baseline_scenario = "",
+                      value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_,
+                      value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_,
+                      pert_sd = NA_real_, pert_a = NA_real_, pert_b = NA_real_) %>%
+        dplyr::select(USPS, subpop, start_date, end_date, name,
+                      template, type, category, parameter, baseline_scenario,
+                      tidyselect::starts_with("value_"), tidyselect::starts_with("pert_")) %>%
         dplyr::filter(start_date >= vacc_start_date & value_mean > 0)
-    
+
     return(vacc)
 }
 
@@ -641,7 +641,7 @@ set_vacc_rates_params_dose3 <- function (vacc_path,
 #' @param variant_lb
 #' @param varian_effect change in transmission for variant default is 50% from Davies et al 2021
 #' @param month_shift
-#' @param geodata file with columns for state/county abbreviation (USPS) and admin code (geoid); only required if state_level is TRUE
+#' @param geodata file with columns for state/county abbreviation (USPS) and admin code (subpop); only required if state_level is TRUE
 #' @param state_level whether there is state-level data on the variant; requires a geodata file
 #' @param transmission_increase transmission increase in B1617 relative to B117
 #' @param inference logical indicating whether inference will be performed on intervention (default is TRUE); perturbation values are replaced with NA if set to FALSE.
@@ -662,29 +662,29 @@ set_vacc_rates_params_dose3 <- function (vacc_path,
 #'
 #' @examples
 #'
-set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 = NULL, 
-                               sim_start_date, sim_end_date, inference_cutoff_date = Sys.Date() - 7, 
-                               variant_lb = 1.4, variant_effect = 1.5, month_shift = NULL, 
-                               state_level = TRUE, geodata = NULL, 
-                               transmission_increase = c(1, 1.45, (1.6 * 1.6)), 
-                               variant_compartments = c("WILD", "ALPHA", "DELTA"), 
-                               compartment = TRUE, inference = TRUE, 
-                               v_dist = "truncnorm", v_sd = 0.01, v_a = -1.5, v_b = 0, 
+set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 = NULL,
+                               sim_start_date, sim_end_date, inference_cutoff_date = Sys.Date() - 7,
+                               variant_lb = 1.4, variant_effect = 1.5, month_shift = NULL,
+                               state_level = TRUE, geodata = NULL,
+                               transmission_increase = c(1, 1.45, (1.6 * 1.6)),
+                               variant_compartments = c("WILD", "ALPHA", "DELTA"),
+                               compartment = TRUE, inference = TRUE,
+                               v_dist = "truncnorm", v_sd = 0.01, v_a = -1.5, v_b = 0,
                                p_dist = "truncnorm", p_mean = 0, p_sd = 0.01, p_a = -1, p_b = 1){
-    
+
     inference_cutoff_date <- as.Date(inference_cutoff_date)
     if (compartment) {
-        variant_data <- generate_compartment_variant2(variant_path = variant_path, 
-                                                      variant_compartments = variant_compartments, transmission_increase = transmission_increase, 
-                                                      geodata = geodata, sim_start_date = sim_start_date, 
+        variant_data <- generate_compartment_variant2(variant_path = variant_path,
+                                                      variant_compartments = variant_compartments, transmission_increase = transmission_increase,
+                                                      geodata = geodata, sim_start_date = sim_start_date,
                                                       sim_end_date = sim_end_date)
     } else {
         # we can get rid of this B117 part eventually
         if (b117_only) {
-            variant_data <- config.writer::generate_variant_b117(variant_path = variant_path, 
-                                                                 sim_start_date = sim_start_date, sim_end_date = sim_end_date, 
-                                                                 variant_lb = variant_lb, variant_effect = variant_effect, 
-                                                                 month_shift = month_shift) %>% dplyr::mutate(geoid = "all", 
+            variant_data <- config.writer::generate_variant_b117(variant_path = variant_path,
+                                                                 sim_start_date = sim_start_date, sim_end_date = sim_end_date,
+                                                                 variant_lb = variant_lb, variant_effect = variant_effect,
+                                                                 month_shift = month_shift) %>% dplyr::mutate(subpop = "all",
                                                                                                               USPS = "")
         } else if (state_level) {
             if (is.null(variant_path_2)) {
@@ -693,39 +693,39 @@ set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 =
             if (is.null(geodata)) {
                 stop("You must specify a geodata file")
             }
-            variant_data <- generate_multiple_variants_state(variant_path_1 = variant_path, 
-                                                             variant_path_2 = variant_path_2, sim_start_date = sim_start_date, 
-                                                             sim_end_date = sim_end_date, variant_lb = variant_lb, 
-                                                             variant_effect = variant_effect, transmission_increase = transmission_increase, 
+            variant_data <- generate_multiple_variants_state(variant_path_1 = variant_path,
+                                                             variant_path_2 = variant_path_2, sim_start_date = sim_start_date,
+                                                             sim_end_date = sim_end_date, variant_lb = variant_lb,
+                                                             variant_effect = variant_effect, transmission_increase = transmission_increase,
                                                              geodata = geodata)
         } else {
             if (is.null(variant_path_2)) {
                 stop("You must specify a path for the second variant.")
             }
-            variant_data <- generate_multiple_variants(variant_path_1 = variant_path, 
-                                                       variant_path_2 = variant_path_2, sim_start_date = sim_start_date, 
-                                                       sim_end_date = sim_end_date, variant_lb = variant_lb, 
-                                                       variant_effect = variant_effect, transmission_increase = transmission_increase) %>% 
-                dplyr::mutate(geoid = "all", USPS = "")
+            variant_data <- generate_multiple_variants(variant_path_1 = variant_path,
+                                                       variant_path_2 = variant_path_2, sim_start_date = sim_start_date,
+                                                       sim_end_date = sim_end_date, variant_lb = variant_lb,
+                                                       variant_effect = variant_effect, transmission_increase = transmission_increase) %>%
+                dplyr::mutate(subpop = "all", USPS = "")
         }
     }
-    variant_data <- variant_data %>% dplyr::mutate(type = "transmission", 
-                                                   category = "variant", 
-                                                   name = paste(USPS, "variantR0adj", paste0("Week", lubridate::week(start_date)), sep = "_"), 
+    variant_data <- variant_data %>% dplyr::mutate(type = "transmission",
+                                                   category = "variant",
+                                                   name = paste(USPS, "variantR0adj", paste0("Week", lubridate::week(start_date)), sep = "_"),
                                                    name = stringr::str_remove(name, "^\\_"),
-                                                   template = "Reduce", 
-                                                   parameter = "R0", 
-                                                   value_dist = v_dist, value_mean = 1 - R_ratio, value_sd = v_sd, value_a = v_a, value_b = v_b, 
-                                                   pert_dist = p_dist, pert_mean = p_mean, pert_sd = p_sd, 
-                                                   pert_a = p_a, pert_b = p_b, baseline_scenario = "") %>% 
-        dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference & start_date < inference_cutoff_date, .x, NA_real_)), 
-                      pert_dist = ifelse(inference & start_date < inference_cutoff_date, 
-                                         pert_dist, NA_character_)) %>% 
-        dplyr::select(USPS, 
-                      geoid, start_date, end_date, name, template, type, category, 
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"), 
+                                                   template = "Reduce",
+                                                   parameter = "R0",
+                                                   value_dist = v_dist, value_mean = 1 - R_ratio, value_sd = v_sd, value_a = v_a, value_b = v_b,
+                                                   pert_dist = p_dist, pert_mean = p_mean, pert_sd = p_sd,
+                                                   pert_a = p_a, pert_b = p_b, baseline_scenario = "") %>%
+        dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference & start_date < inference_cutoff_date, .x, NA_real_)),
+                      pert_dist = ifelse(inference & start_date < inference_cutoff_date,
+                                         pert_dist, NA_character_)) %>%
+        dplyr::select(USPS,
+                      subpop, start_date, end_date, name, template, type, category,
+                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
-    
+
     return(variant_data)
 }
 
@@ -736,7 +736,7 @@ set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 =
 #' @param outcome_path path to vaccination adjusted outcome interventions
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
-#' @param incl_geoid vector of geoids to include
+#' @param incl_subpop vector of subpop to include
 #' @param scenario which scenario will be selected from the outcome intervention file
 #' @param v_dist type of distribution for reduction
 #' @param v_sd reduction sd
@@ -756,85 +756,85 @@ set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 =
 #'
 #' @examples
 #'
-set_vacc_outcome_params <- function(age_strat = "under65", 
+set_vacc_outcome_params <- function(age_strat = "under65",
                                     variant_compartments = c("WILD","ALPHA","DELTA"),
                                     vaccine_compartments = c("unvaccinated"),
                                     national_level = TRUE, # whether to do national interventions to reduce number
                                     redux_round = 0.1,
-                                    outcome_path, 
-                                    sim_start_date = as.Date("2020-03-31"), 
-                                    sim_end_date = Sys.Date() + 60, 
-                                    inference = FALSE, 
-                                    incl_geoid = NULL, 
-                                    scenario_num = 1, 
-                                    v_dist = "truncnorm", v_sd = 0.01, v_a = 0, v_b = 1, 
-                                    p_dist = "truncnorm", p_mean = 0, p_sd = 0.05, 
+                                    outcome_path,
+                                    sim_start_date = as.Date("2020-03-31"),
+                                    sim_end_date = Sys.Date() + 60,
+                                    inference = FALSE,
+                                    incl_subpop = NULL,
+                                    scenario_num = 1,
+                                    v_dist = "truncnorm", v_sd = 0.01, v_a = 0, v_b = 1,
+                                    p_dist = "truncnorm", p_mean = 0, p_sd = 0.05,
                                     p_a = -1, p_b = 1){
-    
+
     sim_start_date <- as.Date(sim_start_date)
     sim_end_date <- as.Date(sim_end_date)
-    outcome <- readr::read_csv(outcome_path) %>% 
-        dplyr::filter(!is.na(month) & month != "baseline") %>% 
+    outcome <- readr::read_csv(outcome_path) %>%
+        dplyr::filter(!is.na(month) & month != "baseline") %>%
         dplyr::filter(scenario == scenario_num) %>%
         dplyr::filter(prob_redux!=1)
-    
-    if (!is.null(incl_geoid)){
-        outcome <- outcome %>% dplyr::filter(geoid %in% incl_geoid)
+
+    if (!is.null(incl_subpop)){
+        outcome <- outcome %>% dplyr::filter(subpop %in% incl_subpop)
     }
     if(!is.null(outcome$age_strata)){
         if(!is.null(age_strat)){
             outcome <- outcome %>% filter(age_strata %in% age_strat)
         }
     }
-    
+
     if(national_level){
-        outcome <- outcome %>% 
+        outcome <- outcome %>%
             group_by(age_strata, start_date, end_date, month, year, var) %>%
             summarise(prob_redux = mean(prob_redux, na.rm=TRUE)) %>%
-            mutate(USPS="US", geoid='all')
+            mutate(USPS="US", subpop='all')
     }
-    
-    outcome <- outcome %>% 
+
+    outcome <- outcome %>%
         mutate(prob_redux = round(prob_redux / redux_round)*redux_round) %>%
         filter(prob_redux!=1)
-    
-    outcome <- outcome %>% 
-        dplyr::mutate(month = tolower(month)) %>% 
-        dplyr::mutate(prob_redux = 1 - prob_redux) %>% 
-        dplyr::filter(start_date <= sim_end_date) %>% 
-        dplyr::mutate(end_date = lubridate::as_date(ifelse(end_date > sim_end_date, sim_end_date, end_date)), 
-                      start_date = lubridate::as_date(ifelse(end_date > start_date & start_date < sim_start_date, sim_start_date, start_date))) %>% 
-        dplyr::filter(start_date >= sim_start_date) %>% 
-        dplyr::rename(value_mean = prob_redux) %>% 
-        dplyr::mutate(geoid = as.character(geoid), 
-                      type = "outcome", 
-                      category = "vacc_outcome",baseline_scenario = "", 
-                      value_dist = v_dist, value_sd = v_sd, value_a = v_a, 
-                      value_b = v_b, pert_dist = p_dist, pert_mean = p_mean, 
-                      pert_sd = p_sd, pert_a = p_a, pert_b = p_b) 
-    
-    outcome <- outcome %>% 
+
+    outcome <- outcome %>%
+        dplyr::mutate(month = tolower(month)) %>%
+        dplyr::mutate(prob_redux = 1 - prob_redux) %>%
+        dplyr::filter(start_date <= sim_end_date) %>%
+        dplyr::mutate(end_date = lubridate::as_date(ifelse(end_date > sim_end_date, sim_end_date, end_date)),
+                      start_date = lubridate::as_date(ifelse(end_date > start_date & start_date < sim_start_date, sim_start_date, start_date))) %>%
+        dplyr::filter(start_date >= sim_start_date) %>%
+        dplyr::rename(value_mean = prob_redux) %>%
+        dplyr::mutate(subpop = as.character(subpop),
+                      type = "outcome",
+                      category = "vacc_outcome",baseline_scenario = "",
+                      value_dist = v_dist, value_sd = v_sd, value_a = v_a,
+                      value_b = v_b, pert_dist = p_dist, pert_mean = p_mean,
+                      pert_sd = p_sd, pert_a = p_a, pert_b = p_b)
+
+    outcome <- outcome %>%
         dplyr::full_join(
             expand_grid(var = c("rr_death_inf", "rr_hosp_inf"),
                         variant=variant_compartments,
                         vacc=vaccine_compartments,
                         age_strata=unique(outcome$age_strata)) %>%
-                dplyr::mutate(param = dplyr::case_when(var == "rr_death_inf" ~ "incidD", var == "rr_hosp_inf" ~ "incidH", 
+                dplyr::mutate(param = dplyr::case_when(var == "rr_death_inf" ~ "incidD", var == "rr_hosp_inf" ~ "incidH",
                                                        TRUE ~ NA_character_),
-                              param = paste(param, vacc, variant, age_strat, sep="_")) %>% 
+                              param = paste(param, vacc, variant, age_strat, sep="_")) %>%
                 dplyr::filter(!is.na(param))) %>%
         dplyr::mutate(
-            #    name = paste(param, "vaccadj", month, sep = "_"), template = "Reduce", 
-            #    name = paste(param, "vaccadj", USPS, (1-value_mean), sep = "_"), template = "Reduce", 
-            name = paste(param, "vaccadj", (1-value_mean), sep = "_"), template = "Reduce", 
-            parameter = paste0(param, "::probability")) %>% 
-        dplyr::mutate(dplyr::across(pert_mean:pert_b, 
-                                    ~ifelse(inference, .x, NA_real_)), 
-                      pert_dist = ifelse(inference, 
-                                         pert_dist, NA_character_)) %>% 
-        dplyr::select(USPS, geoid, 
-                      start_date, end_date, name, template, type, category, 
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"), 
+            #    name = paste(param, "vaccadj", month, sep = "_"), template = "Reduce",
+            #    name = paste(param, "vaccadj", USPS, (1-value_mean), sep = "_"), template = "Reduce",
+            name = paste(param, "vaccadj", (1-value_mean), sep = "_"), template = "Reduce",
+            parameter = paste0(param, "::probability")) %>%
+        dplyr::mutate(dplyr::across(pert_mean:pert_b,
+                                    ~ifelse(inference, .x, NA_real_)),
+                      pert_dist = ifelse(inference,
+                                         pert_dist, NA_character_)) %>%
+        dplyr::select(USPS, subpop,
+                      start_date, end_date, name, template, type, category,
+                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
     return(outcome)
 }
@@ -845,11 +845,11 @@ set_vacc_outcome_params <- function(age_strat = "under65",
 #' Generate incidC shift interventions
 #'
 #' @param periods vector of dates that include a shift in incidC
-#' @param geodata df with USPS and geoid column for geoids with a shift in incidC
+#' @param geodata df with USPS and subpop column for subpop with a shift in incidC
 #' @param baseline_ifr assumed true infection fatality rate
 #' @param cfr_data optional file with estimates of cfr by state
 #' @param epochs character vector with the selection of epochs from the cfr_data file, any of "NoSplit", "MarJun", "JulOct", "NovJan". Required if cfr_data is specified.
-#' @param outcomes_parquet_file path to file with geoid-specific adjustments to IFR; required if cfr_data is specified
+#' @param outcomes_parquet_file path to file with subpop-specific adjustments to IFR; required if cfr_data is specified
 #' @param inference logical indicating whether inference will be performed on intervention (default is TRUE); perturbation values are replaced with NA if set to FALSE.
 #' @param v_dist type of distribution for reduction
 #' @param v_mean state-specific initial value. will be taken from empirical CFR estimates if it exists, otherwise this used. If a vector is specified, then each value is added to the corresponding period
@@ -878,50 +878,50 @@ set_incidC_shift <- function(periods,
                              p_mean = 0, p_sd = 0.01, p_a = -1, p_b = 1
 ){
     periods <- as.Date(periods)
-    
+
     if(is.null(cfr_data)){
         epochs <- 1:(length(periods)-1)
-        
+
         cfr_data <- geodata %>%
-            dplyr::select(USPS, geoid) %>%
+            dplyr::select(USPS, subpop) %>%
             tidyr::expand_grid(value_mean = v_mean,
                                epoch=epochs)
     } else{
         if(is.null(epochs) | length(epochs) != (length(periods)-1)){stop("The number of epochs selected should be equal to the number of periods with a shift in incidC")}
         if(any(!epochs %in% c("NoSplit", "MarJun", "JulOct", "NovJan"))){stop('Unknown epoch selected, choose from: "NoSplit", "MarJun", "JulOct", "NovJan"')}
         if(is.null(outcomes_parquet_file)){stop("Must specify a file with the age-adjustments to IFR by state")}
-        
+
         relative_outcomes <- arrow::read_parquet(outcomes_parquet_file)
-        
+
         relative_ifr <- relative_outcomes %>%
             dplyr::filter(source == 'incidI' & outcome == "incidD") %>%
-            dplyr::filter(geoid %in% geodata$geoid) %>%
-            dplyr::select(USPS,geoid,value) %>%
+            dplyr::filter(subpop %in% geodata$subpop) %>%
+            dplyr::select(USPS,subpop,value) %>%
             dplyr::rename(rel_ifr=value) %>%
             dplyr::mutate(ifr=baseline_ifr*rel_ifr)
-        
+
         cfr_data <- readr::read_csv(cfr_data) %>%
             dplyr::rename(USPS=state, delay=lag) %>%
             dplyr::select(USPS, epoch, delay, cfr) %>%
             dplyr::filter(epoch %in% epochs) %>%
             dplyr::left_join(relative_ifr) %>%
-            dplyr::filter(geoid %in% geodata$geoid) %>%
+            dplyr::filter(subpop %in% geodata$subpop) %>%
             dplyr::mutate(incidC = pmin(0.99,ifr/cfr),  # get effective case detection rate based in assumed IFR.
                           value_mean = pmax(0,1-incidC),
                           value_mean = signif(value_mean, digits = 2)) %>% # get effective reduction in incidC assuming baseline incidC
-            dplyr::select(USPS,geoid, epoch, value_mean)
-        
-        
+            dplyr::select(USPS,subpop, epoch, value_mean)
+
+
         no_cfr_data <- relative_ifr %>%
             tidyr::expand_grid(value_mean = v_mean,
                                epoch = epochs) %>%
-            dplyr::filter(!geoid %in% cfr_data$geoid) %>%
-            dplyr::select(USPS, geoid, epoch, value_mean)
-        
+            dplyr::filter(!subpop %in% cfr_data$subpop) %>%
+            dplyr::select(USPS, subpop, epoch, value_mean)
+
         cfr_data <- dplyr::bind_rows(cfr_data,
                                      no_cfr_data)
     }
-    
+
     outcome <- list()
     for(i in 1:(length(periods)-1)){
         outcome[[i]] <- cfr_data %>%
@@ -947,16 +947,16 @@ set_incidC_shift <- function(periods,
                 pert_a = p_a,
                 pert_b = p_b
             )
-        
+
     }
-    
+
     outcome <- dplyr::bind_rows(outcome) %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)),
                       pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
-    
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+
     return(outcome)
-    
+
 }
 
 #' Generate interventions to adjust hospitalizations
@@ -964,7 +964,7 @@ set_incidC_shift <- function(periods,
 #' @param outcome_path path to vaccination adjusted outcome interventions
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
-#' @param geodata df with USPS and geoid column for geoids with an incidH adjustment
+#' @param geodata df with USPS and subpop column for subpop with an incidH adjustment
 #' @param v_dist type of distribution for reduction
 #' @param v_sd reduction sd
 #' @param v_a reduction a
@@ -995,15 +995,15 @@ set_incidH_adj_params <- function(outcome_path,
 )
 {
     variant_compartments <- stringr::str_to_upper(variant_compartments)
-    
+
     sim_start_date <- lubridate::as_date(sim_start_date)
     sim_end_date <- lubridate::as_date(sim_end_date)
     outcome <- readr::read_csv(outcome_path) %>%
         dplyr::filter(!is.na(ratio) & USPS != "US")
-    
+
     outcome <- outcome %>%
-        dplyr::left_join(geodata %>% dplyr::select(USPS, geoid))
-    
+        dplyr::left_join(geodata %>% dplyr::select(USPS, subpop))
+
     outcome <- outcome %>% dplyr::mutate(param = "incidH") %>%
         # dplyr::mutate(month = tolower(month)) %>%
         dplyr::mutate(prob_redux = 1 - (1/ratio)) %>%
@@ -1011,7 +1011,7 @@ set_incidH_adj_params <- function(outcome_path,
         dplyr::mutate(end_date = sim_end_date,
                       start_date = sim_start_date) %>%
         dplyr::rename(value_mean = prob_redux) %>%
-        dplyr::mutate(geoid = as.character(geoid),
+        dplyr::mutate(subpop = as.character(subpop),
                       type = "outcome",
                       category = "outcome_adj",
                       name = paste(param, "adj",USPS, sep = "_"),
@@ -1029,10 +1029,10 @@ set_incidH_adj_params <- function(outcome_path,
                       pert_b = p_b) %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)),
                       pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name, template, type, category,
+        dplyr::select(USPS, subpop, start_date, end_date, name, template, type, category,
                       parameter, baseline_scenario, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
-    
+
     if(compartment){
         temp <- list()
         for(i in 1:length(variant_compartments)){
@@ -1040,11 +1040,11 @@ set_incidH_adj_params <- function(outcome_path,
                 dplyr::mutate(parameter = stringr::str_replace(parameter, "::probability", paste0("_", variant_compartments[i],"::probability")),
                               name = paste0(name, "_", variant_compartments[i]))
         }
-        
+
         outcome <- dplyr::bind_rows(temp)
-        
+
     }
-    
+
     return(outcome)
 }
 
@@ -1056,7 +1056,7 @@ set_incidH_adj_params <- function(outcome_path,
 #' @param VE_delta vaccine effectivenes against variant or the first and second doses, respectively
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
-#' @param geodata df with USPS and geoid column for geoids with an incidH adjustment
+#' @param geodata df with USPS and subpop column for subpop with an incidH adjustment
 #' @param v_dist type of distribution for reduction
 #' @param v_sd reduction sd
 #' @param v_a reduction a
@@ -1083,12 +1083,12 @@ set_ve_shift_params <- function(variant_path,
                                 v_dist = "fixed", v_sd = 0.01, v_a = -1, v_b = 2,
                                 p_dist = "truncnorm", p_mean = 0, p_sd = 0.01, p_a = -1, p_b = 1,
                                 compartment = TRUE){
-    
+
     par_val_1 <- ifelse(compartment, "theta_1A", "susceptibility_reduction 1")
     par_val_2 <- ifelse(compartment, "theta_2A", "susceptibility_reduction 2")
     sim_start_date <- lubridate::as_date(sim_start_date)
     sim_end_date <- lubridate::as_date(sim_end_date)
-    
+
     outcome <- readr::read_csv(variant_path) %>%
         dplyr::filter(location == "US", date >= "2021-04-01") %>%
         dplyr::mutate(month = lubridate::month(date, label=TRUE), year = lubridate::year(date),
@@ -1109,15 +1109,15 @@ set_ve_shift_params <- function(variant_path,
                          start_date = min(start_date),
                          end_date = max(end_date)) %>%
         dplyr::filter(value_mean != 0)
-    
-    
+
+
     outcome <- outcome %>%
         dplyr::mutate(name = paste0("VEshift_", tolower(month), "_dose", stringr::str_sub(dose, 3, 3))) %>%
         dplyr::select(-dose) %>%
         dplyr::filter(start_date <= sim_end_date & end_date > sim_start_date) %>%
         dplyr::mutate(end_date = lubridate::as_date(ifelse(end_date > sim_end_date, sim_end_date, end_date))) %>%
         dplyr::mutate(USPS = "",
-                      geoid = "all",
+                      subpop = "all",
                       type = "transmission",
                       parameter = dplyr::if_else(stringr::str_detect(name, "ose1"), par_val_1, par_val_2),
                       category = "ve_shift",
@@ -1152,38 +1152,38 @@ set_ve_shift_params <- function(variant_path,
 #'
 #' @examples
 #'
-bind_interventions <- function(..., 
-                               inference_cutoff_date = Sys.Date() - 7, 
+bind_interventions <- function(...,
+                               inference_cutoff_date = Sys.Date() - 7,
                                sim_start_date,
-                               sim_end_date, 
+                               sim_end_date,
                                save_name,
                                filter_dates=FALSE) {
-    
+
     inference_cutoff_date <- as.Date(inference_cutoff_date)
     sim_end_date <- as.Date(sim_end_date)
     sim_start_date <- as.Date(sim_start_date)
     dat <- dplyr::bind_rows(...)
     if (filter_dates){
-        dat <- dat %>% 
+        dat <- dat %>%
             filter(start_date < sim_end) %>%
             filter(end_date > sim_start) %>%
             mutate(start_date = as_date(ifelse(start_date<sim_start, sim_start, start_date)))
     } else {
-        if (min(dat$start_date) < sim_start_date) 
+        if (min(dat$start_date) < sim_start_date)
             stop("At least one intervention has a start date before the sim_start_date.")
-        if (max(dat$end_date) > sim_end_date) 
+        if (max(dat$end_date) > sim_end_date)
             stop("At least one intervention has an end date after the sim_end_date.")
     }
     check <- dat %>% dplyr::filter(category == "NPI") %>%
-        dplyr::group_by(USPS, geoid, type, category) %>% dplyr::arrange(USPS, geoid, start_date) %>% 
-        dplyr::mutate(note = dplyr::case_when(end_date >= dplyr::lead(start_date) ~ "Overlap", dplyr::lead(start_date) - end_date > 1 ~ "Gap", TRUE ~ NA_character_)) %>% 
+        dplyr::group_by(USPS, subpop, type, category) %>% dplyr::arrange(USPS, subpop, start_date) %>%
+        dplyr::mutate(note = dplyr::case_when(end_date >= dplyr::lead(start_date) ~ "Overlap", dplyr::lead(start_date) - end_date > 1 ~ "Gap", TRUE ~ NA_character_)) %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(start_date < inference_cutoff_date, .x, NA_real_)), pert_dist = ifelse(start_date < inference_cutoff_date, pert_dist, NA_character_)) %>%
         dplyr::filter(!is.na(note))
     if (nrow(check) > 0) {
-        if (any(check$note == "Overlap")) 
-            warning(paste0("There are ", nrow(check[check$note == "Overlap", ]), " NPIs of the same category/geoid that overlap in time"))
-        if (any(check$note == "Gap")) 
-            warning(paste0("There are ", nrow(check[check$note == "Gap", ]), " NPIs of the same category/geoid that are discontinuous."))
+        if (any(check$note == "Overlap"))
+            warning(paste0("There are ", nrow(check[check$note == "Overlap", ]), " NPIs of the same category/subpop that overlap in time"))
+        if (any(check$note == "Gap"))
+            warning(paste0("There are ", nrow(check[check$note == "Gap", ]), " NPIs of the same category/subpop that are discontinuous."))
     }
     if (!is.null(save_name)) {
         readr::write_csv(dat, file = save_name)
@@ -1192,7 +1192,7 @@ bind_interventions <- function(...,
 }
 
 
-#' Estimate average reduction in transmission per day per geoid
+#' Estimate average reduction in transmission per day per subpop
 #'
 #' @param dat
 #' @param plot
@@ -1205,7 +1205,7 @@ bind_interventions <- function(...,
 
 daily_mean_reduction <- function(dat,
                                  plot = FALSE){
-    
+
     dat <- dat %>%
         dplyr::filter(type == "transmission") %>%
         dplyr::mutate(mean = dplyr::case_when(value_dist == "truncnorm" ~
@@ -1215,51 +1215,51 @@ daily_mean_reduction <- function(dat,
                                               value_dist == "uniform" ~
                                                   (value_a+value_b)/2)
         ) %>%
-        dplyr::select(USPS, geoid, start_date, end_date, mean)
-    
+        dplyr::select(USPS, subpop, start_date, end_date, mean)
+
     timeline <- tidyr::crossing(time = seq(from=min(dat$start_date), to=max(dat$end_date), by = 1),
-                                geoid = unique(dat$geoid))
-    
-    if(any(stringr::str_detect(dat$geoid, '", "'))){
-        mtr_geoid <- dat %>%
-            dplyr::filter(stringr::str_detect(geoid, '", "'))
-        
+                                subpop = unique(dat$subpop))
+
+    if(any(stringr::str_detect(dat$subpop, '", "'))){
+        mtr_subpop <- dat %>%
+            dplyr::filter(stringr::str_detect(subpop, '", "'))
+
         temp <- list()
-        for(i in 1:nrow(mtr_geoid)){
-            temp[[i]] <- tidyr::expand_grid(geoid = mtr_geoid$geoid[i] %>% stringr::str_split('", "') %>% unlist(),
-                                            mtr_geoid[i,] %>% dplyr::ungroup() %>% dplyr::select(-geoid)) %>%
-                dplyr::select(colnames(mtr_geoid))
+        for(i in 1:nrow(mtr_subpop)){
+            temp[[i]] <- tidyr::expand_grid(subpop = mtr_subpop$subpop[i] %>% stringr::str_split('", "') %>% unlist(),
+                                            mtr_subpop[i,] %>% dplyr::ungroup() %>% dplyr::select(-subpop)) %>%
+                dplyr::select(colnames(mtr_subpop))
         }
-        
+
         dat <- dat %>%
-            dplyr::filter(stringr::str_detect(geoid, '", "', negate = TRUE)) %>%
+            dplyr::filter(stringr::str_detect(subpop, '", "', negate = TRUE)) %>%
             dplyr::bind_rows(
                 dplyr::bind_rows(temp)
             )
     }
-    
+
     dat <- dat %>%
-        dplyr::filter(geoid=="all") %>%
+        dplyr::filter(subpop=="all") %>%
         dplyr::ungroup() %>%
-        dplyr::select(-geoid) %>%
-        tidyr::crossing(geoid=unique(dat$geoid[dat$geoid!="all"])) %>%
-        dplyr::select(geoid, start_date, end_date, mean) %>%
-        dplyr::bind_rows(dat %>% dplyr::filter(geoid!="all") %>% dplyr::ungroup() %>% dplyr::select(-USPS)) %>%
+        dplyr::select(-subpop) %>%
+        tidyr::crossing(subpop=unique(dat$subpop[dat$subpop!="all"])) %>%
+        dplyr::select(subpop, start_date, end_date, mean) %>%
+        dplyr::bind_rows(dat %>% dplyr::filter(subpop!="all") %>% dplyr::ungroup() %>% dplyr::select(-USPS)) %>%
         dplyr::left_join(timeline) %>%
         dplyr::filter(time >= start_date & time <= end_date) %>%
-        dplyr::group_by(geoid, time) %>%
+        dplyr::group_by(subpop, time) %>%
         dplyr::summarize(mean = prod(1-mean))
-    
+
     if(plot){
         dat<- ggplot2::ggplot(data= dat, ggplot2::aes(x=time, y=mean))+
             ggplot2::geom_line()+
-            ggplot2::facet_wrap(~geoid)+
+            ggplot2::facet_wrap(~subpop)+
             ggplot2::theme_bw()+
             ggplot2::ylab("Average reduction")+
             ggplot2::scale_x_date(date_breaks = "3 months", date_labels = "%b\n%y")+
             ggplot2::scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0))
-        
+
     }
-    
+
     return(dat)
 }
