@@ -97,7 +97,7 @@ single_loc_inference_test <- function(to_fit,
             write_csv(seeding_file, append = file.exists(seeding_file))
         
         initial_npis %>% 
-            distinct(reduction, npi_name, geoid) %>% 
+            distinct(reduction, npi_name, subpop) %>% 
             mutate(slot = s, index = 0) %>% 
             write_csv(npi_file, append = file.exists(npi_file))
         
@@ -136,7 +136,7 @@ single_loc_inference_test <- function(to_fit,
         # Compute log-likelihoods
         initial_log_likelihood_data <- dplyr::tibble(
             ll = sum(unlist(log_likelihood)),
-            geoid = 1
+            subpop = 1
         )
         
         # Compute total loglik for each sim
@@ -188,7 +188,7 @@ single_loc_inference_test <- function(to_fit,
             # Compute log-likelihoods
             log_likelihood_data <- dplyr::tibble(
                 ll = sum(unlist(log_likelihood)),
-                geoid = 1
+                subpop = 1
             )
             
             # Compute total loglik for each sim
@@ -209,13 +209,13 @@ single_loc_inference_test <- function(to_fit,
             seeding_npis_list <- accept_reject_new_seeding_npis(
                 seeding_orig = initial_seeding,
                 seeding_prop = current_seeding,
-                npis_orig = distinct(initial_npis, reduction, npi_name, geoid),
-                npis_prop = distinct(current_npis, reduction, npi_name, geoid),
+                npis_orig = distinct(initial_npis, reduction, npi_name, subpop),
+                npis_prop = distinct(current_npis, reduction, npi_name, subpop),
                 orig_lls = previous_likelihood_data,
                 prop_lls = log_likelihood_data
             )
             initial_seeding <- seeding_npis_list$seeding
-            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -reduction), by = c("geoid", "npi_name"))
+            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -reduction), by = c("subpop", "npi_name"))
             previous_likelihood_data <- seeding_npis_list$ll
             
             # Write to file
@@ -325,7 +325,7 @@ multi_loc_inference_test <- function(to_fit,
         npis_init <- pmap(list(x = 1:N, y = offsets),
                      function(x,y) 
                          npis_dataframe(config, 
-                                        geoid = x,
+                                        subpop = x,
                                         offset = y,
                                         random = T)) %>% 
             bind_rows()
@@ -346,12 +346,12 @@ multi_loc_inference_test <- function(to_fit,
             write_csv(seeding_file, append = file.exists(seeding_file))
         
         initial_npis %>% 
-            distinct(reduction, npi_name, geoid) %>% 
+            distinct(reduction, npi_name, subpop) %>% 
             mutate(slot = s, index = 0) %>% 
             write_csv(npi_file, append = file.exists(npi_file))
         
-        npi_mat <- select(initial_npis, date, geoid, reduction) %>% 
-            pivot_wider(values_from = "reduction", names_from = "geoid", id_cols = "date")
+        npi_mat <- select(initial_npis, date, subpop, reduction) %>% 
+            pivot_wider(values_from = "reduction", names_from = "subpop", id_cols = "date")
         
         # Simulate epi
         initial_sim_hosp <- simulate_multi_epi(times = sim_times,
@@ -372,7 +372,7 @@ multi_loc_inference_test <- function(to_fit,
         for(location in all_locations) {
             
             local_sim_hosp <- dplyr::filter(initial_sim_hosp, !!rlang::sym(obs_nodename) == location) %>%
-                dplyr::filter(time %in% unique(obs$date[obs$geoid == location]))
+                dplyr::filter(time %in% unique(obs$date[obs$subpop == location]))
             initial_sim_stats <- inference::getStats(
                 local_sim_hosp,
                 "time",
@@ -396,7 +396,7 @@ multi_loc_inference_test <- function(to_fit,
             # Compute log-likelihoods
             initial_likelihood_data[[location]] <- dplyr::tibble(
                 ll = sum(unlist(log_likelihood)),
-                geoid = location
+                subpop = location
             )
         }
         
@@ -423,8 +423,8 @@ multi_loc_inference_test <- function(to_fit,
             current_seeding <- perturb_seeding(initial_seeding, config$seeding$perturbation_sd, date_bounds)
             current_npis <- perturb_expand_npis(initial_npis, config$interventions$settings, multi = T)
             
-            npi_mat <- select(current_npis, date, geoid, reduction) %>% 
-                pivot_wider(values_from = "reduction", names_from = "geoid", id_cols = "date")
+            npi_mat <- select(current_npis, date, subpop, reduction) %>% 
+                pivot_wider(values_from = "reduction", names_from = "subpop", id_cols = "date")
             
             # Simulate  hospitalizatoins
             sim_hosp <- simulate_multi_epi(times = sim_times,
@@ -443,7 +443,7 @@ multi_loc_inference_test <- function(to_fit,
             
             for(location in all_locations) {
                 local_sim_hosp <- dplyr::filter(sim_hosp, !!rlang::sym(obs_nodename) == location) %>%
-                    dplyr::filter(time %in% unique(obs$date[obs$geoid == location]))
+                    dplyr::filter(time %in% unique(obs$date[obs$subpop == location]))
                 sim_stats <- inference::getStats(
                     local_sim_hosp,
                     "time",
@@ -467,7 +467,7 @@ multi_loc_inference_test <- function(to_fit,
                 # Compute log-likelihoods
                 current_likelihood_data[[location]] <- dplyr::tibble(
                     ll = sum(unlist(log_likelihood)),
-                    geoid = location
+                    subpop = location
                 )
             }
             
@@ -496,13 +496,13 @@ multi_loc_inference_test <- function(to_fit,
             seeding_npis_list <- accept_reject_new_seeding_npis(
                 seeding_orig = initial_seeding,
                 seeding_prop = current_seeding,
-                npis_orig = distinct(initial_npis, reduction, npi_name, geoid),
-                npis_prop = distinct(current_npis, reduction, npi_name, geoid),
+                npis_orig = distinct(initial_npis, reduction, npi_name, subpop),
+                npis_prop = distinct(current_npis, reduction, npi_name, subpop),
                 orig_lls = previous_likelihood_data,
                 prop_lls = current_likelihood_data
             )
             initial_seeding <- seeding_npis_list$seeding
-            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -reduction), by = c("geoid", "npi_name"))
+            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -reduction), by = c("subpop", "npi_name"))
             previous_likelihood_data <- seeding_npis_list$ll
             
             # Write to file
@@ -712,10 +712,10 @@ simulate_multi_epi <- function(times,
         }
     }
     
-    epi <- lapply(1:N, function(x) as.data.frame(epi[,,x]) %>% mutate(geoid = x)) %>%
+    epi <- lapply(1:N, function(x) as.data.frame(epi[,,x]) %>% mutate(subpop = x)) %>%
         bind_rows() %>% 
         mutate(time=rep(times, N)) %>%
-        pivot_longer(cols = c(-time, -geoid), values_to="N", names_to="comp")
+        pivot_longer(cols = c(-time, -subpop), values_to="N", names_to="comp")
     
     return(epi)
 }
@@ -742,11 +742,11 @@ single_hosp_run <- function(epi, config) {
     dat_ <- dplyr::filter(epi, comp == "incidI") %>% 
         select(-comp) %>% 
         rename(incidI = N) %>%
-        mutate(uid = epi$geoid[1]) %>% 
+        mutate(uid = epi$subpop[1]) %>% 
         as.data.table()
     
-    if ("geoid" %in% colnames(dat_)) {
-        dat_ <- select(dat_, -geoid)
+    if ("subpop" %in% colnames(dat_)) {
+        dat_ <- select(dat_, -subpop)
     }
     
     dat_H <- hosp_create_delay_frame('incidI',p_hosp,dat_,time_hosp_pars,"H")
@@ -771,7 +771,7 @@ single_hosp_run <- function(epi, config) {
             list(hosp_curr = 0)) %>%
         arrange(date_inds) %>% 
         select(-date_inds) %>% 
-        mutate(geoid = uid) %>% 
+        mutate(subpop = uid) %>% 
         select(-uid)
     
     return(res)
@@ -780,7 +780,7 @@ single_hosp_run <- function(epi, config) {
 ##' @export
 multi_hosp_run <- function(epi, N, config) {
     map_df(1:N, 
-           ~ single_hosp_run(dplyr::filter(epi, geoid == .), config)) %>%
+           ~ single_hosp_run(dplyr::filter(epi, subpop == .), config)) %>%
         dplyr::filter(time >= config$start_date,
                time <= config$end_date)
 }
@@ -795,10 +795,10 @@ multi_hosp_run <- function(epi, N, config) {
 ##'
 ##'
 ##' @export
-npis_dataframe <- function(config, random = F, geoid = 1, offset = 0, intervention_multi = 1) {
+npis_dataframe <- function(config, random = F, subpop = 1, offset = 0, intervention_multi = 1) {
     
     times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
-    npis <- tibble(date = times, reduction = 0, npi_name = "local_variation", geoid = geoid)
+    npis <- tibble(date = times, reduction = 0, npi_name = "local_variation", subpop = subpop)
     interventions <- config$interventions$settings
     date_changes <- map_chr(interventions[1:2], 
                             ~ifelse(is.null(.$period_start_date),
@@ -886,7 +886,7 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
     npis <- pmap(list(x = 1:N, y = offsets, z = interventions_multi),
                  function(x,y,z) 
                      npis_dataframe(config, 
-                                    geoid = x,
+                                    subpop = x,
                                     offset = y,
                                     intervention_multi = z)) %>% 
         bind_rows()
@@ -895,8 +895,8 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
     gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
     sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
-    npi_mat <- select(npis, date, geoid, reduction) %>% 
-        pivot_wider(values_from = "reduction", names_from = "geoid", id_cols = "date")
+    npi_mat <- select(npis, date, subpop, reduction) %>% 
+        pivot_wider(values_from = "reduction", names_from = "subpop", id_cols = "date")
     
     # Simulate epi
     epi <- simulate_multi_epi(times = times,
@@ -912,7 +912,7 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
     # - - - -
     # Setup fake data
     fake_data <- map_df(1:N, 
-                        ~ single_hosp_run(dplyr::filter(epi, geoid == .), config)) %>%
+                        ~ single_hosp_run(dplyr::filter(epi, subpop == .), config)) %>%
         rename(date = time) %>% 
         dplyr::filter(date >= config$start_date,
                date <= config$end_date)
@@ -933,12 +933,12 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
 perturb_expand_npis <- function(npis, intervention_settings, multi = F) {
     if(multi) {
         npis %>% 
-            distinct(reduction, npi_name, geoid) %>%
-            group_by(geoid) %>% 
+            distinct(reduction, npi_name, subpop) %>%
+            group_by(subpop) %>% 
             group_map(~perturb_npis(.x, intervention_settings) %>% 
-                          mutate(geoid = .y$geoid[1])) %>% 
+                          mutate(subpop = .y$subpop[1])) %>% 
             bind_rows() %>% 
-            inner_join(select(npis, -reduction), by = c("npi_name", "geoid"))
+            inner_join(select(npis, -reduction), by = c("npi_name", "subpop"))
     } else {
         npis %>% 
             distinct(reduction, npi_name) %>% 

@@ -91,20 +91,20 @@ collapse_intervention<- function(dat){
     if (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups))) {
 
         mtr <- mtr %>%
-            dplyr::group_by(dplyr::across(-geoid)) %>%
-            dplyr::summarize(geoid = paste0(geoid, collapse='", "'),
+            dplyr::group_by(dplyr::across(-subpop)) %>%
+            dplyr::summarize(subpop = paste0(subpop, collapse='", "'),
                              spatial_groups = paste0(spatial_groups, collapse='", "')) %>%
             dplyr::mutate(period = paste0("            ", period))
 
     } else {
         mtr <- mtr %>%
-            dplyr::group_by(dplyr::across(-geoid)) %>%
-            dplyr::summarize(geoid = paste0(geoid, collapse='", "')) %>%
+            dplyr::group_by(dplyr::across(-subpop)) %>%
+            dplyr::summarize(subpop = paste0(subpop, collapse='", "')) %>%
             dplyr::mutate(period = paste0("            ", period))
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, geoid, contains("spatial_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::select(USPS, subpop, contains("spatial_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
         dplyr::filter(template %in% c("ReduceR0", "Reduce", "ReduceIntervention")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
@@ -114,15 +114,15 @@ collapse_intervention<- function(dat){
         dplyr::add_count(dplyr::across(-USPS)) %>%
         dplyr::mutate(name = dplyr::case_when(category =="local_variance" | USPS %in% c("all", "") | is.na(USPS) ~ name,
                                               n==1 & template=="Reduce" ~ paste0(USPS, "_", name),
-                                              template=="Reduce" ~ paste0(geoid, "_", name),
+                                              template=="Reduce" ~ paste0(subpop, "_", name),
                                               n==1 & template!="ReduceIntervention" ~ paste0(USPS, name),
-                                              template!="ReduceIntervention" ~ paste0(geoid, name),
+                                              template!="ReduceIntervention" ~ paste0(subpop, name),
                                               TRUE ~ name),
                       name = stringr::str_remove(name, "^_"))
 
     dat <- dplyr::bind_rows(mtr, reduce) %>%
         dplyr::mutate(interv_order = dplyr::recode(category, "universal_npi" = 1, "local_var" = 2, "seasonal" = 3, "NPI" = 4, "incidCshift" = 5)) %>%
-        dplyr::arrange(interv_order, USPS, category, geoid, parameter) %>%
+        dplyr::arrange(interv_order, USPS, category, subpop, parameter) %>%
         dplyr::ungroup()
 
     return(dat)
@@ -139,16 +139,16 @@ collapse_intervention<- function(dat){
 #'
 yaml_mtr_template <- function(dat){
     template <- unique(dat$template)
-    geoid_all <- any(unique(dat$geoid)=="all")
+    subpop_all <- any(unique(dat$subpop)=="all")
     inference <- !any(is.na(dat$pert_dist))
 
-    if(template=="MultiTimeReduce" & geoid_all){
+    if(template=="MultiTimeReduce" & subpop_all){
         cat(paste0(
             "    ", dat$name, ":\n",
             "      template: MultiTimeReduce\n",
             "      parameter: ", dat$parameter, "\n",
             "      groups:\n",
-            '        - affected_geoids: "all"\n'
+            '        - subpop: "all"\n'
         ))
         if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
             cat(paste0(
@@ -162,7 +162,7 @@ yaml_mtr_template <- function(dat){
         }
     }
 
-    if(template=="MultiTimeReduce" & !geoid_all){
+    if(template=="MultiTimeReduce" & !subpop_all){
         cat(paste0(
             "    ", dat$name[1], ":\n",
             "      template: MultiTimeReduce\n",
@@ -172,7 +172,7 @@ yaml_mtr_template <- function(dat){
 
         for(j in 1:nrow(dat)){
             cat(paste0(
-                '        - affected_geoids: ["', dat$geoid[j], '"]\n'))
+                '        - subpop: ["', dat$subpop[j], '"]\n'))
 
             if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
                 cat(paste0(
@@ -371,10 +371,10 @@ yaml_reduce_template<- function(dat){
         if(dat$template %in% c("Reduce", "ReduceIntervention")){
             paste0("      parameter: ", dat$parameter, "\n")
         },
-        if(all(dat$geoid == "all")){
-            '      affected_geoids: "all"\n'
+        if(all(dat$subpop == "all")){
+            '      subpop: "all"\n'
         } else {
-            paste0('      affected_geoids: ["', dat$geoid, '"]\n')
+            paste0('      subpop: ["', dat$subpop, '"]\n')
         },
         if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
             if(all(dat$spatial_groups == "all")){
@@ -426,7 +426,7 @@ yaml_reduce_template<- function(dat){
 
 yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
     if (stack) {
-        dat <- dat %>% dplyr::group_by(category, USPS, geoid) %>%
+        dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period == max(period)) %>%
             dplyr::bind_rows(dat %>% dplyr::filter(category != "NPI_redux")) %>%
             dplyr::distinct(name, category) %>%
@@ -452,7 +452,7 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
                    "\"]\n"))
     }
     else {
-        dat <- dat %>% dplyr::group_by(category, USPS, geoid) %>%
+        dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period ==
                               max(period)) %>% dplyr::bind_rows(dat %>% dplyr::filter(category !=
                                                                                           "NPI_redux")) %>% dplyr::distinct(name, category) %>%
@@ -484,7 +484,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 
     if (stack) {
         dat <- dat %>%
-            dplyr::group_by(category, USPS, geoid) %>%
+            dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period == max(period)) %>%
             dplyr::bind_rows(dat %>% dplyr::filter(category != "NPI_redux")) %>% dplyr::distinct(name, category) %>%
             dplyr::group_by(category) %>% dplyr::summarize(name = paste0(unique(name), collapse = "\", \""))
@@ -506,7 +506,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     } else {
-        dat <- dat %>% dplyr::group_by(category, USPS, geoid) %>%
+        dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period == max(period)) %>%
             dplyr::bind_rows(dat %>% dplyr::filter(category !=
                                                        "NPI_redux")) %>% dplyr::distinct(name, category) %>%
@@ -603,7 +603,7 @@ print_spatial_setup <- function (
         geodata_file = "geodata.csv",
         mobility_file = "mobility.csv",
         popnodes = "pop2019est",
-        nodenames = "geoid",
+        nodenames = "subpop",
         state_level = TRUE) {
 
     cat(
@@ -684,7 +684,7 @@ print_compartments <- function (
 #' @param fix_added_seeding
 #'
 #' @details
-#' ## The model performns inference on the seeding date and initial number of seeding infections in each geoid with the default settings
+#' ## The model performns inference on the seeding date and initial number of seeding infections in each subpop with the default settings
 #' ## The method for determining the proposal distribution for the seeding amount is hard-coded in the inference package (R/pkgs/inference/R/functions/perturb_seeding.R). It is pertubed with a normal distribution where the mean of the distribution 10 times the number of confirmed cases on a given date and the standard deviation is 1.
 #'
 #' @return
@@ -1120,7 +1120,7 @@ print_interventions <- function (
 print_outcomes <- function (resume_modifier = NULL,
                             dat = NULL, ifr = NULL, outcomes_base_data = NULL,
                             param_from_file = TRUE,
-                            outcomes_parquet_file = "usa-geoid-params-output_statelevel.parquet",
+                            outcomes_parquet_file = "usa-subpop-params-output_statelevel.parquet",
                             incidH_prob_dist = "fixed", incidH_prob_value = 0.0175,
                             incidH_delay_dist = "fixed", incidH_delay_value = 7, incidH_duration_dist = "fixed",
                             incidH_duration_value = 7, incidD_prob_dist = "fixed", incidD_prob_value = 0.005,

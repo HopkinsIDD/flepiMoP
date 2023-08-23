@@ -220,7 +220,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 
     census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
     fluview_data <- fluview_data %>%
-        dplyr::inner_join(census_data %>% dplyr::select(source = USPS, FIPS = geoid)) %>%
+        dplyr::inner_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
         dplyr::select(Update, source, FIPS, incidD)
 
 
@@ -285,7 +285,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 #
 #     census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
 #     fluview_data <- fluview_data %>%
-#         left_join(census_data %>% dplyr::select(source = USPS, FIPS = geoid)) %>%
+#         left_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
 #         dplyr::select(Update, source, FIPS, incidD)
 #
 #

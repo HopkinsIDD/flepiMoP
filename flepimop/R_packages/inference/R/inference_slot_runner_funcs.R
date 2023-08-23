@@ -52,7 +52,7 @@ aggregate_and_calc_loc_likelihoods <- function(
             dplyr::filter(
                 modeled_outcome,
                 !!rlang::sym(obs_nodename) == location,
-                time %in% unique(obs$date[obs$geoid == location])
+                time %in% unique(obs$date[obs$subpop == location])
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
@@ -85,12 +85,12 @@ aggregate_and_calc_loc_likelihoods <- function(
         likelihood_data[[location]] <- dplyr::tibble(
             ll = this_location_log_likelihood,
             filename = hosp_file,
-            geoid = location,
+            subpop = location,
             accept = 0, # acceptance decision (0/1) . Will be updated later when accept/reject decisions made
             accept_avg = 0, # running average acceptance decision
             accept_prob = 0 # probability of acceptance of proposal
         )
-        names(likelihood_data)[names(likelihood_data) == 'geoid'] <- obs_nodename
+        names(likelihood_data)[names(likelihood_data) == 'subpop'] <- obs_nodename
     }
 
     #' @importFrom magrittr %>%
@@ -155,7 +155,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         } else if (defined_priors[[prior]]$module == "outcomes_interventions") {
             #' @importFrom magrittr %>%
@@ -165,7 +165,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         }  else if (defined_priors[[prior]]$module %in% c("outcomes_parameters", "hospitalization")) {
 
@@ -175,7 +175,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         } else  if (hierarchical_stats[[stat]]$module == "seir_parameters") {
             stop("We currently do not support priors on seir parameters, since we don't do inference on them except via npis.")

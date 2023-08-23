@@ -10,7 +10,7 @@ spatial_setup:
   geodata: geodata.csv
   mobility: mobility.txt
   popnodes: population
-  nodenames: geoid
+  nodenames: subpop
 
 initial_conditions:
   method: InitialConditionsFolderDraw
@@ -96,7 +96,7 @@ interventions:
         - periods:
             - start_date: 2020-04-02
               end_date: 2020-05-16
-          affected_geoids: "all"
+          subpop: "all"
       value:
         distribution: uniform
         low: .14
@@ -108,7 +108,7 @@ interventions:
         - periods:
             - start_date: 2020-04-02
               end_date: 2020-05-16
-          affected_geoids: "all"
+          subpop: "all"
       value:
         distribution: uniform
         low: .04
@@ -120,7 +120,7 @@ interventions:
         - periods:
             - start_date: 2020-04-02
               end_date: 2020-05-16
-          affected_geoids: "all"
+          subpop: "all"
       value:
         distribution: uniform
         low: .2

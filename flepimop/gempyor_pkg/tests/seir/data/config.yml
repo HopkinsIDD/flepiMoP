@@ -10,7 +10,7 @@ spatial_setup:
   geodata: geodata.csv
   mobility: mobility.txt
   popnodes: population
-  nodenames: geoid
+  nodenames: subpop
 
 seeding:
   method: FolderDraw
@@ -106,7 +106,7 @@ interventions:
         - periods:
             - start_date: 2020-04-01
               end_date: 2020-05-15
-          affected_geoids: "all"
+          subpop: "all"
       value:
         distribution: uniform
         low: .04

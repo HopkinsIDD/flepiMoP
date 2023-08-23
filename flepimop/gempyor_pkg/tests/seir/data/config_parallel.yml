@@ -10,7 +10,7 @@ spatial_setup:
   geodata: geodata.csv
   mobility: mobility.csv
   popnodes: population
-  nodenames: geoid
+  nodenames: subpop
   census_year: 2018
   modeled_states:
     - HI
@@ -116,7 +116,7 @@ interventions:
       template: MultiTimeReduce
       parameter: r0
       groups:
-        - affected_geoids: "all"
+        - subpop: "all"
           periods:
           - start_date: "2020-04-01"
             end_date: "2020-04-15"

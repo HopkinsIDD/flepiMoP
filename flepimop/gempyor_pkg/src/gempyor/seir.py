@@ -147,7 +147,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_seir,
                 global_config=config,
-                geoids=s.spatset.nodenames,
+                subpop=s.spatset.nodenames,
                 loaded_df=loaded_df,
                 pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
             )
@@ -155,7 +155,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_seir,
                 global_config=config,
-                geoids=s.spatset.nodenames,
+                subpop=s.spatset.nodenames,
                 pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
             )
     return npi

@@ -16,7 +16,7 @@ class NPIBase(abc.ABC):
     def getReduction(self, param, default=None):
         pass
 
-    # Returns dataframe with columns: <geoids>, time, parameter, name. Index is sequential.
+    # Returns dataframe with columns: <subpop>, time, parameter, name. Index is sequential.
     @abc.abstractmethod
     def getReductionToWrite(self):
         pass
@@ -28,7 +28,7 @@ class NPIBase(abc.ABC):
         *,
         npi_config,
         global_config,
-        geoids,
+        subpop,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
     ):
@@ -37,7 +37,7 @@ class NPIBase(abc.ABC):
         return npi_class(
             npi_config=npi_config,
             global_config=global_config,
-            geoids=geoids,
+            subpop=subpop,
             loaded_df=loaded_df,
             pnames_overlap_operation_sum=pnames_overlap_operation_sum,
         )

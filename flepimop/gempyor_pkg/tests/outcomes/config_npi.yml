@@ -9,7 +9,7 @@ spatial_setup:
   geodata: geodata.csv
   mobility: mobility.csv
   popnodes: population
-  nodenames: geoid
+  nodenames: subpop
   census_year: 2018
   modeled_states:
     - HI
@@ -26,7 +26,7 @@ interventions:
     Hduration:
       template: Reduce
       parameter: "incidH::duration"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
@@ -35,7 +35,7 @@ interventions:
     Hdelay:
       template: Reduce
       parameter: "incidH::delay"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
@@ -44,7 +44,7 @@ interventions:
     Hprobability:
       template: Reduce
       parameter: "incidH::probability"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
@@ -53,7 +53,7 @@ interventions:
     Ddelay:
       template: Reduce
       parameter: "incidD::delay"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
@@ -62,7 +62,7 @@ interventions:
     Dprobability:
       template: Reduce
       parameter: "incidD::probability"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
@@ -71,7 +71,7 @@ interventions:
     ICUprobability:
       template: Reduce
       parameter: "incidICU::probability"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:

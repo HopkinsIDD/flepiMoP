@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the subpop
 #
 # ## Output Data
 #
@@ -296,11 +296,11 @@ seir_dat_static <- seir_dat_static %>%
     filter(mc_value_type == "prevalence") %>%
     mutate(mc_vaccination_stage = ifelse(mc_vaccination_stage == "3dose", "vaccinated", "unvaccinated")) %>%
     mutate(mc_variant_type = "ALL") %>%
-    pivot_longer(cols = -c(starts_with("mc_"), date), names_to = "geoid", values_to = "value") %>%
+    pivot_longer(cols = -c(starts_with("mc_"), date), names_to = "subpop", values_to = "value") %>%
     group_by(across(c(-value))) %>%
     summarise(value = sum(value, na.rm = TRUE)) %>%
     mutate(mc_name = paste(mc_infection_stage, mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
-    pivot_wider(names_from = geoid, values_from = value) %>%
+    pivot_wider(names_from = subpop, values_from = value) %>%
     dplyr::select(all_of(seir_dat_cols))
 
 
@@ -336,7 +336,7 @@ if (gradual_waning){
         group_by(prob_immune, date, mc_value_type, mc_variant_type, mc_vaccination_stage, mc_age_strata, loc) %>%
         summarise(n = sum(n, na.rm=TRUE)) %>%
         as_tibble() %>%
-        left_join(geodata %>% rename(loc = geoid) %>% select(USPS, loc, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
+        left_join(geodata %>% rename(loc = subpop) %>% select(USPS, loc, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
         mutate(prop = n / pop_agestrata) %>%
         group_by(USPS, loc, date, mc_value_type, mc_variant_type, mc_vaccination_stage, mc_age_strata) %>%
         summarise(prop_immune = sum((n * prob_immune) / sum(n, na.rm = TRUE), na.rm = TRUE))  %>%
@@ -382,7 +382,7 @@ seir_dat_changing <- seir_dat_changing %>%
 # geodata <- read_csv("data/geodata_2019_statelevel_agestrat.csv")
 #
 # seir_dat_changing %>% filter(mc_age_strata == "age18to64") %>%
-#     left_join(geodata %>% rename(loc = geoid) %>% select(USPS, loc, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
+#     left_join(geodata %>% rename(loc = subpop) %>% select(USPS, loc, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
 #     mutate(prop = n / pop_agestrata) %>%
 #     ggplot(aes(x = prob_immune_nom, y = prop, color = USPS)) +
 #     geom_point() +
@@ -394,7 +394,7 @@ seir_dat_changing <- seir_dat_changing %>%
 #     theme(legend.position = "none", axis.text.x = element_text(angle = 90))
 #
 # seir_dat_changing %>%
-#     left_join(geodata %>% rename(loc = geoid) %>% select(USPS, loc, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
+#     left_join(geodata %>% rename(loc = subpop) %>% select(USPS, loc, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
 #     mutate(prop = n / pop_agestrata) %>%
 #     group_by(USPS, loc, date, mc_value_type, mc_vaccination_stage, mc_age_strata) %>%
 #     summarise(prop_immune = sum((n * prob_immune_nom) / sum(n, na.rm = TRUE), na.rm = TRUE)) %>%
@@ -436,8 +436,8 @@ seir_dat_changing_final <- seir_dat_changing %>%
 # # CHECK
 # seir_dat_changing_final %>%
 #     filter(mc_age_strata == "age18to64") %>%
-#     pivot_longer(cols=-c(mc_value_type:mc_name, date), names_to = "geoid", values_to = "n") %>%
-#     left_join(geodata %>% rename(geoid = geoid) %>% select(USPS, geoid, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
+#     pivot_longer(cols=-c(mc_value_type:mc_name, date), names_to = "subpop", values_to = "n") %>%
+#     left_join(geodata %>% rename(subpop = subpop) %>% select(USPS, subpop, mc_age_strata = age_strata, pop_agestrata) %>% distinct()) %>%
 #     mutate(prop = n / pop_agestrata) %>%
 #     ggplot(aes(x = mc_infection_stage, y = n, color = USPS)) +
 #     geom_point() +
