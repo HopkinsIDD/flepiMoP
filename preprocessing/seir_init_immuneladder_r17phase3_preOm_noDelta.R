@@ -15,7 +15,6 @@
 
 # spatial_setup:
 #   geodata: <path to file>
-#   subpop: <string>
 #
 # seeding:
 #   lambda_file: <path to file>

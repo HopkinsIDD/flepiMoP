@@ -12,7 +12,6 @@
 #   modeled_states: <list of state postal codes> e.g. MD, CA, NY
 #   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
 #   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
-#   popnodes: <string> optional; default is 'population'
 #
 # importation:
 #   census_api_key: <string, optional> default is environment variable CENSUS_API_KEY. Environment variable is preferred so you don't accidentally commit your key.

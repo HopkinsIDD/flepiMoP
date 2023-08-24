@@ -19,8 +19,6 @@
 # spatial_setup:
 #   geodata: <path to file>
 #   mobility: <path to file>
-#   subpop_names: <string>
-#   popnodes: <string>
 #
 # seir:
 #   parameters

@@ -602,8 +602,6 @@ print_spatial_setup <- function (
         sim_states,
         geodata_file = "geodata.csv",
         mobility_file = "mobility.csv",
-        popnodes = "pop2019est",
-        subpop = "subpop",
         state_level = TRUE) {
 
     cat(
@@ -614,8 +612,6 @@ print_spatial_setup <- function (
         paste0("\n",
                "  geodata: ", geodata_file, "\n",
                "  mobility: ", mobility_file, "\n",
-               "  popnodes: ", popnodes, "\n",
-               "  subpop: ", subpop, "\n",
                "  state_level: ", state_level, "\n",
                "\n")
     )

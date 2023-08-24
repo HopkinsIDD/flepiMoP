@@ -72,7 +72,7 @@ us_data <- us_data %>%
     rename(FIPS = location,
            incidH = value,
            source = USPS) %>%
-    select(-location_name, -pop2019est)
+    select(-location_name, -population)
 
 # Filter to dates we care about for speed and space
 end_date_ <- config$end_date_groundtruth
