@@ -9,8 +9,6 @@ spatial_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.txt
-  popnodes: population
-  subpop: subpop
 
 initial_conditions:
   method: InitialConditionsFolderDraw

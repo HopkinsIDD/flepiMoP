@@ -8,8 +8,6 @@ nslots: 1
 spatial_setup:
   geodata: geodata.csv
   mobility: mobility.csv
-  popnodes: population
-  subpop: subpop
   census_year: 2018
   modeled_states:
     - HI

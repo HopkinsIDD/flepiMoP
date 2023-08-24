@@ -12,8 +12,6 @@
 #   modeled_states: <list of country ISO3 codes> e.g. ZMB, BGD, CAN
 #   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
 #   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
-#   popnodes: <string> optional; default is 'pop'
-#
 #
 # ## Input Data
 #

@@ -69,8 +69,6 @@ spatial_setup:
     - WY
   geodata: geodata_2019_statelevel.csv
   mobility: mobility_2011-2015_statelevel.csv
-  popnodes: pop2019est
-  subpop: subpop
   include_in_report: include_in_report
   state_level: TRUE
 

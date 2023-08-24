@@ -9,8 +9,6 @@ spatial_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.csv
-  popnodes: population
-  subpop: subpop
   census_year: 2018
   modeled_states:
     - HI
