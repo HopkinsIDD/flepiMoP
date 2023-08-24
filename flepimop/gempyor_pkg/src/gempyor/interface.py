@@ -87,7 +87,7 @@ class InferenceSimulator:
                 if spatial_config["mobility"].exists()
                 else None,
                 popnodes_key=spatial_config["popnodes"].get(),
-                subpop_key=spatial_config["subpop"].get(),
+                nodenames_key=spatial_config["nodenames"].get(),
             ),
             nslots=nslots,
             npi_scenario=npi_scenario,
@@ -374,13 +374,13 @@ class InferenceSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, subpop in enumerate(self.s.spatset.subpop):
+        for i, geoid in enumerate(self.s.spatset.nodenames):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
                 columns=self.s.parameters.pnames,
                 index=pd.date_range(self.s.ti, self.s.tf, freq="D"),
             )
-            a["subpop"] = subpop
+            a["geoid"] = geoid
             full_df = pd.concat([full_df, a])
 
         # for R, duplicate names are not allowed in index:
