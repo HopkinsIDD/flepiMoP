@@ -25,7 +25,7 @@ ss = setup.SpatialSetup(
     geodata_file=f"{DATA_DIR}/geodata.csv",
     mobility_file=f"{DATA_DIR}/mobility.txt",
     popnodes_key="population",
-    nodenames_key="subpop",
+    subpop_names_key="subpop",
 )
 
 first_sim_index = 1
@@ -58,7 +58,7 @@ mobility_subpop_indices = s.mobility.indices
 mobility_data_indices = s.mobility.indptr
 mobility_data = s.mobility.data
 
-npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.spatset.nodenames)
+npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.spatset.subpop_names)
 
 params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
 params = s.parameters.parameters_reduce(params, npi)

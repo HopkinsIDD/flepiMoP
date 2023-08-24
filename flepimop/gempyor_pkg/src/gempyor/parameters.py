@@ -20,7 +20,7 @@ class Parameters:
         *,
         ti: datetime.date,
         tf: datetime.date,
-        nodenames: list,
+        subpop_names: list,
         config_version: str = "v2",
     ):
         self.pconfig = parameter_config
@@ -54,19 +54,19 @@ class Parameters:
                     fn_name = self.pconfig[pn]["timeserie"].get()
                     df = utils.read_df(fn_name).set_index("date")
                     df.index = pd.to_datetime(df.index)
-                    if len(df.columns) >= len(nodenames):  # one ts per subpop
-                        df = df[nodenames]  # make sure the order of subpops is the same as the reference
-                        # (nodenames from spatial setup) and select the columns
+                    if len(df.columns) >= len(subpop_names):  # one ts per subpop
+                        df = df[subpop_names]  # make sure the order of subpops is the same as the reference
+                        # (subpop_names from spatial setup) and select the columns
                     elif len(df.columns) == 1:
                         df = pd.DataFrame(
-                            pd.concat([df] * len(nodenames), axis=1).values, index=df.index, columns=nodenames
+                            pd.concat([df] * len(subpop_names), axis=1).values, index=df.index, columns=subpop_names
                         )
                     else:
                         print("loaded col :", sorted(list(df.columns)))
-                        print("geodata col:", sorted(nodenames))
+                        print("geodata col:", sorted(subpop_names))
                         raise ValueError(
                             f"""ERROR loading file {fn_name} for parameter {pn}: the number of non 'date'
-                        columns are {len(df.columns)}, expected {len(nodenames)} (the number of subpops) or one."""
+                        columns are {len(df.columns)}, expected {len(subpop_names)} (the number of subpops) or one."""
                         )
 
                     df = df[str(ti) : str(tf)]

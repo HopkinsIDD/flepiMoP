@@ -24,7 +24,7 @@ def test_constant_population():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="subpop",
+        subpop_names_key="subpop",
     )
 
     s = setup.Setup(
@@ -47,7 +47,7 @@ def test_constant_population():
     initial_conditions = s.seedingAndIC.draw_ic(sim_id=0, setup=s)
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.spatset.nodenames)
+    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.spatset.subpop_names)
 
     parameters = s.parameters.parameters_quick_draw(n_days=s.n_days, nnodes=s.nnodes)
     parameter_names = [x for x in s.parameters.pnames]

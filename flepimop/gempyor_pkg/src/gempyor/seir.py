@@ -147,7 +147,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_seir,
                 global_config=config,
-                subpops=s.spatset.nodenames,
+                subpops=s.spatset.subpop_names,
                 loaded_df=loaded_df,
                 pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
             )
@@ -155,7 +155,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_seir,
                 global_config=config,
-                subpops=s.spatset.nodenames,
+                subpops=s.spatset.subpop_names,
                 pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
             )
     return npi
@@ -269,7 +269,7 @@ def states2Df(s, states):
     prev_df = pd.DataFrame(
         data=states_prev.reshape(s.n_days * s.compartments.get_ncomp(), s.nnodes),
         index=ts_index,
-        columns=s.spatset.nodenames,
+        columns=s.spatset.subpop_names,
     ).reset_index()
     prev_df = pd.merge(
         left=s.compartments.get_compartments_explicitDF(),
@@ -287,7 +287,7 @@ def states2Df(s, states):
     incid_df = pd.DataFrame(
         data=states_incid.reshape(s.n_days * s.compartments.get_ncomp(), s.nnodes),
         index=ts_index,
-        columns=s.spatset.nodenames,
+        columns=s.spatset.subpop_names,
     ).reset_index()
     incid_df = pd.merge(
         left=s.compartments.get_compartments_explicitDF(),
