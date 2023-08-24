@@ -72,14 +72,14 @@ def build_npi_Outcomes(
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_outcomes,
                 global_config=config,
-                geoids=s.spatset.nodenames,
+                subpops=s.spatset.nodenames,
                 loaded_df=loaded_df,
             )
         else:
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_outcomes,
                 global_config=config,
-                geoids=s.spatset.nodenames,
+                subpops=s.spatset.nodenames,
             )
     return npi
 
@@ -130,19 +130,19 @@ def read_parameters_from_config(s: setup.Setup):
                 raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
 
             print(
-                "Loaded geoids in loaded relative probablity file:",
-                len(branching_data.geoid.unique()),
+                "Loaded subpops in loaded relative probablity file:",
+                len(branching_data.subpop.unique()),
                 "",
                 end="",
             )
-            branching_data = branching_data[branching_data["geoid"].isin(s.spatset.nodenames)]
+            branching_data = branching_data[branching_data["subpop"].isin(s.spatset.nodenames)]
             print(
                 "Intersect with seir simulation: ",
-                len(branching_data.geoid.unique()),
+                len(branching_data.subpop.unique()),
                 "kept",
             )
 
-            if len(branching_data.geoid.unique()) != len(s.spatset.nodenames):
+            if len(branching_data.subpop.unique()) != len(s.spatset.nodenames):
                 raise ValueError(
                     f"Places in seir input files does not correspond to places in outcome probability file {branching_file}"
                 )
@@ -229,9 +229,9 @@ def read_parameters_from_config(s: setup.Setup):
                         if len(rel_probability) > 0:
                             logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
                             # Sort it in case the relative probablity file is mispecified
-                            rel_probability.geoid = rel_probability.geoid.astype("category")
-                            rel_probability.geoid = rel_probability.geoid.cat.set_categories(s.spatset.nodenames)
-                            rel_probability = rel_probability.sort_values(["geoid"])
+                            rel_probability.subpop = rel_probability.subpop.astype("category")
+                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(s.spatset.nodenames)
+                            rel_probability = rel_probability.sort_values(["subpop"])
                             parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
                         else:
                             logging.debug(
@@ -266,7 +266,7 @@ def postprocess_and_write(sim_id, s, outcomes, hpar, npi):
     if npi is None:
         hnpi = pd.DataFrame(
             columns=[
-                "geoid",
+                "subpop",
                 "npi_name",
                 "start_date",
                 "end_date",
@@ -288,7 +288,7 @@ def dataframe_from_array(data, places, dates, comp_name):
     df = pd.DataFrame(data.astype(np.double), columns=places, index=dates)
     df.index.name = "date"
     df.reset_index(inplace=True)
-    df = pd.melt(df, id_vars="date", value_name=comp_name, var_name="geoid")
+    df = pd.melt(df, id_vars="date", value_name=comp_name, var_name="subpop")
     return df
 
 
@@ -300,7 +300,7 @@ def read_seir_sim(s, sim_id):
 
 def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None, npi=None):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
-    hpar = pd.DataFrame(columns=["geoid", "quantity", "outcome", "value"])
+    hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
     dates = pd.date_range(s.ti, s.tf, freq="D")
 
@@ -348,13 +348,13 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
             else:
                 probabilities = parameters[new_comp]["probability"].as_random_distribution()(
                     size=len(s.spatset.nodenames)
-                )  # one draw per geoid
+                )  # one draw per subpop
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
 
                 delays = parameters[new_comp]["delay"].as_random_distribution()(
                     size=len(s.spatset.nodenames)
-                )  # one draw per geoid
+                )  # one draw per subpop
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
             probabilities = np.repeat(probabilities[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
@@ -366,7 +366,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                     hpar,
                     pd.DataFrame.from_dict(
                         {
-                            "geoid": s.spatset.nodenames,
+                            "subpop": s.spatset.nodenames,
                             "quantity": ["probability"] * len(s.spatset.nodenames),
                             "outcome": [new_comp] * len(s.spatset.nodenames),
                             "value": probabilities[0] * np.ones(len(s.spatset.nodenames)),
@@ -374,7 +374,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                     ),
                     pd.DataFrame.from_dict(
                         {
-                            "geoid": s.spatset.nodenames,
+                            "subpop": s.spatset.nodenames,
                             "quantity": ["delay"] * len(s.spatset.nodenames),
                             "outcome": [new_comp] * len(s.spatset.nodenames),
                             "value": delays[0] * np.ones(len(s.spatset.nodenames)),
@@ -419,7 +419,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                 else:
                     durations = parameters[new_comp]["duration"].as_random_distribution()(
                         size=len(s.spatset.nodenames)
-                    )  # one draw per geoid
+                    )  # one draw per subpop
                 durations = np.repeat(durations[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
                 durations = np.round(durations).astype(int)
 
@@ -428,7 +428,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                         hpar,
                         pd.DataFrame.from_dict(
                             {
-                                "geoid": s.spatset.nodenames,
+                                "subpop": s.spatset.nodenames,
                                 "quantity": ["duration"] * len(s.spatset.nodenames),
                                 "outcome": [new_comp] * len(s.spatset.nodenames),
                                 "value": durations[0] * np.ones(len(s.spatset.nodenames)),

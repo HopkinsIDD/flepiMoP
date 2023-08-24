@@ -25,7 +25,7 @@ ss = setup.SpatialSetup(
     geodata_file=f"{DATA_DIR}/geodata.csv",
     mobility_file=f"{DATA_DIR}/mobility.txt",
     popnodes_key="population",
-    nodenames_key="geoid",
+    nodenames_key="subpop",
 )
 
 first_sim_index = 1
@@ -54,11 +54,11 @@ s = setup.Setup(
 seeding_data = s.seedingAndIC.draw_seeding(sim_id=100, setup=s)
 initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
 
-mobility_geoid_indices = s.mobility.indices
+mobility_subpop_indices = s.mobility.indices
 mobility_data_indices = s.mobility.indptr
 mobility_data = s.mobility.data
 
-npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, geoids=s.spatset.nodenames)
+npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.spatset.nodenames)
 
 params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
 params = s.parameters.parameters_reduce(params, npi)
@@ -84,7 +84,7 @@ states = seir.steps_SEIR_nb(
     initial_conditions,
     seeding_data,
     mobility_data,
-    mobility_geoid_indices,
+    mobility_subpop_indices,
     mobility_data_indices,
     s.popnodes,
     True,

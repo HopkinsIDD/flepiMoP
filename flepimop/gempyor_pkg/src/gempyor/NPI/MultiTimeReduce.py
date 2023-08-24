@@ -10,7 +10,7 @@ class MultiTimeReduce(NPIBase):
         *,
         npi_config,
         global_config,
-        geoids,
+        subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
         sanitize=False,
@@ -27,23 +27,23 @@ class MultiTimeReduce(NPIBase):
         self.start_date = global_config["start_date"].as_date()
         self.end_date = global_config["end_date"].as_date()
 
-        self.geoids = geoids
+        self.subpops = subpops
 
         self.npi = pd.DataFrame(
             0.0,
-            index=self.geoids,
+            index=self.subpops,
             columns=pd.date_range(self.start_date, self.end_date),
         )
 
         self.parameters = pd.DataFrame(
             data={
-                "npi_name": [""] * len(self.geoids),
-                "parameter": [""] * len(self.geoids),
-                "start_date": [[self.start_date]] * len(self.geoids),
-                "end_date": [[self.end_date]] * len(self.geoids),
-                "reduction": [0.0] * len(self.geoids),
+                "npi_name": [""] * len(self.subpops),
+                "parameter": [""] * len(self.subpops),
+                "start_date": [[self.start_date]] * len(self.subpops),
+                "end_date": [[self.end_date]] * len(self.subpops),
+                "reduction": [0.0] * len(self.subpops),
             },
-            index=self.geoids,
+            index=self.subpops,
         )
 
         self.param_name = npi_config["parameter"].as_str().lower()
@@ -61,14 +61,14 @@ class MultiTimeReduce(NPIBase):
                 raise ValueError("at least one period start or end date is not between global dates")
 
         for grp_config in npi_config["groups"]:
-            affected_geoids_grp = self.__get_affected_geoids_grp(grp_config)
-            for sub_index in range(len(self.parameters["start_date"][affected_geoids_grp[0]])):
+            affected_subpops_grp = self.__get_affected_subpops_grp(grp_config)
+            for sub_index in range(len(self.parameters["start_date"][affected_subpops_grp[0]])):
                 period_range = pd.date_range(
-                    self.parameters["start_date"][affected_geoids_grp[0]][sub_index],
-                    self.parameters["end_date"][affected_geoids_grp[0]][sub_index],
+                    self.parameters["start_date"][affected_subpops_grp[0]][sub_index],
+                    self.parameters["end_date"][affected_subpops_grp[0]][sub_index],
                 )
-                self.npi.loc[affected_geoids_grp, period_range] = np.tile(
-                    self.parameters["reduction"][affected_geoids_grp],
+                self.npi.loc[affected_subpops_grp, period_range] = np.tile(
+                    self.parameters["reduction"][affected_subpops_grp],
                     (len(period_range), 1),
                 ).T
 
@@ -100,9 +100,9 @@ class MultiTimeReduce(NPIBase):
         if not (self.parameters["start_date"] <= self.parameters["end_date"]).all():
             raise ValueError(f"at least one period_start_date is greater than the corresponding period end date")
 
-        for n in self.affected_geoids:
-            if n not in self.geoids:
-                raise ValueError(f"Invalid config value {n} not in geoids")
+        for n in self.affected_subpops:
+            if n not in self.subpops:
+                raise ValueError(f"Invalid config value {n} not in subpops")
 
         ### if self.param_name not in REDUCE_PARAMS:
         ###     raise ValueError(f"Invalid parameter name: {self.param_name}. Must be one of {REDUCE_PARAMS}")
@@ -120,16 +120,16 @@ class MultiTimeReduce(NPIBase):
         # Get name of the parameter to reduce
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
-        self.affected_geoids = self.__get_affected_geoids(npi_config)
+        self.affected_subpops = self.__get_affected_subpops(npi_config)
 
-        self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
+        self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         dist = npi_config["value"].as_random_distribution()
         self.parameters["npi_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
         self.spatial_groups = []
         for grp_config in npi_config["groups"]:
-            affected_geoids_grp = self.__get_affected_geoids_grp(grp_config)
+            affected_subpops_grp = self.__get_affected_subpops_grp(grp_config)
             # Create reduction
             start_dates = []
             end_dates = []
@@ -140,52 +140,52 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            this_spatial_group = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
+            this_spatial_group = helpers.get_spatial_groups(grp_config, affected_subpops_grp)
             self.spatial_groups.append(this_spatial_group)
             # print(self.name, this_spatial_groups)
 
             # unfortunately, we cannot use .loc here, because it is not possible to assign a list of list
             # to a subset of a dataframe... so we iterate.
-            for geoid in this_spatial_group["ungrouped"]:
-                self.parameters.at[geoid, "start_date"] = start_dates
-                self.parameters.at[geoid, "end_date"] = end_dates
-                self.parameters.at[geoid, "reduction"] = dist(size=1)
+            for subpop in this_spatial_group["ungrouped"]:
+                self.parameters.at[subpop, "start_date"] = start_dates
+                self.parameters.at[subpop, "end_date"] = end_dates
+                self.parameters.at[subpop, "reduction"] = dist(size=1)
             for group in this_spatial_group["grouped"]:
                 drawn_value = dist(size=1)
-                for geoid in group:
-                    self.parameters.at[geoid, "start_date"] = start_dates
-                    self.parameters.at[geoid, "end_date"] = end_dates
-                    self.parameters.at[geoid, "reduction"] = drawn_value
+                for subpop in group:
+                    self.parameters.at[subpop, "start_date"] = start_dates
+                    self.parameters.at[subpop, "end_date"] = end_dates
+                    self.parameters.at[subpop, "reduction"] = drawn_value
 
-    def __get_affected_geoids_grp(self, grp_config):
-        if grp_config["affected_geoids"].get() == "all":
-            affected_geoids_grp = self.geoids
+    def __get_affected_subpops_grp(self, grp_config):
+        if grp_config["affected_subpops"].get() == "all":
+            affected_subpops_grp = self.subpops
         else:
-            affected_geoids_grp = [str(n.get()) for n in grp_config["affected_geoids"]]
-        return affected_geoids_grp
+            affected_subpops_grp = [str(n.get()) for n in grp_config["affected_subpops"]]
+        return affected_subpops_grp
 
     def __createFromDf(self, loaded_df, npi_config):
-        loaded_df.index = loaded_df.geoid
+        loaded_df.index = loaded_df.subpop
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
-        self.affected_geoids = self.__get_affected_geoids(npi_config)
+        self.affected_subpops = self.__get_affected_subpops(npi_config)
 
-        self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
+        self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         self.parameters["npi_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
         # self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
         # self.parameters["start_date"] = [[datetime.date.fromisoformat(date) for date in strdate.split(",")] for strdate in self.parameters["start_date"]]
         # self.parameters["end_date"] =   [[datetime.date.fromisoformat(date) for date in strdate.split(",")] for strdate in self.parameters["end_date"]]
-        # self.affected_geoids = set(self.parameters.index)
+        # self.affected_subpops = set(self.parameters.index)
 
         if self.sanitize:
-            if len(self.affected_geoids) != len(self.parameters):
-                print(f"loading {self.name} and we got {len(self.parameters)} geoids")
-                print(f"getting from config that it affects {len(self.affected_geoids)}")
+            if len(self.affected_subpops) != len(self.parameters):
+                print(f"loading {self.name} and we got {len(self.parameters)} subpops")
+                print(f"getting from config that it affects {len(self.affected_subpops)}")
 
         self.spatial_groups = []
         for grp_config in npi_config["groups"]:
-            affected_geoids_grp = self.__get_affected_geoids_grp(grp_config)
+            affected_subpops_grp = self.__get_affected_subpops_grp(grp_config)
             # Create reduction
             start_dates = []
             end_dates = []
@@ -196,36 +196,36 @@ class MultiTimeReduce(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            this_spatial_group = helpers.get_spatial_groups(grp_config, affected_geoids_grp)
+            this_spatial_group = helpers.get_spatial_groups(grp_config, affected_subpops_grp)
             self.spatial_groups.append(this_spatial_group)
 
-            for geoid in this_spatial_group["ungrouped"]:
-                if not geoid in loaded_df.index:
-                    self.parameters.at[geoid, "start_date"] = start_dates
-                    self.parameters.at[geoid, "end_date"] = end_dates
+            for subpop in this_spatial_group["ungrouped"]:
+                if not subpop in loaded_df.index:
+                    self.parameters.at[subpop, "start_date"] = start_dates
+                    self.parameters.at[subpop, "end_date"] = end_dates
                     dist = npi_config["value"].as_random_distribution()
-                    self.parameters.at[geoid, "reduction"] = dist(size=1)
+                    self.parameters.at[subpop, "reduction"] = dist(size=1)
                 else:
-                    self.parameters.at[geoid, "start_date"] = start_dates
-                    self.parameters.at[geoid, "end_date"] = end_dates
-                    self.parameters.at[geoid, "reduction"] = loaded_df.at[geoid, "reduction"]
+                    self.parameters.at[subpop, "start_date"] = start_dates
+                    self.parameters.at[subpop, "end_date"] = end_dates
+                    self.parameters.at[subpop, "reduction"] = loaded_df.at[subpop, "reduction"]
             for group in this_spatial_group["grouped"]:
                 if ",".join(group) in loaded_df.index:  # ordered, so it's ok
-                    for geoid in group:
-                        self.parameters.at[geoid, "start_date"] = start_dates
-                        self.parameters.at[geoid, "end_date"] = end_dates
-                        self.parameters.at[geoid, "reduction"] = loaded_df.at[",".join(group), "reduction"]
+                    for subpop in group:
+                        self.parameters.at[subpop, "start_date"] = start_dates
+                        self.parameters.at[subpop, "end_date"] = end_dates
+                        self.parameters.at[subpop, "reduction"] = loaded_df.at[",".join(group), "reduction"]
                 else:
                     dist = npi_config["value"].as_random_distribution()
                     drawn_value = dist(size=1)
-                    for geoid in group:
-                        self.parameters.at[geoid, "start_date"] = start_dates
-                        self.parameters.at[geoid, "end_date"] = end_dates
-                        self.parameters.at[geoid, "reduction"] = drawn_value
+                    for subpop in group:
+                        self.parameters.at[subpop, "start_date"] = start_dates
+                        self.parameters.at[subpop, "end_date"] = end_dates
+                        self.parameters.at[subpop, "reduction"] = drawn_value
 
-        self.parameters = self.parameters.loc[list(self.affected_geoids)]
-        # self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids) ]
-        # self.parameters = self.parameters[self.affected_geoids]
+        self.parameters = self.parameters.loc[list(self.affected_subpops)]
+        # self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops) ]
+        # self.parameters = self.parameters[self.affected_subpops]
 
         # parameter name is picked from config too: (before: )
         # self.param_name = self.parameters["parameter"].unique()[0]  # [0] to convert ndarray to str
@@ -233,20 +233,20 @@ class MultiTimeReduce(NPIBase):
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
         self.parameters["parameter"] = self.param_name
 
-    def __get_affected_geoids(self, npi_config):
-        # Optional config field "affected_geoids"
-        # If values of "affected_geoids" is "all" or unspecified, run on all geoids.
-        # Otherwise, run only on geoids specified.
-        affected_geoids_grp = []
+    def __get_affected_subpops(self, npi_config):
+        # Optional config field "affected_subpops"
+        # If values of "affected_subpops" is "all" or unspecified, run on all subpops.
+        # Otherwise, run only on subpops specified.
+        affected_subpops_grp = []
         for grp_config in npi_config["groups"]:
-            if grp_config["affected_geoids"].get() == "all":
-                affected_geoids_grp = self.geoids
+            if grp_config["affected_subpops"].get() == "all":
+                affected_subpops_grp = self.subpops
             else:
-                affected_geoids_grp += [str(n.get()) for n in grp_config["affected_geoids"]]
-        affected_geoids = set(affected_geoids_grp)
-        if len(affected_geoids) != len(affected_geoids_grp):
-            raise ValueError(f"In NPI {self.name}, some geoids belong to several groups. This is unsupported.")
-        return affected_geoids
+                affected_subpops_grp += [str(n.get()) for n in grp_config["affected_subpops"]]
+        affected_subpops = set(affected_subpops_grp)
+        if len(affected_subpops) != len(affected_subpops_grp):
+            raise ValueError(f"In NPI {self.name}, some subpops belong to several groups. This is unsupported.")
+        return affected_subpops
 
     def getReduction(self, param, default=0.0):
         "Return the reduction for this param, `default` if no reduction defined"
@@ -257,11 +257,11 @@ class MultiTimeReduce(NPIBase):
 
     def getReductionToWrite(self):
         df_list = []
-        # self.parameters.index is a list of geoids
+        # self.parameters.index is a list of subpops
         for this_spatial_groups in self.spatial_groups:
             # spatially ungrouped dataframe
             df_ungroup = self.parameters[self.parameters.index.isin(this_spatial_groups["ungrouped"])].copy()
-            df_ungroup.index.name = "geoid"
+            df_ungroup.index.name = "subpop"
             df_ungroup["start_date"] = df_ungroup["start_date"].apply(
                 lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])
             )
@@ -272,12 +272,12 @@ class MultiTimeReduce(NPIBase):
             # spatially grouped dataframe. They are nested within multitime reduce groups,
             # so we can set the same dates for allof them
             for group in this_spatial_groups["grouped"]:
-                # we use the first geoid to represent the group
+                # we use the first subpop to represent the group
                 df_group = self.parameters[self.parameters.index == group[0]].copy()
 
                 row_group = pd.DataFrame.from_dict(
                     {
-                        "geoid": ",".join(group),
+                        "subpop": ",".join(group),
                         "npi_name": df_group["npi_name"],
                         "parameter": df_group["parameter"],
                         "start_date": df_group["start_date"].apply(
@@ -286,7 +286,7 @@ class MultiTimeReduce(NPIBase):
                         "end_date": df_group["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])),
                         "reduction": df_group["reduction"],
                     }
-                ).set_index("geoid")
+                ).set_index("subpop")
                 df_list.append(row_group)
 
         df = pd.concat(df_list)

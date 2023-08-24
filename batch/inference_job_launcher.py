@@ -421,13 +421,13 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
-            geoid_fname = pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
-            with open(geoid_fname) as geoid_fp:
-                num_geoids = sum(1 for line in geoid_fp)
+            geodata_fname = pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
+            with open(geodata_fname) as geodata_fp:
+                num_subpops = sum(1 for line in geodata_fp)
 
             if batch_system == "aws":
-                # formula based on a simple regression of geoids (based on known good performant params)
-                sims_per_job = max(60 - math.sqrt(num_geoids), 10)
+                # formula based on a simple regression of subpops (based on known good performant params)
+                sims_per_job = max(60 - math.sqrt(num_subpops), 10)
                 sims_per_job = 5 * int(math.ceil(sims_per_job / 5))  # multiple of 5
                 num_blocks = int(math.ceil(iterations_per_slot / sims_per_job))
             elif batch_system == "slurm" or batch_system == "local":
@@ -439,7 +439,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
 
             print(
                 f"Setting sims per job to {sims_per_job} "
-                f"[estimated based on {num_geoids} geoids and {iterations_per_slot} iterations_per_slot in config]"
+                f"[estimated based on {num_subpops} subpop(s) and {iterations_per_slot} iterations_per_slot in config]"
             )
             print(f"Setting number of blocks to {num_blocks} [via math]")
 

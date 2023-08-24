@@ -51,7 +51,7 @@ if True:
 
     assert (p_draw[p.pnames2pindex["R0s"]] == initial_df.values).all()
 
-    ### test what happen when the order of geoids is not respected (expected: reput them in order)
+    ### test what happen when the order of subpops is not respected (expected: reput them in order)
 
     ### test what happens with incomplete data (expected: fail)
 

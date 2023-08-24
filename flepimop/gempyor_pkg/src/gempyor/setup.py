@@ -261,7 +261,7 @@ class SpatialSetup:
         self.setup_name = setup_name
         self.data = pd.read_csv(
             geodata_file, converters={nodenames_key: lambda x: str(x).strip()}, skipinitialspace=True
-        )  # geoids and populations, strip whitespaces
+        )  # subpops and populations, strip whitespaces
         self.nnodes = len(self.data)  # K = # of locations
 
         # popnodes_key is the name of the column in geodata_file with populations
@@ -275,7 +275,7 @@ class SpatialSetup:
                 f"There are {len(np.argwhere(self.popnodes == 0))} nodes with population zero, this is not supported."
             )
 
-        # nodenames_key is the name of the column in geodata_file with geoids
+        # nodenames_key is the name of the column in geodata_file with subpops
         if nodenames_key not in self.data:
             raise ValueError(f"nodenames_key: {nodenames_key} does not correspond to a column in geodata.")
         self.nodenames = self.data[nodenames_key].tolist()

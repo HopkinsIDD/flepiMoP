@@ -28,7 +28,7 @@ def test_parameters_from_config_plus_read_write():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="geoid",
+        nodenames_key="subpop",
     )
 
     index = 1
@@ -100,7 +100,7 @@ def test_parameters_quick_draw_old():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="geoid",
+        nodenames_key="subpop",
     )
     index = 1
     run_id = "test_parameter"
@@ -174,7 +174,7 @@ def test_parameters_from_timeserie_file():
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="geoid",
+        nodenames_key="subpop",
     )
     index = 1
     run_id = "test_parameter"

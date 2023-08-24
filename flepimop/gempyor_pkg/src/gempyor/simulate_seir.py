@@ -58,7 +58,7 @@
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
-#       affected_geoids: <list of strings> optional
+#       subpop: <list of strings> optional
 # ```
 #
 # If {template} is ReduceR0
@@ -70,7 +70,7 @@
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
-#       affected_geoids: <list of strings> optional
+#       subpop: <list of strings> optional
 # ```
 #
 # If {template} is Stacked
