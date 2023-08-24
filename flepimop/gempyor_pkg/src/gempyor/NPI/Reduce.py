@@ -97,12 +97,12 @@ class Reduce(NPIBase):
         # Get name of the parameter to reduce
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
-        # Optional config field "affected_subpops"
-        # If values of "affected_subpops" is "all" or unspecified, run on all subpops.
+        # Optional config field "subpop"
+        # If values of "subpop" is "all" or unspecified, run on all subpops.
         # Otherwise, run only on subpops specified.
         self.affected_subpops = set(self.subpops)
-        if npi_config["affected_subpops"].exists() and npi_config["affected_subpops"].get() != "all":
-            self.affected_subpops = {str(n.get()) for n in npi_config["affected_subpops"]}
+        if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
+            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         # Create reduction
@@ -131,8 +131,8 @@ class Reduce(NPIBase):
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
 
         self.affected_subpops = set(self.subpops)
-        if npi_config["affected_subpops"].exists() and npi_config["affected_subpops"].get() != "all":
-            self.affected_subpops = {str(n.get()) for n in npi_config["affected_subpops"]}
+        if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
+            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]

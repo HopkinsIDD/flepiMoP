@@ -158,10 +158,10 @@ class MultiTimeReduce(NPIBase):
                     self.parameters.at[subpop, "reduction"] = drawn_value
 
     def __get_affected_subpops_grp(self, grp_config):
-        if grp_config["affected_subpops"].get() == "all":
+        if grp_config["subpop"].get() == "all":
             affected_subpops_grp = self.subpops
         else:
-            affected_subpops_grp = [str(n.get()) for n in grp_config["affected_subpops"]]
+            affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
         return affected_subpops_grp
 
     def __createFromDf(self, loaded_df, npi_config):
@@ -234,15 +234,15 @@ class MultiTimeReduce(NPIBase):
         self.parameters["parameter"] = self.param_name
 
     def __get_affected_subpops(self, npi_config):
-        # Optional config field "affected_subpops"
-        # If values of "affected_subpops" is "all" or unspecified, run on all subpops.
+        # Optional config field "subpop"
+        # If values of "subpop" is "all" or unspecified, run on all subpops.
         # Otherwise, run only on subpops specified.
         affected_subpops_grp = []
         for grp_config in npi_config["groups"]:
-            if grp_config["affected_subpops"].get() == "all":
+            if grp_config["subpop"].get() == "all":
                 affected_subpops_grp = self.subpops
             else:
-                affected_subpops_grp += [str(n.get()) for n in grp_config["affected_subpops"]]
+                affected_subpops_grp += [str(n.get()) for n in grp_config["subpop"]]
         affected_subpops = set(affected_subpops_grp)
         if len(affected_subpops) != len(affected_subpops_grp):
             raise ValueError(f"In NPI {self.name}, some subpops belong to several groups. This is unsupported.")
