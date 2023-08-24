@@ -247,8 +247,9 @@ class InferenceSimulator:
                 else:
                     initial_conditions = self.s.seedingAndIC.draw_ic(sim_id2write, setup=self.s)
                     seeding_data, seeding_amounts = self.s.seedingAndIC.draw_seeding(sim_id2write, setup=self.s)
-                self.debug_seeding_date = seeding_data
+                self.debug_seeding_data = seeding_data
                 self.debug_seeding_amounts = seeding_amounts
+                self.debug_initial_conditions = initial_conditions
 
             with Timer("SEIR.compute"):
                 states = seir.steps_SEIR(
