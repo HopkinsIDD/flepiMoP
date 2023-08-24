@@ -64,7 +64,7 @@ class Compartments:
     def access_original_config_by_multi_index(self, config_piece, index, dimension=None, encapsulate_as_list=False):
         if dimension is None:
             dimension = [None for i in index]
-        tmp = [y for y in zip(index, range(len(index)), dimension)]    
+        tmp = [y for y in zip(index, range(len(index)), dimension)]
         tmp = zip(index, range(len(index)), dimension)
         tmp = [list_access_element(config_piece[x[1]], x[0], x[2], encapsulate_as_list) for x in tmp]
         return tmp

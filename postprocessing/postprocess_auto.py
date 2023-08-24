@@ -16,8 +16,8 @@ import matplotlib.dates as mdates
 import matplotlib.cbook as cbook
 from matplotlib.backends.backend_pdf import PdfPages
 
-channelids = {"cspproduction": "C011YTUBJ7R",
-              "debug": "C04MAQWLEAW"}
+channelids = {"cspproduction": "C011YTUBJ7R", "debug": "C04MAQWLEAW"}
+
 
 class RunInfo:
     def __init__(self, run_id, config_path=None, folder_path=None):
@@ -301,12 +301,12 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
     print(f"list of files to be sent over slack: {file_list}")
 
     if "production" in slack_channel.lower():
-        channel=channelids["cspproduction"]
+        channel = channelids["cspproduction"]
     elif "debug" in slack_channel.lower():
-        channel=channelids["debug"]
+        channel = channelids["debug"]
     else:
         print("no channel specified, not sending anything to slack")
-        channel=None
+        channel = None
 
     # slack_multiple_files(
     #    slack_token=slack_token,
