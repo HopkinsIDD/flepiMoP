@@ -274,16 +274,18 @@ def test_outcome_scenario_subclasses():
             )
             assert (
                 float(
-                    hpar[(hpar["subpop"] == place) & (hpar["outcome"] == f"incidH{cl}") & (hpar["quantity"] == "delay")][
-                        "value"
-                    ]
+                    hpar[
+                        (hpar["subpop"] == place) & (hpar["outcome"] == f"incidH{cl}") & (hpar["quantity"] == "delay")
+                    ]["value"]
                 )
                 == 7
             )
             assert (
                 float(
                     hpar[
-                        (hpar["subpop"] == place) & (hpar["outcome"] == f"incidH{cl}") & (hpar["quantity"] == "duration")
+                        (hpar["subpop"] == place)
+                        & (hpar["outcome"] == f"incidH{cl}")
+                        & (hpar["quantity"] == "duration")
                     ]["value"]
                 )
                 == 7
@@ -300,9 +302,9 @@ def test_outcome_scenario_subclasses():
             )
             assert (
                 float(
-                    hpar[(hpar["subpop"] == place) & (hpar["outcome"] == f"incidD{cl}") & (hpar["quantity"] == "delay")][
-                        "value"
-                    ]
+                    hpar[
+                        (hpar["subpop"] == place) & (hpar["outcome"] == f"incidD{cl}") & (hpar["quantity"] == "delay")
+                    ]["value"]
                 )
                 == 2
             )

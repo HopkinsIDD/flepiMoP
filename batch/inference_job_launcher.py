@@ -241,7 +241,7 @@ def user_confirmation(question="Continue?", default=False):
     "slack_channel",
     envvar="SLACK_CHANNEL",
     default="cspproduction",
-    type=click.Choice(['cspproduction', 'debug', 'noslack']),
+    type=click.Choice(["cspproduction", "debug", "noslack"]),
     help="Slack channel, either 'csp-production' or 'debug', or 'noslack' to disable slack",
 )
 @click.option(
@@ -331,22 +331,26 @@ def launch_batch(
         print(f"WARNING: no inference section found in {config_file}!")
 
     if "s3://" in str(restart_from_location):  # ugly hack: str because it might be None
-        restart_from_run_id = aws_countfiles_autodetect_runid(s3_bucket=s3_bucket, 
-                                                              restart_from_location=restart_from_location, 
-                                                              restart_from_run_id=restart_from_run_id,
-                                                              num_jobs=num_jobs,
-                                                              strict=False)
+        restart_from_run_id = aws_countfiles_autodetect_runid(
+            s3_bucket=s3_bucket,
+            restart_from_location=restart_from_location,
+            restart_from_run_id=restart_from_run_id,
+            num_jobs=num_jobs,
+            strict=False,
+        )
     else:
         if restart_from_run_id is None and restart_from_location is not None:
             raise Exception(
                 "No auto-detection of run_id from local folder, please specify --restart_from_run_id (or fixme)"
             )
     if "s3://" in str(continuation_location):
-        continuation_run_id = aws_countfiles_autodetect_runid(s3_bucket=s3_bucket, 
-                                                              restart_from_location=continuation_location, 
-                                                              restart_from_run_id=continuation_run_id,
-                                                              num_jobs=num_jobs,
-                                                              strict=True)
+        continuation_run_id = aws_countfiles_autodetect_runid(
+            s3_bucket=s3_bucket,
+            restart_from_location=continuation_location,
+            restart_from_run_id=continuation_run_id,
+            num_jobs=num_jobs,
+            strict=True,
+        )
     else:
         if continuation_run_id is None and continuation_location is not None:
             raise Exception(
@@ -355,9 +359,9 @@ def launch_batch(
     if continuation and continuation_location is None:
         continuation_location = restart_from_location
         continuation_run_id = restart_from_run_id
-        print("Continuation enabled but no continuation location provided. Assuming that continuation location is the same as resume location")
-        
-    
+        print(
+            "Continuation enabled but no continuation location provided. Assuming that continuation location is the same as resume location"
+        )
 
     handler = BatchJobHandler(
         batch_system,
@@ -484,7 +488,7 @@ def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_fr
 
     final_llik = [f for f in all_files if ("llik" in f) and ("final" in f)]
     if len(final_llik) == 0:  # hacky: there might be a bucket with no llik files, e.g if init.
-        final_llik =  [f for f in all_files if ("init" in f) and ("final" in f)]
+        final_llik = [f for f in all_files if ("init" in f) and ("final" in f)]
 
     if len(final_llik) != num_jobs:
         if strict:
@@ -497,7 +501,7 @@ def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_fr
             )
             if (num_jobs - len(final_llik)) > 50:
                 user_confirmation(question=f"Difference > 50. Should we continue ?")
-    
+
     return restart_from_run_id
 
 
@@ -720,8 +724,13 @@ class BatchJobHandler(object):
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION", "value": f"TRUE"})
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION_RUN_ID", "value": f"{self.continuation_run_id}"})
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION_LOCATION", "value": f"{self.continuation_location}"})
-                cur_env_vars.append({"name": "FLEPI_CONTINUATION_FTYPE", "value": f"{config['initial_conditions']['initial_file_type']}"})
-                
+                cur_env_vars.append(
+                    {
+                        "name": "FLEPI_CONTINUATION_FTYPE",
+                        "value": f"{config['initial_conditions']['initial_file_type']}",
+                    }
+                )
+
             # First job:
             if self.batch_system == "aws":
                 cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}_block0"})
@@ -815,8 +824,6 @@ class BatchJobHandler(object):
                     os.environ[envar["name"]] = envar["value"]
                     print(f"""export {envar["name"]}="{envar["value"]}" """)
                 print(f"--- end env var to set ---")
-
-
 
             # On aws: create all other jobs + the copy job. slurm script is only one block and copies itself at the end.
             if self.batch_system == "aws":

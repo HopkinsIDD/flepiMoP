@@ -13,14 +13,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def build_step_source_arg(s,
+def build_step_source_arg(
+    s,
     parsed_parameters,
     transition_array,
     proportion_array,
     proportion_info,
     initial_conditions,
     seeding_data,
-    seeding_amounts,):
+    seeding_amounts,
+):
     assert type(s.mobility) == scipy.sparse.csr.csr_matrix
     mobility_data = s.mobility.data
     mobility_data = mobility_data.astype("float64")
@@ -96,14 +98,16 @@ def steps_SEIR(
     seeding_amounts,
 ):
 
-    fnct_args = build_step_source_arg(s,
-    parsed_parameters,
-    transition_array,
-    proportion_array,
-    proportion_info,
-    initial_conditions,
-    seeding_data,
-    seeding_amounts,)
+    fnct_args = build_step_source_arg(
+        s,
+        parsed_parameters,
+        transition_array,
+        proportion_array,
+        proportion_info,
+        initial_conditions,
+        seeding_data,
+        seeding_amounts,
+    )
 
     logging.info(f"Integrating with method {s.integration_method}")
 

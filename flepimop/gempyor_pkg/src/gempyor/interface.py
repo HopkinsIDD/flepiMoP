@@ -156,7 +156,7 @@ class InferenceSimulator:
                     sim_id2load=sim_id2load,
                 )
         return 0
-    
+
     def build_structure(self):
         (
             self.unique_strings,
@@ -165,7 +165,6 @@ class InferenceSimulator:
             self.proportion_info,
         ) = self.s.compartments.get_transition_array()
         self.already_built = True
-    
 
     # @profile()
     def one_simulation(
@@ -228,7 +227,7 @@ class InferenceSimulator:
             ### Run every time:
             with Timer("SEIR.parameters"):
                 # Draw or load parameters
-                
+
                 p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
                 # reduce them
                 parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
@@ -390,29 +389,33 @@ class InferenceSimulator:
 
         return full_df
 
-    # TODO these function should support bypass    
-    def get_parsed_parameters_seir(self, load_ID=False,
+    # TODO these function should support bypass
+    def get_parsed_parameters_seir(
+        self,
+        load_ID=False,
         sim_id2load=None,
-        #bypass_DF=None,
-        #bypass_FN=None,
+        # bypass_DF=None,
+        # bypass_FN=None,
     ):
         if not self.already_built:
             self.build_structure()
-            
+
         npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
-                )
+            parameters, self.s.parameters.pnames, self.unique_strings
+        )
         return parsed_parameters
-    
-    def get_reduced_parameters_seir(self, load_ID=False,
+
+    def get_reduced_parameters_seir(
+        self,
+        load_ID=False,
         sim_id2load=None,
-        #bypass_DF=None,
-        #bypass_FN=None,
+        # bypass_DF=None,
+        # bypass_FN=None,
     ):
         npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
@@ -420,10 +423,9 @@ class InferenceSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
-                )
+            parameters, self.s.parameters.pnames, self.unique_strings
+        )
         return parsed_parameters
-        
 
 
 def paramred_parallel(run_spec, snpi_fn):
