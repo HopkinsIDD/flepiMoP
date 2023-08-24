@@ -35,7 +35,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
     n_seeding_ignored_before = 0
     n_seeding_ignored_after = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
-        if row["place"] not in setup.spatset.subpop:
+        if row["place"] not in setup.spatset.nodenames:
             raise ValueError(
                 f"Invalid place '{row['place']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata."
             )
@@ -49,7 +49,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
                 destination_dict = {grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names}
                 seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(source_dict)
                 seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict)
-                seeding_dict["seeding_places"][idx] = setup.spatset.subpop.index(row["place"])
+                seeding_dict["seeding_places"][idx] = setup.spatset.nodenames.index(row["place"])
                 seeding_amounts[idx] = amounts[idx]
             else:
                 n_seeding_ignored_after += 1
@@ -109,7 +109,7 @@ class SeedingAndIC:
             if ic_df.empty:
                 raise ValueError(f"There is no entry for initial time ti in the provided initial_conditions::states_file.")
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
-            for pl_idx, pl in enumerate(setup.spatset.subpop):  #
+            for pl_idx, pl in enumerate(setup.spatset.nodenames):  #
                 if pl in list(ic_df["place"]):
                     states_pl = ic_df[ic_df["place"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
@@ -170,7 +170,7 @@ class SeedingAndIC:
                     print(f"WARNING: init file mc_name {ic_df_compartment['mc_name'].iloc[0]} does not match compartment mc_name {comp_name}")
 
 
-                for pl_idx, pl in enumerate(setup.spatset.subpop):
+                for pl_idx, pl in enumerate(setup.spatset.nodenames):
                     if pl in ic_df.columns:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])    
                     elif allow_missing_nodes:
@@ -185,12 +185,12 @@ class SeedingAndIC:
         
         # check that the inputed values sums to the node_population:
         error = False
-        for pl_idx, pl in enumerate(setup.spatset.subpop):
+        for pl_idx, pl in enumerate(setup.spatset.nodenames):
             n_y0 = y0[:, pl_idx].sum()
             n_pop = setup.popnodes[pl_idx]
             if abs(n_y0-n_pop) > 1:
                 error = True
-                print(f"ERROR: subpop {pl} (idx: pl_idx) has a population from initial condition of {n_y0} while population from geodata is {n_pop} (absolute difference should be < 1, here is {abs(n_y0-n_pop)})") 
+                print(f"ERROR: nodename {pl} (idx: pl_idx) has a population from initial condition of {n_y0} while population from geodata is {n_pop} (absolute difference should be < 1, here is {abs(n_y0-n_pop)})") 
         if error:
             raise ValueError()
         return y0

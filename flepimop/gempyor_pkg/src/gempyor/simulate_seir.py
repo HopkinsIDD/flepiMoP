@@ -19,7 +19,7 @@
 # spatial_setup:
 #   geodata: <path to file>
 #   mobility: <path to file>
-#   subpop: <string>
+#   nodenames: <string>
 #   popnodes: <string>
 #
 # seir:
@@ -58,7 +58,7 @@
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
-#       subpop: <list of strings> optional
+#       affected_geoids: <list of strings> optional
 # ```
 #
 # If {template} is ReduceR0
@@ -70,7 +70,7 @@
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
-#       subpop: <list of strings> optional
+#       affected_geoids: <list of strings> optional
 # ```
 #
 # If {template} is Stacked
@@ -100,7 +100,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::subpop} and {spatial_setup::popnodes}
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::nodenames} and {spatial_setup::popnodes}
 # * <b>{data_path}/{spatial_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
@@ -258,7 +258,7 @@ def simulate(
         if spatial_config["mobility"].exists()
         else None,
         popnodes_key=spatial_config["popnodes"].get(),
-        subpop_key=spatial_config["subpop"].get(),
+        nodenames_key=spatial_config["nodenames"].get(),
     )
 
     start = time.monotonic()

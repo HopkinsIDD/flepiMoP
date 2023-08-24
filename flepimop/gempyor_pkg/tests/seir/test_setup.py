@@ -22,7 +22,7 @@ class TestSpatialSetup:
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.txt",
             popnodes_key="population",
-            subpop_key="subpop",
+            nodenames_key="geoid",
         )
 
     def test_bad_popnodes_key_fail(self):
@@ -33,17 +33,17 @@ class TestSpatialSetup:
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
                 popnodes_key="wrong",
-                subpop_key="subpop",
+                nodenames_key="geoid",
             )
 
-    def test_bad_subpop_key_fail(self):
-        with pytest.raises(ValueError, match=r".*subpop_key.*"):
+    def test_bad_nodenames_key_fail(self):
+        with pytest.raises(ValueError, match=r".*nodenames_key.*"):
             setup.SpatialSetup(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.txt",
                 popnodes_key="population",
-                subpop_key="wrong",
+                nodenames_key="wrong",
             )
 
     def test_mobility_dimensions_fail(self):
@@ -53,7 +53,7 @@ class TestSpatialSetup:
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
                 popnodes_key="population",
-                subpop_key="subpop",
+                nodenames_key="geoid",
             )
 
     def test_mobility_too_big_fail(self):
@@ -63,5 +63,5 @@ class TestSpatialSetup:
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_big.txt",
                 popnodes_key="population",
-                subpop_key="subpop",
+                nodenames_key="geoid",
             )

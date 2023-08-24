@@ -72,14 +72,14 @@ def build_npi_Outcomes(
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_outcomes,
                 global_config=config,
-                subpop=s.spatset.subpop,
+                geoids=s.spatset.nodenames,
                 loaded_df=loaded_df,
             )
         else:
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_outcomes,
                 global_config=config,
-                subpop=s.spatset.subpop,
+                geoids=s.spatset.nodenames,
             )
     return npi
 
@@ -130,19 +130,19 @@ def read_parameters_from_config(s: setup.Setup):
                 raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
 
             print(
-                "Loaded subpop in loaded relative probablity file:",
-                len(branching_data.subpop.unique()),
+                "Loaded geoids in loaded relative probablity file:",
+                len(branching_data.geoid.unique()),
                 "",
                 end="",
             )
-            branching_data = branching_data[branching_data["subpop"].isin(s.spatset.subpop)]
+            branching_data = branching_data[branching_data["geoid"].isin(s.spatset.nodenames)]
             print(
                 "Intersect with seir simulation: ",
-                len(branching_data.subpop.unique()),
+                len(branching_data.geoid.unique()),
                 "kept",
             )
 
-            if len(branching_data.subpop.unique()) != len(s.spatset.subpop):
+            if len(branching_data.geoid.unique()) != len(s.spatset.nodenames):
                 raise ValueError(
                     f"Places in seir input files does not correspond to places in outcome probability file {branching_file}"
                 )
@@ -229,9 +229,9 @@ def read_parameters_from_config(s: setup.Setup):
                         if len(rel_probability) > 0:
                             logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
                             # Sort it in case the relative probablity file is mispecified
-                            rel_probability.subpop = rel_probability.subpop.astype("category")
-                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(s.spatset.subpop)
-                            rel_probability = rel_probability.sort_values(["subpop"])
+                            rel_probability.geoid = rel_probability.geoid.astype("category")
+                            rel_probability.geoid = rel_probability.geoid.cat.set_categories(s.spatset.nodenames)
+                            rel_probability = rel_probability.sort_values(["geoid"])
                             parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
                         else:
                             logging.debug(
@@ -266,7 +266,7 @@ def postprocess_and_write(sim_id, s, outcomes, hpar, npi):
     if npi is None:
         hnpi = pd.DataFrame(
             columns=[
-                "subpop",
+                "geoid",
                 "npi_name",
                 "start_date",
                 "end_date",
@@ -288,7 +288,7 @@ def dataframe_from_array(data, places, dates, comp_name):
     df = pd.DataFrame(data.astype(np.double), columns=places, index=dates)
     df.index.name = "date"
     df.reset_index(inplace=True)
-    df = pd.melt(df, id_vars="date", value_name=comp_name, var_name="subpop")
+    df = pd.melt(df, id_vars="date", value_name=comp_name, var_name="geoid")
     return df
 
 
@@ -300,13 +300,13 @@ def read_seir_sim(s, sim_id):
 
 def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None, npi=None):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
-    hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
+    hpar = pd.DataFrame(columns=["geoid", "quantity", "outcome", "value"])
     all_data = {}
     dates = pd.date_range(s.ti, s.tf, freq="D")
 
     outcomes = dataframe_from_array(
-        np.zeros((len(dates), len(s.spatset.subpop)), dtype=int),
-        s.spatset.subpop,
+        np.zeros((len(dates), len(s.spatset.nodenames)), dtype=int),
+        s.spatset.nodenames,
         dates,
         "zeros",
     ).drop("zeros", axis=1)
@@ -323,16 +323,16 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                 source_array = get_filtered_incidI(
                     seir_sim,
                     dates,
-                    s.spatset.subpop,
+                    s.spatset.nodenames,
                     {"incidence": {"infection_stage": "I1"}},
                 )
                 all_data["incidI"] = source_array
                 outcomes = pd.merge(
                     outcomes,
-                    dataframe_from_array(source_array, s.spatset.subpop, dates, "incidI"),
+                    dataframe_from_array(source_array, s.spatset.nodenames, dates, "incidI"),
                 )
             elif isinstance(source_name, dict):
-                source_array = get_filtered_incidI(seir_sim, dates, s.spatset.subpop, source_name)
+                source_array = get_filtered_incidI(seir_sim, dates, s.spatset.nodenames, source_name)
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 source_array = all_data[source_name]
@@ -347,14 +347,14 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                 ].to_numpy()
             else:
                 probabilities = parameters[new_comp]["probability"].as_random_distribution()(
-                    size=len(s.spatset.subpop)
-                )  # one draw per subpop
+                    size=len(s.spatset.nodenames)
+                )  # one draw per geoid
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
 
                 delays = parameters[new_comp]["delay"].as_random_distribution()(
-                    size=len(s.spatset.subpop)
-                )  # one draw per subpop
+                    size=len(s.spatset.nodenames)
+                )  # one draw per geoid
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
             probabilities = np.repeat(probabilities[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
@@ -366,18 +366,18 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                     hpar,
                     pd.DataFrame.from_dict(
                         {
-                            "subpop": s.spatset.subpop,
-                            "quantity": ["probability"] * len(s.spatset.subpop),
-                            "outcome": [new_comp] * len(s.spatset.subpop),
-                            "value": probabilities[0] * np.ones(len(s.spatset.subpop)),
+                            "geoid": s.spatset.nodenames,
+                            "quantity": ["probability"] * len(s.spatset.nodenames),
+                            "outcome": [new_comp] * len(s.spatset.nodenames),
+                            "value": probabilities[0] * np.ones(len(s.spatset.nodenames)),
                         }
                     ),
                     pd.DataFrame.from_dict(
                         {
-                            "subpop": s.spatset.subpop,
-                            "quantity": ["delay"] * len(s.spatset.subpop),
-                            "outcome": [new_comp] * len(s.spatset.subpop),
-                            "value": delays[0] * np.ones(len(s.spatset.subpop)),
+                            "geoid": s.spatset.nodenames,
+                            "quantity": ["delay"] * len(s.spatset.nodenames),
+                            "outcome": [new_comp] * len(s.spatset.nodenames),
+                            "value": delays[0] * np.ones(len(s.spatset.nodenames)),
                         }
                     ),
                 ],
@@ -407,7 +407,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
             stoch_delay_flag = False
             all_data[new_comp] = multishift(all_data[new_comp], delays, stoch_delay_flag=stoch_delay_flag)
             # Produce a dataframe an merge it
-            df_p = dataframe_from_array(all_data[new_comp], s.spatset.subpop, dates, new_comp)
+            df_p = dataframe_from_array(all_data[new_comp], s.spatset.nodenames, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
 
             # Make duration
@@ -418,8 +418,8 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                     ]["value"].to_numpy()
                 else:
                     durations = parameters[new_comp]["duration"].as_random_distribution()(
-                        size=len(s.spatset.subpop)
-                    )  # one draw per subpop
+                        size=len(s.spatset.nodenames)
+                    )  # one draw per geoid
                 durations = np.repeat(durations[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
                 durations = np.round(durations).astype(int)
 
@@ -428,10 +428,10 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                         hpar,
                         pd.DataFrame.from_dict(
                             {
-                                "subpop": s.spatset.subpop,
-                                "quantity": ["duration"] * len(s.spatset.subpop),
-                                "outcome": [new_comp] * len(s.spatset.subpop),
-                                "value": durations[0] * np.ones(len(s.spatset.subpop)),
+                                "geoid": s.spatset.nodenames,
+                                "quantity": ["duration"] * len(s.spatset.nodenames),
+                                "outcome": [new_comp] * len(s.spatset.nodenames),
+                                "value": durations[0] * np.ones(len(s.spatset.nodenames)),
                             }
                         ),
                     ],
@@ -465,7 +465,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
 
                 df_p = dataframe_from_array(
                     all_data[parameters[new_comp]["duration_name"]],
-                    s.spatset.subpop,
+                    s.spatset.nodenames,
                     dates,
                     parameters[new_comp]["duration_name"],
                 )
@@ -473,14 +473,14 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
 
         elif "sum" in parameters[new_comp]:
             sum_outcome = np.zeros(
-                (len(dates), len(s.spatset.subpop)),
+                (len(dates), len(s.spatset.nodenames)),
                 dtype=all_data[parameters[new_comp]["sum"][0]].dtype,
             )
             # Sum all concerned compartment.
             for cmp in parameters[new_comp]["sum"]:
                 sum_outcome += all_data[cmp]
             all_data[new_comp] = sum_outcome
-            df_p = dataframe_from_array(sum_outcome, s.spatset.subpop, dates, new_comp)
+            df_p = dataframe_from_array(sum_outcome, s.spatset.nodenames, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
 
     return outcomes, hpar
