@@ -133,7 +133,7 @@ class Setup:
                 config_version=config_version,
                 ti=self.ti,
                 tf=self.tf,
-                nodenames=self.spatset.nodenames,
+                subpop_names=self.spatset.subpop_names,
             )
             self.seedingAndIC = seeding_ic.SeedingAndIC(
                 seeding_config=self.seeding_config,
@@ -257,10 +257,10 @@ class Setup:
 
 
 class SpatialSetup:
-    def __init__(self, *, setup_name, geodata_file, mobility_file, popnodes_key, nodenames_key):
+    def __init__(self, *, setup_name, geodata_file, mobility_file, popnodes_key, subpop_names_key):
         self.setup_name = setup_name
         self.data = pd.read_csv(
-            geodata_file, converters={nodenames_key: lambda x: str(x).strip()}, skipinitialspace=True
+            geodata_file, converters={subpop_names_key: lambda x: str(x).strip()}, skipinitialspace=True
         )  # subpops and populations, strip whitespaces
         self.nnodes = len(self.data)  # K = # of locations
 
@@ -275,12 +275,12 @@ class SpatialSetup:
                 f"There are {len(np.argwhere(self.popnodes == 0))} nodes with population zero, this is not supported."
             )
 
-        # nodenames_key is the name of the column in geodata_file with subpops
-        if nodenames_key not in self.data:
-            raise ValueError(f"nodenames_key: {nodenames_key} does not correspond to a column in geodata.")
-        self.nodenames = self.data[nodenames_key].tolist()
-        if len(self.nodenames) != len(set(self.nodenames)):
-            raise ValueError(f"There are duplicate nodenames in geodata.")
+        # subpop_names_key is the name of the column in geodata_file with subpops
+        if subpop_names_key not in self.data:
+            raise ValueError(f"subpop_names_key: {subpop_names_key} does not correspond to a column in geodata.")
+        self.subpop_names = self.data[subpop_names_key].tolist()
+        if len(self.subpop_names) != len(set(self.subpop_names)):
+            raise ValueError(f"There are duplicate subpop_names in geodata.")
 
         if mobility_file is not None:
             mobility_file = pathlib.Path(mobility_file)
@@ -297,7 +297,7 @@ class SpatialSetup:
 
             elif mobility_file.suffix == ".csv":
                 mobility_data = pd.read_csv(mobility_file, converters={"ori": str, "dest": str}, skipinitialspace=True)
-                nn_dict = {v: k for k, v in enumerate(self.nodenames)}
+                nn_dict = {v: k for k, v in enumerate(self.subpop_names)}
                 mobility_data["ori_idx"] = mobility_data["ori"].apply(nn_dict.__getitem__)
                 mobility_data["dest_idx"] = mobility_data["dest"].apply(nn_dict.__getitem__)
                 if any(mobility_data["ori_idx"] == mobility_data["dest_idx"]):
@@ -330,7 +330,7 @@ class SpatialSetup:
                 rows, cols, values = scipy.sparse.find(tmp)
                 errmsg = ""
                 for r, c, v in zip(rows, cols, values):
-                    errmsg += f"\n({r}, {c}) = {self.mobility[r, c]} > population of '{self.nodenames[r]}' = {self.popnodes[r]}"
+                    errmsg += f"\n({r}, {c}) = {self.mobility[r, c]} > population of '{self.subpop_names[r]}' = {self.popnodes[r]}"
                 raise ValueError(
                     f"The following entries in the mobility data exceed the source node populations in geodata:{errmsg}"
                 )
@@ -341,7 +341,7 @@ class SpatialSetup:
                 (row,) = np.where(tmp)
                 errmsg = ""
                 for r in row:
-                    errmsg += f"\n sum accross row {r} exceed population of node '{self.nodenames[r]}' ({self.popnodes[r]}), by {-tmp[r]}"
+                    errmsg += f"\n sum accross row {r} exceed population of node '{self.subpop_names[r]}' ({self.popnodes[r]}), by {-tmp[r]}"
                 raise ValueError(
                     f"The following rows in the mobility data exceed the source node populations in geodata:{errmsg}"
                 )
