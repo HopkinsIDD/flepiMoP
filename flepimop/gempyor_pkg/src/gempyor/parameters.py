@@ -54,8 +54,8 @@ class Parameters:
                     fn_name = self.pconfig[pn]["timeserie"].get()
                     df = utils.read_df(fn_name).set_index("date")
                     df.index = pd.to_datetime(df.index)
-                    if len(df.columns) >= len(nodenames):  # one ts per geoid
-                        df = df[nodenames]  # make sure the order of geoids is the same as the reference
+                    if len(df.columns) >= len(nodenames):  # one ts per subpop
+                        df = df[nodenames]  # make sure the order of subpops is the same as the reference
                         # (nodenames from spatial setup) and select the columns
                     elif len(df.columns) == 1:
                         df = pd.DataFrame(
@@ -66,7 +66,7 @@ class Parameters:
                         print("geodata col:", sorted(nodenames))
                         raise ValueError(
                             f"""ERROR loading file {fn_name} for parameter {pn}: the number of non 'date'
-                        columns are {len(df.columns)}, expected {len(nodenames)} (the number of geoids) or one."""
+                        columns are {len(df.columns)}, expected {len(nodenames)} (the number of subpops) or one."""
                         )
 
                     df = df[str(ti) : str(tf)]
