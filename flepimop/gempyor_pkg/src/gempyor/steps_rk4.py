@@ -226,18 +226,18 @@ def rk4_integration(
                 seeding_data["day_start_idx"][min(today + int(np.ceil(dt)), len(seeding_data["day_start_idx"]) - 1)],
             ):
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
-                seeding_places = seeding_data["seeding_places"][seeding_instance_idx]
+                seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
                 seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
-                states_next[seeding_sources][seeding_places] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_places] = states_next[seeding_sources][seeding_places] * (
-                    states_next[seeding_sources][seeding_places] > 0
+                states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
+                    states_next[seeding_sources][seeding_subpops] > 0
                 )
-                states_next[seeding_destinations][seeding_places] += this_seeding_amounts
+                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
 
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_places] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
 
         x_ = np.zeros((2, ncompartments, nspatial_nodes))
         x_[0] = states_next

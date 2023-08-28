@@ -13,7 +13,7 @@
 #  method: delayframe                   # Only fast is supported atm. Makes fast delay_table computations. Later agent-based method ?
 #  paths:
 #    param_from_file: TRUE               #
-#    param_place_file: <path.csv>       # OPTIONAL: File with param per csv. For each param in this file
+#    param_subpop_file: <path.csv>       # OPTIONAL: File with param per csv. For each param in this file
 #  scenarios:                           # Outcomes scenarios to run
 #    - low_death_rate
 #    - mid_death_rate
@@ -38,7 +38,7 @@
 #
 # ## Input Data
 #
-# * <b>{param_place_file}</b> is a csv with columns place, parameter, value. Parameter is constructed as, e.g for comp1:
+# * <b>{param_subpop_file}</b> is a csv with columns subpop, parameter, value. Parameter is constructed as, e.g for comp1:
 #                probability: Pnew_comp1|source
 #                delay:       Dnew_comp1
 #                duration:    Lnew_comp1
