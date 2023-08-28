@@ -5,7 +5,7 @@ from . import helpers
 from .base import NPIBase
 
 
-class Reduce(NPIBase):
+class SinglePeriodModifier(NPIBase):
     def __init__(
         self,
         *,
