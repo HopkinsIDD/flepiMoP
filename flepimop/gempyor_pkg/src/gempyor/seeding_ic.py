@@ -27,7 +27,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
     )
     seeding_dict["seeding_sources"] = np.zeros(len(amounts), dtype=np.int64)
     seeding_dict["seeding_destinations"] = np.zeros(len(amounts), dtype=np.int64)
-    seeding_dict["seeding_places"] = np.zeros(len(amounts), dtype=np.int64)
+    seeding_dict["seeding_subpops"] = np.zeros(len(amounts), dtype=np.int64)
     seeding_amounts = np.zeros(len(amounts), dtype=np.float64)
 
     nb_seed_perday = np.zeros(setup.n_days, dtype=np.int64)
@@ -35,9 +35,9 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
     n_seeding_ignored_before = 0
     n_seeding_ignored_after = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
-        if row["place"] not in setup.spatset.subpop_names:
+        if row["subpop"] not in setup.spatset.subpop_names:
             raise ValueError(
-                f"Invalid place '{row['place']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata."
+                f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata."
             )
 
         if (row["date"].date() - setup.ti).days >= 0:
@@ -49,7 +49,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
                 destination_dict = {grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names}
                 seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(source_dict)
                 seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict)
-                seeding_dict["seeding_places"][idx] = setup.spatset.subpop_names.index(row["place"])
+                seeding_dict["seeding_subpops"][idx] = setup.spatset.subpop_names.index(row["subpop"])
                 seeding_amounts[idx] = amounts[idx]
             else:
                 n_seeding_ignored_after += 1
@@ -103,7 +103,7 @@ class SeedingAndIC:
             #  TODO Think about     - Does not support the new way of doing compartiment indexing
             ic_df = pd.read_csv(
                 self.initial_conditions_config["states_file"].as_str(),
-                converters={"place": lambda x: str(x)},
+                converters={"subpop": lambda x: str(x)},
                 skipinitialspace=True,
             )
             if ic_df.empty:
@@ -112,8 +112,8 @@ class SeedingAndIC:
                 )
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for pl_idx, pl in enumerate(setup.spatset.subpop_names):  #
-                if pl in list(ic_df["place"]):
-                    states_pl = ic_df[ic_df["place"] == pl]
+                if pl in list(ic_df["subpop"]):
+                    states_pl = ic_df[ic_df["subpop"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
                         ic_df_compartment_val = states_pl[states_pl["comp"] == comp_name]["amount"]
                         if len(ic_df_compartment_val) > 1:
@@ -139,7 +139,7 @@ class SeedingAndIC:
                     y0[0, pl_idx] = setup.popnodes[pl_idx]
                 else:
                     raise ValueError(
-                        f"place {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
+                        f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
@@ -200,7 +200,7 @@ class SeedingAndIC:
                         y0[0, pl_idx] = setup.popnodes[pl_idx]
                     else:
                         raise ValueError(
-                            f"place {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
+                            f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
@@ -231,13 +231,13 @@ class SeedingAndIC:
         if method == "NegativeBinomialDistributed" or method == "PoissonDistributed":
             seeding = pd.read_csv(
                 self.seeding_config["lambda_file"].as_str(),
-                converters={"place": lambda x: str(x)},
+                converters={"subpop": lambda x: str(x)},
                 parse_dates=["date"],
                 skipinitialspace=True,
             )
-            dupes = seeding[seeding.duplicated(["place", "date"])].index + 1
+            dupes = seeding[seeding.duplicated(["subpop", "date"])].index + 1
             if not dupes.empty:
-                raise ValueError(f"Repeated place-date in rows {dupes.tolist()} of seeding::lambda_file.")
+                raise ValueError(f"Repeated subpop-date in rows {dupes.tolist()} of seeding::lambda_file.")
         elif method == "FolderDraw":
             seeding = pd.read_csv(
                 setup.get_input_filename(
@@ -245,19 +245,19 @@ class SeedingAndIC:
                     sim_id=sim_id,
                     extension_override="csv",
                 ),
-                converters={"place": lambda x: str(x)},
+                converters={"subpop": lambda x: str(x)},
                 parse_dates=["date"],
                 skipinitialspace=True,
             )
         elif method == "FromFile":
             seeding = pd.read_csv(
                 self.seeding_config["seeding_file"].get(),
-                converters={"place": lambda x: str(x)},
+                converters={"subpop": lambda x: str(x)},
                 parse_dates=["date"],
                 skipinitialspace=True,
             )
         elif method == "NoSeeding":
-            seeding = pd.DataFrame(columns=["date", "place"])
+            seeding = pd.DataFrame(columns=["date", "subpop"])
             return _DataFrame2NumbaDict(df=seeding, amounts=[], setup=setup)
         else:
             raise NotImplementedError(f"unknown seeding method [got: {method}]")
