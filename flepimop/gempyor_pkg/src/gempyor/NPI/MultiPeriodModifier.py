@@ -4,7 +4,7 @@ from . import helpers
 from .base import NPIBase
 
 
-class MultiTimeReduce(NPIBase):
+class MultiPeriodModifier(NPIBase):
     def __init__(
         self,
         *,
