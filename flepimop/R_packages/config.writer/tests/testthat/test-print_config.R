@@ -10,7 +10,7 @@ generate_config <- function(){
                  sim_end_date = "2021-08-07",
                  dt = 0.25,
                  nslots = 300,
-                 sim_states = unique(interventions$USPS[!interventions$USPS %in% c("", "all") & !is.na(interventions$USPS)]),
+                 modeled_states = unique(interventions$USPS[!interventions$USPS %in% c("", "all") & !is.na(interventions$USPS)]),
                  setup_name = "usa_inference_territories_statelevel",
                  geodata = "geodata_territories_2019_statelevel.csv",
                  mobility = "mobility_territories_2011-2015_statelevel.csv")
