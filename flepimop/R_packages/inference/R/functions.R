@@ -509,8 +509,8 @@ perturb_hpar <- function(hpar, intervention_settings) {
 ##' on a subpop specific likelihood.
 ##'
 ##'
-##' @param seeding_orig original seeding data frame (must have column place)
-##' @param seeding_prop proposal seeding (must have column place)
+##' @param seeding_orig original seeding data frame (must have column subpop)
+##' @param seeding_prop proposal seeding (must have column subpop)
 ##' @param snpi_orig original npi data frame  (must have column subpop)
 ##' @param snpi_prop proposal npi data frame  (must have column subpop)
 ##' @param hnpi_orig original npi data frame  (must have column subpop)
@@ -548,11 +548,11 @@ accept_reject_new_seeding_npis <- function(
   orig_lls$accept <- as.numeric(accept) # added column for acceptance decision
   orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
 
-  for (place in orig_lls$subpop[accept]) {
-    rc_seeding[rc_seeding$place == place, ] <- seeding_prop[seeding_prop$place ==place, ]
-    rc_snpi[rc_snpi$subpop == place, ] <- snpi_prop[snpi_prop$subpop == place, ]
-    rc_hnpi[rc_hnpi$subpop == place, ] <- hnpi_prop[hnpi_prop$subpop == place, ]
-    rc_hpar[rc_hpar$subpop == place, ] <- hpar_prop[hpar_prop$subpop == place, ]
+  for (subpop in orig_lls$subpop[accept]) {
+    rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop ==subpop, ]
+    rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
+    rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
+    rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == place, ]
   }
 
   return(list(

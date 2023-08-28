@@ -361,7 +361,7 @@ if("seed" %in% model_outputs){ ## TO DO: MODIFIED FOR WHEN LOTS MORE SEEDING COM
   seed_plots <- lapply(sort(unique(setDT(geodata) %>% .[, get(config$spatial_setup$subpop)])),
                        function(i){
                          outputs_global$seed %>%
-                           .[place == i] %>%
+                           .[subpop == i] %>%
                            ggplot(aes(x = as.Date(date), y = amount)) +
                            facet_wrap(as.formula(facet_formula), scales = 'free', ncol=1,
                                       labeller = label_wrap_gen(multi_line=FALSE)) +
@@ -374,9 +374,9 @@ if("seed" %in% model_outputs){ ## TO DO: MODIFIED FOR WHEN LOTS MORE SEEDING COM
   print(do.call("grid.arrange", c(seed_plots, ncol=4)))
   
   # 
-  # for(i in unique(outputs_global$seed$place)){
+  # for(i in unique(outputs_global$seed$subpop)){
   #   print(outputs_global$seed %>%
-  #     .[place == i] %>%
+  #     .[subpop == i] %>%
   #       ggplot(aes(x = as.Date(date), y = amount)) +
   #       facet_wrap(as.formula(facet_formula), scales = 'free', ncol=1, 
   #                  labeller = label_wrap_gen(multi_line=FALSE)) +

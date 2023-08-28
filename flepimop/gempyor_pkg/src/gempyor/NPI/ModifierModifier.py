@@ -8,7 +8,7 @@ from .base import NPIBase
 debug_print = False
 
 
-class ReduceIntervention(NPIBase):
+class ModifierModifier(NPIBase):
     def __init__(
         self,
         *,
@@ -206,4 +206,4 @@ class ReduceIntervention(NPIBase):
 
         self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_subpops))
         if self.spatial_groups["grouped"]:
-            raise ValueError("Spatial groups are not supported for ReduceIntervention interventions")
+            raise ValueError("Spatial groups are not supported for ModifierModifier interventions")
