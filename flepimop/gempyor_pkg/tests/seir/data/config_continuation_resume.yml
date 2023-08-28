@@ -80,7 +80,7 @@ interventions:
     - Scenario2
   settings:
     None:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-16
@@ -88,7 +88,7 @@ interventions:
         distribution: fixed
         value: 0
     Wuhan:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-16
@@ -97,7 +97,7 @@ interventions:
         low: .14
         high: .33
     KansasCity:
-      template: ReduceR0
+      template: SinglePeriodModifierR0
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-16
@@ -106,11 +106,11 @@ interventions:
         low: .04
         high: .23
     Scenario1:
-      template: Stacked
+      template: StackedModifier
       scenarios:
         - Wuhan
         - None
     Scenario2:
-      template: Stacked
+      template: StackedModifier
       scenarios:
         - Wuhan
