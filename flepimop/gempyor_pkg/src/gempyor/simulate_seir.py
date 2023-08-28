@@ -34,10 +34,10 @@
 #     - ...
 #   settings:
 #     <scenario 1 name>:
-#       template: choose one - "Reduce", ReduceR0", "Stacked"
+#       template: choose one - "SinglePeriodModifier", ", "StackedModifier"
 #       ...
 #     <scenario 2 name>:
-#       template: choose one - "Reduce", "ReduceR0", "Stacked"
+#       template: choose one - "SinglePeriodModifier", "", "StackedModifier"
 #       ...
 #
 # seeding:
@@ -46,12 +46,12 @@
 #
 # ### interventions::scenarios::settings::<scenario name>
 #
-# If {template} is ReduceR0
+# If {template} is 
 # ```yaml
 # interventions:
 #   scenarios:
 #     <scenario name>:
-#       template: Reduce
+#       template: SinglePeriodModifier
 #       parameter: choose one - "alpha, sigma, gamma, r0"
 #       period_start_date: <date>
 #       period_end_date: <date>
@@ -59,24 +59,24 @@
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is ReduceR0
+# If {template} is 
 # ```yaml
 # interventions:
 #   scenarios:
 #     <scenario name>:
-#       template: ReduceR0
+#       template: 
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is Stacked
+# If {template} is StackedModifier
 # ```yaml
 # interventions:
 #   scenarios:
 #     <scenario name>:
-#       template: Stacked
+#       template: StackedModifier
 #       scenarios: <list of scenario names>
 # ```
 #
