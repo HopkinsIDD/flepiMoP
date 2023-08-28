@@ -38,7 +38,7 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
     start_date <- as.Date(start_date)
     sim_end_date <- as.Date(sim_end_date)
 
-    template = "Reduce"
+    template = "SinglePeriodModifier"
     param_val <- "incidH::probability"
 
     if(is.null(incl_subpop)){
@@ -82,7 +82,7 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
 #' @param npi_cutoff_date only interventions that start before or on npi_cuttof_date are included
-#' @param redux_subpop string or vector of characters indicating which subpop will have an intervention with the ReduceIntervention template; it accepts "all". If any values are specified, the intervention in the subpop with the maximum start date will be selected. It defaults to NULL. .
+#' @param redux_subpop string or vector of characters indicating which subpop will have an intervention with the ModifierModifier template; it accepts "all". If any values are specified, the intervention in the subpop with the maximum start date will be selected. It defaults to NULL. .
 #' @param v_dist type of distribution for reduction
 #' @param v_mean reduction mean
 #' @param v_sd reduction sd
@@ -141,7 +141,7 @@ set_npi_params_old <- function(intervention_file,
                       type = "transmission",
                       category = "NPI",
                       baseline_scenario = "",
-                      parameter = dplyr::if_else(template=="MultiTimeReduce", param_val, NA_character_)
+                      parameter = dplyr::if_else(template=="MultiPeriodModifier", param_val, NA_character_)
         )
 
     if(any(stringr::str_detect(npi$name, "^\\d$"))) stop("Intervention names must include at least one non-numeric character.")
@@ -173,8 +173,8 @@ set_npi_params_old <- function(intervention_file,
     npi <- npi %>%
         dplyr::ungroup() %>%
         dplyr::add_count(name) %>%
-        dplyr::mutate(template = dplyr::if_else(n==1 & template == "MultiTimeReduce", "Reduce", template),
-                      parameter = dplyr::if_else(n==1 & template == "Reduce", param_val, parameter)) %>%
+        dplyr::mutate(template = dplyr::if_else(n==1 & template == "MultiPeriodModifier", "SinglePeriodModifier", template),
+                      parameter = dplyr::if_else(n==1 & template == "SinglePeriodModifier", param_val, parameter)) %>%
         dplyr::select(-n)
 
     return(npi)
@@ -189,7 +189,7 @@ set_npi_params_old <- function(intervention_file,
 #' @param sim_start_date simulation start date
 #' @param sim_end_date simulation end date
 #' @param npi_cutoff_date only interventions that start before or on npi_cuttof_date are included
-#' @param redux_subpop string or vector of characters indicating which subpop will have an intervention with the ReduceIntervention template; it accepts "all". If any values are specified, the intervention in the subpop with the maximum start date will be selected. It defaults to NULL. .
+#' @param redux_subpop string or vector of characters indicating which subpop will have an intervention with the ModifierModifier template; it accepts "all". If any values are specified, the intervention in the subpop with the maximum start date will be selected. It defaults to NULL. .
 #' @param v_dist type of distribution for reduction
 #' @param v_mean reduction mean
 #' @param v_sd reduction sd
@@ -232,7 +232,7 @@ set_npi_params <- function (intervention_file, sim_start_date = as.Date("2020-01
                       value_mean = v_mean, value_sd = v_sd, value_a = v_a,
                       value_b = v_b, pert_dist = p_dist, pert_mean = p_mean,
                       pert_sd = p_sd, pert_a = p_a, pert_b = p_b, type = "transmission",
-                      category = "NPI", baseline_scenario = "", parameter = dplyr::if_else(template == "MultiTimeReduce", param_val, NA_character_))
+                      category = "NPI", baseline_scenario = "", parameter = dplyr::if_else(template == "MultiPeriodModifier", param_val, NA_character_))
     if (any(stringr::str_detect(npi$name, "^\\d$")))
         stop("Intervention names must include at least one non-numeric character.")
     npi <- npi %>% dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)), pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
@@ -252,8 +252,8 @@ set_npi_params <- function (intervention_file, sim_start_date = as.Date("2020-01
     }
     npi <- npi %>% dplyr::ungroup() %>%
         dplyr::add_count(name) %>%
-        dplyr::mutate(template = dplyr::if_else(n == 1 & template == "MultiTimeReduce", "Reduce", template),
-                      parameter = dplyr::if_else(n == 1 & template == "Reduce", param_val, parameter)) %>%
+        dplyr::mutate(template = dplyr::if_else(n == 1 & template == "MultiPeriodModifier", "SinglePeriodModifier", template),
+                      parameter = dplyr::if_else(n == 1 & template == "SinglePeriodModifier", param_val, parameter)) %>%
         dplyr::select(-n)
     return(npi)
 }
@@ -294,7 +294,7 @@ set_npi_params <- function (intervention_file, sim_start_date = as.Date("2020-01
 set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                                    sim_end_date=Sys.Date()+60,
                                    inference = TRUE,
-                                   template = "MultiTimeReduce",
+                                   template = "MultiPeriodModifier",
                                    v_dist="truncnorm",
                                    v_mean = c(-0.2, -0.133, -0.067, 0, 0.067, 0.133, 0.2, 0.133, 0.067, 0, -0.067, -0.133), # TODO function?
                                    v_sd = 0.05, v_a = -1, v_b = 1,
@@ -343,7 +343,7 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                           lubridate::ceiling_date(end_date, "months") <= lubridate::ceiling_date(sim_end_date, "months")
         ) %>%
         dplyr::add_count(name) %>%
-        dplyr::mutate(template = dplyr::if_else(n > 1, template, "Reduce"),
+        dplyr::mutate(template = dplyr::if_else(n > 1, template, "SinglePeriodModifier"),
                       end_date = dplyr::if_else(end_date > sim_end_date, sim_end_date, end_date),
                       start_date = dplyr::if_else(start_date < sim_start_date, sim_start_date, start_date)
         ) %>%
@@ -389,7 +389,7 @@ set_localvar_params <- function(sim_start_date=as.Date("2020-03-31"),
     sim_start_date <- as.Date(sim_start_date)
     sim_end_date <- as.Date(sim_end_date)
 
-    template = "Reduce"
+    template = "SinglePeriodModifier"
     param_val <- ifelse(compartment, "r0", "R0")
     affected_subpop = "all"
 
@@ -491,7 +491,7 @@ set_redux_params <- function(npi_file,
                category = "NPI_redux",
                name = paste0(category, '_', month),
                baseline_scenario = c("base_npi", paste0("NPI_redux_", month[-length(month)])),
-               template = "ReduceIntervention",
+               template = "ModifierModifier",
                parameter = param_val,
                value_dist = v_dist,
                value_sd = v_sd,
@@ -543,7 +543,7 @@ set_vacc_rates_params <- function (vacc_path,
         dplyr::mutate(subpop = as.character(subpop), month = lubridate::month(start_date, label = TRUE),
                       type = "transmission", category = "vaccination",
                       name = paste0("Dose1_", tolower(month), lubridate::year(start_date)),
-                      template = "Reduce",  baseline_scenario = "",
+                      template = "SinglePeriodModifier",  baseline_scenario = "",
                       value_mean = round(value_mean, 5),
                       value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_,
                       value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_,
@@ -611,7 +611,7 @@ set_vacc_rates_params_dose3 <- function (vacc_path,
         dplyr::mutate(subpop = as.character(subpop), month = lubridate::month(start_date,
                                                                             label = TRUE), type = "transmission", category = "vaccination",
                       name = paste0("Dose3_", tolower(month), lubridate::year(start_date), "_",age_group),
-                      template = "Reduce",
+                      template = "SinglePeriodModifier",
                       baseline_scenario = "",
                       value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_,
                       value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_,
@@ -713,7 +713,7 @@ set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 =
                                                    category = "variant",
                                                    name = paste(USPS, "variantR0adj", paste0("Week", lubridate::week(start_date)), sep = "_"),
                                                    name = stringr::str_remove(name, "^\\_"),
-                                                   template = "Reduce",
+                                                   template = "SinglePeriodModifier",
                                                    parameter = "R0",
                                                    value_dist = v_dist, value_mean = 1 - R_ratio, value_sd = v_sd, value_a = v_a, value_b = v_b,
                                                    pert_dist = p_dist, pert_mean = p_mean, pert_sd = p_sd,
@@ -824,9 +824,9 @@ set_vacc_outcome_params <- function(age_strat = "under65",
                               param = paste(param, vacc, variant, age_strat, sep="_")) %>%
                 dplyr::filter(!is.na(param))) %>%
         dplyr::mutate(
-            #    name = paste(param, "vaccadj", month, sep = "_"), template = "Reduce",
-            #    name = paste(param, "vaccadj", USPS, (1-value_mean), sep = "_"), template = "Reduce",
-            name = paste(param, "vaccadj", (1-value_mean), sep = "_"), template = "Reduce",
+            #    name = paste(param, "vaccadj", month, sep = "_"), template = "SinglePeriodModifier",
+            #    name = paste(param, "vaccadj", USPS, (1-value_mean), sep = "_"), template = "SinglePeriodModifier",
+            name = paste(param, "vaccadj", (1-value_mean), sep = "_"), template = "SinglePeriodModifier",
             parameter = paste0(param, "::probability")) %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b,
                                     ~ifelse(inference, .x, NA_real_)),
@@ -928,7 +928,7 @@ set_incidC_shift <- function(periods,
             dplyr::filter(epoch == epochs[i]) %>%
             dplyr::select(-epoch) %>%
             dplyr::mutate(
-                template = "Reduce",
+                template = "SinglePeriodModifier",
                 name = paste0("incidCshift_", i),
                 type = "outcome",
                 category = "incidCshift",
@@ -1015,7 +1015,7 @@ set_incidH_adj_params <- function(outcome_path,
                       type = "outcome",
                       category = "outcome_adj",
                       name = paste(param, "adj",USPS, sep = "_"),
-                      template = "Reduce",
+                      template = "SinglePeriodModifier",
                       parameter = paste0(param, "::probability"),
                       baseline_scenario = "",
                       value_dist = v_dist,
@@ -1121,7 +1121,7 @@ set_ve_shift_params <- function(variant_path,
                       type = "transmission",
                       parameter = dplyr::if_else(stringr::str_detect(name, "ose1"), par_val_1, par_val_2),
                       category = "ve_shift",
-                      template = "Reduce",
+                      template = "SinglePeriodModifier",
                       baseline_scenario = "",
                       value_dist = v_dist,
                       value_sd = v_sd,

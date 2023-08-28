@@ -2,11 +2,11 @@ context("accept_reject_new_seeding_npis")
 
 
 test_that("all blocks are accpeted when all proposals are better",{
-    seed_orig <- data.frame(place=c(rep("A",5),rep("B",5),rep("C",5)),
+    seed_orig <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
                             date=16:30,
                             value=1:15)
 
-    seed_prop <- data.frame(place=c(rep("A",5),rep("B",5),rep("C",5)),
+    seed_prop <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
                             date=16:30,
                             value=(1:15)*10)
 
@@ -57,11 +57,11 @@ test_that("all blocks are accpeted when all proposals are better",{
 
 
 test_that("all blocks are rejected when all proposals are 1x10^12 times worse",{
-    seed_orig <- data.frame(place=c(rep("A",5),rep("B",5),rep("C",5)),
+    seed_orig <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
                             date=16:30,
                             value=1:15)
 
-    seed_prop <- data.frame(place=c(rep("A",5),rep("B",5),rep("C",5)),
+    seed_prop <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
                             date=16:30,
                             value=(1:15)*10)
 
@@ -112,11 +112,11 @@ test_that("all blocks are rejected when all proposals are 1x10^12 times worse",{
 
 
 test_that("only middle block is accepted when appropriate",{
-    seed_orig <- data.frame(place=c(rep("A",5),rep("B",5),rep("C",5)),
+    seed_orig <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
                             date=16:30,
                             value=1:15)
 
-    seed_prop <- data.frame(place=c(rep("A",5),rep("B",5),rep("C",5)),
+    seed_prop <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
                             date=16:30,
                             value=(1:15)*10)
 
@@ -155,7 +155,7 @@ test_that("only middle block is accepted when appropriate",{
       prop_lls = prop_lls
     )
 
-    sd_inds <- which(seed_orig$place!="B")
+    sd_inds <- which(seed_orig$subpop!="B")
     npi_inds <- which(npis_orig$subpop!="B")
     ll_inds <- which(prop_lls$subpop!="B")
 
@@ -165,7 +165,7 @@ test_that("only middle block is accepted when appropriate",{
     expect_that(tmp$lls$ll[ll_inds], equals(orig_lls$ll[ll_inds]))
 
 
-    sd_inds <- which(seed_orig$place=="B")
+    sd_inds <- which(seed_orig$subpop=="B")
     npi_inds <- which(npis_orig$subpop=="B")
     ll_inds <- which(prop_lls$subpop=="B")
 

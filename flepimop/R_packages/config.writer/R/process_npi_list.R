@@ -94,7 +94,7 @@ find_truncnorm_mean_parameter <- function(a, b, mean, sd) {
     )
 }
 
-#' ScenarioHub: Recode scenario hub interventions for "ReduceR0" template
+#' ScenarioHub: Recode scenario hub interventions for "SinglePeriodModifier" template
 #'
 #' @param data intervention list for the national forecast or the scenariohub
 #'
@@ -118,11 +118,11 @@ npi_recode_scenario <- function(data
 
 }
 
-#'  ScenarioHub: Recode scenario hub interventions for "MultiTimeReduce" template
+#'  ScenarioHub: Recode scenario hub interventions for "MultiPeriodModifier" template
 #'
 #' @param data intervention list for the national forecast or the scenariohub
 #'
-#' @return recoded npi names for use with MultiTimeReduce
+#' @return recoded npi names for use with MultiPeriodModifier
 #' @export
 #'
 
@@ -152,7 +152,7 @@ npi_recode_scenario_mult <- function(data){
 #'         - start_date: intervention start date
 #'         - end_date: intervention end date
 #'         - name: intervention name
-#'         - template: intervention template (e.g. ReduceR0, MultiTimeReduce)
+#'         - template: intervention template (e.g. SinglePeriodModifier, MultiPeriodModifier)
 #' @export
 #'
 #' @examples
@@ -174,10 +174,10 @@ process_npi_usa <- function (intervention_path,
         og <- og %>% dplyr::mutate(dplyr::across(tidyselect::ends_with("_date"), ~lubridate::mdy(.x)))
     }
     if ("template" %in% colnames(og)) {
-        og <- og %>% dplyr::mutate(name = dplyr::if_else(template == "MultiTimeReduce", scenario_mult, scenario)) %>%
+        og <- og %>% dplyr::mutate(name = dplyr::if_else(template == "MultiPeriodModifier", scenario_mult, scenario)) %>%
             dplyr::select(USPS, subpop, start_date, end_date, name, template)
     } else {
-        og <- og %>% dplyr::mutate(template = "MultiTimeReduce") %>%
+        og <- og %>% dplyr::mutate(template = "MultiPeriodModifier") %>%
             dplyr::select(USPS, subpop, start_date, end_date, name = scenario_mult, template)
     }
     if (prevent_overlap) {
@@ -206,7 +206,7 @@ process_npi_usa <- function (intervention_path,
 #'         - start_date: intervention start date
 #'         - end_date: intervention end date
 #'         - name: intervention name
-#'         - template: intervention template (e.g. ReduceR0, MultiTimeReduce)
+#'         - template: intervention template (e.g. SinglePeriodModifier, MultiPeriodModifier)
 #' @export
 #'
 process_npi_ca <- function(intervention_path,
@@ -227,7 +227,7 @@ process_npi_ca <- function(intervention_path,
         dplyr::arrange(start_date) %>%
         dplyr::mutate(end_date = dplyr::if_else(is.na(end_date), dplyr::lead(start_date)-1, end_date),
                       end_date = dplyr::if_else(start_date == max(start_date), lubridate::NA_Date_, end_date),
-                      template = "MultiTimeReduce") %>%
+                      template = "MultiPeriodModifier") %>%
         dplyr::ungroup() %>%
         dplyr::select(USPS, subpop, start_date, end_date, name = phase, template)
 

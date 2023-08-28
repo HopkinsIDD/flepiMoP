@@ -307,7 +307,7 @@ incident_cases <- incident_cases %>%
     dplyr::ungroup() %>%
     dplyr::select(!!!rlang::syms(required_column_names))
 
-names(incident_cases)[1:3] <- c("place", "date", "amount")
+names(incident_cases)[1:3] <- c("subpop", "date", "amount")
 
 incident_cases <- incident_cases %>%
     dplyr::filter(!is.na(amount) | !is.na(date))
@@ -332,12 +332,12 @@ if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seed
         seeding_pop$no_perturb <- TRUE
     }
     seeding_pop <- seeding_pop %>%
-        dplyr::filter(place %in% all_subpop) %>%
+        dplyr::filter(subpop %in% all_subpop) %>%
         dplyr::select(!!!colnames(incident_cases))
 
     incident_cases <- incident_cases %>%
         dplyr::bind_rows(seeding_pop) %>%
-        dplyr::arrange(place, date)
+        dplyr::arrange(subpop, date)
 }
 
 
@@ -346,7 +346,7 @@ if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seed
 if (max(incident_cases$date) < lubridate::as_date(config$start_date)){
 
     incident_cases <- incident_cases %>%
-        group_by(place) %>%
+        group_by(subpop) %>%
         filter(date == min(date)) %>%
         distinct() %>%
         ungroup() %>%

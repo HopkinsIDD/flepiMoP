@@ -124,7 +124,7 @@ def read_parameters_from_config(s: setup.Setup):
         outcomes_config = s.outcomes_config["settings"][s.outcome_scenario]
         if s.outcomes_config["param_from_file"].get():
             # Load the actual csv file
-            branching_file = s.outcomes_config["param_place_file"].as_str()
+            branching_file = s.outcomes_config["param_subpop_file"].as_str()
             branching_data = pa.parquet.read_table(branching_file).to_pandas()
             if "relative_probability" not in list(branching_data["quantity"]):
                 raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
@@ -144,7 +144,7 @@ def read_parameters_from_config(s: setup.Setup):
 
             if len(branching_data.subpop.unique()) != len(s.spatset.subpop_names):
                 raise ValueError(
-                    f"Places in seir input files does not correspond to places in outcome probability file {branching_file}"
+                    f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
                 )
 
         subclasses = [""]
@@ -279,13 +279,13 @@ def postprocess_and_write(sim_id, s, outcomes, hpar, npi):
     s.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
 
 
-def dataframe_from_array(data, places, dates, comp_name):
+def dataframe_from_array(data, subpops, dates, comp_name):
     """
         Produce a dataframe in long form from a numpy matrix of
-    dimensions: dates * places. This dataframe are merged together
+    dimensions: dates * subpops. This dataframe are merged together
     to produce the final output
     """
-    df = pd.DataFrame(data.astype(np.double), columns=places, index=dates)
+    df = pd.DataFrame(data.astype(np.double), columns=subpops, index=dates)
     df.index.name = "date"
     df.reset_index(inplace=True)
     df = pd.melt(df, id_vars="date", value_name=comp_name, var_name="subpop")
@@ -486,7 +486,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
     return outcomes, hpar
 
 
-def get_filtered_incidI(diffI, dates, places, filters):
+def get_filtered_incidI(diffI, dates, subpops, filters):
 
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
@@ -497,7 +497,7 @@ def get_filtered_incidI(diffI, dates, places, filters):
     diffI.drop(["mc_value_type"], inplace=True, axis=1)
     filters = filters[vtype]
 
-    incidI_arr = np.zeros((len(dates), len(places)), dtype=int)
+    incidI_arr = np.zeros((len(dates), len(subpops)), dtype=int)
     df = diffI.copy()
     for mc_type, mc_value in filters.items():
         if isinstance(mc_value, str):

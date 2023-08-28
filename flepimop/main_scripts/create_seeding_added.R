@@ -305,7 +305,7 @@ incident_cases <- incident_cases %>%
     dplyr::ungroup() %>%
     dplyr::select(!!!rlang::syms(required_column_names))
 
-names(incident_cases)[1:3] <- c("place", "date", "amount")
+names(incident_cases)[1:3] <- c("subpop", "date", "amount")
 
 incident_cases <- incident_cases %>%
     dplyr::filter(!is.na(amount) | !is.na(date))
@@ -332,12 +332,12 @@ if (!("no_perturb" %in% colnames(incident_cases))){
 #         seeding_pop$no_perturb <- TRUE
 #     }
 #     seeding_pop <- seeding_pop %>%
-#         dplyr::filter(place %in% all_subpop) %>%
+#         dplyr::filter(subpop %in% all_subpop) %>%
 #         dplyr::select(!!!colnames(incident_cases))
 #
 #     incident_cases <- incident_cases %>%
 #         dplyr::bind_rows(seeding_pop) %>%
-#         dplyr::arrange(place, date)
+#         dplyr::arrange(subpop, date)
 # }
 
 

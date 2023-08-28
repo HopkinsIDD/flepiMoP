@@ -52,7 +52,7 @@ interventions:
     - inference
   settings:
     all_independent:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r1
       subpop: "all"
       period_start_date: 2020-01-01
@@ -64,7 +64,7 @@ interventions:
         a: -1
         b: 1
     all_together:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r2
       subpop: "all"
       spatial_groups: "all"
@@ -77,7 +77,7 @@ interventions:
         a: -1
         b: 1
     two_groups:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r3
       subpop: "all"
       spatial_groups: 
@@ -98,7 +98,7 @@ interventions:
         a: -1
         b: 1
     one_group:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r4
       subpop: ["01000", "02000", "04000", "06000"]
       spatial_groups: 
@@ -113,7 +113,7 @@ interventions:
         b: 0.9
 
     mt_reduce:
-      template: MultiTimeReduce
+      template: MultiPeriodModifier
       parameter: r5
       groups:
         - subpop: ["09000", "10000"]
@@ -138,7 +138,7 @@ interventions:
         b: 1
 
     scn_error:
-      template: MultiTimeReduce
+      template: MultiPeriodModifier
       parameter: r1
       groups:
         - subpop: ["09000", "10000"]
@@ -163,8 +163,8 @@ interventions:
         b: 1
 
     inference:
-      template: Stacked
+      template: StackedModifier
       scenarios: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
     error:
-      template: Stacked
+      template: StackedModifier
       scenarios: ["scn_error"]

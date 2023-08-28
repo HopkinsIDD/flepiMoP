@@ -3,7 +3,7 @@ context("perturb_seeding")
 test_that("seeding date always stays within date bounds", {
     N <- 10000
     seeding <- data.frame(date=rep(as.Date("2020-02-01"), N),
-                          place=1:N,
+                          subpop=1:N,
                           amount=rep(10,N))
 
     date_bounds <- as.Date(c("2020-01-31", "2020-02-02"))
@@ -18,7 +18,7 @@ test_that("seeding date always stays within date bounds", {
 test_that("the median of the seeding pertubations is 0 after 10000 sims", {
     N <- 10000
     seeding <- data.frame(date=rep(as.Date("2020-02-01"), N),
-                          place=1:N,
+                          subpop=1:N,
                           amount=rep(10,N))
 
     date_bounds <- as.Date(c("2020-01-20", "2020-02-20"))

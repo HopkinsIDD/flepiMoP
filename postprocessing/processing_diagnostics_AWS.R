@@ -137,7 +137,7 @@ global_int_llik <- import_s3_outcome(work_dir, "llik", "global", "intermediate")
 chimeric_int_llik <- import_s3_outcome(work_dir, "llik", "chimeric", "intermediate") %>%
   full_join(geodata_states, by = "subpop")
 seed <- import_s3_outcome(work_dir, "seed", "global", "final") %>%
-  mutate(subpop = stringr::str_pad(place, width = 5, side = "left", pad = "0")) %>%
+  mutate(subpop = stringr::str_pad(subpop, width = 5, side = "left", pad = "0")) %>%
   full_join(geodata_states, by = "subpop")
 snpi <- import_s3_outcome(work_dir, "snpi", "global", "final") %>%
   full_join(geodata_states, by = "subpop")
