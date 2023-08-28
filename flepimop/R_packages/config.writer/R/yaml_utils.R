@@ -585,7 +585,7 @@ print_header <- function (
 #' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
 #'
 #' @param census_year integer(year)
-#' @param sim_states vector of locations that will be modeled
+#' @param modeled_states vector of sub-populations (i.e., locations) that will be modeled. This can be different from the subpop IDs. For the US, state abbreviations are often used. This component is only used for filtering the data to the set of populations.
 #' @param geodata_file path to file relative to data_path Geodata is a .csv with column headers, with at least two columns: subpop and popnodes
 #' @param popnodes is the name of a column in geodata that specifies the population of the subpop column
 #' @param subpop is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
@@ -599,16 +599,17 @@ print_header <- function (
 #'
 print_spatial_setup <- function (
         census_year = 2019,
-        sim_states,
+        modeled_states = NULL,
         geodata_file = "geodata.csv",
         mobility_file = "mobility.csv",
         state_level = TRUE) {
 
     cat(
         paste0("spatial_setup:\n",
-               "  census_year: ", census_year, "\n",
-               "  modeled_states:\n"),
-        paste0("   - ", sim_states, "\n"),
+               "  census_year: ", census_year, "\n"),
+        ifelse(!is.null(modeled_states),
+                paste0("  modeled_states:\n",
+               "   - ", modeled_states, "\n"),""),
         paste0("\n",
                "  geodata: ", geodata_file, "\n",
                "  mobility: ", mobility_file, "\n",
