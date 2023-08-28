@@ -42,7 +42,7 @@ def build_step_source_arg(
     keys_ref = [
         "seeding_sources",
         "seeding_destinations",
-        "seeding_places",
+        "seeding_subpops",
         "day_start_idx",
     ]
     for key, item in seeding_data.items():

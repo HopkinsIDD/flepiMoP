@@ -58392,7 +58392,7 @@ interventions:
 outcomes:
   method: delayframe
   param_from_file: FALSE
-  param_place_file: "usa-subpop-params-output_statelevel_agestrat_R12.parquet"
+  param_subpop_file: "usa-subpop-params-output_statelevel_agestrat_R12.parquet"
   scenarios:
     - med
   settings:
