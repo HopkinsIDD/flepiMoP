@@ -552,7 +552,7 @@ accept_reject_new_seeding_npis <- function(
     rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop ==subpop, ]
     rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
     rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
-    rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == place, ]
+    rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
   }
 
   return(list(
