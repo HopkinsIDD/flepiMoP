@@ -84,11 +84,17 @@ class Setup:
 
         # I'm not really sure if we should impose defaut or make setup really explicit and
         # have users pass
-        if seir_config is None and config["seir"].exists():
+        #if seir_config is None and config["seir"].exists():
+        if not seir_config and config["seir"].exists():
             self.seir_config = config["seir"]
+        # added below to cope with the imcompleteness of config["seir"]
+        if not parameters_config  and config["seir"]["parameters"].exists():
+            self.parameters_config = config["seir"]["parameters"]
 
         # Set-up the integration method and the time step
-        if config["seir"].exists() and (seir_config or parameters_config):
+        #if config["seir"].exists() and (seir_config or parameters_config):
+        if (self.seir_config and self.parameters_config):
+        #if ((seir_config or self.seir_config) and parameters_config): # modified to handle the case of "T and (F or F)) -> F" 
             if "integration" in self.seir_config.keys():
                 if "method" in self.seir_config["integration"].keys():
                     self.integration_method = self.seir_config["integration"]["method"].get()
@@ -97,7 +103,7 @@ class Setup:
                     if self.integration_method == "rk4":
                         self.integration_method = "rk4.jit"
                     if self.integration_method not in ["rk4.jit", "legacy"]:
-                        raise ValueError(f"Unknow integration method {self.integration_method}.")
+                        raise ValueError(f"Unknown integration method {self.integration_method}.")
                 if "dt" in self.seir_config["integration"].keys() and self.dt is None:
                     self.dt = float(
                         eval(str(self.seir_config["integration"]["dt"].get()))
@@ -122,6 +128,7 @@ class Setup:
                     f"Should be either non-specified (default: 'v3'), or set to 'old' or 'v2'."
                 )
             elif config_version == "old" or config_version == "v2":
+            # NOTE: even behaved as old, "v2" seems by default in parameter.py 
                 raise ValueError(
                     f"Configuration version 'old' and 'v2' are no longer supported by flepiMoP\n"
                     f"Please use a 'v3' instead, or use the COVIDScenarioPipeline package. "
@@ -148,7 +155,8 @@ class Setup:
         # 3. Outcomes
         self.npi_config_outcomes = None
         if self.outcomes_config:
-            if self.outcomes_config["interventions"]["settings"][self.outcome_scenario].exists():
+            # if self.outcomes_config["interventions"]["settings"][self.outcome_scenario].exists():
+            if self.outcomes_config["interventions"]["settings"][self.outcome_scenario].keys(): #  type dict
                 self.npi_config_outcomes = self.outcomes_config["interventions"]["settings"][self.outcome_scenario]
 
         # 4. Inputs and outputs
@@ -161,9 +169,12 @@ class Setup:
         self.out_run_id = out_run_id
 
         if in_prefix is None:
+# NOTE: hard-coded "model_output"
+# NOTE: asymmetric with out_prefix
             in_prefix = f"model_output/{setup_name}/{in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
+# NOTE: hard-coded "model_output"
             out_prefix = f"model_output/{setup_name}/{npi_scenario}/{out_run_id}/"
         self.out_prefix = out_prefix
 
@@ -176,6 +187,8 @@ class Setup:
                 ftypes.extend(["hosp", "hpar", "hnpi"])
             for ftype in ftypes:
                 datadir = file_paths.create_dir_name(self.out_run_id, self.out_prefix, ftype)
+# NOTE: owing to file_paths.py dirname will be used as hard-coded one
+# NOTE: owing to run_id form, %Y.%m.%d.  is not good to be appled on Windows
                 os.makedirs(datadir, exist_ok=True)
 
             if self.write_parquet and self.write_csv:
@@ -184,6 +197,9 @@ class Setup:
                 self.extension = "parquet"
             elif self.write_csv:
                 self.extension = "csv"
+        else:
+            # there were cases in which self.extension was not set then: 
+            self.extension = "parquet" # to avoid no self.extension in anytime
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.get_filename(
@@ -314,6 +330,7 @@ class SpatialSetup:
             elif mobility_file.suffix == ".npz":
                 self.mobility = scipy.sparse.load_npz(mobility_file).astype(int)
                 # Validate mobility data
+		# data valication/arrangement is needed
                 if self.mobility.shape != (self.nnodes, self.nnodes):
                     raise ValueError(
                         f"mobility data must have dimensions of length of geodata ({self.nnodes}, {self.nnodes}). Actual: {self.mobility.shape}"
