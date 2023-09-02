@@ -39,7 +39,6 @@ def test_parameters_from_config_plus_read_write():
         spatial_setup=ss,
         nslots=1,
         npi_scenario="None",
-        config_version="v3",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
@@ -60,7 +59,6 @@ def test_parameters_from_config_plus_read_write():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
     n_days = 10
     nnodes = 5
@@ -70,7 +68,6 @@ def test_parameters_from_config_plus_read_write():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
     p_draw = p.parameters_quick_draw(n_days=10, nnodes=5)
     # test shape
@@ -83,7 +80,6 @@ def test_parameters_from_config_plus_read_write():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
     p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nnodes=nnodes)
 
@@ -115,7 +111,6 @@ def test_parameters_quick_draw_old():
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        config_version="v3",
         interactive=True,
         write_csv=False,
         first_sim_index=index,
@@ -131,7 +126,6 @@ def test_parameters_quick_draw_old():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
 
     ### Check that the object is well constructed:
@@ -184,7 +178,6 @@ def test_parameters_from_timeserie_file():
         spatial_setup=ss,
         nslots=1,
         npi_scenario="None",
-        config_version="v3",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
@@ -205,7 +198,6 @@ def test_parameters_from_timeserie_file():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
     n_days = 10
     nnodes = 5
@@ -215,7 +207,6 @@ def test_parameters_from_timeserie_file():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
     p_draw = p.parameters_quick_draw(n_days=10, nnodes=5)
     # test shape
@@ -228,7 +219,6 @@ def test_parameters_from_timeserie_file():
         ti=s.ti,
         tf=s.tf,
         subpop_names=s.spatset.subpop_names,
-        config_version="v3",
     )
     p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nnodes=nnodes)
 
