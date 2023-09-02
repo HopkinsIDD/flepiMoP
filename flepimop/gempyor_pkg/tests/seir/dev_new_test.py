@@ -34,7 +34,7 @@ if True:
     )
 
     # p = parameters.Parameters(
-    #    parameter_config=config["seir"]["parameters"], config_version="v2")
+    #    parameter_config=config["seir"]["parameters"])
 
     p = inference_simulator.s.parameters
     p_draw = p.parameters_quick_draw(n_days=inference_simulator.s.n_days, nnodes=inference_simulator.s.nnodes)

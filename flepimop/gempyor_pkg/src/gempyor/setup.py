@@ -32,7 +32,6 @@ class Setup:
         ti,  # time to start
         tf,  # time to finish
         npi_scenario=None,
-        config_version=None,
         npi_config_seir={},
         seeding_config={},
         initial_conditions_config={},
@@ -60,6 +59,9 @@ class Setup:
         self.tf = tf  ## we end on 23:59 on tf
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+        
+        # 2. Check what type of config we have:
+        
         self.npi_scenario = npi_scenario
         self.npi_config_seir = npi_config_seir
         self.seeding_config = seeding_config
@@ -112,25 +114,9 @@ class Setup:
             if self.dt is not None:
                 self.dt = float(self.dt)
 
-            if config_version is None:
-                config_version = "v3"
-                logging.debug(f"Config version not provided, infering type {config_version}")
-
-            if config_version not in ["old", "v2", "v3"]:
-                raise ValueError(
-                    f"Configuration version unknown: {config_version}. \n"
-                    f"Should be either non-specified (default: 'v3'), or set to 'old' or 'v2'."
-                )
-            elif config_version == "old" or config_version == "v2":
-                raise ValueError(
-                    f"Configuration version 'old' and 'v2' are no longer supported by flepiMoP\n"
-                    f"Please use a 'v3' instead, or use the COVIDScenarioPipeline package. "
-                )
-
             # Think if we really want to hold this up.
             self.parameters = parameters.Parameters(
                 parameter_config=self.parameters_config,
-                config_version=config_version,
                 ti=self.ti,
                 tf=self.tf,
                 subpop_names=self.spatset.subpop_names,
