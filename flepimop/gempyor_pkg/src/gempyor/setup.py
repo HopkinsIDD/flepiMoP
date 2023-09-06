@@ -8,6 +8,7 @@ import os
 import scipy.sparse
 import pyarrow as pa
 import copy
+import confuse
 from . import compartments
 from . import parameters
 from . import seeding_ic
@@ -85,72 +86,82 @@ class Setup:
         # I'm not really sure if we should impose defaut or make setup really explicit and
         # have users pass
         #if seir_config is None and config["seir"].exists():
-        if not seir_config and config["seir"].exists():
-            self.seir_config = config["seir"]
+        try:
+            if not seir_config and config["seir"].exists():
+                self.seir_config = config["seir"]
         # added below to cope with the imcompleteness of config["seir"]
-        if not parameters_config  and config["seir"]["parameters"].exists():
-            self.parameters_config = config["seir"]["parameters"]
+            if (not any(parameters_config)) and config["seir"]["parameters"].exists():
+                self.parameters_config = config["seir"]["parameters"]
+        #if (not parameters_config ) and config["seir"]["parameters"].exists():
+        #if (not any(parameters_config) ) and self.seir_config["parameters"].keys():
+        #if  self.seir_config):
+        #except confuse.exceptions.NotFoundError as e:
+        #    print("catch NotFoundError:",e)     
 
         # Set-up the integration method and the time step
         #if config["seir"].exists() and (seir_config or parameters_config):
-        if (self.seir_config and self.parameters_config):
+            if (self.seir_config or config["seir"].exists()) and (any(self.parameters_config) or config["seir"]["parameters"].exists()):
+        #if (self.seir_config and self.parameters_config):
         #if ((seir_config or self.seir_config) and parameters_config): # modified to handle the case of "T and (F or F)) -> F" 
-            if "integration" in self.seir_config.keys():
-                if "method" in self.seir_config["integration"].keys():
-                    self.integration_method = self.seir_config["integration"]["method"].get()
-                    if self.integration_method == "best.current":
-                        self.integration_method = "rk4.jit"
-                    if self.integration_method == "rk4":
-                        self.integration_method = "rk4.jit"
-                    if self.integration_method not in ["rk4.jit", "legacy"]:
-                        raise ValueError(f"Unknown integration method {self.integration_method}.")
-                if "dt" in self.seir_config["integration"].keys() and self.dt is None:
-                    self.dt = float(
-                        eval(str(self.seir_config["integration"]["dt"].get()))
+                if "integration" in self.seir_config.keys():
+                    if "method" in self.seir_config["integration"].keys():
+                        self.integration_method = self.seir_config["integration"]["method"].get()
+                        print(self.integration_method)
+                        if self.integration_method == "best.current":
+                            self.integration_method = "rk4.jit"
+                        if self.integration_method == "rk4":
+                            self.integration_method = "rk4.jit"
+                        if self.integration_method not in ["rk4.jit", "legacy"]:
+                            raise ValueError(f"Unknown integration method {self.integration_method}.")
+                    if "dt" in self.seir_config["integration"].keys() and self.dt is None:
+                        self.dt = float(
+                            eval(str(self.seir_config["integration"]["dt"].get()))
                     )  # ugly way to parse string and formulas
-                elif self.dt is None:
-                    self.dt = 2.0
-            else:
-                self.integration_method = "rk4.jit"
-                if self.dt is None:
-                    self.dt = 2.0
-                logging.info(f"Integration method not provided, assuming type {self.integration_method}")
-            if self.dt is not None:
-                self.dt = float(self.dt)
+                    elif self.dt is None:
+                        self.dt = 2.0
+                else:
+                    self.integration_method = "rk4.jit"
+                    if self.dt is None:
+                        self.dt = 2.0
+                    logging.info(f"Integration method not provided, assuming type {self.integration_method}")
+        except confuse.exceptions.NotFoundError as e:
+            print("catch NotFoundError:",e)     
+        if self.dt is not None:
+            self.dt = float(self.dt)
 
-            if config_version is None:
-                config_version = "v3"
-                logging.debug(f"Config version not provided, infering type {config_version}")
+        if config_version is None:
+            config_version = "v3"
+            logging.debug(f"Config version not provided, infering type {config_version}")
 
-            if config_version not in ["old", "v2", "v3"]:
-                raise ValueError(
-                    f"Configuration version unknown: {config_version}. \n"
-                    f"Should be either non-specified (default: 'v3'), or set to 'old' or 'v2'."
-                )
-            elif config_version == "old" or config_version == "v2":
+        if config_version not in ["old", "v2", "v3"]:
+            raise ValueError(
+                f"Configuration version unknown: {config_version}. \n"
+                f"Should be either non-specified (default: 'v3'), or set to 'old' or 'v2'."
+            )
+        elif config_version == "old" or config_version == "v2":
             # NOTE: even behaved as old, "v2" seems by default in parameter.py 
-                raise ValueError(
-                    f"Configuration version 'old' and 'v2' are no longer supported by flepiMoP\n"
-                    f"Please use a 'v3' instead, or use the COVIDScenarioPipeline package. "
-                )
+            raise ValueError(
+                f"Configuration version 'old' and 'v2' are no longer supported by flepiMoP\n"
+                f"Please use a 'v3' instead, or use the COVIDScenarioPipeline package. "
+            )
 
-            # Think if we really want to hold this up.
-            self.parameters = parameters.Parameters(
-                parameter_config=self.parameters_config,
-                config_version=config_version,
-                ti=self.ti,
-                tf=self.tf,
-                nodenames=self.spatset.nodenames,
+        # Think if we really want to hold this up.
+        self.parameters = parameters.Parameters(
+            parameter_config=self.parameters_config,
+            config_version=config_version,
+            ti=self.ti,
+            tf=self.tf,
+            nodenames=self.spatset.nodenames,
+        )
+        self.seedingAndIC = seeding_ic.SeedingAndIC(
+            seeding_config=self.seeding_config,
+            initial_conditions_config=self.initial_conditions_config,
+        )
+        # really ugly references to the config globally here.
+        if config["compartments"].exists() and self.seir_config is not None:
+            self.compartments = compartments.Compartments(
+                seir_config=self.seir_config, compartments_config=config["compartments"]
             )
-            self.seedingAndIC = seeding_ic.SeedingAndIC(
-                seeding_config=self.seeding_config,
-                initial_conditions_config=self.initial_conditions_config,
-            )
-            # really ugly references to the config globally here.
-            if config["compartments"].exists() and self.seir_config is not None:
-                self.compartments = compartments.Compartments(
-                    seir_config=self.seir_config, compartments_config=config["compartments"]
-                )
 
         # 3. Outcomes
         self.npi_config_outcomes = None
