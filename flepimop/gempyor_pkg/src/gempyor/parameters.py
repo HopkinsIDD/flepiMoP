@@ -37,6 +37,7 @@ class Parameters:
             if self.npar != len(set([name.lower() for name in self.pnames])):
                 raise ValueError(
                     "Parameters of the SEIR model have the same name (remember that case is not sufficient!)"
+                #NOTE: should this lines be eliminated?
                 )
 
             # Attributes of dictionary
