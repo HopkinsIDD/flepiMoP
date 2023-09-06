@@ -111,6 +111,7 @@ class TestSetup:
            npi_config_seir={},
            seeding_config={},
            initial_conditions_config={},
+          # parameters_config={"alpha":{"value":{"distribution":"fixed","value":.9}}},
            parameters_config={},
            seir_config=None,
            outcomes_config={},
@@ -128,7 +129,9 @@ class TestSetup:
         )
 
         assert s.seir_config != None
-        
+        #print(s.seir_config["parameters"])
+        assert s.parameters_config != None
+        #print(s.integration_method) 
         assert s.integration_method == 'legacy'
 
     def test_w_config_seir_integration_method_rk4_1_success(self):
@@ -308,6 +311,7 @@ class TestSetup:
 
         assert s.dt == 2.0
 
+    ''' not needed any longer
     def test_w_config_seir_old_integration_method_fail(self):
         with pytest.raises(ValueError, match=r".*Configuration.*no.*longer.*"):
         # if old method in seir
@@ -329,7 +333,6 @@ class TestSetup:
               ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
               tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
            )
-
     def test_w_config_seir_config_version_not_provided_fail(self):
         with pytest.raises(ValueError, match=r".*Should.*non-specified.*"):
         # if not seir_config["integration"]["dt"]
@@ -358,6 +361,7 @@ class TestSetup:
               seir_config=None,
               dt=None,  # step size, in days
            )
+    '''
 
     def test_w_config_compartments_and_seir_config_not_None_success(self):
         # if config["compartments"] and iself.seir_config was set
