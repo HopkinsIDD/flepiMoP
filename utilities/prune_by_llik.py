@@ -118,11 +118,11 @@ if fill_missing:
     if missing_numbers:
         missing_filenames = []
         for num in missing_numbers:
-            filename_prefix = re.search(r'^.*?(\d+)', all_files[0]).group()
-            filename_suffix = re.search(r'(\..*?)$', all_files[0]).group()
-            missing_filename = os.path.join("...", f"{num:09d}{filename_suffix}")
+            filename = os.path.basename(all_files[0])
+            filename_prefix = re.search(r'^.*?(\d+)', filename).group()
+            filename_suffix = re.search(r'(\..*?)$', filename).group()
+            missing_filename = os.path.join(os.path.dirname(all_files[0]), f"{num:09d}{filename_suffix}")
             missing_filenames.append(missing_filename)
-
         print("The missing filenames with full paths are:")
         for missing_filename in missing_filenames:
             print(missing_filename)
