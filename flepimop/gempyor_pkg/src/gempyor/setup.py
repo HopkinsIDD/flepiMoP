@@ -60,7 +60,6 @@ class Setup:
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
         
-        # 2. Check what type of config we have:
         
         self.npi_scenario = npi_scenario
         self.npi_config_seir = npi_config_seir
@@ -99,7 +98,7 @@ class Setup:
                     if self.integration_method == "rk4":
                         self.integration_method = "rk4.jit"
                     if self.integration_method not in ["rk4.jit", "legacy"]:
-                        raise ValueError(f"Unknow integration method {self.integration_method}.")
+                        raise ValueError(f"Unknown integration method {self.integration_method}.")
                 if "dt" in self.seir_config["integration"].keys() and self.dt is None:
                     self.dt = float(
                         eval(str(self.seir_config["integration"]["dt"].get()))
