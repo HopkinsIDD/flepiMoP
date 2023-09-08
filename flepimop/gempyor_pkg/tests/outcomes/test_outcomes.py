@@ -773,8 +773,8 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         first_sim_index=1,
         outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
-        out_run_id=107,
-    )
+out_run_id=107,
+)
 
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
 
