@@ -115,7 +115,8 @@ class SeedingAndIC:
                 if pl in list(ic_df["subpop"]):
                     states_pl = ic_df[ic_df["subpop"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
-                        ic_df_compartment_val = states_pl[states_pl["comp"] == comp_name]["amount"]
+                        # TODO: allow here the change to single MCs
+                        ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
                         if len(ic_df_compartment_val) > 1:
                             raise ValueError(
                                 f"ERROR: Several ({len(ic_df_compartment_val)}) rows are matches for compartment {comp_name} in init file: filters returned {ic_df_compartment_val}"
