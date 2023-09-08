@@ -126,7 +126,7 @@ if fill_missing:
         print("The missing filenames with full paths are:")
         for missing_filename in missing_filenames:
             print(missing_filename)
-        all_files = all_files + missing_filename
+        all_files = all_files + missing_filenames
     else:
         print("No missing filenames found.")
     
