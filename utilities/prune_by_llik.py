@@ -58,6 +58,7 @@ def get_all_filenames(
 # def generate_pdf(fs_results_path, best_n):
 print("pruning by llik")
 fs_results_path = "to_prune/"
+
 best_n = 100
 llik_filenames = get_all_filenames("llik", fs_results_path, finals_only=True)
 # In[7]:
@@ -97,13 +98,42 @@ print(f"Top {best_n} slots by llik are:")
 for slot in best_slots:
     print(f" - {slot:4}, llik: {sorted_llik.loc[slot]['ll']:0.3f}")
 files_to_keep = list(full_df.loc[best_slots]["filename"].unique())
+
+#important to sort by llik
 all_files = sorted(list(full_df["filename"].unique()))
 
+
 prune_method = "replace"
-prune_method = "delete"
+#prune_method = "delete"
+
+# if prune method is replace, this method tell if it should also replace missing file
+fill_missing = True
+fill_from_min=1
+fill_from_max=300
+
+if fill_missing:
+    # Extract the numbers from the filenames
+    numbers = [int(os.path.basename(filename).split('.')[0]) for filename in all_files]
+    missing_numbers = [num for num in range(fill_from_min, fill_from_max + 1) if num not in numbers]
+    if missing_numbers:
+        missing_filenames = []
+        for num in missing_numbers:
+            filename_prefix = re.search(r'^.*?(\d+)', filenames[0]).group()
+            filename_suffix = re.search(r'(\..*?)$', filenames[0]).group()
+            missing_filename = os.path.join("...", f"{num:09d}{filename_suffix}")
+            missing_filenames.append(missing_filename)
+
+        print("The missing filenames with full paths are:")
+        for missing_filename in missing_filenames:
+            print(missing_filename)
+        all_files = all_files + missing_filename
+    else:
+        print("No missing filenames found.")
+    
+    
+
 
 output_folder = "pruned/"
-
 
 def copy_path(src, dst):
     os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -157,6 +187,8 @@ elif prune_method == "delete":
                 src = src.replace(".parquet", ".csv")
                 dst = dst.replace(".parquet", ".csv")
             copy_path(src=src, dst=dst)
+            
+
 
 # if __name__ == "__main__":
 #    generate_pdf()
