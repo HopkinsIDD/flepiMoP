@@ -85,6 +85,7 @@ class SeedingAndIC:
         method = "Default"
         if "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
+            
 
         allow_missing_nodes = False
         allow_missing_compartments = False
@@ -94,29 +95,37 @@ class SeedingAndIC:
         if "allow_missing_compartments" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["allow_missing_compartments"].get():
                 allow_missing_compartments = True
+        
+        # Places to allocate the rest of the population    
+        rests = []
 
         if method == "Default":
             ## JK : This could be specified in the config
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             y0[0, :] = setup.popnodes
-        elif method == "SetInitialConditions":
-            #  TODO Think about     - Does not support the new way of doing compartiment indexing
-            ic_df = pd.read_csv(
-                self.initial_conditions_config["states_file"].as_str(),
-                converters={"subpop": lambda x: str(x)},
-                skipinitialspace=True,
-            )
-            if ic_df.empty:
-                raise ValueError(
-                    f"There is no entry for initial time ti in the provided initial_conditions::states_file."
+            
+        elif method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
+            #  TODO Think about     - Does not support the new way of doing compartment indexing
+            if method == "SetInitialConditionsFolderDraw":
+                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+            else:
+                ic_df = read_df(
+                    self.initial_conditions_config["initial_conditions_file"].get(),
                 )
+                
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for pl_idx, pl in enumerate(setup.spatset.subpop_names):  #
                 if pl in list(ic_df["subpop"]):
                     states_pl = ic_df[ic_df["subpop"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
-                        # TODO: allow here the change to single MCs
-                        ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
+
+                        if "mc_name" in states_pl.columns:
+                            ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
+                        else:
+                            filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
+                            ic_df_compartment =  states_pl.copy()
+                            for mc_name, mc_value in filters.items():
+                                ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value]["amount"]
                         if len(ic_df_compartment_val) > 1:
                             raise ValueError(
                                 f"ERROR: Several ({len(ic_df_compartment_val)}) rows are matches for compartment {comp_name} in init file: filters returned {ic_df_compartment_val}"
@@ -129,15 +138,21 @@ class SeedingAndIC:
                                     f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
                                                  Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
                                 )
-                        y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
+                        if "rest" in ic_df_compartment_val:
+                            rests.append([comp_idx, pl_idx])
+                        else:
+                            y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_nodes:
                     logger.critical(
-                        f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
+                        f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
                     )
-                    if "proportion" in self.initial_conditions_config.keys():
-                        if self.initial_conditions_config["proportion"].get():
+                    if "proportional" in self.initial_conditions_config.keys():
+                        if self.initial_conditions_config["proportional"].get():
                             y0[0, pl_idx] = 1.0
-                    y0[0, pl_idx] = setup.popnodes[pl_idx]
+                        else:
+                            y0[0, pl_idx] = setup.popnodes[pl_idx]
+                    else:
+                        y0[0, pl_idx] = setup.popnodes[pl_idx]
                 else:
                     raise ValueError(
                         f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
@@ -206,8 +221,20 @@ class SeedingAndIC:
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
         
-        if "proportion" in self.initial_conditions_config.keys():
-            if self.initial_conditions_config["proportion"].get():
+        
+        # rest
+        if rests: # not empty
+            for comp_idx, pl_idx in rests:
+                total = setup.popnodes[pl_idx]
+                if "proportional" in self.initial_conditions_config.keys():
+                    if self.initial_conditions_config["proportional"].get():
+                        total = 1.0
+                y0[comp_idx, pl_idx] = total -  y0[:, pl_idx].sum()
+        
+                
+        
+        if "proportional" in self.initial_conditions_config.keys():
+            if self.initial_conditions_config["proportional"].get():
                 y0 = y0 * setup.popnodes[pl_idx]
 
         # check that the inputed values sums to the node_population:

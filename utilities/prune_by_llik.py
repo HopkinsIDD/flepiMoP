@@ -14,7 +14,7 @@ def get_all_filenames(
     file_type, fs_results_path="to_prune/", finals_only=False, intermediates_only=True, ignore_chimeric=True
 ) -> dict:
     """
-    return dictionanary for each run name
+    return dictionary for each run name
     """
     if file_type == "seed":
         ext = "csv"

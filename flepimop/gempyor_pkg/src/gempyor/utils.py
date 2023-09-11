@@ -36,7 +36,8 @@ def read_df(fname: str, extension: str = "") -> pd.DataFrame:
         fname = f"{fname}.{extension}"
     extension = fname.split(".")[-1]
     if extension == "csv":
-        df = pd.read_csv(fname)
+        # The converter prevents e.g leading geoid (0600) to be converted as int; and works when the column is absent
+        df = pd.read_csv(fname, converters={"subpop": lambda x: str(x)}, skipinitialspace=True)
     elif extension == "parquet":
         df = pa.parquet.read_table(fname).to_pandas()
     else:
