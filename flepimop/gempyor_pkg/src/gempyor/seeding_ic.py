@@ -134,6 +134,9 @@ class SeedingAndIC:
                     logger.critical(
                         f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
                     )
+                    if "proportion" in self.initial_conditions_config.keys():
+                        if self.initial_conditions_config["proportion"].get():
+                            y0[0, pl_idx] = 1.0
                     y0[0, pl_idx] = setup.popnodes[pl_idx]
                 else:
                     raise ValueError(
@@ -192,6 +195,9 @@ class SeedingAndIC:
                         logger.critical(
                             f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
                         )
+                        if "proportion" in self.initial_conditions_config.keys():
+                            if self.initial_conditions_config["proportion"].get():
+                                y0[0, pl_idx] = 1.0
                         y0[0, pl_idx] = setup.popnodes[pl_idx]
                     else:
                         raise ValueError(
@@ -199,6 +205,10 @@ class SeedingAndIC:
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
+        
+        if "proportion" in self.initial_conditions_config.keys():
+            if self.initial_conditions_config["proportion"].get():
+                y0 = y0 * setup.popnodes[pl_idx]
 
         # check that the inputed values sums to the node_population:
         error = False
