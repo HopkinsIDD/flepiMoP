@@ -1986,3 +1986,50 @@ seir_chunk <- function(resume_modifier = NULL,
 
     return(tmp)
 }
+
+
+
+#' print_init_conditions
+#'
+#' @description Print initial conditions section of config
+#'
+#' @param method
+#' @param proportional 
+#' @param perturbation if TRUE, will print perturbation section, requires other values below
+#' @param pert_dist distribution of the perturbation
+#' @param pert_mean mean of perturbation
+#' @param pert_sd standard deviation of perturbation
+#' @param pert_a minimum value of perturbation 
+#' @param pert_b maximum value of perturbation
+#'
+#' @details
+#' Config helper to print initial conditions section
+#' @export
+#'
+#' @examples
+#' print_init_conditions()
+#'
+print_init_conditions <- function(method = "SetInitialConditionsFolderDraw",
+                                  proportional = "True", 
+                                  perturbation = TRUE,
+                                  pert_dist = "truncnorm",
+                                  pert_mean = 0, 
+                                  pert_sd = 0.02,
+                                  pert_a = -1,
+                                  pert_b = 1){
+  
+  cat(paste0("initial_conditions: \n",
+             "  method: ", method, "\n",
+             "  proportional: ", proportional, "\n",
+             ifelse(perturbation, paste0("  perturbation: \n",
+                                         "    distribution: ", pert_dist, "\n",
+                                         "    mean: ", pert_mean, "\n",
+                                         "    sd: ", pert_sd, "\n",
+                                         "    a: ", pert_a, "\n",
+                                         "    b: ", pert_b),
+                    "\n")
+  ))
+  
+}
+
+
