@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import confuse
 
-from gempyor import setup
+from gempyor import setup, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(__file__))
 
 class TestSubpopulationStructure:
     def test_SubpopulationStructure_success(self):
-        ss = setup.SubpopulationStructure(
+        ss = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -28,7 +28,7 @@ class TestSubpopulationStructure:
     def test_bad_popnodes_key_fail(self):
         # Bad popnodes_key error
         with pytest.raises(ValueError, match=r".*popnodes_key.*"):
-            setup.SubpopulationStructure(
+            subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
@@ -38,7 +38,7 @@ class TestSubpopulationStructure:
 
     def test_bad_subpop_names_key_fail(self):
         with pytest.raises(ValueError, match=r".*subpop_names_key.*"):
-            setup.SubpopulationStructure(
+            subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -48,7 +48,7 @@ class TestSubpopulationStructure:
 
     def test_mobility_dimensions_fail(self):
         with pytest.raises(ValueError, match=r".*mobility.*dimensions.*"):
-            setup.SubpopulationStructure(
+            subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
@@ -58,7 +58,7 @@ class TestSubpopulationStructure:
 
     def test_mobility_too_big_fail(self):
         with pytest.raises(ValueError, match=r".*mobility.*population.*"):
-            setup.SubpopulationStructure(
+            subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_big.txt",

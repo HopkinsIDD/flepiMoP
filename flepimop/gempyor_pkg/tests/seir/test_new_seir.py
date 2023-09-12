@@ -8,7 +8,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from functools import reduce
 
-from gempyor import setup, seir, NPI, file_paths, compartments
+from gempyor import setup, seir, NPI, file_paths, compartments, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -19,7 +19,7 @@ os.chdir(os.path.dirname(__file__))
 def test_constant_population():
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",

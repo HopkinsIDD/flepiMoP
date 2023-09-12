@@ -10,7 +10,7 @@
 
 
 import pathlib
-from . import seir, setup, file_paths
+from . import seir, setup, file_paths, subpopulation_structure
 from . import outcomes
 from .utils import config, Timer, read_df, profile
 import numpy as np
@@ -80,7 +80,7 @@ class GempyorSimulator:
         write_parquet = True
         self.s = setup.Setup(
             setup_name=config["name"].get() + "_" + str(npi_scenario),
-            spatial_setup=setup.SubpopulationStructure(
+            spatial_setup=subpopulation_structure.SubpopulationStructure(
                 setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
                 mobility_file=spatial_base_path / spatial_config["mobility"].get()
@@ -118,7 +118,7 @@ class GempyorSimulator:
             f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
-        self.already_built = False  # whether we have already build the costly objects that need just one build.
+        self.already_built = False  # whether we have already build the costly objects that need just one build
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
         self.s.in_prefix = new_prefix
@@ -374,7 +374,7 @@ class GempyorSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, subpop in enumerate(self.s.subpop_struct.subpop_names):
+        for i, subpop in enumerate(self.s.spatset.subpop_names):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
                 columns=self.s.parameters.pnames,
