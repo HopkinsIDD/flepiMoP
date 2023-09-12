@@ -7,7 +7,7 @@ import pyarrow as pa
 import time
 import confuse
 
-from gempyor import utils, interface, setup, parameters
+from gempyor import utils, interface, seir, setup, parameters
 from gempyor.utils import config
 
 TEST_SETUP_NAME = "minimal_test"
@@ -34,6 +34,7 @@ class TestInferenceSimulator:
         i.update_prefix("test_newer_in_prefix", "test_newer_out_prefix")
         assert i.s.in_prefix == "test_newer_in_prefix"  
         assert i.s.out_prefix == "test_newer_out_prefix"  
+        i.update_prefix("", "")
 
         i.update_run_id("test_new_run_id")
         assert i.s.in_run_id == "test_new_run_id"  
@@ -43,8 +44,10 @@ class TestInferenceSimulator:
         assert i.s.in_run_id == "test_newer_in_run_id"  
         assert i.s.out_run_id == "test_newer_out_run_id" 
 
+        i.update_run_id("test", "test")
+
       #  i.one_simulation_legacy(sim_id2write=0)
         i.build_structure()
         assert i.already_built 
 
-      #  i.one_simulation(sim_id2write=0)
+        i.one_simulation(sim_id2write=0)
