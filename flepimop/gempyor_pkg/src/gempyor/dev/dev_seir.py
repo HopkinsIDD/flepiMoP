@@ -20,7 +20,7 @@ config.clear()
 config.read(user=False)
 config.set_file(f"{DATA_DIR}/config.yml")
 
-ss = setup.SubpopulationStructure(
+ss = subpopulation_structure.SubpopulationStructure(
     setup_name="test_seir",
     geodata_file=f"{DATA_DIR}/geodata.csv",
     mobility_file=f"{DATA_DIR}/mobility.txt",

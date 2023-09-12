@@ -8,7 +8,7 @@ import pathlib
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from gempyor import setup, seir, NPI, file_paths
+from gempyor import setup, seir, NPI, file_paths, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -20,7 +20,7 @@ def test_check_values():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_values",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -73,7 +73,7 @@ def test_check_values():
 def test_constant_population_legacy_integration():
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -149,7 +149,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     print("test mobility with txt matrices")
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -234,7 +234,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     config.set_file(f"{DATA_DIR}/config.yml")
     print("test mobility with csv matrices")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.csv",
@@ -304,7 +304,7 @@ def test_steps_SEIR_no_spread():
     print("test mobility with no spread")
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -405,7 +405,7 @@ def test_continuation_resume():
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=setup.SubpopulationStructure(
+        spatial_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -455,7 +455,7 @@ def test_continuation_resume():
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=setup.SubpopulationStructure(
+        spatial_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -523,7 +523,7 @@ def test_inference_resume():
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=setup.SubpopulationStructure(
+        spatial_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -568,7 +568,7 @@ def test_inference_resume():
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=setup.SubpopulationStructure(
+        spatial_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -616,7 +616,7 @@ def test_parallel_compartments_with_vacc():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config_parallel.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -710,7 +710,7 @@ def test_parallel_compartments_no_vacc():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config_parallel.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",

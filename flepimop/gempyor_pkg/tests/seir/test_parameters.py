@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import setup, seir, NPI, file_paths, parameters
+from gempyor import setup, seir, NPI, file_paths, parameters, subpopulation_structure
 
 from gempyor.utils import config, write_df, read_df
 
@@ -23,7 +23,7 @@ def test_parameters_from_config_plus_read_write():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
     # Would be better to build a setup
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -91,7 +91,7 @@ def test_parameters_quick_draw_old():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -163,7 +163,7 @@ def test_parameters_from_timeserie_file():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
-    ss = setup.SubpopulationStructure(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",

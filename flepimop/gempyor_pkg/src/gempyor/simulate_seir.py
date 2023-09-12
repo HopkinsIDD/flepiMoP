@@ -249,7 +249,7 @@ def simulate(
     if not nslots:
         nslots = config["nslots"].as_number()
 
-    spatial_setup = setup.SubpopulationStructure(
+    spatial_setup = subpopulation_structure.SubpopulationStructure(
         setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()

@@ -197,7 +197,7 @@ def simulate(
         nslots = config["nslots"].as_number()
     print(f"Simulations to be run: {nslots}")
 
-    spatial_setup = setup.SubpopulationStructure(
+    spatial_setup = subpopulation_structure.SubpopulationStructure(
         setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
