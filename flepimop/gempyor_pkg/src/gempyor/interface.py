@@ -38,7 +38,7 @@ handler.setFormatter(formatter)
 # logger.addHandler(handler)
 
 
-class InferenceSimulator:
+class GempyorSimulator:
     def __init__(
         self,
         config_path,
@@ -430,7 +430,7 @@ class InferenceSimulator:
 
 def paramred_parallel(run_spec, snpi_fn):
     config_filepath = run_spec["config"]
-    gempyor_simulator = InferenceSimulator(
+    gempyor_simulator = GempyorSimulator(
         config_path=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",
@@ -456,7 +456,7 @@ def paramred_parallel(run_spec, snpi_fn):
 
 def paramred_parallel_config(run_spec, dummy):
     config_filepath = run_spec["config"]
-    gempyor_simulator = InferenceSimulator(
+    gempyor_simulator = GempyorSimulator(
         config_path=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",

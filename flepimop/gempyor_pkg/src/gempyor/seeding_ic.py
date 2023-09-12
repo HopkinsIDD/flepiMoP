@@ -71,7 +71,6 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
 
     return seeding_dict, seeding_amounts
 
-
 class SeedingAndIC:
     def __init__(
         self,

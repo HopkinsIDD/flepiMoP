@@ -44,10 +44,10 @@ gempyor <- reticulate::import("gempyor")
 
 ### Building a simulator
 
-We create an `InferenceSimulator` object by providing the path of config file. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: `config_FCH_R12_optSev_lowIE_blk5_Mar6.yml` on March 6, 2022.
+We create an `GempyorSimulator` object by providing the path of config file. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: `config_FCH_R12_optSev_lowIE_blk5_Mar6.yml` on March 6, 2022.
 ```{r}
 config_filepath = '../tests/npi/config_npi.yml'
-gempyor_simulator <- gempyor$InferenceSimulator(
+gempyor_simulator <- gempyor$GempyorSimulator(
                           config_path=config_filepath,
                           run_id="test_run_id",
                           prefix="test_prefix/",

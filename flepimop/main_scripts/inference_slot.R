@@ -353,7 +353,7 @@ for(npi_scenario in npi_scenarios) {
 
         ### Set up initial conditions ----------
         ## python configuration: build simulator model initialized with compartment and all.
-        gempyor_inference_runner <- gempyor$InferenceSimulator(
+        gempyor_inference_runner <- gempyor$GempyorSimulator(
             config_path=opt$config,
             run_id=opt$run_id,
             prefix=global_block_prefix,
@@ -505,7 +505,7 @@ for(npi_scenario in npi_scenarios) {
                 load_ID=TRUE,
                 sim_id2load=this_index)
             if (err != 0){
-                stop("InferenceSimulator failed to run")
+                stop("GempyorSimulator failed to run")
             }
 
             if (config$inference$do_inference){

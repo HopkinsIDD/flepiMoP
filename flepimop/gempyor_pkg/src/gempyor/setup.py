@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Setup:
     """
-    This class hold a setup model setup.
+    This class hold a full model setup.
     """
 
     def __init__(
