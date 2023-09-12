@@ -32,7 +32,7 @@ os.chdir(os.path.dirname(__file__))
 
 def test_outcome_scenario():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config.yml",
         run_id=1,
         prefix="",
@@ -125,7 +125,7 @@ def test_outcome_scenario():
 
 def test_outcome_scenario_with_load():
     os.chdir(os.path.dirname(__file__))
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
         run_id=2,
         prefix="",
@@ -161,7 +161,7 @@ def test_outcomes_read_write_hpar():
     config.clear()
     config.read(user=False)
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
         run_id=2,
         prefix="",
@@ -186,7 +186,7 @@ def test_outcomes_read_write_hpar():
 def test_outcome_scenario_subclasses():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_subclasses.yml",
         run_id=1,
         prefix="",
@@ -333,7 +333,7 @@ def test_outcome_scenario_subclasses():
 def test_outcome_scenario_with_load_subclasses():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_load_subclasses.yml",
         run_id=1,
         prefix="",
@@ -376,7 +376,7 @@ def test_outcome_scenario_with_load_subclasses():
 def test_outcomes_read_write_hpar_subclasses():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
         run_id=1,
         prefix="",
@@ -388,7 +388,7 @@ def test_outcomes_read_write_hpar_subclasses():
 
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s)
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
         run_id=12,
         prefix="",
@@ -447,7 +447,7 @@ def test_multishift_notstochdelays():
 def test_outcomes_npi():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=1,
         prefix="",
@@ -543,7 +543,7 @@ def test_outcomes_npi():
 def test_outcomes_read_write_hnpi():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=105,
         prefix="",
@@ -570,7 +570,7 @@ def test_outcomes_read_write_hnpi():
 def test_outcomes_read_write_hnpi2():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=105,
         prefix="",
@@ -594,7 +594,7 @@ def test_outcomes_read_write_hnpi2():
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=106,
         prefix="",
@@ -619,7 +619,7 @@ def test_outcomes_read_write_hnpi2():
 def test_outcomes_npi_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi_custom_pnames.yml",
         run_id=1,
         prefix="",
@@ -715,7 +715,7 @@ def test_outcomes_npi_custom_pname():
 def test_outcomes_read_write_hnpi_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi_custom_pnames.yml",
         run_id=105,
         prefix="",
@@ -751,7 +751,7 @@ def test_outcomes_read_write_hnpi2_custom_pname():
 
     random.seed(10)
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi_custom_pnames.yml",
         run_id=105,
         prefix="",
@@ -768,7 +768,7 @@ def test_outcomes_read_write_hnpi2_custom_pname():
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi_custom_pnames.yml",
         run_id=106,
         prefix="",
@@ -795,7 +795,7 @@ def test_outcomes_pcomp():
     os.chdir(os.path.dirname(__file__))
     prefix = ""
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_mc_selection.yml",
         run_id=110,
         prefix="",
@@ -940,7 +940,7 @@ def test_outcomes_pcomp():
 def test_outcomes_pcomp_read_write():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_mc_selection.yml",
         run_id=111,
         prefix="",

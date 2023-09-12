@@ -245,9 +245,9 @@ gempyor &lt;- reticulate::import(&quot;gempyor&quot;)</code></pre>
 </div>
 <div id="building-a-simulator" class="section level3">
 <h3>Building a simulator</h3>
-<p>We create an <code>InferenceSimulator</code> object by providing the path of config file. It may take a while to run all of that. First build the object. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: <code>config_FCH_R12_optSev_lowIE_blk5_Mar6.yml</code> on March 6, 2022.</p>
+<p>We create an <code>GempyorSimulator</code> object by providing the path of config file. It may take a while to run all of that. First build the object. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: <code>config_FCH_R12_optSev_lowIE_blk5_Mar6.yml</code> on March 6, 2022.</p>
 <pre class="r"><code>config_filepath = &#39;../tests/npi/config_npi.yml&#39;
-gempyor_simulator &lt;- gempyor$InferenceSimulator(
+gempyor_simulator &lt;- gempyor$GempyorSimulator(
                           config_path=config_filepath,
                           run_id=&quot;test_run_id&quot;,
                           prefix=&quot;test_prefix/&quot;,

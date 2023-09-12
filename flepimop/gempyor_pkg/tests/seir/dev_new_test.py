@@ -24,7 +24,7 @@ if True:
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml")
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml",
         run_id=1,
         prefix="",

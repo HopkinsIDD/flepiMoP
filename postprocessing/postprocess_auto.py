@@ -174,7 +174,7 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
         for run_name, run_info in all_runs.items():
             run_id = run_info.run_id
             config_filepath = run_info.config_path
-            run_info.gempyor_simulator = gempyor.InferenceSimulator(
+            run_info.gempyor_simulator = gempyor.GempyorSimulator(
                 config_path=config_filepath,
                 run_id=run_id,
                 # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
