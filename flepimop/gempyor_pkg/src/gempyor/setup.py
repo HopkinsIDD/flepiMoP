@@ -74,11 +74,11 @@ class Setup:
         self.first_sim_index = first_sim_index
         self.outcome_scenario = outcome_scenario
 
-        self.spatset = spatial_setup
+        self.subpop_struct = spatial_setup
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
-        self.nnodes = self.spatset.nnodes
-        self.popnodes = self.spatset.popnodes
-        self.mobility = self.spatset.mobility
+        self.nnodes = self.subpop_struct.nnodes
+        self.popnodes = self.subpop_struct.popnodes
+        self.mobility = self.subpop_struct.mobility
 
         self.stoch_traj_flag = stoch_traj_flag
 
@@ -117,7 +117,7 @@ class Setup:
                 parameter_config=self.parameters_config,
                 ti=self.ti,
                 tf=self.tf,
-                subpop_names=self.spatset.subpop_names,
+                subpop_names=self.subpop_struct.subpop_names,
             )
             self.seedingAndIC = seeding_ic.SeedingAndIC(
                 seeding_config=self.seeding_config,
@@ -240,7 +240,7 @@ class Setup:
         return fname
 
 
-class SpatialSetup:
+class SubpopulationStructure:
     def __init__(self, *, setup_name, geodata_file, mobility_file, popnodes_key, subpop_names_key):
         self.setup_name = setup_name
         self.data = pd.read_csv(

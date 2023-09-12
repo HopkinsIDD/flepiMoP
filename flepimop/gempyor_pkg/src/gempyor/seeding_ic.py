@@ -35,7 +35,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
     n_seeding_ignored_before = 0
     n_seeding_ignored_after = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
-        if row["subpop"] not in setup.spatset.subpop_names:
+        if row["subpop"] not in setup.subpop_struct.subpop_names:
             raise ValueError(
                 f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata."
             )
@@ -49,7 +49,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
                 destination_dict = {grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names}
                 seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(source_dict)
                 seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict)
-                seeding_dict["seeding_subpops"][idx] = setup.spatset.subpop_names.index(row["subpop"])
+                seeding_dict["seeding_subpops"][idx] = setup.subpop_struct.subpop_names.index(row["subpop"])
                 seeding_amounts[idx] = amounts[idx]
             else:
                 n_seeding_ignored_after += 1
@@ -113,7 +113,7 @@ class SeedingAndIC:
                 )
 
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
-            for pl_idx, pl in enumerate(setup.spatset.subpop_names):  #
+            for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):  #
                 if pl in list(ic_df["subpop"]):
                     states_pl = ic_df[ic_df["subpop"] == pl]
                     for comp_idx, comp_name in setup.compartments.compartments["name"].items():
@@ -204,7 +204,7 @@ class SeedingAndIC:
                         f"WARNING: init file mc_name {ic_df_compartment['mc_name'].iloc[0]} does not match compartment mc_name {comp_name}"
                     )
 
-                for pl_idx, pl in enumerate(setup.spatset.subpop_names):
+                for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
                     if pl in ic_df.columns:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
                     elif allow_missing_nodes:
@@ -237,7 +237,7 @@ class SeedingAndIC:
 
         # check that the inputed values sums to the node_population:
         error = False
-        for pl_idx, pl in enumerate(setup.spatset.subpop_names):
+        for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
             n_y0 = y0[:, pl_idx].sum()
             n_pop = setup.popnodes[pl_idx]
             if abs(n_y0 - n_pop) > 1:

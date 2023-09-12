@@ -15,9 +15,9 @@ DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 
-class TestSpatialSetup:
-    def test_SpatialSetup_success(self):
-        ss = setup.SpatialSetup(
+class TestSubpopulationStructure:
+    def test_SubpopulationStructure_success(self):
+        ss = setup.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -28,7 +28,7 @@ class TestSpatialSetup:
     def test_bad_popnodes_key_fail(self):
         # Bad popnodes_key error
         with pytest.raises(ValueError, match=r".*popnodes_key.*"):
-            setup.SpatialSetup(
+            setup.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
@@ -38,7 +38,7 @@ class TestSpatialSetup:
 
     def test_bad_subpop_names_key_fail(self):
         with pytest.raises(ValueError, match=r".*subpop_names_key.*"):
-            setup.SpatialSetup(
+            setup.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -48,7 +48,7 @@ class TestSpatialSetup:
 
     def test_mobility_dimensions_fail(self):
         with pytest.raises(ValueError, match=r".*mobility.*dimensions.*"):
-            setup.SpatialSetup(
+            setup.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
@@ -58,7 +58,7 @@ class TestSpatialSetup:
 
     def test_mobility_too_big_fail(self):
         with pytest.raises(ValueError, match=r".*mobility.*population.*"):
-            setup.SpatialSetup(
+            setup.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_big.txt",
