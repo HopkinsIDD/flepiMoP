@@ -71,6 +71,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
 
     return seeding_dict, seeding_amounts
 
+
 class SeedingAndIC:
     def __init__(
         self,
@@ -84,7 +85,6 @@ class SeedingAndIC:
         method = "Default"
         if "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
-            
 
         allow_missing_nodes = False
         allow_missing_compartments = False
@@ -94,15 +94,15 @@ class SeedingAndIC:
         if "allow_missing_compartments" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["allow_missing_compartments"].get():
                 allow_missing_compartments = True
-        
-        # Places to allocate the rest of the population    
+
+        # Places to allocate the rest of the population
         rests = []
 
         if method == "Default":
             ## JK : This could be specified in the config
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             y0[0, :] = setup.popnodes
-            
+
         elif method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
             #  TODO Think about     - Does not support the new way of doing compartment indexing
             if method == "SetInitialConditionsFolderDraw":
@@ -111,7 +111,7 @@ class SeedingAndIC:
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
                 )
-                
+
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
             for pl_idx, pl in enumerate(setup.spatset.subpop_names):  #
                 if pl in list(ic_df["subpop"]):
@@ -122,9 +122,11 @@ class SeedingAndIC:
                             ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
                         else:
                             filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
-                            ic_df_compartment =  states_pl.copy()
+                            ic_df_compartment = states_pl.copy()
                             for mc_name, mc_value in filters.items():
-                                ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value]["amount"]
+                                ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value][
+                                    "amount"
+                                ]
                         if len(ic_df_compartment_val) > 1:
                             raise ValueError(
                                 f"ERROR: Several ({len(ic_df_compartment_val)}) rows are matches for compartment {comp_name} in init file: filters returned {ic_df_compartment_val}"
@@ -219,19 +221,16 @@ class SeedingAndIC:
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
-        
-        
+
         # rest
-        if rests: # not empty
+        if rests:  # not empty
             for comp_idx, pl_idx in rests:
                 total = setup.popnodes[pl_idx]
                 if "proportional" in self.initial_conditions_config.keys():
                     if self.initial_conditions_config["proportional"].get():
                         total = 1.0
-                y0[comp_idx, pl_idx] = total -  y0[:, pl_idx].sum()
-        
-                
-        
+                y0[comp_idx, pl_idx] = total - y0[:, pl_idx].sum()
+
         if "proportional" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["proportional"].get():
                 y0 = y0 * setup.popnodes[pl_idx]

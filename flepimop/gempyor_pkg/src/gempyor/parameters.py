@@ -33,9 +33,7 @@ class Parameters:
         self.pnames = self.pconfig.keys()
         self.npar = len(self.pnames)
         if self.npar != len(set([name.lower() for name in self.pnames])):
-            raise ValueError(
-                "Parameters of the SEIR model have the same name (remember that case is not sufficient!)"
-            )
+            raise ValueError("Parameters of the SEIR model have the same name (remember that case is not sufficient!)")
 
         # Attributes of dictionary
         for idx, pn in enumerate(self.pnames):
@@ -93,9 +91,7 @@ class Parameters:
                 ].as_str()
             else:
                 self.pdata[pn]["intervention_overlap_operation"] = "prod"
-                logging.debug(
-                    f"No 'intervention_overlap_operation' for parameter {pn}, assuming multiplicative NPIs"
-                )
+                logging.debug(f"No 'intervention_overlap_operation' for parameter {pn}, assuming multiplicative NPIs")
             self.intervention_overlap_operation[self.pdata[pn]["intervention_overlap_operation"]].append(pn.lower())
 
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
