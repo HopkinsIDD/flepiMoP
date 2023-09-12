@@ -46,7 +46,7 @@
 #
 # ### interventions::scenarios::settings::<scenario name>
 #
-# If {template} is 
+# If {template} is
 # ```yaml
 # interventions:
 #   scenarios:
@@ -59,12 +59,12 @@
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is 
+# If {template} is
 # ```yaml
 # interventions:
 #   scenarios:
 #     <scenario name>:
-#       template: 
+#       template:
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
