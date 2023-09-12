@@ -411,6 +411,29 @@ perturb_snpi <- function(snpi, intervention_settings) {
   return(snpi)
 }
 
+perturb_init <- function(init, perturbation) {
+
+  pert_dist <- flepicommon::as_random_distribution(perturbation)
+  perturb <- init$perturb
+
+  init$amount[perturb] <- init$amount[perturb] + pert_dist(nrow(perturb))
+
+ clip_to_bounds <- function(value) {
+    if (value < 0) {
+      return(0)
+    } else if (value > 1) {
+      return(1)
+    } else {
+      return(value)
+    }
+  }
+
+  # Apply the clip_to_bounds function to elements outside the bounds
+  init$amount[perturb] <- sapply(init$amount[perturb], clip_to_bounds)
+
+  return(init)
+}
+
 
 ##' Function perturbs an npi parameter file based on
 ##' user-specified distributions
@@ -520,6 +543,8 @@ perturb_hpar <- function(hpar, intervention_settings) {
 ##' @return a new data frame with the confirmed seedin.
 ##' @export
 accept_reject_new_seeding_npis <- function(
+  init_orig,
+  init_prop,
   seeding_orig,
   seeding_prop,
   snpi_orig,
@@ -532,6 +557,7 @@ accept_reject_new_seeding_npis <- function(
   prop_lls
 ) {
   rc_seeding <- seeding_orig
+  rc_init <- init_orig
   rc_snpi <- snpi_orig
   rc_hnpi <- hnpi_orig
   rc_hpar <- hpar_orig
@@ -549,7 +575,8 @@ accept_reject_new_seeding_npis <- function(
   orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
 
   for (subpop in orig_lls$subpop[accept]) {
-    rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop ==subpop, ]
+    rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop == subpop, ]
+    rc_init[rc_init$subpop == subpop, ] <- init_prop[init_prop$subpop == subpop, ]
     rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
     rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
     rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
@@ -557,6 +584,7 @@ accept_reject_new_seeding_npis <- function(
 
   return(list(
     seeding = rc_seeding,
+    init = rc_init,
     snpi = rc_snpi,
     hnpi = rc_hnpi,
     hpar = rc_hpar,
