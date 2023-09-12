@@ -23,7 +23,7 @@ def test_parameters_from_config_plus_read_write():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
     # Would be better to build a setup
-    ss = setup.SpatialSetup(
+    ss = setup.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -58,7 +58,7 @@ def test_parameters_from_config_plus_read_write():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
     n_days = 10
     nnodes = 5
@@ -67,7 +67,7 @@ def test_parameters_from_config_plus_read_write():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
     p_draw = p.parameters_quick_draw(n_days=10, nnodes=5)
     # test shape
@@ -79,7 +79,7 @@ def test_parameters_from_config_plus_read_write():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
     p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nnodes=nnodes)
 
@@ -91,7 +91,7 @@ def test_parameters_quick_draw_old():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SpatialSetup(
+    ss = setup.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -125,7 +125,7 @@ def test_parameters_quick_draw_old():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
 
     ### Check that the object is well constructed:
@@ -163,7 +163,7 @@ def test_parameters_from_timeserie_file():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
-    ss = setup.SpatialSetup(
+    ss = setup.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -197,7 +197,7 @@ def test_parameters_from_timeserie_file():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
     n_days = 10
     nnodes = 5
@@ -206,7 +206,7 @@ def test_parameters_from_timeserie_file():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
     p_draw = p.parameters_quick_draw(n_days=10, nnodes=5)
     # test shape
@@ -218,7 +218,7 @@ def test_parameters_from_timeserie_file():
         parameter_config=config["seir"]["parameters"],
         ti=s.ti,
         tf=s.tf,
-        subpop_names=s.spatset.subpop_names,
+        subpop_names=s.subpop_struct.subpop_names,
     )
     p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nnodes=nnodes)
 

@@ -65,7 +65,7 @@ def test_Setup_has_compartments_component():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SpatialSetup(
+    ss = setup.SubpopulationStructure(
         setup_name="test_values",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",

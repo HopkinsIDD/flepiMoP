@@ -20,7 +20,7 @@ config.clear()
 config.read(user=False)
 config.set_file(f"{DATA_DIR}/config.yml")
 
-ss = setup.SpatialSetup(
+ss = setup.SubpopulationStructure(
     setup_name="test_seir",
     geodata_file=f"{DATA_DIR}/geodata.csv",
     mobility_file=f"{DATA_DIR}/mobility.txt",
@@ -58,7 +58,7 @@ mobility_subpop_indices = s.mobility.indices
 mobility_data_indices = s.mobility.indptr
 mobility_data = s.mobility.data
 
-npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.spatset.subpop_names)
+npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
 params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
 params = s.parameters.parameters_reduce(params, npi)
