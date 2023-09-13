@@ -20,8 +20,7 @@ class Parameters:
         *,
         ti: datetime.date,
         tf: datetime.date,
-        nodenames: list,
-        config_version: str = "v2",
+        subpop_names: list,
     ):
         self.pconfig = parameter_config
         self.pnames = []
@@ -31,149 +30,71 @@ class Parameters:
         self.pnames2pindex = {}
         self.intervention_overlap_operation = {"sum": [], "prod": []}
 
-        if config_version == "v3":
-            self.pnames = self.pconfig.keys()
-            self.npar = len(self.pnames)
-            if self.npar != len(set([name.lower() for name in self.pnames])):
-                raise ValueError(
-                    "Parameters of the SEIR model have the same name (remember that case is not sufficient!)"
-                #NOTE: should this lines be eliminated?
-                )
+        self.pnames = self.pconfig.keys()
+        self.npar = len(self.pnames)
+        if self.npar != len(set([name.lower() for name in self.pnames])):
+            raise ValueError("Parameters of the SEIR model have the same name (remember that case is not sufficient!)")
+            #NOTE: this lines was not eliminated so been targeted in test
 
-            # Attributes of dictionary
-            for idx, pn in enumerate(self.pnames):
-                self.pnames2pindex[pn] = idx
-                self.pdata[pn] = {}
-                self.pdata[pn]["idx"] = idx
+        # Attributes of dictionary
+        for idx, pn in enumerate(self.pnames):
+            self.pnames2pindex[pn] = idx
+            self.pdata[pn] = {}
+            self.pdata[pn]["idx"] = idx
 
-                # Parameter characterized by it's distribution
-                if self.pconfig[pn]["value"].exists():
-                    self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
+            # Parameter characterized by it's distribution
+            if self.pconfig[pn]["value"].exists():
+                self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
 
-                # Parameter given as a file
-                elif self.pconfig[pn]["timeserie"].exists():
-                    fn_name = self.pconfig[pn]["timeserie"].get()
-                    df = utils.read_df(fn_name).set_index("date")
-                    df.index = pd.to_datetime(df.index)
-                    if len(df.columns) >= len(nodenames):  # one ts per geoid
-                        df = df[nodenames]  # make sure the order of geoids is the same as the reference
-                        # (nodenames from spatial setup) and select the columns
-                    elif len(df.columns) == 1:
-                        df = pd.DataFrame(
-                            pd.concat([df] * len(nodenames), axis=1).values, index=df.index, columns=nodenames
-                        )
-                    else:
-                        print("loaded col :", sorted(list(df.columns)))
-                        print("geodata col:", sorted(nodenames))
-                        raise ValueError(
-                            f"""ERROR loading file {fn_name} for parameter {pn}: the number of non 'date'
-                        columns are {len(df.columns)}, expected {len(nodenames)} (the number of geoids) or one."""
-                        )
-
-                    df = df[str(ti) : str(tf)]
-                    if not (len(df.index) == len(pd.date_range(ti, tf))):
-                        print("config dates:", pd.date_range(ti, tf))
-                        print("loaded dates:", df.index)
-                        raise ValueError(
-                            f"""ERROR loading file {fn_name} for parameter {pn}: 
-                        the 'date' index of the provided file does not cover the whole config time span from
-                        {ti}->{tf}, where we have dates from {str(df.index[0])} to {str(df.index[-1])}"""
-                        )
-                    # check the date range, need the lenght to be equal
-                    if not (pd.date_range(ti, tf) == df.index).all():
-                        print("config dates:", pd.date_range(ti, tf))
-                        print("loaded dates:", df.index)
-                        raise ValueError(
-                            f"""ERROR loading file {fn_name} for parameter {pn}: 
-                        the 'date' index of the provided file does not cover the whole config time span from
-                        {ti}->{tf}"""
-                        )
-
-                    self.pdata[pn]["ts"] = df
-                if self.pconfig[pn]["intervention_overlap_operation"].exists():
-                    self.pdata[pn]["intervention_overlap_operation"] = self.pconfig[pn][
-                        "intervention_overlap_operation"
-                    ].as_str()
+            # Parameter given as a file
+            elif self.pconfig[pn]["timeserie"].exists():
+                fn_name = self.pconfig[pn]["timeserie"].get()
+                df = utils.read_df(fn_name).set_index("date")
+                df.index = pd.to_datetime(df.index)
+                if len(df.columns) >= len(subpop_names):  # one ts per subpop
+                    df = df[subpop_names]  # make sure the order of subpops is the same as the reference
+                    # (subpop_names from spatial setup) and select the columns
+                elif len(df.columns) == 1:
+                    df = pd.DataFrame(
+                        pd.concat([df] * len(subpop_names), axis=1).values, index=df.index, columns=subpop_names
+                    )
                 else:
-                    self.pdata[pn]["intervention_overlap_operation"] = "prod"
-                    logging.debug(
-                        f"No 'intervention_overlap_operation' for parameter {pn}, assuming multiplicative NPIs"
-                    )
-                self.intervention_overlap_operation[self.pdata[pn]["intervention_overlap_operation"]].append(pn.lower())
-
-        elif config_version == "old":
-            n_parallel_compartments = 1
-            n_parallel_transitions = 0
-            compartments_dict = {}
-            compartments_map = {}
-            transition_map = {}
-            if "parallel_structure" in self.pconfig:
-                if "compartments" not in self.pconfig["parallel_structure"]:
+                    print("loaded col :", sorted(list(df.columns)))
+                    print("geodata col:", sorted(subpop_names))
                     raise ValueError(
-                        f"A config specifying a parallel structure should assign compartments to that structure"
+                        f"""ERROR loading file {fn_name} for parameter {pn}: the number of non 'date'
+                    columns are {len(df.columns)}, expected {len(subpop_names)} (the number of subpops) or one."""
                     )
-                compartments_map = self.pconfig["parallel_structure"]["compartments"]
-                n_parallel_compartments = len(compartments_map.get())
-                compartments_dict = {k: v for v, k in enumerate(compartments_map.get())}
-                if not "transitions" in self.pconfig["parallel_structure"]:
+
+                df = df[str(ti) : str(tf)]
+                if not (len(df.index) == len(pd.date_range(ti, tf))):
+                    print("config dates:", pd.date_range(ti, tf))
+                    print("loaded dates:", df.index)
                     raise ValueError(
-                        f"A config specifying a parallel structure should assign transitions to that structure"
+                        f"""ERROR loading file {fn_name} for parameter {pn}: 
+                    the 'date' index of the provided file does not cover the whole config time span from
+                    {ti}->{tf}, where we have dates from {str(df.index[0])} to {str(df.index[-1])}"""
                     )
-                transitions_map = self.pconfig["parallel_structure"]["transitions"]
-                n_parallel_transitions = len(transitions_map.get())
-                transition_map = transitions_map
+                # check the date range, need the lenght to be equal
+                if not (pd.date_range(ti, tf) == df.index).all():
+                    print("config dates:", pd.date_range(ti, tf))
+                    print("loaded dates:", df.index)
+                    raise ValueError(
+                        f"""ERROR loading file {fn_name} for parameter {pn}: 
+                    the 'date' index of the provided file does not cover the whole config time span from
+                    {ti}->{tf}"""
+                    )
 
-            self.alpha_val = 1.0
-            if "alpha" in self.pconfig:
-                self.alpha_val = self.pconfig["alpha"].as_evaled_expression()
-            self.sigma_val = self.pconfig["sigma"].as_evaled_expression()
-            gamma_dist = self.pconfig["gamma"].as_random_distribution()
-            R0s_dist = self.pconfig["R0s"].as_random_distribution()
+                self.pdata[pn]["ts"] = df
+            if self.pconfig[pn]["intervention_overlap_operation"].exists():
+                self.pdata[pn]["intervention_overlap_operation"] = self.pconfig[pn][
+                    "intervention_overlap_operation"
+                ].as_str()
+            else:
+                self.pdata[pn]["intervention_overlap_operation"] = "prod"
+                logging.debug(f"No 'intervention_overlap_operation' for parameter {pn}, assuming multiplicative NPIs")
+            self.intervention_overlap_operation[self.pdata[pn]["intervention_overlap_operation"]].append(pn.lower())
 
-            ### Do some conversions
-            # Convert numbers to distribution like object that can be called
-            p_dists = {
-                "alpha": self.picklable_lamda_alpha,
-                "sigma": self.picklable_lamda_sigma,
-                "gamma": gamma_dist,
-                "R0": R0s_dist,
-            }
-            for key in p_dists:
-                self.intervention_overlap_operation["prod"].append(key.lower())
-
-            if n_parallel_compartments > 1.5:
-                for compartment, index in compartments_dict.items():
-                    if "susceptibility_reduction" in compartments_map[compartment]:
-                        pn = f"susceptibility_reduction{index}"
-                        p_dists[pn] = compartments_map[compartment]["susceptibility_reduction"].as_random_distribution()
-                        self.intervention_overlap_operation["prod"].append(pn.lower())
-                    else:
-                        raise ValueError(f"Susceptibility Reduction not found for comp {compartment}")
-                    if "transmissibility_reduction" in compartments_map[compartment]:
-                        pn = f"transmissibility_reduction{index}"
-                        p_dists[pn] = compartments_map[compartment][
-                            "transmissibility_reduction"
-                        ].as_random_distribution()
-                        self.intervention_overlap_operation["prod"].append(pn.lower())
-                    else:
-                        raise ValueError(f"Transmissibility Reduction not found for comp {compartment}")
-                for transition in range(n_parallel_transitions):
-                    pn = f"transition_rate{transition}"
-                    p_dists[pn] = transition_map[transition]["rate"].as_random_distribution()
-                    self.intervention_overlap_operation["sum"].append(pn.lower())
-
-            ### Build the new structure
-            for idx, pn in enumerate(p_dists):
-                self.pnames.append(pn)
-                self.pnames2pindex[pn] = idx
-                self.pdata[pn] = {}
-                self.pdata[pn]["idx"] = idx
-                self.pdata[pn]["dist"] = p_dists[pn]
-                if "transition_rate" not in pn:
-                    self.pdata[pn]["intervention_overlap_operation"] = "prod"
-                else:
-                    self.pdata[pn]["intervention_overlap_operation"] = "sum"
-            self.npar = len(self.pnames)
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
         logging.debug(f"Data to sample is: {self.pdata}")
         logging.debug(f"Index in arrays are: {self.pnames2pindex}")

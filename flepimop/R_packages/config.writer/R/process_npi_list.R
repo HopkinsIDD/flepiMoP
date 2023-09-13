@@ -19,14 +19,14 @@ NULL
 ##' Convenience function to load the geodata file
 ##'
 ##' @param filename filename of geodata file
-##' @param geoid_len length of geoid character string
-##' @param geoid_pad what to pad the geoid character string with
+##' @param subpop_len length of subpop character string
+##' @param subpop_pad what to pad the subpop character string with
 ##' @param state_name whether to add column state with the US state name; defaults to TRUE for forecast or scenario hub runs.
 ##'
 ##' @details
-##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and geoid with the geo IDs of the area. .
+##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and subpop with the geo IDs of the area. .
 ##'
-##' @return a data frame with columns for state USPS, county geoid and population
+##' @return a data frame with columns for state USPS, county subpop and population
 ##' @examples
 ##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
 ##' geodata
@@ -34,20 +34,20 @@ NULL
 ##' @export
 
 load_geodata_file <- function(filename,
-                              geoid_len = 0,
-                              geoid_pad = "0",
+                              subpop_len = 0,
+                              subpop_pad = "0",
                               state_name = TRUE) {
 
     if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
     geodata <- readr::read_csv(filename) %>%
-        dplyr::mutate(geoid = as.character(geoid))
+        dplyr::mutate(subpop = as.character(subpop))
 
-    if (!("geoid" %in% names(geodata))) {
-        stop(paste(filename, "does not have a column named geoid"))
+    if (!("subpop" %in% names(geodata))) {
+        stop(paste(filename, "does not have a column named subpop"))
     }
 
-    if (geoid_len > 0) {
-        geodata$geoid <- stringr::str_pad(geodata$geoid, geoid_len, pad = geoid_pad)
+    if (subpop_len > 0) {
+        geodata$subpop <- stringr::str_pad(geodata$subpop, subpop_len, pad = subpop_pad)
     }
 
     if(state_name) {
@@ -94,7 +94,7 @@ find_truncnorm_mean_parameter <- function(a, b, mean, sd) {
     )
 }
 
-#' ScenarioHub: Recode scenario hub interventions for "ReduceR0" template
+#' ScenarioHub: Recode scenario hub interventions for "SinglePeriodModifier" template
 #'
 #' @param data intervention list for the national forecast or the scenariohub
 #'
@@ -118,11 +118,11 @@ npi_recode_scenario <- function(data
 
 }
 
-#'  ScenarioHub: Recode scenario hub interventions for "MultiTimeReduce" template
+#'  ScenarioHub: Recode scenario hub interventions for "MultiPeriodModifier" template
 #'
 #' @param data intervention list for the national forecast or the scenariohub
 #'
-#' @return recoded npi names for use with MultiTimeReduce
+#' @return recoded npi names for use with MultiPeriodModifier
 #' @export
 #'
 
@@ -142,17 +142,17 @@ npi_recode_scenario_mult <- function(data){
 #' ScenarioHub: Process scenario hub npi list
 #'
 #' @param intervention_path path to csv with intervention list
-#' @param geodata df with state USPS and geoid from load_geodata_file
-#' @param prevent_overlap whether to allow for interventions to overlap in time and geoid
+#' @param geodata df with state USPS and subpop from load_geodata_file
+#' @param prevent_overlap whether to allow for interventions to overlap in time and subpop
 #' @param prevent_gaps whether to prevent gaps in interventions (i.e. no interventions)
 #'
 #' @return df with six columns:
 #'         - USPS: state abbreviation
-#'         - geoid: county ID
+#'         - subpop: county ID
 #'         - start_date: intervention start date
 #'         - end_date: intervention end date
 #'         - name: intervention name
-#'         - template: intervention template (e.g. ReduceR0, MultiTimeReduce)
+#'         - template: intervention template (e.g. SinglePeriodModifier, MultiPeriodModifier)
 #' @export
 #'
 #' @examples
@@ -174,18 +174,18 @@ process_npi_usa <- function (intervention_path,
         og <- og %>% dplyr::mutate(dplyr::across(tidyselect::ends_with("_date"), ~lubridate::mdy(.x)))
     }
     if ("template" %in% colnames(og)) {
-        og <- og %>% dplyr::mutate(name = dplyr::if_else(template == "MultiTimeReduce", scenario_mult, scenario)) %>%
-            dplyr::select(USPS, geoid, start_date, end_date, name, template)
+        og <- og %>% dplyr::mutate(name = dplyr::if_else(template == "MultiPeriodModifier", scenario_mult, scenario)) %>%
+            dplyr::select(USPS, subpop, start_date, end_date, name, template)
     } else {
-        og <- og %>% dplyr::mutate(template = "MultiTimeReduce") %>%
-            dplyr::select(USPS, geoid, start_date, end_date, name = scenario_mult, template)
+        og <- og %>% dplyr::mutate(template = "MultiPeriodModifier") %>%
+            dplyr::select(USPS, subpop, start_date, end_date, name = scenario_mult, template)
     }
     if (prevent_overlap) {
-        og <- og %>% dplyr::group_by(USPS, geoid) %>%
+        og <- og %>% dplyr::group_by(USPS, subpop) %>%
             dplyr::mutate(end_date = dplyr::if_else(end_date >= dplyr::lead(start_date), dplyr::lead(start_date) - 1, end_date))
     }
     if (prevent_gaps) {
-        og <- og %>% dplyr::group_by(USPS, geoid) %>%
+        og <- og %>% dplyr::group_by(USPS, subpop) %>%
             dplyr::mutate(end_date = dplyr::if_else(end_date < dplyr::lead(start_date), dplyr::lead(start_date) - 1, end_date))
     }
     return(og)
@@ -196,17 +196,17 @@ process_npi_usa <- function (intervention_path,
 #' Process California intervention data
 #'
 #' @param intervention_path path to csv with intervention list
-#' @param geodata df with state USPS and geoid from load_geodata_file
-#' @param prevent_overlap whether to allow for interventions to overlap in time and geoid
+#' @param geodata df with state USPS and subpop from load_geodata_file
+#' @param prevent_overlap whether to allow for interventions to overlap in time and subpop
 #' @param prevent_gaps whether to prevent gaps in interventions (i.e. no interventions)
 #'
 #' @return df with six columns:
 #'         - USPS: state abbreviation
-#'         - geoid: county ID
+#'         - subpop: county ID
 #'         - start_date: intervention start date
 #'         - end_date: intervention end date
 #'         - name: intervention name
-#'         - template: intervention template (e.g. ReduceR0, MultiTimeReduce)
+#'         - template: intervention template (e.g. SinglePeriodModifier, MultiPeriodModifier)
 #' @export
 #'
 process_npi_ca <- function(intervention_path,
@@ -221,25 +221,25 @@ process_npi_ca <- function(intervention_path,
                                            readr::col_character(), readr::col_character(),
                                            readr::col_date(format = date_format), readr::col_character())
                           ) %>%
-        dplyr::mutate(geoid = dplyr::if_else(stringr::str_length(geoid)==4, paste0(0, geoid), geoid)) %>%
+        dplyr::mutate(subpop = dplyr::if_else(stringr::str_length(subpop)==4, paste0(0, subpop), subpop)) %>%
         dplyr::left_join(geodata) %>%
-        dplyr::group_by(county, geoid) %>%
+        dplyr::group_by(county, subpop) %>%
         dplyr::arrange(start_date) %>%
         dplyr::mutate(end_date = dplyr::if_else(is.na(end_date), dplyr::lead(start_date)-1, end_date),
                       end_date = dplyr::if_else(start_date == max(start_date), lubridate::NA_Date_, end_date),
-                      template = "MultiTimeReduce") %>%
+                      template = "MultiPeriodModifier") %>%
         dplyr::ungroup() %>%
-        dplyr::select(USPS, geoid, start_date, end_date, name = phase, template)
+        dplyr::select(USPS, subpop, start_date, end_date, name = phase, template)
 
     if(prevent_overlap){
         og <- og %>%
-            dplyr::group_by(USPS, geoid) %>%
+            dplyr::group_by(USPS, subpop) %>%
             dplyr::mutate(end_date = dplyr::if_else(end_date >= dplyr::lead(start_date) & !is.na(end_date), dplyr::lead(start_date)-1, end_date))
     }
 
     if(prevent_gaps){
         og <- og %>%
-            dplyr::group_by(USPS, geoid) %>%
+            dplyr::group_by(USPS, subpop) %>%
             dplyr::mutate(end_date = dplyr::if_else(end_date < dplyr::lead(start_date) & !is.na(end_date), dplyr::lead(start_date)-1, end_date))
     }
 
@@ -543,8 +543,8 @@ generate_multiple_variants_state <- function(variant_path_1,
         dplyr::filter(R_ratio>1) %>%
         dplyr::filter(location != "US") %>%
         dplyr::rename("USPS" = "location") %>%
-        dplyr::left_join(geodata %>% dplyr::select(USPS, geoid)) %>%
-        dplyr::filter(!is.na(geoid)) %>%
+        dplyr::left_join(geodata %>% dplyr::select(USPS, subpop)) %>%
+        dplyr::filter(!is.na(subpop)) %>%
         dplyr::ungroup()
 }
 
@@ -631,7 +631,7 @@ generate_compartment_variant <- function(variant_path = "../COVID19_USA/data/var
     variant_data <- variant_data %>%
         dplyr::filter(R_ratio>1) %>%
         dplyr::filter(USPS != "US") %>%
-        dplyr::left_join(geodata %>% dplyr::select(USPS, geoid))
+        dplyr::left_join(geodata %>% dplyr::select(USPS, subpop))
 
     return(variant_data)
 }

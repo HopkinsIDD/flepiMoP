@@ -10,7 +10,7 @@
 
 
 import pathlib
-from . import seir, setup, file_paths
+from . import seir, setup, file_paths, subpopulation_structure
 from . import outcomes
 from .utils import config, Timer, read_df, profile
 import numpy as np
@@ -38,7 +38,7 @@ handler.setFormatter(formatter)
 # logger.addHandler(handler)
 
 
-class InferenceSimulator:
+class GempyorSimulator:
     def __init__(
         self,
         config_path,
@@ -80,14 +80,14 @@ class InferenceSimulator:
         write_parquet = True
         self.s = setup.Setup(
             setup_name=config["name"].get() + "_" + str(npi_scenario),
-            spatial_setup=setup.SpatialSetup(
+            spatial_setup=subpopulation_structure.SubpopulationStructure(
                 setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
                 mobility_file=spatial_base_path / spatial_config["mobility"].get()
                 if spatial_config["mobility"].exists()
                 else None,
-                popnodes_key=spatial_config["popnodes"].get(),
-                nodenames_key=spatial_config["nodenames"].get(),
+                popnodes_key="population",
+                subpop_names_key="subpop",
             ),
             nslots=nslots,
             npi_scenario=npi_scenario,
@@ -118,7 +118,7 @@ class InferenceSimulator:
             f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
-        self.already_built = False  # whether we have already build the costly object we just build once.
+        self.already_built = False  # whether we have already build the costly objects that need just one build
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
         self.s.in_prefix = new_prefix
@@ -156,7 +156,7 @@ class InferenceSimulator:
                     sim_id2load=sim_id2load,
                 )
         return 0
-    
+
     def build_structure(self):
         (
             self.unique_strings,
@@ -165,7 +165,6 @@ class InferenceSimulator:
             self.proportion_info,
         ) = self.s.compartments.get_transition_array()
         self.already_built = True
-    
 
     # @profile()
     def one_simulation(
@@ -228,7 +227,7 @@ class InferenceSimulator:
             ### Run every time:
             with Timer("SEIR.parameters"):
                 # Draw or load parameters
-                
+
                 p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
                 # reduce them
                 parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
@@ -247,8 +246,9 @@ class InferenceSimulator:
                 else:
                     initial_conditions = self.s.seedingAndIC.draw_ic(sim_id2write, setup=self.s)
                     seeding_data, seeding_amounts = self.s.seedingAndIC.draw_seeding(sim_id2write, setup=self.s)
-                self.debug_seeding_date = seeding_data
+                self.debug_seeding_data = seeding_data
                 self.debug_seeding_amounts = seeding_amounts
+                self.debug_initial_conditions = initial_conditions
 
             with Timer("SEIR.compute"):
                 states = seir.steps_SEIR(
@@ -374,13 +374,13 @@ class InferenceSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, geoid in enumerate(self.s.spatset.nodenames):
+        for i, subpop in enumerate(self.s.spatset.subpop_names):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
                 columns=self.s.parameters.pnames,
                 index=pd.date_range(self.s.ti, self.s.tf, freq="D"),
             )
-            a["geoid"] = geoid
+            a["subpop"] = subpop
             full_df = pd.concat([full_df, a])
 
         # for R, duplicate names are not allowed in index:
@@ -389,29 +389,33 @@ class InferenceSimulator:
 
         return full_df
 
-    # TODO these function should support bypass    
-    def get_parsed_parameters_seir(self, load_ID=False,
+    # TODO these function should support bypass
+    def get_parsed_parameters_seir(
+        self,
+        load_ID=False,
         sim_id2load=None,
-        #bypass_DF=None,
-        #bypass_FN=None,
+        # bypass_DF=None,
+        # bypass_FN=None,
     ):
         if not self.already_built:
             self.build_structure()
-            
+
         npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
-                )
+            parameters, self.s.parameters.pnames, self.unique_strings
+        )
         return parsed_parameters
-    
-    def get_reduced_parameters_seir(self, load_ID=False,
+
+    def get_reduced_parameters_seir(
+        self,
+        load_ID=False,
         sim_id2load=None,
-        #bypass_DF=None,
-        #bypass_FN=None,
+        # bypass_DF=None,
+        # bypass_FN=None,
     ):
         npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
@@ -419,15 +423,14 @@ class InferenceSimulator:
         parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
 
         parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
-                )
+            parameters, self.s.parameters.pnames, self.unique_strings
+        )
         return parsed_parameters
-        
 
 
 def paramred_parallel(run_spec, snpi_fn):
     config_filepath = run_spec["config"]
-    gempyor_simulator = InferenceSimulator(
+    gempyor_simulator = GempyorSimulator(
         config_path=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",
@@ -453,7 +456,7 @@ def paramred_parallel(run_spec, snpi_fn):
 
 def paramred_parallel_config(run_spec, dummy):
     config_filepath = run_spec["config"]
-    gempyor_simulator = InferenceSimulator(
+    gempyor_simulator = GempyorSimulator(
         config_path=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",

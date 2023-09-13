@@ -4,14 +4,14 @@
 ##' Convenience function to load the geodata file
 ##'
 ##' @param filename filename of geodata file
-##' @param geoid_len length of geoid character string
-##' @param geoid_pad what to pad the geoid character string with
+##' @param subpop_len length of subpop character string
+##' @param subpop_pad what to pad the subpop character string with
 ##' @param state_name whether to add column state with the US state name; defaults to TRUE for forecast or scenario hub runs.
 ##'
 ##' @details
-##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and geoid with the geo IDs of the area. .
+##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and subpop with the geo IDs of the area. .
 ##'
-##' @return a data frame with columns for state USPS, county geoid and population
+##' @return a data frame with columns for state USPS, county subpop and population
 ##' @examples
 ##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
 ##' geodata
@@ -19,21 +19,21 @@
 ##' @export
 
 load_geodata_file <- function(filename,
-                              geoid_len = 0,
-                              geoid_pad = "0",
+                              subpop_len = 0,
+                              subpop_pad = "0",
                               state_name = TRUE
 ) {
 
     if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
     geodata <- readr::read_csv(filename) %>%
-        dplyr::mutate(geoid = as.character(geoid))
+        dplyr::mutate(subpop = as.character(subpop))
 
-    if (!("geoid" %in% names(geodata))) {
-        stop(paste(filename, "does not have a column named geoid"))
+    if (!("subpop" %in% names(geodata))) {
+        stop(paste(filename, "does not have a column named subpop"))
     }
 
-    if (geoid_len > 0) {
-        geodata$geoid <- stringr::str_pad(geodata$geoid, geoid_len, pad = geoid_pad)
+    if (subpop_len > 0) {
+        geodata$subpop <- stringr::str_pad(geodata$subpop, subpop_len, pad = subpop_pad)
     }
 
     if(state_name) {
@@ -69,7 +69,7 @@ read_file_of_type <- function(extension,...){
             time=col_date(),
             uid=col_character(),
             comp=col_character(),
-            geoid=col_character()
+            subpop=col_character()
         )))})
     }
     if(extension == 'parquet'){
@@ -213,7 +213,7 @@ get_islandareas_data <- function() {
 #' @export
 #'
 #' @examples
-fix_negative_counts_single_geoid <- function(.x,.y, incid_col_name, date_col_name, cum_col_name, type){
+fix_negative_counts_single_subpop <- function(.x,.y, incid_col_name, date_col_name, cum_col_name, type){
   original_names <- names(.x)
 
   .x <- dplyr::arrange(.x,!!rlang::sym(date_col_name))
@@ -278,7 +278,7 @@ fix_negative_counts_single_geoid <- function(.x,.y, incid_col_name, date_col_nam
 
 # Add missing dates, fix counts that go negative, and fix NA values
 #
-# See fix_negative_counts_single_geoid() for more details on the algorithm,
+# See fix_negative_counts_single_subpop() for more details on the algorithm,
 # specified by argument "type"
 #' Title
 #'
@@ -311,7 +311,7 @@ fix_negative_counts <- function(
   df <- dplyr::group_by(df, FIPS,source)
     # Add missing dates
   df <- tidyr::complete(df, !!rlang::sym(date_col_name) := min_date + seq_len(max_date - min_date)-1)
-  df <- dplyr::group_map(df, fix_negative_counts_single_geoid,
+  df <- dplyr::group_map(df, fix_negative_counts_single_subpop,
                           incid_col_name=incid_col_name,
                           date_col_name=date_col_name,
                           cum_col_name=cum_col_name,
@@ -324,7 +324,7 @@ fix_negative_counts <- function(
 
 # Add missing dates, fix counts that go negative, and fix NA values for global dataset (group by Country_Region and Province_State instead of by FIPS)
 #
-# See fix_negative_counts_single_geoid() for more details on the algorithm,
+# See fix_negative_counts_single_subpop() for more details on the algorithm,
 # specified by argument "type"
 #' Title
 #'
@@ -357,7 +357,7 @@ fix_negative_counts_global <- function(
   df <- dplyr::group_by(df, Country_Region, Province_State, source)
     # Add missing dates
   df <- tidyr::complete(df, !!rlang::sym(date_col_name) := min_date + seq_len(max_date - min_date)-1)
-  df <- dplyr::group_map(df, fix_negative_counts_single_geoid,
+  df <- dplyr::group_map(df, fix_negative_counts_single_subpop,
                           incid_col_name=incid_col_name,
                           date_col_name=date_col_name,
                           cum_col_name=cum_col_name,

@@ -65,7 +65,6 @@ class Compartments:
         if dimension is None:
             dimension = [None for i in index]
         tmp = [y for y in zip(index, range(len(index)), dimension)]
-
         tmp = zip(index, range(len(index)), dimension)
         tmp = [list_access_element(config_piece[x[1]], x[0], x[2], encapsulate_as_list) for x in tmp]
         return tmp
@@ -304,7 +303,7 @@ class Compartments:
 
     def get_transition_array(self):
         with Timer("SEIR.compartments"):
-            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int")
+            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int64")
             for cit, colname in enumerate(("source", "destination")):
                 for it, elem in enumerate(self.transitions[colname]):
                     elem = reduce(lambda a, b: a + "_" + b, elem)

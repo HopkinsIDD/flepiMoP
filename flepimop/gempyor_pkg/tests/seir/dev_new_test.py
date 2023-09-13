@@ -24,7 +24,7 @@ if True:
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml")
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml",
         run_id=1,
         prefix="",
@@ -34,7 +34,7 @@ if True:
     )
 
     # p = parameters.Parameters(
-    #    parameter_config=config["seir"]["parameters"], config_version="v2")
+    #    parameter_config=config["seir"]["parameters"])
 
     p = inference_simulator.s.parameters
     p_draw = p.parameters_quick_draw(n_days=inference_simulator.s.n_days, nnodes=inference_simulator.s.nnodes)
@@ -51,7 +51,7 @@ if True:
 
     assert (p_draw[p.pnames2pindex["R0s"]] == initial_df.values).all()
 
-    ### test what happen when the order of geoids is not respected (expected: reput them in order)
+    ### test what happen when the order of subpops is not respected (expected: reput them in order)
 
     ### test what happens with incomplete data (expected: fail)
 

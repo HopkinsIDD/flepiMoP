@@ -102,10 +102,10 @@ clean_gt_forplots <- function(gt_data){
     gt_long <- gt_long %>%
         rename(time=date, USPS=source)
     gt_long <- gt_long %>%
-        rename(geoid=FIPS, outcome_name = target, outcome = incid)
+        rename(subpop=FIPS, outcome_name = target, outcome = incid)
 
     gt_data <- gt_data %>%
-        rename(geoid=FIPS, time=date, USPS=source)
+        rename(subpop=FIPS, time=date, USPS=source)
 
     return(gt_data)
 }

@@ -26,7 +26,7 @@ os.chdir(os.path.dirname(__file__))
 def test_full_npis_read_write():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=105,
         prefix="",
@@ -57,7 +57,7 @@ def test_full_npis_read_write():
 
     random.seed(10)
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=105,
         prefix="",
@@ -81,7 +81,7 @@ def test_full_npis_read_write():
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_npi.yml",
         run_id=106,
         prefix="",
@@ -105,7 +105,7 @@ def test_full_npis_read_write():
 
 
 def test_spatial_groups():
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
         prefix="",
@@ -155,38 +155,38 @@ def test_spatial_groups():
     # all independent: r1
     df = npi_df[npi_df["npi_name"] == "all_independent"]
     assert len(df) == inference_simulator.s.nnodes
-    for g in df["geoid"]:
+    for g in df["subpop"]:
         assert "," not in g
 
     # all the same: r2
     df = npi_df[npi_df["npi_name"] == "all_together"]
     assert len(df) == 1
-    assert set(df["geoid"].iloc[0].split(",")) == set(inference_simulator.s.spatset.nodenames)
-    assert len(df["geoid"].iloc[0].split(",")) == inference_simulator.s.nnodes
+    assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.s.subpop_struct.subpop_names)
+    assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.s.nnodes
 
     # two groups: r3
     df = npi_df[npi_df["npi_name"] == "two_groups"]
     assert len(df) == inference_simulator.s.nnodes - 2
     for g in ["01000", "02000", "04000", "06000"]:
-        assert g not in df["geoid"]
-    assert len(df[df["geoid"] == "01000,02000"]) == 1
-    assert len(df[df["geoid"] == "04000,06000"]) == 1
+        assert g not in df["subpop"]
+    assert len(df[df["subpop"] == "01000,02000"]) == 1
+    assert len(df[df["subpop"] == "04000,06000"]) == 1
 
     # mtr group: r5
     df = npi_df[npi_df["npi_name"] == "mt_reduce"]
     assert len(df) == 4
-    assert df.geoid.to_list() == ["09000,10000", "02000", "06000", "01000,04000"]
-    assert df[df["geoid"] == "09000,10000"]["start_date"].iloc[0] == "2020-12-01,2021-12-01"
+    assert df.subpop.to_list() == ["09000,10000", "02000", "06000", "01000,04000"]
+    assert df[df["subpop"] == "09000,10000"]["start_date"].iloc[0] == "2020-12-01,2021-12-01"
     assert (
-        df[df["geoid"] == "01000,04000"]["start_date"].iloc[0]
-        == df[df["geoid"] == "06000"]["start_date"].iloc[0]
+        df[df["subpop"] == "01000,04000"]["start_date"].iloc[0]
+        == df[df["subpop"] == "06000"]["start_date"].iloc[0]
         == "2020-10-01,2021-10-01"
     )
 
 
 def test_spatial_groups():
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
         prefix="",
@@ -208,7 +208,7 @@ def test_spatial_groups():
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(106, "", 1, "snpi", "parquet"))
 
-    inference_simulator = gempyor.InferenceSimulator(
+    inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_test_spatial_group_npi.yml",
         run_id=106,
         prefix="",
@@ -225,9 +225,9 @@ def test_spatial_groups():
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.106.snpi.parquet").to_pandas()
     snpi_wrote = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.107.snpi.parquet").to_pandas()
 
-    # now the order can change, so we need to sort by geoid and start_date
-    snpi_wrote = snpi_wrote.sort_values(by=["geoid", "start_date"]).reset_index(drop=True)
-    snpi_read = snpi_read.sort_values(by=["geoid", "start_date"]).reset_index(drop=True)
+    # now the order can change, so we need to sort by subpop and start_date
+    snpi_wrote = snpi_wrote.sort_values(by=["subpop", "start_date"]).reset_index(drop=True)
+    snpi_read = snpi_read.sort_values(by=["subpop", "start_date"]).reset_index(drop=True)
     assert (snpi_read == snpi_wrote).all().all()
 
     npi_read = seir.build_npi_SEIR(

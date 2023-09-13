@@ -81,7 +81,7 @@ collapse_intervention<- function(dat){
     #TODO: add number to repeated names
     #TODO add a check that all end_dates are the same
     mtr <- dat %>%
-        dplyr::filter(template=="MultiTimeReduce") %>%
+        dplyr::filter(template=="MultiPeriodModifier") %>%
         dplyr::mutate(end_date=paste0("end_date: ", end_date),
                       start_date=paste0("- start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n              ", start_date:end_date) %>%
@@ -91,21 +91,21 @@ collapse_intervention<- function(dat){
     if (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups))) {
 
         mtr <- mtr %>%
-            dplyr::group_by(dplyr::across(-geoid)) %>%
-            dplyr::summarize(geoid = paste0(geoid, collapse='", "'),
+            dplyr::group_by(dplyr::across(-subpop)) %>%
+            dplyr::summarize(subpop = paste0(subpop, collapse='", "'),
                              spatial_groups = paste0(spatial_groups, collapse='", "')) %>%
             dplyr::mutate(period = paste0("            ", period))
 
     } else {
         mtr <- mtr %>%
-            dplyr::group_by(dplyr::across(-geoid)) %>%
-            dplyr::summarize(geoid = paste0(geoid, collapse='", "')) %>%
+            dplyr::group_by(dplyr::across(-subpop)) %>%
+            dplyr::summarize(subpop = paste0(subpop, collapse='", "')) %>%
             dplyr::mutate(period = paste0("            ", period))
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, geoid, contains("spatial_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
-        dplyr::filter(template %in% c("ReduceR0", "Reduce", "ReduceIntervention")) %>%
+        dplyr::select(USPS, subpop, contains("spatial_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::filter(template %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n      ", start_date:end_date) %>%
@@ -113,22 +113,22 @@ collapse_intervention<- function(dat){
         dplyr::ungroup() %>%
         dplyr::add_count(dplyr::across(-USPS)) %>%
         dplyr::mutate(name = dplyr::case_when(category =="local_variance" | USPS %in% c("all", "") | is.na(USPS) ~ name,
-                                              n==1 & template=="Reduce" ~ paste0(USPS, "_", name),
-                                              template=="Reduce" ~ paste0(geoid, "_", name),
-                                              n==1 & template!="ReduceIntervention" ~ paste0(USPS, name),
-                                              template!="ReduceIntervention" ~ paste0(geoid, name),
+                                              n==1 & template=="SinglePeriodModifier" ~ paste0(USPS, "_", name),
+                                              template=="SinglePeriodModifier" ~ paste0(subpop, "_", name),
+                                              n==1 & template!="ModifierModifier" ~ paste0(USPS, name),
+                                              template!="ModifierModifier" ~ paste0(subpop, name),
                                               TRUE ~ name),
                       name = stringr::str_remove(name, "^_"))
 
     dat <- dplyr::bind_rows(mtr, reduce) %>%
         dplyr::mutate(interv_order = dplyr::recode(category, "universal_npi" = 1, "local_var" = 2, "seasonal" = 3, "NPI" = 4, "incidCshift" = 5)) %>%
-        dplyr::arrange(interv_order, USPS, category, geoid, parameter) %>%
+        dplyr::arrange(interv_order, USPS, category, subpop, parameter) %>%
         dplyr::ungroup()
 
     return(dat)
 }
 
-#' Print intervention text for MultiTimeReduce interventions
+#' Print intervention text for MultiPeriodModifier interventions
 #'
 #' @param dat df for an intervention with the MTR template with processed name/period; see collapsed_intervention. All rows in the dataframe should have the same intervention name.
 #'
@@ -139,16 +139,16 @@ collapse_intervention<- function(dat){
 #'
 yaml_mtr_template <- function(dat){
     template <- unique(dat$template)
-    geoid_all <- any(unique(dat$geoid)=="all")
+    subpop_all <- any(unique(dat$subpop)=="all")
     inference <- !any(is.na(dat$pert_dist))
 
-    if(template=="MultiTimeReduce" & geoid_all){
+    if(template=="MultiPeriodModifier" & subpop_all){
         cat(paste0(
             "    ", dat$name, ":\n",
-            "      template: MultiTimeReduce\n",
+            "      template: MultiPeriodModifier\n",
             "      parameter: ", dat$parameter, "\n",
             "      groups:\n",
-            '        - affected_geoids: "all"\n'
+            '        - subpop: "all"\n'
         ))
         if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
             cat(paste0(
@@ -162,17 +162,17 @@ yaml_mtr_template <- function(dat){
         }
     }
 
-    if(template=="MultiTimeReduce" & !geoid_all){
+    if(template=="MultiPeriodModifier" & !subpop_all){
         cat(paste0(
             "    ", dat$name[1], ":\n",
-            "      template: MultiTimeReduce\n",
+            "      template: MultiPeriodModifier\n",
             "      parameter: ", dat$parameter[1], "\n",
             "      groups:\n"
         ))
 
         for(j in 1:nrow(dat)){
             cat(paste0(
-                '        - affected_geoids: ["', dat$geoid[j], '"]\n'))
+                '        - subpop: ["', dat$subpop[j], '"]\n'))
 
             if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
                 cat(paste0(
@@ -354,9 +354,9 @@ print_value1 <- function(value_type, value_dist, value_mean,
 
 
 
-#' Print intervention text for Reduce interventions
+#' Print intervention text for SinglePeriodModifier interventions
 #'
-#' @param dat df row for an intervention with the Reduce, ReduceR0 or ReduceIntervention template that has been processed name/period; see collapsed_intervention.
+#' @param dat df row for an intervention with the SinglePeriodModifier or ModifierModifier template that has been processed name/period; see collapsed_intervention.
 #'
 #' @return
 #' @export
@@ -368,13 +368,13 @@ yaml_reduce_template<- function(dat){
     cat(paste0(
         "    ", dat$name, ":\n",
         "      template: ", dat$template,"\n",
-        if(dat$template %in% c("Reduce", "ReduceIntervention")){
+        if(dat$template %in% c("SinglePeriodModifier", "ModifierModifier")){
             paste0("      parameter: ", dat$parameter, "\n")
         },
-        if(all(dat$geoid == "all")){
-            '      affected_geoids: "all"\n'
+        if(all(dat$subpop == "all")){
+            '      subpop: "all"\n'
         } else {
-            paste0('      affected_geoids: ["', dat$geoid, '"]\n')
+            paste0('      subpop: ["', dat$subpop, '"]\n')
         },
         if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
             if(all(dat$spatial_groups == "all")){
@@ -385,7 +385,7 @@ yaml_reduce_template<- function(dat){
             }
         },
         dat$period,
-        if(dat$template == "ReduceIntervention"){
+        if(dat$template == "ModifierModifier"){
             paste0("      baseline_scenario: ", dat$baseline_scenario, "\n")
         }
     ))
@@ -426,7 +426,7 @@ yaml_reduce_template<- function(dat){
 
 yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
     if (stack) {
-        dat <- dat %>% dplyr::group_by(category, USPS, geoid) %>%
+        dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period == max(period)) %>%
             dplyr::bind_rows(dat %>% dplyr::filter(category != "NPI_redux")) %>%
             dplyr::distinct(name, category) %>%
@@ -441,18 +441,18 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
 
                 next
             }
-            cat(paste0("    ", dat$category[i], ":\n", "      template: Stacked\n",
+            cat(paste0("    ", dat$category[i], ":\n", "      template: StackedModifier\n",
                        "      scenarios: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category ==
                                                         "NPI_redux", name, category))
-        cat(paste0("    ", scenario, ":\n", "      template: Stacked\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     }
     else {
-        dat <- dat %>% dplyr::group_by(category, USPS, geoid) %>%
+        dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period ==
                               max(period)) %>% dplyr::bind_rows(dat %>% dplyr::filter(category !=
                                                                                           "NPI_redux")) %>% dplyr::distinct(name, category) %>%
@@ -461,7 +461,7 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
         if (duplicate_names > 1) {
             stop("At least one intervention name is shared by distinct NPIs.")
         }
-        cat(paste0("    ", scenario, ":\n", "      template: Stacked\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -484,7 +484,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 
     if (stack) {
         dat <- dat %>%
-            dplyr::group_by(category, USPS, geoid) %>%
+            dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period == max(period)) %>%
             dplyr::bind_rows(dat %>% dplyr::filter(category != "NPI_redux")) %>% dplyr::distinct(name, category) %>%
             dplyr::group_by(category) %>% dplyr::summarize(name = paste0(unique(name), collapse = "\", \""))
@@ -497,16 +497,16 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
             if (dat$category[i] %in% c("local_variance", "NPI_redux")) {
                 next
             }
-            cat(paste0("    ", dat$category[i], ":\n", "      template: Stacked\n",
+            cat(paste0("    ", dat$category[i], ":\n", "      template: StackedModifier\n",
                        "      scenarios: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category == "NPI_redux", name, category))
-        cat(paste0("    ", scenario, ":\n", "      template: Stacked\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     } else {
-        dat <- dat %>% dplyr::group_by(category, USPS, geoid) %>%
+        dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
             dplyr::filter(category == "NPI_redux" & period == max(period)) %>%
             dplyr::bind_rows(dat %>% dplyr::filter(category !=
                                                        "NPI_redux")) %>% dplyr::distinct(name, category) %>%
@@ -515,7 +515,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
         if (duplicate_names > 1) {
             stop("At least one intervention name is shared by distinct NPIs.")
         }
-        cat(paste0("    ", scenario, ":\n", "      template: Stacked\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -585,11 +585,11 @@ print_header <- function (
 #' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
 #'
 #' @param census_year integer(year)
-#' @param sim_states vector of locations that will be modeled
-#' @param geodata_file path to file relative to data_path Geodata is a .csv with column headers, with at least two columns: nodenames and popnodes
-#' @param popnodes is the name of a column in geodata that specifies the population of the nodenames column
-#' @param nodenames is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
-#' @param mobility_file path to file relative to data_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the nodenames column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
+#' @param modeled_states vector of sub-populations (i.e., locations) that will be modeled. This can be different from the subpop IDs. For the US, state abbreviations are often used. This component is only used for filtering the data to the set of populations.
+#' @param geodata_file path to file relative to data_path Geodata is a .csv with column headers, with at least two columns: subpop and popnodes
+#' @param popnodes is the name of a column in geodata that specifies the population of the subpop column
+#' @param subpop is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
+#' @param mobility_file path to file relative to data_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the subpop column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
 #' @param state_level whether this is a state-level run
 #'
 #' @return
@@ -599,23 +599,20 @@ print_header <- function (
 #'
 print_spatial_setup <- function (
         census_year = 2019,
-        sim_states,
+        modeled_states = NULL,
         geodata_file = "geodata.csv",
         mobility_file = "mobility.csv",
-        popnodes = "pop2019est",
-        nodenames = "geoid",
         state_level = TRUE) {
 
     cat(
         paste0("spatial_setup:\n",
-               "  census_year: ", census_year, "\n",
-               "  modeled_states:\n"),
-        paste0("   - ", sim_states, "\n"),
+               "  census_year: ", census_year, "\n"),
+        ifelse(!is.null(modeled_states),
+                paste0("  modeled_states:\n",
+               "   - ", modeled_states, "\n"),""),
         paste0("\n",
                "  geodata: ", geodata_file, "\n",
                "  mobility: ", mobility_file, "\n",
-               "  popnodes: ", popnodes, "\n",
-               "  nodenames: ", nodenames, "\n",
                "  state_level: ", state_level, "\n",
                "\n")
     )
@@ -684,7 +681,7 @@ print_compartments <- function (
 #' @param fix_added_seeding
 #'
 #' @details
-#' ## The model performns inference on the seeding date and initial number of seeding infections in each geoid with the default settings
+#' ## The model performns inference on the seeding date and initial number of seeding infections in each subpop with the default settings
 #' ## The method for determining the proposal distribution for the seeding amount is hard-coded in the inference package (R/pkgs/inference/R/functions/perturb_seeding.R). It is pertubed with a normal distribution where the mean of the distribution 10 times the number of confirmed cases on a given date and the standard deviation is 1.
 #'
 #' @return
@@ -1019,7 +1016,7 @@ print_interventions <- function (
     for (i in 1:nrow(dat)) {
         if (i > nrow(dat))
             break
-        if (dat$template[i] == "MultiTimeReduce") {
+        if (dat$template[i] == "MultiPeriodModifier") {
             dat %>% dplyr::filter(name == dat$name[i]) %>% yaml_mtr_template(.)
             dat <- dat %>% dplyr::filter(name != dat$name[i] | dplyr::row_number() == i)
         } else {
@@ -1036,7 +1033,7 @@ print_interventions <- function (
         for (i in 1:nrow(outcome_dat)) {
             if (i > nrow(outcome_dat))
                 break
-            if (outcome_dat$template[i] == "MultiTimeReduce") {
+            if (outcome_dat$template[i] == "MultiPeriodModifier") {
                 outcome_dat %>% dplyr::filter(name == outcome_dat$name[i]) %>%
                     yaml_mtr_template(.)
                 outcome_dat <- outcome_dat %>%
@@ -1120,7 +1117,7 @@ print_interventions <- function (
 print_outcomes <- function (resume_modifier = NULL,
                             dat = NULL, ifr = NULL, outcomes_base_data = NULL,
                             param_from_file = TRUE,
-                            outcomes_parquet_file = "usa-geoid-params-output_statelevel.parquet",
+                            outcomes_parquet_file = "usa-subpop-params-output_statelevel.parquet",
                             incidH_prob_dist = "fixed", incidH_prob_value = 0.0175,
                             incidH_delay_dist = "fixed", incidH_delay_value = 7, incidH_duration_dist = "fixed",
                             incidH_duration_value = 7, incidD_prob_dist = "fixed", incidD_prob_value = 0.005,
@@ -1401,7 +1398,7 @@ print_outcomes <- function (resume_modifier = NULL,
             cat(paste0("  interventions:\n",
                        "    settings:\n",
                        "      ", ifr, ":\n",
-                       "        template: Stacked\n",
+                       "        template: StackedModifier\n",
                        "        scenarios: [\"outcome_interventions\"]\n"))
         }
 
@@ -1451,7 +1448,7 @@ print_outcomes <- function (resume_modifier = NULL,
                 cat(paste0("  interventions:\n",
                            "    settings:\n",
                            "      ", ifr, ":\n",
-                           "        template: Stacked\n",
+                           "        template: StackedModifier\n",
                            "        scenarios: [\"", outcome_interventions, "\"]\n"))
             }
         }
@@ -1989,3 +1986,50 @@ seir_chunk <- function(resume_modifier = NULL,
 
     return(tmp)
 }
+
+
+
+#' print_init_conditions
+#'
+#' @description Print initial conditions section of config
+#'
+#' @param method
+#' @param proportional 
+#' @param perturbation if TRUE, will print perturbation section, requires other values below
+#' @param pert_dist distribution of the perturbation
+#' @param pert_mean mean of perturbation
+#' @param pert_sd standard deviation of perturbation
+#' @param pert_a minimum value of perturbation 
+#' @param pert_b maximum value of perturbation
+#'
+#' @details
+#' Config helper to print initial conditions section
+#' @export
+#'
+#' @examples
+#' print_init_conditions()
+#'
+print_init_conditions <- function(method = "SetInitialConditionsFolderDraw",
+                                  proportional = "True", 
+                                  perturbation = TRUE,
+                                  pert_dist = "truncnorm",
+                                  pert_mean = 0, 
+                                  pert_sd = 0.02,
+                                  pert_a = -1,
+                                  pert_b = 1){
+  
+  cat(paste0("initial_conditions: \n",
+             "  method: ", method, "\n",
+             "  proportional: ", proportional, "\n",
+             ifelse(perturbation, paste0("  perturbation: \n",
+                                         "    distribution: ", pert_dist, "\n",
+                                         "    mean: ", pert_mean, "\n",
+                                         "    sd: ", pert_sd, "\n",
+                                         "    a: ", pert_a, "\n",
+                                         "    b: ", pert_b),
+                    "\n")
+  ))
+  
+}
+
+

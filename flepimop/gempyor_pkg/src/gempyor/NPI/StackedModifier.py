@@ -14,13 +14,13 @@ debug_print = False
 REDUCTION_METADATA_CAP = int(os.getenv("FLEPI_MAX_STACK_SIZE", 50000))
 
 
-class Stacked(NPIBase):
+class StackedModifier(NPIBase):
     def __init__(
         self,
         *,
         npi_config,
         global_config,
-        geoids,
+        subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
     ):
@@ -29,7 +29,7 @@ class Stacked(NPIBase):
         self.start_date = global_config["start_date"].as_date()
         self.end_date = global_config["end_date"].as_date()
 
-        self.geoids = geoids
+        self.subpops = subpops
         self.param_name = []
         self.reductions = {}  # {param: 1 for param in REDUCE_PARAMS}
         self.reduction_params = collections.deque()
@@ -59,7 +59,7 @@ class Stacked(NPIBase):
             sub_npi = NPIBase.execute(
                 npi_config=scenario_npi_config,
                 global_config=global_config,
-                geoids=geoids,
+                subpops=subpops,
                 loaded_df=loaded_df,
             )
 
@@ -103,7 +103,7 @@ class Stacked(NPIBase):
         # check that no NPI is called several times, and retourn them
         if len(sub_npis_unique_names) != len(set(sub_npis_unique_names)):
             raise ValueError(
-                f"Stacked NPI {self.name} calls a NPI, which calls another NPI. The NPI that is called multiple time is/are: {set([x for x in sub_npis_unique_names if sub_npis_unique_names.count(x) > 1])}"
+                f"StackedModifier NPI {self.name} calls a NPI, which calls another NPI. The NPI that is called multiple time is/are: {set([x for x in sub_npis_unique_names if sub_npis_unique_names.count(x) > 1])}"
             )
 
         self.__checkErrors()

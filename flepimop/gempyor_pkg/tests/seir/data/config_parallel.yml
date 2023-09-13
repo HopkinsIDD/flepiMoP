@@ -9,8 +9,6 @@ spatial_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.csv
-  popnodes: population
-  nodenames: geoid
   census_year: 2018
   modeled_states:
     - HI
@@ -101,22 +99,22 @@ interventions:
     - Scenario2
   settings:
     None:
-      template: ReduceR0
+      template: SinglePeriodModifierR0
       value:
         distribution: fixed
         value: 0
     Place1:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: r0
       value:
         distribution: uniform
         low: .14
         high: .33
     Place2:
-      template: MultiTimeReduce
+      template: MultiPeriodModifier
       parameter: r0
       groups:
-        - affected_geoids: "all"
+        - subpop: "all"
           periods:
           - start_date: "2020-04-01"
             end_date: "2020-04-15"
@@ -127,7 +125,7 @@ interventions:
         low: .14
         high: .33
     Dose1:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: "transition_rate0"
       period_start_date: 2020-04-10
       period_end_date: 2020-04-10
@@ -135,7 +133,7 @@ interventions:
         distribution: fixed
         value: 0.9
     Dose2:
-      template: Reduce
+      template: SinglePeriodModifier
       parameter: "transition_rate1"
       period_start_date: 2020-04-11
       period_end_date: 2020-04-11
@@ -143,18 +141,18 @@ interventions:
         distribution: fixed
         value: 0.9
     vaccination:
-      template: Stacked
+      template: StackedModifier
       scenarios:
         - Dose1
         - Dose2
     Scenario_vacc:
-      template: Stacked
+      template: StackedModifier
       scenarios:
         - Place1
         - Place2
         - vaccination
     Scenario_novacc:
-      template: Stacked
+      template: StackedModifier
       scenarios:
         - Place1
         - Place2

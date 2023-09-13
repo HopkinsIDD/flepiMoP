@@ -44,10 +44,10 @@ gempyor <- reticulate::import("gempyor")
 
 ### Building a simulator
 
-We create an `InferenceSimulator` object by providing the path of config file. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: `config_FCH_R12_optSev_lowIE_blk5_Mar6.yml` on March 6, 2022.
+We create an `GempyorSimulator` object by providing the path of config file. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: `config_FCH_R12_optSev_lowIE_blk5_Mar6.yml` on March 6, 2022.
 ```{r}
 config_filepath = '../tests/npi/config_npi.yml'
-gempyor_simulator <- gempyor$InferenceSimulator(
+gempyor_simulator <- gempyor$GempyorSimulator(
                           config_path=config_filepath,
                           run_id="test_run_id",
                           prefix="test_prefix/",
@@ -115,12 +115,12 @@ We can also get the reduction in time that applies to each parameter. This is a 
 reduc <- npi_seir$getReduction(param = 'r0')
 
 
-reduc <- reduc %>% rownames_to_column(var = 'geoid') 
+reduc <- reduc %>% rownames_to_column(var = 'subpop') 
 reduc <- reduc %>% 
-  pivot_longer(cols=colnames(reduc %>% select(-geoid)), names_to = "date", values_to = "reduction") %>% 
+  pivot_longer(cols=colnames(reduc %>% select(-subpop)), names_to = "date", values_to = "reduction") %>% 
   mutate(date=as.Date(date))  
 # let's plot it:
-reduc %>% ggplot(aes(x=date, y=reduction)) + geom_path() + facet_wrap(~ geoid)
+reduc %>% ggplot(aes(x=date, y=reduction)) + geom_path() + facet_wrap(~ subpop)
 ```
 
 Now the same for outcome. We can check which parameters gets modified by this NPI by using the `getReductionDF()` method:
@@ -132,12 +132,12 @@ as it is only `inciditoc_all` here, we can plot it
 ```{r, fig.show=TRUE}
 reduc <- npi_outcome$getReduction(param = 'inciditoc_all')
 # There is a bit of R to get it to something usable, it's probably a very ugly way to do this:
-reduc <- reduc %>% rownames_to_column(var = 'geoid') 
+reduc <- reduc %>% rownames_to_column(var = 'subpop') 
 reduc <- reduc %>% 
-  pivot_longer(cols=colnames(reduc %>% select(-geoid)), names_to = "date", values_to = "reduction") %>%
+  pivot_longer(cols=colnames(reduc %>% select(-subpop)), names_to = "date", values_to = "reduction") %>%
   mutate(date=as.Date(date))
 
-reduc %>% ggplot(aes(x=date, y=reduction)) + geom_path() + facet_wrap(~ geoid)
+reduc %>% ggplot(aes(x=date, y=reduction)) + geom_path() + facet_wrap(~ subpop)
 ```
 
 
@@ -149,15 +149,15 @@ param_reduc = gempyor_simulator$get_seir_parameter_reduced(npi_seir=npi_seir) # 
 
 # We can also provide an array as returned by gempyor_simulator$get_seir_parameters() 
 param_reduc_from = gempyor_simulator$get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
-param_reduc <- param_reduc %>% pivot_longer(cols = param_reduc %>% select(-date, -geoid) %>% colnames(), names_to = 'parameter')
+param_reduc <- param_reduc %>% pivot_longer(cols = param_reduc %>% select(-date, -subpop) %>% colnames(), names_to = 'parameter')
 
-param_reduc %>% filter(parameter=='r0') %>% ggplot(aes(x=date, y=value)) + geom_line() + facet_wrap(~geoid)
+param_reduc %>% filter(parameter=='r0') %>% ggplot(aes(x=date, y=value)) + geom_line() + facet_wrap(~subpop)
 ```
 
 
 Let's plot the vaccination rate, the same way, from the same dataframe:
 ```{r,  fig.show=TRUE}
-param_reduc %>% filter(parameter=='nu1age18to64') %>% ggplot(aes(x=date, y=value)) + geom_path() + facet_wrap(~ geoid)
+param_reduc %>% filter(parameter=='nu1age18to64') %>% ggplot(aes(x=date, y=value)) + geom_path() + facet_wrap(~ subpop)
 ```
 
 ### Get compartment graph image

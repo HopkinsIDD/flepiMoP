@@ -12,6 +12,7 @@ import confuse
 from . import compartments
 from . import parameters
 from . import seeding_ic
+from .subpopulation_structure import SubpopulationStructure
 from .utils import config, read_df, write_df
 from . import file_paths
 import logging
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class Setup:
     """
-    This class hold a setup model setup.
+    This class hold a full model setup.
     """
 
     def __init__(
@@ -33,7 +34,6 @@ class Setup:
         ti,  # time to start
         tf,  # time to finish
         npi_scenario=None,
-        config_version=None,
         npi_config_seir={},
         seeding_config={},
         initial_conditions_config={},
@@ -61,6 +61,7 @@ class Setup:
         self.tf = tf  ## we end on 23:59 on tf
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+
         self.npi_scenario = npi_scenario
         self.npi_config_seir = npi_config_seir
         self.seeding_config = seeding_config
@@ -75,11 +76,11 @@ class Setup:
         self.first_sim_index = first_sim_index
         self.outcome_scenario = outcome_scenario
 
-        self.spatset = spatial_setup
+        self.subpop_struct = spatial_setup
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
-        self.nnodes = self.spatset.nnodes
-        self.popnodes = self.spatset.popnodes
-        self.mobility = self.spatset.mobility
+        self.nnodes = self.subpop_struct.nnodes
+        self.popnodes = self.subpop_struct.popnodes
+        self.mobility = self.subpop_struct.mobility
 
         self.stoch_traj_flag = stoch_traj_flag
 
@@ -106,7 +107,6 @@ class Setup:
                 if "integration" in self.seir_config.keys():
                     if "method" in self.seir_config["integration"].keys():
                         self.integration_method = self.seir_config["integration"]["method"].get()
-                        print(self.integration_method)
                         if self.integration_method == "best.current":
                             self.integration_method = "rk4.jit"
                         if self.integration_method == "rk4":
@@ -129,39 +129,23 @@ class Setup:
         if self.dt is not None:
             self.dt = float(self.dt)
 
-        if config_version is None:
-            config_version = "v3"
-            logging.debug(f"Config version not provided, infering type {config_version}")
-
-        if config_version not in ["old", "v2", "v3"]:
-            raise ValueError(
-                f"Configuration version unknown: {config_version}. \n"
-                f"Should be either non-specified (default: 'v3'), or set to 'old' or 'v2'."
+            # Think if we really want to hold this up.
+            self.parameters = parameters.Parameters(
+                parameter_config=self.parameters_config,
+                # NOTE: 'config_version' was gone, no longer needed?  
+                ti=self.ti,
+                tf=self.tf,
+                subpop_names=self.subpop_struct.subpop_names,
             )
-        elif config_version == "old" or config_version == "v2":
-            # NOTE: even behaved as old, "v2" seems by default in parameter.py 
-            raise ValueError(
-                f"Configuration version 'old' and 'v2' are no longer supported by flepiMoP\n"
-                f"Please use a 'v3' instead, or use the COVIDScenarioPipeline package. "
+            self.seedingAndIC = seeding_ic.SeedingAndIC(
+                seeding_config=self.seeding_config,
+                initial_conditions_config=self.initial_conditions_config,
             )
-
-        # Think if we really want to hold this up.
-        self.parameters = parameters.Parameters(
-            parameter_config=self.parameters_config,
-            config_version=config_version,
-            ti=self.ti,
-            tf=self.tf,
-            nodenames=self.spatset.nodenames,
-        )
-        self.seedingAndIC = seeding_ic.SeedingAndIC(
-            seeding_config=self.seeding_config,
-            initial_conditions_config=self.initial_conditions_config,
-        )
-        # really ugly references to the config globally here.
-        if config["compartments"].exists() and self.seir_config is not None:
-            self.compartments = compartments.Compartments(
-                seir_config=self.seir_config, compartments_config=config["compartments"]
-            )
+            # really ugly references to the config globally here.
+            if config["compartments"].exists() and self.seir_config is not None:
+                self.compartments = compartments.Compartments(
+                    seir_config=self.seir_config, compartments_config=config["compartments"]
+                )
 
         # 3. Outcomes
         self.npi_config_outcomes = None
@@ -281,98 +265,3 @@ class Setup:
             df=df,
         )
         return fname
-
-
-class SpatialSetup:
-    def __init__(self, *, setup_name, geodata_file, mobility_file, popnodes_key, nodenames_key):
-        self.setup_name = setup_name
-        self.data = pd.read_csv(
-            geodata_file, converters={nodenames_key: lambda x: str(x).strip()}, skipinitialspace=True
-        )  # geoids and populations, strip whitespaces
-        self.nnodes = len(self.data)  # K = # of locations
-
-        # popnodes_key is the name of the column in geodata_file with populations
-        if popnodes_key not in self.data:
-            raise ValueError(
-                f"popnodes_key: {popnodes_key} does not correspond to a column in geodata: {self.data.columns}"
-            )
-        self.popnodes = self.data[popnodes_key].to_numpy()  # population
-        if len(np.argwhere(self.popnodes == 0)):
-            raise ValueError(
-                f"There are {len(np.argwhere(self.popnodes == 0))} nodes with population zero, this is not supported."
-            )
-
-        # nodenames_key is the name of the column in geodata_file with geoids
-        if nodenames_key not in self.data:
-            raise ValueError(f"nodenames_key: {nodenames_key} does not correspond to a column in geodata.")
-        self.nodenames = self.data[nodenames_key].tolist()
-        if len(self.nodenames) != len(set(self.nodenames)):
-            raise ValueError(f"There are duplicate nodenames in geodata.")
-
-        if mobility_file is not None:
-            mobility_file = pathlib.Path(mobility_file)
-            if mobility_file.suffix == ".txt":
-                print("Mobility files as matrices are not recommended. Please switch soon to long form csv files.")
-                self.mobility = scipy.sparse.csr_matrix(
-                    np.loadtxt(mobility_file), dtype=int
-                )  # K x K matrix of people moving
-                # Validate mobility data
-                if self.mobility.shape != (self.nnodes, self.nnodes):
-                    raise ValueError(
-                        f"mobility data must have dimensions of length of geodata ({self.nnodes}, {self.nnodes}). Actual: {self.mobility.shape}"
-                    )
-
-            elif mobility_file.suffix == ".csv":
-                mobility_data = pd.read_csv(mobility_file, converters={"ori": str, "dest": str}, skipinitialspace=True)
-                nn_dict = {v: k for k, v in enumerate(self.nodenames)}
-                mobility_data["ori_idx"] = mobility_data["ori"].apply(nn_dict.__getitem__)
-                mobility_data["dest_idx"] = mobility_data["dest"].apply(nn_dict.__getitem__)
-                if any(mobility_data["ori_idx"] == mobility_data["dest_idx"]):
-                    raise ValueError(
-                        f"Mobility fluxes with same origin and destination in long form matrix. This is not supported"
-                    )
-
-                self.mobility = scipy.sparse.coo_matrix(
-                    (mobility_data.amount, (mobility_data.ori_idx, mobility_data.dest_idx)),
-                    shape=(self.nnodes, self.nnodes),
-                    dtype=int,
-                ).tocsr()
-
-            elif mobility_file.suffix == ".npz":
-                self.mobility = scipy.sparse.load_npz(mobility_file).astype(int)
-                # Validate mobility data
-		# data valication/arrangement is needed
-                if self.mobility.shape != (self.nnodes, self.nnodes):
-                    raise ValueError(
-                        f"mobility data must have dimensions of length of geodata ({self.nnodes}, {self.nnodes}). Actual: {self.mobility.shape}"
-                    )
-            else:
-                raise ValueError(
-                    f"Mobility data must either be a .csv file in longform (recommended) or a .txt matrix file. Got {mobility_file}"
-                )
-
-            # Make sure mobility values <= the population of src node
-            tmp = (self.mobility.T - self.popnodes).T
-            tmp[tmp < 0] = 0
-            if tmp.any():
-                rows, cols, values = scipy.sparse.find(tmp)
-                errmsg = ""
-                for r, c, v in zip(rows, cols, values):
-                    errmsg += f"\n({r}, {c}) = {self.mobility[r, c]} > population of '{self.nodenames[r]}' = {self.popnodes[r]}"
-                raise ValueError(
-                    f"The following entries in the mobility data exceed the source node populations in geodata:{errmsg}"
-                )
-
-            tmp = self.popnodes - np.squeeze(np.asarray(self.mobility.sum(axis=1)))
-            tmp[tmp > 0] = 0
-            if tmp.any():
-                (row,) = np.where(tmp)
-                errmsg = ""
-                for r in row:
-                    errmsg += f"\n sum accross row {r} exceed population of node '{self.nodenames[r]}' ({self.popnodes[r]}), by {-tmp[r]}"
-                raise ValueError(
-                    f"The following rows in the mobility data exceed the source node populations in geodata:{errmsg}"
-                )
-        else:
-            logging.critical("No mobility matrix specified -- assuming no one moves")
-            self.mobility = scipy.sparse.csr_matrix(np.zeros((self.nnodes, self.nnodes)), dtype=int)

@@ -8,13 +8,13 @@ from .base import NPIBase
 debug_print = False
 
 
-class ReduceIntervention(NPIBase):
+class ModifierModifier(NPIBase):
     def __init__(
         self,
         *,
         npi_config,
         global_config,
-        geoids,
+        subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
     ):
@@ -23,11 +23,11 @@ class ReduceIntervention(NPIBase):
         self.start_date = global_config["start_date"].as_date()
         self.end_date = global_config["end_date"].as_date()
 
-        self.geoids = geoids
+        self.subpops = subpops
 
         self.parameters = pd.DataFrame(
             0.0,
-            index=self.geoids,
+            index=self.subpops,
             columns=["npi_name", "start_date", "end_date", "parameter", "reduction"],
         )
 
@@ -61,7 +61,7 @@ class ReduceIntervention(NPIBase):
         self.sub_npi = NPIBase.execute(
             npi_config=scenario_npi_config,
             global_config=global_config,
-            geoids=geoids,
+            subpops=subpops,
             loaded_df=loaded_df,
         )
         new_params = self.sub_npi.param_name  # either a list (if stacked) or a string
@@ -122,9 +122,9 @@ class ReduceIntervention(NPIBase):
         if not (self.parameters["start_date"] <= self.parameters["end_date"]).all():
             raise ValueError(f"at least one period_start_date is greater than the corresponding period end date")
 
-        for n in self.affected_geoids:
-            if n not in self.geoids:
-                raise ValueError(f"Invalid config value {n} not in geoids")
+        for n in self.affected_subpops:
+            if n not in self.subpops:
+                raise ValueError(f"Invalid config value {n} not in subpops")
 
         # if not ((min_start_date >= self.scenario_start_date)):
         #     raise ValueError(f"{self.name} : at least one period_start_date occurs before the baseline intervention begins")
@@ -152,7 +152,7 @@ class ReduceIntervention(NPIBase):
         return pd.concat(self.reduction_params, ignore_index=True)
 
     def __createFromDf(self, loaded_df, npi_config):
-        loaded_df.index = loaded_df.geoid
+        loaded_df.index = loaded_df.subpop
         loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
         self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
 
@@ -173,7 +173,7 @@ class ReduceIntervention(NPIBase):
         # else:
         #    self.parameters["start_date"] = self.end_date
 
-        self.affected_geoids = set(self.parameters.index)
+        self.affected_subpops = set(self.parameters.index)
         # parameter name is picked from config too: (before: )
         # self.param_name = self.parameters["parameter"].unique()[0]  # [0] to convert ndarray to str
         # now:
@@ -184,14 +184,14 @@ class ReduceIntervention(NPIBase):
         # Get name of the parameter to reduce
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
-        # Optional config field "affected_geoids"
-        # If values of "affected_geoids" is "all" or unspecified, run on all geoids.
-        # Otherwise, run only on geoids specified.
-        self.affected_geoids = set(self.geoids)
-        if npi_config["affected_geoids"].exists() and npi_config["affected_geoids"].get() != "all":
-            self.affected_geoids = {str(n.get()) for n in npi_config["affected_geoids"]}
+        # Optional config field "subpop"
+        # If values of "subpop" is "all" or unspecified, run on all subpops.
+        # Otherwise, run only on subpops specified.
+        self.affected_subpops = set(self.subpops)
+        if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
+            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
 
-        self.parameters = self.parameters[self.parameters.index.isin(self.affected_geoids)]
+        self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         # Create reduction
         self.dist = npi_config["value"].as_random_distribution()
 
@@ -204,6 +204,6 @@ class ReduceIntervention(NPIBase):
         )
         self.parameters["parameter"] = self.param_name
 
-        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_geoids))
+        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_subpops))
         if self.spatial_groups["grouped"]:
-            raise ValueError("Spatial groups are not supported for ReduceIntervention interventions")
+            raise ValueError("Spatial groups are not supported for ModifierModifier interventions")

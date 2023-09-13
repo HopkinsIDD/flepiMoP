@@ -12,8 +12,6 @@
 #   modeled_states: <list of country ISO3 codes> e.g. ZMB, BGD, CAN
 #   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
 #   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
-#   popnodes: <string> optional; default is 'pop'
-#
 #
 # ## Input Data
 #
@@ -107,7 +105,7 @@ if(opt$w){
 }
 
 # Save population geodata
-names(census_data) <- c("geoid","admin2","admin0","pop")
+names(census_data) <- c("subpop","admin2","admin0","pop")
 write.csv(file = file.path(outdir,'geodata.csv'), census_data,row.names=FALSE)
 
 print("Census Data Check (up to 6 rows)")

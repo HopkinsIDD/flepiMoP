@@ -8,8 +8,6 @@ nslots: 15
 spatial_setup:
   geodata: geodata.csv
   mobility: mobility.txt
-  popnodes: population
-  nodenames: geoid
 
 compartments:
   infection_stage: ["S", "E", "I1", "I2", "I3", "R"]

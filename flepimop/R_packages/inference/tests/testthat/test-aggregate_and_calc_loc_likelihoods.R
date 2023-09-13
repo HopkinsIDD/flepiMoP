@@ -7,25 +7,25 @@ context("aggregate_and_calc_loc_likelihoods")
 ##'
 get_minimal_setup <- function () {
 
-    #3geoids
-    geoids <- c("06001", "06002", "06003", "32001","32002","32003")
+    #3subpop
+    subpop <- c("06001", "06002", "06003", "32001","32002","32003")
     USPS <- c(rep("CA",3), rep("NY",3))
 
     ##list of lcations to consider...all of them
-    all_locations <- geoids
+    all_locations <- subpop
 
-    obs_nodename <- "geoid"
+    obs_subpop <- "subpop"
 
 
-    ##Generate observed data per geoid  the simulated data will be compared too
+    ##Generate observed data per subpop  the simulated data will be compared too
     ##TODO
     times <- seq(as.Date("2020-02-15"),as.Date("2020-06-30"), by="days")
     day <- 1:length(times)
 
     obs_sims <- list()
-    for (i in 1:length(geoids)) {
+    for (i in 1:length(subpop)) {
         obs_sims[[i]] <- dplyr::tibble(date = times,
-                              geoid = geoids[i],
+                              subpop = subpop[i],
                               death_incid = rpois(length(day), 1000*dnorm(day, 32, 10)),
                               confirmed_incid = rpois(length(day), 10000*dnorm(day, 32, 10)))
     }
@@ -33,7 +33,7 @@ get_minimal_setup <- function () {
 
 
     ##Aggregate the observed data to the appropriate level
-    geonames <- unique(obs[[obs_nodename]])
+    geonames <- unique(obs[[obs_subpop]])
 
     ##minimal confif information used by function
     config <- list()
@@ -67,7 +67,7 @@ get_minimal_setup <- function () {
     data_stats <- lapply(
         geonames,
         function(x) {
-            df <- obs[obs[[obs_nodename]] == x, ]
+            df <- obs[obs[[obs_subpop]] == x, ]
             inference::getStats(
                            df,
                            "date",
@@ -76,7 +76,7 @@ get_minimal_setup <- function () {
         }) %>%
         setNames(geonames)
 
-    ##Simulated data per geoid, multiple vars. Just perturb obs  by default
+    ##Simulated data per subpop, multiple vars. Just perturb obs  by default
     sim_hosp <- obs %>%
         dplyr::rename(incidD = death_incid, incidC = confirmed_incid) %>%
         dplyr::mutate(incidD = incidD + rpois(length(incidD), incidD))%>%
@@ -84,7 +84,7 @@ get_minimal_setup <- function () {
         dplyr::rename(time=date)
 
     ##the observed node name.
-    obs_nodename <- "geoid"
+    obs_subpop <- "subpop"
 
 
 
@@ -100,26 +100,26 @@ get_minimal_setup <- function () {
 
 
     ##geodata data frame
-    geodata <- dplyr::tibble(geoid = geoids,
+    geodata <- dplyr::tibble(subpop = subpop,
                       USPS = USPS)
 
 
     ##The file containing information on the given npis. Creating 2 by default.
-    npi1 <- dplyr::tibble(geoid=geoids,
+    npi1 <- dplyr::tibble(subpop=subpop,
                    npi_name = "local_variance",
                    start_date = "2020-01-01",
                    end_date = "2020-06-30",
                    parameter = "r0",
                    reduction = runif(6,-.5, .5))
 
-    npi2A <- dplyr::tibble(geoid = geoids[1:3],
+    npi2A <- dplyr::tibble(subpop = subpop[1:3],
                     npi_name = "full_lockdown_CA",
                     start_date = "2020-03-25",
                     end_date = "2020-06-01",
                     parameter = "r0",
                     reduction = runif(3,-.8, -.5))
 
-    npi2B <- dplyr::tibble(geoid = geoids[4:6],
+    npi2B <- dplyr::tibble(subpop = subpop[4:6],
                     npi_name = "full_lockdown_NY",
                     start_date = "2020-03-15",
                     end_date = "2020-05-22",
@@ -129,14 +129,14 @@ get_minimal_setup <- function () {
     snpi <- dplyr::bind_rows(npi1, npi2A, npi2B)
 
     ##The file containing information on the given hospitalization npis. Creating 2 by default.
-    npi1 <- dplyr::tibble(geoid=geoids,
+    npi1 <- dplyr::tibble(subpop=subpop,
                    npi_name = "local_variance",
                    start_date = "2020-01-01",
                    end_date = "2020-06-30",
                    parameter = "hosp::inf",
                    reduction = runif(6,-.5, .5))
 
-    npi2 <- dplyr::tibble(geoid = geoids[1:3],
+    npi2 <- dplyr::tibble(subpop = subpop[1:3],
                     npi_name = "full_lockdown_CA",
                     start_date = "2020-03-25",
                     end_date = "2020-06-01",
@@ -147,11 +147,11 @@ get_minimal_setup <- function () {
     hnpi <- dplyr::bind_rows(npi1, npi2)
 
     ##Set up hospitalizatoin params.
-    hpar1 <- dplyr::tibble(geoid=geoids,
+    hpar1 <- dplyr::tibble(subpop=subpop,
                     parameter="p_confirmed_inf",
                     value=0.1)
 
-    hpar2 <- dplyr::tibble(geoid=geoids,
+    hpar2 <- dplyr::tibble(subpop=subpop,
                     parameter="p_hosp_inf",
                     value=.07)
 
@@ -160,7 +160,7 @@ get_minimal_setup <- function () {
 
     return(list(all_locations=all_locations,
                 sim_hosp=sim_hosp,
-                obs_nodename=obs_nodename,
+                obs_subpop=obs_subpop,
                 config=config,
                 obs=obs,
                 data_stats=data_stats,
@@ -182,7 +182,7 @@ test_that("aggregate_and_calc_loc_likelihoods returns a likelihood per location 
     tmp <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -195,7 +195,7 @@ test_that("aggregate_and_calc_loc_likelihoods returns a likelihood per location 
 
 
     expect_that(nrow(tmp), equals(length(stuff$all_locations)))
-    expect_that(sort(colnames(tmp)), equals(sort(c("ll","accept","accept_prob","accept_avg","filename",stuff$obs_nodename))))
+    expect_that(sort(colnames(tmp)), equals(sort(c("ll","accept","accept_prob","accept_avg","filename",stuff$obs_subpop))))
 
 })
 
@@ -212,7 +212,7 @@ test_that("likelihood of perfect data is less that likelihood of imperfect data"
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -226,7 +226,7 @@ test_that("likelihood of perfect data is less that likelihood of imperfect data"
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -262,7 +262,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -278,7 +278,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -297,7 +297,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -313,7 +313,7 @@ test_that("removing deaths as a stat makes the likelihood invariant to changes i
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -348,7 +348,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -364,7 +364,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -383,7 +383,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -399,7 +399,7 @@ test_that("removing confirmed as a stat makes the likelihood invariant to change
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = alt_sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -427,7 +427,7 @@ test_that("likelihoood insenstive to parameters with no multi-level compoenent o
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -443,7 +443,7 @@ test_that("likelihoood insenstive to parameters with no multi-level compoenent o
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -481,7 +481,7 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -497,7 +497,7 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -512,7 +512,7 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
     tmp3 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -552,7 +552,7 @@ test_that("likelihood is sensitive to changes to correct hpar parameters when mu
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -569,7 +569,7 @@ test_that("likelihood is sensitive to changes to correct hpar parameters when mu
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -585,7 +585,7 @@ test_that("likelihood is sensitive to changes to correct hpar parameters when mu
     tmp3 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -626,7 +626,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -642,7 +642,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -657,7 +657,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
     tmp3 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -697,7 +697,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -714,7 +714,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -730,7 +730,7 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
     tmp3 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -775,7 +775,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
     tmp1 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -791,7 +791,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
     tmp2 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -806,7 +806,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
     tmp3 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,
@@ -821,7 +821,7 @@ test_that("Hierarchical structure works on interventions not defined for all loc
     tmp4 <- aggregate_and_calc_loc_likelihoods(
       all_locations = stuff$all_locations,
       modeled_outcome = stuff$sim_hosp,
-      obs_nodename = stuff$obs_nodename,
+      obs_subpop = stuff$obs_subpop,
       targets_config = stuff$config[['inference']][['statistics']],
       obs = stuff$obs,
       ground_truth_data = stuff$data_stats,

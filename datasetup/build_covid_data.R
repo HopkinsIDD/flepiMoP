@@ -49,12 +49,12 @@ source(file.path(opt$path, "datasetup/data_setup_source.R"))
 # SET DELPHI API KEY ------------------------------------------------------
 
 if (any(grepl("nchs|hhs", opt$gt_data_source))){
-    if (!is.null(opt$delphi_api_key)){
-        cat(paste0("Using Environment variable for Delphi API key: ", opt$delphi_api_key))
-        options(covidcast.auth = opt$delphi_api_key)
-    } else if (!is.null(config$inference$gt_api_key)){
+    if (!is.null(config$inference$gt_api_key)){
         cat(paste0("Using Config variable for Delphi API key: ", config$inference$gt_api_key))
         options(covidcast.auth = config$inference$gt_api_key)
+    } else if (!is.null(opt$delphi_api_key)){
+        cat(paste0("Using Environment variable for Delphi API key: ", opt$delphi_api_key))
+        options(covidcast.auth = opt$delphi_api_key)
     } else {
         newkey <- readline(prompt = "Please enter your Delphi API key before proceeding:")
         #check
@@ -220,7 +220,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 
     census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
     fluview_data <- fluview_data %>%
-        dplyr::inner_join(census_data %>% dplyr::select(source = USPS, FIPS = geoid)) %>%
+        dplyr::inner_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
         dplyr::select(Update, source, FIPS, incidD)
 
 
@@ -285,7 +285,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 #
 #     census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
 #     fluview_data <- fluview_data %>%
-#         left_join(census_data %>% dplyr::select(source = USPS, FIPS = geoid)) %>%
+#         left_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
 #         dplyr::select(Update, source, FIPS, incidD)
 #
 #

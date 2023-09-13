@@ -3,7 +3,7 @@ context("perturb_npis")
 test_that("perturb_snpi always stays within support", {
     N <- 10000
     npis <- data.frame(
-        geoid = rep('00000',times=N),
+        subpop = rep('00000',times=N),
         npi_name = rep("test_npi",times=N),
         start_date = rep("2020-02-01",times=N),
         end_date = rep("2020-02-02",times=N),
@@ -11,7 +11,7 @@ test_that("perturb_snpi always stays within support", {
         reduction = rep(-.099,times=N)
     )
     npi_settings <- list(test_npi = list(
-        template = "Reduce",
+        template = "SinglePeriodModifier",
         parameter = "r0",
         value = list(
           distribution = "truncnorm",
@@ -35,7 +35,7 @@ test_that("perturb_snpi always stays within support", {
 test_that("perturb_snpi has a median of 0 after 10000 sims",{
     N <- 10000
     npis <- data.frame(
-        geoid = rep('00000',times=N),
+        subpop = rep('00000',times=N),
         npi_name = rep("test_npi",times=N),
         start_date = rep("2020-02-01",times=N),
         end_date = rep("2020-02-02",times=N),
@@ -43,7 +43,7 @@ test_that("perturb_snpi has a median of 0 after 10000 sims",{
         reduction = rep(0,times=N)
     )
     npi_settings <- list(
-        template = "Reduce",
+        template = "SinglePeriodModifier",
         parameter = "r0",
         value = list(
           distribution = "truncnorm",
@@ -79,7 +79,7 @@ test_that("perturb_snpi has a median of 0 after 10000 sims",{
 test_that("perturb_snpi does not perturb npis without a perturbation section", {
     N <- 10000
     npis <- data.frame(
-        geoid = rep('00000',times=N),
+        subpop = rep('00000',times=N),
         npi_name = rep("test_npi",times=N),
         start_date = rep("2020-02-01",times=N),
         end_date = rep("2020-02-02",times=N),
@@ -87,7 +87,7 @@ test_that("perturb_snpi does not perturb npis without a perturbation section", {
         reduction = rep(-.099,times=N)
     )
     npi_settings <- list(test_npi = list(
-        template = "Reduce",
+        template = "SinglePeriodModifier",
         parameter = "r0",
         value = list(
           distribution = "truncnorm",
