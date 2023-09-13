@@ -15,7 +15,7 @@
 
 # spatial_setup:
 #   geodata: <path to file>
-#   nodenames: <string>
+#   subpop: <string>
 #
 # seeding:
 #   lambda_file: <path to file>
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
+# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
@@ -151,15 +151,15 @@ if (seed_variants) {
 
 ## Check some data attributes:
 ## This is a hack:
-if ("geoid" %in% names(cases_deaths)) {
-    cases_deaths$FIPS <- cases_deaths$geoid
+if ("subpop" %in% names(cases_deaths)) {
+    cases_deaths$FIPS <- cases_deaths$subpop
     warning("Changing FIPS name in seeding. This is a hack")
 }
 if ("date" %in% names(cases_deaths)) {
     cases_deaths$Update <- cases_deaths$date
     warning("Changing Update name in seeding. This is a hack")
 }
-obs_nodename <- config$spatial_setup$nodenames
+obs_subpop <- config$spatial_setup$subpop
 required_column_names <- NULL
 
 check_required_names <- function(df, cols, msg) {
@@ -270,12 +270,12 @@ geodata <- flepicommon::load_geodata_file(
     TRUE
 )
 
-all_geoids <- geodata[[config$spatial_setup$nodenames]]
+all_subpop <- geodata[[config$spatial_setup$subpop]]
 
 
 
 incident_cases <- incident_cases %>%
-    dplyr::filter(FIPS %in% all_geoids) %>%
+    dplyr::filter(FIPS %in% all_subpop) %>%
     dplyr::select(!!!required_column_names)
 incident_cases <- incident_cases %>% filter(value>0)
 
@@ -305,7 +305,7 @@ incident_cases <- incident_cases %>%
     dplyr::ungroup() %>%
     dplyr::select(!!!rlang::syms(required_column_names))
 
-names(incident_cases)[1:3] <- c("place", "date", "amount")
+names(incident_cases)[1:3] <- c("subpop", "date", "amount")
 
 incident_cases <- incident_cases %>%
     dplyr::filter(!is.na(amount) | !is.na(date))
@@ -332,12 +332,12 @@ if (!("no_perturb" %in% colnames(incident_cases))){
 #         seeding_pop$no_perturb <- TRUE
 #     }
 #     seeding_pop <- seeding_pop %>%
-#         dplyr::filter(place %in% all_geoids) %>%
+#         dplyr::filter(subpop %in% all_subpop) %>%
 #         dplyr::select(!!!colnames(incident_cases))
 #
 #     incident_cases <- incident_cases %>%
 #         dplyr::bind_rows(seeding_pop) %>%
-#         dplyr::arrange(place, date)
+#         dplyr::arrange(subpop, date)
 # }
 
 

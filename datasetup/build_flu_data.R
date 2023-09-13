@@ -65,14 +65,14 @@ locs <- read_csv(file.path(config$data_path, config$spatial_setup$geodata))
 us_data <- us_data %>%
     mutate(location = stringr::str_pad(location, width = 2, side = "left", pad = "0"))
 
-us_data <- us_data %>% 
+us_data <- us_data %>%
     filter(location != "US") %>%
     mutate(location = stringr::str_pad(location, width=5, side="right", pad="0")) %>%
-    left_join(locs, by = c("location"="geoid")) %>%
-    rename(FIPS = location, 
+    left_join(locs, by = c("location"="subpop")) %>%
+    rename(FIPS = location,
            incidH = value,
            source = USPS) %>%
-    select(-location_name, -pop2019est)
+    select(-location_name, -population)
 
 # Filter to dates we care about for speed and space
 end_date_ <- config$end_date_groundtruth
@@ -98,24 +98,24 @@ variant_props_file <- config$seeding$variant_filename
 adjust_for_variant <- !is.null(variant_props_file)
 
 # if (adjust_for_variant){
-#     
+#
 #     # Variant Data (need to automate this data pull still)
 #     #variant_data <- read_csv(file.path(config$data_path, "variant/WHO_NREVSS_Clinical_Labs.csv"), skip = 1)
 #     variant_data <- cdcfluview::who_nrevss(region="state", years = 2022)$clinical_labs
-#     
+#
 #     # location data
 #     loc_data <- read_csv("data-locations/locations.csv")
-#     
-#     
+#
+#
 #     # CLEAN DATA
-#     
+#
 #     variant_data <- variant_data %>%
 #         select(state = region,
 #                week = week,
 #                year = year,
 #                FluA = total_a,
 #                FluB = total_b) %>%
-#         # select(state = REGION, 
+#         # select(state = REGION,
 #         #        week = WEEK,
 #         #        year = YEAR,
 #         #        FluA = `TOTAL A`,
@@ -145,14 +145,14 @@ adjust_for_variant <- !is.null(variant_props_file)
 #         mutate(prop = ifelse(is.na(prop), 0, prop)) %>%
 #         filter(!is.na(week_end)) %>%
 #         filter(week_end <= as_date(end_date_))
-#     
+#
 #     variant_data <- variant_data %>%
 #         left_join(loc_data %>% select(state = location_name, source = abbreviation)) %>%
 #         mutate(week = epiweek(week_end), year = epiyear(week_end))
-#     
+#
 #     if(end_date_ != max(variant_data$week_end)){
 #         # Extend to dates of groundtruth
-#         var_max_dates <- variant_data %>% 
+#         var_max_dates <- variant_data %>%
 #             group_by(source, state) %>%
 #             filter(week_end == max(week_end)) %>%
 #             ungroup() %>%
@@ -164,50 +164,50 @@ adjust_for_variant <- !is.null(variant_props_file)
 #             ungroup()
 #         var_max_dates <- var_max_dates %>%
 #             rename(max_current = week_end) %>%
-#             mutate(week_end = strsplit(as.character(weeks_missing), ",")) %>% 
+#             mutate(week_end = strsplit(as.character(weeks_missing), ",")) %>%
 #             unnest(week_end) %>%
 #             select(state, week, year, variant, prop, week_end, source) %>%
 #             mutate(week_end = as_date(week_end))
 #         variant_data <- variant_data %>%
 #             bind_rows(var_max_dates)
 #     }
-#     
+#
 #     variant_data <- variant_data %>%
 #         mutate(week = epiweek(week_end), year = epiyear(week_end))
-#     
+#
 #     variant_data <- variant_data %>%
 #         expand_grid(day = 1:7) %>%
 #         mutate(date = as_date(MMWRweek::MMWRweek2Date(year, week, day))) %>%
 #         select(c(variant, prop, source, date))
-#     
-#     variant_data <- variant_data %>% 
+#
+#     variant_data <- variant_data %>%
 #         filter(date >= as_date(config$start_date) & date <= as_date(config$end_date_groundtruth))
-#     
+#
 #     write_csv(variant_data, variant_props_file)
 # }
-# 
+#
 
 # APPLY VARIANTS ----------------------------------------------------------
 
 
 if (adjust_for_variant) {
-    
+
     us_data <- read_csv(config$inference$gt_data_path)
-    
+
     tryCatch({
         us_data <- flepicommon::do_variant_adjustment(us_data, variant_props_file)
-        us_data <- us_data %>% 
+        us_data <- us_data %>%
             filter(date >= as_date(config$start_date) & date <= as_date(config$end_date_groundtruth))
         write_csv(us_data, config$inference$gt_data_path)
     }, error = function(e) {
-        stop(paste0("Could not use variant file |", variant_props_file, 
+        stop(paste0("Could not use variant file |", variant_props_file,
                     "|, with error message", e$message))
     })
 }
 
 
 
-cat(paste0("Ground truth data saved\n", 
+cat(paste0("Ground truth data saved\n",
            "  -- file:      ", config$inference$gt_data_path,".\n",
            "  -- outcomes:  ", paste(grep("incid", colnames(us_data), value = TRUE), collapse = ", ")))
 

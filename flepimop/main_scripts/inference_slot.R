@@ -32,7 +32,7 @@ option_list = list(
     optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
     optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
     optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
-    optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid")
+    optparse::make_option(c("-g", "--subpop_len"), action="store", default=Sys.getenv("SUBPOP_LENGTH", 5), type='integer', help = "number of digits in subpop")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -99,10 +99,10 @@ suppressMessages(
             config$data_path,
             config$spatial_setup$geodata, sep = "/"
         ),
-        geoid_len = opt$geoid_len
+        subpop_len = opt$subpop_len
     )
 )
-obs_nodename <- config$spatial_setup$nodenames
+obs_subpop <- config$spatial_setup$subpop
 
 ##Load simulations per slot from config if not defined on command line
 ##command options take precedence
@@ -163,7 +163,7 @@ if (is.null(config$inference$gt_source)){
 }
 
 gt_scale <- ifelse(state_level, "US state", "US county")
-fips_codes_ <- geodata[[obs_nodename]]
+fips_codes_ <- geodata[[obs_subpop]]
 
 gt_start_date <- lubridate::ymd(config$start_date)
 if (opt$ground_truth_start != "") {
@@ -193,7 +193,7 @@ if (config$inference$do_inference){
     # obs <- inference::get_ground_truth(
     #     data_path = data_path,
     #     fips_codes = fips_codes_,
-    #     fips_column_name = obs_nodename,
+    #     fips_column_name = obs_subpop,
     #     start_date = gt_start_date,
     #     end_date = gt_end_date,
     #     gt_source = gt_source,
@@ -210,16 +210,16 @@ if (config$inference$do_inference){
         dplyr::filter(FIPS %in% fips_codes_, date >= gt_start_date, date <= gt_end_date) %>%
         dplyr::right_join(tidyr::expand_grid(FIPS = unique(.$FIPS), date = unique(.$date))) %>%
         dplyr::mutate_if(is.numeric, dplyr::coalesce, 0) %>%
-        dplyr::rename(!!obs_nodename := FIPS)
+        dplyr::rename(!!obs_subpop := FIPS)
 
-    geonames <- unique(obs[[obs_nodename]])
+    geonames <- unique(obs[[obs_subpop]])
 
 
     ## Compute statistics
     data_stats <- lapply(
         geonames,
         function(x) {
-            df <- obs[obs[[obs_nodename]] == x, ]
+            df <- obs[obs[[obs_subpop]] == x, ]
             inference::getStats(
                 df,
                 "date",
@@ -235,7 +235,7 @@ if (config$inference$do_inference){
     likelihood_calculation_fun <- function(sim_hosp){
 
         sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$time >= min(obs$date),sim_hosp$time <= max(obs$date))
-        lhs <- unique(sim_hosp[[obs_nodename]])
+        lhs <- unique(sim_hosp[[obs_subpop]])
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]
 
@@ -243,7 +243,7 @@ if (config$inference$do_inference){
         inference::aggregate_and_calc_loc_likelihoods(
             all_locations = all_locations, # technically different
             modeled_outcome = sim_hosp,
-            obs_nodename = obs_nodename,
+            obs_subpop = obs_subpop,
             targets_config = config[["inference"]][["statistics"]],
             obs = obs,
             ground_truth_data = data_stats,
@@ -253,7 +253,7 @@ if (config$inference$do_inference){
             geodata = geodata,
             snpi = arrow::read_parquet(first_global_files[['snpi_filename']]),
             hnpi = arrow::read_parquet(first_global_files[['hnpi_filename']]),
-            hpar = dplyr::mutate(arrow::read_parquet(first_global_files[['hpar_filename']]),parameter=paste(quantity,!!rlang::sym(obs_nodename),outcome,sep='_')),
+            hpar = dplyr::mutate(arrow::read_parquet(first_global_files[['hpar_filename']]),parameter=paste(quantity,!!rlang::sym(obs_subpop),outcome,sep='_')),
             start_date = gt_start_date,
             end_date = gt_end_date
         )
@@ -262,17 +262,17 @@ if (config$inference$do_inference){
 
 } else {
 
-    geonames <- obs_nodename
+    geonames <- obs_subpop
 
     likelihood_calculation_fun <- function(sim_hosp){
 
-        all_locations <- unique(sim_hosp[[obs_nodename]])
+        all_locations <- unique(sim_hosp[[obs_subpop]])
 
         ## No references to config$inference$statistics
         inference::aggregate_and_calc_loc_likelihoods(
             all_locations = all_locations, # technically different
             modeled_outcome = sim_hosp,
-            obs_nodename = obs_nodename,
+            obs_subpop = obs_subpop,
             targets_config = config[["inference"]][["statistics"]],
             obs = sim_hosp,
             ground_truth_data = sim_hosp,
@@ -282,7 +282,7 @@ if (config$inference$do_inference){
             geodata = geodata,
             snpi = arrow::read_parquet(first_global_files[['snpi_filename']]),
             hnpi = arrow::read_parquet(first_global_files[['hnpi_filename']]),
-            hpar = dplyr::mutate(arrow::read_parquet(first_global_files[['hpar_filename']]),parameter=paste(quantity,!!rlang::sym(obs_nodename),outcome,sep='_')),
+            hpar = dplyr::mutate(arrow::read_parquet(first_global_files[['hpar_filename']]),parameter=paste(quantity,!!rlang::sym(obs_subpop),outcome,sep='_')),
             start_date = gt_start_date,
             end_date = gt_end_date
         )
@@ -353,7 +353,7 @@ for(npi_scenario in npi_scenarios) {
 
         ### Set up initial conditions ----------
         ## python configuration: build simulator model initialized with compartment and all.
-        gempyor_inference_runner <- gempyor$InferenceSimulator(
+        gempyor_inference_runner <- gempyor$GempyorSimulator(
             config_path=opt$config,
             run_id=opt$run_id,
             prefix=global_block_prefix,
@@ -476,7 +476,7 @@ for(npi_scenario in npi_scenarios) {
                 }
                 proposed_seeding <- initial_seeding
             }
-            
+
             # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
@@ -505,19 +505,19 @@ for(npi_scenario in npi_scenarios) {
                 load_ID=TRUE,
                 sim_id2load=this_index)
             if (err != 0){
-                stop("InferenceSimulator failed to run")
+                stop("GempyorSimulator failed to run")
             }
 
             if (config$inference$do_inference){
                 sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
                     dplyr::filter(time >= min(obs$date),time <= max(obs$date))
 
-                lhs <- unique(sim_hosp[[obs_nodename]])
+                lhs <- unique(sim_hosp[[obs_subpop]])
                 rhs <- unique(names(data_stats))
                 all_locations <- rhs[rhs %in% lhs]
             } else {
                 sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']])
-                all_locations <- unique(sim_hosp[[obs_nodename]])
+                all_locations <- unique(sim_hosp[[obs_subpop]])
                 obs <- sim_hosp
                 data_stats <- sim_hosp
             }
@@ -526,7 +526,7 @@ for(npi_scenario in npi_scenarios) {
             proposed_likelihood_data <- inference::aggregate_and_calc_loc_likelihoods(
                 all_locations = all_locations,
                 modeled_outcome = sim_hosp,
-                obs_nodename = obs_nodename,
+                obs_subpop = obs_subpop,
                 targets_config = config[["inference"]][["statistics"]],
                 obs = obs,
                 ground_truth_data = data_stats,
@@ -538,7 +538,7 @@ for(npi_scenario in npi_scenarios) {
                 hnpi = proposed_hnpi,
                 hpar = dplyr::mutate(
                     proposed_hpar,
-                    parameter = paste(quantity, !!rlang::sym(obs_nodename), outcome, sep = "_")
+                    parameter = paste(quantity, !!rlang::sym(obs_subpop), outcome, sep = "_")
                 ),
                 start_date = gt_start_date,
                 end_date = gt_end_date

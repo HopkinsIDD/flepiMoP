@@ -112,17 +112,57 @@
 # * model_output/{setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]
 # * model_parameters/{setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]
 # * model_parameters/{setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]
+# ## Configuration Items
+#
+# ```yaml
+# outcomes:
+#  method: delayframe                   # Only fast is supported atm. Makes fast delay_table computations. Later agent-based method ?
+#  paths:
+#    param_from_file: TRUE               #
+#    param_subpop_file: <path.csv>       # OPTIONAL: File with param per csv. For each param in this file
+#  scenarios:                           # Outcomes scenarios to run
+#    - low_death_rate
+#    - mid_death_rate
+#  settings:                            # Setting for each scenario
+#    low_death_rate:
+#      new_comp1:                               # New compartement name
+#        source: incidence                      # Source of the new compartement: either an previously defined compartement or "incidence" for diffI of the SEIR
+#        probability:  <random distribution>           # Branching probability from source
+#        delay: <random distribution>                  # Delay from incidence of source to incidence of new_compartement
+#        duration: <random distribution>               # OPTIONAL ! Duration in new_comp. If provided, the model add to it's
+#                                                      #output "new_comp1_curr" with current amount in new_comp1
+#      new_comp2:                               # Example for a second compatiment
+#        source: new_comp1
+#        probability: <random distribution>
+#        delay: <random distribution>
+#        duration: <random distribution>
+#      death_tot:                               # Possibility to combine compartements for death.
+#        sum: ['death_hosp', 'death_ICU', 'death_incid']
+#
+#    mid_death_rate:
+#      ...
+#
+# ## Input Data
+#
+# * <b>{param_subpop_file}</b> is a csv with columns subpop, parameter, value. Parameter is constructed as, e.g for comp1:
+#                probability: Pnew_comp1|source
+#                delay:       Dnew_comp1
+#                duration:    Lnew_comp1
+
+
+# ## Output Data
+# * {output_path}/model_output/{setup_name}_[scenario]/[simulation ID].hosp.parquet
 
 
 ## @cond
 
 import multiprocessing
 import pathlib
-import time
+import time, os
 
 import click
 
-from gempyor import seir, setup, file_paths
+from gempyor import seir, outcomes, setup, file_paths
 from gempyor.utils import config
 
 # from .profile import profile_options
@@ -147,6 +187,16 @@ from gempyor.utils import config
     default=[],
     multiple=True,
     help="override the NPI scenario(s) run for this simulation [supports multiple NPI scenarios: `-s Wuhan -s None`]",
+)
+@click.option(
+    "-d",
+    "--scenarios_outcomes",
+    "scenarios_outcomes",
+    envvar="FLEPI_DEATHRATES",
+    type=str,
+    default=[],
+    multiple=True,
+    help="Scenario of outcomes to run",
 )
 @click.option(
     "-n",
@@ -203,6 +253,16 @@ from gempyor.utils import config
     help="Unique identifier for the run",
 )
 @click.option(
+    "--in-prefix",
+    "--in-prefix",
+    "in_prefix",
+    envvar="FLEPI_PREFIX",
+    type=str,
+    default=None,
+    show_default=True,
+    help="unique identifier for the run",
+)
+@click.option(
     "--interactive/--batch",
     default=False,
     help="run in interactive or batch mode [default: batch]",
@@ -225,6 +285,8 @@ def simulate(
     in_run_id,
     out_run_id,
     npi_scenarios,
+    scenarios_outcomes,
+    in_prefix,
     nslots,
     jobs,
     interactive,
@@ -246,8 +308,14 @@ def simulate(
         npi_scenarios = config["interventions"]["scenarios"].as_str_seq()
     print(f"NPI Scenarios to be run: {', '.join(npi_scenarios)}")
 
+    print(f"Outcomes scenarios to be run: {', '.join(scenarios_outcomes)}")
+
+    if in_prefix is None:
+        in_prefix = config["name"].get() + "/"
+
     if not nslots:
         nslots = config["nslots"].as_number()
+    print(f"Simulations to be run: {nslots}")
 
     spatial_setup = subpopulation_structure.SubpopulationStructure(
         setup_name=config["setup_name"].get(),
@@ -293,7 +361,54 @@ def simulate(
     """
         )
         seir.run_parallel_SEIR(s, config=config, n_jobs=jobs)
-    print(f">> All runs completed in {time.monotonic() - start:.1f} seconds")
+    print(f">> All SEIR runs completed in {time.monotonic() - start:.1f} seconds")
+
+    if config["outcomes"].exists():
+        if not scenarios_outcomes:
+            scenarios_outcomes = config["outcomes"]["scenarios"].as_str_seq()
+        start = time.monotonic()
+        for scenario_outcomes in scenarios_outcomes:
+            print(f"outcome {scenario_outcomes}")
+
+            out_prefix = config["name"].get() + "/" + str(scenario_outcomes) + "/"
+
+            s = setup.Setup(
+                setup_name=config["name"].get() + "/" + str(scenarios_outcomes) + "/",
+                spatial_setup=spatial_setup,
+                nslots=nslots,
+                outcomes_config=config["outcomes"],
+                outcomes_scenario=scenario_outcomes,
+                ti=config["start_date"].as_date(),
+                tf=config["end_date"].as_date(),
+                write_csv=write_csv,
+                write_parquet=write_parquet,
+                first_sim_index=first_sim_index,
+                in_run_id=in_run_id,
+                in_prefix=in_prefix,
+                out_run_id=out_run_id,
+                out_prefix=out_prefix,
+                stoch_traj_flag=stoch_traj_flag,
+            )
+
+            outdir = file_paths.create_dir_name(out_run_id, out_prefix, "hosp")
+            os.makedirs(outdir, exist_ok=True)
+
+            print(
+                f"""
+    >> Starting {nslots} model runs beginning from {first_sim_index} on {jobs} processes
+    >> Scenario: {scenario_outcomes} 
+    >> writing to folder : {out_prefix}
+    >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories"""
+            )
+
+            if config["outcomes"]["method"].get() == "delayframe":
+                outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, s=s, nslots=nslots, n_jobs=jobs)
+            else:
+                raise ValueError(f"Only method 'delayframe' is supported at the moment.")
+
+        print(f">> All Outcomes runs completed in {time.monotonic() - start:.1f} seconds")
+    else:
+        print("No observable found in config")
 
 
 if __name__ == "__main__":

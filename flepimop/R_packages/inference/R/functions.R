@@ -208,14 +208,14 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
 ##'
 ##' @param stat the statistic to calculate the penalty on
 ##' @param infer_frame data frame with the statistics in it
-##' @param geodata geodata containing geoid from npi fram and the grouping column
+##' @param geodata geodata containing subpop from npi fram and the grouping column
 ##' @param geo_group_col the column to group on
 ##' @param stat_name_col column holding stats name...default is npi_name
 ##' @param stat_col column hold the stat
 ##' @param transform how should the data be transformed before calc
 ##' @param min_sd what is the minimum SD to consider. Default is .1
 ##'
-##' @return a data frame with geoids and a per geoid LL adjustment
+##' @return a data frame with subpop and a per subpop LL adjustment
 ##'
 ##' @export
 ##'
@@ -253,7 +253,7 @@ calc_hierarchical_likadj <- function (stat,
                           mean(!!sym(stat_col)),
                           max(sd(!!sym(stat_col)), min_sd, na.rm=T), log=TRUE))%>%
     ungroup()%>%
-    select(geoid, likadj)
+    select(subpop, likadj)
 
   return(rc)
 }
@@ -290,7 +290,7 @@ calc_prior_likadj  <- function(params,
 
 ##'
 ##'
-##' Function to compute cumulative counts across geoids
+##' Function to compute cumulative counts across subpop
 ##'
 ##' @param sim_hosp output of ouctomes branching process
 ##'
@@ -300,8 +300,8 @@ calc_prior_likadj  <- function(params,
 ##'
 compute_cumulative_counts <- function(sim_hosp) {
   res <- sim_hosp %>%
-    gather(var, value, -time, -geoid) %>%
-    group_by(geoid, var) %>%
+    gather(var, value, -time, -subpop) %>%
+    group_by(subpop, var) %>%
     arrange(time) %>%
     mutate(cumul = cumsum(value)) %>%
     ungroup() %>%
@@ -314,7 +314,7 @@ compute_cumulative_counts <- function(sim_hosp) {
 
 ##'
 ##'
-##' Function to compute cumulative counts across geoids
+##' Function to compute cumulative counts across subpop
 ##'
 ##' @param sim_hosp output of ouctomes branching process
 ##'
@@ -326,7 +326,7 @@ compute_totals <- function(sim_hosp) {
   sim_hosp %>%
     group_by(time) %>%
     summarise_if(is.numeric, sum, na.rm = TRUE) %>%
-    mutate(geoid = "all") %>%
+    mutate(subpop = "all") %>%
     select(all_of(colnames(sim_hosp))) %>%
     rbind(sim_hosp)
 }
@@ -505,18 +505,18 @@ perturb_hpar <- function(hpar, intervention_settings) {
 
   return(hpar)
 }
-##' Function to go through to accept or reject proposed parameters for each geoid based
-##' on a geoid specific likelihood.
+##' Function to go through to accept or reject proposed parameters for each subpop based
+##' on a subpop specific likelihood.
 ##'
 ##'
-##' @param seeding_orig original seeding data frame (must have column place)
-##' @param seeding_prop proposal seeding (must have column place)
-##' @param snpi_orig original npi data frame  (must have column geoid)
-##' @param snpi_prop proposal npi data frame  (must have column geoid)
-##' @param hnpi_orig original npi data frame  (must have column geoid)
-##' @param hnpi_prop proposal npi data frame  (must have column geoid)
-##' @param orig_lls original ll data frame  (must have column ll and geoid)
-##' @param prop_lls proposal ll fata frame (must have column ll and geoid)
+##' @param seeding_orig original seeding data frame (must have column subpop)
+##' @param seeding_prop proposal seeding (must have column subpop)
+##' @param snpi_orig original npi data frame  (must have column subpop)
+##' @param snpi_prop proposal npi data frame  (must have column subpop)
+##' @param hnpi_orig original npi data frame  (must have column subpop)
+##' @param hnpi_prop proposal npi data frame  (must have column subpop)
+##' @param orig_lls original ll data frame  (must have column ll and subpop)
+##' @param prop_lls proposal ll fata frame (must have column ll and subpop)
 ##' @return a new data frame with the confirmed seedin.
 ##' @export
 accept_reject_new_seeding_npis <- function(
@@ -536,8 +536,8 @@ accept_reject_new_seeding_npis <- function(
   rc_hnpi <- hnpi_orig
   rc_hpar <- hpar_orig
 
-  if (!all(orig_lls$geoid == prop_lls$geoid)) {
-    stop("geoids must match")
+  if (!all(orig_lls$subpop == prop_lls$subpop)) {
+    stop("subpop must match")
   }
   ##draw accepts/rejects
   ratio <- exp(prop_lls$ll - orig_lls$ll)
@@ -548,11 +548,11 @@ accept_reject_new_seeding_npis <- function(
   orig_lls$accept <- as.numeric(accept) # added column for acceptance decision
   orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
 
-  for (place in orig_lls$geoid[accept]) {
-    rc_seeding[rc_seeding$place == place, ] <- seeding_prop[seeding_prop$place ==place, ]
-    rc_snpi[rc_snpi$geoid == place, ] <- snpi_prop[snpi_prop$geoid == place, ]
-    rc_hnpi[rc_hnpi$geoid == place, ] <- hnpi_prop[hnpi_prop$geoid == place, ]
-    rc_hpar[rc_hpar$geoid == place, ] <- hpar_prop[hpar_prop$geoid == place, ]
+  for (subpop in orig_lls$subpop[accept]) {
+    rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop ==subpop, ]
+    rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
+    rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
+    rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
   }
 
   return(list(
@@ -654,11 +654,11 @@ perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
       }
 
       ## for each of them generate the perturbation and update their value
-      for (this_npi_ind in which(ind)){ # for each geoid that has this interventions
+      for (this_npi_ind in which(ind)){ # for each subpop that has this interventions
 
-        this_geoid <- snpi[["geoid"]][this_npi_ind]
-        this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid]
-        his_accept_prob <- llik$accept_prob[llik$geoid==this_geoid]
+        this_subpop <- snpi[["subpop"]][this_npi_ind]
+        this_accept_avg <- llik$accept_avg[llik$subpop==this_subpop]
+        his_accept_prob <- llik$accept_prob[llik$subpop==this_subpop]
         this_intervention_setting<- intervention_settings[[intervention]]
 
         ##get the random distribution from flepicommon package
@@ -750,10 +750,10 @@ perturb_hnpi_from_file  <- function(hnpi, intervention_settings, llik){
       }
 
       ## for each of them generate the perturbation and update their value
-      for (this_npi_ind in which(ind)){ # for each geoid that has this interventions
+      for (this_npi_ind in which(ind)){ # for each subpop that has this interventions
 
-        this_geoid <- hnpi[["geoid"]][this_npi_ind]
-        this_accept_avg <- llik$accept_avg[llik$geoid==this_geoid]
+        this_subpop <- hnpi[["subpop"]][this_npi_ind]
+        this_accept_avg <- llik$accept_avg[llik$subpop==this_subpop]
         this_intervention_setting<- intervention_settings[[intervention]]
 
         ##get the random distribution from flepicommon package

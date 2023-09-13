@@ -451,11 +451,11 @@ if (!full_fit & smh_or_fch == "smh" & save_reps){
 
     file_samp <- lapply(file_names, arrow::read_parquet)
     file_samp <- data.table::rbindlist(file_samp) %>% as_tibble() %>%
-        left_join(geodata %>% select(location = USPS, geoid) %>% add_row(location="US", geoid="US")) %>%
+        left_join(geodata %>% select(location = USPS, subpop) %>% add_row(location="US", subpop="US")) %>%
         select(-location) %>%
         mutate(sample = as.integer(sample),
-               location = stringr::str_pad(substr(geoid, 1, 2), width=2, side="right", pad = "0")) %>%
-        select(-geoid) %>%
+               location = stringr::str_pad(substr(subpop, 1, 2), width=2, side="right", pad = "0")) %>%
+        select(-subpop) %>%
         arrange(scenario_id, target_end_date, target, location, age_group)
 
     file_samp_nums <- file_samp %>%

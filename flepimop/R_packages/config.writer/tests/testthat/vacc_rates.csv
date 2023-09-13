@@ -1,4 +1,4 @@
-USPS,geoid,month,year,scenario,start_date,end_date,pop_unvacc,vacc_rate
+USPS,subpop,month,year,scenario,start_date,end_date,pop_unvacc,vacc_rate
 DE,10000,12,2020,2,2020-12-17,2020-12-31,956923.6607142857,1.64e-4
 DE,10000,1,2021,2,2021-01-01,2021-01-31,946565.0215053763,4.24e-4
 DE,10000,2,2021,2,2021-02-01,2021-02-28,923839.6870748299,0.003744

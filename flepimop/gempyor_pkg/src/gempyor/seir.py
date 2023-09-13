@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def steps_SEIR(
+def build_step_source_arg(
     s,
     parsed_parameters,
     transition_array,
@@ -42,7 +42,7 @@ def steps_SEIR(
     keys_ref = [
         "seeding_sources",
         "seeding_destinations",
-        "seeding_places",
+        "seeding_subpops",
         "day_start_idx",
     ]
     for key, item in seeding_data.items():
@@ -84,6 +84,30 @@ def steps_SEIR(
         "population": s.popnodes,
         "stochastic_p": s.stoch_traj_flag,
     }
+    return fnct_args
+
+
+def steps_SEIR(
+    s,
+    parsed_parameters,
+    transition_array,
+    proportion_array,
+    proportion_info,
+    initial_conditions,
+    seeding_data,
+    seeding_amounts,
+):
+
+    fnct_args = build_step_source_arg(
+        s,
+        parsed_parameters,
+        transition_array,
+        proportion_array,
+        proportion_info,
+        initial_conditions,
+        seeding_data,
+        seeding_amounts,
+    )
 
     logging.info(f"Integrating with method {s.integration_method}")
 
@@ -147,7 +171,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_seir,
                 global_config=config,
-                geoids=s.spatset.nodenames,
+                subpops=s.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
                 pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
             )
@@ -155,7 +179,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
             npi = NPI.NPIBase.execute(
                 npi_config=s.npi_config_seir,
                 global_config=config,
-                geoids=s.spatset.nodenames,
+                subpops=s.subpop_struct.subpop_names,
                 pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
             )
     return npi
@@ -269,7 +293,7 @@ def states2Df(s, states):
     prev_df = pd.DataFrame(
         data=states_prev.reshape(s.n_days * s.compartments.get_ncomp(), s.nnodes),
         index=ts_index,
-        columns=s.spatset.nodenames,
+        columns=s.subpop_struct.subpop_names,
     ).reset_index()
     prev_df = pd.merge(
         left=s.compartments.get_compartments_explicitDF(),
@@ -287,7 +311,7 @@ def states2Df(s, states):
     incid_df = pd.DataFrame(
         data=states_incid.reshape(s.n_days * s.compartments.get_ncomp(), s.nnodes),
         index=ts_index,
-        columns=s.spatset.nodenames,
+        columns=s.subpop_struct.subpop_names,
     ).reset_index()
     incid_df = pd.merge(
         left=s.compartments.get_compartments_explicitDF(),

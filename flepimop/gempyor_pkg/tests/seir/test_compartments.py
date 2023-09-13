@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import compartments, seir, NPI, file_paths, setup
+from gempyor import compartments, seir, NPI, file_paths, setup, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -65,12 +65,12 @@ def test_Setup_has_compartments_component():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SpatialSetup(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_values",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="geoid",
+        subpop_names_key="subpop",
     )
 
     s = setup.Setup(
@@ -78,7 +78,6 @@ def test_Setup_has_compartments_component():
         spatial_setup=ss,
         nslots=1,
         npi_scenario="None",
-        config_version="v3",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seir_config=config["seir"],
@@ -100,7 +99,6 @@ def test_Setup_has_compartments_component():
         spatial_setup=ss,
         nslots=1,
         npi_scenario="None",
-        config_version="v3",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seir_config=config["seir"],

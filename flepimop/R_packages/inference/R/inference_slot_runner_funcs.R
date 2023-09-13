@@ -5,7 +5,7 @@
 ##'
 ##' @param all_locations all of the locations to calculate likelihood for
 ##' @param modeled_outcome  the hospital data for the simulations
-##' @param obs_nodename the name of the column containing locations.
+##' @param obs_subpop the name of the column containing locations.
 ##' @param config the full configuration setup
 ##' @param obs the full observed data
 ##' @param ground_truth_data the data we are going to compare to aggregated to the right statistic
@@ -24,7 +24,7 @@
 aggregate_and_calc_loc_likelihoods <- function(
         all_locations,
         modeled_outcome,
-        obs_nodename,
+        obs_subpop,
         targets_config,
         obs,
         ground_truth_data,
@@ -51,8 +51,8 @@ aggregate_and_calc_loc_likelihoods <- function(
             ## Filter to this location
             dplyr::filter(
                 modeled_outcome,
-                !!rlang::sym(obs_nodename) == location,
-                time %in% unique(obs$date[obs$geoid == location])
+                !!rlang::sym(obs_subpop) == location,
+                time %in% unique(obs$date[obs$subpop == location])
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
@@ -85,12 +85,12 @@ aggregate_and_calc_loc_likelihoods <- function(
         likelihood_data[[location]] <- dplyr::tibble(
             ll = this_location_log_likelihood,
             filename = hosp_file,
-            geoid = location,
+            subpop = location,
             accept = 0, # acceptance decision (0/1) . Will be updated later when accept/reject decisions made
             accept_avg = 0, # running average acceptance decision
             accept_prob = 0 # probability of acceptance of proposal
         )
-        names(likelihood_data)[names(likelihood_data) == 'geoid'] <- obs_nodename
+        names(likelihood_data)[names(likelihood_data) == 'subpop'] <- obs_subpop
     }
 
     #' @importFrom magrittr %>%
@@ -138,7 +138,7 @@ aggregate_and_calc_loc_likelihoods <- function(
 
 
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_nodename) %>%
+        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             tidyr::replace_na(list(likadj = 0)) %>% ##avoid unmatched location problems
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
@@ -155,7 +155,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         } else if (defined_priors[[prior]]$module == "outcomes_interventions") {
             #' @importFrom magrittr %>%
@@ -165,7 +165,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         }  else if (defined_priors[[prior]]$module %in% c("outcomes_parameters", "hospitalization")) {
 
@@ -175,7 +175,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         } else  if (hierarchical_stats[[stat]]$module == "seir_parameters") {
             stop("We currently do not support priors on seir parameters, since we don't do inference on them except via npis.")
@@ -184,7 +184,7 @@ aggregate_and_calc_loc_likelihoods <- function(
         }
 
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_nodename) %>%
+        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
     }
@@ -737,7 +737,7 @@ initialize_mcmc_first_block <- function(
     # These functions save variables to files of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
     if (any(checked_par_files %in% global_file_names)) {
         if (!all(checked_par_files %in% global_file_names)) {
-            stop("Provided some InferenceSimulator input, but not all")
+            stop("Provided some GempyorSimulator input, but not all")
         }
         if (any(checked_sim_files %in% global_file_names)) {
             if (!all(checked_sim_files %in% global_file_names)) {
@@ -745,7 +745,7 @@ initialize_mcmc_first_block <- function(
             }
             gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
         } else {
-            stop("Provided some InferenceSimulator output(seir, hosp), but not InferenceSimulator input")
+            stop("Provided some GempyorSimulator output(seir, hosp), but not GempyorSimulator input")
         }
     } else {
         if (any(checked_sim_files %in% global_file_names)) {

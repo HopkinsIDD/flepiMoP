@@ -13,7 +13,7 @@
 #  method: delayframe                   # Only fast is supported atm. Makes fast delay_table computations. Later agent-based method ?
 #  paths:
 #    param_from_file: TRUE               #
-#    param_place_file: <path.csv>       # OPTIONAL: File with param per csv. For each param in this file
+#    param_subpop_file: <path.csv>       # OPTIONAL: File with param per csv. For each param in this file
 #  scenarios:                           # Outcomes scenarios to run
 #    - low_death_rate
 #    - mid_death_rate
@@ -38,7 +38,7 @@
 #
 # ## Input Data
 #
-# * <b>{param_place_file}</b> is a csv with columns place, parameter, value. Parameter is constructed as, e.g for comp1:
+# * <b>{param_subpop_file}</b> is a csv with columns subpop, parameter, value. Parameter is constructed as, e.g for comp1:
 #                probability: Pnew_comp1|source
 #                delay:       Dnew_comp1
 #                duration:    Lnew_comp1
@@ -197,14 +197,14 @@ def simulate(
         nslots = config["nslots"].as_number()
     print(f"Simulations to be run: {nslots}")
 
-    spatial_setup = setup.SpatialSetup(
+    spatial_setup = subpopulation_structure.SubpopulationStructure(
         setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()
         else None,
-        popnodes_key=spatial_config["popnodes"].get(),
-        nodenames_key=spatial_config["nodenames"].get(),
+        popnodes_key="population",
+        subpop_names_key="subpop",
     )
 
     start = time.monotonic()

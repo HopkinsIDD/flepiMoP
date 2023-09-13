@@ -10,7 +10,7 @@ generate_config <- function(){
                  sim_end_date = "2021-08-07",
                  dt = 0.25,
                  nslots = 300,
-                 sim_states = unique(interventions$USPS[!interventions$USPS %in% c("", "all") & !is.na(interventions$USPS)]),
+                 modeled_states = unique(interventions$USPS[!interventions$USPS %in% c("", "all") & !is.na(interventions$USPS)]),
                  setup_name = "usa_inference_territories_statelevel",
                  geodata = "geodata_territories_2019_statelevel.csv",
                  mobility = "mobility_territories_2011-2015_statelevel.csv")
@@ -39,7 +39,7 @@ generate_config <- function(){
 
     print_outcomes(dat = interventions,
                    ifr = "med",
-                   outcomes_parquet_file="usa-geoid-params-output_statelevel.parquet",
+                   outcomes_parquet_file="usa-subpop-params-output_statelevel.parquet",
                    incidC_prob_value = c(0.4, 0.4, 0.4),
                    compartment = FALSE)
 
