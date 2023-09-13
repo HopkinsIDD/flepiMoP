@@ -146,12 +146,12 @@ def test_constant_population_rk4jit_integration_fail():
     with pytest.raises(ValueError, match=r".*with.*method.*integration.*"):
         config.set_file(f"{DATA_DIR}/config.yml")
 
-        ss = setup.SpatialSetup(
+        ss = subpopulation_structure.SubpopulationStructure(
             setup_name="test_seir",
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.txt",
             popnodes_key="population",
-            nodenames_key="geoid",
+            subpop_names_key="subpop",
         )
 
         first_sim_index = 1
@@ -182,7 +182,7 @@ def test_constant_population_rk4jit_integration_fail():
         seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
         initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
 
-        npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, geoids=s.spatset.nodenames)
+        npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
         params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
         params = s.parameters.parameters_reduce(params, npi)
@@ -210,12 +210,12 @@ def test_constant_population_rk4jit_integration():
     #config.set_file(f"{DATA_DIR}/config.yml")
     config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
 
-    ss = setup.SpatialSetup(
+    ss = subpopulation_structure.SubpopulationStructure(
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
         popnodes_key="population",
-        nodenames_key="geoid",
+        subpop_names_key="subpop",
     )
 
     first_sim_index = 1
@@ -247,7 +247,7 @@ def test_constant_population_rk4jit_integration():
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
     initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, geoids=s.spatset.nodenames)
+    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
     params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
     params = s.parameters.parameters_reduce(params, npi)
