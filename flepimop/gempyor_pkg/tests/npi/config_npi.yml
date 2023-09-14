@@ -13,7 +13,7 @@ compartments:
   variant_type: ["WILD", "ALPHA", "DELTA", "OMICRON"]
   age_strata: ["age0to17", "age18to64", "age65to100"]
 
-spatial_setup:
+subpop_setup:
   census_year: 2019
   modeled_states:
     - AK
