@@ -13,7 +13,7 @@
 # end_date: <date>
 # data_path: <path to directory>
 
-# spatial_setup:
+# subpop_setup:
 #   geodata: <path to file>
 #   subpop: <string>
 #
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::subpop} that denotes the subpop
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
@@ -55,14 +55,14 @@ if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-if (is.null(config$spatial_setup$us_model)) {
-    config$spatial_setup$us_model <- FALSE
-    if ("modeled_states" %in% names(config$spatial_setup)) {
-        config$spatial_setup$us_model <- TRUE
+if (is.null(config$subpop_setup$us_model)) {
+    config$subpop_setup$us_model <- FALSE
+    if ("modeled_states" %in% names(config$subpop_setup)) {
+        config$subpop_setup$us_model <- TRUE
     }
 }
 
-is_US_run <- config$spatial_setup$us_model
+is_US_run <- config$subpop_setup$us_model
 seed_variants <- "variant_filename" %in% names(config$seeding)
 
 
@@ -159,7 +159,7 @@ if ("date" %in% names(cases_deaths)) {
     cases_deaths$Update <- cases_deaths$date
     warning("Changing Update name in seeding. This is a hack")
 }
-obs_subpop <- config$spatial_setup$subpop
+obs_subpop <- config$subpop_setup$subpop
 required_column_names <- NULL
 
 check_required_names <- function(df, cols, msg) {
@@ -264,13 +264,13 @@ all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
 geodata <- flepicommon::load_geodata_file(
-    file.path(config$data_path, config$spatial_setup$geodata),
+    file.path(config$data_path, config$subpop_setup$geodata),
     5,
     "0",
     TRUE
 )
 
-all_subpop <- geodata[[config$spatial_setup$subpop]]
+all_subpop <- geodata[[config$subpop_setup$subpop]]
 
 
 

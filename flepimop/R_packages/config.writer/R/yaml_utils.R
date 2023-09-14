@@ -88,12 +88,12 @@ collapse_intervention<- function(dat){
         dplyr::group_by(dplyr::across(-period)) %>%
         dplyr::summarize(period = paste0(period, collapse="\n            "))
 
-    if (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups))) {
+    if (!all(is.na(mtr$subpop_groups)) & !all(is.null(mtr$subpop_groups))) {
 
         mtr <- mtr %>%
             dplyr::group_by(dplyr::across(-subpop)) %>%
             dplyr::summarize(subpop = paste0(subpop, collapse='", "'),
-                             spatial_groups = paste0(spatial_groups, collapse='", "')) %>%
+                             subpop_groups = paste0(subpop_groups, collapse='", "')) %>%
             dplyr::mutate(period = paste0("            ", period))
 
     } else {
@@ -104,7 +104,7 @@ collapse_intervention<- function(dat){
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, subpop, contains("spatial_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
         dplyr::filter(template %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
@@ -150,9 +150,9 @@ yaml_mtr_template <- function(dat){
             "      groups:\n",
             '        - subpop: "all"\n'
         ))
-        if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+        if(!all(is.na(dat$subpop_groups)) & !all(is.null(dat$subpop_groups))){
             cat(paste0(
-                '          spatial_groups: "all"\n'))
+                '          subpop_groups: "all"\n'))
         }
 
         for(j in 1:nrow(dat)){
@@ -174,9 +174,9 @@ yaml_mtr_template <- function(dat){
             cat(paste0(
                 '        - subpop: ["', dat$subpop[j], '"]\n'))
 
-            if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
+            if(!all(is.na(dat$subpop_groups)) & !all(is.null(dat$subpop_groups))){
                 cat(paste0(
-                    '          spatial_groups: ["', dat$spatial_groups[j], '"]\n'))
+                    '          subpop_groups: ["', dat$subpop_groups[j], '"]\n'))
             }
             cat(paste0(
                 '          periods:\n',
@@ -376,12 +376,12 @@ yaml_reduce_template<- function(dat){
         } else {
             paste0('      subpop: ["', dat$subpop, '"]\n')
         },
-        if(!all(is.na(dat$spatial_groups)) & !all(is.null(dat$spatial_groups))){
-            if(all(dat$spatial_groups == "all")){
-                '      spatial_groups: "all"\n'
+        if(!all(is.na(dat$subpop_groups)) & !all(is.null(dat$subpop_groups))){
+            if(all(dat$subpop_groups == "all")){
+                '      subpop_groups: "all"\n'
             } else {
-                paste0('      spatial_groups: \n',
-                       paste(sapply(X=dat$spatial_groups, function(x = X) paste0('        - ["', paste(x, collapse = '", "'), '"]\n')), collapse = ""))
+                paste0('      subpop_groups: \n',
+                       paste(sapply(X=dat$subpop_groups, function(x = X) paste0('        - ["', paste(x, collapse = '", "'), '"]\n')), collapse = ""))
             }
         },
         dat$period,
@@ -527,7 +527,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 
 
 #' Print Header Section
-#' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
+#' @description Prints the global options and the subpop setup section of the configuration files. These typically sit at the top of the configuration file.
 #'
 #' @param sim_name name of simulation, typically named after the region/location you are modeling
 #' @param setup_name # SMH, FCH
@@ -540,7 +540,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 #' @param nslots number of simulations to run
 #' @param model_output_dirname
 #' @param start_date_groundtruth
-#' @param setup_name spatial folder name
+#' @param setup_name subpop folder name
 #'
 #' @return
 #' @export
@@ -582,7 +582,7 @@ print_header <- function (
 
 
 #' Print Header Section
-#' @description Prints the global options and the spatial setup section of the configuration files. These typically sit at the top of the configuration file.
+#' @description Prints the global options and the subpop setup section of the configuration files. These typically sit at the top of the configuration file.
 #'
 #' @param census_year integer(year)
 #' @param modeled_states vector of sub-populations (i.e., locations) that will be modeled. This can be different from the subpop IDs. For the US, state abbreviations are often used. This component is only used for filtering the data to the set of populations.
@@ -597,7 +597,7 @@ print_header <- function (
 #'
 #' @examples
 #'
-print_spatial_setup <- function (
+print_subpop_setup <- function (
         census_year = 2019,
         modeled_states = NULL,
         geodata_file = "geodata.csv",
@@ -605,7 +605,7 @@ print_spatial_setup <- function (
         state_level = TRUE) {
 
     cat(
-        paste0("spatial_setup:\n",
+        paste0("subpop_setup:\n",
                "  census_year: ", census_year, "\n"),
         ifelse(!is.null(modeled_states),
                 paste0("  modeled_states:\n",
