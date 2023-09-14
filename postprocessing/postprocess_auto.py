@@ -182,7 +182,7 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
                 npi_scenario="inference",  # NPIs scenario to use
                 outcome_scenario="med",  # Outcome scenario to use
                 stoch_traj_flag=False,
-                spatial_path_prefix="./",  # prefix where to find the folder indicated in spatial_setup$
+                spatial_path_prefix="./",  # prefix where to find the folder indicated in subpop_setup$
             )
             run_info.folder_path = f"{fs_results_path}/model_output"
 

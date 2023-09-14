@@ -28,7 +28,7 @@ class Setup:
         self,
         *,
         setup_name,
-        spatial_setup,
+        subpop_setup,
         nslots,
         ti,  # time to start
         tf,  # time to finish
@@ -75,7 +75,7 @@ class Setup:
         self.first_sim_index = first_sim_index
         self.outcome_scenario = outcome_scenario
 
-        self.subpop_struct = spatial_setup
+        self.subpop_struct = subpop_setup
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
         self.nnodes = self.subpop_struct.nnodes
         self.popnodes = self.subpop_struct.popnodes

@@ -69,7 +69,7 @@ class GempyorSimulator:
         config.clear()
         config.read(user=False)
         config.set_file(config_path)
-        spatial_config = config["spatial_setup"]
+        spatial_config = config["subpop_setup"]
         spatial_base_path = config["data_path"].get()
         spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
@@ -80,7 +80,7 @@ class GempyorSimulator:
         write_parquet = True
         self.s = setup.Setup(
             setup_name=config["name"].get() + "_" + str(npi_scenario),
-            spatial_setup=subpopulation_structure.SubpopulationStructure(
+            subpop_setup=subpopulation_structure.SubpopulationStructure(
                 setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
                 mobility_file=spatial_base_path / spatial_config["mobility"].get()
@@ -438,7 +438,7 @@ def paramred_parallel(run_spec, snpi_fn):
         npi_scenario="inference",  # NPIs scenario to use
         outcome_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in spatial_setup$
+        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     snpi = pq.read_table(snpi_fn).to_pandas()
@@ -464,7 +464,7 @@ def paramred_parallel_config(run_spec, dummy):
         npi_scenario="inference",  # NPIs scenario to use
         outcome_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in spatial_setup$
+        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     npi_seir = gempyor_simulator.get_seir_npi()

@@ -16,7 +16,7 @@
 # dt: float
 # nslots: <integer> overridden by the -n/--nslots script parameter
 # data_path: <path to directory>
-# spatial_setup:
+# subpop_setup:
 #   geodata: <path to file>
 #   mobility: <path to file>
 #
@@ -98,8 +98,8 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with columns {spatial_setup::subpop_names} and {spatial_setup::popnodes}
-# * <b>{data_path}/{spatial_setup::mobility}</b>
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::popnodes}
+# * <b>{data_path}/{subpop_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
 # * {seeding::lambda_file}
@@ -238,7 +238,7 @@ def simulate(
     config.clear()
     config.read(user=False)
     config.set_file(config_file)
-    spatial_config = config["spatial_setup"]
+    spatial_config = config["subpop_setup"]
     spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
@@ -249,7 +249,7 @@ def simulate(
     if not nslots:
         nslots = config["nslots"].as_number()
 
-    spatial_setup = subpopulation_structure.SubpopulationStructure(
+    subpop_setup = subpopulation_structure.SubpopulationStructure(
         setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
@@ -264,7 +264,7 @@ def simulate(
 
         s = setup.Setup(
             setup_name=config["name"].get() + "/" + str(npi_scenario) + "/",
-            spatial_setup=spatial_setup,
+            subpop_setup=subpop_setup,
             nslots=nslots,
             npi_scenario=npi_scenario,
             npi_config_seir=config["interventions"]["settings"][npi_scenario],
