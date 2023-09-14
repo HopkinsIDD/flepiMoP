@@ -609,7 +609,7 @@ print_spatial_setup <- function (
                "  census_year: ", census_year, "\n"),
         ifelse(!is.null(modeled_states),
                 paste0("  modeled_states:\n",
-               "   - ", modeled_states, "\n"),""),
+               paste(as.vector(sapply(modeled_states, function(x) paste0("     - ", x, "\n"))), collapse = "")),""),
         paste0("\n",
                "  geodata: ", geodata_file, "\n",
                "  mobility: ", mobility_file, "\n",
@@ -617,6 +617,7 @@ print_spatial_setup <- function (
                "\n")
     )
 }
+
 
 
 
@@ -1994,12 +1995,12 @@ seir_chunk <- function(resume_modifier = NULL,
 #' @description Print initial conditions section of config
 #'
 #' @param method
-#' @param proportional 
+#' @param proportional
 #' @param perturbation if TRUE, will print perturbation section, requires other values below
 #' @param pert_dist distribution of the perturbation
 #' @param pert_mean mean of perturbation
 #' @param pert_sd standard deviation of perturbation
-#' @param pert_a minimum value of perturbation 
+#' @param pert_a minimum value of perturbation
 #' @param pert_b maximum value of perturbation
 #'
 #' @details
@@ -2010,14 +2011,14 @@ seir_chunk <- function(resume_modifier = NULL,
 #' print_init_conditions()
 #'
 print_init_conditions <- function(method = "SetInitialConditionsFolderDraw",
-                                  proportional = "True", 
+                                  proportional = "True",
                                   perturbation = TRUE,
                                   pert_dist = "truncnorm",
-                                  pert_mean = 0, 
+                                  pert_mean = 0,
                                   pert_sd = 0.02,
                                   pert_a = -1,
                                   pert_b = 1){
-  
+
   cat(paste0("initial_conditions: \n",
              "  method: ", method, "\n",
              "  proportional: ", proportional, "\n",
@@ -2029,7 +2030,7 @@ print_init_conditions <- function(method = "SetInitialConditionsFolderDraw",
                                          "    b: ", pert_b),
                     "\n")
   ))
-  
+
 }
 
 
