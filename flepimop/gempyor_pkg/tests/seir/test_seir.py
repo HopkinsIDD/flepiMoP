@@ -30,7 +30,7 @@ def test_check_values():
 
     s = setup.Setup(
         setup_name="test_values",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -86,7 +86,7 @@ def test_constant_population_legacy_integration():
     prefix = ""
     s = setup.Setup(
         setup_name="test_seir",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -162,7 +162,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     prefix = ""
     s = setup.Setup(
         setup_name="test_seir",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -248,7 +248,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
 
     s = setup.Setup(
         setup_name="test_seir",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -317,7 +317,7 @@ def test_steps_SEIR_no_spread():
     prefix = ""
     s = setup.Setup(
         setup_name="test_seir",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -401,11 +401,11 @@ def test_continuation_resume():
     prefix = ""
     stoch_traj_flag = True
 
-    spatial_config = config["spatial_setup"]
+    spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=subpopulation_structure.SubpopulationStructure(
+        subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -451,11 +451,11 @@ def test_continuation_resume():
     prefix = ""
     stoch_traj_flag = True
 
-    spatial_config = config["spatial_setup"]
+    spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=subpopulation_structure.SubpopulationStructure(
+        subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -519,11 +519,11 @@ def test_inference_resume():
     prefix = ""
     stoch_traj_flag = True
 
-    spatial_config = config["spatial_setup"]
+    spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=subpopulation_structure.SubpopulationStructure(
+        subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -564,11 +564,11 @@ def test_inference_resume():
     prefix = ""
     stoch_traj_flag = True
 
-    spatial_config = config["spatial_setup"]
+    spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = setup.Setup(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
-        spatial_setup=subpopulation_structure.SubpopulationStructure(
+        subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
@@ -629,7 +629,7 @@ def test_parallel_compartments_with_vacc():
     prefix = ""
     s = setup.Setup(
         setup_name="test_seir",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="Scenario_vacc",
         npi_config_seir=config["interventions"]["settings"]["Scenario_vacc"],
@@ -724,7 +724,7 @@ def test_parallel_compartments_no_vacc():
 
     s = setup.Setup(
         setup_name="test_seir",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="Scenario_novacc",
         npi_config_seir=config["interventions"]["settings"]["Scenario_novacc"],

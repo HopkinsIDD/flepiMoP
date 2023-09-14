@@ -185,7 +185,7 @@ def simulate(
     config.clear()
     config.read(user=False)
     config.set_file(config_file)
-    spatial_config = config["spatial_setup"]
+    spatial_config = config["subpop_setup"]
     spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
@@ -197,7 +197,7 @@ def simulate(
         nslots = config["nslots"].as_number()
     print(f"Simulations to be run: {nslots}")
 
-    spatial_setup = subpopulation_structure.SubpopulationStructure(
+    subpop_setup = subpopulation_structure.SubpopulationStructure(
         setup_name=config["setup_name"].get(),
         geodata_file=spatial_base_path / spatial_config["geodata"].get(),
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
@@ -218,7 +218,7 @@ def simulate(
             raise ValueError(f"in_prefix must be provided")
         s = setup.Setup(
             setup_name=config["name"].get() + "/" + str(scenarios_outcomes) + "/",
-            spatial_setup=spatial_setup,
+            subpop_setup=subpop_setup,
             nslots=nslots,
             outcomes_config=config["outcomes"],
             outcomes_scenario=scenario_outcomes,

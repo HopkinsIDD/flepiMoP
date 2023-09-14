@@ -75,7 +75,7 @@ def test_Setup_has_compartments_component():
 
     s = setup.Setup(
         setup_name="test_values",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -96,7 +96,7 @@ def test_Setup_has_compartments_component():
 
     s = setup.Setup(
         setup_name="test_values",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
