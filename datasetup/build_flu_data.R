@@ -32,11 +32,11 @@ if (length(config) == 0) {
 }
 
 outdir <- config$data_path
-filterUSPS <- config$spatial_setup$modeled_states
+filterUSPS <- config$subpop_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
-state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
+state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -59,7 +59,7 @@ source("https://raw.githubusercontent.com/cdcepi/Flusight-forecast-data/master/d
 
 # Pull daily hospitalizations for model run
 us_data <- load_flu_hosp_data(temporal_resolution = 'daily', na.rm = TRUE)
-locs <- read_csv(file.path(config$data_path, config$spatial_setup$geodata))
+locs <- read_csv(file.path(config$data_path, config$subpop_setup$geodata))
 
 # fix string pad issue on left side
 us_data <- us_data %>%

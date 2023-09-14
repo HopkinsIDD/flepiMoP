@@ -8,7 +8,7 @@
 #
 # ```yaml
 # data_path: <path to directory>
-# spatial_setup:
+# subpop_setup:
 #   modeled_states: <list of state postal codes> e.g. MD, CA, NY
 #   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
 #   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
@@ -23,8 +23,8 @@
 #
 # ## Output Data
 #
-# * {data_path}/{spatial_setup::mobility}
-# * {data_path}/{spatial_setup::geodata}
+# * {data_path}/{subpop_setup::mobility}
+# * {data_path}/{subpop_setup::geodata}
 #
 
 ## @cond
@@ -52,11 +52,11 @@ if (length(config) == 0) {
 }
 
 outdir <- config$data_path
-filterUSPS <- config$spatial_setup$modeled_states
+filterUSPS <- config$subpop_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
-state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
+state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 # commute_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","commute_data.gz.parquet"))
@@ -80,7 +80,7 @@ tidycensus::census_api_key(key = census_key)
 
 
 census_data <- tidycensus::get_acs(geography="county", state=filterUSPS,
-                                   variables="B01003_001", year=config$spatial_setup$census_year,
+                                   variables="B01003_001", year=config$subpop_setup$census_year,
                                    keep_geo_vars=TRUE, geometry=FALSE, show_call=TRUE)
 census_data <- census_data %>%
   dplyr::rename(population=estimate, subpop=GEOID) %>%
@@ -137,12 +137,12 @@ if (state_level){
 census_data <- census_data %>%
   dplyr::arrange(population)
 
-if (!is.null(config$spatial_setup$popnodes)) {
-  names(census_data)[names(census_data) == "population"] <- config$spatial_setup$popnodes
+if (!is.null(config$subpop_setup$popnodes)) {
+  names(census_data)[names(census_data) == "population"] <- config$subpop_setup$popnodes
 }
 
-if (length(config$spatial_setup$geodata) > 0) {
-  geodata_file <- config$spatial_setup$geodata
+if (length(config$subpop_setup$geodata) > 0) {
+  geodata_file <- config$subpop_setup$geodata
 } else {
   geodata_file <- 'geodata.csv'
 }
@@ -155,13 +155,13 @@ print(paste("Wrote geodata file:", file.path(outdir, geodata_file)))
 # MOBILITY DATA (COMMUTER DATA) ------------------------------------------------------------
 
 
-if(state_level & !file.exists(paste0(config$data_path, "/", config$spatial_setup$mobility))){
+if(state_level & !file.exists(paste0(config$data_path, "/", config$subpop_setup$mobility))){
 
-  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", paste0(config$data_path, "/", config$spatial_setup$mobility), "(specified in the config) currently exists. Please check again."))
+  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", paste0(config$data_path, "/", config$subpop_setup$mobility), "(specified in the config) currently exists. Please check again."))
 
-} else if(state_level & file.exists(paste0(config$data_path, "/", config$spatial_setup$mobility))){
+} else if(state_level & file.exists(paste0(config$data_path, "/", config$subpop_setup$mobility))){
 
-  warning(paste("Using existing state-level mobility file named", paste0(config$data_path, "/", config$spatial_setup$mobility)))
+  warning(paste("Using existing state-level mobility file named", paste0(config$data_path, "/", config$subpop_setup$mobility)))
 
 } else{
 
@@ -176,8 +176,8 @@ if(state_level & !file.exists(paste0(config$data_path, "/", config$spatial_setup
 
   if(opt$w){
     mobility_file <- 'mobility.txt'
-  } else if (length(config$spatial_setup$mobility) > 0) {
-    mobility_file <- config$spatial_setup$mobility
+  } else if (length(config$subpop_setup$mobility) > 0) {
+    mobility_file <- config$subpop_setup$mobility
   } else {
     mobility_file <- 'mobility.csv'
   }
@@ -210,7 +210,7 @@ if(state_level & !file.exists(paste0(config$data_path, "/", config$spatial_setup
       write.csv(file = file.path(outdir, mobility_file), rc, row.names=FALSE)
 
     } else {
-      stop("Only .txt and .csv extensions supported for mobility matrix. Please check config's spatial_setup::mobility.")
+      stop("Only .txt and .csv extensions supported for mobility matrix. Please check config's subpop_setup::mobility.")
     }
 
     print(paste("Wrote mobility file:", file.path(outdir, mobility_file)))

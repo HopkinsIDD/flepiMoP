@@ -31,11 +31,11 @@ if (exists("config$inference$gt_source")) {
 }
 
 outdir <- config$data_path
-filterUSPS <- config$spatial_setup$modeled_states
+filterUSPS <- config$subpop_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
-state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
+state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -218,7 +218,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 
     max(fluview_data$Update)
 
-    census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
+    census_data <- read_csv(file = file.path(config$data_path, config$subpop_setup$geodata))
     fluview_data <- fluview_data %>%
         dplyr::inner_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
         dplyr::select(Update, source, FIPS, incidD)
@@ -235,7 +235,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
     fluview_data <- make_daily_data(data = fluview_data, current_timescale = "week") #%>%
     # mutate(gt_source = "nchs")
     # fluview_data <- fluview_data %>%
-    # filter(source %in% config$spatial_setup$modeled_states)
+    # filter(source %in% config$subpop_setup$modeled_states)
     # Update >= config$start_date,
     # Update <= config$end_date_groundtruth)
     gt_data <- append(gt_data, list(fluview_data))
@@ -283,7 +283,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 #
 #     max(fluview_data$Update)
 #
-#     census_data <- read_csv(file = file.path(config$data_path, config$spatial_setup$geodata))
+#     census_data <- read_csv(file = file.path(config$data_path, config$subpop_setup$geodata))
 #     fluview_data <- fluview_data %>%
 #         left_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
 #         dplyr::select(Update, source, FIPS, incidD)
@@ -300,7 +300,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 #     fluview_data <- make_daily_data(data = fluview_data, current_timescale = "week") #%>%
 #     # mutate(gt_source = "nchs")
 #     # fluview_data <- fluview_data %>%
-#     # filter(source %in% config$spatial_setup$modeled_states)
+#     # filter(source %in% config$subpop_setup$modeled_states)
 #     # Update >= config$start_date,
 #     # Update <= config$end_date_groundtruth)
 #     gt_data <- append(gt_data, list(fluview_data))
@@ -372,7 +372,7 @@ us_data <- us_data %>%
     filter(Update >= lubridate::as_date(config$start_date) & Update <= lubridate::as_date(end_date_))
 
 # Filter to states we care about
-locs <- config$spatial_setup$modeled_states
+locs <- config$subpop_setup$modeled_states
 us_data <- us_data %>%
     filter(source %in% locs) %>%
     filter(!is.na(source)) %>%

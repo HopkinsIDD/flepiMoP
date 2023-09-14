@@ -78,14 +78,14 @@ validation_list$nslots<- function(value,full_config,config_name){
   }
   return(TRUE)
 }
-#### SPATIAL SETUP PART
+#### subpop SETUP PART
 ##Checking if the following values are present or not.
 ##If they do not have an assigned default value then the execution will be stopped.
 ##If they have a default then A statement will be printed and test will continue
 ## No Default: Base Path, Modeled States, Year. subpop
 ## With Default: Geodata, Mobility, Popnodes, Statelevel
 
-validation_list$spatial_setup <- list()
+validation_list$subpop_setup <- list()
 validation_list$data_path <- function(value, full_config, config_name) {
   if (is.null(value)) {
     print("No base path mentioned in the configuration file")
@@ -98,7 +98,7 @@ validation_list$data_path <- function(value, full_config, config_name) {
   return(TRUE)
 }
 
-validation_list$spatial_setup$modeled_states <- function(value, full_config,config_name) {
+validation_list$subpop_setup$modeled_states <- function(value, full_config,config_name) {
   if(length(value)==0){
     print("No state mentioned in the configuration file")
     return(FALSE)
@@ -117,7 +117,7 @@ validation_list$spatial_setup$modeled_states <- function(value, full_config,conf
   return(TRUE)
 }
 
-validation_list$spatial_setup$geodata <- function(value, full_config,config_name) {
+validation_list$subpop_setup$geodata <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No geodata path mentioned in the configuration file")
     return(FALSE)
@@ -131,7 +131,7 @@ validation_list$spatial_setup$geodata <- function(value, full_config,config_name
   return(TRUE)
 }
 
-validation_list$spatial_setup$mobility <- function(value, full_config,config_name) {
+validation_list$subpop_setup$mobility <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No mobility path mentioned in the configuration file")
     return(FALSE)
@@ -145,7 +145,7 @@ validation_list$spatial_setup$mobility <- function(value, full_config,config_nam
   return(TRUE)
 }
 
-validation_list$spatial_setup$census_year <- function(value, full_config,config_name) {
+validation_list$subpop_setup$census_year <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No year mentioned")
     return(FALSE)
@@ -153,7 +153,7 @@ validation_list$spatial_setup$census_year <- function(value, full_config,config_
   return(TRUE)
 }
 
-validation_list$spatial_setup$subpop <- function(value, full_config,config_name) {
+validation_list$subpop_setup$subpop <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No subpops mentioned") #Should display a better error message than subpop.
     return(FALSE)
@@ -161,7 +161,7 @@ validation_list$spatial_setup$subpop <- function(value, full_config,config_name)
   return(TRUE)
 }
 
-validation_list$spatial_setup$popnodes <- function(value, full_config,config_name) {
+validation_list$subpop_setup$popnodes <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No Population Nodes mentioned") #Should display a better error message than subpop.
     return(FALSE)
@@ -170,7 +170,7 @@ validation_list$spatial_setup$popnodes <- function(value, full_config,config_nam
 }
 
 #SINCE NOT NECESSARY written to remove warning
-validation_list$spatial_setup$include_in_report <- function(value, full_config,config_name) {
+validation_list$subpop_setup$include_in_report <- function(value, full_config,config_name) {
   return(TRUE)
 }
 
@@ -186,7 +186,7 @@ validation_list$setup_name <- function(value, full_config,config_name) {
   return(TRUE)
 }
 
-validation_list$spatial_setup$state_level <- function(value, full_config,config_name) {
+validation_list$subpop_setup$state_level <- function(value, full_config,config_name) {
   if (is.null(value)) {
     print("No specifications about state level runs mentioned mentioned")
     return(FALSE)

@@ -104,7 +104,7 @@ if (!is.null(config$initial_conditions)){
 #}
 
 # Aggregation to state level if in config
-state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
+state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
 
 ##Load information on geographic locations from geodata file.
@@ -112,12 +112,12 @@ suppressMessages(
     geodata <- flepicommon::load_geodata_file(
         paste(
             config$data_path,
-            config$spatial_setup$geodata, sep = "/"
+            config$subpop_setup$geodata, sep = "/"
         ),
         subpop_len = opt$subpop_len
     )
 )
-obs_subpop <- config$spatial_setup$subpop
+obs_subpop <- config$subpop_setup$subpop
 
 ##Load simulations per slot from config if not defined on command line
 ##command options take precedence
