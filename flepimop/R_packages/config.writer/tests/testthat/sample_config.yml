@@ -6,7 +6,7 @@ data_path: data
 nslots: 300
 dt: 0.25
 
-spatial_setup:
+subpop_setup:
   census_year: 2019
   modeled_states:
     - AL
