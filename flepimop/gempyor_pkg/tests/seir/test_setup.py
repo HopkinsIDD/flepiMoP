@@ -31,7 +31,7 @@ class TestSubpopulationStructure:
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
             npi_scenario=None,
-            config_version=None,
+         #   config_version=None,
             npi_config_seir={},
             seeding_config={},
             initial_conditions_config={},
