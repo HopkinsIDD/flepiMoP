@@ -22,12 +22,12 @@ class TestSeedingAndIC:
        config.read(user=False)
        config.set_file(f"{DATA_DIR}/config.yml")
 
-       ss = setup.SpatialSetup(
+       ss = setup.SubpopulationStructure(
            setup_name="test_values",
            geodata_file=f"{DATA_DIR}/geodata.csv",
            mobility_file=f"{DATA_DIR}/mobility.csv",
            popnodes_key="population",
-           nodenames_key="geoid",
+           subpop_names_key="subpop",
        )
 
        s = setup.Setup(
@@ -55,12 +55,12 @@ class TestSeedingAndIC:
        config.read(user=False)
        config.set_file(f"{DATA_DIR}/config.yml")
 
-       ss = setup.SpatialSetup(
+       ss = setup.SubpopulationStructure(
            setup_name="test_values",
            geodata_file=f"{DATA_DIR}/geodata.csv",
            mobility_file=f"{DATA_DIR}/mobility.csv",
            popnodes_key="population",
-           nodenames_key="geoid",
+           subpop_names_key="subpop",
        )
        s = setup.Setup(
            setup_name="test_seeding and ic",
@@ -93,12 +93,12 @@ class TestSeedingAndIC:
            config.read(user=False)
            config.set_file(f"{DATA_DIR}/config.yml")
            
-           ss = setup.SpatialSetup(
+           ss = setup.SubpopulationStructure(
                setup_name="test_values",
                geodata_file=f"{DATA_DIR}/geodata.csv",
                mobility_file=f"{DATA_DIR}/mobility.csv",
                popnodes_key="population",
-               nodenames_key="geoid",
+               subpop_names_key="subpop",
            )   
            s = setup.Setup(
                setup_name="test_seeding and ic",
@@ -126,12 +126,12 @@ class TestSeedingAndIC:
        config.read(user=False)
        config.set_file(f"{DATA_DIR}/config.yml")
 
-       ss = setup.SpatialSetup(
+       ss = setup.SubpopulationStructure(
            setup_name="test_values",
            geodata_file=f"{DATA_DIR}/geodata.csv",
            mobility_file=f"{DATA_DIR}/mobility.csv",
            popnodes_key="population",
-           nodenames_key="geoid",
+           subpop_names_key="subpop",
        )
        s = setup.Setup(
            setup_name="test_seeding and ic",

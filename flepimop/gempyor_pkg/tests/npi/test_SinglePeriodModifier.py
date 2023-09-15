@@ -10,18 +10,18 @@ from gempyor.utils import config
 DATA_DIR  = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
-class Test_ReduceR0:
-    def test_ReduceR0_success(self):
+class Test_SinglePeriodModifier:
+    def test_SinglePeriodModifier_success(self):
        config.clear()
        config.read(user=False)
        config.set_file(f"{DATA_DIR}/config_minimal.yaml")
 
-       ss = setup.SpatialSetup(
+       ss = setup.SubpopulationStructure(
           setup_name="test_seir",
           geodata_file=f"{DATA_DIR}/geodata.csv",
           mobility_file=f"{DATA_DIR}/mobility.csv",
           popnodes_key="population",
-          nodenames_key="geoid",
+          subpop_names_key="subpop",
        )
 
        s = setup.Setup(
@@ -44,5 +44,5 @@ class Test_ReduceR0:
           dt=0.25,
        )
 	
-       test = NPI.ReduceR0(npi_config=s.npi_config_seir, global_config=config,geoids=s.spatset.nodenames)
+       test = NPI.SinglePeriodModifier(npi_config=s.npi_config_seir, global_config=config,subpops=s.subpop_struct.subpop_names)
       

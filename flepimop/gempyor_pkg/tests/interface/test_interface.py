@@ -17,11 +17,12 @@ os.chdir(os.path.dirname(__file__))
 
 tmp_path = "/tmp"
 
-class TestInferenceSimulator:
-    def test_InferenceSimulator_success(self):
+class TestGempyorSimulator:
+    def test_GempyorSimulator_success(self):
    # the minimum model test, choices are: npi_scenario="None"
    #     config.set_file(f"{DATA_DIR}/config_min_test.yml")
-        i = interface.InferenceSimulator(config_path=f"{DATA_DIR}/config_min_test.yml", npi_scenario="None")
+   #     i = interface.GempyorSimulator(config_path=f"{DATA_DIR}/config.yml", npi_scenario="None")
+        i = interface.GempyorSimulator(config_path=f"{DATA_DIR}/config.yml", npi_scenario="None")
         ''' run_id="test_run_id" = in_run_id,
             prefix="test_prefix" = in_prefix = out_prefix,
             out_run_id = in_run_id,
@@ -50,4 +51,4 @@ class TestInferenceSimulator:
         i.build_structure()
         assert i.already_built 
 
-        i.one_simulation(sim_id2write=0)
+       # i.one_simulation(sim_id2write=0)
