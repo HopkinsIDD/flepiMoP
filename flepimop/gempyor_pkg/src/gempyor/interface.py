@@ -8,10 +8,9 @@
 # This populate the namespace with four functions, with return value 0 if the
 # function terminated successfully
 
-
 import pathlib
 from . import seir, setup, file_paths, subpopulation_structure
-from . import outcomes
+from . import outcomes, parameters, seeding_ic, compartments
 from .utils import config, Timer, read_df, profile
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
@@ -55,91 +54,68 @@ class GempyorSimulator:
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
     ):
+        """ Auto-build gempyor from a configuration file -- Contains all the individuals objects"""
+        # sets the random seed
+        np.random.seed(rng_seed)
+        
+        # Make sure we really read only that config
+        config.clear()
+        config.read(user=False)
+        config.set_file(config_path)
+        spatial_config = config["subpop_setup"]
+        spatial_base_path = config["data_path"].get()
+        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+  
+        # Parse config, taking default if necessary (exist a better way to make this in confuse probably)
+        self.setup_name = config["name"].get() if config["name"].exists() else ""
+        self.seir_config = config["seir"] if config["seir"].exists() else None
+        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        
+        if self.seir_config is not None:
+            self.parameters = parameters.Parameters(
+                parameter_config=self.seir_config["parameters"],
+                ti=self.ti,
+                tf=self.tf,
+                subpop_names=self.subpop_struct.subpop_names,
+            )
+            self.compartments = compartments.Compartments(
+                    seir_config=self.seir_config, compartments_config=config["compartments"]
+                )
+            
+            self.seeding_config = config["seeding"] if config["seeding"].exists() else None
+            self.initial_conditions_config = config["initial_conditions"] if config["initial_conditions"].exists() else None
+            self.seedingAndIC = seeding_ic.SeedingAndIC(
+                seeding_config=self.seeding_config,
+                initial_conditions_config=self.initial_conditions_config,
+            )
+            
+            self.npi_config_seir = config["modifier_seir"] if config["modifier_seir"].exists() else None
+            
+            # TODO: move to seir.py
 
-        self.setup_name = config["name"].get() + "_" + str(npi_scenario)
+    
         self.nslots = nslots
-        self.dt = dt
+        # TODO: not necessary for outcimes only
         self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
         self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
 
-        self.npi_scenario = npi_scenario
-        self.npi_config_seir = config["interventions"]["settings"][npi_scenario]
-        self.seeding_config = config["seeding"]
-        self.initial_conditions_config = config["initial_conditions"]
-        self.parameters_config = config["seir"]["parameters"]
-        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
-
-        self.seir_config = config["seir"]
-        self.interactive = interactive
         self.write_csv = write_csv
         self.write_parquet = write_parquet
         self.first_sim_index = first_sim_index
-        self.outcome_scenario = outcome_scenario
-
-        self.subpop_struct = subpopulation_structure.SubpopulationStructure(
-                setup_name=config["setup_name"].get(),
-                geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-                mobility_file=spatial_base_path / spatial_config["mobility"].get()
-                if spatial_config["mobility"].exists()
-                else None,
-                popnodes_key="population",
-                subpop_names_key="subpop",
-            )
+        if config["subpop_setup"].exists():
+            self.subpop_struct = subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        else:
+            raise ValueError("Missing required configuration section 'subpop_setup:'")
+        
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
-        self.nnodes = self.subpop_struct.nnodes
-        self.popnodes = self.subpop_struct.popnodes
+        # this should be accessible via functions
+        self.nsubpops = self.subpop_struct.nsubpops
+        self.subpop_pop = self.subpop_struct.subpop_pop
         self.mobility = self.subpop_struct.mobility
 
         self.stoch_traj_flag = stoch_traj_flag
-
-        # I'm not really sure if we should impose defaut or make setup really explicit and
-        # have users pass
-        if seir_config is None and config["seir"].exists():
-            self.seir_config = config["seir"]
-
-        # Set-up the integration method and the time step
-        if config["seir"].exists() and (seir_config or parameters_config):
-            if "integration" in self.seir_config.keys():
-                if "method" in self.seir_config["integration"].keys():
-                    self.integration_method = self.seir_config["integration"]["method"].get()
-                    if self.integration_method == "best.current":
-                        self.integration_method = "rk4.jit"
-                    if self.integration_method == "rk4":
-                        self.integration_method = "rk4.jit"
-                    if self.integration_method not in ["rk4.jit", "legacy"]:
-                        raise ValueError(f"Unknown integration method {self.integration_method}.")
-                if "dt" in self.seir_config["integration"].keys() and self.dt is None:
-                    self.dt = float(
-                        eval(str(self.seir_config["integration"]["dt"].get()))
-                    )  # ugly way to parse string and formulas
-                elif self.dt is None:
-                    self.dt = 2.0
-            else:
-                self.integration_method = "rk4.jit"
-                if self.dt is None:
-                    self.dt = 2.0
-                logging.info(f"Integration method not provided, assuming type {self.integration_method}")
-            if self.dt is not None:
-                self.dt = float(self.dt)
-
-            # Think if we really want to hold this up.
-            self.parameters = parameters.Parameters(
-                parameter_config=self.parameters_config,
-                ti=self.ti,
-                tf=self.tf,
-                subpop_names=self.subpop_struct.subpop_names,
-            )
-            self.seedingAndIC = seeding_ic.SeedingAndIC(
-                seeding_config=self.seeding_config,
-                initial_conditions_config=self.initial_conditions_config,
-            )
-            # really ugly references to the config globally here.
-            if config["compartments"].exists() and self.seir_config is not None:
-                self.compartments = compartments.Compartments(
-                    seir_config=self.seir_config, compartments_config=config["compartments"]
-                )
 
         # 3. Outcomes
         self.npi_config_outcomes = None
@@ -156,17 +132,6 @@ class GempyorSimulator:
         if out_prefix is None:
             out_prefix = in_prefix
 
-        # Config prep
-        config.clear()
-        config.read(user=False)
-        config.set_file(config_path)
-        spatial_config = config["subpop_setup"]
-        spatial_base_path = config["data_path"].get()
-        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
-
-        np.random.seed(rng_seed)
-
-        interactive = False
         write_csv = False
         write_parquet = True
 
@@ -176,7 +141,8 @@ class GempyorSimulator:
             f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
-        self.already_built = False  # whether we have already build the costly objects that need just one build
+        # whether we have already build the costly objects that need just one build
+        self.already_built = False  
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
         self.s.in_prefix = new_prefix
@@ -397,10 +363,10 @@ class GempyorSimulator:
             p_draw = self.s.parameters.parameters_load(
                 param_df=param_df,
                 n_days=self.s.n_days,
-                nnodes=self.s.nnodes,
+                nsubpops=self.s.nsubpops,
             )
         else:
-            p_draw = self.s.parameters.parameters_quick_draw(n_days=self.s.n_days, nnodes=self.s.nnodes)
+            p_draw = self.s.parameters.parameters_quick_draw(n_days=self.s.n_days, nsubpops=self.s.nsubpops)
         return p_draw
 
     def get_seir_parametersDF(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):

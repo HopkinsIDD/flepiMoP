@@ -98,7 +98,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::popnodes}
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::subpop_pop}
 # * <b>{data_path}/{subpop_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
@@ -255,7 +255,7 @@ def simulate(
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()
         else None,
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 

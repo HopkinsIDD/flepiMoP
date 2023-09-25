@@ -100,8 +100,8 @@ class SeedingAndIC:
 
         if method == "Default":
             ## JK : This could be specified in the config
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
-            y0[0, :] = setup.popnodes
+            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
+            y0[0, :] = setup.subpop_pop
 
         elif method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
             #  TODO Think about     - Does not support the new way of doing compartment indexing
@@ -112,7 +112,7 @@ class SeedingAndIC:
                     self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
+            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
             for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):  #
                 if pl in list(ic_df["subpop"]):
                     states_pl = ic_df[ic_df["subpop"] == pl]
@@ -145,15 +145,15 @@ class SeedingAndIC:
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_nodes:
                     logger.critical(
-                        f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
+                        f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
                     )
                     if "proportional" in self.initial_conditions_config.keys():
                         if self.initial_conditions_config["proportional"].get():
                             y0[0, pl_idx] = 1.0
                         else:
-                            y0[0, pl_idx] = setup.popnodes[pl_idx]
+                            y0[0, pl_idx] = setup.subpop_pop[pl_idx]
                     else:
-                        y0[0, pl_idx] = setup.popnodes[pl_idx]
+                        y0[0, pl_idx] = setup.subpop_pop[pl_idx]
                 else:
                     raise ValueError(
                         f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
@@ -176,7 +176,7 @@ class SeedingAndIC:
                 raise ValueError(
                     f"There is no entry for initial time ti in the provided initial_conditions::states_file."
                 )
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nnodes))
+            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
 
             for comp_idx, comp_name in setup.compartments.compartments["name"].items():
                 # rely on all the mc's instead of mc_name to avoid errors due to e.g order.
@@ -209,12 +209,12 @@ class SeedingAndIC:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
                     elif allow_missing_nodes:
                         logger.critical(
-                            f"No initial conditions for for node {pl}, assuming everyone (n={setup.popnodes[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
+                            f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
                         )
                         if "proportion" in self.initial_conditions_config.keys():
                             if self.initial_conditions_config["proportion"].get():
                                 y0[0, pl_idx] = 1.0
-                        y0[0, pl_idx] = setup.popnodes[pl_idx]
+                        y0[0, pl_idx] = setup.subpop_pop[pl_idx]
                     else:
                         raise ValueError(
                             f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
@@ -225,7 +225,7 @@ class SeedingAndIC:
         # rest
         if rests:  # not empty
             for comp_idx, pl_idx in rests:
-                total = setup.popnodes[pl_idx]
+                total = setup.subpop_pop[pl_idx]
                 if "proportional" in self.initial_conditions_config.keys():
                     if self.initial_conditions_config["proportional"].get():
                         total = 1.0
@@ -233,13 +233,13 @@ class SeedingAndIC:
 
         if "proportional" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["proportional"].get():
-                y0 = y0 * setup.popnodes[pl_idx]
+                y0 = y0 * setup.subpop_pop[pl_idx]
 
         # check that the inputed values sums to the node_population:
         error = False
         for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
             n_y0 = y0[:, pl_idx].sum()
-            n_pop = setup.popnodes[pl_idx]
+            n_pop = setup.subpop_pop[pl_idx]
             if abs(n_y0 - n_pop) > 1:
                 error = True
                 print(

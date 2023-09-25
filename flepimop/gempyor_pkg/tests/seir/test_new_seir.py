@@ -23,7 +23,7 @@ def test_constant_population():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -49,7 +49,7 @@ def test_constant_population():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    parameters = s.parameters.parameters_quick_draw(n_days=s.n_days, nnodes=s.nnodes)
+    parameters = s.parameters.parameters_quick_draw(n_days=s.n_days, nsubpops=s.nsubpops)
     parameter_names = [x for x in s.parameters.pnames]
 
     print("RUN_FUN_START")

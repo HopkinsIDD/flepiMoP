@@ -120,7 +120,7 @@ def test_spatial_groups():
     npi = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
 
     # all independent: r1
-    assert len(npi.getReduction("r1")["2021-01-01"].unique()) == inference_simulator.s.nnodes
+    assert len(npi.getReduction("r1")["2021-01-01"].unique()) == inference_simulator.s.nsubpops
     assert npi.getReduction("r1").isna().sum().sum() == 0
 
     # all the same: r2
@@ -128,7 +128,7 @@ def test_spatial_groups():
     assert npi.getReduction("r2").isna().sum().sum() == 0
 
     # two groups: r3
-    assert len(npi.getReduction("r3")["2020-04-15"].unique()) == inference_simulator.s.nnodes - 2
+    assert len(npi.getReduction("r3")["2020-04-15"].unique()) == inference_simulator.s.nsubpops - 2
     assert npi.getReduction("r3").isna().sum().sum() == 0
     assert len(npi.getReduction("r3").loc[["01000", "02000"], "2020-04-15"].unique()) == 1
     assert len(npi.getReduction("r3").loc[["04000", "06000"], "2020-04-15"].unique()) == 1
@@ -154,7 +154,7 @@ def test_spatial_groups():
 
     # all independent: r1
     df = npi_df[npi_df["npi_name"] == "all_independent"]
-    assert len(df) == inference_simulator.s.nnodes
+    assert len(df) == inference_simulator.s.nsubpops
     for g in df["subpop"]:
         assert "," not in g
 
@@ -162,11 +162,11 @@ def test_spatial_groups():
     df = npi_df[npi_df["npi_name"] == "all_together"]
     assert len(df) == 1
     assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.s.subpop_struct.subpop_names)
-    assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.s.nnodes
+    assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.s.nsubpops
 
     # two groups: r3
     df = npi_df[npi_df["npi_name"] == "two_groups"]
-    assert len(df) == inference_simulator.s.nnodes - 2
+    assert len(df) == inference_simulator.s.nsubpops - 2
     for g in ["01000", "02000", "04000", "06000"]:
         assert g not in df["subpop"]
     assert len(df[df["subpop"] == "01000,02000"]) == 1
