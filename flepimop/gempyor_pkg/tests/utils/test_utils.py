@@ -65,3 +65,27 @@ def test_Timer_with_statement_success():
 		
 def test_aws_disk_diagnosis_success():
 	utils.aws_disk_diagnosis()
+
+def test_profile_success():
+	utils.profile()
+	utils.profile(output_file="test")
+
+def test_ISO8601Date_success():
+	t = utils.ISO8601Date("2020-02-01")
+	#dt = datetime.datetime.strptime("2020-02-01", "%Y-%m-%d")
+
+	#assert t == datetime.datetime("2020-02-01").strftime("%Y-%m-%d")
+
+
+def test_get_truncated_normal_success():
+	utils.get_truncated_normal(mean=0, sd=1, a=-2, b=2)
+
+
+def test_get_log_normal_success():
+	utils.get_log_normal(meanlog=0, sdlog=1)
+
+
+
+
+
+
