@@ -23,6 +23,27 @@ def build_step_source_arg(
     seeding_data,
     seeding_amounts,
 ):
+    
+    if "integration" in s.seir_config.keys():
+        if "method" in s.seir_config["integration"].keys():
+            integration_method = s.seir_config["integration"]["method"].get()
+            if integration_method == "best.current":
+                integration_method = "rk4.jit"
+            if integration_method == "rk4":
+                integration_method = "rk4.jit"
+            if integration_method not in ["rk4.jit", "legacy"]:
+                raise ValueError(f"Unknown integration method {integration_method}.")
+        if "dt" in s.seir_config["integration"].keys():
+            dt = float(
+                eval(str(s.seir_config["integration"]["dt"].get()))
+            )  # ugly way to parse string and formulas
+        else:
+            dt = 2.0
+    else:
+        integration_method = "rk4.jit"
+        dt = 2.0
+        logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
+    
     assert type(s.mobility) == scipy.sparse.csr.csr_matrix
     mobility_data = s.mobility.data
     mobility_data = mobility_data.astype("float64")
@@ -30,7 +51,7 @@ def build_step_source_arg(
     assert type(s.nsubpops) == int
     assert s.n_days > 1
     assert parsed_parameters.shape[1:3] == (s.n_days, s.nsubpops)
-    assert type(s.dt) == float
+    assert type(dt) == float
     assert type(transition_array[0][0]) == np.int64
     assert type(proportion_array[0]) == np.int64
     assert type(proportion_info[0][0]) == np.int64
@@ -64,14 +85,15 @@ def build_step_source_arg(
     assert len(s.subpop_pop) == s.nsubpops
     assert type(s.subpop_pop[0]) == np.int64
 
-    assert s.dt <= 1.0 or s.dt == 2.0
+    assert dt <= 1.0 or dt == 2.0
 
     fnct_args = {
         "ncompartments": s.compartments.compartments.shape[0],
         "nspatial_nodes": s.nsubpops,
         "ndays": s.n_days,
         "parameters": parsed_parameters,
-        "dt": s.dt,
+        "dt": dt,
+        "integration_method":integration_method,
         "transitions": transition_array,
         "proportion_info": proportion_info,
         "transition_sum_compartments": proportion_array,
@@ -108,14 +130,17 @@ def steps_SEIR(
         seeding_amounts,
     )
 
-    logging.info(f"Integrating with method {s.integration_method}")
+    integration_method = fnct_args["integration_method"]
 
-    if s.integration_method == "legacy":
+    logging.info(f"Integrating with method {integration_method}")
+
+
+    if integration_method == "legacy":
         seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
-    elif s.integration_method == "rk4.jit":
+    elif integration_method == "rk4.jit":
         if s.stoch_traj_flag == True:
             raise ValueError(
-                f"with method {s.integration_method}, only deterministic "
+                f"with method {integration_method}, only deterministic "
                 f"integration is possible (got stoch_straj_flag={s.stoch_traj_flag}"
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args)
@@ -123,7 +148,7 @@ def steps_SEIR(
         from .dev import steps as steps_experimental
 
         logging.critical("Experimental !!! These methods are not ready for production ! ")
-        if s.integration_method in [
+        if integration_method in [
             "scipy.solve_ivp",
             "scipy.odeint",
             "scipy.solve_ivp2",
@@ -131,28 +156,28 @@ def steps_SEIR(
         ]:
             if s.stoch_traj_flag == True:
                 raise ValueError(
-                    f"with method {s.integration_method}, only deterministic "
+                    f"with method {integration_method}, only deterministic "
                     f"integration is possible (got stoch_straj_flag={s.stoch_traj_flag}"
                 )
-            seir_sim = steps_experimental.ode_integration(**fnct_args, integration_method=s.integration_method)
-        elif s.integration_method == "rk4.jit1":
+            seir_sim = steps_experimental.ode_integration(**fnct_args, integration_method=integration_method)
+        elif integration_method == "rk4.jit1":
             seir_sim = steps_experimental.rk4_integration1(**fnct_args)
-        elif s.integration_method == "rk4.jit2":
+        elif integration_method == "rk4.jit2":
             seir_sim = steps_experimental.rk4_integration2(**fnct_args)
-        elif s.integration_method == "rk4.jit3":
+        elif integration_method == "rk4.jit3":
             seir_sim = steps_experimental.rk4_integration3(**fnct_args)
-        elif s.integration_method == "rk4.jit4":
+        elif integration_method == "rk4.jit4":
             seir_sim = steps_experimental.rk4_integration4(**fnct_args)
-        elif s.integration_method == "rk4.jit5":
+        elif integration_method == "rk4.jit5":
             seir_sim = steps_experimental.rk4_integration5(**fnct_args)
-        elif s.integration_method == "rk4.jit6":
+        elif integration_method == "rk4.jit6":
             seir_sim = steps_experimental.rk4_integration6(**fnct_args)
-        elif s.integration_method == "rk4.jit.smart":
+        elif integration_method == "rk4.jit.smart":
             seir_sim = steps_experimental.rk4_integration2_smart(**fnct_args)
-        elif s.integration_method == "rk4_aot":
+        elif integration_method == "rk4_aot":
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
-            raise ValueError(f"Unknow integration scheme, got {s.integration_method}")
+            raise ValueError(f"Unknow integration scheme, got {integration_method}")
     return seir_sim
 
 
