@@ -86,7 +86,7 @@ class GempyorSimulator:
                 mobility_file=spatial_base_path / spatial_config["mobility"].get()
                 if spatial_config["mobility"].exists()
                 else None,
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             ),
             nslots=nslots,
@@ -339,10 +339,10 @@ class GempyorSimulator:
             p_draw = self.s.parameters.parameters_load(
                 param_df=param_df,
                 n_days=self.s.n_days,
-                nnodes=self.s.nnodes,
+                nsubpops=self.s.nsubpops,
             )
         else:
-            p_draw = self.s.parameters.parameters_quick_draw(n_days=self.s.n_days, nnodes=self.s.nnodes)
+            p_draw = self.s.parameters.parameters_quick_draw(n_days=self.s.n_days, nsubpops=self.s.nsubpops)
         return p_draw
 
     def get_seir_parametersDF(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):

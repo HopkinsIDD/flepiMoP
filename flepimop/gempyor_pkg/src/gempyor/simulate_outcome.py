@@ -203,7 +203,7 @@ def simulate(
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()
         else None,
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
