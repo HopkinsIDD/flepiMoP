@@ -41,7 +41,7 @@ class StackedModifier(NPIBase):
         # just preload all settings
         settings_map = global_config["seir_modifiers"]["settings"].get()
 
-        for scenario in npi_config["scenarios"].get():
+        for scenario in npi_config["modifiers"].get():
             # if it's a string, look up the scenario name's config
             if isinstance(scenario, str):
                 settings = settings_map.get(scenario)
