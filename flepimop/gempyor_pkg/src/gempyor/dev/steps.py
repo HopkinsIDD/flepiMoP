@@ -38,7 +38,6 @@ def ode_integration(
     stochastic_p,  # 16
     integration_method,
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))
@@ -243,7 +242,6 @@ def rk4_integration1(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))
@@ -434,7 +432,6 @@ def rk4_integration2(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))
@@ -627,7 +624,6 @@ def rk4_integration3(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     seeding_subpops_dict = seeding_data["seeding_subpops"]
     seeding_sources_dict = seeding_data["seeding_sources"]
     seeding_destinations_dict = seeding_data["seeding_destinations"]
@@ -827,7 +823,6 @@ def rk4_integration4(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))
@@ -1021,7 +1016,6 @@ def rk4_integration5(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))
@@ -1225,7 +1219,6 @@ def rk4_integration2_smart(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))
@@ -1427,7 +1420,6 @@ def rk4_integration2_smart(
                 # with Timer(f'solver_solve{time_jump}'):
                 #    ts, sol = solver.run(ts)
                 with Timer(f"solver_solve{time_jump}"):
-
                     sol = odeint(
                         rhs,
                         y0=x_,
@@ -1497,7 +1489,6 @@ def rk4_integration_aot(
     population,  # 15
     stochastic_p,  # 16
 ):
-
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_current = np.zeros((ncompartments, nspatial_nodes))

@@ -98,7 +98,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::popnodes}
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::subpop_pop}
 # * <b>{data_path}/{subpop_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
@@ -233,7 +233,6 @@ def simulate(
     first_sim_index,
     stoch_traj_flag,
 ):
-
     spatial_path_prefix = ""
     config.clear()
     config.read(user=False)
@@ -255,13 +254,12 @@ def simulate(
         mobility_file=spatial_base_path / spatial_config["mobility"].get()
         if spatial_config["mobility"].exists()
         else None,
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
     start = time.monotonic()
     for npi_scenario in npi_scenarios:
-
         s = setup.Setup(
             setup_name=config["name"].get() + "/" + str(npi_scenario) + "/",
             subpop_setup=subpop_setup,

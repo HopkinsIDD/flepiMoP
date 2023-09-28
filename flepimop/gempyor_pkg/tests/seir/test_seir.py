@@ -24,7 +24,7 @@ def test_check_values():
         setup_name="test_values",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -43,8 +43,7 @@ def test_check_values():
     )
 
     with warnings.catch_warnings(record=True) as w:
-
-        seeding = np.zeros((s.n_days, s.nnodes))
+        seeding = np.zeros((s.n_days, s.nsubpops))
 
         if np.all(seeding == 0):
             warnings.warn("provided seeding has only value 0", UserWarning)
@@ -77,7 +76,7 @@ def test_constant_population_legacy_integration():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -110,7 +109,7 @@ def test_constant_population_legacy_integration():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
     params = s.parameters.parameters_reduce(params, npi)
 
     (
@@ -132,11 +131,11 @@ def test_constant_population_legacy_integration():
         seeding_amounts,
     )
 
-    completepop = s.popnodes.sum()
-    origpop = s.popnodes
+    completepop = s.subpop_pop.sum()
+    origpop = s.subpop_pop
     for it in range(s.n_days):
         totalpop = 0
-        for i in range(s.nnodes):
+        for i in range(s.nsubpops):
             totalpop += states[0].sum(axis=1)[it, i]
             assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
@@ -153,7 +152,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -185,7 +184,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
     params = s.parameters.parameters_reduce(params, npi)
 
     (
@@ -238,7 +237,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.csv",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -271,7 +270,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
     params = s.parameters.parameters_reduce(params, npi)
 
     (
@@ -308,7 +307,7 @@ def test_steps_SEIR_no_spread():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -342,7 +341,7 @@ def test_steps_SEIR_no_spread():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
     params = s.parameters.parameters_reduce(params, npi)
 
     (
@@ -409,7 +408,7 @@ def test_continuation_resume():
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         ),
         nslots=nslots,
@@ -459,7 +458,7 @@ def test_continuation_resume():
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         ),
         nslots=nslots,
@@ -527,7 +526,7 @@ def test_inference_resume():
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         ),
         nslots=nslots,
@@ -572,7 +571,7 @@ def test_inference_resume():
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
             mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         ),
         nslots=nslots,
@@ -620,7 +619,7 @@ def test_parallel_compartments_with_vacc():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -653,7 +652,7 @@ def test_parallel_compartments_with_vacc():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
     params = s.parameters.parameters_reduce(params, npi)
 
     (
@@ -714,7 +713,7 @@ def test_parallel_compartments_no_vacc():
         setup_name="test_seir",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
@@ -748,7 +747,7 @@ def test_parallel_compartments_no_vacc():
 
     npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
     params = s.parameters.parameters_reduce(params, npi)
 
     (
