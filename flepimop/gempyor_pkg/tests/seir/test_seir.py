@@ -20,7 +20,7 @@ def test_check_values():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
@@ -28,7 +28,7 @@ def test_check_values():
     )
 
     with warnings.catch_warnings(record=True) as w:
-        seeding = np.zeros((s.n_days, s.nsubpops))
+        seeding = np.zeros((modinf.n_days, modinf.nsubpops))
 
         if np.all(seeding == 0):
             warnings.warn("provided seeding has only value 0", UserWarning)
@@ -38,13 +38,13 @@ def test_check_values():
         if np.all(seeding == 0):
             warnings.warn("provided seeding has only value 0", UserWarning)
 
-        if np.all(s.mobility.data < 1):
+        if np.all(modinf.mobility.data < 1):
             warnings.warn("highest mobility value is less than 1", UserWarning)
 
-        s.mobility.data[0] = 0.8
-        s.mobility.data[1] = 0.5
+        modinf.mobility.data[0] = 0.8
+        modinf.mobility.data[1] = 0.5
 
-        if np.all(s.mobility.data < 1):
+        if np.all(modinf.mobility.data < 1):
             warnings.warn("highest mobility value is less than 1", UserWarning)
 
         assert len(w) == 2
@@ -60,7 +60,7 @@ def test_constant_population_legacy_integration():
     first_sim_index = 1
     run_id = "test"
     prefix = ""
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
@@ -73,24 +73,24 @@ def test_constant_population_legacy_integration():
     )
     integration_method = "legacy"
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     states = seir.steps_SEIR(
-        s,
+        modinf,
         parsed_parameters,
         transition_array,
         proportion_array,
@@ -100,11 +100,11 @@ def test_constant_population_legacy_integration():
         seeding_amounts,
     )
 
-    completepop = s.subpop_pop.sum()
-    origpop = s.subpop_pop
-    for it in range(s.n_days):
+    completepop = modinf.subpop_pop.sum()
+    origpop = modinf.subpop_pop
+    for it in range(modinf.n_days):
         totalpop = 0
-        for i in range(s.nsubpops):
+        for i in range(modinf.nsubpops):
             totalpop += states[0].sum(axis=1)[it, i]
             assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
@@ -120,7 +120,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
@@ -132,25 +132,25 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     for i in range(5):
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -159,12 +159,12 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
-        assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(s.tf), "10001"] > 1
-        assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(s.tf), "20002"] > 1
+        df = seir.states2Df(modinf, states)
+        assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "10001"] > 1
+        assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] > 1
 
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -173,8 +173,8 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
-        assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(s.tf), "20002"] > 1
+        df = seir.states2Df(modinf, states)
+        assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] > 1
         assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["20002"] > 0
         assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["10001"] > 0
 
@@ -191,7 +191,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     run_id = "test_SeedOneNode"
     prefix = ""
 
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
@@ -203,25 +203,25 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     for i in range(5):
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -230,7 +230,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
 
         assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["20002"] > 0
         assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["10001"] > 0
@@ -244,7 +244,7 @@ def test_steps_SEIR_no_spread():
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
@@ -256,27 +256,27 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    s.mobility.data = s.mobility.data * 0
+    modinf.mobility.data = modinf.mobility.data * 0
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     for i in range(10):
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -285,13 +285,13 @@ def test_steps_SEIR_no_spread():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(s.tf), "20002"] == 0.0
+            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] == 0.0
         )
 
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -300,9 +300,9 @@ def test_steps_SEIR_no_spread():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(s.tf), "20002"] == 0.0
+            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] == 0.0
         )
 
 
@@ -323,7 +323,7 @@ def test_continuation_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
@@ -335,10 +335,10 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    seir.onerun_SEIR(sim_id2write=int(sim_id2write), s=s, config=config)
+    seir.onerun_SEIR(sim_id2write=int(sim_id2write), s=modinf, config=config)
 
     states_old = pq.read_table(
-        file_paths.create_file_name(s.in_run_id, s.in_prefix, 100, "seir", "parquet"),
+        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, 100, "seir", "parquet"),
     ).to_pandas()
     states_old = states_old[states_old["date"] == "2020-03-15"].reset_index(drop=True)
 
@@ -357,7 +357,7 @@ def test_continuation_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
@@ -369,10 +369,10 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    seir.onerun_SEIR(sim_id2write=sim_id2write, s=s, config=config)
+    seir.onerun_SEIR(sim_id2write=sim_id2write, s=modinf, config=config)
 
     states_new = pq.read_table(
-        file_paths.create_file_name(s.in_run_id, s.in_prefix, sim_id2write, "seir", "parquet"),
+        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "seir", "parquet"),
     ).to_pandas()
     states_new = states_new[states_new["date"] == "2020-03-15"].reset_index(drop=True)
     assert (
@@ -384,9 +384,9 @@ def test_continuation_resume():
         .all()
     )
 
-    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, s=s, sim_id2load=sim_id2write, load_ID=True, config=config)
+    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, s=modinf, sim_id2load=sim_id2write, load_ID=True, config=config)
     states_new = pq.read_table(
-        file_paths.create_file_name(s.in_run_id, s.in_prefix, sim_id2write + 1, "seir", "parquet"),
+        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "seir", "parquet"),
     ).to_pandas()
     states_new = states_new[states_new["date"] == "2020-03-15"].reset_index(drop=True)
     for path in ["model_output/seir", "model_output/snpi", "model_output/spar"]:
@@ -410,7 +410,7 @@ def test_inference_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
@@ -422,9 +422,9 @@ def test_inference_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    seir.onerun_SEIR(sim_id2write=int(sim_id2write), s=s, config=config)
+    seir.onerun_SEIR(sim_id2write=int(sim_id2write), s=modinf, config=config)
     npis_old = pq.read_table(
-        file_paths.create_file_name(s.in_run_id, s.in_prefix, sim_id2write, "snpi", "parquet")
+        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet")
     ).to_pandas()
 
     config.clear()
@@ -441,7 +441,7 @@ def test_inference_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
@@ -454,9 +454,9 @@ def test_inference_resume():
         out_prefix=prefix,
     )
 
-    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, s=s, sim_id2load=sim_id2write, load_ID=True, config=config)
+    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, s=modinf, sim_id2load=sim_id2write, load_ID=True, config=config)
     npis_new = pq.read_table(
-        file_paths.create_file_name(s.in_run_id, s.in_prefix, sim_id2write + 1, "snpi", "parquet")
+        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "snpi", "parquet")
     ).to_pandas()
 
     assert npis_old["npi_name"].isin(["None", "Wuhan", "KansasCity"]).all()
@@ -480,7 +480,7 @@ def test_parallel_compartments_with_vacc():
     first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="Scenario_vacc",
@@ -492,25 +492,25 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     for i in range(5):
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -519,7 +519,7 @@ def test_parallel_compartments_with_vacc():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
         assert (
             df[
                 (df["mc_value_type"] == "prevalence")
@@ -530,7 +530,7 @@ def test_parallel_compartments_with_vacc():
         )
 
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -539,7 +539,7 @@ def test_parallel_compartments_with_vacc():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
         assert (
             df[
                 (df["mc_value_type"] == "prevalence")
@@ -558,7 +558,7 @@ def test_parallel_compartments_no_vacc():
     run_id = "test_parallel"
     prefix = ""
 
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="Scenario_novacc",
@@ -570,26 +570,26 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     for i in range(5):
-        s.npi_config_seir = config["seir_modifiers"]["settings"]["Scenario_vacc"]
+        modinf.npi_config_seir = config["seir_modifiers"]["settings"]["Scenario_vacc"]
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -598,7 +598,7 @@ def test_parallel_compartments_no_vacc():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
         assert (
             df[
                 (df["mc_value_type"] == "prevalence")
@@ -609,7 +609,7 @@ def test_parallel_compartments_no_vacc():
         )
 
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -618,7 +618,7 @@ def test_parallel_compartments_no_vacc():
             seeding_data,
             seeding_amounts,
         )
-        df = seir.states2Df(s, states)
+        df = seir.states2Df(modinf, states)
         assert (
             df[
                 (df["mc_value_type"] == "prevalence")

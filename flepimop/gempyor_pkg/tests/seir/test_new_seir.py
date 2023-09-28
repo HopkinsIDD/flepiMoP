@@ -19,20 +19,20 @@ os.chdir(os.path.dirname(__file__))
 def test_constant_population():
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         write_csv=False,
         stoch_traj_flag=False,
     )
 
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=0, setup=s)
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=0, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
+    npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
 
-    parameters = s.parameters.parameters_quick_draw(n_days=s.n_days, nsubpops=s.nsubpops)
-    parameter_names = [x for x in s.parameters.pnames]
+    parameters = modinf.parameters.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
+    parameter_names = [x for x in modinf.parameters.pnames]
 
     print("RUN_FUN_START")
     (
@@ -40,13 +40,13 @@ def test_constant_population():
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(parameters, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(parameters, modinf.parameters.pnames, unique_strings)
     print("RUN_FUN_END")
     print(proportion_array)
 
     states = seir.steps_SEIR(
-        s,
+        modinf,
         parsed_parameters,
         transition_array,
         proportion_array,

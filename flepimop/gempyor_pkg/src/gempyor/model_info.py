@@ -51,7 +51,7 @@ class ModelInfo:
         self.setup_name = config["name"].get()
         if self.seir_modifiers_scenario is not None:
             self.setup_name += "_" + str(self.seir_modifiers_scenario)
-        if self.outcomes_modifiers_scenario is not None:
+        if self.outcome_modifiers_scenario is not None:
             self.setup_name += "_" + str(self.outcome_modifiers_scenario)
 
         # 2. What about time:
@@ -59,7 +59,7 @@ class ModelInfo:
         self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
-        self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
+        self.n_days = (self.tf - self.ti).days + 1  # because we include ti and tf
 
         # 3. What about subpopulations
         spatial_config = config["subpop_setup"]
@@ -87,10 +87,11 @@ class ModelInfo:
             self.seeding_config = config["seeding"] if config["seeding"].exists() else None
 
             if self.seeding_config is None and self.initial_conditions_config is None:
-                raise ValueError("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
+                logging.critical("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
+                #raise ValueError("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
             
             if config["seir_modifiers"].exists():
-                if config["seir_modifiers"]["scenarios"].exists()
+                if config["seir_modifiers"]["scenarios"].exists():
                     self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
                 else: 
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
@@ -134,10 +135,10 @@ class ModelInfo:
         self.out_run_id = out_run_id
 
         if in_prefix is None:
-            in_prefix = f"model_output/{setup_name}/{in_run_id}/"
+            in_prefix = f"model_output/{self.setup_name}/{in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
-            out_prefix = f"model_output/{setup_name}/{seir_modifiers_scenario}/{out_run_id}/"
+            out_prefix = f"model_output/{self.setup_name}/{out_run_id}/"
         self.out_prefix = out_prefix
 
         if self.write_csv or self.write_parquet:
@@ -145,7 +146,7 @@ class ModelInfo:
             ftypes = []
             if config["seir"].exists():
                 ftypes.extend(["seir", "spar", "snpi"])
-            if outcomes_config:
+            if config["outcomes"].exists():
                 ftypes.extend(["hosp", "hpar", "hnpi"])
             for ftype in ftypes:
                 datadir = file_paths.create_dir_name(self.out_run_id, self.out_prefix, ftype)

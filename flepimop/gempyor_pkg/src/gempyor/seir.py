@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_step_source_arg(
-    s,
+    modinf,
     parsed_parameters,
     transition_array,
     proportion_array,
@@ -24,18 +24,18 @@ def build_step_source_arg(
     seeding_amounts,
 ):
     
-    if "integration" in s.seir_config.keys():
-        if "method" in s.seir_config["integration"].keys():
-            integration_method = s.seir_config["integration"]["method"].get()
+    if "integration" in modinf.seir_config.keys():
+        if "method" in modinf.seir_config["integration"].keys():
+            integration_method = modinf.seir_config["integration"]["method"].get()
             if integration_method == "best.current":
                 integration_method = "rk4.jit"
             if integration_method == "rk4":
                 integration_method = "rk4.jit"
             if integration_method not in ["rk4.jit", "legacy"]:
                 raise ValueError(f"Unknown integration method {integration_method}.")
-        if "dt" in s.seir_config["integration"].keys():
+        if "dt" in modinf.seir_config["integration"].keys():
             dt = float(
-                eval(str(s.seir_config["integration"]["dt"].get()))
+                eval(str(modinf.seir_config["integration"]["dt"].get()))
             )  # ugly way to parse string and formulas
         else:
             dt = 2.0
@@ -44,18 +44,18 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
     
-    assert type(s.mobility) == scipy.sparse.csr.csr_matrix
-    mobility_data = s.mobility.data
+    assert type(modinf.mobility) == scipy.sparse.csr.csr_matrix
+    mobility_data = modinf.mobility.data
     mobility_data = mobility_data.astype("float64")
-    assert type(s.compartments.compartments.shape[0]) == int
-    assert type(s.nsubpops) == int
-    assert s.n_days > 1
-    assert parsed_parameters.shape[1:3] == (s.n_days, s.nsubpops)
+    assert type(modinf.compartments.compartments.shape[0]) == int
+    assert type(modinf.nsubpops) == int
+    assert modinf.n_days > 1
+    assert parsed_parameters.shape[1:3] == (modinf.n_days, modinf.nsubpops)
     assert type(dt) == float
     assert type(transition_array[0][0]) == np.int64
     assert type(proportion_array[0]) == np.int64
     assert type(proportion_info[0][0]) == np.int64
-    assert initial_conditions.shape == (s.compartments.compartments.shape[0], s.nsubpops)
+    assert initial_conditions.shape == (modinf.compartments.compartments.shape[0], modinf.nsubpops)
     assert type(initial_conditions[0][0]) == np.float64
     # Test of empty seeding:
     assert len(seeding_data.keys()) == 4
@@ -69,7 +69,7 @@ def build_step_source_arg(
     for key, item in seeding_data.items():
         assert key in keys_ref
         if key == "day_start_idx":
-            assert len(item) == s.n_days + 1
+            assert len(item) == modinf.n_days + 1
             # assert (item == np.zeros(s.n_days + 1, dtype=np.int64)).all()
         # else:
         #     assert item.size == np.array([], dtype=np.int64)
@@ -77,20 +77,20 @@ def build_step_source_arg(
 
     if len(mobility_data) > 0:
         assert type(mobility_data[0]) == np.float64
-        assert len(mobility_data) == len(s.mobility.indices)
-        assert type(s.mobility.indices[0]) == np.int32
-        assert len(s.mobility.indptr) == s.nsubpops + 1
-        assert type(s.mobility.indptr[0]) == np.int32
+        assert len(mobility_data) == len(modinf.mobility.indices)
+        assert type(modinf.mobility.indices[0]) == np.int32
+        assert len(modinf.mobility.indptr) == modinf.nsubpops + 1
+        assert type(modinf.mobility.indptr[0]) == np.int32
 
-    assert len(s.subpop_pop) == s.nsubpops
-    assert type(s.subpop_pop[0]) == np.int64
+    assert len(modinf.subpop_pop) == modinf.nsubpops
+    assert type(modinf.subpop_pop[0]) == np.int64
 
     assert dt <= 1.0 or dt == 2.0
 
     fnct_args = {
-        "ncompartments": s.compartments.compartments.shape[0],
-        "nspatial_nodes": s.nsubpops,
-        "ndays": s.n_days,
+        "ncompartments": modinf.compartments.compartments.shape[0],
+        "nspatial_nodes": modinf.nsubpops,
+        "ndays": modinf.n_days,
         "parameters": parsed_parameters,
         "dt": dt,
         "integration_method":integration_method,
@@ -101,16 +101,16 @@ def build_step_source_arg(
         "seeding_data": seeding_data,
         "seeding_amounts": seeding_amounts,
         "mobility_data": mobility_data,
-        "mobility_row_indices": s.mobility.indices,
-        "mobility_data_indices": s.mobility.indptr,
-        "population": s.subpop_pop,
-        "stochastic_p": s.stoch_traj_flag,
+        "mobility_row_indices": modinf.mobility.indices,
+        "mobility_data_indices": modinf.mobility.indptr,
+        "population": modinf.subpop_pop,
+        "stochastic_p": modinf.stoch_traj_flag,
     }
     return fnct_args
 
 
 def steps_SEIR(
-    s,
+    modinf,
     parsed_parameters,
     transition_array,
     proportion_array,
@@ -120,7 +120,7 @@ def steps_SEIR(
     seeding_amounts,
 ):
     fnct_args = build_step_source_arg(
-        s,
+        modinf,
         parsed_parameters,
         transition_array,
         proportion_array,
@@ -138,10 +138,10 @@ def steps_SEIR(
     if integration_method == "legacy":
         seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
     elif integration_method == "rk4.jit":
-        if s.stoch_traj_flag == True:
+        if modinf.stoch_traj_flag == True:
             raise ValueError(
                 f"with method {integration_method}, only deterministic "
-                f"integration is possible (got stoch_straj_flag={s.stoch_traj_flag}"
+                f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args)
     else:
@@ -154,10 +154,10 @@ def steps_SEIR(
             "scipy.solve_ivp2",
             "scipy.odeint2",
         ]:
-            if s.stoch_traj_flag == True:
+            if modinf.stoch_traj_flag == True:
                 raise ValueError(
                     f"with method {integration_method}, only deterministic "
-                    f"integration is possible (got stoch_straj_flag={s.stoch_traj_flag}"
+                    f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
                 )
             seir_sim = steps_experimental.ode_integration(**fnct_args, integration_method=integration_method)
         elif integration_method == "rk4.jit1":
@@ -181,7 +181,7 @@ def steps_SEIR(
     return seir_sim
 
 
-def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
+def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
     with Timer("SEIR.NPI"):
         loaded_df = None
         if bypass_DF is not None:
@@ -189,22 +189,22 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
         elif bypass_FN is not None:
             loaded_df = read_df(fname=bypass_FN)
         elif load_ID == True:
-            loaded_df = s.read_simID(ftype="snpi", sim_id=sim_id2load)
+            loaded_df = modinf.read_simID(ftype="snpi", sim_id=sim_id2load)
 
         if loaded_df is not None:
             npi = NPI.NPIBase.execute(
-                npi_config=s.npi_config_seir,
+                npi_config=modinf.npi_config_seir,
                 global_config=config,
-                subpops=s.subpop_struct.subpop_names,
+                subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
-                pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
+                pnames_overlap_operation_sum=modinf.parameters.intervention_overlap_operation["sum"],
             )
         else:
             npi = NPI.NPIBase.execute(
-                npi_config=s.npi_config_seir,
+                npi_config=modinf.npi_config_seir,
                 global_config=config,
-                subpops=s.subpop_struct.subpop_names,
-                pnames_overlap_operation_sum=s.parameters.intervention_overlap_operation["sum"],
+                subpops=modinf.subpop_struct.subpop_names,
+                pnames_overlap_operation_sum=modinf.parameters.intervention_overlap_operation["sum"],
             )
     return npi
 
@@ -218,7 +218,7 @@ def onerun_SEIR(
 ):
     np.random.seed()
 
-    npi = build_npi_SEIR(s=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+    npi = build_npi_SEIR(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     with Timer("onerun_SEIR.compartments"):
         (
@@ -273,28 +273,28 @@ def onerun_SEIR(
     return out_df
 
 
-def run_parallel_SEIR(s, config, *, n_jobs=1):
+def run_parallel_SEIR(modinf, config, *, n_jobs=1):
     start = time.monotonic()
-    sim_ids = np.arange(1, s.nslots + 1)
+    sim_ids = np.arange(1, modinf.nslots + 1)
 
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
-            onerun_SEIR(sim_id2write=sim_id, modinf=s, load_ID=False, sim_id2load=None, config=config)
+            onerun_SEIR(sim_id2write=sim_id, modinf=modinf, load_ID=False, sim_id2load=None, config=config)
     else:
         tqdm.contrib.concurrent.process_map(
             onerun_SEIR,
             sim_ids,
-            itertools.repeat(s),
+            itertools.repeat(modinf),
             itertools.repeat(False),
             itertools.repeat(None),
             itertools.repeat(config),
             max_workers=n_jobs,
         )
 
-    logging.info(f""">> {s.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds""")
+    logging.info(f""">> {modinf.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds""")
 
 
-def states2Df(s, states):
+def states2Df(modinf, states):
     # Tidyup data for  R, to save it:
     #
     # Write output to .snpi.*, .spar.*, and .seir.* files
@@ -310,17 +310,17 @@ def states2Df(s, states):
     # states_diff = np.diff(states_diff, axis=0)
 
     ts_index = pd.MultiIndex.from_product(
-        [pd.date_range(s.ti, s.tf, freq="D"), s.compartments.compartments["name"]],
+        [pd.date_range(modinf.ti, modinf.tf, freq="D"), modinf.compartments.compartments["name"]],
         names=["date", "mc_name"],
     )
     # prevalence data, we use multi.index dataframe, sparring us the array manipulation we use to do
     prev_df = pd.DataFrame(
-        data=states_prev.reshape(s.n_days * s.compartments.get_ncomp(), s.nsubpops),
+        data=states_prev.reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
-        columns=s.subpop_struct.subpop_names,
+        columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
     prev_df = pd.merge(
-        left=s.compartments.get_compartments_explicitDF(),
+        left=modinf.compartments.get_compartments_explicitDF(),
         right=prev_df,
         how="right",
         on="mc_name",
@@ -328,17 +328,17 @@ def states2Df(s, states):
     prev_df.insert(loc=0, column="mc_value_type", value="prevalence")
 
     ts_index = pd.MultiIndex.from_product(
-        [pd.date_range(s.ti, s.tf, freq="D"), s.compartments.compartments["name"]],
+        [pd.date_range(modinf.ti, modinf.tf, freq="D"), modinf.compartments.compartments["name"]],
         names=["date", "mc_name"],
     )
 
     incid_df = pd.DataFrame(
-        data=states_incid.reshape(s.n_days * s.compartments.get_ncomp(), s.nsubpops),
+        data=states_incid.reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
-        columns=s.subpop_struct.subpop_names,
+        columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
     incid_df = pd.merge(
-        left=s.compartments.get_compartments_explicitDF(),
+        left=modinf.compartments.get_compartments_explicitDF(),
         right=incid_df,
         how="right",
         on="mc_name",
@@ -352,16 +352,15 @@ def states2Df(s, states):
     return out_df
 
 
-def postprocess_and_write(sim_id, s, states, p_draw, npi, seeding):
-    # print(f"before postprocess_and_write for id {s.out_run_id}, {s.out_prefix}, {sim_id + s.first_sim_index - 1}")
+def postprocess_and_write(sim_id, modinf, states, p_draw, npi, seeding):
     # aws_disk_diagnosis()
 
     # NPIs
-    s.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
+    modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
     # Parameters
-    s.write_simID(ftype="spar", sim_id=sim_id, df=s.parameters.getParameterDF(p_draw=p_draw))
-    out_df = states2Df(s, states)
-    s.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
+    modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
+    out_df = states2Df(modinf, states)
+    modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
 
     return out_df
 

@@ -14,18 +14,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
+def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
     start = time.monotonic()
 
-    # sim_id2loads = np.arange(sim_id2load, sim_id2load + s.nslots)
-    sim_id2writes = np.arange(sim_id2write, sim_id2write + s.nslots)
+    sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
 
     loaded_values = None
-    if (n_jobs == 1) or (s.nslots == 1):  # run single process for debugging/profiling purposes
+    if (n_jobs == 1) or (modinf.nslots == 1):  # run single process for debugging/profiling purposes
         for sim_offset in np.arange(nslots):
             onerun_delayframe_outcomes(
                 sim_id2write=sim_id2writes[sim_offset],
-                modinf=s,
+                modinf=modinf,
                 load_ID=False,
                 sim_id2load=None,
             )
@@ -39,7 +38,7 @@ def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
         tqdm.contrib.concurrent.process_map(
             onerun_delayframe_outcomes,
             sim_id2writes,
-            s,
+            modinf,
             max_workers=n_jobs,
         )
 
@@ -105,7 +104,7 @@ def onerun_delayframe_outcomes(
     # Compute outcomes
     with Timer("onerun_delayframe_outcomes.compute"):
         outcomes, hpar = compute_all_multioutcomes(
-            s=modinf,
+            modinf=modinf,
             sim_id2write=sim_id2write,
             parameters=parameters,
             loaded_values=loaded_values,
@@ -113,7 +112,7 @@ def onerun_delayframe_outcomes(
         )
 
     with Timer("onerun_delayframe_outcomes.postprocess"):
-        postprocess_and_write(sim_id=sim_id2write, s=modinf, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
+        postprocess_and_write(sim_id=sim_id2write, modinf=modinf, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
 
 
 def read_parameters_from_config(modinf: model_info.ModelInfo):
@@ -260,10 +259,10 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
     return parameters
 
 
-def postprocess_and_write(sim_id, s, outcomes, hpar, npi):
+def postprocess_and_write(sim_id, modinf, outcomes, hpar, npi):
     outcomes["time"] = outcomes["date"]
-    s.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes)
-    s.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
+    modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes)
+    modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
 
     if npi is None:
         hnpi = pd.DataFrame(
@@ -278,7 +277,7 @@ def postprocess_and_write(sim_id, s, outcomes, hpar, npi):
         )
     else:
         hnpi = npi.getReductionDF()
-    s.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
+    modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
 
 
 def dataframe_from_array(data, subpops, dates, comp_name):
@@ -294,26 +293,26 @@ def dataframe_from_array(data, subpops, dates, comp_name):
     return df
 
 
-def read_seir_sim(s, sim_id):
-    seir_df = s.read_simID(ftype="seir", sim_id=sim_id)
+def read_seir_sim(modinf, sim_id):
+    seir_df = modinf.read_simID(ftype="seir", sim_id=sim_id)
 
     return seir_df
 
 
-def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None, npi=None):
+def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
-    dates = pd.date_range(s.ti, s.tf, freq="D")
+    dates = pd.date_range(modinf.ti, modinf.tf, freq="D")
 
     outcomes = dataframe_from_array(
-        np.zeros((len(dates), len(s.subpop_struct.subpop_names)), dtype=int),
-        s.subpop_struct.subpop_names,
+        np.zeros((len(dates), len(modinf.subpop_struct.subpop_names)), dtype=int),
+        modinf.subpop_struct.subpop_names,
         dates,
         "zeros",
     ).drop("zeros", axis=1)
 
-    seir_sim = read_seir_sim(s, sim_id=sim_id2write)
+    seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
 
     for new_comp in parameters:
         if "source" in parameters[new_comp]:
@@ -325,16 +324,16 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                 source_array = get_filtered_incidI(
                     seir_sim,
                     dates,
-                    s.subpop_struct.subpop_names,
+                    modinf.subpop_struct.subpop_names,
                     {"incidence": {"infection_stage": "I1"}},
                 )
                 all_data["incidI"] = source_array
                 outcomes = pd.merge(
                     outcomes,
-                    dataframe_from_array(source_array, s.subpop_struct.subpop_names, dates, "incidI"),
+                    dataframe_from_array(source_array, modinf.subpop_struct.subpop_names, dates, "incidI"),
                 )
             elif isinstance(source_name, dict):
-                source_array = get_filtered_incidI(seir_sim, dates, s.subpop_struct.subpop_names, source_name)
+                source_array = get_filtered_incidI(seir_sim, dates, modinf.subpop_struct.subpop_names, source_name)
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 source_array = all_data[source_name]
@@ -349,13 +348,13 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                 ].to_numpy()
             else:
                 probabilities = parameters[new_comp]["probability"].as_random_distribution()(
-                    size=len(s.subpop_struct.subpop_names)
+                    size=len(modinf.subpop_struct.subpop_names)
                 )  # one draw per subpop
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
 
                 delays = parameters[new_comp]["delay"].as_random_distribution()(
-                    size=len(s.subpop_struct.subpop_names)
+                    size=len(modinf.subpop_struct.subpop_names)
                 )  # one draw per subpop
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
@@ -368,18 +367,18 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                     hpar,
                     pd.DataFrame.from_dict(
                         {
-                            "subpop": s.subpop_struct.subpop_names,
-                            "quantity": ["probability"] * len(s.subpop_struct.subpop_names),
-                            "outcome": [new_comp] * len(s.subpop_struct.subpop_names),
-                            "value": probabilities[0] * np.ones(len(s.subpop_struct.subpop_names)),
+                            "subpop": modinf.subpop_struct.subpop_names,
+                            "quantity": ["probability"] * len(modinf.subpop_struct.subpop_names),
+                            "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
+                            "value": probabilities[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
                         }
                     ),
                     pd.DataFrame.from_dict(
                         {
-                            "subpop": s.subpop_struct.subpop_names,
-                            "quantity": ["delay"] * len(s.subpop_struct.subpop_names),
-                            "outcome": [new_comp] * len(s.subpop_struct.subpop_names),
-                            "value": delays[0] * np.ones(len(s.subpop_struct.subpop_names)),
+                            "subpop": modinf.subpop_struct.subpop_names,
+                            "quantity": ["delay"] * len(modinf.subpop_struct.subpop_names),
+                            "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
+                            "value": delays[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
                         }
                     ),
                 ],
@@ -399,7 +398,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
             # Create new compartment incidence:
             all_data[new_comp] = np.empty_like(source_array)
             # Draw with from source compartment
-            if s.stoch_traj_flag:
+            if modinf.stoch_traj_flag:
                 all_data[new_comp] = np.random.binomial(source_array.astype(np.int32), probabilities)
             else:
                 all_data[new_comp] = source_array * (probabilities * np.ones_like(source_array))
@@ -409,7 +408,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
             stoch_delay_flag = False
             all_data[new_comp] = multishift(all_data[new_comp], delays, stoch_delay_flag=stoch_delay_flag)
             # Produce a dataframe an merge it
-            df_p = dataframe_from_array(all_data[new_comp], s.subpop_struct.subpop_names, dates, new_comp)
+            df_p = dataframe_from_array(all_data[new_comp], modinf.subpop_struct.subpop_names, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
 
             # Make duration
@@ -420,7 +419,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                     ]["value"].to_numpy()
                 else:
                     durations = parameters[new_comp]["duration"].as_random_distribution()(
-                        size=len(s.subpop_struct.subpop_names)
+                        size=len(modinf.subpop_struct.subpop_names)
                     )  # one draw per subpop
                 durations = np.repeat(durations[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
                 durations = np.round(durations).astype(int)
@@ -430,10 +429,10 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
                         hpar,
                         pd.DataFrame.from_dict(
                             {
-                                "subpop": s.subpop_struct.subpop_names,
-                                "quantity": ["duration"] * len(s.subpop_struct.subpop_names),
-                                "outcome": [new_comp] * len(s.subpop_struct.subpop_names),
-                                "value": durations[0] * np.ones(len(s.subpop_struct.subpop_names)),
+                                "subpop": modinf.subpop_struct.subpop_names,
+                                "quantity": ["duration"] * len(modinf.subpop_struct.subpop_names),
+                                "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
+                                "value": durations[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
                             }
                         ),
                     ],
@@ -467,7 +466,7 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
 
                 df_p = dataframe_from_array(
                     all_data[parameters[new_comp]["duration_name"]],
-                    s.subpop_struct.subpop_names,
+                    modinf.subpop_struct.subpop_names,
                     dates,
                     parameters[new_comp]["duration_name"],
                 )
@@ -475,14 +474,14 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
 
         elif "sum" in parameters[new_comp]:
             sum_outcome = np.zeros(
-                (len(dates), len(s.subpop_struct.subpop_names)),
+                (len(dates), len(modinf.subpop_struct.subpop_names)),
                 dtype=all_data[parameters[new_comp]["sum"][0]].dtype,
             )
             # Sum all concerned compartment.
             for cmp in parameters[new_comp]["sum"]:
                 sum_outcome += all_data[cmp]
             all_data[new_comp] = sum_outcome
-            df_p = dataframe_from_array(sum_outcome, s.subpop_struct.subpop_names, dates, new_comp)
+            df_p = dataframe_from_array(sum_outcome, modinf.subpop_struct.subpop_names, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
 
     return outcomes, hpar

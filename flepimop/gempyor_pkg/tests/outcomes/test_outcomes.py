@@ -40,7 +40,7 @@ def test_outcome():
         stoch_traj_flag=False,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=False)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=False)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.1.hosp.parquet").to_pandas()
     hosp.set_index("time", drop=True, inplace=True)
@@ -129,11 +129,11 @@ def test_outcome_modifiers_scenario_with_load():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=False)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=False)
 
     hpar_config = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.1.hpar.parquet").to_pandas()
     hpar_rel = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.2.hpar.parquet").to_pandas()
@@ -165,11 +165,11 @@ def test_outcomes_read_write_hpar():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=3,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.2.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.3.hpar.parquet").to_pandas()
@@ -190,12 +190,12 @@ def test_outcome_modifiers_scenario_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=10,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.10.hosp.parquet").to_pandas()
     hosp.set_index("time", drop=True, inplace=True)
@@ -337,12 +337,12 @@ def test_outcome_modifiers_scenario_with_load_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=11,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf)
 
     hpar_config = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.10.hpar.parquet").to_pandas()
     hpar_rel = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.11.hpar.parquet").to_pandas()
@@ -380,24 +380,24 @@ def test_outcomes_read_write_hpar_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=12,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf)
 
     inference_simulator = gempyor.GempyorSimulator(
         config_path=f"{config_path_prefix}config_load.yml",
         run_id=12,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=13,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.12.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.13.hpar.parquet").to_pandas()
@@ -451,11 +451,11 @@ def test_outcomes_npi():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=105,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
     hosp.set_index("time", drop=True, inplace=True)
@@ -547,12 +547,12 @@ def test_outcomes_read_write_hnpi():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.105.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
@@ -574,7 +574,7 @@ def test_outcomes_read_write_hnpi2():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -586,7 +586,7 @@ def test_outcomes_read_write_hnpi2():
     import random
 
     random.seed(10)
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
     hnpi_wrote = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
@@ -598,11 +598,11 @@ def test_outcomes_read_write_hnpi2():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=107,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.107.hpar.parquet").to_pandas()
@@ -623,11 +623,11 @@ def test_outcomes_npi_custom_pname():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=105,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=False, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=False, sim_id2load=1)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
     hosp.set_index("time", drop=True, inplace=True)
@@ -719,12 +719,12 @@ def test_outcomes_read_write_hnpi_custom_pname():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.105.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
@@ -755,12 +755,12 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
     hnpi_wrote = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
@@ -772,12 +772,12 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=107,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.107.hpar.parquet").to_pandas()
@@ -813,7 +813,7 @@ def test_outcomes_pcomp():
     new_seir = pd.concat([seir, seir2])
     out_df = pa.Table.from_pandas(new_seir, preserve_index=False)
     pa.parquet.write_table(out_df, file_paths.create_file_name(110, prefix, 1, "seir", "parquet"))
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=False)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=False)
 
     hosp_f = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.111.hosp.parquet").to_pandas()
     hosp_f.set_index("time", drop=True, inplace=True)
@@ -944,12 +944,12 @@ def test_outcomes_pcomp_read_write():
         run_id=111,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="high_death_rate",
+        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=112,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(sim_id2write=1, s=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
     hpar_read = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.111.hpar.parquet").to_pandas()
     hpar_wrote = pq.read_table(f"{config_path_prefix}model_output/hpar/000000001.112.hpar.parquet").to_pandas()

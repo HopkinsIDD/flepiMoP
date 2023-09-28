@@ -75,7 +75,7 @@ class GempyorSimulator:
 
         write_csv = False
         write_parquet = True
-        self.s = model_info.ModelInfo(
+        self.modinf = model_info.ModelInfo(
             config=config,
             nslots=nslots,
             seir_modifiers_scenario=seir_modifiers_scenario,
@@ -92,25 +92,25 @@ class GempyorSimulator:
 
         print(
             f"""  gempyor >> Running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** simulation;\n"""
-            f"""  gempyor >> ModelInfo {self.s.setup_name}; index: {self.s.first_sim_index}; run_id: {in_run_id},\n"""
+            f"""  gempyor >> ModelInfo {self.modinf.setup_name}; index: {self.modinf.first_sim_index}; run_id: {in_run_id},\n"""
             f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
         self.already_built = False  # whether we have already build the costly objects that need just one build
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
-        self.s.in_prefix = new_prefix
+        self.modinf.in_prefix = new_prefix
         if new_out_prefix is None:
-            self.s.out_prefix = new_prefix
+            self.modinf.out_prefix = new_prefix
         else:
-            self.s.out_prefix = new_out_prefix
+            self.modinf.out_prefix = new_out_prefix
 
     def update_run_id(self, new_run_id, new_out_run_id=None):
-        self.s.in_run_id = new_run_id
+        self.modinf.in_run_id = new_run_id
         if new_out_run_id is None:
-            self.s.out_run_id = new_run_id
+            self.modinf.out_run_id = new_run_id
         else:
-            self.s.out_run_id = new_out_run_id
+            self.modinf.out_run_id = new_out_run_id
 
     def one_simulation_legacy(self, sim_id2write: int, load_ID: bool = False, sim_id2load: int = None):
         sim_id2write = int(sim_id2write)
@@ -120,7 +120,7 @@ class GempyorSimulator:
             with Timer("onerun_SEIR"):
                 seir.onerun_SEIR(
                     sim_id2write=sim_id2write,
-                    modinf=self.s,
+                    modinf=self.modinf,
                     load_ID=load_ID,
                     sim_id2load=sim_id2load,
                     config=config,
@@ -129,7 +129,7 @@ class GempyorSimulator:
             with Timer("onerun_OUTCOMES"):
                 outcomes.onerun_delayframe_outcomes(
                     sim_id2write=sim_id2write,
-                    modinf=self.s,
+                    modinf=self.modinf,
                     load_ID=load_ID,
                     sim_id2load=sim_id2load,
                 )
@@ -141,7 +141,7 @@ class GempyorSimulator:
             self.transition_array,
             self.proportion_array,
             self.proportion_info,
-        ) = self.s.compartments.get_transition_array()
+        ) = self.modinf.compartments.get_transition_array()
         self.already_built = True
 
     # @profile()
@@ -158,23 +158,23 @@ class GempyorSimulator:
 
         with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
             if not self.already_built:
-                self.outcomes_parameters = outcomes.read_parameters_from_config(self.s)
+                self.outcomes_parameters = outcomes.read_parameters_from_config(self.modinf)
 
             npi_outcomes = None
             if parallel:
                 with Timer("//things"):
                     with ProcessPoolExecutor(max_workers=max(mp.cpu_count(), 3)) as executor:
-                        ret_seir = executor.submit(seir.build_npi_SEIR, self.s, load_ID, sim_id2load, config)
-                        if self.s.npi_config_outcomes:
+                        ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
+                        if self.modinf.npi_config_outcomes:
                             ret_outcomes = executor.submit(
                                 outcomes.build_outcomes_Modifiers,
-                                self.s,
+                                self.modinf,
                                 load_ID,
                                 sim_id2load,
                                 config,
                             )
                         if not self.already_built:
-                            ret_comparments = executor.submit(self.s.compartments.get_transition_array)
+                            ret_comparments = executor.submit(self.modinf.compartments.get_transition_array)
 
                 # print("expections:", ret_seir.exception(), ret_outcomes.exception(), ret_comparments.exception())
 
@@ -187,15 +187,15 @@ class GempyorSimulator:
                     ) = ret_comparments.result()
                     self.already_built = True
                 npi_seir = ret_seir.result()
-                if self.s.npi_config_outcomes:
+                if self.modinf.npi_config_outcomes:
                     npi_outcomes = ret_outcomes.result()
             else:
                 if not self.already_built:
                     self.build_structure()
-                npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
-                if self.s.npi_config_outcomes:
+                npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+                if self.modinf.npi_config_outcomes:
                     npi_outcomes = outcomes.build_outcomes_Modifiers(
-                        modinf=self.s,
+                        modinf=self.modinf,
                         load_ID=load_ID,
                         sim_id2load=sim_id2load,
                         config=config,
@@ -208,10 +208,10 @@ class GempyorSimulator:
 
                 p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
                 # reduce them
-                parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+                parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
                 # Parse them
-                parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
+                parsed_parameters = self.modinf.compartments.parse_parameters(
+                    parameters, self.modinf.parameters.pnames, self.unique_strings
                 )
                 self.debug_p_draw = p_draw
                 self.debug_parameters = parameters
@@ -219,18 +219,18 @@ class GempyorSimulator:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.s.seedingAndIC.load_ic(sim_id2load, setup=self.s)
-                    seeding_data, seeding_amounts = self.s.seedingAndIC.load_seeding(sim_id2load, setup=self.s)
+                    initial_conditions = self.modinf.seedingAndIC.load_ic(sim_id2load, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.load_seeding(sim_id2load, setup=self.modinf)
                 else:
-                    initial_conditions = self.s.seedingAndIC.draw_ic(sim_id2write, setup=self.s)
-                    seeding_data, seeding_amounts = self.s.seedingAndIC.draw_seeding(sim_id2write, setup=self.s)
+                    initial_conditions = self.modinf.seedingAndIC.draw_ic(sim_id2write, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.draw_seeding(sim_id2write, setup=self.modinf)
                 self.debug_seeding_data = seeding_data
                 self.debug_seeding_amounts = seeding_amounts
                 self.debug_initial_conditions = initial_conditions
 
             with Timer("SEIR.compute"):
                 states = seir.steps_SEIR(
-                    self.s,
+                    self.modinf,
                     parsed_parameters,
                     self.transition_array,
                     self.proportion_array,
@@ -242,19 +242,19 @@ class GempyorSimulator:
                 self.debug_states = states
 
             with Timer("SEIR.postprocess"):
-                if self.s.write_csv or self.s.write_parquet:
-                    out_df = seir.postprocess_and_write(sim_id2write, self.s, states, p_draw, npi_seir, seeding_data)
+                if self.modinf.write_csv or self.modinf.write_parquet:
+                    out_df = seir.postprocess_and_write(sim_id2write, self.modinf, states, p_draw, npi_seir, seeding_data)
                     self.debug_out_df = out_df
 
             loaded_values = None
             if load_ID:
-                loaded_values = self.s.read_simID(ftype="hpar", sim_id=sim_id2load)
+                loaded_values = self.modinf.read_simID(ftype="hpar", sim_id=sim_id2load)
                 self.debug_loaded_values = loaded_values
 
             # Compute outcomes
             with Timer("onerun_delayframe_outcomes.compute"):
                 outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
-                    s=self.s,
+                    modinf=self.modinf,
                     sim_id2write=sim_id2write,
                     parameters=self.outcomes_parameters,
                     loaded_values=loaded_values,
@@ -266,7 +266,7 @@ class GempyorSimulator:
             with Timer("onerun_delayframe_outcomes.postprocess"):
                 outcomes.postprocess_and_write(
                     sim_id=sim_id2write,
-                    s=self.s,
+                    modinf=self.modinf,
                     outcomes=outcomes_df,
                     hpar=hpar_df,
                     npi=npi_outcomes,
@@ -274,7 +274,7 @@ class GempyorSimulator:
         return 0
 
     def plot_transition_graph(self, output_file="transition_graph", source_filters=[], destination_filters=[]):
-        self.s.compartments.plot(
+        self.modinf.compartments.plot(
             output_file=output_file,
             source_filters=source_filters,
             destination_filters=destination_filters,
@@ -282,9 +282,9 @@ class GempyorSimulator:
 
     def get_outcome_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         npi_outcomes = None
-        if self.s.npi_config_outcomes:
+        if self.modinf.npi_config_outcomes:
             npi_outcomes = outcomes.build_outcomes_Modifiers(
-                modinf=self.s,
+                modinf=self.modinf,
                 load_ID=load_ID,
                 sim_id2load=sim_id2load,
                 config=config,
@@ -295,7 +295,7 @@ class GempyorSimulator:
 
     def get_seir_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         npi_seir = seir.build_npi_SEIR(
-            s=self.s,
+            modinf=self.modinf,
             load_ID=load_ID,
             sim_id2load=sim_id2load,
             config=config,
@@ -311,16 +311,16 @@ class GempyorSimulator:
         elif bypass_FN is not None:
             param_df = read_df(fname=bypass_FN)
         elif load_ID == True:
-            param_df = self.s.read_simID(ftype="spar", sim_id=sim_id2load)
+            param_df = self.modinf.read_simID(ftype="spar", sim_id=sim_id2load)
 
         if param_df is not None:
-            p_draw = self.s.parameters.parameters_load(
+            p_draw = self.modinf.parameters.parameters_load(
                 param_df=param_df,
-                n_days=self.s.n_days,
-                nsubpops=self.s.nsubpops,
+                n_days=self.modinf.n_days,
+                nsubpops=self.modinf.nsubpops,
             )
         else:
-            p_draw = self.s.parameters.parameters_quick_draw(n_days=self.s.n_days, nsubpops=self.s.nsubpops)
+            p_draw = self.modinf.parameters.parameters_quick_draw(n_days=self.modinf.n_days, nsubpops=self.modinf.nsubpops)
         return p_draw
 
     def get_seir_parametersDF(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
@@ -330,7 +330,7 @@ class GempyorSimulator:
             bypass_DF=bypass_DF,
             bypass_FN=bypass_FN,
         )
-        return self.s.parameters.getParameterDF(p_draw=p_draw)
+        return self.modinf.parameters.getParameterDF(p_draw=p_draw)
 
     def get_seir_parameter_reduced(
         self,
@@ -349,14 +349,14 @@ class GempyorSimulator:
                 bypass_FN=bypass_FN,
             )
 
-        parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+        parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, subpop in enumerate(self.s.spatset.subpop_names):
+        for i, subpop in enumerate(self.modinf.spatset.subpop_names):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
-                columns=self.s.parameters.pnames,
-                index=pd.date_range(self.s.ti, self.s.tf, freq="D"),
+                columns=self.modinf.parameters.pnames,
+                index=pd.date_range(self.modinf.ti, self.modinf.tf, freq="D"),
             )
             a["subpop"] = subpop
             full_df = pd.concat([full_df, a])
@@ -378,13 +378,13 @@ class GempyorSimulator:
         if not self.already_built:
             self.build_structure()
 
-        npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
-        parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+        parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
-        parsed_parameters = self.s.compartments.parse_parameters(
-            parameters, self.s.parameters.pnames, self.unique_strings
+        parsed_parameters = self.modinf.compartments.parse_parameters(
+            parameters, self.modinf.parameters.pnames, self.unique_strings
         )
         return parsed_parameters
 
@@ -395,13 +395,13 @@ class GempyorSimulator:
         # bypass_DF=None,
         # bypass_FN=None,
     ):
-        npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
-        parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+        parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
-        parsed_parameters = self.s.compartments.parse_parameters(
-            parameters, self.s.parameters.pnames, self.unique_strings
+        parsed_parameters = self.modinf.compartments.parse_parameters(
+            parameters, self.modinf.parameters.pnames, self.unique_strings
         )
         return parsed_parameters
 
