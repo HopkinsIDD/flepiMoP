@@ -179,8 +179,8 @@ def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, sl
                 run_id=run_id,
                 # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
                 first_sim_index=1,
-                npi_scenario="inference",  # NPIs scenario to use
-                outcome_scenario="med",  # Outcome scenario to use
+                seir_modifiers_scenario="inference",  # NPIs scenario to use
+                outcome_modifiers_scenario="med",  # Outcome scenario to use
                 stoch_traj_flag=False,
                 spatial_path_prefix="./",  # prefix where to find the folder indicated in subpop_setup$
             )

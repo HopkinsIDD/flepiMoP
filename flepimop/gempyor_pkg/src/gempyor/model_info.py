@@ -30,16 +30,9 @@ class ModelInfo:
         setup_name,
         subpop_setup,
         nslots,
-        ti,  # time to start
-        tf,  # time to finish
-        npi_scenario=None,
-        npi_config_seir={},
-        seeding_config={},
-        initial_conditions_config={},
-        parameters_config={},
-        seir_config=None,
-        outcomes_config={},
-        outcome_scenario=None,
+        config,
+        seir_modifiers_scenario=None,
+        outcome_modifiers_scenario=None,
         interactive=True,
         write_csv=False,
         write_parquet=False,
@@ -55,24 +48,25 @@ class ModelInfo:
         self.setup_name = setup_name
         self.nslots = nslots
         self.dt = dt
-        self.ti = ti  ## we start at 00:00 on ti
-        self.tf = tf  ## we end on 23:59 on tf
+        
+        self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
+        self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
 
-        self.npi_scenario = npi_scenario
-        self.npi_config_seir = npi_config_seir
-        self.seeding_config = seeding_config
-        self.initial_conditions_config = initial_conditions_config
-        self.parameters_config = parameters_config
-        self.outcomes_config = outcomes_config
+        self.seir_modifiers_scenario = seir_modifiers_scenario
+        self.npi_config_seir = config["seir_modifiers"]["settings"][seir_modifiers_scenario]
+        self.seeding_config = config["seeding"]
+        self.initial_conditions_config = config["initial_conditions"]
+        self.parameters_config = config["seir"]["parameters"]
+        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
 
-        self.seir_config = seir_config
+        self.seir_config = config["seir"]
         self.interactive = interactive
         self.write_csv = write_csv
         self.write_parquet = write_parquet
         self.first_sim_index = first_sim_index
-        self.outcome_scenario = outcome_scenario
+        self.outcome_modifiers_scenario = outcome_modifiers_scenario
 
         self.subpop_struct = subpop_setup
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
@@ -132,10 +126,11 @@ class ModelInfo:
         # 3. Outcomes
         self.npi_config_outcomes = None
         if self.outcomes_config:
-            if self.config["outcomes_modifiers"].exists():
-                self.npi_config_outcomes = self.config["outcomes_modifiers"]
-#if self.outcomes_config["interventions"]["settings"][self.outcome_scenario].exists():
-#                self.npi_config_outcomes = self.outcomes_config["interventions"]["settings"][self.outcome_scenario]
+            if config["outcomes_modifiers"].exists():
+                if config["outcomes_modifiers"]["scenarios"].exists():
+                    self.npi_config_outcomes = self.outcomes_config["outcomes_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
+                else:
+                    self.npi_config_outcomes = config["outcomes_modifiers"]
 
         # 4. Inputs and outputs
         if in_run_id is None:
@@ -150,7 +145,7 @@ class ModelInfo:
             in_prefix = f"model_output/{setup_name}/{in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
-            out_prefix = f"model_output/{setup_name}/{npi_scenario}/{out_run_id}/"
+            out_prefix = f"model_output/{setup_name}/{seir_modifiers_scenario}/{out_run_id}/"
         self.out_prefix = out_prefix
 
         if self.write_csv or self.write_parquet:

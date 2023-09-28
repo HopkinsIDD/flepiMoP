@@ -46,7 +46,7 @@ class ModifierModifier(NPIBase):
 
         # the confuse library's config resolution mechanism makes slicing the configuration object expensive; instead,
         # just preload all settings
-        settings_map = global_config["interventions"]["settings"].get()
+        settings_map = global_config["seir_modifiers"]["settings"].get()
         scenario = npi_config["baseline_scenario"].get()
         settings = settings_map.get(scenario)
         if settings is None:

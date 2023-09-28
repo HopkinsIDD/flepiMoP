@@ -39,7 +39,7 @@ class StackedModifier(NPIBase):
 
         # the confuse library's config resolution mechanism makes slicing the configuration object expensive; instead,
         # just preload all settings
-        settings_map = global_config["interventions"]["settings"].get()
+        settings_map = global_config["seir_modifiers"]["settings"].get()
 
         for scenario in npi_config["scenarios"].get():
             # if it's a string, look up the scenario name's config

@@ -31,8 +31,8 @@ def test_full_npis_read_write():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_scenario="med",
-        npi_scenario="inference",
+        outcome_modifiers_scenario="med",
+        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -42,7 +42,7 @@ def test_full_npis_read_write():
     #    sim_id2write=1, s=inference_simulator.s, load_ID=False, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_npi_Outcomes(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
+    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
     # npi_seir = seir.build_npi_SEIR(
     #    inference_simulator.s, load_ID=False, sim_id2load=None, config=config
     # )
@@ -62,8 +62,8 @@ def test_full_npis_read_write():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_scenario="med",
-        npi_scenario="inference",
+        outcome_modifiers_scenario="med",
+        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -73,7 +73,7 @@ def test_full_npis_read_write():
     #    sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_npi_Outcomes(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
+    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
     inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
@@ -86,7 +86,7 @@ def test_full_npis_read_write():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        outcome_scenario="med",
+        outcome_modifiers_scenario="med",
         stoch_traj_flag=False,
         out_run_id=107,
     )
@@ -96,7 +96,7 @@ def test_full_npis_read_write():
     #    sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_npi_Outcomes(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
+    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
     inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
@@ -110,8 +110,8 @@ def test_spatial_groups():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_scenario="med",
-        npi_scenario="inference",
+        outcome_modifiers_scenario="med",
+        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -190,8 +190,8 @@ def test_spatial_groups():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_scenario="med",
-        npi_scenario="inference",
+        outcome_modifiers_scenario="med",
+        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -212,8 +212,8 @@ def test_spatial_groups():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        outcome_scenario="med",
-        npi_scenario="inference",
+        outcome_modifiers_scenario="med",
+        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=107,
     )

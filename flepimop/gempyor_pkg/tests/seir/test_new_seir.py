@@ -31,7 +31,7 @@ def test_constant_population():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="None",
+        seir_modifiers_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config={},

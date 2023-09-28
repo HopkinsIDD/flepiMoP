@@ -393,10 +393,10 @@ def launch_batch(
         continuation_run_id,
     )
 
-    npi_scenarios = config["interventions"]["scenarios"]
-    outcome_scenarios = config["outcomes"]["scenarios"]
+    seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
+    outcome_modifiers_scenarios = config["outcomes"]["scenarios"]
 
-    handler.launch(job_name, config_file, npi_scenarios, outcome_scenarios)
+    handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 
     # Set job_name as environmental variable so it can be pulled for pushing to git
     os.environ["job_name"] = job_name
@@ -648,7 +648,7 @@ class BatchJobHandler(object):
         if remove_source:
             os.remove(source)
 
-    def launch(self, job_name, config_file, npi_scenarios, outcome_scenarios):
+    def launch(self, job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios):
         s3_results_path = f"s3://{self.s3_bucket}/{job_name}"
 
         if self.batch_system == "slurm":
@@ -699,7 +699,7 @@ class BatchJobHandler(object):
         with open(config_file) as f:
             config = yaml.full_load(f)
 
-        for ctr, (s, d) in enumerate(itertools.product(npi_scenarios, outcome_scenarios)):
+        for ctr, (s, d) in enumerate(itertools.product(seir_modifiers_scenarios, outcome_modifiers_scenarios)):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()

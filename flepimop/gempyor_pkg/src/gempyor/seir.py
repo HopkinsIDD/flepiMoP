@@ -223,8 +223,8 @@ def onerun_SEIR(
             p_draw = s.parameters.parameters_quick_draw(n_days=s.n_days, nsubpops=s.nsubpops)
         # reduce them
         parameters = s.parameters.parameters_reduce(p_draw, npi)
-        log_debug_parameters(p_draw, "Parameters without interventions")
-        log_debug_parameters(parameters, "Parameters with interventions")
+        log_debug_parameters(p_draw, "Parameters without seir_modifiers")
+        log_debug_parameters(parameters, "Parameters with seir_modifiers")
 
         # Parse them
         parsed_parameters = s.compartments.parse_parameters(parameters, s.parameters.pnames, unique_strings)

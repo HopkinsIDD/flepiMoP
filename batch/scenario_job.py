@@ -134,14 +134,14 @@ def launch_batch(
     config["nslots"] = slots_per_job
 
     if parallelize_scenarios:
-        npi_scenarios = config["interventions"]["scenarios"]
-        for s in npi_scenarios:
-            npi_scenario_job_name = f"{job_name}_{s}"
+        seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
+        for s in seir_modifiers_scenarios:
+            seir_modifiers_scenario_job_name = f"{job_name}_{s}"
             config["interventions"]["scenarios"] = [s]
             with open(config_file, "w") as f:
                 yaml.dump(config, f, sort_keys=False)
             launch_job_inner(
-                npi_scenario_job_name,
+                seir_modifiers_scenario_job_name,
                 config_file,
                 num_jobs,
                 slots_per_job,
@@ -153,7 +153,7 @@ def launch_batch(
                 vcpu,
                 memory,
             )
-        config["interventions"]["scenarios"] = npi_scenarios
+        config["interventions"]["scenarios"] = seir_modifiers_scenarios
         with open(config_file, "w") as f:
             yaml.dump(config, f, sort_keys=False)
     else:

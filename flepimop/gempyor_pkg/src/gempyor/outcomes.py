@@ -51,7 +51,7 @@ def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
     return 1
 
 
-def build_npi_Outcomes(
+def build_outcomes_Modifiers(
     s: model_info.ModelInfo,
     load_ID: bool,
     sim_id2load: int,
@@ -59,7 +59,7 @@ def build_npi_Outcomes(
     bypass_DF=None,
     bypass_FN=None,
 ):
-    with Timer("Outcomes.NPI"):
+    with Timer("Outcomes.Modifiers"):
         loaded_df = None
         if bypass_DF is not None:
             loaded_df = bypass_DF
@@ -96,7 +96,7 @@ def onerun_delayframe_outcomes(
 
     npi_outcomes = None
     if s.npi_config_outcomes:
-        npi_outcomes = build_npi_Outcomes(s=s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_outcomes = build_outcomes_Modifiers(s=s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     loaded_values = None
     if load_ID:
@@ -121,7 +121,7 @@ def read_parameters_from_config(s: model_info.ModelInfo):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
-        outcomes_config = s.outcomes_config["settings"][s.outcome_scenario]
+        outcomes_config = s.outcomes_config["outcomes"]
         if s.outcomes_config["param_from_file"].get():
             # Load the actual csv file
             branching_file = s.outcomes_config["param_subpop_file"].as_str()
