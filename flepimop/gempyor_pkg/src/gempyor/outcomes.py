@@ -25,7 +25,7 @@ def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
         for sim_offset in np.arange(nslots):
             onerun_delayframe_outcomes(
                 sim_id2write=sim_id2writes[sim_offset],
-                s=s,
+                modinf=s,
                 load_ID=False,
                 sim_id2load=None,
             )
@@ -52,7 +52,7 @@ def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
 
 
 def build_outcomes_Modifiers(
-    s: model_info.ModelInfo,
+    modinf: model_info.ModelInfo,
     load_ID: bool,
     sim_id2load: int,
     config,
@@ -66,20 +66,20 @@ def build_outcomes_Modifiers(
         elif bypass_FN is not None:
             loaded_df = read_df(fname=bypass_FN)
         elif load_ID == True:
-            loaded_df = s.read_simID(ftype="hnpi", sim_id=sim_id2load)
+            loaded_df = modinf.read_simID(ftype="hnpi", sim_id=sim_id2load)
 
         if loaded_df is not None:
             npi = NPI.NPIBase.execute(
-                npi_config=s.npi_config_outcomes,
+                npi_config=modinf.npi_config_outcomes,
                 global_config=config,
-                subpops=s.subpop_struct.subpop_names,
+                subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
             )
         else:
             npi = NPI.NPIBase.execute(
-                npi_config=s.npi_config_outcomes,
+                npi_config=modinf.npi_config_outcomes,
                 global_config=config,
-                subpops=s.subpop_struct.subpop_names,
+                subpops=modinf.subpop_struct.subpop_names,
             )
     return npi
 
@@ -87,25 +87,25 @@ def build_outcomes_Modifiers(
 def onerun_delayframe_outcomes(
     *,
     sim_id2write: int,
-    s: model_info.ModelInfo,
+    modinf: model_info.ModelInfo,
     load_ID: bool = False,
     sim_id2load: int = None,
 ):
     with Timer("buildOutcome.structure"):
-        parameters = read_parameters_from_config(s)
+        parameters = read_parameters_from_config(modinf)
 
     npi_outcomes = None
-    if s.npi_config_outcomes:
-        npi_outcomes = build_outcomes_Modifiers(s=s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+    if modinf.npi_config_outcomes:
+        npi_outcomes = build_outcomes_Modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     loaded_values = None
     if load_ID:
-        loaded_values = s.read_simID(ftype="hpar", sim_id=sim_id2load)
+        loaded_values = modinf.read_simID(ftype="hpar", sim_id=sim_id2load)
 
     # Compute outcomes
     with Timer("onerun_delayframe_outcomes.compute"):
         outcomes, hpar = compute_all_multioutcomes(
-            s=s,
+            s=modinf,
             sim_id2write=sim_id2write,
             parameters=parameters,
             loaded_values=loaded_values,
@@ -113,18 +113,18 @@ def onerun_delayframe_outcomes(
         )
 
     with Timer("onerun_delayframe_outcomes.postprocess"):
-        postprocess_and_write(sim_id=sim_id2write, s=s, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
+        postprocess_and_write(sim_id=sim_id2write, s=modinf, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
 
 
-def read_parameters_from_config(s: model_info.ModelInfo):
+def read_parameters_from_config(modinf: model_info.ModelInfo):
     with Timer("Outcome.structure"):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
-        outcomes_config = s.outcomes_config["outcomes"]
-        if s.outcomes_config["param_from_file"].get():
+        outcomes_config = modinf.outcomes_config["outcomes"]
+        if modinf.outcomes_config["param_from_file"].get():
             # Load the actual csv file
-            branching_file = s.outcomes_config["param_subpop_file"].as_str()
+            branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
             branching_data = pa.parquet.read_table(branching_file).to_pandas()
             if "relative_probability" not in list(branching_data["quantity"]):
                 raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
@@ -135,21 +135,21 @@ def read_parameters_from_config(s: model_info.ModelInfo):
                 "",
                 end="",
             )
-            branching_data = branching_data[branching_data["subpop"].isin(s.subpop_struct.subpop_names)]
+            branching_data = branching_data[branching_data["subpop"].isin(modinf.subpop_struct.subpop_names)]
             print(
                 "Intersect with seir simulation: ",
                 len(branching_data.subpop.unique()),
                 "kept",
             )
 
-            if len(branching_data.subpop.unique()) != len(s.subpop_struct.subpop_names):
+            if len(branching_data.subpop.unique()) != len(modinf.subpop_struct.subpop_names):
                 raise ValueError(
                     f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
                 )
 
         subclasses = [""]
-        if s.outcomes_config["subclasses"].exists():
-            subclasses = s.outcomes_config["subclasses"].get()
+        if modinf.outcomes_config["subclasses"].exists():
+            subclasses = modinf.outcomes_config["subclasses"].get()
 
         parameters = {}
         for new_comp in outcomes_config:
@@ -221,7 +221,7 @@ def read_parameters_from_config(s: model_info.ModelInfo):
                         else:
                             parameters[class_name]["duration_name"] = new_comp + "_curr" + subclass
 
-                    if s.outcomes_config["param_from_file"].get():
+                    if modinf.outcomes_config["param_from_file"].get():
                         rel_probability = branching_data[
                             (branching_data["outcome"] == class_name)
                             & (branching_data["quantity"] == "relative_probability")
@@ -231,7 +231,7 @@ def read_parameters_from_config(s: model_info.ModelInfo):
                             # Sort it in case the relative probablity file is mispecified
                             rel_probability.subpop = rel_probability.subpop.astype("category")
                             rel_probability.subpop = rel_probability.subpop.cat.set_categories(
-                                s.subpop_struct.subpop_names
+                                modinf.subpop_struct.subpop_names
                             )
                             rel_probability = rel_probability.sort_values(["subpop"])
                             parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()

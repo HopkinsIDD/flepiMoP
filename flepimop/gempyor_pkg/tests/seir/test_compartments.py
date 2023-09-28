@@ -65,26 +65,11 @@ def test_ModelInfo_has_compartments_component():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_values",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     s = model_info.ModelInfo(
-        setup_name="test_values",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seir_config=config["seir"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
-        dt=0.25,
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments
@@ -94,17 +79,9 @@ def test_ModelInfo_has_compartments_component():
     config.set_file(f"{DATA_DIR}/config_compartmental_model_full.yml")
 
     s = model_info.ModelInfo(
-        setup_name="test_values",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
-        seir_modifiers_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seir_config=config["seir"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
-        dt=0.25,
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments

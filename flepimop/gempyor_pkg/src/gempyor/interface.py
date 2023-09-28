@@ -10,7 +10,7 @@
 
 
 import pathlib
-from . import seir, model_info, file_paths, subpopulation_structure
+from . import seir, model_info, file_paths
 from . import outcomes
 from .utils import config, Timer, read_df, profile
 import numpy as np
@@ -69,9 +69,7 @@ class GempyorSimulator:
         config.clear()
         config.read(user=False)
         config.set_file(config_path)
-        spatial_config = config["subpop_setup"]
-        spatial_base_path = config["data_path"].get()
-        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+    
 
         np.random.seed(rng_seed)
 
@@ -79,16 +77,6 @@ class GempyorSimulator:
         write_parquet = True
         self.s = model_info.ModelInfo(
             config=config,
-            setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
-            subpop_setup=subpopulation_structure.SubpopulationStructure(
-                setup_name=config["setup_name"].get(),
-                geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-                mobility_file=spatial_base_path / spatial_config["mobility"].get()
-                if spatial_config["mobility"].exists()
-                else None,
-                subpop_pop_key="population",
-                subpop_names_key="subpop",
-            ),
             nslots=nslots,
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
@@ -133,7 +121,7 @@ class GempyorSimulator:
             with Timer("onerun_SEIR"):
                 seir.onerun_SEIR(
                     sim_id2write=sim_id2write,
-                    s=self.s,
+                    modinf=self.s,
                     load_ID=load_ID,
                     sim_id2load=sim_id2load,
                     config=config,
@@ -142,7 +130,7 @@ class GempyorSimulator:
             with Timer("onerun_OUTCOMES"):
                 outcomes.onerun_delayframe_outcomes(
                     sim_id2write=sim_id2write,
-                    s=self.s,
+                    modinf=self.s,
                     load_ID=load_ID,
                     sim_id2load=sim_id2load,
                 )
@@ -208,7 +196,7 @@ class GempyorSimulator:
                 npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
                 if self.s.npi_config_outcomes:
                     npi_outcomes = outcomes.build_outcomes_Modifiers(
-                        s=self.s,
+                        modinf=self.s,
                         load_ID=load_ID,
                         sim_id2load=sim_id2load,
                         config=config,
@@ -297,7 +285,7 @@ class GempyorSimulator:
         npi_outcomes = None
         if self.s.npi_config_outcomes:
             npi_outcomes = outcomes.build_outcomes_Modifiers(
-                s=self.s,
+                modinf=self.s,
                 load_ID=load_ID,
                 sim_id2load=sim_id2load,
                 config=config,

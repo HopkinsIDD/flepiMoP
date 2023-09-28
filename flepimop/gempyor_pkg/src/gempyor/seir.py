@@ -186,14 +186,14 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
 
 def onerun_SEIR(
     sim_id2write: int,
-    s: model_info.ModelInfo,
+    modinf: model_info.ModelInfo,
     load_ID: bool = False,
     sim_id2load: int = None,
     config=None,
 ):
     np.random.seed()
 
-    npi = build_npi_SEIR(s=s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+    npi = build_npi_SEIR(s=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     with Timer("onerun_SEIR.compartments"):
         (
@@ -201,38 +201,38 @@ def onerun_SEIR(
             transition_array,
             proportion_array,
             proportion_info,
-        ) = s.compartments.get_transition_array()
+        ) = modinf.compartments.get_transition_array()
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = s.seedingAndIC.load_ic(sim_id2load, setup=s)
-            seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id2load, setup=s)
+            initial_conditions = modinf.seedingAndIC.load_ic(sim_id2load, setup=modinf)
+            seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id2load, setup=modinf)
         else:
-            initial_conditions = s.seedingAndIC.draw_ic(sim_id2write, setup=s)
-            seeding_data, seeding_amounts = s.seedingAndIC.draw_seeding(sim_id2write, setup=s)
+            initial_conditions = modinf.seedingAndIC.draw_ic(sim_id2write, setup=modinf)
+            seeding_data, seeding_amounts = modinf.seedingAndIC.draw_seeding(sim_id2write, setup=modinf)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
         if load_ID:
-            p_draw = s.parameters.parameters_load(
-                param_df=s.read_simID(ftype="spar", sim_id=sim_id2load),
-                n_days=s.n_days,
-                nsubpops=s.nsubpops,
+            p_draw = modinf.parameters.parameters_load(
+                param_df=modinf.read_simID(ftype="spar", sim_id=sim_id2load),
+                n_days=modinf.n_days,
+                nsubpops=modinf.nsubpops,
             )
         else:
-            p_draw = s.parameters.parameters_quick_draw(n_days=s.n_days, nsubpops=s.nsubpops)
+            p_draw = modinf.parameters.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
         # reduce them
-        parameters = s.parameters.parameters_reduce(p_draw, npi)
+        parameters = modinf.parameters.parameters_reduce(p_draw, npi)
         log_debug_parameters(p_draw, "Parameters without seir_modifiers")
         log_debug_parameters(parameters, "Parameters with seir_modifiers")
 
         # Parse them
-        parsed_parameters = s.compartments.parse_parameters(parameters, s.parameters.pnames, unique_strings)
+        parsed_parameters = modinf.compartments.parse_parameters(parameters, modinf.parameters.pnames, unique_strings)
         log_debug_parameters(parsed_parameters, "Unique Parameters used by transitions")
 
     with Timer("onerun_SEIR.compute"):
         states = steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -243,8 +243,8 @@ def onerun_SEIR(
         )
 
     with Timer("onerun_SEIR.postprocess"):
-        if s.write_csv or s.write_parquet:
-            out_df = postprocess_and_write(sim_id2write, s, states, p_draw, npi, seeding_data)
+        if modinf.write_csv or modinf.write_parquet:
+            out_df = postprocess_and_write(sim_id2write, modinf, states, p_draw, npi, seeding_data)
     return out_df
 
 
@@ -254,7 +254,7 @@ def run_parallel_SEIR(s, config, *, n_jobs=1):
 
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
-            onerun_SEIR(sim_id2write=sim_id, s=s, load_ID=False, sim_id2load=None, config=config)
+            onerun_SEIR(sim_id2write=sim_id, modinf=s, load_ID=False, sim_id2load=None, config=config)
     else:
         tqdm.contrib.concurrent.process_map(
             onerun_SEIR,
