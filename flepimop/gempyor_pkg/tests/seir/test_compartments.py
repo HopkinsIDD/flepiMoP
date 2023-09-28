@@ -83,7 +83,6 @@ def test_ModelInfo_has_compartments_component():
         seir_config=config["seir"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         dt=0.25,
     )
@@ -104,7 +103,6 @@ def test_ModelInfo_has_compartments_component():
         seir_config=config["seir"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         dt=0.25,
     )

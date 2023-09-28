@@ -263,11 +263,6 @@ from gempyor.utils import config
     help="unique identifier for the run",
 )
 @click.option(
-    "--interactive/--batch",
-    default=False,
-    help="run in interactive or batch mode [default: batch]",
-)
-@click.option(
     "--write-csv/--no-write-csv",
     default=False,
     show_default=True,
@@ -289,7 +284,6 @@ def simulate(
     in_prefix,
     nslots,
     jobs,
-    interactive,
     write_csv,
     write_parquet,
     first_sim_index,
@@ -340,7 +334,6 @@ def simulate(
             seir_config=config["seir"],
             ti=config["start_date"].as_date(),
             tf=config["end_date"].as_date(),
-            interactive=interactive,
             write_csv=write_csv,
             write_parquet=write_parquet,
             first_sim_index=first_sim_index,

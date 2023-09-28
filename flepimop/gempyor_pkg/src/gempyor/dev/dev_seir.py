@@ -41,7 +41,6 @@ s = model_info.ModelInfo(
     seeding_config=config["seeding"],
     ti=config["start_date"].as_date(),
     tf=config["end_date"].as_date(),
-    interactive=True,
     write_csv=False,
     first_sim_index=first_sim_index,
     in_run_id=run_id,
