@@ -71,7 +71,7 @@ def test_constant_population_legacy_integration():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    s.integration_method = "legacy"
+    integration_method = "legacy"
 
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
     initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)

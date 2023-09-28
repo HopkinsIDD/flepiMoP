@@ -1,35 +1,34 @@
-from distutils import extension
-import pathlib
-import re
-import numpy as np
 import pandas as pd
-import datetime
-import os
-import scipy.sparse
-import pyarrow as pa
-import copy
-from . import compartments
-from . import parameters
-from . import seeding_ic, subpopulation_structure
-from .utils import config, read_df, write_df
-from . import file_paths
-import logging
+import datetime, os, logging, pathlib
+from . import seeding_ic, subpopulation_structure, parameters, compartments, file_paths
+from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
 
 
 class ModelInfo:
     """
-    This class hold a full model setup.
+    Parse config and hold some results, with main config sections.
+    ```
+        # subpop_setup       # Always required
+        # compartments        # Required if running seir
+        # seir                # Required if running seir
+        # initial_conditions  # One of seeding or initial_conditions is required when running seir
+        # seeding             # One of seeding or initial_conditions is required when running seir
+        # outcomes            # Required if running outcomes
+        # seir_modifiers      # Not required. If exists, every modifier will be applied to seir parameters
+        # outcomes_modifiers  # Not required. If exists, every modifier will be applied to outcomes parameters
+        # inference           # Required if running inference
+    ```
     """
-
     def __init__(
         self,
         *,
-        nslots,
         config,
+        nslots=1,
         seir_modifiers_scenario=None,
         outcome_modifiers_scenario=None,
+        spatial_path_prefix="",
         write_csv=False,
         write_parquet=False,
         first_sim_index=1,
@@ -39,28 +38,30 @@ class ModelInfo:
         out_prefix=None,
         stoch_traj_flag=False,
     ):
-        # 1. Important global variables
-        self.setup_name = config["name"].get() + "_" + str(seir_modifiers_scenario)
         self.nslots = nslots
+        self.write_csv = write_csv
+        self.write_parquet = write_parquet
+        self.first_sim_index = first_sim_index
+        self.stoch_traj_flag = stoch_traj_flag
 
+        self.seir_modifiers_scenario = seir_modifiers_scenario
+        self.outcome_modifiers_scenario = outcome_modifiers_scenario
+
+        # 1. Create a setup name that contains every scenario.
+        self.setup_name = config["name"].get()
+        if self.seir_modifiers_scenario is not None:
+            self.setup_name += "_" + str(self.seir_modifiers_scenario)
+        if self.outcomes_modifiers_scenario is not None:
+            self.setup_name += "_" + str(self.outcome_modifiers_scenario)
+
+        # 2. What about time:
         self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
         self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
         if self.tf <= self.ti:
             raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+        self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
 
-        self.seir_modifiers_scenario = seir_modifiers_scenario
-        self.npi_config_seir = config["seir_modifiers"]["settings"][seir_modifiers_scenario]
-        self.seeding_config = config["seeding"]
-        self.initial_conditions_config = config["initial_conditions"]
-        self.parameters_config = config["seir"]["parameters"]
-        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
-
-        self.seir_config = config["seir"]
-        self.write_csv = write_csv
-        self.write_parquet = write_parquet
-        self.first_sim_index = first_sim_index
-        self.outcome_modifiers_scenario = outcome_modifiers_scenario
-
+        # 3. What about subpopulations
         spatial_config = config["subpop_setup"]
         spatial_base_path = config["data_path"].get()
         spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
@@ -74,42 +75,25 @@ class ModelInfo:
                 subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
-        self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
         self.mobility = self.subpop_struct.mobility
 
-        self.stoch_traj_flag = stoch_traj_flag
+        # 4. the SEIR structure
+        if config["seir"].exists():
+            seir_config = config["seir"]
+            self.parameters_config = config["seir"]["parameters"]
+            self.initial_conditions_config = config["initial_conditions"] if config["initial_conditions"].exists() else None
+            self.seeding_config = config["seeding"] if config["seeding"].exists() else None
 
-        # I'm not really sure if we should impose defaut or make setup really explicit and
-        # have users pass
-        if seir_config is None and config["seir"].exists():
-            self.seir_config = config["seir"]
-
-        # Set-up the integration method and the time step
-        if config["seir"].exists() and (seir_config or parameters_config):
-            if "integration" in self.seir_config.keys():
-                if "method" in self.seir_config["integration"].keys():
-                    self.integration_method = self.seir_config["integration"]["method"].get()
-                    if self.integration_method == "best.current":
-                        self.integration_method = "rk4.jit"
-                    if self.integration_method == "rk4":
-                        self.integration_method = "rk4.jit"
-                    if self.integration_method not in ["rk4.jit", "legacy"]:
-                        raise ValueError(f"Unknown integration method {self.integration_method}.")
-                if "dt" in self.seir_config["integration"].keys() and self.dt is None:
-                    self.dt = float(
-                        eval(str(self.seir_config["integration"]["dt"].get()))
-                    )  # ugly way to parse string and formulas
-                elif self.dt is None:
-                    self.dt = 2.0
-            else:
-                self.integration_method = "rk4.jit"
-                if self.dt is None:
-                    self.dt = 2.0
-                logging.info(f"Integration method not provided, assuming type {self.integration_method}")
-            if self.dt is not None:
-                self.dt = float(self.dt)
+            if self.seeding_config is None and self.initial_conditions_config is None:
+                raise ValueError("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
+            
+            if config["seir_modifiers"].exists():
+                if config["seir_modifiers"]["scenarios"].exists()
+                    self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
+                else: 
+                    raise ValueError("Not implemented yet")  # TODO create a Stacked from all
 
             # Think if we really want to hold this up.
             self.parameters = parameters.Parameters(
@@ -123,21 +107,24 @@ class ModelInfo:
                 initial_conditions_config=self.initial_conditions_config,
             )
             # really ugly references to the config globally here.
-            if config["compartments"].exists() and self.seir_config is not None:
+            if config["compartments"].exists() and seir_config is not None:
                 self.compartments = compartments.Compartments(
-                    seir_config=self.seir_config, compartments_config=config["compartments"]
+                    seir_config=seir_config, compartments_config=config["compartments"]
                 )
+                
 
-        # 3. Outcomes
-        self.npi_config_outcomes = None
-        if self.outcomes_config:
+        # 5. Outcomes
+        if config["outcomes"].exists():
+            self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+
+            self.npi_config_outcomes = None
             if config["outcomes_modifiers"].exists():
                 if config["outcomes_modifiers"]["scenarios"].exists():
                     self.npi_config_outcomes = self.outcomes_config["outcomes_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
                 else:
-                    self.npi_config_outcomes = config["outcomes_modifiers"]
+                    raise ValueError("Not implemented yet") 
 
-        # 4. Inputs and outputs
+        # 6. Inputs and outputs
         if in_run_id is None:
             in_run_id = file_paths.run_id()
         self.in_run_id = in_run_id
