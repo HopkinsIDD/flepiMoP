@@ -37,7 +37,6 @@ def test_check_values():
         parameters_config=config["seir"]["parameters"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         dt=0.25,
     )
@@ -93,7 +92,6 @@ def test_constant_population_legacy_integration():
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
@@ -169,7 +167,6 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
@@ -255,7 +252,6 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
@@ -324,7 +320,6 @@ def test_steps_SEIR_no_spread():
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
@@ -392,7 +387,6 @@ def test_continuation_resume():
     seir_modifiers_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
-    interactive = False
     write_csv = False
     write_parquet = True
     first_sim_index = 1
@@ -420,7 +414,6 @@ def test_continuation_resume():
         initial_conditions_config=config["initial_conditions"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=interactive,
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -442,7 +435,6 @@ def test_continuation_resume():
     seir_modifiers_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
-    interactive = False
     write_csv = False
     write_parquet = True
     first_sim_index = 1
@@ -469,7 +461,6 @@ def test_continuation_resume():
         parameters_config=config["seir"]["parameters"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=interactive,
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -510,7 +501,6 @@ def test_inference_resume():
     seir_modifiers_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
-    interactive = False
     write_csv = False
     write_parquet = True
     first_sim_index = 1
@@ -536,7 +526,6 @@ def test_inference_resume():
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=interactive,
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -555,7 +544,6 @@ def test_inference_resume():
     config.set_file("data/config_inference_resume.yml")
     seir_modifiers_scenario = "Scenario1"
     nslots = 1
-    interactive = False
     write_csv = False
     write_parquet = True
     first_sim_index = 1
@@ -582,7 +570,6 @@ def test_inference_resume():
         parameters_config=config["seir"]["parameters"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=interactive,
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -637,7 +624,6 @@ def test_parallel_compartments_with_vacc():
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
         seir_config=config["seir"],
-        interactive=True,
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
@@ -732,7 +718,6 @@ def test_parallel_compartments_no_vacc():
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
         seir_config=config["seir"],
-        interactive=True,
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
