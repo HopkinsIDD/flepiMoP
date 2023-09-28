@@ -38,7 +38,6 @@ def test_constant_population():
         initial_conditions_config=config["initial_conditions"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
         dt=0.25,
         stoch_traj_flag=False,
