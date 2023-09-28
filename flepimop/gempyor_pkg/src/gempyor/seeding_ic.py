@@ -9,7 +9,7 @@ from . import file_paths
 import confuse
 import logging
 from . import compartments
-from . import setup
+from . import model_info
 import numba as nb
 from .utils import read_df
 

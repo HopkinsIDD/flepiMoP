@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import compartments, seir, NPI, file_paths, setup, subpopulation_structure
+from gempyor import compartments, seir, NPI, file_paths, model_info, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -60,7 +60,7 @@ def test_check_transitions_parquet_writing_and_loading():
     assert lhs == rhs
 
 
-def test_Setup_has_compartments_component():
+def test_ModelInfo_has_compartments_component():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
@@ -73,7 +73,7 @@ def test_Setup_has_compartments_component():
         subpop_names_key="subpop",
     )
 
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_values",
         subpop_setup=ss,
         nslots=1,
@@ -94,7 +94,7 @@ def test_Setup_has_compartments_component():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_full.yml")
 
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_values",
         subpop_setup=ss,
         nslots=1,

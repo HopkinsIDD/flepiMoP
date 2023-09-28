@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import setup, seir, NPI, file_paths, parameters
+from gempyor import model_info, seir, NPI, file_paths, parameters
 
 from gempyor.utils import config, write_df, read_df
 import gempyor

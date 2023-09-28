@@ -8,7 +8,7 @@ import pathlib
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from gempyor import setup, seir, NPI, file_paths, subpopulation_structure
+from gempyor import model_info, seir, NPI, file_paths, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -28,7 +28,7 @@ def test_check_values():
         subpop_names_key="subpop",
     )
 
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_values",
         subpop_setup=ss,
         nslots=1,
@@ -83,7 +83,7 @@ def test_constant_population_legacy_integration():
     first_sim_index = 1
     run_id = "test"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -159,7 +159,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -245,7 +245,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     run_id = "test_SeedOneNode"
     prefix = ""
 
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -314,7 +314,7 @@ def test_steps_SEIR_no_spread():
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -402,7 +402,7 @@ def test_continuation_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
@@ -452,7 +452,7 @@ def test_continuation_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
@@ -520,7 +520,7 @@ def test_inference_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
@@ -565,7 +565,7 @@ def test_inference_resume():
 
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name=config["name"].get() + "_" + str(npi_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
@@ -626,7 +626,7 @@ def test_parallel_compartments_with_vacc():
     first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -721,7 +721,7 @@ def test_parallel_compartments_no_vacc():
     run_id = "test_parallel"
     prefix = ""
 
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,

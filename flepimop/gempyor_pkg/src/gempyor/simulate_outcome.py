@@ -55,7 +55,7 @@ import time, os
 
 import click
 
-from gempyor import file_paths, setup
+from gempyor import file_paths, model_info
 from gempyor.utils import config
 from gempyor import outcomes
 
@@ -216,7 +216,7 @@ def simulate(
             out_prefix = config["name"].get() + "/" + str(scenario_outcomes) + "/"
         if in_prefix is None:
             raise ValueError(f"in_prefix must be provided")
-        s = setup.Setup(
+        s = model_info.ModelInfo(
             setup_name=config["name"].get() + "/" + str(scenarios_outcomes) + "/",
             subpop_setup=subpop_setup,
             nslots=nslots,

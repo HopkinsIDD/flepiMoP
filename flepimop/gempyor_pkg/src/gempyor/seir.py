@@ -5,7 +5,7 @@ import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
 
-from . import NPI, setup, file_paths, steps_rk4
+from . import NPI, model_info, file_paths, steps_rk4
 from .utils import config, Timer, aws_disk_diagnosis, read_df
 import pyarrow as pa
 import logging
@@ -186,7 +186,7 @@ def build_npi_SEIR(s, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=No
 
 def onerun_SEIR(
     sim_id2write: int,
-    s: setup.Setup,
+    s: model_info.ModelInfo,
     load_ID: bool = False,
     sim_id2load: int = None,
     config=None,

@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 import filecmp
 import pandas as pd
 import matplotlib.pyplot as plt
-from . import compartments, seir, NPI, file_paths, setup
+from . import compartments, seir, NPI, file_paths, model_info
 
 from .utils import config
 
@@ -31,7 +31,7 @@ ss = subpopulation_structure.SubpopulationStructure(
 first_sim_index = 1
 run_id = "test_SeedOneNode"
 prefix = ""
-s = setup.Setup(
+s = model_info.ModelInfo(
     setup_name="test_seir",
     subpop_setup=ss,
     nslots=1,
