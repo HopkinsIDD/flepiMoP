@@ -20,25 +20,11 @@ def test_check_values():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_values",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     s = model_info.ModelInfo(
-        setup_name="test_values",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
-        dt=0.25,
     )
 
     with warnings.catch_warnings(record=True) as w:
@@ -71,34 +57,19 @@ def test_check_values():
 def test_constant_population_legacy_integration():
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     first_sim_index = 1
     run_id = "test"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
     s.integration_method = "legacy"
 
@@ -146,34 +117,19 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     print("test mobility with txt matrices")
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=1,
     )
 
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
@@ -230,35 +186,21 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     config.set_file(f"{DATA_DIR}/config.yml")
     print("test mobility with csv matrices")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.csv",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
 
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
 
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=1,
     )
 
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
@@ -299,34 +241,19 @@ def test_steps_SEIR_no_spread():
     print("test mobility with no spread")
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     first_sim_index = 1
     run_id = "test_SeedOneNode"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
 
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
@@ -397,23 +324,9 @@ def test_continuation_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
-        subpop_setup=subpopulation_structure.SubpopulationStructure(
-            setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
-        ),
+        config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
-        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        seir_config=config["seir"],
-        initial_conditions_config=config["initial_conditions"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -445,22 +358,9 @@ def test_continuation_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
-        subpop_setup=subpopulation_structure.SubpopulationStructure(
-            setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
-        ),
+        config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
-        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
-        seeding_config=config["seeding"],
-        initial_conditions_config=config["initial_conditions"],
-        parameters_config=config["seir"]["parameters"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -511,21 +411,9 @@ def test_inference_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
-        subpop_setup=subpopulation_structure.SubpopulationStructure(
-            setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
-        ),
+        config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
-        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -554,22 +442,9 @@ def test_inference_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
-        subpop_setup=subpopulation_structure.SubpopulationStructure(
-            setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get(),
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
-        ),
+        config=config,
         nslots=nslots,
         seir_modifiers_scenario=seir_modifiers_scenario,
-        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
-        seeding_config=config["seeding"],
-        initial_conditions_config=config["initial_conditions"],
-        parameters_config=config["seir"]["parameters"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=write_csv,
         write_parquet=write_parquet,
         first_sim_index=first_sim_index,
@@ -602,35 +477,19 @@ def test_parallel_compartments_with_vacc():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config_parallel.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="Scenario_vacc",
-        npi_config_seir=config["seir_modifiers"]["settings"]["Scenario_vacc"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
-        seir_config=config["seir"],
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
 
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
@@ -695,36 +554,20 @@ def test_parallel_compartments_no_vacc():
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config_parallel.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     first_sim_index = 1
     run_id = "test_parallel"
     prefix = ""
 
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="Scenario_novacc",
-        npi_config_seir=config["seir_modifiers"]["settings"]["Scenario_novacc"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
-        seir_config=config["seir"],
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
 
     seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)

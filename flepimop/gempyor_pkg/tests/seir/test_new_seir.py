@@ -19,27 +19,10 @@ os.chdir(os.path.dirname(__file__))
 def test_constant_population():
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
-        seir_modifiers_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config={},
-        initial_conditions_config=config["initial_conditions"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
-        dt=0.25,
         stoch_traj_flag=False,
     )
 

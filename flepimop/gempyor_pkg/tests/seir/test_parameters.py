@@ -22,35 +22,20 @@ def test_parameters_from_config_plus_read_write():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
-    # Would be better to build a setup
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
 
     index = 1
     run_id = "test_parameter"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
 
     lhs = parameters.Parameters(
@@ -90,33 +75,19 @@ def test_parameters_quick_draw_old():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
     index = 1
     run_id = "test_parameter"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
 
     params = parameters.Parameters(
@@ -172,22 +143,15 @@ def test_parameters_from_timeserie_file():
     run_id = "test_parameter"
     prefix = ""
     s = model_info.ModelInfo(
-        setup_name="test_seir",
-        subpop_setup=ss,
+        config=config,
         nslots=1,
         seir_modifiers_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
         write_csv=False,
         first_sim_index=index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
     )
 
     lhs = parameters.Parameters(

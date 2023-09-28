@@ -10,8 +10,7 @@ import pyarrow as pa
 import copy
 from . import compartments
 from . import parameters
-from . import seeding_ic
-from .subpopulation_structure import SubpopulationStructure
+from . import seeding_ic, subpopulation_structure
 from .utils import config, read_df, write_df
 from . import file_paths
 import logging
@@ -27,16 +26,12 @@ class ModelInfo:
     def __init__(
         self,
         *,
-        setup_name,
-        subpop_setup,
         nslots,
         config,
         seir_modifiers_scenario=None,
         outcome_modifiers_scenario=None,
-        interactive=True,
         write_csv=False,
         write_parquet=False,
-        dt=None,  # step size, in days
         first_sim_index=1,
         in_run_id=None,
         in_prefix=None,
@@ -45,10 +40,9 @@ class ModelInfo:
         stoch_traj_flag=False,
     ):
         # 1. Important global variables
-        self.setup_name = setup_name
+        self.setup_name = config["name"].get() + "_" + str(seir_modifiers_scenario)
         self.nslots = nslots
-        self.dt = dt
-        
+
         self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
         self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
         if self.tf <= self.ti:
@@ -62,13 +56,24 @@ class ModelInfo:
         self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
 
         self.seir_config = config["seir"]
-        self.interactive = interactive
         self.write_csv = write_csv
         self.write_parquet = write_parquet
         self.first_sim_index = first_sim_index
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
 
-        self.subpop_struct = subpop_setup
+        spatial_config = config["subpop_setup"]
+        spatial_base_path = config["data_path"].get()
+        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+
+        self.subpop_struct = subpopulation_structure.SubpopulationStructure(
+                setup_name=config["setup_name"].get(),
+                geodata_file=spatial_base_path / spatial_config["geodata"].get(),
+                mobility_file=spatial_base_path / spatial_config["mobility"].get()
+                if spatial_config["mobility"].exists()
+                else None,
+                subpop_pop_key="population",
+                subpop_names_key="subpop",
+            )
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop

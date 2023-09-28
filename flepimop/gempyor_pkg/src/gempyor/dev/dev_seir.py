@@ -20,34 +20,19 @@ config.clear()
 config.read(user=False)
 config.set_file(f"{DATA_DIR}/config.yml")
 
-ss = subpopulation_structure.SubpopulationStructure(
-    setup_name="test_seir",
-    geodata_file=f"{DATA_DIR}/geodata.csv",
-    mobility_file=f"{DATA_DIR}/mobility.txt",
-    subpop_pop_key="population",
-    subpop_names_key="subpop",
-)
-
 first_sim_index = 1
 run_id = "test_SeedOneNode"
 prefix = ""
 s = model_info.ModelInfo(
     setup_name="test_seir",
-    subpop_setup=ss,
     nslots=1,
     seir_modifiers_scenario="None",
-    npi_config_seir=config["seir_modifiers"]["settings"]["None"],
-    parameters_config=config["seir"]["parameters"],
-    seeding_config=config["seeding"],
-    ti=config["start_date"].as_date(),
-    tf=config["end_date"].as_date(),
     write_csv=False,
     first_sim_index=first_sim_index,
     in_run_id=run_id,
     in_prefix=prefix,
     out_run_id=run_id,
     out_prefix=prefix,
-    dt=0.25,
 )
 
 seeding_data = s.seedingAndIC.draw_seeding(sim_id=100, setup=s)

@@ -289,13 +289,9 @@ def simulate(
     first_sim_index,
     stoch_traj_flag,
 ):
-    spatial_path_prefix = ""
     config.clear()
     config.read(user=False)
     config.set_file(config_file)
-    spatial_config = config["subpop_setup"]
-    spatial_base_path = config["data_path"].get()
-    spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
     if not seir_modifiers_scenarios:
         seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
@@ -310,30 +306,13 @@ def simulate(
         nslots = config["nslots"].as_number()
     print(f"Simulations to be run: {nslots}")
 
-    subpop_setup = subpopulation_structure.SubpopulationStructure(
-        setup_name=config["setup_name"].get(),
-        geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-        mobility_file=spatial_base_path / spatial_config["mobility"].get()
-        if spatial_config["mobility"].exists()
-        else None,
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
-
     start = time.monotonic()
     for seir_modifiers_scenario in seir_modifiers_scenarios:
         s = model_info.ModelInfo(
-            setup_name=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/",
-            subpop_setup=subpop_setup,
+            config=config,
             nslots=nslots,
             seir_modifiers_scenario=seir_modifiers_scenario,
-            npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
-            seeding_config=config["seeding"],
-            initial_conditions_config=config["initial_conditions"],
-            parameters_config=config["seir"]["parameters"],
-            seir_config=config["seir"],
-            ti=config["start_date"].as_date(),
-            tf=config["end_date"].as_date(),
+            outcome_modifiers_scenario= outcome_modifiers_scenario=outcome_modifiers_scenario,,
             write_csv=write_csv,
             write_parquet=write_parquet,
             first_sim_index=first_sim_index,
