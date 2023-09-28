@@ -7,87 +7,11 @@ nslots: 1
 
 subpop_setup:
   geodata: geodata.csv
-  mobility: mobility.csv
-  census_year: 2018
-  modeled_states:
-    - HI
-
-interventions:
-  scenarios:
-    - None
-  settings:
-    None:
-      template: SinglePeriodModifierR0
-      value:
-        distribution: fixed
-        value: 0
-    Hduration:
-      template: SinglePeriodModifier
-      parameter: "incidH_duration"
-      subpop: "all"
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-15
-      value:
-        distribution: fixed
-        value: .5
-    Hdelay:
-      template: SinglePeriodModifier
-      parameter: "incidH_delay"
-      subpop: "all"
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-15
-      value:
-        distribution: fixed
-        value: .5
-    Hprobability:
-      template: SinglePeriodModifier
-      parameter: "incidH_probability"
-      subpop: "all"
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-15
-      value:
-        distribution: fixed
-        value: 0.5
-    Ddelay:
-      template: SinglePeriodModifier
-      parameter: "incidD_delay"
-      subpop: "all"
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-15
-      value:
-        distribution: fixed
-        value: .5
-    Dprobability:
-      template: SinglePeriodModifier
-      parameter: "incidD_probability"
-      subpop: "all"
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-15
-      value:
-        distribution: fixed
-        value: .5
-    ICUprobability:
-      template: SinglePeriodModifier
-      parameter: "incidICU_probability"
-      subpop: "all"
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-15
-      value:
-        distribution: fixed
-        value: .5
-    times2D:
-      template: StackedModifier
-      scenarios: ["Ddelay", "Dprobability"]
-    times2H:
-      template: StackedModifier
-      scenarios: ["Hdelay", "Hprobability", "Hduration"]
 
 outcomes:
   method: delayframe
   param_from_file: False
-  scenarios:
-    - high_death_rate
-  settings:
+  outcomes:
   ### 3 examples of sourcing incidH with the new syntax:
   ### 1. same old syntax.
   ### the source will be the sum of the incidence of infection_stage I1, accross all other meta_compartments.
@@ -146,127 +70,189 @@ outcomes:
           name: hosp_curr
   ### 3 different incidH for each dose, and then a sum that combine them together. Here it's possible
   ### to have different NPIs and probabilities for e.g different doses.
-    high_death_rate:
-      incidI_0dose:
-        source:
-          incidence:
-            infection_stage: ["I1"]
-            vaccination_stage: ["unvaccinated"]
-        probability:
-          value:
-            distribution: fixed
-            value: 1
-        delay:
-          value:
-            distribution: fixed
-            value: 0
-      incidI_1dose:
-        source:
-          incidence:
-            infection_stage: ["I1"]
-            vaccination_stage: "first_dose"
-        probability:
-          value:
-            distribution: fixed
-            value: 1
-        delay:
-          value:
-            distribution: fixed
-            value: 0
-      incidH_0dose:
-        source:
-          incidence:
-            infection_stage: ["I1"]
-            vaccination_stage: ["unvaccinated"]
-        probability:
-          intervention_param_name: incidH_probability
-          value:
-            distribution: fixed
-            value: .2
-        delay:
-          intervention_param_name: incidH_delay
-          value:
-            distribution: fixed
-            value: 14
-        duration:
-          intervention_param_name: incidH_duration
-          value:
-            distribution: fixed
-            value: 14
-          name: incidH_0dose_curr
-      incidH_1dose:
-        source:
-          incidence:
-            infection_stage: ["I1"]
-            vaccination_stage: "first_dose"
-        probability:
-          intervention_param_name: incidH_probability
-          value:
-            distribution: fixed
-            value: .2
-        delay:
-          intervention_param_name: incidH_delay
-          value:
-            distribution: fixed
-            value: 14
-        duration:
-          intervention_param_name: incidH_duration
-          value:
-            distribution: fixed
-            value: 14
-          name: incidH_1dose_curr
-      incidICU_0dose:
-        source: incidH_0dose
-        probability:
-          intervention_param_name: incidICU_probability
-          value:
-            distribution: fixed
-            value: .8
-        delay:
-          value:
-            distribution: fixed
-            value: 0
-      incidICU_1dose:
-        source: incidH_1dose
-        probability:
-          intervention_param_name: incidICU_probability
-          value:
-            distribution: fixed
-            value: .8
-        delay:
-          value:
-            distribution: fixed
-            value: 0
-      incidD_0dose:
-        source: incidI_0dose
-        probability:
-          intervention_param_name: incidD_probability
-          value:
-            distribution: fixed
-            value: .02
-        delay:
-          intervention_param_name: incidD_delay
-          value:
-            distribution: fixed
-            value: 4
-      incidD_1dose:
-        source: incidI_1dose
-        probability:
-          intervention_param_name: incidD_probability
-          value:
-            distribution: fixed
-            value: .02
-        delay:
-          intervention_param_name: incidD_delay
-          value:
-            distribution: fixed
-            value: 4
-      incidH_from_sum:
-        sum: [ 'incidH_1dose', 'incidH_0dose']
-  interventions:
-      settings:
-        high_death_rate:
-          template: StackedModifier
-          scenarios: ["times2H", "ICUprobability", "times2D"]
+    incidI_0dose:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+          vaccination_stage: ["unvaccinated"]
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_1dose:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+          vaccination_stage: "first_dose"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidH_0dose:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+          vaccination_stage: ["unvaccinated"]
+      probability:
+        intervention_param_name: incidH_probability
+        value:
+          distribution: fixed
+          value: .2
+      delay:
+        intervention_param_name: incidH_delay
+        value:
+          distribution: fixed
+          value: 14
+      duration:
+        intervention_param_name: incidH_duration
+        value:
+          distribution: fixed
+          value: 14
+        name: incidH_0dose_curr
+    incidH_1dose:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+          vaccination_stage: "first_dose"
+      probability:
+        intervention_param_name: incidH_probability
+        value:
+          distribution: fixed
+          value: .2
+      delay:
+        intervention_param_name: incidH_delay
+        value:
+          distribution: fixed
+          value: 14
+      duration:
+        intervention_param_name: incidH_duration
+        value:
+          distribution: fixed
+          value: 14
+        name: incidH_1dose_curr
+    incidICU_0dose:
+      source: incidH_0dose
+      probability:
+        intervention_param_name: incidICU_probability
+        value:
+          distribution: fixed
+          value: .8
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidICU_1dose:
+      source: incidH_1dose
+      probability:
+        intervention_param_name: incidICU_probability
+        value:
+          distribution: fixed
+          value: .8
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidD_0dose:
+      source: incidI_0dose
+      probability:
+        intervention_param_name: incidD_probability
+        value:
+          distribution: fixed
+          value: .02
+      delay:
+        intervention_param_name: incidD_delay
+        value:
+          distribution: fixed
+          value: 4
+    incidD_1dose:
+      source: incidI_1dose
+      probability:
+        intervention_param_name: incidD_probability
+        value:
+          distribution: fixed
+          value: .02
+      delay:
+        intervention_param_name: incidD_delay
+        value:
+          distribution: fixed
+          value: 4
+    incidH_from_sum:
+      sum: [ 'incidH_1dose', 'incidH_0dose']
+
+outcome_modifiers:
+  scenarios:
+    - Some
+  settings:
+    Some:
+      method: StackedModifier
+        scenarios: ["times2H", "ICUprobability", "times2D"]
+    Hduration:
+      method: SinglePeriodModifier
+      parameter: "incidH_duration"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    Hdelay:
+      method: SinglePeriodModifier
+      parameter: "incidH_delay"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    Hprobability:
+      method: SinglePeriodModifier
+      parameter: "incidH_probability"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: 0.5
+    Ddelay:
+      method: SinglePeriodModifier
+      parameter: "incidD_delay"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    Dprobability:
+      method: SinglePeriodModifier
+      parameter: "incidD_probability"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    ICUprobability:
+      method: SinglePeriodModifier
+      parameter: "incidICU_probability"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    times2D:
+      method: StackedModifier
+      scenarios: ["Ddelay", "Dprobability"]
+    times2H:
+      method: StackedModifier
+      scenarios: ["Hdelay", "Hprobability", "Hduration"]
 
 
