@@ -32,8 +32,8 @@ class NPIBase(abc.ABC):
         loaded_df=None,
         pnames_overlap_operation_sum=[],
     ):
-        template = npi_config["template"].as_str()
-        npi_class = NPIBase.__plugins__[template]
+        method = npi_config["method"].as_str()
+        npi_class = NPIBase.__plugins__[method]
         return npi_class(
             npi_config=npi_config,
             global_config=global_config,

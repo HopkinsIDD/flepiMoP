@@ -81,7 +81,7 @@ collapse_intervention<- function(dat){
     #TODO: add number to repeated names
     #TODO add a check that all end_dates are the same
     mtr <- dat %>%
-        dplyr::filter(template=="MultiPeriodModifier") %>%
+        dplyr::filter(method=="MultiPeriodModifier") %>%
         dplyr::mutate(end_date=paste0("end_date: ", end_date),
                       start_date=paste0("- start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n              ", start_date:end_date) %>%
@@ -104,8 +104,8 @@ collapse_intervention<- function(dat){
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
-        dplyr::filter(template %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
+        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, method, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::filter(method %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n      ", start_date:end_date) %>%
@@ -113,10 +113,10 @@ collapse_intervention<- function(dat){
         dplyr::ungroup() %>%
         dplyr::add_count(dplyr::across(-USPS)) %>%
         dplyr::mutate(name = dplyr::case_when(category =="local_variance" | USPS %in% c("all", "") | is.na(USPS) ~ name,
-                                              n==1 & template=="SinglePeriodModifier" ~ paste0(USPS, "_", name),
-                                              template=="SinglePeriodModifier" ~ paste0(subpop, "_", name),
-                                              n==1 & template!="ModifierModifier" ~ paste0(USPS, name),
-                                              template!="ModifierModifier" ~ paste0(subpop, name),
+                                              n==1 & method=="SinglePeriodModifier" ~ paste0(USPS, "_", name),
+                                              method=="SinglePeriodModifier" ~ paste0(subpop, "_", name),
+                                              n==1 & method!="ModifierModifier" ~ paste0(USPS, name),
+                                              method!="ModifierModifier" ~ paste0(subpop, name),
                                               TRUE ~ name),
                       name = stringr::str_remove(name, "^_"))
 
@@ -130,22 +130,22 @@ collapse_intervention<- function(dat){
 
 #' Print intervention text for MultiPeriodModifier interventions
 #'
-#' @param dat df for an intervention with the MTR template with processed name/period; see collapsed_intervention. All rows in the dataframe should have the same intervention name.
+#' @param dat df for an intervention with the MTR method with processed name/period; see collapsed_intervention. All rows in the dataframe should have the same intervention name.
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #'
-yaml_mtr_template <- function(dat){
-    template <- unique(dat$template)
+yaml_mtr_method <- function(dat){
+    method <- unique(dat$method)
     subpop_all <- any(unique(dat$subpop)=="all")
     inference <- !any(is.na(dat$pert_dist))
 
-    if(template=="MultiPeriodModifier" & subpop_all){
+    if(method=="MultiPeriodModifier" & subpop_all){
         cat(paste0(
             "    ", dat$name, ":\n",
-            "      template: MultiPeriodModifier\n",
+            "      method: MultiPeriodModifier\n",
             "      parameter: ", dat$parameter, "\n",
             "      groups:\n",
             '        - subpop: "all"\n'
@@ -162,10 +162,10 @@ yaml_mtr_template <- function(dat){
         }
     }
 
-    if(template=="MultiPeriodModifier" & !subpop_all){
+    if(method=="MultiPeriodModifier" & !subpop_all){
         cat(paste0(
             "    ", dat$name[1], ":\n",
-            "      template: MultiPeriodModifier\n",
+            "      method: MultiPeriodModifier\n",
             "      parameter: ", dat$parameter[1], "\n",
             "      groups:\n"
         ))
@@ -356,19 +356,19 @@ print_value1 <- function(value_type, value_dist, value_mean,
 
 #' Print intervention text for SinglePeriodModifier interventions
 #'
-#' @param dat df row for an intervention with the SinglePeriodModifier or ModifierModifier template that has been processed name/period; see collapsed_intervention.
+#' @param dat df row for an intervention with the SinglePeriodModifier or ModifierModifier method that has been processed name/period; see collapsed_intervention.
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #'
-yaml_reduce_template<- function(dat){
+yaml_reduce_method<- function(dat){
 
     cat(paste0(
         "    ", dat$name, ":\n",
-        "      template: ", dat$template,"\n",
-        if(dat$template %in% c("SinglePeriodModifier", "ModifierModifier")){
+        "      method: ", dat$method,"\n",
+        if(dat$method %in% c("SinglePeriodModifier", "ModifierModifier")){
             paste0("      parameter: ", dat$parameter, "\n")
         },
         if(all(dat$subpop == "all")){
@@ -385,7 +385,7 @@ yaml_reduce_template<- function(dat){
             }
         },
         dat$period,
-        if(dat$template == "ModifierModifier"){
+        if(dat$method == "ModifierModifier"){
             paste0("      baseline_scenario: ", dat$baseline_scenario, "\n")
         }
     ))
@@ -441,13 +441,13 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
 
                 next
             }
-            cat(paste0("    ", dat$category[i], ":\n", "      template: StackedModifier\n",
+            cat(paste0("    ", dat$category[i], ":\n", "      method: StackedModifier\n",
                        "      scenarios: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category ==
                                                         "NPI_redux", name, category))
-        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -461,7 +461,7 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
         if (duplicate_names > 1) {
             stop("At least one intervention name is shared by distinct NPIs.")
         }
-        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -497,12 +497,12 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
             if (dat$category[i] %in% c("local_variance", "NPI_redux")) {
                 next
             }
-            cat(paste0("    ", dat$category[i], ":\n", "      template: StackedModifier\n",
+            cat(paste0("    ", dat$category[i], ":\n", "      method: StackedModifier\n",
                        "      scenarios: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category == "NPI_redux", name, category))
-        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     } else {
@@ -515,7 +515,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
         if (duplicate_names > 1) {
             stop("At least one intervention name is shared by distinct NPIs.")
         }
-        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -1010,18 +1010,18 @@ print_interventions <- function (
         stack = TRUE,
         compartment = TRUE){
 
-    cat(paste0("\ninterventions:\n", "  scenarios:\n", "    - ",
+    cat(paste0("\nseir_modifiers:\n", "  scenarios:\n", "    - ",
                scenario, "\n", "  settings:\n"))
     outcome_dat <- dat %>% collapse_intervention() %>% dplyr::filter(type == "outcome")
     dat <- collapse_intervention(dat) %>% dplyr::filter(type == "transmission")
     for (i in 1:nrow(dat)) {
         if (i > nrow(dat))
             break
-        if (dat$template[i] == "MultiPeriodModifier") {
-            dat %>% dplyr::filter(name == dat$name[i]) %>% yaml_mtr_template(.)
+        if (dat$method[i] == "MultiPeriodModifier") {
+            dat %>% dplyr::filter(name == dat$name[i]) %>% yaml_mtr_method(.)
             dat <- dat %>% dplyr::filter(name != dat$name[i] | dplyr::row_number() == i)
         } else {
-            yaml_reduce_template(dat[i, ])
+            yaml_reduce_method(dat[i, ])
         }
     }
     yaml_stack1(dat, scenario, stack)
@@ -1034,13 +1034,13 @@ print_interventions <- function (
         for (i in 1:nrow(outcome_dat)) {
             if (i > nrow(outcome_dat))
                 break
-            if (outcome_dat$template[i] == "MultiPeriodModifier") {
+            if (outcome_dat$method[i] == "MultiPeriodModifier") {
                 outcome_dat %>% dplyr::filter(name == outcome_dat$name[i]) %>%
-                    yaml_mtr_template(.)
+                    yaml_mtr_method(.)
                 outcome_dat <- outcome_dat %>%
                     dplyr::filter(name != outcome_dat$name[i] | dplyr::row_number() == i)
             } else {
-                yaml_reduce_template(outcome_dat[i, ])
+                yaml_reduce_method(outcome_dat[i, ])
             }
         }
         cat(paste0("\n"))
@@ -1396,10 +1396,10 @@ print_outcomes <- function (resume_modifier = NULL,
         cat(paste0(outcomes, mget(outcomes_included) %>% unlist() %>% paste0(collapse = "")))
 
         if (incl_interventions) {
-            cat(paste0("  interventions:\n",
+            cat(paste0("  seir_modifiers:\n",
                        "    settings:\n",
                        "      ", ifr, ":\n",
-                       "        template: StackedModifier\n",
+                       "        method: StackedModifier\n",
                        "        scenarios: [\"outcome_interventions\"]\n"))
         }
 
@@ -1446,10 +1446,10 @@ print_outcomes <- function (resume_modifier = NULL,
             if (nrow(dat) > 0) {
                 outcome_interventions <- paste0(unique(dat$name), collapse = "\", \"")
 
-                cat(paste0("  interventions:\n",
+                cat(paste0("  seir_modifiers:\n",
                            "    settings:\n",
                            "      ", ifr, ":\n",
-                           "        template: StackedModifier\n",
+                           "        method: StackedModifier\n",
                            "        scenarios: [\"", outcome_interventions, "\"]\n"))
             }
         }

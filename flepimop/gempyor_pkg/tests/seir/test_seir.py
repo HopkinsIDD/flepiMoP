@@ -32,8 +32,8 @@ def test_check_values():
         setup_name="test_values",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
+        seir_modifiers_scenario="None",
+        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         ti=config["start_date"].as_date(),
         tf=config["end_date"].as_date(),
@@ -87,8 +87,8 @@ def test_constant_population_legacy_integration():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
+        seir_modifiers_scenario="None",
+        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -163,8 +163,8 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
+        seir_modifiers_scenario="None",
+        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -249,8 +249,8 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
+        seir_modifiers_scenario="None",
+        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -318,8 +318,8 @@ def test_steps_SEIR_no_spread():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
+        seir_modifiers_scenario="None",
+        npi_config_seir=config["seir_modifiers"]["settings"]["None"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -389,7 +389,7 @@ def test_continuation_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config.yml")
-    npi_scenario = "Scenario1"
+    seir_modifiers_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
     interactive = False
@@ -403,7 +403,7 @@ def test_continuation_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(npi_scenario),
+        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -412,8 +412,8 @@ def test_continuation_resume():
             subpop_names_key="subpop",
         ),
         nslots=nslots,
-        npi_scenario=npi_scenario,
-        npi_config_seir=config["interventions"]["settings"][npi_scenario],
+        seir_modifiers_scenario=seir_modifiers_scenario,
+        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         seir_config=config["seir"],
@@ -439,7 +439,7 @@ def test_continuation_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config_continuation_resume.yml")
-    npi_scenario = "Scenario1"
+    seir_modifiers_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
     interactive = False
@@ -453,7 +453,7 @@ def test_continuation_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(npi_scenario),
+        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -462,8 +462,8 @@ def test_continuation_resume():
             subpop_names_key="subpop",
         ),
         nslots=nslots,
-        npi_scenario=npi_scenario,
-        npi_config_seir=config["interventions"]["settings"][npi_scenario],
+        seir_modifiers_scenario=seir_modifiers_scenario,
+        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
         seeding_config=config["seeding"],
         initial_conditions_config=config["initial_conditions"],
         parameters_config=config["seir"]["parameters"],
@@ -507,7 +507,7 @@ def test_inference_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config.yml")
-    npi_scenario = "Scenario1"
+    seir_modifiers_scenario = "Scenario1"
     sim_id2write = 100
     nslots = 1
     interactive = False
@@ -521,7 +521,7 @@ def test_inference_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(npi_scenario),
+        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -530,8 +530,8 @@ def test_inference_resume():
             subpop_names_key="subpop",
         ),
         nslots=nslots,
-        npi_scenario=npi_scenario,
-        npi_config_seir=config["interventions"]["settings"][npi_scenario],
+        seir_modifiers_scenario=seir_modifiers_scenario,
+        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -553,7 +553,7 @@ def test_inference_resume():
     config.clear()
     config.read(user=False)
     config.set_file("data/config_inference_resume.yml")
-    npi_scenario = "Scenario1"
+    seir_modifiers_scenario = "Scenario1"
     nslots = 1
     interactive = False
     write_csv = False
@@ -566,7 +566,7 @@ def test_inference_resume():
     spatial_config = config["subpop_setup"]
     spatial_base_path = pathlib.Path(config["data_path"].get())
     s = model_info.ModelInfo(
-        setup_name=config["name"].get() + "_" + str(npi_scenario),
+        setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
         subpop_setup=subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
             geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -575,8 +575,8 @@ def test_inference_resume():
             subpop_names_key="subpop",
         ),
         nslots=nslots,
-        npi_scenario=npi_scenario,
-        npi_config_seir=config["interventions"]["settings"][npi_scenario],
+        seir_modifiers_scenario=seir_modifiers_scenario,
+        npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
         seeding_config=config["seeding"],
         initial_conditions_config=config["initial_conditions"],
         parameters_config=config["seir"]["parameters"],
@@ -630,8 +630,8 @@ def test_parallel_compartments_with_vacc():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="Scenario_vacc",
-        npi_config_seir=config["interventions"]["settings"]["Scenario_vacc"],
+        seir_modifiers_scenario="Scenario_vacc",
+        npi_config_seir=config["seir_modifiers"]["settings"]["Scenario_vacc"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -725,8 +725,8 @@ def test_parallel_compartments_no_vacc():
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
-        npi_scenario="Scenario_novacc",
-        npi_config_seir=config["interventions"]["settings"]["Scenario_novacc"],
+        seir_modifiers_scenario="Scenario_novacc",
+        npi_config_seir=config["seir_modifiers"]["settings"]["Scenario_novacc"],
         parameters_config=config["seir"]["parameters"],
         seeding_config=config["seeding"],
         ti=config["start_date"].as_date(),
@@ -759,7 +759,7 @@ def test_parallel_compartments_no_vacc():
     parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
 
     for i in range(5):
-        s.npi_config_seir = config["interventions"]["settings"]["Scenario_vacc"]
+        s.npi_config_seir = config["seir_modifiers"]["settings"]["Scenario_vacc"]
         states = seir.steps_SEIR(
             s,
             parsed_parameters,

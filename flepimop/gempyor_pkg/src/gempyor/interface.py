@@ -45,8 +45,8 @@ class GempyorSimulator:
         run_id="test_run_id",
         prefix="test_prefix",
         first_sim_index=1,
-        npi_scenario="inference",
-        outcome_scenario="med",
+        seir_modifiers_scenario="inference",
+        outcome_modifiers_scenario="inference",
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
@@ -55,8 +55,8 @@ class GempyorSimulator:
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
     ):
-        self.npi_scenario = npi_scenario
-        self.outcome_scenario = outcome_scenario
+        self.seir_modifiers_scenario = seir_modifiers_scenario
+        self.outcome_modifiers_scenario = outcome_modifiers_scenario
 
         in_run_id = run_id
         if out_run_id is None:
@@ -75,11 +75,11 @@ class GempyorSimulator:
 
         np.random.seed(rng_seed)
 
-        interactive = False
         write_csv = False
         write_parquet = True
         self.s = model_info.ModelInfo(
-            setup_name=config["name"].get() + "_" + str(npi_scenario),
+            config=config,
+            setup_name=config["name"].get() + "_" + str(seir_modifiers_scenario),
             subpop_setup=subpopulation_structure.SubpopulationStructure(
                 setup_name=config["setup_name"].get(),
                 geodata_file=spatial_base_path / spatial_config["geodata"].get(),
@@ -90,17 +90,8 @@ class GempyorSimulator:
                 subpop_names_key="subpop",
             ),
             nslots=nslots,
-            npi_scenario=npi_scenario,
-            npi_config_seir=config["interventions"]["settings"][npi_scenario],
-            seeding_config=config["seeding"],
-            initial_conditions_config=config["initial_conditions"],
-            parameters_config=config["seir"]["parameters"],
-            seir_config=config["seir"],
-            outcomes_config=config["outcomes"] if config["outcomes"].exists() else None,
-            outcome_scenario=outcome_scenario,
-            ti=config["start_date"].as_date(),
-            tf=config["end_date"].as_date(),
-            interactive=interactive,
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            outcome_modifiers_scenario=outcome_modifiers_scenario,
             write_csv=write_csv,
             write_parquet=write_parquet,
             dt=None,  # default to config value
@@ -189,7 +180,7 @@ class GempyorSimulator:
                         ret_seir = executor.submit(seir.build_npi_SEIR, self.s, load_ID, sim_id2load, config)
                         if self.s.npi_config_outcomes:
                             ret_outcomes = executor.submit(
-                                outcomes.build_npi_Outcomes,
+                                outcomes.build_outcomes_Modifiers,
                                 self.s,
                                 load_ID,
                                 sim_id2load,
@@ -216,7 +207,7 @@ class GempyorSimulator:
                     self.build_structure()
                 npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
                 if self.s.npi_config_outcomes:
-                    npi_outcomes = outcomes.build_npi_Outcomes(
+                    npi_outcomes = outcomes.build_outcomes_Modifiers(
                         s=self.s,
                         load_ID=load_ID,
                         sim_id2load=sim_id2load,
@@ -305,7 +296,7 @@ class GempyorSimulator:
     def get_outcome_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         npi_outcomes = None
         if self.s.npi_config_outcomes:
-            npi_outcomes = outcomes.build_npi_Outcomes(
+            npi_outcomes = outcomes.build_outcomes_Modifiers(
                 s=self.s,
                 load_ID=load_ID,
                 sim_id2load=sim_id2load,
@@ -435,8 +426,8 @@ def paramred_parallel(run_spec, snpi_fn):
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
-        npi_scenario="inference",  # NPIs scenario to use
-        outcome_scenario="med",  # Outcome scenario to use
+        seir_modifiers_scenario="inference",  # NPIs scenario to use
+        outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
         spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
@@ -461,8 +452,8 @@ def paramred_parallel_config(run_spec, dummy):
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
-        npi_scenario="inference",  # NPIs scenario to use
-        outcome_scenario="med",  # Outcome scenario to use
+        seir_modifiers_scenario="inference",  # NPIs scenario to use
+        outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
         spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )

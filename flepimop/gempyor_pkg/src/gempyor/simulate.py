@@ -27,31 +27,31 @@
 #     gamma: <random distribution>
 #     R0s: <random distribution>
 #
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     - <scenario 1 name>
 #     - <scenario 2 name>
 #     - ...
 #   settings:
 #     <scenario 1 name>:
-#       template: choose one - "SinglePeriodModifier", ", "StackedModifier"
+#       method: choose one - "SinglePeriodModifier", ", "StackedModifier"
 #       ...
 #     <scenario 2 name>:
-#       template: choose one - "SinglePeriodModifier", "", "StackedModifier"
+#       method: choose one - "SinglePeriodModifier", "", "StackedModifier"
 #       ...
 #
 # seeding:
 #   method: choose one - "PoissonDistributed", "FolderDraw"
 # ```
 #
-# ### interventions::scenarios::settings::<scenario name>
+# ### seir_modifiers::scenarios::settings::<scenario name>
 #
-# If {template} is
+# If {method} is
 # ```yaml
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     <scenario name>:
-#       template: SinglePeriodModifier
+#       method: SinglePeriodModifier
 #       parameter: choose one - "alpha, sigma, gamma, r0"
 #       period_start_date: <date>
 #       period_end_date: <date>
@@ -59,24 +59,24 @@
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is
+# If {method} is
 # ```yaml
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     <scenario name>:
-#       template:
+#       method:
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is StackedModifier
+# If {method} is StackedModifier
 # ```yaml
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     <scenario name>:
-#       template: StackedModifier
+#       method: StackedModifier
 #       scenarios: <list of scenario names>
 # ```
 #
@@ -180,8 +180,8 @@ from gempyor.utils import config
 )
 @click.option(
     "-s",
-    "--npi_scenario",
-    "npi_scenarios",
+    "--seir_modifiers_scenario",
+    "seir_modifiers_scenarios",
     envvar="FLEPI_NPI_SCENARIOS",
     type=str,
     default=[],
@@ -284,7 +284,7 @@ def simulate(
     config_file,
     in_run_id,
     out_run_id,
-    npi_scenarios,
+    seir_modifiers_scenarios,
     scenarios_outcomes,
     in_prefix,
     nslots,
@@ -303,9 +303,9 @@ def simulate(
     spatial_base_path = config["data_path"].get()
     spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
-    if not npi_scenarios:
-        npi_scenarios = config["interventions"]["scenarios"].as_str_seq()
-    print(f"NPI Scenarios to be run: {', '.join(npi_scenarios)}")
+    if not seir_modifiers_scenarios:
+        seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+    print(f"NPI Scenarios to be run: {', '.join(seir_modifiers_scenarios)}")
 
     print(f"Outcomes scenarios to be run: {', '.join(scenarios_outcomes)}")
 
@@ -327,13 +327,13 @@ def simulate(
     )
 
     start = time.monotonic()
-    for npi_scenario in npi_scenarios:
+    for seir_modifiers_scenario in seir_modifiers_scenarios:
         s = model_info.ModelInfo(
-            setup_name=config["name"].get() + "/" + str(npi_scenario) + "/",
+            setup_name=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/",
             subpop_setup=subpop_setup,
             nslots=nslots,
-            npi_scenario=npi_scenario,
-            npi_config_seir=config["interventions"]["settings"][npi_scenario],
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            npi_config_seir=config["seir_modifiers"]["settings"][seir_modifiers_scenario],
             seeding_config=config["seeding"],
             initial_conditions_config=config["initial_conditions"],
             parameters_config=config["seir"]["parameters"],
@@ -347,13 +347,13 @@ def simulate(
             in_run_id=in_run_id,
             in_prefix=config["name"].get() + "/",
             out_run_id=out_run_id,
-            out_prefix=config["name"].get() + "/" + str(npi_scenario) + "/" + out_run_id + "/",
+            out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
             stoch_traj_flag=stoch_traj_flag,
         )
 
         print(
             f"""
->> Scenario: {npi_scenario} from config {config_file}
+>> Scenario: {seir_modifiers_scenario} from config {config_file}
 >> Starting {s.nslots} model runs beginning from {s.first_sim_index} on {jobs} processes
 >> ModelInfo *** {s.setup_name} *** from {s.ti} to {s.tf}
     """
