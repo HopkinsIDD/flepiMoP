@@ -36,8 +36,8 @@ if True:
     # p = parameters.Parameters(
     #    parameter_config=config["seir"]["parameters"])
 
-    p = inference_simulator.s.parameters
-    p_draw = p.parameters_quick_draw(n_days=inference_simulator.s.n_days, nsubpops=inference_simulator.s.nsubpops)
+    p = inference_simulator.modinf.parameters
+    p_draw = p.parameters_quick_draw(n_days=inference_simulator.modinf.n_days, nsubpops=inference_simulator.modinf.nsubpops)
 
     p_df = p.getParameterDF(p_draw)["parameter"]
 

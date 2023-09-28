@@ -42,12 +42,12 @@ def test_full_npis_read_write():
     #    sim_id2write=1, s=inference_simulator.s, load_ID=False, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
+    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.modinf, load_ID=False, sim_id2load=None, config=config)
     # npi_seir = seir.build_npi_SEIR(
     #    inference_simulator.s, load_ID=False, sim_id2load=None, config=config
     # )
 
-    inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
+    inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
     hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
@@ -73,8 +73,8 @@ def test_full_npis_read_write():
     #    sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
-    inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
+    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config)
+    inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
     hnpi_wrote = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
@@ -96,8 +96,8 @@ def test_full_npis_read_write():
     #    sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
-    inference_simulator.s.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
+    npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config)
+    inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
     hnpi_wrote = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.107.hnpi.parquet").to_pandas()
@@ -117,10 +117,10 @@ def test_spatial_groups():
     )
 
     # Test build from config, value of the reduction array
-    npi = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
+    npi = seir.build_npi_SEIR(inference_simulator.modinf, load_ID=False, sim_id2load=None, config=config)
 
     # all independent: r1
-    assert len(npi.getReduction("r1")["2021-01-01"].unique()) == inference_simulator.s.nsubpops
+    assert len(npi.getReduction("r1")["2021-01-01"].unique()) == inference_simulator.modinf.nsubpops
     assert npi.getReduction("r1").isna().sum().sum() == 0
 
     # all the same: r2
@@ -128,7 +128,7 @@ def test_spatial_groups():
     assert npi.getReduction("r2").isna().sum().sum() == 0
 
     # two groups: r3
-    assert len(npi.getReduction("r3")["2020-04-15"].unique()) == inference_simulator.s.nsubpops - 2
+    assert len(npi.getReduction("r3")["2020-04-15"].unique()) == inference_simulator.modinf.nsubpops - 2
     assert npi.getReduction("r3").isna().sum().sum() == 0
     assert len(npi.getReduction("r3").loc[["01000", "02000"], "2020-04-15"].unique()) == 1
     assert len(npi.getReduction("r3").loc[["04000", "06000"], "2020-04-15"].unique()) == 1
@@ -154,19 +154,19 @@ def test_spatial_groups():
 
     # all independent: r1
     df = npi_df[npi_df["npi_name"] == "all_independent"]
-    assert len(df) == inference_simulator.s.nsubpops
+    assert len(df) == inference_simulator.modinf.nsubpops
     for g in df["subpop"]:
         assert "," not in g
 
     # all the same: r2
     df = npi_df[npi_df["npi_name"] == "all_together"]
     assert len(df) == 1
-    assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.s.subpop_struct.subpop_names)
-    assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.s.nsubpops
+    assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.modinf.subpop_struct.subpop_names)
+    assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.modinf.nsubpops
 
     # two groups: r3
     df = npi_df[npi_df["npi_name"] == "two_groups"]
-    assert len(df) == inference_simulator.s.nsubpops - 2
+    assert len(df) == inference_simulator.modinf.nsubpops - 2
     for g in ["01000", "02000", "04000", "06000"]:
         assert g not in df["subpop"]
     assert len(df[df["subpop"] == "01000,02000"]) == 1
@@ -197,10 +197,10 @@ def test_spatial_groups():
     )
 
     # Test build from config, value of the reduction array
-    npi = seir.build_npi_SEIR(inference_simulator.s, load_ID=False, sim_id2load=None, config=config)
+    npi = seir.build_npi_SEIR(inference_simulator.modinf, load_ID=False, sim_id2load=None, config=config)
     npi_df = npi.getReductionDF()
 
-    inference_simulator.s.write_simID(ftype="snpi", sim_id=1, df=npi_df)
+    inference_simulator.modinf.write_simID(ftype="snpi", sim_id=1, df=npi_df)
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.105.snpi.parquet").to_pandas()
     snpi_read["reduction"] = np.random.random(len(snpi_read)) * 2 - 1
@@ -218,8 +218,8 @@ def test_spatial_groups():
         out_run_id=107,
     )
 
-    npi_seir = seir.build_npi_SEIR(inference_simulator.s, load_ID=True, sim_id2load=1, config=config)
-    inference_simulator.s.write_simID(ftype="snpi", sim_id=1, df=npi_seir.getReductionDF())
+    npi_seir = seir.build_npi_SEIR(inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config)
+    inference_simulator.modinf.write_simID(ftype="snpi", sim_id=1, df=npi_seir.getReductionDF())
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.106.snpi.parquet").to_pandas()
     snpi_wrote = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.107.snpi.parquet").to_pandas()
@@ -230,10 +230,10 @@ def test_spatial_groups():
     assert (snpi_read == snpi_wrote).all().all()
 
     npi_read = seir.build_npi_SEIR(
-        inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_read
+        inference_simulator.modinf, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_read
     )
     npi_wrote = seir.build_npi_SEIR(
-        inference_simulator.s, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_wrote
+        inference_simulator.modinf, load_ID=False, sim_id2load=1, config=config, bypass_DF=snpi_wrote
     )
 
     assert (npi_read.getReductionDF() == npi_wrote.getReductionDF()).all().all()

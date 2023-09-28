@@ -312,7 +312,7 @@ def simulate(
             config=config,
             nslots=nslots,
             seir_modifiers_scenario=seir_modifiers_scenario,
-            outcome_modifiers_scenario= outcome_modifiers_scenario=outcome_modifiers_scenario,,
+            outcome_modifiers_scenario=outcome_modifiers_scenario,
             write_csv=write_csv,
             write_parquet=write_parquet,
             first_sim_index=first_sim_index,
@@ -372,7 +372,7 @@ def simulate(
             )
 
             if config["outcomes"]["method"].get() == "delayframe":
-                outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, s=s, nslots=nslots, n_jobs=jobs)
+                outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=s, nslots=nslots, n_jobs=jobs)
             else:
                 raise ValueError(f"Only method 'delayframe' is supported at the moment.")
 

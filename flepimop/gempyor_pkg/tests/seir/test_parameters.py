@@ -78,7 +78,7 @@ def test_parameters_quick_draw_old():
     index = 1
     run_id = "test_parameter"
     prefix = ""
-    s = model_info.ModelInfo(
+    modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
@@ -92,9 +92,9 @@ def test_parameters_quick_draw_old():
 
     params = parameters.Parameters(
         parameter_config=config["seir"]["parameters"],
-        ti=s.ti,
-        tf=s.tf,
-        subpop_names=s.subpop_struct.subpop_names,
+        ti=modinf.ti,
+        tf=modinf.tf,
+        subpop_names=modinf.subpop_struct.subpop_names,
     )
 
     ### Check that the object is well constructed:
@@ -104,7 +104,7 @@ def test_parameters_quick_draw_old():
     assert params.intervention_overlap_operation["sum"] == []
     assert params.intervention_overlap_operation["prod"] == [pn.lower() for pn in params.pnames]
 
-    p_array = params.parameters_quick_draw(n_days=s.n_days, nsubpops=s.nsubpops)
+    p_array = params.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
     print(p_array.shape)
 
     alpha = p_array[params.pnames2pindex["alpha"]]
@@ -114,17 +114,17 @@ def test_parameters_quick_draw_old():
     # susceptibility_reduction = p_array[parameters.pnames2pindex['']]
     # transmissibility_reduction = p_array[parameters.pnames2pindex['alpha']]
 
-    assert alpha.shape == (s.n_days, s.nsubpops)
+    assert alpha.shape == (modinf.n_days, modinf.nsubpops)
     assert (alpha == 0.9).all()
 
-    assert R0s.shape == (s.n_days, s.nsubpops)
+    assert R0s.shape == (modinf.n_days, modinf.nsubpops)
     assert len(np.unique(R0s)) == 1
     assert ((2 <= R0s) & (R0s <= 3)).all()
 
-    assert sigma.shape == (s.n_days, s.nsubpops)
+    assert sigma.shape == (modinf.n_days, modinf.nsubpops)
     assert (sigma == config["seir"]["parameters"]["sigma"]["value"]["value"].as_evaled_expression()).all()
 
-    assert gamma.shape == (s.n_days, s.nsubpops)
+    assert gamma.shape == (modinf.n_days, modinf.nsubpops)
     assert len(np.unique(gamma)) == 1
 
 
