@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import setup, seir, NPI, file_paths, parameters, subpopulation_structure
+from gempyor import model_info, seir, NPI, file_paths, parameters, subpopulation_structure
 
 from gempyor.utils import config, write_df, read_df
 
@@ -34,7 +34,7 @@ def test_parameters_from_config_plus_read_write():
     index = 1
     run_id = "test_parameter"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -101,7 +101,7 @@ def test_parameters_quick_draw_old():
     index = 1
     run_id = "test_parameter"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,
@@ -173,7 +173,7 @@ def test_parameters_from_timeserie_file():
     index = 1
     run_id = "test_parameter"
     prefix = ""
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,

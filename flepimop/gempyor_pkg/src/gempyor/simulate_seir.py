@@ -122,7 +122,7 @@ import time
 
 import click
 
-from gempyor import seir, setup, file_paths
+from gempyor import seir, model_info, file_paths
 from gempyor.utils import config
 
 # from .profile import profile_options
@@ -260,7 +260,7 @@ def simulate(
 
     start = time.monotonic()
     for npi_scenario in npi_scenarios:
-        s = setup.Setup(
+        s = model_info.ModelInfo(
             setup_name=config["name"].get() + "/" + str(npi_scenario) + "/",
             subpop_setup=subpop_setup,
             nslots=nslots,
@@ -287,7 +287,7 @@ def simulate(
             f"""
 >> Scenario: {npi_scenario} from config {config_file}
 >> Starting {s.nslots} model runs beginning from {s.first_sim_index} on {jobs} processes
->> Setup *** {s.setup_name} *** from {s.ti} to {s.tf}
+>> ModelInfo *** {s.setup_name} *** from {s.ti} to {s.tf}
     """
         )
         seir.run_parallel_SEIR(s, config=config, n_jobs=jobs)

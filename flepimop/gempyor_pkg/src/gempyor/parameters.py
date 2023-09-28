@@ -6,7 +6,7 @@ import copy
 import confuse
 from numpy import ndarray
 import logging
-from . import setup, NPI, utils
+from . import model_info, NPI, utils
 import datetime
 
 logger = logging.getLogger(__name__)

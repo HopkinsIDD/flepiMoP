@@ -8,7 +8,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from functools import reduce
 
-from gempyor import setup, seir, NPI, file_paths, compartments, subpopulation_structure
+from gempyor import model_info, seir, NPI, file_paths, compartments, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -27,7 +27,7 @@ def test_constant_population():
         subpop_names_key="subpop",
     )
 
-    s = setup.Setup(
+    s = model_info.ModelInfo(
         setup_name="test_seir",
         subpop_setup=ss,
         nslots=1,

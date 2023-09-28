@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import confuse
 
-from gempyor import setup, subpopulation_structure
+from gempyor import model_info, subpopulation_structure
 
 from gempyor.utils import config
 

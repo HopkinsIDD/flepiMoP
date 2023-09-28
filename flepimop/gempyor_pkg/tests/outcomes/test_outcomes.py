@@ -16,7 +16,7 @@ from pathlib import Path
 # import seaborn as sns
 import pyarrow.parquet as pq
 import pyarrow as pa
-from gempyor import file_paths, setup, outcomes
+from gempyor import file_paths, model_info, outcomes
 
 config_path_prefix = ""  #'tests/outcomes/'
 

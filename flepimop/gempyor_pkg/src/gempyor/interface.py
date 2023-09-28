@@ -10,7 +10,7 @@
 
 
 import pathlib
-from . import seir, setup, file_paths, subpopulation_structure
+from . import seir, model_info, file_paths, subpopulation_structure
 from . import outcomes
 from .utils import config, Timer, read_df, profile
 import numpy as np
@@ -78,7 +78,7 @@ class GempyorSimulator:
         interactive = False
         write_csv = False
         write_parquet = True
-        self.s = setup.Setup(
+        self.s = model_info.ModelInfo(
             setup_name=config["name"].get() + "_" + str(npi_scenario),
             subpop_setup=subpopulation_structure.SubpopulationStructure(
                 setup_name=config["setup_name"].get(),
@@ -114,7 +114,7 @@ class GempyorSimulator:
 
         print(
             f"""  gempyor >> Running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** simulation;\n"""
-            f"""  gempyor >> Setup {self.s.setup_name}; index: {self.s.first_sim_index}; run_id: {in_run_id},\n"""
+            f"""  gempyor >> ModelInfo {self.s.setup_name}; index: {self.s.first_sim_index}; run_id: {in_run_id},\n"""
             f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 

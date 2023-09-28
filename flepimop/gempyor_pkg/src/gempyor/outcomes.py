@@ -7,7 +7,7 @@ import tqdm.contrib.concurrent
 from .utils import config, Timer, read_df
 import pyarrow as pa
 import pandas as pd
-from . import NPI, setup
+from . import NPI, model_info
 
 import logging
 
@@ -52,7 +52,7 @@ def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
 
 
 def build_npi_Outcomes(
-    s: setup.Setup,
+    s: model_info.ModelInfo,
     load_ID: bool,
     sim_id2load: int,
     config,
@@ -87,7 +87,7 @@ def build_npi_Outcomes(
 def onerun_delayframe_outcomes(
     *,
     sim_id2write: int,
-    s: setup.Setup,
+    s: model_info.ModelInfo,
     load_ID: bool = False,
     sim_id2load: int = None,
 ):
@@ -116,7 +116,7 @@ def onerun_delayframe_outcomes(
         postprocess_and_write(sim_id=sim_id2write, s=s, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
 
 
-def read_parameters_from_config(s: setup.Setup):
+def read_parameters_from_config(s: model_info.ModelInfo):
     with Timer("Outcome.structure"):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
