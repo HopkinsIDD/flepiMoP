@@ -95,6 +95,7 @@ def onerun_delayframe_outcomes(
     with Timer("buildOutcome.structure"):
         parameters = read_parameters_from_config(modinf)
 
+    npi_outcomes = None
     if modinf.npi_config_outcomes:
         npi_outcomes = build_outcomes_Modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
