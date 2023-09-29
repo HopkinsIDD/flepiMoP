@@ -809,7 +809,7 @@ def test_outcomes_pcomp():
     seir2 = seir.copy()
     seir2["mc_vaccination_stage"] = "first_dose"
 
-    # -> TODO should be there to test the old filters
+    # -> TODO should be there to test the old filters.
     # seir2["mc_name"] = seir2["mc_name"].str.replace("_unvaccinated", "_first_dose")
 
     for pl in subpop:

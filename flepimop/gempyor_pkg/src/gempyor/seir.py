@@ -192,7 +192,8 @@ def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_
         if loaded_df is not None:
             npi = NPI.NPIBase.execute(
                 npi_config=modinf.npi_config_seir,
-                global_config=config,
+                modinf=modinf,
+                modifiers_library=modinf.seir_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
                 pnames_overlap_operation_sum=modinf.parameters.intervention_overlap_operation["sum"],
@@ -200,7 +201,8 @@ def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_
         else:
             npi = NPI.NPIBase.execute(
                 npi_config=modinf.npi_config_seir,
-                global_config=config,
+                modinf=modinf,
+                modifiers_library=modinf.seir_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
                 pnames_overlap_operation_sum=modinf.parameters.intervention_overlap_operation["sum"],
             )
