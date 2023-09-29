@@ -1,7 +1,7 @@
 ##' Functoin that takes the results of an inference run, a date
 ##' and a set of cumulative numbers and and results from the simulation.
 ##'
-##' @param sim_data data from the simse to use. already aggregated to correct spatial scale
+##' @param sim_data data from the simse to use. already aggregated to correct subpop scale
 ##' @param start_date the date to start from
 ##' @param cum_dat the cumulative data on start date. should have a column to join to sta on and cumDeaths
 ##' @param loc_column whihc column defines location

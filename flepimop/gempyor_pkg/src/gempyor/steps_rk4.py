@@ -93,7 +93,6 @@ def rk4_integration(
                 # source compartment. That's why there is nothing with n_spatial node here.
                 # but (TODO) we should enforce that ?
                 if first_proportion:
-
                     only_one_proportion = (
                         transitions[transition_proportion_start_col][transition_index] + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]

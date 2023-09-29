@@ -33,13 +33,13 @@ def get_spatial_groups(grp_config, affected_subpops: list) -> dict:
 
     spatial_groups = {"grouped": [], "ungrouped": []}
 
-    if not grp_config["spatial_groups"].exists():
+    if not grp_config["subpop_groups"].exists():
         spatial_groups["ungrouped"] = affected_subpops
     else:
-        if grp_config["spatial_groups"].get() == "all":
+        if grp_config["subpop_groups"].get() == "all":
             spatial_groups["grouped"] = [affected_subpops]
         else:
-            spatial_groups["grouped"] = grp_config["spatial_groups"].get()
+            spatial_groups["grouped"] = grp_config["subpop_groups"].get()
             spatial_groups["ungrouped"] = list(
                 set(affected_subpops) - set(flatten_list_of_lists(spatial_groups["grouped"]))
             )

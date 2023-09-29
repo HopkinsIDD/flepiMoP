@@ -30,8 +30,8 @@ single_loc_inference_test <- function(to_fit,
     cl <- parallel::makeCluster(ncores)
     registerDoSNOW(cl)
     
-    # Column name that stores spatial unique id
-    obs_subpop <- config$spatial_setup$subpop
+    # Column name that stores subpop unique id
+    obs_subpop <- config$subpop_setup$subpop
     
     # Set number of simulations
     iterations_per_slot <- config$inference$iterations_per_slot
@@ -273,8 +273,8 @@ multi_loc_inference_test <- function(to_fit,
     registerDoSNOW(cl)
     
     N <- length(S0s)
-    # Column name that stores spatial unique id
-    obs_subpop <- config$spatial_setup$subpop
+    # Column name that stores subpop unique id
+    obs_subpop <- config$subpop_setup$subpop
     
     # Set number of simulations
     iterations_per_slot <- config$inference$iterations_per_slot
