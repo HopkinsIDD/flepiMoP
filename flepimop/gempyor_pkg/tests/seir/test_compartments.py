@@ -69,13 +69,13 @@ def test_Setup_has_compartments_component():
         setup_name="test_values",
         geodata_file=f"{DATA_DIR}/geodata.csv",
         mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
+        subpop_pop_key="population",
         subpop_names_key="subpop",
     )
 
     s = setup.Setup(
         setup_name="test_values",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],
@@ -96,7 +96,7 @@ def test_Setup_has_compartments_component():
 
     s = setup.Setup(
         setup_name="test_values",
-        spatial_setup=ss,
+        subpop_setup=ss,
         nslots=1,
         npi_scenario="None",
         npi_config_seir=config["interventions"]["settings"]["None"],

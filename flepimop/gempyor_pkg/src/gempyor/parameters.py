@@ -111,46 +111,46 @@ class Parameters:
     def get_pnames2pindex(self) -> dict:
         return self.pnames2pindex
 
-    def parameters_quick_draw(self, n_days: int, nnodes: int) -> ndarray:
+    def parameters_quick_draw(self, n_days: int, nsubpops: int) -> ndarray:
         """
         Returns all parameter in an array. These are drawn based on the seir::parameters section of the config, passed in as p_config.
         :param n_days: number of time interval
-        :param nnodes: number of spatial nodes
-        :return:  array of shape (nparam, n_days, nnodes) with all parameters for all nodes and all time (same value)
+        :param nsubpops: number of spatial nodes
+        :return:  array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time (same value)
         """
-        param_arr = np.empty((self.npar, n_days, nnodes), dtype="float64")
+        param_arr = np.empty((self.npar, n_days, nsubpops), dtype="float64")
         param_arr[:] = np.nan  # fill with NaNs so we don't fail silently
 
         for idx, pn in enumerate(self.pnames):
             if "dist" in self.pdata[pn]:
-                param_arr[idx] = np.full((n_days, nnodes), self.pdata[pn]["dist"]())
+                param_arr[idx] = np.full((n_days, nsubpops), self.pdata[pn]["dist"]())
             else:
                 param_arr[idx] = self.pdata[pn]["ts"].values
 
         return param_arr  # we don't store it as a member because this object needs to be small to be pickable
 
-    def parameters_load(self, param_df: pd.DataFrame, n_days: int, nnodes: int) -> ndarray:
+    def parameters_load(self, param_df: pd.DataFrame, n_days: int, nsubpops: int) -> ndarray:
         """
         drop-in equivalent to param_quick_draw() that take a file as written parameter_write()
         :param fname:
         :param n_days:
-        :param nnodes:
+        :param nsubpops:
         :param extension:
-        :return: array of shape (nparam, n_days, nnodes) with all parameters for all nodes and all time.
+        :return: array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time.
         """
-        param_arr = np.empty((self.npar, n_days, nnodes), dtype="float64")
+        param_arr = np.empty((self.npar, n_days, nsubpops), dtype="float64")
         param_arr[:] = np.nan  # fill with NaNs so we don't fail silently
 
         for idx, pn in enumerate(self.pnames):
             if pn in param_df["parameter"].values:
                 pval = float(param_df[param_df["parameter"] == pn].value)
-                param_arr[idx] = np.full((n_days, nnodes), pval)
+                param_arr[idx] = np.full((n_days, nsubpops), pval)
             elif "ts" in self.pdata[pn]:
                 param_arr[idx] = self.pdata[pn]["ts"].values
             else:
                 print(f"PARAM: parameter {pn} NOT found in loadID file. Drawing from config distribution")
                 pval = self.pdata[pn]["dist"]()
-                param_arr[idx] = np.full((n_days, nnodes), pval)
+                param_arr[idx] = np.full((n_days, nsubpops), pval)
 
         return param_arr
 
@@ -173,9 +173,9 @@ class Parameters:
     def parameters_reduce(self, p_draw: ndarray, npi: object) -> ndarray:
         """
         Params reduced according to the NPI provided.
-        :param p_draw: array of shape (nparam, n_days, nnodes) from p_draw
+        :param p_draw: array of shape (nparam, n_days, nsubpops) from p_draw
         :param npi: NPI object with the reduction
-        :return: array of shape (nparam, n_days, nnodes) with all parameters for all nodes and all time, reduced
+        :return: array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time, reduced
         """
         p_reduced = copy.deepcopy(p_draw)
 

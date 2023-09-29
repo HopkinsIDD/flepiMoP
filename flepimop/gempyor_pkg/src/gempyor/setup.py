@@ -29,7 +29,7 @@ class Setup:
         self,
         *,
         setup_name,
-        spatial_setup,
+        subpop_setup,
         nslots,
         ti,  # time to start
         tf,  # time to finish
@@ -52,7 +52,6 @@ class Setup:
         out_prefix=None,
         stoch_traj_flag=False,
     ):
-
         # 1. Important global variables
         self.setup_name = setup_name
         self.nslots = nslots
@@ -76,10 +75,10 @@ class Setup:
         self.first_sim_index = first_sim_index
         self.outcome_scenario = outcome_scenario
 
-        self.subpop_struct = spatial_setup
+        self.subpop_struct = subpop_setup
         self.n_days = (self.tf - self.ti).days + 1  # because we include s.ti and s.tf
-        self.nnodes = self.subpop_struct.nnodes
-        self.popnodes = self.subpop_struct.popnodes
+        self.nsubpops = self.subpop_struct.nsubpops
+        self.subpop_pop = self.subpop_struct.subpop_pop
         self.mobility = self.subpop_struct.mobility
 
         self.stoch_traj_flag = stoch_traj_flag
@@ -132,7 +131,6 @@ class Setup:
             # Think if we really want to hold this up.
             self.parameters = parameters.Parameters(
                 parameter_config=self.parameters_config,
-                # NOTE: 'config_version' was gone, no longer needed?  
                 ti=self.ti,
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,

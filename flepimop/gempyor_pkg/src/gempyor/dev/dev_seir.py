@@ -24,7 +24,7 @@ ss = subpopulation_structure.SubpopulationStructure(
     setup_name="test_seir",
     geodata_file=f"{DATA_DIR}/geodata.csv",
     mobility_file=f"{DATA_DIR}/mobility.txt",
-    popnodes_key="population",
+    subpop_pop_key="population",
     subpop_names_key="subpop",
 )
 
@@ -33,7 +33,7 @@ run_id = "test_SeedOneNode"
 prefix = ""
 s = setup.Setup(
     setup_name="test_seir",
-    spatial_setup=ss,
+    subpop_setup=ss,
     nslots=1,
     npi_scenario="None",
     npi_config_seir=config["interventions"]["settings"]["None"],
@@ -60,7 +60,7 @@ mobility_data = s.mobility.data
 
 npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, subpops=s.subpop_struct.subpop_names)
 
-params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
+params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
 params = s.parameters.parameters_reduce(params, npi)
 
 (
@@ -74,7 +74,7 @@ params = s.parameters.parameters_reduce(params, npi)
 
 states = seir.steps_SEIR_nb(
     s.compartments.compartments.shape[0],
-    s.nnodes,
+    s.nsubpops,
     s.n_days,
     parsed_parameters,
     s.dt,
@@ -86,7 +86,7 @@ states = seir.steps_SEIR_nb(
     mobility_data,
     mobility_subpop_indices,
     mobility_data_indices,
-    s.popnodes,
+    s.subpop_pop,
     True,
 )
 df = seir.states2Df(s, states)
