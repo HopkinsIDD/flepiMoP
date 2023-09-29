@@ -38,6 +38,7 @@ class ModelInfo:
         out_run_id=None,
         out_prefix=None,
         stoch_traj_flag=False,
+        setup_name=None, # override config setup_name
     ):
         self.nslots = nslots
         self.write_csv = write_csv
@@ -49,11 +50,14 @@ class ModelInfo:
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
 
         # 1. Create a setup name that contains every scenario.
-        self.setup_name = config["name"].get()
-        if self.seir_modifiers_scenario is not None:
-            self.setup_name += "_" + str(self.seir_modifiers_scenario)
-        if self.outcome_modifiers_scenario is not None:
-            self.setup_name += "_" + str(self.outcome_modifiers_scenario)
+        if setup_name is None:
+            self.setup_name = config["name"].get()
+            if self.seir_modifiers_scenario is not None:
+                self.setup_name += "_" + str(self.seir_modifiers_scenario)
+            if self.outcome_modifiers_scenario is not None:
+                self.setup_name += "_" + str(self.outcome_modifiers_scenario)
+        else:
+            self.setup_name=setup_name
 
         # 2. What about time:
         self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
@@ -82,7 +86,7 @@ class ModelInfo:
 
         # 4. the SEIR structure
         if config["seir"].exists():
-            seir_config = config["seir"]
+            self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
             self.initial_conditions_config = (
                 config["initial_conditions"] if config["initial_conditions"].exists() else None
@@ -107,9 +111,9 @@ class ModelInfo:
                 initial_conditions_config=self.initial_conditions_config,
             )
             # really ugly references to the config globally here.
-            if config["compartments"].exists() and seir_config is not None:
+            if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
-                    seir_config=seir_config, compartments_config=config["compartments"]
+                    seir_config=self.seir_config, compartments_config=config["compartments"]
                 )
 
             # SEIR modifiers
