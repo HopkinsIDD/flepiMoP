@@ -125,7 +125,7 @@ class ModelInfo:
                     "An seir modifiers scenario was provided to ModelInfo but no 'seir_modifiers' sections in config"
                 )
             else:
-                logging.critical("Running ModelInfo with seir but without SEIR Modifiers")
+                logging.info("Running ModelInfo with seir but without SEIR Modifiers")
 
         elif self.seir_modifiers_scenario is not None:
             raise ValueError("A seir modifiers scenario was provided to ModelInfo but no 'seir:' sections in config")
@@ -150,13 +150,13 @@ class ModelInfo:
                     "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes_modifiers' sections in config"
                 )
             else:
-                logging.critical("Running ModelInfo with outcomes but without Outcomes Modifiers")
+                logging.info("Running ModelInfo with outcomes but without Outcomes Modifiers")
         elif self.outcome_modifiers_scenario is not None:
             raise ValueError(
                 "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes:' sections in config"
             )
         else:
-            logging.critical("Running ModelInfo without Outcomes")
+            logging.info("Running ModelInfo without Outcomes")
 
         # 6. Inputs and outputs
         if in_run_id is None:
