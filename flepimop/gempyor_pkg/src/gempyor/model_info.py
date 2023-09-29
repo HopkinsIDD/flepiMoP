@@ -21,6 +21,7 @@ class ModelInfo:
         # inference           # Required if running inference
     ```
     """
+
     def __init__(
         self,
         *,
@@ -67,14 +68,14 @@ class ModelInfo:
         spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
-                setup_name=config["setup_name"].get(),
-                geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-                mobility_file=spatial_base_path / spatial_config["mobility"].get()
-                if spatial_config["mobility"].exists()
-                else None,
-                subpop_pop_key="population",
-                subpop_names_key="subpop",
-            )
+            setup_name=config["setup_name"].get(),
+            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
+            mobility_file=spatial_base_path / spatial_config["mobility"].get()
+            if spatial_config["mobility"].exists()
+            else None,
+            subpop_pop_key="population",
+            subpop_names_key="subpop",
+        )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
         self.mobility = self.subpop_struct.mobility
@@ -83,17 +84,21 @@ class ModelInfo:
         if config["seir"].exists():
             seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
-            self.initial_conditions_config = config["initial_conditions"] if config["initial_conditions"].exists() else None
+            self.initial_conditions_config = (
+                config["initial_conditions"] if config["initial_conditions"].exists() else None
+            )
             self.seeding_config = config["seeding"] if config["seeding"].exists() else None
 
             if self.seeding_config is None and self.initial_conditions_config is None:
-                logging.critical("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
-                #raise ValueError("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
-            
+                logging.critical(
+                    "The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed"
+                )
+                # raise ValueError("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
+
             if config["seir_modifiers"].exists():
                 if config["seir_modifiers"]["scenarios"].exists():
                     self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
-                else: 
+                else:
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
 
             # Think if we really want to hold this up.
@@ -112,28 +117,30 @@ class ModelInfo:
                 self.compartments = compartments.Compartments(
                     seir_config=seir_config, compartments_config=config["compartments"]
                 )
-                
-        print(config.keys())
-        print(type(config))
-        print(config["outcomes"])
+
         # 5. Outcomes
         if config["outcomes"].exists():
             self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
-
             self.npi_config_outcomes = None
             if config["outcomes_modifiers"].exists():
                 if config["outcomes_modifiers"]["scenarios"].exists():
-                    self.npi_config_outcomes = config["outcomes_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
+                    self.npi_config_outcomes = config["outcomes_modifiers"]["modifiers"][
+                        self.outcome_modifiers_scenario
+                    ]
                     self.outcome_modifiers_library = config["outcomes_modifiers"]["modifiers"].get()
                 else:
                     self.outcome_modifiers_library = config["outcomes_modifiers"].get()
                     raise ValueError("Not implemented yet")
             elif self.outcome_modifiers_scenario is not None:
-                raise ValueError("An outcome modifiers scenario was provided to ModelInfo but no outcomes sections in config")
+                raise ValueError(
+                    "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes_modifiers' sections in config"
+                )
             else:
                 logging.critical("Running ModelInfo with outcomes but without Outcomes Modifiers")
         elif self.outcome_modifiers_scenario is not None:
-            raise ValueError("An outcome modifiers scenario was provided to ModelInfo but no 'outcomes:' sections in config")
+            raise ValueError(
+                "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes:' sections in config"
+            )
         else:
             logging.critical("Running ModelInfo without Outcomes")
 

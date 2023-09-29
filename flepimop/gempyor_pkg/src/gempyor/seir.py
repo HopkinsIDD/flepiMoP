@@ -23,7 +23,6 @@ def build_step_source_arg(
     seeding_data,
     seeding_amounts,
 ):
-    
     if "integration" in modinf.seir_config.keys():
         if "method" in modinf.seir_config["integration"].keys():
             integration_method = modinf.seir_config["integration"]["method"].get()
@@ -43,7 +42,7 @@ def build_step_source_arg(
         integration_method = "rk4.jit"
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
-    
+
     assert type(modinf.mobility) == scipy.sparse.csr.csr_matrix
     mobility_data = modinf.mobility.data
     mobility_data = mobility_data.astype("float64")
@@ -93,7 +92,7 @@ def build_step_source_arg(
         "ndays": modinf.n_days,
         "parameters": parsed_parameters,
         "dt": dt,
-        "integration_method":integration_method,
+        "integration_method": integration_method,
         "transitions": transition_array,
         "proportion_info": proportion_info,
         "transition_sum_compartments": proportion_array,
@@ -133,7 +132,6 @@ def steps_SEIR(
     integration_method = fnct_args["integration_method"]
 
     logging.info(f"Integrating with method {integration_method}")
-
 
     if integration_method == "legacy":
         seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")

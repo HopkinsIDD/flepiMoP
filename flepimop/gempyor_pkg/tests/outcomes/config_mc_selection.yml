@@ -187,7 +187,7 @@ outcomes:
     incidH_from_sum:
       sum: [ 'incidH_1dose', 'incidH_0dose']
 
-outcome_modifiers:
+outcomes_modifiers:
   scenarios:
     - Some
   modifiers:

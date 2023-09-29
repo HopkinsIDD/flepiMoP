@@ -42,7 +42,9 @@ mobility_subpop_indices = modinf.mobility.indices
 mobility_data_indices = modinf.mobility.indptr
 mobility_data = modinf.mobility.data
 
-npi = NPI.NPIBase.execute(npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names)
+npi = NPI.NPIBase.execute(
+    npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+)
 
 params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
 params = modinf.parameters.parameters_reduce(params, npi)

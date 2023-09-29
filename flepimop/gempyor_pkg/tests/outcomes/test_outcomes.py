@@ -808,7 +808,9 @@ def test_outcomes_pcomp():
     seir = pq.read_table(f"{config_path_prefix}model_output/seir/000000001.105.seir.parquet").to_pandas()
     seir2 = seir.copy()
     seir2["mc_vaccination_stage"] = "first_dose"
-    #seir2["mc_name"] = seir2["mc_name"].str.replace("_unvaccinated", "_first_dose")
+
+    # -> TODO should be there to test the old filters
+    # seir2["mc_name"] = seir2["mc_name"].str.replace("_unvaccinated", "_first_dose")
 
     for pl in subpop:
         seir2[pl] = seir2[pl] * p_compmult[1]
