@@ -29,7 +29,7 @@ def test_parameters_from_config_plus_read_write():
     s = model_info.ModelInfo(
         config=config,
         nslots=1,
-        seir_modifiers_scenario="None",
+        seir_modifiers_scenario=None,
         write_csv=False,
         first_sim_index=index,
         in_run_id=run_id,
@@ -132,20 +132,13 @@ def test_parameters_from_timeserie_file():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")
-    ss = subpopulation_structure.SubpopulationStructure(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
+
     index = 1
     run_id = "test_parameter"
     prefix = ""
     s = model_info.ModelInfo(
         config=config,
         nslots=1,
-        seir_modifiers_scenario="None",
         write_csv=False,
         first_sim_index=index,
         in_run_id=run_id,

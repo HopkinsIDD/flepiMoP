@@ -130,6 +130,7 @@ def steps_SEIR(
     )
 
     integration_method = fnct_args["integration_method"]
+    fnct_args.pop("integration_method")
 
     logging.info(f"Integrating with method {integration_method}")
 
