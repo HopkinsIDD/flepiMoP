@@ -13,7 +13,7 @@
 # end_date: <date>
 # data_path: <path to directory>
 
-# spatial_setup:
+# subpop_setup:
 #   geodata: <path to file>
 #
 # seeding:
@@ -23,7 +23,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::subpop} that denotes the subpop
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #

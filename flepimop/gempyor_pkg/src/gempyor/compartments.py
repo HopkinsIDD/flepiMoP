@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 class Compartments:
     # Minimal object to be easily picklable for // runs
     def __init__(self, seir_config=None, compartments_config=None, compartments_file=None, transitions_file=None):
-
         self.times_set = 0
 
         ## Something like this is needed for check script:

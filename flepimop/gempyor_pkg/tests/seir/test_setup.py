@@ -21,18 +21,18 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.txt",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
 
-    def test_bad_popnodes_key_fail(self):
-        # Bad popnodes_key error
-        with pytest.raises(ValueError, match=r".*popnodes_key.*"):
+    def test_bad_subpop_pop_key_fail(self):
+        # Bad subpop_pop_key error
+        with pytest.raises(ValueError, match=r".*subpop_pop_key.*"):
             subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
-                popnodes_key="wrong",
+                subpop_pop_key="wrong",
                 subpop_names_key="subpop",
             )
 
@@ -42,7 +42,7 @@ class TestSubpopulationStructure:
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.txt",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="wrong",
             )
 
@@ -52,7 +52,7 @@ class TestSubpopulationStructure:
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
 
@@ -62,6 +62,6 @@ class TestSubpopulationStructure:
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_big.txt",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
