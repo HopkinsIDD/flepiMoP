@@ -112,7 +112,7 @@ seir_modifiers:
     - None
     - Scenario1
     - Scenario2
-  settings:
+  modifiers:
     None:
       method: SinglePeriodModifier
       parameter: r0
@@ -144,11 +144,11 @@ seir_modifiers:
         high: .23
     Scenario1:
       method: StackedModifier
-      scenarios:
+      modifiers:
         - KansasCity
         - Wuhan
         - None
     Scenario2:
       method: StackedModifier
-      scenarios:
+      modifiers:
         - Wuhan

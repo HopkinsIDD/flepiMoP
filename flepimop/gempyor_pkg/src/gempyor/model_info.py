@@ -156,7 +156,7 @@ class ModelInfo:
                 "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes:' sections in config"
             )
         else:
-            logging.infogi("Running ModelInfo without Outcomes")
+            logging.info("Running ModelInfo without Outcomes")
 
         # 6. Inputs and outputs
         if in_run_id is None:

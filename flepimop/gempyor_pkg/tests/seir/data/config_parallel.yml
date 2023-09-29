@@ -97,7 +97,7 @@ seir_modifiers:
   scenarios:
     - Scenario1
     - Scenario2
-  settings:
+  modifiers:
     None:
       method: SinglePeriodModifierR0
       value:
@@ -142,17 +142,17 @@ seir_modifiers:
         value: 0.9
     vaccination:
       method: StackedModifier
-      scenarios:
+      modifiers:
         - Dose1
         - Dose2
     Scenario_vacc:
       method: StackedModifier
-      scenarios:
+      modifiers:
         - Place1
         - Place2
         - vaccination
     Scenario_novacc:
       method: StackedModifier
-      scenarios:
+      modifiers:
         - Place1
         - Place2
