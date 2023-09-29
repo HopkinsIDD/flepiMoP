@@ -70,14 +70,16 @@ def build_outcomes_Modifiers(
         if loaded_df is not None:
             npi = NPI.NPIBase.execute(
                 npi_config=modinf.npi_config_outcomes,
-                global_config=config,
+                modinf=modinf,
+                modifiers_library=modinf.outcome_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
             )
         else:
             npi = NPI.NPIBase.execute(
                 npi_config=modinf.npi_config_outcomes,
-                global_config=config,
+                modinf=modinf,
+                modifiers_library=modinf.outcome_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
             )
     return npi
@@ -96,6 +98,9 @@ def onerun_delayframe_outcomes(
     npi_outcomes = None
     if modinf.npi_config_outcomes:
         npi_outcomes = build_outcomes_Modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        print("NPIIIIIII OUTCOOOME")
+    else:
+        print("No NPI")
 
     loaded_values = None
     if load_ID:
@@ -304,6 +309,7 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
     dates = pd.date_range(modinf.ti, modinf.tf, freq="D")
+    print(modinf.ti, modinf.tf, len(dates))
 
     outcomes = dataframe_from_array(
         np.zeros((len(dates), len(modinf.subpop_struct.subpop_names)), dtype=int),
@@ -315,6 +321,8 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
     seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
 
     for new_comp in parameters:
+        print(new_comp
+              )
         if "source" in parameters[new_comp]:
             # Read the config for this compartment: if a source is specified, we
             # 1. compute incidence from binomial draw
@@ -385,10 +393,12 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                 axis=0,
             )
             if npi is not None:
+                print("Doing NPIs")
                 delays = NPI.reduce_parameter(
                     parameter=delays,
                     modification=npi.getReduction(parameters[new_comp]["delay::npi_param_name"].lower()),
                 )
+
                 delays = np.round(delays).astype(int)
                 probabilities = NPI.reduce_parameter(
                     parameter=probabilities,
@@ -488,10 +498,14 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
 
 
 def get_filtered_incidI(diffI, dates, subpops, filters):
+    print("get_filtered_incidI", diffI.shape, len(dates), len(subpops), filters)
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
+    else:
+        raise ValueError("Cannot distinguish is SEIR sourced outcomes needs incidence or prevalence")
+
 
     diffI = diffI[diffI["mc_value_type"] == vtype].copy()
     diffI.drop(["mc_value_type"], inplace=True, axis=1)
@@ -499,15 +513,18 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
 
     incidI_arr = np.zeros((len(dates), len(subpops)), dtype=int)
     df = diffI.copy()
+    print("bf", df, df.shape)
     for mc_type, mc_value in filters.items():
         if isinstance(mc_value, str):
             mc_value = [mc_value]
         df = df[df[f"mc_{mc_type}"].isin(mc_value)]
-
+    print("df", df.shape)
     for mcn in df["mc_name"].unique():
+        print(mcn)
         new_df = df[df["mc_name"] == mcn]
         new_df = new_df.drop([c for c in new_df.columns if "mc_" in c], axis=1)
         new_df = new_df.drop("date", axis=1)
+        print(incidI_arr.shape, new_df.shape)
         incidI_arr = incidI_arr + new_df.to_numpy()
     return incidI_arr
 

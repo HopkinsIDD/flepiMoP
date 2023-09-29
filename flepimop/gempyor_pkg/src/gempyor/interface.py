@@ -45,8 +45,8 @@ class GempyorSimulator:
         run_id="test_run_id",
         prefix="test_prefix",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
-        outcome_modifiers_scenario="inference",
+        seir_modifiers_scenario=None,
+        outcome_modifiers_scenario=None,
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
@@ -69,7 +69,7 @@ class GempyorSimulator:
         config.clear()
         config.read(user=False)
         config.set_file(config_path)
-    
+        print(config_path)
 
         np.random.seed(rng_seed)
 

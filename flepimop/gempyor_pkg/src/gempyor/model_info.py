@@ -113,7 +113,9 @@ class ModelInfo:
                     seir_config=seir_config, compartments_config=config["compartments"]
                 )
                 
-
+        print(config.keys())
+        print(type(config))
+        print(config["outcomes"])
         # 5. Outcomes
         if config["outcomes"].exists():
             self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
@@ -121,9 +123,19 @@ class ModelInfo:
             self.npi_config_outcomes = None
             if config["outcomes_modifiers"].exists():
                 if config["outcomes_modifiers"]["scenarios"].exists():
-                    self.npi_config_outcomes = self.outcomes_config["outcomes_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
+                    self.npi_config_outcomes = config["outcomes_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
+                    self.outcome_modifiers_library = config["outcomes_modifiers"]["modifiers"].get()
                 else:
-                    raise ValueError("Not implemented yet") 
+                    self.outcome_modifiers_library = config["outcomes_modifiers"].get()
+                    raise ValueError("Not implemented yet")
+            elif self.outcome_modifiers_scenario is not None:
+                raise ValueError("An outcome modifiers scenario was provided to ModelInfo but no outcomes sections in config")
+            else:
+                logging.critical("Running ModelInfo with outcomes but without Outcomes Modifiers")
+        elif self.outcome_modifiers_scenario is not None:
+            raise ValueError("An outcome modifiers scenario was provided to ModelInfo but no 'outcomes:' sections in config")
+        else:
+            logging.critical("Running ModelInfo without Outcomes")
 
         # 6. Inputs and outputs
         if in_run_id is None:
