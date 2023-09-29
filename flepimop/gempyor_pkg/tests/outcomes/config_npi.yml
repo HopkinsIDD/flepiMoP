@@ -54,7 +54,7 @@ outcomes_modifiers:
   modifiers:
     Some:
       method: StackedModifier
-        scenarios: ["times2H", "ICUprobability", "times2D"]
+      modifiers: ["times2H", "ICUprobability", "times2D"]
     Hduration:
       method: SinglePeriodModifier
       parameter: "incidH::duration"
@@ -111,7 +111,7 @@ outcomes_modifiers:
         value: .5
     times2D:
       method: StackedModifier
-      scenarios: ["Ddelay", "Dprobability"]
+      modifiers: ["Ddelay", "Dprobability"]
     times2H:
       method: StackedModifier
-      scenarios: ["Hdelay", "Hprobability", "Hduration"]
+      modifiers: ["Hdelay", "Hprobability", "Hduration"]

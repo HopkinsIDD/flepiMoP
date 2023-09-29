@@ -335,7 +335,7 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    seir.onerun_SEIR(sim_id2write=int(sim_id2write), s=modinf, config=config)
+    seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
 
     states_old = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, 100, "seir", "parquet"),
@@ -369,7 +369,7 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    seir.onerun_SEIR(sim_id2write=sim_id2write, s=modinf, config=config)
+    seir.onerun_SEIR(sim_id2write=sim_id2write, modinf=modinf, config=config)
 
     states_new = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "seir", "parquet"),
@@ -384,7 +384,7 @@ def test_continuation_resume():
         .all()
     )
 
-    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, s=modinf, sim_id2load=sim_id2write, load_ID=True, config=config)
+    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, modinf=modinf, sim_id2load=sim_id2write, load_ID=True, config=config)
     states_new = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "seir", "parquet"),
     ).to_pandas()
@@ -422,7 +422,7 @@ def test_inference_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    seir.onerun_SEIR(sim_id2write=int(sim_id2write), s=modinf, config=config)
+    seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
     npis_old = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet")
     ).to_pandas()
@@ -454,7 +454,7 @@ def test_inference_resume():
         out_prefix=prefix,
     )
 
-    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, s=modinf, sim_id2load=sim_id2write, load_ID=True, config=config)
+    seir.onerun_SEIR(sim_id2write=sim_id2write + 1, modinf=modinf, sim_id2load=sim_id2write, load_ID=True, config=config)
     npis_new = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "snpi", "parquet")
     ).to_pandas()

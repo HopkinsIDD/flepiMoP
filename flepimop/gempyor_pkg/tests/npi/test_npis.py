@@ -39,7 +39,7 @@ def test_full_npis_read_write():
     # inference_simulator.one_simulation(sim_id2write=1,load_ID=False)
 
     # outcomes.onerun_delayframe_outcomes(
-    #    sim_id2write=1, s=inference_simulator.s, load_ID=False, sim_id2load=1
+    #    sim_id2write=1, modinf=inference_simulator.s, load_ID=False, sim_id2load=1
     # )
 
     npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.modinf, load_ID=False, sim_id2load=None, config=config)
@@ -70,7 +70,7 @@ def test_full_npis_read_write():
     # shutil.move('model_output/seir/000000001.105.seir.parquet', 'model_output/seir/000000001.106.seir.parquet')
 
     # outcomes.onerun_delayframe_outcomes(
-    #    sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1
+    #    sim_id2write=1, modinf=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
     npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config)
@@ -93,7 +93,7 @@ def test_full_npis_read_write():
     # shutil.move('model_output/seir/000000001.106.seir.parquet', 'model_output/seir/000000001.107.seir.parquet')
 
     # outcomes.onerun_delayframe_outcomes(
-    #    sim_id2write=1, s=inference_simulator.s, load_ID=True, sim_id2load=1
+    #    sim_id2write=1, modinf=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
     npi_outcomes = outcomes.build_outcomes_Modifiers(inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config)

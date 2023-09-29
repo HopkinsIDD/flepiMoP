@@ -12,64 +12,64 @@ outcomes:
   method: delayframe
   param_from_file: False
   outcomes:
-  ### 3 examples of sourcing incidH with the new syntax:
-  ### 1. same old syntax.
-  ### the source will be the sum of the incidence of infection_stage I1, accross all other meta_compartments.
-    incidH_from_all_compatibility:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .1
-        delay:
-          value:
-            distribution: fixed
-            value: 7
-        duration:
-          value:
-            distribution: fixed
-            value: 7
-          name: hosp_curr
-  ### 2. Same thing as before but using the new syntax
-    incidH_from_all_implicit:
-        source:
-          incidence:
-            infection_stage: "I1"
-        probability:
-          value:
-            distribution: fixed
-            value: .1
-        delay:
-          value:
-            distribution: fixed
-            value: 7
-        duration:
-          value:
-            distribution: fixed
-            value: 7
-          name: hosp_curr
-    ### 3. Same thing as before but using the new syntax, but explicitely.
-    incidH_from_all_explicit:
-        source:
-          incidence:
-            infection_stage: "I1"
-            vaccination_stage: ["0dose", "1dose", "2dose"]
-            variant_type: ["var0", "var1"]
-        probability:
-          value:
-            distribution: fixed
-            value: .1
-        delay:
-          value:
-            distribution: fixed
-            value: 7
-        duration:
-          value:
-            distribution: fixed
-            value: 7
-          name: hosp_curr
-  ### 3 different incidH for each dose, and then a sum that combine them together. Here it's possible
-  ### to have different NPIs and probabilities for e.g different doses.
+    ### 3 examples of sourcing incidH with the new syntax:
+    ### 1. same old syntax.
+    ### the source will be the sum of the incidence of infection_stage I1, accross all other meta_compartments.
+    #incidH_from_all_compatibility:
+    #  source: incidI
+    #  probability:
+    #    value:
+    #      distribution: fixed
+    #      value: .1
+    #  delay:
+    #    value:
+    #      distribution: fixed
+    #      value: 7
+    #  duration:
+    #    value:
+    #      distribution: fixed
+    #      value: 7
+    #    name: hosp_curr
+    #### 2. Same thing as before but using the new syntax
+    #incidH_from_all_implicit:
+    #  source:
+    #    incidence:
+    #      infection_stage: "I1"
+    #  probability:
+    #    value:
+    #      distribution: fixed
+    #      value: .1
+    #  delay:
+    #    value:
+    #      distribution: fixed
+    #      value: 7
+    #  duration:
+    #    value:
+    #      distribution: fixed
+    #      value: 7
+    #    name: hosp_curr
+    #### 3. Same thing as before but using the new syntax, but explicitely.
+    #incidH_from_all_explicit:
+    #  source:
+    #    incidence:
+    #      infection_stage: "I1"
+    #      vaccination_stage: ["unvaccinated", "first_dose", "second_dose"]
+    #      #variant_type: ["var0", "var1"]
+    #  probability:
+    #    value:
+    #      distribution: fixed
+    #      value: .1
+    #  delay:
+    #    value:
+    #      distribution: fixed
+    #      value: 7
+    #  duration:
+    #    value:
+    #      distribution: fixed
+    #      value: 7
+    #    name: hosp_curr
+    ### 3 different incidH for each dose, and then a sum that combine them together. Here it's possible
+    ### to have different NPIs and probabilities for e.g different doses.
     incidI_0dose:
       source:
         incidence:
@@ -190,10 +190,10 @@ outcomes:
 outcome_modifiers:
   scenarios:
     - Some
-  settings:
+  modifiers:
     Some:
       method: StackedModifier
-        scenarios: ["times2H", "ICUprobability", "times2D"]
+      modifiers: ["times2H", "ICUprobability", "times2D"]
     Hduration:
       method: SinglePeriodModifier
       parameter: "incidH_duration"
@@ -250,9 +250,9 @@ outcome_modifiers:
         value: .5
     times2D:
       method: StackedModifier
-      scenarios: ["Ddelay", "Dprobability"]
+      modifiers: ["Ddelay", "Dprobability"]
     times2H:
       method: StackedModifier
-      scenarios: ["Hdelay", "Hprobability", "Hduration"]
+      modifiers: ["Hdelay", "Hprobability", "Hduration"]
 
 
