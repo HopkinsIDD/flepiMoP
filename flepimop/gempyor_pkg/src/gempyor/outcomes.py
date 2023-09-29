@@ -230,7 +230,9 @@ def read_parameters_from_config(s: setup.Setup):
                             logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
                             # Sort it in case the relative probablity file is mispecified
                             rel_probability.subpop = rel_probability.subpop.astype("category")
-                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(s.subpop_struct.subpop_names)
+                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(
+                                s.subpop_struct.subpop_names
+                            )
                             rel_probability = rel_probability.sort_values(["subpop"])
                             parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
                         else:
@@ -487,7 +489,6 @@ def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None
 
 
 def get_filtered_incidI(diffI, dates, subpops, filters):
-
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:

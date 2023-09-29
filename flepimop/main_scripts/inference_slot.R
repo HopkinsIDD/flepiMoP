@@ -83,13 +83,28 @@ if (!is.null(config$seeding)){
 }
 
 
+infer_initial_conditions <- FALSE
+if (!is.null(config$initial_conditions)){
+    if (('perturbation' %in% names(config$initial_conditions))) {
+        infer_initial_conditions <- TRUE
+        if (!(config$initial_conditions$method %in% c('SetInitialConditionsFolderDraw'))){
+            stop("This filtration method requires the initial_condition method 'SetInitialConditionsFolderDraw'")
+        }
+        if (!(config$initial_conditions$proportional)){
+            stop("This filtration method requires the initial_condition to be set proportional'")
+        }
+    }
+} else {
+    print("⚠️ No initial_conditions: section found in config >> not fitting initial_conditions.")
+}
+
 
 #if (!('lambda_file' %in% names(config$seeding))) {
 #  stop("Despite being a folder draw method, filtration method requires the seeding to provide a lambda_file argument.")
 #}
 
 # Aggregation to state level if in config
-state_level <- ifelse(!is.null(config$spatial_setup$state_level) && config$spatial_setup$state_level, TRUE, FALSE)
+state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
 
 ##Load information on geographic locations from geodata file.
@@ -97,12 +112,12 @@ suppressMessages(
     geodata <- flepicommon::load_geodata_file(
         paste(
             config$data_path,
-            config$spatial_setup$geodata, sep = "/"
+            config$subpop_setup$geodata, sep = "/"
         ),
         subpop_len = opt$subpop_len
     )
 )
-obs_subpop <- config$spatial_setup$subpop
+obs_subpop <- config$subpop_setup$subpop
 
 ##Load simulations per slot from config if not defined on command line
 ##command options take precedence
@@ -290,9 +305,6 @@ if (config$inference$do_inference){
     print("Running WITHOUT inference")
 }
 
-
-
-
 required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
 
 # Load gempyor module
@@ -395,6 +407,7 @@ for(npi_scenario in npi_scenarios) {
                 initial_seeding$amount <- as.integer(round(initial_seeding$amount))
             }
         # }
+        initial_init <- arrow::read_parquet(first_chimeric_files[['init_filename']])
         initial_snpi <- arrow::read_parquet(first_chimeric_files[['snpi_filename']])
         initial_hnpi <- arrow::read_parquet(first_chimeric_files[['hnpi_filename']])
         initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
@@ -457,6 +470,11 @@ for(npi_scenario in npi_scenarios) {
             } else {
                 proposed_seeding <- initial_seeding
             }
+            if (infer_initial_conditions) {
+                proposed_init <- inference::perturb_init(initial_init, config$initial_conditions$perturbation)
+            } else {
+                proposed_init <- initial_init
+            }
             proposed_snpi <- inference::perturb_snpi(initial_snpi, config$interventions$settings)
             proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$interventions$settings)
             proposed_spar <- initial_spar
@@ -467,6 +485,7 @@ for(npi_scenario in npi_scenarios) {
 
             # since the first iteration is accepted by default, we don't perturb it
             if ((opt$this_block == 1) && (current_index == 0)) {
+                proposed_init <- initial_init
                 proposed_snpi <- initial_snpi
                 proposed_hnpi <- initial_hnpi
                 proposed_spar <- initial_spar
@@ -489,6 +508,7 @@ for(npi_scenario in npi_scenarios) {
                 write.csv(proposed_seeding, this_global_files[['seed_filename']], row.names = FALSE)
             # }
 
+            arrow::write_parquet(proposed_init,this_global_files[['init_filename']])
             arrow::write_parquet(proposed_snpi,this_global_files[['snpi_filename']])
             arrow::write_parquet(proposed_hnpi,this_global_files[['hnpi_filename']])
             arrow::write_parquet(proposed_spar,this_global_files[['spar_filename']])
@@ -618,6 +638,8 @@ for(npi_scenario in npi_scenarios) {
                 #  "Chimeric" means GeoID-specific
 
                 seeding_npis_list <- inference::accept_reject_new_seeding_npis(
+                    init_orig = initial_init,
+                    init_prop = proposed_init,
                     seeding_orig = initial_seeding,
                     seeding_prop = proposed_seeding,
                     snpi_orig = initial_snpi,
@@ -632,6 +654,7 @@ for(npi_scenario in npi_scenarios) {
 
 
                 # Update accepted parameters to start next simulation
+                initial_init <- seeding_npis_list$init
                 initial_seeding <- seeding_npis_list$seeding
                 initial_snpi <- seeding_npis_list$snpi
                 initial_hnpi <- seeding_npis_list$hnpi
@@ -639,6 +662,7 @@ for(npi_scenario in npi_scenarios) {
                 chimeric_likelihood_data <- seeding_npis_list$ll
             } else {
                 print("Resetting chimeric files to global")
+                initial_init <- proposed_init
                 initial_seeding <- proposed_seeding
                 initial_snpi <- proposed_snpi
                 initial_hnpi <- proposed_hnpi
@@ -655,6 +679,7 @@ for(npi_scenario in npi_scenarios) {
             ## Write accepted parameters to file
             # writes to file of the form variable/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.block.iter.run_id.variable.ext
             write.csv(initial_seeding,this_chimeric_files[['seed_filename']], row.names = FALSE)
+            arrow::write_parquet(initial_init,this_chimeric_files[['init_filename']])
             arrow::write_parquet(initial_snpi,this_chimeric_files[['snpi_filename']])
             arrow::write_parquet(initial_hnpi,this_chimeric_files[['hnpi_filename']])
             arrow::write_parquet(initial_spar,this_chimeric_files[['spar_filename']])
@@ -664,6 +689,7 @@ for(npi_scenario in npi_scenarios) {
             print(paste("Current index is ",current_index))
 
             ###Memory management
+            rm(proposed_init)
             rm(proposed_snpi)
             rm(proposed_hnpi)
             rm(proposed_hpar)

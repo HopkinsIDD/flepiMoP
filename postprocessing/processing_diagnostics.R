@@ -17,7 +17,7 @@ s3_name <- "idd-inference-runs"
 
 # Pull in subpop data
 geodata_states <- read.csv(paste0("./data/",
-                                  config$spatial_setup$geodata)) %>%
+                                  config$subpop_setup$geodata)) %>%
   mutate(subpop = stringr::str_pad(subpop, width = 5, side = "left", pad = "0"))
 
 # PULL OUTCOMES FROM S3 ---------------------------------------------------

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import confuse
 
-from gempyor import setup, subpopulation_structure, parameters
+from gempyor import setup, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -21,12 +21,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -58,12 +58,12 @@ class TestSubpopulationStructure:
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.csv",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
             s = setup.Setup(
                 setup_name = TEST_SETUP_NAME,
-                spatial_setup =ss,
+                subpop_setup=ss,
                 nslots = 1,
                 ti = datetime.datetime.strptime("2020-03-31","%Y-%m-%d"),
                 tf = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
@@ -97,12 +97,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -143,12 +143,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -185,12 +185,12 @@ class TestSubpopulationStructure:
         setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -225,12 +225,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -268,12 +268,12 @@ class TestSubpopulationStructure:
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.csv",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
            s = setup.Setup(
                 setup_name = TEST_SETUP_NAME,
-                spatial_setup =ss,
+                subpop_setup=ss,
                 nslots = 1,
                 ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
                 tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -290,12 +290,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -318,11 +318,11 @@ class TestSubpopulationStructure:
            #config.clear()
            #config.read(user=False)
            #config.set_file(f"{DATA_DIR}/config_seir_unknown_integration.yml")
-           ss = setup.SpatialSetup(
+           ss = subpopulation_structure.SubpopulationStructure(
               setup_name=TEST_SETUP_NAME,
               geodata_file=f"{DATA_DIR}/geodata.csv",
               mobility_file=f"{DATA_DIR}/mobility.csv",
-              popnodes_key="population",
+              subpop_pop_key="population",
               subpop_names_key="subpop",
            )
            s = setup.Setup(
@@ -339,11 +339,11 @@ class TestSubpopulationStructure:
        # config.clear()
        # config.read(user=False)
        # config.set_file(f"{DATA_DIR}/config_seir_no_dt.yml")
-           ss = setup.SpatialSetup(
+           ss = subpopulation_structure.SubpopulationStructure(
               setup_name=TEST_SETUP_NAME,
               geodata_file=f"{DATA_DIR}/geodata.csv",
               mobility_file=f"{DATA_DIR}/mobility.csv",
-              popnodes_key="population",
+              subpop_pop_key="population",
               subpop_names_key="subpop",
            )
            s = setup.Setup(
@@ -372,12 +372,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -397,12 +397,12 @@ class TestSubpopulationStructure:
            setup_name=TEST_SETUP_NAME,
            geodata_file=f"{DATA_DIR}/geodata.csv",
            mobility_file=f"{DATA_DIR}/mobility.csv",
-           popnodes_key="population",
+           subpop_pop_key="population",
            subpop_names_key="subpop",
         )
         s = setup.Setup(
            setup_name = TEST_SETUP_NAME,
-           spatial_setup =ss,
+           subpop_setup=ss,
            nslots = 1,
            ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
            tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -445,12 +445,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -496,12 +496,12 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.csv",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
         s = setup.Setup(
             setup_name = TEST_SETUP_NAME,
-            spatial_setup =ss,
+            subpop_setup=ss,
             nslots = 1,
             ti = datetime.datetime.strptime("2020-01-31","%Y-%m-%d"),
             tf = datetime.datetime.strptime("2020-05-31","%Y-%m-%d"),
@@ -567,76 +567,47 @@ class TestSubpopulationStructure:
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
             mobility_file=f"{DATA_DIR}/mobility.npz",
-            popnodes_key="population",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
     def test_SpatialSetup_wihout_mobility_success3(self):
-        ss = setup.SpatialSetup(
+        ss = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata.csv",
-            mobility_file=f"{DATA_DIR}/mobility0.csv",
-            popnodes_key="population",
+            mobility_file=f"{DATA_DIR}/mobility.txt",
+            subpop_pop_key="population",
             subpop_names_key="subpop",
         )
 
-    def test_bad_popnodes_key_fail(self):
-        # Bad popnodes_key error
-        with pytest.raises(ValueError, match=r".*popnodes_key.*"):
+    def test_bad_subpop_pop_key_fail(self):
+        # Bad subpop_pop_key error
+        with pytest.raises(ValueError, match=r".*subpop_pop_key.*"):
             subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
-                popnodes_key="wrong",
+                subpop_pop_key="wrong",
                 subpop_names_key="subpop",
             )
 
-    def test_bad_nodenames_key_fail(self):
-        with pytest.raises(ValueError, match=r".*nodenames_key.*"):
-            setup.SpatialSetup(
+    def test_bad_subpop_names_key_fail(self):
+        with pytest.raises(ValueError, match=r".*subpop_names_key.*"):
+            subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility.txt",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="wrong",
             )
+    '''
 
-    def test_duplicate_nodenames_key_fail(self):
-        with pytest.raises(ValueError, match=r".*duplicate.*"):
-            subpopulation_structure.SubpopulationStructure(
-                setup_name=TEST_SETUP_NAME,
-                geodata_file=f"{DATA_DIR}/geodata_dup.csv",
-                mobility_file=f"{DATA_DIR}/mobility.csv",
-                popnodes_key="population",
-                subpop_names_key="subpop",
-            )
-    '''
-    def test_mobility_shape_in_npz_fail(self):
-        with pytest.raises(ValueError, match=r".*mobility.*Actual.*"):
-            subpopulation_structure.SubpopulationStructure(
-                setup_name=TEST_SETUP_NAME,
-                geodata_file=f"{DATA_DIR}/geodata.csv",
-                mobility_file=f"{DATA_DIR}/mobility_2x3.npz",
-                popnodes_key="population",
-                subpop_names_key="subpop",
-            )
-    '''
     def test_mobility_dimensions_fail(self):
         with pytest.raises(ValueError, match=r".*mobility.*dimensions.*"):
             subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_small.txt",
-                popnodes_key="population",
-                subpop_names_key="subpop",
-            )
-
-    def test_mobility_same_ori_dest_fail(self):
-        with pytest.raises(ValueError, match=r".*Mobility.*same.*"):
-            setup.SpatialSetup(
-                setup_name=TEST_SETUP_NAME,
-                geodata_file=f"{DATA_DIR}/geodata.csv",
-                mobility_file=f"{DATA_DIR}/mobility_same_ori_dest.csv",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
 
@@ -646,16 +617,16 @@ class TestSubpopulationStructure:
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility_big.txt",
-                popnodes_key="population",
+                subpop_pop_key="population",
                 subpop_names_key="subpop",
             )
     def test_mobility_data_exceeded_fail(self):
         with pytest.raises(ValueError, match=r".*mobility.*exceed.*"):
-            setup.SpatialSetup(
+            subpopulation_structure.SubpopulationStructure(
                 setup_name=TEST_SETUP_NAME,
                 geodata_file=f"{DATA_DIR}/geodata.csv",
                 mobility_file=f"{DATA_DIR}/mobility1001.csv",
-                popnodes_key="population",
-                nodenames_key="geoid",
+                subpop_pop_key="population",
+                subpop_names_key="subpop",
             )
-    '''
+

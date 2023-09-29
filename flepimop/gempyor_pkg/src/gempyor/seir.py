@@ -27,14 +27,14 @@ def build_step_source_arg(
     mobility_data = s.mobility.data
     mobility_data = mobility_data.astype("float64")
     assert type(s.compartments.compartments.shape[0]) == int
-    assert type(s.nnodes) == int
+    assert type(s.nsubpops) == int
     assert s.n_days > 1
-    assert parsed_parameters.shape[1:3] == (s.n_days, s.nnodes)
+    assert parsed_parameters.shape[1:3] == (s.n_days, s.nsubpops)
     assert type(s.dt) == float
     assert type(transition_array[0][0]) == np.int64
     assert type(proportion_array[0]) == np.int64
     assert type(proportion_info[0][0]) == np.int64
-    assert initial_conditions.shape == (s.compartments.compartments.shape[0], s.nnodes)
+    assert initial_conditions.shape == (s.compartments.compartments.shape[0], s.nsubpops)
     assert type(initial_conditions[0][0]) == np.float64
     # Test of empty seeding:
     assert len(seeding_data.keys()) == 4
@@ -58,17 +58,17 @@ def build_step_source_arg(
         assert type(mobility_data[0]) == np.float64
         assert len(mobility_data) == len(s.mobility.indices)
         assert type(s.mobility.indices[0]) == np.int32
-        assert len(s.mobility.indptr) == s.nnodes + 1
+        assert len(s.mobility.indptr) == s.nsubpops + 1
         assert type(s.mobility.indptr[0]) == np.int32
 
-    assert len(s.popnodes) == s.nnodes
-    assert type(s.popnodes[0]) == np.int64
+    assert len(s.subpop_pop) == s.nsubpops
+    assert type(s.subpop_pop[0]) == np.int64
 
     assert s.dt <= 1.0 or s.dt == 2.0
 
     fnct_args = {
         "ncompartments": s.compartments.compartments.shape[0],
-        "nspatial_nodes": s.nnodes,
+        "nspatial_nodes": s.nsubpops,
         "ndays": s.n_days,
         "parameters": parsed_parameters,
         "dt": s.dt,
@@ -81,7 +81,7 @@ def build_step_source_arg(
         "mobility_data": mobility_data,
         "mobility_row_indices": s.mobility.indices,
         "mobility_data_indices": s.mobility.indptr,
-        "population": s.popnodes,
+        "population": s.subpop_pop,
         "stochastic_p": s.stoch_traj_flag,
     }
     return fnct_args
@@ -97,7 +97,6 @@ def steps_SEIR(
     seeding_data,
     seeding_amounts,
 ):
-
     fnct_args = build_step_source_arg(
         s,
         parsed_parameters,
@@ -218,10 +217,10 @@ def onerun_SEIR(
             p_draw = s.parameters.parameters_load(
                 param_df=s.read_simID(ftype="spar", sim_id=sim_id2load),
                 n_days=s.n_days,
-                nnodes=s.nnodes,
+                nsubpops=s.nsubpops,
             )
         else:
-            p_draw = s.parameters.parameters_quick_draw(n_days=s.n_days, nnodes=s.nnodes)
+            p_draw = s.parameters.parameters_quick_draw(n_days=s.n_days, nsubpops=s.nsubpops)
         # reduce them
         parameters = s.parameters.parameters_reduce(p_draw, npi)
         log_debug_parameters(p_draw, "Parameters without interventions")
@@ -291,7 +290,7 @@ def states2Df(s, states):
     )
     # prevalence data, we use multi.index dataframe, sparring us the array manipulation we use to do
     prev_df = pd.DataFrame(
-        data=states_prev.reshape(s.n_days * s.compartments.get_ncomp(), s.nnodes),
+        data=states_prev.reshape(s.n_days * s.compartments.get_ncomp(), s.nsubpops),
         index=ts_index,
         columns=s.subpop_struct.subpop_names,
     ).reset_index()
@@ -309,7 +308,7 @@ def states2Df(s, states):
     )
 
     incid_df = pd.DataFrame(
-        data=states_incid.reshape(s.n_days * s.compartments.get_ncomp(), s.nnodes),
+        data=states_incid.reshape(s.n_days * s.compartments.get_ncomp(), s.nsubpops),
         index=ts_index,
         columns=s.subpop_struct.subpop_names,
     ).reset_index()
@@ -329,7 +328,6 @@ def states2Df(s, states):
 
 
 def postprocess_and_write(sim_id, s, states, p_draw, npi, seeding):
-
     # print(f"before postprocess_and_write for id {s.out_run_id}, {s.out_prefix}, {sim_id + s.first_sim_index - 1}")
     # aws_disk_diagnosis()
 

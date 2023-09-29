@@ -6,7 +6,7 @@ data_path: data
 nslots: 15
 
 
-spatial_setup:
+subpop_setup:
   geodata: geodata.csv
   mobility: mobility.txt
 

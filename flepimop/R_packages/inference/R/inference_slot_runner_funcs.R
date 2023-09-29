@@ -96,7 +96,7 @@ aggregate_and_calc_loc_likelihoods <- function(
     #' @importFrom magrittr %>%
     likelihood_data <- likelihood_data %>% do.call(what = rbind)
 
-    ##Update  likelihood data based on hierarchical_stats
+    ##Update  likelihood data based on hierarchical_stats (NOT SUPPORTED FOR INIT FILES)
     for (stat in names(hierarchical_stats)) {
 
         if (hierarchical_stats[[stat]]$module %in% c("seir_interventions", "seir")) {
@@ -134,6 +134,7 @@ aggregate_and_calc_loc_likelihoods <- function(
         } else {
             stop("unsupported hierarchical stat module")
         }
+        
 
 
 
@@ -596,8 +597,8 @@ initialize_mcmc_first_block <- function(
     ## Only works on these files:
     global_types <- c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik")
     global_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
-    chimeric_types <- c("seed", "snpi", "hnpi", "spar", "hpar", "llik")
-    chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet")
+    chimeric_types <- c("seed", "init", "snpi", "hnpi", "spar", "hpar", "llik")
+    chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
     non_llik_types <- paste(c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
 
     global_files <- create_filename_list(run_id, global_prefix, block - 1, global_types, global_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
