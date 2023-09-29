@@ -20,7 +20,7 @@ os.chdir(os.path.dirname(__file__))
 
 
 # def test_parameters_from_timeserie_file():
-#if True:
+# if True:
 #    config.clear()
 #    config.read(user=False)
 #    config.set_file(f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml")

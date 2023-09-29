@@ -192,7 +192,9 @@ class GempyorSimulator:
             else:
                 if not self.already_built:
                     self.build_structure()
-                npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+                npi_seir = seir.build_npi_SEIR(
+                    modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+                )
                 if self.modinf.npi_config_outcomes:
                     npi_outcomes = outcomes.build_outcomes_Modifiers(
                         modinf=self.modinf,
@@ -220,10 +222,14 @@ class GempyorSimulator:
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
                     initial_conditions = self.modinf.seedingAndIC.load_ic(sim_id2load, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.load_seeding(sim_id2load, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.load_seeding(
+                        sim_id2load, setup=self.modinf
+                    )
                 else:
                     initial_conditions = self.modinf.seedingAndIC.draw_ic(sim_id2write, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.draw_seeding(sim_id2write, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.draw_seeding(
+                        sim_id2write, setup=self.modinf
+                    )
                 self.debug_seeding_data = seeding_data
                 self.debug_seeding_amounts = seeding_amounts
                 self.debug_initial_conditions = initial_conditions
@@ -243,7 +249,9 @@ class GempyorSimulator:
 
             with Timer("SEIR.postprocess"):
                 if self.modinf.write_csv or self.modinf.write_parquet:
-                    out_df = seir.postprocess_and_write(sim_id2write, self.modinf, states, p_draw, npi_seir, seeding_data)
+                    out_df = seir.postprocess_and_write(
+                        sim_id2write, self.modinf, states, p_draw, npi_seir, seeding_data
+                    )
                     self.debug_out_df = out_df
 
             loaded_values = None
@@ -320,7 +328,9 @@ class GempyorSimulator:
                 nsubpops=self.modinf.nsubpops,
             )
         else:
-            p_draw = self.modinf.parameters.parameters_quick_draw(n_days=self.modinf.n_days, nsubpops=self.modinf.nsubpops)
+            p_draw = self.modinf.parameters.parameters_quick_draw(
+                n_days=self.modinf.n_days, nsubpops=self.modinf.nsubpops
+            )
         return p_draw
 
     def get_seir_parametersDF(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):

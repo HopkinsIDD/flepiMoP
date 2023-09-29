@@ -38,7 +38,6 @@ class StackedModifier(NPIBase):
         self.reduction_number = 0
         sub_npis_unique_names = []
 
-
         for scenario in npi_config["modifiers"].get():
             # if it's a string, look up the scenario name's config
             if isinstance(scenario, str):
