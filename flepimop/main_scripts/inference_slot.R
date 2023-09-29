@@ -163,7 +163,7 @@ if (is.null(config$inference$gt_source)){
 }
 
 gt_scale <- ifelse(state_level, "US state", "US county")
-fips_codes_ <- geodata[[obs_subpop]]
+subpops_ <- geodata[[obs_subpop]]
 
 gt_start_date <- lubridate::ymd(config$start_date)
 if (opt$ground_truth_start != "") {
@@ -203,21 +203,20 @@ if (config$inference$do_inference){
 
     obs <- suppressMessages(
         readr::read_csv(config$inference$gt_data_path,
-                        col_types = readr::cols(FIPS = readr::col_character(),
-                                                date = readr::col_date(),
+                        col_types = readr::cols(date = readr::col_date(),
                                                 source = readr::col_character(),
+                                                subpop = readr::col_character(),
                                                 .default = readr::col_double()), )) %>%
-        dplyr::filter(FIPS %in% fips_codes_, date >= gt_start_date, date <= gt_end_date) %>%
-        dplyr::right_join(tidyr::expand_grid(FIPS = unique(.$FIPS), date = unique(.$date))) %>%
-        dplyr::mutate_if(is.numeric, dplyr::coalesce, 0) %>%
-        dplyr::rename(!!obs_subpop := FIPS)
+        dplyr::filter(subpop %in% subpops_, date >= gt_start_date, date <= gt_end_date) %>%
+        dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) %>%
+        dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
 
-    geonames <- unique(obs[[obs_subpop]])
+    subpopnames <- unique(obs[[obs_subpop]])
 
 
     ## Compute statistics
     data_stats <- lapply(
-        geonames,
+        subpopnames,
         function(x) {
             df <- obs[obs[[obs_subpop]] == x, ]
             inference::getStats(
@@ -229,7 +228,7 @@ if (config$inference$do_inference){
                 end_date = gt_end_date
             )
         }) %>%
-        set_names(geonames)
+        set_names(subpopnames)
 
 
     likelihood_calculation_fun <- function(sim_hosp){
@@ -262,7 +261,7 @@ if (config$inference$do_inference){
 
 } else {
 
-    geonames <- obs_subpop
+    subpopnames <- obs_subpop
 
     likelihood_calculation_fun <- function(sim_hosp){
 

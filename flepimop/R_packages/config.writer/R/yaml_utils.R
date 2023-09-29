@@ -80,7 +80,7 @@
 collapse_intervention<- function(dat){
     #TODO: add number to repeated names
     #TODO add a check that all end_dates are the same
-    mtr <- dat %>%
+    mtr <- dat %>% as_tibble() %>%
         dplyr::filter(template=="MultiPeriodModifier") %>%
         dplyr::mutate(end_date=paste0("end_date: ", end_date),
                       start_date=paste0("- start_date: ", start_date)) %>%
@@ -88,8 +88,7 @@ collapse_intervention<- function(dat){
         dplyr::group_by(dplyr::across(-period)) %>%
         dplyr::summarize(period = paste0(period, collapse="\n            "))
 
-    if (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups))) {
-
+    if (exists("mtr$spatial_groups") && (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups)))) {
         mtr <- mtr %>%
             dplyr::group_by(dplyr::across(-subpop)) %>%
             dplyr::summarize(subpop = paste0(subpop, collapse='", "'),
