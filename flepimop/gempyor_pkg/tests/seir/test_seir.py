@@ -77,7 +77,10 @@ def test_constant_population_legacy_integration():
     initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -138,7 +141,10 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -219,7 +225,10 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -276,7 +285,10 @@ def test_steps_SEIR_no_spread():
     modinf.mobility.data = modinf.mobility.data * 0
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -518,7 +530,10 @@ def test_parallel_compartments_with_vacc():
     initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -598,7 +613,10 @@ def test_parallel_compartments_no_vacc():
     initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)

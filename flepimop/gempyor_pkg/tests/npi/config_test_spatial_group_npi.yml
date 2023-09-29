@@ -50,7 +50,7 @@ seir:
 seir_modifiers:
   scenarios:
     - inference
-  settings:
+  modifiers:
     all_independent:
       method: SinglePeriodModifier
       parameter: r1
@@ -111,7 +111,6 @@ seir_modifiers:
         sd: 0.025
         a: 0
         b: 0.9
-
     mt_reduce:
       method: MultiPeriodModifier
       parameter: r5
@@ -136,7 +135,6 @@ seir_modifiers:
         sd: 0.05
         a: -1
         b: 1
-
     scn_error:
       method: MultiPeriodModifier
       parameter: r1
@@ -161,10 +159,9 @@ seir_modifiers:
         sd: 0.05
         a: -1
         b: 1
-
     inference:
       method: StackedModifier
-      scenarios: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
+      modifiers: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
     error:
       method: StackedModifier
-      scenarios: ["scn_error"]
+      modifiers: ["scn_error"]

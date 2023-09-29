@@ -95,12 +95,6 @@ class ModelInfo:
                 )
                 # raise ValueError("The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed")
 
-            if config["seir_modifiers"].exists():
-                if config["seir_modifiers"]["scenarios"].exists():
-                    self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
-                else:
-                    raise ValueError("Not implemented yet")  # TODO create a Stacked from all
-
             # Think if we really want to hold this up.
             self.parameters = parameters.Parameters(
                 parameter_config=self.parameters_config,
@@ -118,6 +112,26 @@ class ModelInfo:
                     seir_config=seir_config, compartments_config=config["compartments"]
                 )
 
+            # SEIR modifiers
+            if config["seir_modifiers"].exists():
+                if config["seir_modifiers"]["scenarios"].exists():
+                    self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
+                    self.seir_modifiers_library = config["seir_modifiers"]["modifiers"].get()
+                else:
+                    self.seir_modifiers_library = config["seir_modifiers"].get()
+                    raise ValueError("Not implemented yet")  # TODO create a Stacked from all
+            elif self.seir_modifiers_scenario is not None:
+                raise ValueError(
+                    "An seir modifiers scenario was provided to ModelInfo but no 'seir_modifiers' sections in config"
+                )
+            else:
+                logging.critical("Running ModelInfo with seir but without SEIR Modifiers")
+
+        elif self.seir_modifiers_scenario is not None:
+            raise ValueError("A seir modifiers scenario was provided to ModelInfo but no 'seir:' sections in config")
+        else:
+            logging.critical("Running ModelInfo without SEIR")
+
         # 5. Outcomes
         if config["outcomes"].exists():
             self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
@@ -130,7 +144,7 @@ class ModelInfo:
                     self.outcome_modifiers_library = config["outcomes_modifiers"]["modifiers"].get()
                 else:
                     self.outcome_modifiers_library = config["outcomes_modifiers"].get()
-                    raise ValueError("Not implemented yet")
+                    raise ValueError("Not implemented yet")  # TODO create a Stacked from all
             elif self.outcome_modifiers_scenario is not None:
                 raise ValueError(
                     "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes_modifiers' sections in config"

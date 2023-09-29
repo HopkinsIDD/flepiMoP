@@ -30,7 +30,10 @@ def test_constant_population():
     seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
-        npi_config=modinf.npi_config_seir, global_config=config, subpops=modinf.subpop_struct.subpop_names
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
     )
 
     parameters = modinf.parameters.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
