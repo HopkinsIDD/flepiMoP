@@ -129,7 +129,6 @@ def test_outcome_modifiers_scenario_with_load():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
     )
 
@@ -165,7 +164,6 @@ def test_outcomes_read_write_hpar():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=3,
     )
@@ -190,7 +188,6 @@ def test_outcome_modifiers_scenario_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=10,
     )
@@ -337,7 +334,6 @@ def test_outcome_modifiers_scenario_with_load_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=11,
     )
@@ -380,7 +376,6 @@ def test_outcomes_read_write_hpar_subclasses():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=12,
     )
@@ -392,7 +387,6 @@ def test_outcomes_read_write_hpar_subclasses():
         run_id=12,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=13,
     )
