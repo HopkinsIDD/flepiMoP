@@ -79,6 +79,7 @@ class SeedingAndIC:
         initial_conditions_config: confuse.ConfigView,
     ):
         self.seeding_config = seeding_config
+        print("self.seeding_config", self.seeding_config)
         self.initial_conditions_config = initial_conditions_config
 
     def draw_ic(self, sim_id: int, setup) -> np.ndarray:
@@ -249,8 +250,9 @@ class SeedingAndIC:
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
+
         method = "NoSeeding"
-        if "method" in self.seeding_config.keys():
+        if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
 
         if method == "NegativeBinomialDistributed" or method == "PoissonDistributed":
@@ -303,7 +305,8 @@ class SeedingAndIC:
 
     def load_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
         method = "NoSeeding"
-        if "method" in self.seeding_config.keys():
+        
+        if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
         if method not in ["FolderDraw", "SetInitialConditions", "InitialConditionsFolderDraw", "NoSeeding", "FromFile"]:
             raise NotImplementedError(
