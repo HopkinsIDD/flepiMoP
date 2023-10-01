@@ -104,7 +104,7 @@ collapse_intervention<- function(dat){
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, method, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, method, type, category, parameter, baseline_modifier, starts_with("value_"), starts_with("pert_")) %>%
         dplyr::filter(method %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
@@ -386,7 +386,7 @@ yaml_reduce_method<- function(dat){
         },
         dat$period,
         if(dat$method == "ModifierModifier"){
-            paste0("      baseline_scenario: ", dat$baseline_scenario, "\n")
+            paste0("      baseline_modifier: ", dat$baseline_modifier, "\n")
         }
     ))
 

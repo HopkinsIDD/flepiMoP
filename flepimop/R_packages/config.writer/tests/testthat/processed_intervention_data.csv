@@ -1,4 +1,4 @@
-USPS,subpop,start_date,end_date,name,method,type,category,parameter,baseline_scenario,value_dist,value_mean,value_sd,value_a,value_b,pert_dist,pert_mean,pert_sd,pert_a,pert_b
+USPS,subpop,start_date,end_date,name,method,type,category,parameter,baseline_modifier,value_dist,value_mean,value_sd,value_a,value_b,pert_dist,pert_mean,pert_sd,pert_a,pert_b
 AL,01000,2020-04-04,2020-04-30,lockdown,MultiPeriodModifier,transmission,NPI,R0,NA,truncnorm,0.6,0.05,0,0.9,truncnorm,0,0.05,-1,1
 AL,01000,2020-05-01,2020-05-21,open_p1,MultiPeriodModifier,transmission,NPI,R0,NA,truncnorm,0.6,0.05,0,0.9,truncnorm,0,0.05,-1,1
 AL,01000,2020-05-22,2020-07-15,open_p2,MultiPeriodModifier,transmission,NPI,R0,NA,truncnorm,0.6,0.05,0,0.9,truncnorm,0,0.05,-1,1
