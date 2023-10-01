@@ -92,6 +92,7 @@ class ModelInfo:
                 config["initial_conditions"] if config["initial_conditions"].exists() else None
             )
             self.seeding_config = config["seeding"] if config["seeding"].exists() else None
+            print("self.seeding_config", self.seeding_config)
 
             if self.seeding_config is None and self.initial_conditions_config is None:
                 logging.critical(
