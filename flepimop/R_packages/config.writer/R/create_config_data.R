@@ -54,7 +54,7 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
                                type = "outcome",
                                category = "incidH_adjustment",
                                parameter = param_val,
-                               baseline_scenario = "",
+                               baseline_modifier = "",
                                start_date = start_date,
                                end_date = sim_end_date,
                                method = method,
@@ -71,7 +71,7 @@ set_incidH_params <- function(start_date=Sys.Date()-42,
                                pert_b = p_b) %>%
         dplyr::mutate(pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
                       dplyr::across(pert_mean:pert_b, ~ifelse(inference, as.numeric(.x), NA_real_))) %>%
-        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_modifier, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
 
     return(local_var)
 }
@@ -140,7 +140,7 @@ set_npi_params_old <- function(intervention_file,
                       pert_b = p_b,
                       type = "transmission",
                       category = "NPI",
-                      baseline_scenario = "",
+                      baseline_modifier = "",
                       parameter = dplyr::if_else(method=="MultiPeriodModifier", param_val, NA_character_)
         )
 
@@ -149,7 +149,7 @@ set_npi_params_old <- function(intervention_file,
     npi <- npi %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)),
                       pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
-        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_modifier, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
 
     if(!is.null(redux_subpop)){
         if(redux_subpop == 'all'){
@@ -232,13 +232,13 @@ set_npi_params <- function (intervention_file, sim_start_date = as.Date("2020-01
                       value_mean = v_mean, value_sd = v_sd, value_a = v_a,
                       value_b = v_b, pert_dist = p_dist, pert_mean = p_mean,
                       pert_sd = p_sd, pert_a = p_a, pert_b = p_b, type = "transmission",
-                      category = "NPI", baseline_scenario = "", parameter = dplyr::if_else(method == "MultiPeriodModifier", param_val, NA_character_))
+                      category = "NPI", baseline_modifier = "", parameter = dplyr::if_else(method == "MultiPeriodModifier", param_val, NA_character_))
     if (any(stringr::str_detect(npi$name, "^\\d$")))
         stop("Intervention names must include at least one non-numeric character.")
     npi <- npi %>% dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)), pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
         dplyr::select(USPS, subpop,
                       start_date, end_date, name, method, type, category,
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
+                      parameter, baseline_modifier, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
     if (!is.null(redux_subpop)) {
         if (redux_subpop == "all") {
@@ -332,7 +332,7 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                       parameter = param_val,
                       category = "seasonal",
                       method = method,
-                      baseline_scenario = "",
+                      baseline_modifier = "",
                       subpop = "all",
                       name = paste0("Seas_", month),
                       pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
@@ -347,7 +347,7 @@ set_seasonality_params <- function(sim_start_date=as.Date("2020-03-31"),
                       end_date = dplyr::if_else(end_date > sim_end_date, sim_end_date, end_date),
                       start_date = dplyr::if_else(start_date < sim_start_date, sim_start_date, start_date)
         ) %>%
-        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_modifier, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
 
     return(seas)
 }
@@ -399,7 +399,7 @@ set_localvar_params <- function(sim_start_date=as.Date("2020-03-31"),
                                type = "transmission",
                                category = "local_variance",
                                parameter = param_val,
-                               baseline_scenario = "",
+                               baseline_modifier = "",
                                start_date = sim_start_date,
                                end_date = sim_end_date,
                                method = method,
@@ -417,7 +417,7 @@ set_localvar_params <- function(sim_start_date=as.Date("2020-03-31"),
                                pert_b = p_b) %>%
         dplyr::mutate(pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
                       dplyr::across(pert_mean:pert_b, ~ifelse(inference, as.numeric(.x), NA_real_))) %>%
-        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_modifier, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
 
     return(local_var)
 }
@@ -490,7 +490,7 @@ set_redux_params <- function(npi_file,
         mutate(USPS = "",
                category = "NPI_redux",
                name = paste0(category, '_', month),
-               baseline_scenario = c("base_npi", paste0("NPI_redux_", month[-length(month)])),
+               baseline_modifier = c("base_npi", paste0("NPI_redux_", month[-length(month)])),
                method = "ModifierModifier",
                parameter = param_val,
                value_dist = v_dist,
@@ -502,7 +502,7 @@ set_redux_params <- function(npi_file,
                pert_sd = NA_real_,
                pert_a = NA_real_,
                pert_b = NA_real_) %>%
-        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_modifier, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
 
     return(redux)
 }
@@ -543,7 +543,7 @@ set_vacc_rates_params <- function (vacc_path,
         dplyr::mutate(subpop = as.character(subpop), month = lubridate::month(start_date, label = TRUE),
                       type = "transmission", category = "vaccination",
                       name = paste0("Dose1_", tolower(month), lubridate::year(start_date)),
-                      method = "SinglePeriodModifier",  baseline_scenario = "",
+                      method = "SinglePeriodModifier",  baseline_modifier = "",
                       value_mean = round(value_mean, 5),
                       value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_,
                       value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_,
@@ -560,7 +560,7 @@ set_vacc_rates_params <- function (vacc_path,
     }
     vacc <- vacc %>%
         dplyr::select(USPS, subpop, start_date, end_date, name,
-                      method, type, category, parameter, baseline_scenario,
+                      method, type, category, parameter, baseline_modifier,
                       tidyselect::starts_with("value_"), tidyselect::starts_with("pert_")) %>%
         dplyr::filter(start_date >= vacc_start_date & value_mean > 0)
     return(vacc)
@@ -612,12 +612,12 @@ set_vacc_rates_params_dose3 <- function (vacc_path,
                                                                             label = TRUE), type = "transmission", category = "vaccination",
                       name = paste0("Dose3_", tolower(month), lubridate::year(start_date), "_",age_group),
                       method = "SinglePeriodModifier",
-                      baseline_scenario = "",
+                      baseline_modifier = "",
                       value_dist = "fixed", value_sd = NA_real_, value_a = NA_real_,
                       value_b = NA_real_, pert_dist = NA_character_, pert_mean = NA_real_,
                       pert_sd = NA_real_, pert_a = NA_real_, pert_b = NA_real_) %>%
         dplyr::select(USPS, subpop, start_date, end_date, name,
-                      method, type, category, parameter, baseline_scenario,
+                      method, type, category, parameter, baseline_modifier,
                       tidyselect::starts_with("value_"), tidyselect::starts_with("pert_")) %>%
         dplyr::filter(start_date >= vacc_start_date & value_mean > 0)
 
@@ -717,13 +717,13 @@ set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 =
                                                    parameter = "R0",
                                                    value_dist = v_dist, value_mean = 1 - R_ratio, value_sd = v_sd, value_a = v_a, value_b = v_b,
                                                    pert_dist = p_dist, pert_mean = p_mean, pert_sd = p_sd,
-                                                   pert_a = p_a, pert_b = p_b, baseline_scenario = "") %>%
+                                                   pert_a = p_a, pert_b = p_b, baseline_modifier = "") %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference & start_date < inference_cutoff_date, .x, NA_real_)),
                       pert_dist = ifelse(inference & start_date < inference_cutoff_date,
                                          pert_dist, NA_character_)) %>%
         dplyr::select(USPS,
                       subpop, start_date, end_date, name, method, type, category,
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
+                      parameter, baseline_modifier, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
 
     return(variant_data)
@@ -808,7 +808,7 @@ set_vacc_outcome_params <- function(age_strat = "under65",
         dplyr::rename(value_mean = prob_redux) %>%
         dplyr::mutate(subpop = as.character(subpop),
                       type = "outcome",
-                      category = "vacc_outcome",baseline_scenario = "",
+                      category = "vacc_outcome",baseline_modifier = "",
                       value_dist = v_dist, value_sd = v_sd, value_a = v_a,
                       value_b = v_b, pert_dist = p_dist, pert_mean = p_mean,
                       pert_sd = p_sd, pert_a = p_a, pert_b = p_b)
@@ -834,7 +834,7 @@ set_vacc_outcome_params <- function(age_strat = "under65",
                                          pert_dist, NA_character_)) %>%
         dplyr::select(USPS, subpop,
                       start_date, end_date, name, method, type, category,
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
+                      parameter, baseline_modifier, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
     return(outcome)
 }
@@ -933,7 +933,7 @@ set_incidC_shift <- function(periods,
                 type = "outcome",
                 category = "incidCshift",
                 parameter = "incidC::probability",
-                baseline_scenario = "",
+                baseline_modifier = "",
                 start_date = periods[i],
                 end_date = periods[i+1]-1,
                 value_dist = v_dist,
@@ -953,7 +953,7 @@ set_incidC_shift <- function(periods,
     outcome <- dplyr::bind_rows(outcome) %>%
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)),
                       pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
-        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_scenario, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
+        dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category, parameter, baseline_modifier, tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
 
     return(outcome)
 
@@ -1017,7 +1017,7 @@ set_incidH_adj_params <- function(outcome_path,
                       name = paste(param, "adj",USPS, sep = "_"),
                       method = "SinglePeriodModifier",
                       parameter = paste0(param, "::probability"),
-                      baseline_scenario = "",
+                      baseline_modifier = "",
                       value_dist = v_dist,
                       value_sd = v_sd,
                       value_a = v_a,
@@ -1030,7 +1030,7 @@ set_incidH_adj_params <- function(outcome_path,
         dplyr::mutate(dplyr::across(pert_mean:pert_b, ~ifelse(inference, .x, NA_real_)),
                       pert_dist = ifelse(inference, pert_dist, NA_character_)) %>%
         dplyr::select(USPS, subpop, start_date, end_date, name, method, type, category,
-                      parameter, baseline_scenario, tidyselect::starts_with("value_"),
+                      parameter, baseline_modifier, tidyselect::starts_with("value_"),
                       tidyselect::starts_with("pert_"))
 
     if(compartment){
@@ -1122,7 +1122,7 @@ set_ve_shift_params <- function(variant_path,
                       parameter = dplyr::if_else(stringr::str_detect(name, "ose1"), par_val_1, par_val_2),
                       category = "ve_shift",
                       method = "SinglePeriodModifier",
-                      baseline_scenario = "",
+                      baseline_modifier = "",
                       value_dist = v_dist,
                       value_sd = v_sd,
                       value_a = v_a,
