@@ -216,11 +216,11 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             parameters[class_name]["duration::npi_param_name"] = f"{new_comp}::duration".lower()
 
                         if outcomes_config[new_comp]["duration"]["name"].exists():
-                            parameters[class_name]["duration_name"] = (
+                            parameters[class_name]["outcome_prevalence_name"] = (
                                 outcomes_config[new_comp]["duration"]["name"].as_str() + subclass
                             )
                         else:
-                            parameters[class_name]["duration_name"] = new_comp + "_curr" + subclass
+                            parameters[class_name]["outcome_prevalence_name"] = new_comp + "_curr" + subclass
 
                     if modinf.outcomes_config["param_from_file"].get():
                         rel_probability = branching_data[
@@ -246,11 +246,11 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                     parameters[new_comp] = {}
                     parameters[new_comp]["sum"] = [new_comp + c for c in subclasses]
                     if outcomes_config[new_comp]["duration"].exists():
-                        duration_name = new_comp + "_curr"
+                        outcome_prevalence_name = new_comp + "_curr"
                         if outcomes_config[new_comp]["duration"]["name"].exists():
-                            duration_name = outcomes_config[new_comp]["duration"]["name"].as_str()
-                        parameters[duration_name] = {}
-                        parameters[duration_name]["sum"] = [duration_name + c for c in subclasses]
+                            outcome_prevalence_name = outcomes_config[new_comp]["duration"]["name"].as_str()
+                        parameters[outcome_prevalence_name] = {}
+                        parameters[outcome_prevalence_name]["sum"] = [outcome_prevalence_name + c for c in subclasses]
 
             elif outcomes_config[new_comp]["sum"].exists():
                 parameters[new_comp] = {}
@@ -461,17 +461,17 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                     # plt.savefig('Daft'+new_comp + '-' + source)
                     # plt.close()
 
-                all_data[parameters[new_comp]["duration_name"]] = np.cumsum(all_data[new_comp], axis=0) - multishift(
+                all_data[parameters[new_comp]["outcome_prevalence_name"]] = np.cumsum(all_data[new_comp], axis=0) - multishift(
                     np.cumsum(all_data[new_comp], axis=0),
                     durations,
                     stoch_delay_flag=stoch_delay_flag,
                 )
 
                 df_p = dataframe_from_array(
-                    all_data[parameters[new_comp]["duration_name"]],
+                    all_data[parameters[new_comp]["outcome_prevalence_name"]],
                     modinf.subpop_struct.subpop_names,
                     dates,
-                    parameters[new_comp]["duration_name"],
+                    parameters[new_comp]["outcome_prevalence_name"],
                 )
                 outcomes = pd.merge(outcomes, df_p)
 
