@@ -128,7 +128,7 @@ def test_parameters_quick_draw_old():
     assert len(np.unique(gamma)) == 1
 
 
-def test_parameters_from_timeserie_file():
+def test_parameters_from_timeseries_file():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format.yml")

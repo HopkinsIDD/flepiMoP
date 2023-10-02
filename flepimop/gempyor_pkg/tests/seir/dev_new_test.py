@@ -19,7 +19,7 @@ DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 
-# def test_parameters_from_timeserie_file():
+# def test_parameters_from_timeseries_file():
 # if True:
 #    config.clear()
 #    config.read(user=False)
