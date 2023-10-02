@@ -26,13 +26,9 @@ seir:
     dt: 1/6
   parameters:
     alpha:
-      value:
-        distribution: fixed
-        value: .9
+      value: .9
     sigma:
-      value:
-        distribution: fixed
-        value: 1 / 5.2
+      value: 1 / 5.2
     gamma:
       value:
         distribution: uniform

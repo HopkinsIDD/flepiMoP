@@ -464,10 +464,7 @@ def test_inference_resume():
     first_sim_index = 1
     run_id = "test"
     prefix = ""
-    stoch_traj_flag = True
 
-    spatial_config = config["subpop_setup"]
-    spatial_base_path = pathlib.Path(config["data_path"].get())
     modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,
