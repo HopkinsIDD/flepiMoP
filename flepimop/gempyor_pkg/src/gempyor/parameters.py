@@ -28,7 +28,7 @@ class Parameters:
 
         self.pdata = {}
         self.pnames2pindex = {}
-        self.intervention_overlap_operation = {"sum": [], "prod": []}
+        self.stacked_modifier_method = {"sum": [], "prod": []}
 
         self.pnames = self.pconfig.keys()
         self.npar = len(self.pnames)
@@ -85,19 +85,19 @@ class Parameters:
                     )
 
                 self.pdata[pn]["ts"] = df
-            if self.pconfig[pn]["intervention_overlap_operation"].exists():
-                self.pdata[pn]["intervention_overlap_operation"] = self.pconfig[pn][
-                    "intervention_overlap_operation"
+            if self.pconfig[pn]["stacked_modifier_method"].exists():
+                self.pdata[pn]["stacked_modifier_method"] = self.pconfig[pn][
+                    "stacked_modifier_method"
                 ].as_str()
             else:
-                self.pdata[pn]["intervention_overlap_operation"] = "prod"
-                logging.debug(f"No 'intervention_overlap_operation' for parameter {pn}, assuming multiplicative NPIs")
-            self.intervention_overlap_operation[self.pdata[pn]["intervention_overlap_operation"]].append(pn.lower())
+                self.pdata[pn]["stacked_modifier_method"] = "prod"
+                logging.debug(f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs")
+            self.stacked_modifier_method[self.pdata[pn]["stacked_modifier_method"]].append(pn.lower())
 
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
         logging.debug(f"Data to sample is: {self.pdata}")
         logging.debug(f"Index in arrays are: {self.pnames2pindex}")
-        logging.debug(f"NPI overlap operation is {self.intervention_overlap_operation} ")
+        logging.debug(f"NPI overlap operation is {self.stacked_modifier_method} ")
 
     def picklable_lamda_alpha(self):
         """These two functions were lambda in __init__ before, it was more elegant. but as the object needs to be pickable,
@@ -182,7 +182,7 @@ class Parameters:
             p_reduced[idx] = NPI.reduce_parameter(
                 parameter=p_draw[idx],
                 modification=npi.getReduction(pn.lower()),
-                method=self.pdata[pn]["intervention_overlap_operation"],
+                method=self.pdata[pn]["stacked_modifier_method"],
             )
 
         return p_reduced

@@ -44,12 +44,12 @@ seir:
         low: 2
         high: 3
     transition_rate0:
-      intervention_overlap_operation: "sum"
+      stacked_modifier_method: "sum"
       value:
         distribution: fixed
         value: 0
     transition_rate1:
-      intervention_overlap_operation: "sum"
+      stacked_modifier_method: "sum"
       value:
         distribution: fixed
         value: 0
