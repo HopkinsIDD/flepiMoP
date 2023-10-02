@@ -15,17 +15,17 @@ outcomes:
     incidH:
       source: incidI
       probability:
-        intervention_param_name: hoSp_param_prob
+        modifier_parameter: hoSp_param_prob
         value:
           distribution: fixed
           value: .2
       delay:
-        intervention_param_name: hoSp_param_delay
+        modifier_parameter: hoSp_param_delay
         value:
           distribution: fixed
           value: 14
       duration:
-        intervention_param_name: hoSp_param_durr
+        modifier_parameter: hoSp_param_durr
         value:
           distribution: fixed
           value: 14
@@ -33,19 +33,19 @@ outcomes:
     incidD:
       source: incidI
       probability:
-        intervention_param_name: death_param_prob
+        modifier_parameter: death_param_prob
         value:
           distribution: fixed
           value: .02
       delay:
-        intervention_param_name: death_param_delay
+        modifier_parameter: death_param_delay
         value:
           distribution: fixed
           value: 4
     incidICU:
       source: incidH
       probability:
-        intervention_param_name: icu_param_prob
+        modifier_parameter: icu_param_prob
         value:
           distribution: fixed
           value: .8
