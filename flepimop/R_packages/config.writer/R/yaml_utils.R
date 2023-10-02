@@ -301,9 +301,9 @@ print_value1 <- function(value_type, value_dist, value_mean,
     space3 <- rep(" ", indent_space + 4) %>% paste0(collapse = "")
 
     print_val <- ""
-    if (value_type == "timeseries" && !is.null(value_type)){
+    if (value_type == "timeseriess" && !is.null(value_type)){
         print_val <- paste0(print_val,
-                            space, "timeserie: ", value_mean$timeserie, "\n")
+                            space, "timeseries: ", value_mean$timeseries, "\n")
 
     } else {
 

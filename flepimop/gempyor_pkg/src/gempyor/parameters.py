@@ -46,8 +46,8 @@ class Parameters:
                 self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
 
             # Parameter given as a file
-            elif self.pconfig[pn]["timeserie"].exists():
-                fn_name = self.pconfig[pn]["timeserie"].get()
+            elif self.pconfig[pn]["timeseries"].exists():
+                fn_name = self.pconfig[pn]["timeseries"].get()
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
                 if len(df.columns) >= len(subpop_names):  # one ts per subpop
