@@ -176,9 +176,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             )
 
                     parameters[class_name]["probability"] = outcomes_config[new_comp]["probability"]["value"]
-                    if outcomes_config[new_comp]["probability"]["intervention_param_name"].exists():
+                    if outcomes_config[new_comp]["probability"]["modifier_parameter"].exists():
                         parameters[class_name]["probability::npi_param_name"] = (
-                            outcomes_config[new_comp]["probability"]["intervention_param_name"].as_str().lower()
+                            outcomes_config[new_comp]["probability"]["modifier_parameter"].as_str().lower()
                         )
                         logging.debug(
                             f"probability of outcome {new_comp} is affected by intervention "
@@ -189,9 +189,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         parameters[class_name]["probability::npi_param_name"] = f"{new_comp}::probability".lower()
 
                     parameters[class_name]["delay"] = outcomes_config[new_comp]["delay"]["value"]
-                    if outcomes_config[new_comp]["delay"]["intervention_param_name"].exists():
+                    if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
                         parameters[class_name]["delay::npi_param_name"] = (
-                            outcomes_config[new_comp]["delay"]["intervention_param_name"].as_str().lower()
+                            outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
                         )
                         logging.debug(
                             f"delay of outcome {new_comp} is affected by intervention "
@@ -203,9 +203,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
 
                     if outcomes_config[new_comp]["duration"].exists():
                         parameters[class_name]["duration"] = outcomes_config[new_comp]["duration"]["value"]
-                        if outcomes_config[new_comp]["duration"]["intervention_param_name"].exists():
+                        if outcomes_config[new_comp]["duration"]["modifier_parameter"].exists():
                             parameters[class_name]["duration::npi_param_name"] = (
-                                outcomes_config[new_comp]["duration"]["intervention_param_name"].as_str().lower()
+                                outcomes_config[new_comp]["duration"]["modifier_parameter"].as_str().lower()
                             )
                             logging.debug(
                                 f"duration of outcome {new_comp} is affected by intervention "

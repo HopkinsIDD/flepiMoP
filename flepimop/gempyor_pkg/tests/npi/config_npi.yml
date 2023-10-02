@@ -59298,7 +59298,7 @@ outcomes:
     incidC_1dose_WILD_age0to17:
       source: incidI_1dose_WILD_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59309,7 +59309,7 @@ outcomes:
     incidC_2dose_WILD_age0to17:
       source: incidI_2dose_WILD_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59320,7 +59320,7 @@ outcomes:
     incidC_previousinfection_WILD_age0to17:
       source: incidI_previousinfection_WILD_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59331,7 +59331,7 @@ outcomes:
     incidC_waned_WILD_age0to17:
       source: incidI_waned_WILD_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59342,7 +59342,7 @@ outcomes:
     incidC_1dose_ALPHA_age0to17:
       source: incidI_1dose_ALPHA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59353,7 +59353,7 @@ outcomes:
     incidC_2dose_ALPHA_age0to17:
       source: incidI_2dose_ALPHA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59364,7 +59364,7 @@ outcomes:
     incidC_previousinfection_ALPHA_age0to17:
       source: incidI_previousinfection_ALPHA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59375,7 +59375,7 @@ outcomes:
     incidC_waned_ALPHA_age0to17:
       source: incidI_waned_ALPHA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59386,7 +59386,7 @@ outcomes:
     incidC_1dose_DELTA_age0to17:
       source: incidI_1dose_DELTA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59397,7 +59397,7 @@ outcomes:
     incidC_2dose_DELTA_age0to17:
       source: incidI_2dose_DELTA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59408,7 +59408,7 @@ outcomes:
     incidC_previousinfection_DELTA_age0to17:
       source: incidI_previousinfection_DELTA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59419,7 +59419,7 @@ outcomes:
     incidC_waned_DELTA_age0to17:
       source: incidI_waned_DELTA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59430,7 +59430,7 @@ outcomes:
     incidC_1dose_OMICRON_age0to17:
       source: incidI_1dose_OMICRON_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59441,7 +59441,7 @@ outcomes:
     incidC_2dose_OMICRON_age0to17:
       source: incidI_2dose_OMICRON_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59452,7 +59452,7 @@ outcomes:
     incidC_previousinfection_OMICRON_age0to17:
       source: incidI_previousinfection_OMICRON_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59463,7 +59463,7 @@ outcomes:
     incidC_waned_OMICRON_age0to17:
       source: incidI_waned_OMICRON_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59474,7 +59474,7 @@ outcomes:
     incidC_1dose_WILD_age18to64:
       source: incidI_1dose_WILD_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59485,7 +59485,7 @@ outcomes:
     incidC_2dose_WILD_age18to64:
       source: incidI_2dose_WILD_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59496,7 +59496,7 @@ outcomes:
     incidC_previousinfection_WILD_age18to64:
       source: incidI_previousinfection_WILD_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59507,7 +59507,7 @@ outcomes:
     incidC_waned_WILD_age18to64:
       source: incidI_waned_WILD_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59518,7 +59518,7 @@ outcomes:
     incidC_1dose_ALPHA_age18to64:
       source: incidI_1dose_ALPHA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59529,7 +59529,7 @@ outcomes:
     incidC_2dose_ALPHA_age18to64:
       source: incidI_2dose_ALPHA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59540,7 +59540,7 @@ outcomes:
     incidC_previousinfection_ALPHA_age18to64:
       source: incidI_previousinfection_ALPHA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59551,7 +59551,7 @@ outcomes:
     incidC_waned_ALPHA_age18to64:
       source: incidI_waned_ALPHA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59562,7 +59562,7 @@ outcomes:
     incidC_1dose_DELTA_age18to64:
       source: incidI_1dose_DELTA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59573,7 +59573,7 @@ outcomes:
     incidC_2dose_DELTA_age18to64:
       source: incidI_2dose_DELTA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59584,7 +59584,7 @@ outcomes:
     incidC_previousinfection_DELTA_age18to64:
       source: incidI_previousinfection_DELTA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59595,7 +59595,7 @@ outcomes:
     incidC_waned_DELTA_age18to64:
       source: incidI_waned_DELTA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59606,7 +59606,7 @@ outcomes:
     incidC_1dose_OMICRON_age18to64:
       source: incidI_1dose_OMICRON_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59617,7 +59617,7 @@ outcomes:
     incidC_2dose_OMICRON_age18to64:
       source: incidI_2dose_OMICRON_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59628,7 +59628,7 @@ outcomes:
     incidC_previousinfection_OMICRON_age18to64:
       source: incidI_previousinfection_OMICRON_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59639,7 +59639,7 @@ outcomes:
     incidC_waned_OMICRON_age18to64:
       source: incidI_waned_OMICRON_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59650,7 +59650,7 @@ outcomes:
     incidC_1dose_WILD_age65to100:
       source: incidI_1dose_WILD_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59661,7 +59661,7 @@ outcomes:
     incidC_2dose_WILD_age65to100:
       source: incidI_2dose_WILD_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59672,7 +59672,7 @@ outcomes:
     incidC_previousinfection_WILD_age65to100:
       source: incidI_previousinfection_WILD_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59683,7 +59683,7 @@ outcomes:
     incidC_waned_WILD_age65to100:
       source: incidI_waned_WILD_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59694,7 +59694,7 @@ outcomes:
     incidC_1dose_ALPHA_age65to100:
       source: incidI_1dose_ALPHA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59705,7 +59705,7 @@ outcomes:
     incidC_2dose_ALPHA_age65to100:
       source: incidI_2dose_ALPHA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59716,7 +59716,7 @@ outcomes:
     incidC_previousinfection_ALPHA_age65to100:
       source: incidI_previousinfection_ALPHA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59727,7 +59727,7 @@ outcomes:
     incidC_waned_ALPHA_age65to100:
       source: incidI_waned_ALPHA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59738,7 +59738,7 @@ outcomes:
     incidC_1dose_DELTA_age65to100:
       source: incidI_1dose_DELTA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59749,7 +59749,7 @@ outcomes:
     incidC_2dose_DELTA_age65to100:
       source: incidI_2dose_DELTA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59760,7 +59760,7 @@ outcomes:
     incidC_previousinfection_DELTA_age65to100:
       source: incidI_previousinfection_DELTA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59771,7 +59771,7 @@ outcomes:
     incidC_waned_DELTA_age65to100:
       source: incidI_waned_DELTA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59782,7 +59782,7 @@ outcomes:
     incidC_1dose_OMICRON_age65to100:
       source: incidI_1dose_OMICRON_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59793,7 +59793,7 @@ outcomes:
     incidC_2dose_OMICRON_age65to100:
       source: incidI_2dose_OMICRON_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59804,7 +59804,7 @@ outcomes:
     incidC_previousinfection_OMICRON_age65to100:
       source: incidI_previousinfection_OMICRON_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59815,7 +59815,7 @@ outcomes:
     incidC_waned_OMICRON_age65to100:
       source: incidI_waned_OMICRON_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59826,7 +59826,7 @@ outcomes:
     incidC_unvaccinated_WILD_age0to17:
       source: incidI_unvaccinated_WILD_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59837,7 +59837,7 @@ outcomes:
     incidC_unvaccinated_ALPHA_age0to17:
       source: incidI_unvaccinated_ALPHA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59848,7 +59848,7 @@ outcomes:
     incidC_unvaccinated_DELTA_age0to17:
       source: incidI_unvaccinated_DELTA_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59859,7 +59859,7 @@ outcomes:
     incidC_unvaccinated_OMICRON_age0to17:
       source: incidI_unvaccinated_OMICRON_age0to17
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59870,7 +59870,7 @@ outcomes:
     incidC_unvaccinated_WILD_age18to64:
       source: incidI_unvaccinated_WILD_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59881,7 +59881,7 @@ outcomes:
     incidC_unvaccinated_ALPHA_age18to64:
       source: incidI_unvaccinated_ALPHA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59892,7 +59892,7 @@ outcomes:
     incidC_unvaccinated_DELTA_age18to64:
       source: incidI_unvaccinated_DELTA_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59903,7 +59903,7 @@ outcomes:
     incidC_unvaccinated_OMICRON_age18to64:
       source: incidI_unvaccinated_OMICRON_age18to64
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59914,7 +59914,7 @@ outcomes:
     incidC_unvaccinated_WILD_age65to100:
       source: incidI_unvaccinated_WILD_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59925,7 +59925,7 @@ outcomes:
     incidC_unvaccinated_ALPHA_age65to100:
       source: incidI_unvaccinated_ALPHA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59936,7 +59936,7 @@ outcomes:
     incidC_unvaccinated_DELTA_age65to100:
       source: incidI_unvaccinated_DELTA_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
@@ -59947,7 +59947,7 @@ outcomes:
     incidC_unvaccinated_OMICRON_age65to100:
       source: incidI_unvaccinated_OMICRON_age65to100
       probability:
-        intervention_param_name: "incidItoC_all"
+        modifier_parameter: "incidItoC_all"
         value:
           distribution: fixed
           value: 1
