@@ -917,12 +917,12 @@ print_seir <- function(integration_method = "rk4",
             if (nu_list$age_stratified[j]){
                 for (i in 1:length(age_strata)) {
                     seir <- paste0(seir, "    ", nu_label_, ifelse(nu_list$age_stratified[j], age_strata[i], ""), resume_modifier, ": \n",
-                                   "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n",
+                                   "      stacked_modifier_method: ", nu_list$overlap_operation[j], "\n",
                                    print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
                 }
             } else {
                 seir <- paste0(seir, "    ", nu_label_, ": \n",
-                               "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n",
+                               "      stacked_modifier_method: ", nu_list$overlap_operation[j], "\n",
                                print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
             }
         }
