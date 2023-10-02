@@ -110,7 +110,7 @@ import_model_outputs <-
 config <- flepicommon::load_config(opt$config)
 
 res_dir <- file.path(opt$results_path, config$model_output_dirname)
-print(res_dir)
+# print(res_dir)
 
 ```
 
@@ -146,13 +146,14 @@ theme_small <-
   )
 
 ```
-📸
 
-Here is a snapshot of your model outputs for run ID `r opt$run_id`, from config `r opt$config`, stored in `r opt$results_path`. 
+Here is a snapshot 📸 of your model outputs for run ID `r opt$run_id`, from config `r opt$config`, stored in `r opt$results_path`. 
+
 
 # Infection model: SEIR model output
+These are the SEIR outputs for your infection model, showing infection states (aggregated across other strata).
 
-```{r seir, cache = TRUE, fig.dim = c(8, 20), results='hide',fig.keep='all'}
+```{r seir, cache = TRUE, fig.dim = c(10, 20), results='hide',fig.keep='all'}
 # read in model outputs
 seir_outputs_global <-
   setDT(import_model_outputs(res_dir, "seir", 'global', 'final'))
@@ -193,8 +194,9 @@ print(
 
 
 # Infection model: SNPI model output
+Here are the snpi parameters for your model. If inference is run, parameters are coloured by their likelihoods in a given subpopulation. 
 
-```{r snpi, cache = TRUE, fig.dim = c(8,20), results='hide',fig.keep='all'}
+```{r snpi, cache = TRUE, fig.dim = c(10,20), results='hide',fig.keep='all'}
 # read in model outputs
 snpi_outputs_global <- setDT(import_model_outputs(res_dir, "snpi", 'global', 'final'))
 node_names <- unique(snpi_outputs_global %>% .[ , get(config$spatial_setup$nodenames)])
@@ -224,8 +226,9 @@ snpi_plots <- lapply(node_names,
                            } + 
                            theme_bw(base_size = 10) +
                            theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
-                                 text = element_text(size = 8)) +  
-                               guides(color = guide_legend(override.aes = list(size = 0.5)))+
+                                 text = element_text(size = 8),
+                                 legend.key.size = unit(0.2, "cm")) +  
+                               # guides(color = guide_legend(override.aes = list(size = 0.5)))+
                            scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
                            labs(x = "parameter", title = i) + theme_small
                          
@@ -252,8 +255,8 @@ snpi_plots <- lapply(node_names,
                            } + 
                            theme_bw(base_size = 10) +
                            theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
-                                 text = element_text(size = 8)) +  
-                               guides(color = guide_legend(override.aes = list(size = 0.5)))+
+                                 text = element_text(size = 8),
+                                 legend.key.size = unit(0.2, "cm")) +  
                            scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
                            labs(x = "parameter") + theme_small
                        }
@@ -265,15 +268,15 @@ print(do.call("grid.arrange", c(snpi_plots, ncol=4)))
 ```
 
 
-#Outcome model: HOSP model output
+# Outcome model: HOSP model output
 <!-- if NO inference, just plot hosp at daily - all aggregate outcomes (?) -->
 <!-- if inference, plot hosp with gt at daily, and at fitting aggregation - ONLY stats in the inference section? -->
 <!-- cumulatives and incident for all? -->
 <!-- plot quantiles and some sample trajectories as well -->
+Here are the results from your outcomes model. If you ran more than one simulation, here's a randomly sampled simulation, and if you ran more, here are the quantiles of all your simulations. 
 
-## Daily hosp {.tabset}
-### Single trajectories {.tabset}
-```{r hosp_daily_single_slot, results='asis', cache = TRUE, fig.dim = c(8,8)}
+## Daily hosp single trajectories {.tabset}
+```{r hosp_daily_single_slot, results='asis', cache = TRUE, fig.dim = c(10,10)}
 ## add something so that if it doesn't exist, it prints some 'no output' message
 
 # get all outcome variables
@@ -300,8 +303,10 @@ cat("\n\n")
 ## plot ONE sample trajectory for sanity check (can modify) 
 for(i in 1:length(outcome_vars_)){
   
-  cat(paste0("#### ",outcome_vars_[i]," \n"))
+  cat(paste0("### ",outcome_vars_[i]," {.tabset} \n"))
   
+  cat(paste0("#### Incident \n"))
+
   ## Incident 
   print(
     hosp_outputs_global %>%
@@ -323,6 +328,10 @@ for(i in 1:length(outcome_vars_)){
       labs(x = 'date', y = outcome_vars_[i], title = "Incidence") +
       theme_classic() + theme_small
   )
+  
+    cat("\n\n")
+
+  cat(paste0("#### Cumulative \n"))
   
   ## Cumulative
   print(
@@ -353,8 +362,8 @@ for(i in 1:length(outcome_vars_)){
 
 ```
 
-### Quantiles {.tabset}
-```{r hosp_daily_quantiles, results='asis', cache = TRUE, fig.dim = c(8,8)}
+## Quantiles {.tabset}
+```{r hosp_daily_quantiles, results='asis', cache = TRUE, fig.dim = c(10,10)}
 # ```{r hosp_daily_quantiles, fig.dim = c(8,8), results='hide',fig.keep='all'}
 
 if(length(unique(hosp_outputs_global$slot)) > 1){
@@ -364,10 +373,11 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
   ## plot quantiles (if more than one slot)
   for(i in 1:length(outcome_vars_)){
     
-    cat(paste0("#### ",outcome_vars_[i]," \n"))
+    cat(paste0("### ",outcome_vars_[i]," {.tabset} \n"))
     ## plot quantiles (if more than one slot)
     # for(i in 1:length(outcome_vars_)){
     
+        cat(paste0("#### Incident \n"))
     # incident
     print(
       hosp_outputs_global %>%
@@ -391,6 +401,10 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
         theme_classic()+ theme_small
     )
     
+    cat("\n\n")
+    
+    cat(paste0("#### Cumulative \n"))
+
     # cumulative
     print(
       hosp_outputs_global %>%
@@ -416,8 +430,9 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
         theme_classic() + theme_small
     )
     
+      cat("\n\n")
+
   }
-  cat("\n\n")
   
 }
 
@@ -427,8 +442,9 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
 
 
 # Outcome model: HNPI model output
+This shows the parameters associated with your outcomes model, for all subpopulations. If inference is run, points are coloured by the associated likelihoods.
 
-```{r hnpi, cache = TRUE, fig.dim = c(8,20), results='hide',fig.keep='all'}
+```{r hnpi, cache = TRUE, fig.dim = c(10,20), results='hide',fig.keep='all'}
 # read in model outputs
 hnpi_outputs_global <- setDT(import_model_outputs(res_dir, "hnpi", 'global', 'final'))
 node_names <- unique(hnpi_outputs_global %>% .[ , get(config$spatial_setup$nodenames)])
@@ -454,9 +470,8 @@ hnpi_plots <- lapply(node_names,
                            geom_jitter(aes(group = npi_name), size = 0.6, height = 0, width = 0.2, alpha = 1)
                          } + 
                          facet_wrap(~geoid, scales = 'free') +
-                             guides(color = guide_legend(override.aes = list(size = 0.5))) +
                          scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-                         theme_classic()+ theme_small
+                         theme_classic()+ theme_small+ theme(legend.key.size = unit(0.2, "cm"))
                      }
 )
 print(do.call("grid.arrange", c(hnpi_plots, ncol=4)))
@@ -464,15 +479,19 @@ print(do.call("grid.arrange", c(hnpi_plots, ncol=4)))
 ```
 
 # Inference: analyses
-## Likelihood 
+If you ran inference, here are some analyses that might be helpful!
+
+## Likelihood (TO ADD: some acceptance stuff)
 ```{r llik_acceptances}
 
 ```
 
 
-## Inference specific outcomes: aggregated {.tabset}
-### Single trajectories (aggregated by fitting) {.tabset}
-```{r hosp_trajectories_inference_aggregate, fig.dim = c(8,20), results='hide',fig.keep='all'}
+## Inference specific outcomes: aggregated single trajectories {.tabset}
+
+In your inference method you specified that your model be fit to `r names(config$inference$statistics)`, with some aggregation over period: `r unlist(config$inference$statistics)[which(str_detect(names(unlist(config$inference$statistics)), "period"))]`. 
+
+```{r hosp_trajectories_inference_aggregate, fig.dim = c(10,10), results='asis'}
 if(inference){
   # get all outcome variables
   scns <- config$outcomes$scenarios
@@ -485,7 +504,7 @@ if(inference){
   cat("\n\n")
   for(i in 1:length(fit_stats)){
     
-    cat(paste0("#### ",fit_stats[i]," \n"))
+    cat(paste0("### ",fit_stats[i]," {.tabset} \n"))
     
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, "geoid","slot")
@@ -526,6 +545,7 @@ if(inference){
     #         )) %>% dplyr::mutate(geoid = x)) %>% dplyr::bind_rows()
     
     ## Incident 
+    cat(paste0("#### Incident \n"))
     print(
       df_data %>%
         setDT() %>%
@@ -544,8 +564,10 @@ if(inference){
         labs(x = 'date', y = statistics$name, title = "Incidence") +
         theme_classic() + theme_small
     )
-    
+    cat("\n\n")
+
     ## Cumulative
+        cat(paste0("#### Cumulative \n"))
     print(
       df_data %>%
         setDT() %>%
@@ -573,18 +595,19 @@ if(inference){
 
 ```
 
-### Quantiles(aggregated by fitting) {.tabset}
-```{r hosp_aggregate_quantiles, fig.dim = c(8,20), results='hide',fig.keep='all'}
+## Inference specific outcomes: aggregated quantiles {.tabset}
+```{r hosp_aggregate_quantiles, fig.dim = c(10,10), results='asis'}
 
 if(length(unique(hosp_outputs_global$slot)) > 1 & inference){
 
   cat("\n\n")
   for(i in 1:length(fit_stats)){
     
-    cat(paste0("#### ",fit_stats[i]," \n"))
+    cat(paste0("### ",fit_stats[i]," {.tabset} \n"))
     statistics <- purrr::flatten(config$inference$statistics[i])
     
     # Incident
+            cat(paste0("#### Incident \n"))
     print(
       df_data %>%
         setDT() %>%
@@ -605,6 +628,9 @@ if(length(unique(hosp_outputs_global$slot)) > 1 & inference){
     )
     
     ## Cumulative
+    cat("\n\n")
+    cat(paste0("#### Cumulative \n"))
+
     print(
       df_data %>%
         setDT() %>%
@@ -640,7 +666,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1 & inference){
 
 Trajectories of the 5 and bottom 5 log likelihoods for each subpopulation. 
 
-```{r hosp_trajectories_by_likelihood, fig.dim = c(8,20), results='hide',fig.keep='all'}
+```{r hosp_trajectories_by_likelihood, fig.dim = c(10,20), results='hide',fig.keep='all'}
 
 if(inference){
   
@@ -682,10 +708,10 @@ if(inference){
                                                  aes(lubridate::as_date(date), value), color = 'firebrick', alpha = 0.1)
                                     } +
                                     facet_wrap(~geoid, scales = 'free') +
-                                    guides(color = guide_legend(override.aes = list(size = 0.5)), 
-                                           linetype = 'none') +
+                                    guides(linetype = 'none') +
                                     labs(x = 'date', y = fit_stats[i]) + #, title = paste0("top 5, bottom 5 lliks, ", statistics$sim_var)) +
-                                    theme_classic() + theme_small 
+                                    theme_classic() + theme_small +
+                                    theme(legend.key.size = unit(0.2, "cm"))
                                 }
       )
       
