@@ -3,7 +3,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .utils import config, Timer
+from .utils import config, Timer, as_list
 from . import file_paths
 from functools import reduce
 import logging
@@ -573,12 +573,6 @@ def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
         return as_list(rc)
     else:
         return rc
-
-
-def as_list(thing):
-    if type(thing) == list:
-        return thing
-    return [thing]
 
 
 def list_recursive_convert_to_string(thing):

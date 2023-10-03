@@ -162,7 +162,7 @@ import time, os, itertools
 import click
 
 from gempyor import seir, outcomes, model_info, file_paths
-from gempyor.utils import config
+from gempyor.utils import config, as_list
 
 # from .profile import profile_options
 
@@ -189,11 +189,11 @@ from gempyor.utils import config
 )
 @click.option(
     "-d",
-    "--scenarios_outcomes",
+    "--outcomes_modifiers_scenario",
     "outcomes_modifiers_scenarios",
     envvar="FLEPI_OUTCOME_SCENARIO",
     type=str,
-    default=None,
+    default=[],
     multiple=True,
     help="Scenario of outcomes to run",
 )
@@ -291,41 +291,51 @@ def simulate(
     config.clear()
     config.read(user=False)
     config.set_file(config_file)
+    print(outcomes_modifiers_scenarios, seir_modifiers_scenarios)
 
-    # Compute the list of scenarios to run:
-    if not seir_modifiers_scenarios and config["seir_modifiers"].exists():
-        if config["seir_modifiers"]["scenarios"].exists():
-            seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+    # Compute the list of scenarios to run. Since multiple = True, it's always a list.
+    if not seir_modifiers_scenarios:
+        seir_modifiers_scenarios = None
+        if config["seir_modifiers"].exists():
+            if config["seir_modifiers"]["scenarios"].exists():
+                seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
         # Model Info handles the case of the default scneario
-    if config["outcomes"].exists() and not outcomes_modifiers_scenarios and config["outcomes_modifiers"].exists():
-        if config["outcomes_modifiers"]["scenarios"].exists():
-            outcome_modifiers_scenarios = config["outcomes"]["scenarios"].as_str_seq()
+    if not outcomes_modifiers_scenarios:
+        outcomes_modifiers_scenarios = None
+        if config["outcomes"].exists() and config["outcomes_modifiers"].exists():
+            if config["outcomes_modifiers"]["scenarios"].exists():
+                outcomes_modifiers_scenarios = config["outcomes"]["scenarios"].as_str_seq()
 
-    scenarios_combinations = list(itertools.product(seir_modifiers_scenarios, outcome_modifiers_scenarios))
+    outcomes_modifiers_scenarios = as_list(outcomes_modifiers_scenarios)
+    seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
+    print(outcomes_modifiers_scenarios, seir_modifiers_scenarios)
+
+    scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcomes_modifiers_scenarios]
     print("Combination of modifiers scenarios to be run: ")
-    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-        print(f"seir_modifier: {seir_modifiers_scenario: <16}, seir_modifier:{outcome_modifiers_scenario}")
+    print(scenarios_combinations)
+    for seir_modifiers_scenario, outcomes_modifiers_scenario in scenarios_combinations:
+        print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcomes_modifiers_scenario}")
 
     if not nslots:
         nslots = config["nslots"].as_number()
     print(f"Simulations to be run: {nslots}")
 
-    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
+    for seir_modifiers_scenario, outcomes_modifiers_scenario in scenarios_combinations:
         start = time.monotonic()
-        print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
+        print(f"Running {seir_modifiers_scenario}_{outcomes_modifiers_scenario}")
 
         modinf = model_info.ModelInfo(
             config=config,
             nslots=nslots,
-            seir_modifiers_scenario=seir_modifiers_scenarios,
-            outcome_modifiers_scenario=outcome_modifiers_scenarios,
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            outcome_modifiers_scenario=outcomes_modifiers_scenario,
             write_csv=write_csv,
             write_parquet=write_parquet,
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
-            in_prefix=config["name"].get() + "/",
+            # in_prefix=config["name"].get() + "/",
             out_run_id=out_run_id,
-            out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
+            # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
             stoch_traj_flag=stoch_traj_flag,
         )
 
@@ -334,16 +344,18 @@ def simulate(
     >> Running from config {config_file}
     >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
     >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
-
-    >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
+    >> Running scenario {seir_modifiers_scenario}_{outcomes_modifiers_scenario}
     >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories
     """
         )
-    seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
-    outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs)
-    print(
-        f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
-    )
+        # (there should be a run function)
+        if config["seir"].exists():
+            seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
+        if config["outcomes"].exists():
+            outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs)
+        print(
+            f">>> {seir_modifiers_scenario}_{outcomes_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
+        )
 
 
 if __name__ == "__main__":

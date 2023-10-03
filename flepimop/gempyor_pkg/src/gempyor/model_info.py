@@ -118,6 +118,7 @@ class ModelInfo:
                 )
 
             # SEIR modifiers
+            self.npi_config_seir = None
             if config["seir_modifiers"].exists():
                 if config["seir_modifiers"]["scenarios"].exists():
                     self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
