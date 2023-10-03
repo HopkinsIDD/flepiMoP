@@ -9,9 +9,6 @@ subpop_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.csv
-  census_year: 2018
-  modeled_states:
-    - HI
 
 seeding:
   seeding_file_type: seed
@@ -61,7 +58,7 @@ seir:
           ["S", ["unvaccinated", "first_dose", "second_dose"]],
           [[["I1", "I2", "I3"]], ["unvaccinated", "first_dose", "second_dose"]],
       ]
-      proportion_exponent: [["1", "1"], ["alpha", "1"]] 
+      proportion_exponent: [["1", "1"], ["1", "1"]] 
     - source: [["E"], ["unvaccinated", "first_dose", "second_dose"]]
       destination: [["I1"], ["unvaccinated", "first_dose", "second_dose"]]
       rate: ["sigma", 1]

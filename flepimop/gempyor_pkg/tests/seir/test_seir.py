@@ -501,6 +501,9 @@ def test_inference_resume():
 
 def test_parallel_compartments_with_vacc():
     os.chdir(os.path.dirname(__file__))
+    config.clear()
+    config.read(user=False)
+
     config.set_file(f"{DATA_DIR}/config_parallel.yml")
 
     first_sim_index = 1
