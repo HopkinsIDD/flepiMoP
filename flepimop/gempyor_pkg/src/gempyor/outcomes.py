@@ -123,30 +123,31 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
         outcomes_config = modinf.outcomes_config["outcomes"]
-        if modinf.outcomes_config["param_from_file"].get():
-            # Load the actual csv file
-            branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
-            branching_data = pa.parquet.read_table(branching_file).to_pandas()
-            if "relative_probability" not in list(branching_data["quantity"]):
-                raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
+        if modinf.outcomes_config["param_from_file"].exists():
+            if modinf.outcomes_config["param_from_file"].get():
+                # Load the actual csv file
+                branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
+                branching_data = pa.parquet.read_table(branching_file).to_pandas()
+                if "relative_probability" not in list(branching_data["quantity"]):
+                    raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
 
-            print(
-                "Loaded subpops in loaded relative probablity file:",
-                len(branching_data.subpop.unique()),
-                "",
-                end="",
-            )
-            branching_data = branching_data[branching_data["subpop"].isin(modinf.subpop_struct.subpop_names)]
-            print(
-                "Intersect with seir simulation: ",
-                len(branching_data.subpop.unique()),
-                "kept",
-            )
-
-            if len(branching_data.subpop.unique()) != len(modinf.subpop_struct.subpop_names):
-                raise ValueError(
-                    f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
+                print(
+                    "Loaded subpops in loaded relative probablity file:",
+                    len(branching_data.subpop.unique()),
+                    "",
+                    end="",
                 )
+                branching_data = branching_data[branching_data["subpop"].isin(modinf.subpop_struct.subpop_names)]
+                print(
+                    "Intersect with seir simulation: ",
+                    len(branching_data.subpop.unique()),
+                    "kept",
+                )
+
+                if len(branching_data.subpop.unique()) != len(modinf.subpop_struct.subpop_names):
+                    raise ValueError(
+                        f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
+                    )
 
         subclasses = [""]
         if modinf.outcomes_config["subclasses"].exists():
@@ -221,25 +222,25 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             )
                         else:
                             parameters[class_name]["outcome_prevalence_name"] = new_comp + "_curr" + subclass
-
-                    if modinf.outcomes_config["param_from_file"].get():
-                        rel_probability = branching_data[
-                            (branching_data["outcome"] == class_name)
-                            & (branching_data["quantity"] == "relative_probability")
-                        ].copy(deep=True)
-                        if len(rel_probability) > 0:
-                            logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
-                            # Sort it in case the relative probablity file is mispecified
-                            rel_probability.subpop = rel_probability.subpop.astype("category")
-                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(
-                                modinf.subpop_struct.subpop_names
-                            )
-                            rel_probability = rel_probability.sort_values(["subpop"])
-                            parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
-                        else:
-                            logging.debug(
-                                f"*NOT* Using 'param_from_file' for relative probability in outcome  {class_name}"
-                            )
+                    if modinf.outcomes_config["param_from_file"].exists():
+                        if modinf.outcomes_config["param_from_file"].get():
+                            rel_probability = branching_data[
+                                (branching_data["outcome"] == class_name)
+                                & (branching_data["quantity"] == "relative_probability")
+                            ].copy(deep=True)
+                            if len(rel_probability) > 0:
+                                logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
+                                # Sort it in case the relative probablity file is mispecified
+                                rel_probability.subpop = rel_probability.subpop.astype("category")
+                                rel_probability.subpop = rel_probability.subpop.cat.set_categories(
+                                    modinf.subpop_struct.subpop_names
+                                )
+                                rel_probability = rel_probability.sort_values(["subpop"])
+                                parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
+                            else:
+                                logging.debug(
+                                    f"*NOT* Using 'param_from_file' for relative probability in outcome  {class_name}"
+                                )
 
                 # We need to compute sum across classes if there is subclasses
                 if subclasses != [""]:
