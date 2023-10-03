@@ -585,6 +585,8 @@ def test_parallel_compartments_with_vacc():
 
 
 def test_parallel_compartments_no_vacc():
+    config.clear()
+    config.read(user=False)
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config_parallel.yml")
 
