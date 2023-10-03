@@ -19,7 +19,6 @@ def get_all_filenames(
     if file_type == "seed":
         ext = "csv"
     else:
-
         ext = "parquet"
     l = []
     for f in Path(str(fs_results_path + "model_output")).rglob(f"*.{ext}"):
@@ -99,28 +98,28 @@ for slot in best_slots:
     print(f" - {slot:4}, llik: {sorted_llik.loc[slot]['ll']:0.3f}")
 files_to_keep = list(full_df.loc[best_slots]["filename"].unique())
 
-#important to sort by llik
+# important to sort by llik
 all_files = sorted(list(full_df["filename"].unique()))
 
 
 prune_method = "replace"
-#prune_method = "delete"
+# prune_method = "delete"
 
 # if prune method is replace, this method tell if it should also replace missing file
 fill_missing = True
-fill_from_min=1
-fill_from_max=300
+fill_from_min = 1
+fill_from_max = 300
 
 if fill_missing:
     # Extract the numbers from the filenames
-    numbers = [int(os.path.basename(filename).split('.')[0]) for filename in all_files]
+    numbers = [int(os.path.basename(filename).split(".")[0]) for filename in all_files]
     missing_numbers = [num for num in range(fill_from_min, fill_from_max + 1) if num not in numbers]
     if missing_numbers:
         missing_filenames = []
         for num in missing_numbers:
             filename = os.path.basename(all_files[0])
-            filename_prefix = re.search(r'^.*?(\d+)', filename).group()
-            filename_suffix = re.search(r'(\..*?)$', filename).group()
+            filename_prefix = re.search(r"^.*?(\d+)", filename).group()
+            filename_suffix = re.search(r"(\..*?)$", filename).group()
             missing_filename = os.path.join(os.path.dirname(all_files[0]), f"{num:09d}{filename_suffix}")
             missing_filenames.append(missing_filename)
         print("The missing filenames with full paths are:")
@@ -129,11 +128,10 @@ if fill_missing:
         all_files = all_files + missing_filenames
     else:
         print("No missing filenames found.")
-    
-    
 
 
 output_folder = "pruned/"
+
 
 def copy_path(src, dst):
     os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -187,7 +185,6 @@ elif prune_method == "delete":
                 src = src.replace(".parquet", ".csv")
                 dst = dst.replace(".parquet", ".csv")
             copy_path(src=src, dst=dst)
-            
 
 
 # if __name__ == "__main__":

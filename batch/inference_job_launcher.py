@@ -300,7 +300,6 @@ def launch_batch(
     continuation_location,
     continuation_run_id,
 ):
-
     config = None
     with open(config_file) as f:
         config = yaml.full_load(f)

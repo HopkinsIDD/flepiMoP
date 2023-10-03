@@ -86,9 +86,7 @@ class Parameters:
 
                 self.pdata[pn]["ts"] = df
             if self.pconfig[pn]["stacked_modifier_method"].exists():
-                self.pdata[pn]["stacked_modifier_method"] = self.pconfig[pn][
-                    "stacked_modifier_method"
-                ].as_str()
+                self.pdata[pn]["stacked_modifier_method"] = self.pconfig[pn]["stacked_modifier_method"].as_str()
             else:
                 self.pdata[pn]["stacked_modifier_method"] = "prod"
                 logging.debug(f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs")

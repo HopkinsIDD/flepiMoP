@@ -461,7 +461,9 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                     # plt.savefig('Daft'+new_comp + '-' + source)
                     # plt.close()
 
-                all_data[parameters[new_comp]["outcome_prevalence_name"]] = np.cumsum(all_data[new_comp], axis=0) - multishift(
+                all_data[parameters[new_comp]["outcome_prevalence_name"]] = np.cumsum(
+                    all_data[new_comp], axis=0
+                ) - multishift(
                     np.cumsum(all_data[new_comp], axis=0),
                     durations,
                     stoch_delay_flag=stoch_delay_flag,
