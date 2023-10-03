@@ -339,8 +339,8 @@ def simulate(
     >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories
     """
         )
-    seir.run_parallel_SEIR(s, config=config, n_jobs=jobs)
-    outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=s, nslots=nslots, n_jobs=jobs)
+    seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
+    outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs)
     print(
         f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
     )
