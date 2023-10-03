@@ -218,8 +218,9 @@ def onerun_SEIR(
     config=None,
 ):
     np.random.seed()
-
-    npi = build_npi_SEIR(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+    npi = None
+    if modinf.npi_config_seir:
+        npi = build_npi_SEIR(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     with Timer("onerun_SEIR.compartments"):
         (
@@ -357,7 +358,8 @@ def postprocess_and_write(sim_id, modinf, states, p_draw, npi, seeding):
     # aws_disk_diagnosis()
 
     # NPIs
-    modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
+    if npi is not None:
+        modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
     # Parameters
     modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
     out_df = states2Df(modinf, states)

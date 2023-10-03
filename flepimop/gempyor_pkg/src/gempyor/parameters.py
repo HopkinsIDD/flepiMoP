@@ -175,12 +175,12 @@ class Parameters:
         :return: array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time, reduced
         """
         p_reduced = copy.deepcopy(p_draw)
-
-        for idx, pn in enumerate(self.pnames):
-            p_reduced[idx] = NPI.reduce_parameter(
-                parameter=p_draw[idx],
-                modification=npi.getReduction(pn.lower()),
-                method=self.pdata[pn]["stacked_modifier_method"],
-            )
+        if npi is not None:
+            for idx, pn in enumerate(self.pnames):
+                p_reduced[idx] = NPI.reduce_parameter(
+                    parameter=p_draw[idx],
+                    modification=npi.getReduction(pn.lower()),
+                    method=self.pdata[pn]["stacked_modifier_method"],
+                )
 
         return p_reduced

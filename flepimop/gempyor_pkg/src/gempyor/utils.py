@@ -106,6 +106,12 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
     return inner
 
 
+def as_list(thing):
+    if type(thing) == list:
+        return thing
+    return [thing]
+
+
 ### A little timer class
 class Timer(object):
     def __init__(self, name):
