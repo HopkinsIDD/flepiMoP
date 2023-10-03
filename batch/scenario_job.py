@@ -121,7 +121,6 @@ def launch_batch(
     vcpu,
     memory,
 ):
-
     config = None
     with open(config_file) as f:
         config = yaml.full_load(f)
@@ -191,7 +190,6 @@ def launch_job_inner(
     vcpu,
     memory,
 ):
-
     # Prepare to tar up the current directory, excluding any dvc outputs, so it
     # can be shipped to S3
     dvc_outputs = get_dvc_outputs()

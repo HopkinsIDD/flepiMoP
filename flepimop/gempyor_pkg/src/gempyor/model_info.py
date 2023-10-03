@@ -38,7 +38,7 @@ class ModelInfo:
         out_run_id=None,
         out_prefix=None,
         stoch_traj_flag=False,
-        setup_name=None, # override config setup_name
+        setup_name=None,  # override config setup_name
     ):
         self.nslots = nslots
         self.write_csv = write_csv
@@ -57,7 +57,7 @@ class ModelInfo:
             if self.outcome_modifiers_scenario is not None:
                 self.setup_name += "_" + str(self.outcome_modifiers_scenario)
         else:
-            self.setup_name=setup_name
+            self.setup_name = setup_name
 
         # 2. What about time:
         self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti

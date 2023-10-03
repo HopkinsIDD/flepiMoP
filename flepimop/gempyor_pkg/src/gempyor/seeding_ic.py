@@ -91,7 +91,7 @@ class SeedingAndIC:
             ## JK : This could be specified in the config
             y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
             y0[0, :] = setup.subpop_pop
-            return y0 # we finish here: no rest and not proportionallity applies
+            return y0  # we finish here: no rest and not proportionallity applies
 
         allow_missing_nodes = False
         allow_missing_compartments = False
@@ -251,7 +251,6 @@ class SeedingAndIC:
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
-
         method = "NoSeeding"
         if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
@@ -306,7 +305,7 @@ class SeedingAndIC:
 
     def load_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
         method = "NoSeeding"
-        
+
         if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
         if method not in ["FolderDraw", "SetInitialConditions", "InitialConditionsFolderDraw", "NoSeeding", "FromFile"]:

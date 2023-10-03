@@ -208,10 +208,11 @@ def as_random_distribution(self):
     else:
         # we allow a fixed value specified directly:
         return functools.partial(
-                np.random.uniform,
-                self.as_evaled_expression(),
-                self.as_evaled_expression(),
-            )
+            np.random.uniform,
+            self.as_evaled_expression(),
+            self.as_evaled_expression(),
+        )
+
 
 def aws_disk_diagnosis():
     import os
