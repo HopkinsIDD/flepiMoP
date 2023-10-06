@@ -178,6 +178,12 @@ if (seed_variants) {
                 dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
         }
     }
+} else {
+
+    # rename date columns in data for joining
+    colnames(cases_deaths)[colnames(cases_deaths) == "Update"] ="date"
+    colnames(cases_deaths) <- gsub("incidH_", "", colnames(cases_deaths))
+
 }
 
 ## Check some data attributes:
@@ -217,6 +223,7 @@ if ("compartments" %in% names(config)) {
         )
         incident_cases <- cases_deaths[, required_column_names] %>%
             tidyr::pivot_longer(!!names(config$seeding$seeding_compartments), names_to = "seeding_group") %>%
+            filter(!is.na(value)) %>%
             dplyr::mutate(
                 source_column = sapply(
                     config$seeding$seeding_compartments[seeding_group],
