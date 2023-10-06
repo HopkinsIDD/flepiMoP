@@ -255,7 +255,7 @@ gempyor_simulator &lt;- gempyor$GempyorSimulator(
                           npi_scenario=&quot;inference&quot;,   # NPIs scenario to use
                           outcome_scenario=&quot;med&quot;,        # Outcome scenario to use
                           stoch_traj_flag=FALSE,
-                          spatial_path_prefix = &#39;../tests/npi/&#39; # prefix where to find the folder indicated in spatial_setup
+                          spatial_path_prefix = &#39;../tests/npi/&#39; # prefix where to find the folder indicated in subpop_setup
 )</code></pre>
 <p>Here we specify that the data folder specified in the config lies in the <code>test/npi/</code> folder, not in the current directory. The only mandatory arguments is the <code>config_path</code>. The default values of the other arguments are</p>
 <pre><code>  run_id=&quot;test_run_id&quot;,   # an ommited argument will be left at its default value

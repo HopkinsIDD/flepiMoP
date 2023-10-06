@@ -55,7 +55,7 @@ import_model_outputs <-
                         "incidD",
                         # lim_hosp = c("date",
                         #              sapply(1:length(names(config$inference$statistics)), function(i) purrr::flatten(config$inference$statistics[i])$sim_var),
-                        config$spatial_setup$nodenames)) {
+                        config$subpop_setup$nodenames)) {
     # "subpop")){
     dir_ <- paste0(
       scn_dir,
@@ -118,7 +118,7 @@ print(res_dir)
 # Pull in subpop data
 geodata <-
   setDT(read.csv(file.path(
-    config$data_path, config$spatial_setup$geodata
+    config$data_path, config$subpop_setup$geodata
   )))
 # geodata <- setDT(read.csv(file.path(config$data_path, config$subpop_setup$geodata)))
 
@@ -197,7 +197,7 @@ print(
 ```{r snpi, cache = TRUE, fig.dim = c(8,20), results='hide',fig.keep='all'}
 # read in model outputs
 snpi_outputs_global <- setDT(import_model_outputs(res_dir, "snpi", 'global', 'final'))
-node_names <- unique(snpi_outputs_global %>% .[ , get(config$spatial_setup$nodenames)])
+node_names <- unique(snpi_outputs_global %>% .[ , get(config$subpop_setup$nodenames)])
 # node_names <- unique(sort(snpi_outputs_global %>% .[ , "subpop"]))
 node_names <- c(node_names[str_detect(node_names,",")], node_names[!str_detect(node_names,",")]) # sort so that multiple subpops are in front
 
@@ -287,10 +287,10 @@ outcome_vars_ <- outcome_vars[!str_detect(outcome_vars, "_")]
 
 # read in model outputs
 hosp_outputs_global <- setDT(import_model_outputs(res_dir, "hosp", 'global', 'final',
-                                                  lim_hosp = c("date", config$spatial_setup$nodenames, outcome_vars_)))
+                                                  lim_hosp = c("date", config$subpop_setup$nodenames, outcome_vars_)))
 # lim_hosp = c("date", "subpop", outcome_vars_)))
 # num_nodes <- length(unique(hosp_outputs_global %>% .[,"subpop"])) 
-num_nodes <- length(unique(hosp_outputs_global %>% .[,get(config$spatial_setup$nodenames)]))
+num_nodes <- length(unique(hosp_outputs_global %>% .[,get(config$subpop_setup$nodenames)]))
 
 sim_sample <- sample(unique(hosp_outputs_global$slot),1)
 
@@ -319,7 +319,7 @@ for(i in 1:length(outcome_vars_)){
                      aes(lubridate::as_date(date), value), color = 'firebrick', alpha = 0.1)
       } +
       # facet_wrap(~subpop, scales = 'free') +
-      facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+      facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +
       labs(x = 'date', y = outcome_vars_[i], title = "Incidence") +
       theme_classic() + theme_small
   )
@@ -341,7 +341,7 @@ for(i in 1:length(outcome_vars_)){
                    aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) 
       } +
       # facet_wrap(~subpop, scales = 'free') +      
-      facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +      
+      facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +      
       labs(x = 'date', y = paste0("cumulative ", outcome_vars_[i]), title = "Cumulative") +
       theme_classic() + theme_small
   )
@@ -373,7 +373,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
       hosp_outputs_global %>%
         .[, date := lubridate::as_date(date)] %>%
         # .[, as.list(quantile(get(outcome_vars_[i]), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
-        .[, as.list(quantile(get(outcome_vars_[i]), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$spatial_setup$nodenames)] %>%
+        .[, as.list(quantile(get(outcome_vars_[i]), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$subpop_setup$nodenames)] %>%
         setnames(., paste0("V", 1:5), paste0("q", c(.05,.25,.5,.75,.95))) %>%
         ggplot() + 
         geom_ribbon(aes(x = date, ymin = q0.05, ymax = q0.95), alpha = 0.1) +
@@ -386,7 +386,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
                        aes(lubridate::as_date(date), value), color = 'firebrick', alpha = 0.1)
         } +
         # facet_wrap(~subpop, scales = 'free') +
-        facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+        facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +
         labs(x = 'date', y = outcome_vars_[i], title = "Incidence") +
         theme_classic()+ theme_small
     )
@@ -411,7 +411,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
                      aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) 
         } +
         # facet_wrap(~subpop, scales = 'free') +      
-        facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+        facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +
         labs(x = 'date', y = paste0("cumulative ", outcome_vars_[i]), title = "Cumulative") +
         theme_classic() + theme_small
     )
@@ -431,7 +431,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1){
 ```{r hnpi, cache = TRUE, fig.dim = c(8,20), results='hide',fig.keep='all'}
 # read in model outputs
 hnpi_outputs_global <- setDT(import_model_outputs(res_dir, "hnpi", 'global', 'final'))
-node_names <- unique(hnpi_outputs_global %>% .[ , get(config$spatial_setup$nodenames)])
+node_names <- unique(hnpi_outputs_global %>% .[ , get(config$subpop_setup$nodenames)])
 # node_names <- unique(sort(hnpi_outputs_global %>% .[ , "subpop"]))
 node_names <- c(node_names[str_detect(node_names,",")], node_names[!str_detect(node_names,",")]) # sort so that multiple subpops are in front
 
@@ -540,7 +540,7 @@ if(inference){
         geom_point(data = df_gt,
                    aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.1) +
         # facet_wrap(~subpop, scales = 'free') +
-        facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+        facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +
         labs(x = 'date', y = statistics$name, title = "Incidence") +
         theme_classic() + theme_small
     )
@@ -561,7 +561,7 @@ if(inference){
                      .[, csum := cumsum(data_var) , by = .(geoid)],
                    aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) +
         # facet_wrap(~subpop, scales = 'free') +      
-        facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +   
+        facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +   
         labs(x = 'date', y = paste0("cumulative ", statistics$name), title = "Cumulative") +
         theme_classic()  + theme_small
     )
@@ -599,7 +599,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1 & inference){
         geom_point(data = df_gt,
                    aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.1) +
         # facet_wrap(~subpop, scales = 'free') +
-        facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +
+        facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +
         labs(x = 'date', y = statistics$name) +
         theme_classic() + theme_small
     )
@@ -623,7 +623,7 @@ if(length(unique(hosp_outputs_global$slot)) > 1 & inference){
                      .[, csum := cumsum(data_var) , by = .(geoid)],
                    aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) +
         # facet_wrap(~subpop, scales = 'free') +      
-        facet_wrap(~get(config$spatial_setup$nodenames), scales = 'free') +      
+        facet_wrap(~get(config$subpop_setup$nodenames), scales = 'free') +      
         labs(x = 'date', y = paste0("cumulative ", statistics$name)) +
         theme_classic() + theme_small
     )
@@ -651,16 +651,16 @@ if(inference){
     if(exists("llik")){
       llik_rank <- llik %>% 
         .[, .SD[order(ll)], geoid] 
-      high_low_llik <- rbindlist(list(data.table(llik_rank, key = eval(config$spatial_setup$nodenames)) %>%
-                                        .[, head(.SD,5), by = eval(config$spatial_setup$nodenames)] %>% 
+      high_low_llik <- rbindlist(list(data.table(llik_rank, key = eval(config$subpop_setup$nodenames)) %>%
+                                        .[, head(.SD,5), by = eval(config$subpop_setup$nodenames)] %>% 
                                         .[, llik_bin := "top"], 
-                                      data.table(llik_rank, key = eval(config$spatial_setup$nodenames)) %>%
-                                        .[, tail(.SD,5), by = eval(config$spatial_setup$nodenames)]%>% 
+                                      data.table(llik_rank, key = eval(config$subpop_setup$nodenames)) %>%
+                                        .[, tail(.SD,5), by = eval(config$subpop_setup$nodenames)]%>% 
                                         .[, llik_bin := "bottom"])
       )
       
       high_low_hosp_llik <- hosp_outputs_global %>% 
-        .[high_low_llik, on = c("slot", eval(config$spatial_setup$nodenames))]
+        .[high_low_llik, on = c("slot", eval(config$subpop_setup$nodenames))]
       
       hosp_llik_plots <- lapply(unique(high_low_hosp_llik %>% .[, geoid]),
                                 function(e){
