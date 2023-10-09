@@ -15,8 +15,8 @@ options(readr.num_columns = 0)
 option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
     optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
-    optparse::make_option(c("-s", "--npi_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
-    optparse::make_option(c("-d", "--outcome_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenarios to run, or 'all' to run all of them"),
+    optparse::make_option(c("-s", "--seir_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
+    optparse::make_option(c("-d", "--outcome_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenarios to run, or 'all' to run all of them"),
     optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("FLEPI_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
     optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
     optparse::make_option(c("-i", "--this_slot"), action="store", default=Sys.getenv("FLEPI_SLOT_INDEX", 1), type='integer', help = "id of this slot"),
@@ -135,20 +135,20 @@ if (!dir.exists(data_dir)){
 
 # Parse scenarios arguments
 ##If outcome scenarios are specified check their existence
-outcome_scenarios <- opt$outcome_scenarios
-if(all(outcome_scenarios == "all")) {
-    outcome_scenarios<- config$outcomes$scenarios
-} else if (!(outcome_scenarios %in% config$outcomes$scenarios)){
-    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
+outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
+if(all(outcome_modifiers_scenarios == "all")) {
+    outcome_modifiers_scenarios<- config$outcomes$scenarios
+} else if (!(outcome_modifiers_scenarios %in% config$outcomes$scenarios)){
+    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
 
 ##If intervention scenarios are specified check their existence
-npi_scenarios <- opt$npi_scenarios
-if (all(npi_scenarios == "all")){
-    npi_scenarios <- config$interventions$scenarios
-} else if (!all(npi_scenarios %in% config$interventions$scenarios)) {
-    message(paste("Invalid intervention scenario arguments: [",paste(setdiff(npi_scenarios, config$interventions$scenarios)), "] did not match any of the named args in ", paste(config$interventions$scenarios, collapse = ", "), "\n"))
+seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
+if (all(seir_modifiers_scenarios == "all")){
+    seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+} else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
+    message(paste("Invalid intervention scenario arguments: [",paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
 
@@ -322,20 +322,20 @@ if (!opt$reset_chimeric_on_accept) {
     warning("We recommend setting reset_chimeric_on_accept TRUE, since reseting chimeric chains on global acceptances more closely matches normal MCMC behaviour")
 }
 
-for(npi_scenario in npi_scenarios) {
+for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
-    print(paste0("Running intervention scenario: ", npi_scenario))
+    print(paste0("Running intervention scenario: ", seir_modifiers_scenario))
 
-    for(outcome_scenario in outcome_scenarios) {
+    for(outcome_modifiers_scenario in outcome_modifiers_scenarios) {
 
-        print(paste0("Running outcome scenario: ", outcome_scenario))
+        print(paste0("Running outcome scenario: ", outcome_modifiers_scenario))
 
         reset_chimeric_files <- FALSE
 
         # Data -------------------------------------------------------------------------
         # Load
 
-        ## file name prefixes for this npi_scenario + outcome_scenario combination
+        ## file name prefixes for this seir_modifiers_scenario + outcome_modifiers_scenario combination
         ## Create prefix is roughly equivalent to paste(...) so
         ## create_prefix("USA", "inference", "med", "2022.03.04.10.18.42.CET", sep='/')
         ## would be "USA/inference/med/2022.03.04.10.18.42.CET"
@@ -347,7 +347,7 @@ for(npi_scenario in npi_scenarios) {
         ## create_prefix(prefix="USA/", "inference", "med", "2022.03.04.10.18.42.CET", sep='/', trailing_separator='.')
         ## would be "USA/inference/med/2022.03.04.10.18.42.CET."
 
-        slot_prefix <- flepicommon::create_prefix(config$name,npi_scenario,outcome_scenario,opt$run_id,sep='/',trailing_separator='/')
+        slot_prefix <- flepicommon::create_prefix(config$name,seir_modifiers_scenario,outcome_modifiers_scenario,opt$run_id,sep='/',trailing_separator='/')
 
         gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
         cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
@@ -368,8 +368,8 @@ for(npi_scenario in npi_scenarios) {
             config_path=opt$config,
             run_id=opt$run_id,
             prefix=global_block_prefix,
-            npi_scenario=npi_scenario,
-            outcome_scenario=outcome_scenario,
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            outcome_modifiers_scenario=outcome_modifiers_scenario,
             stoch_traj_flag=opt$stoch_traj_flag,
             initialize=TRUE  # Shall we pre-compute now things that are not pertubed by inference
         )
@@ -382,7 +382,7 @@ for(npi_scenario in npi_scenarios) {
         first_global_files <- inference::create_filename_list(opt$run_id, global_block_prefix, opt$this_block - 1)
         first_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_block_prefix, opt$this_block - 1)
         ## print("RUNNING: initialization of first block")
-        ## Functions within this function save variables to files of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1),run_id.variable.ext and also copied into the /chimeric/ version, which are referenced by first_global_files and first_chimeric_files
+        ## Functions within this function save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),run_id.variable.ext and also copied into the /chimeric/ version, which are referenced by first_global_files and first_chimeric_files
         inference::initialize_mcmc_first_block(
             opt$run_id,
             opt$this_block,
@@ -418,8 +418,8 @@ for(npi_scenario in npi_scenarios) {
         global_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']])
 
         ##Add initial perturbation sd values to parameter files----
-        initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$interventions$settings)
-        initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$interventions$settings)
+        initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$seir_modifiers$settings)
+        initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$seir_modifiers$settings)
 
         #Need to write these parameters back to the SAME chimeric file since they have a new column now
         arrow::write_parquet(initial_snpi,first_chimeric_files[['snpi_filename']])
@@ -474,10 +474,10 @@ for(npi_scenario in npi_scenarios) {
             } else {
                 proposed_init <- initial_init
             }
-            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$interventions$settings)
-            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$interventions$settings)
+            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$settings)
+            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$seir_modifiers$settings)
             proposed_spar <- initial_spar
-            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_scenario]])
+            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_modifiers_scenario]])
             if (!is.null(config$initial_conditions)){
                 proposed_init <- initial_init
             }
@@ -495,14 +495,14 @@ for(npi_scenario in npi_scenarios) {
                 proposed_seeding <- initial_seeding
             }
 
-            # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
-            # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
-            # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
-            # proposed_hpar <- inference::perturb_hpar_from_file(initial_hpar, config$interventions$settings, chimeric_likelihood_data)
+            # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$seir_modifiers$settings, chimeric_likelihood_data)
+            # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$seir_modifiers$settings, chimeric_likelihood_data)
+            # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$seir_modifiers$settings, chimeric_likelihood_data)
+            # proposed_hpar <- inference::perturb_hpar_from_file(initial_hpar, config$seir_modifiers$settings, chimeric_likelihood_data)
 
 
             ## Write files that need to be written for other code to read
-            # writes to file  of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.block.iter.run_id.variable.ext
+            # writes to file  of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.block.iter.run_id.variable.ext
             # if (!is.null(config$seeding)){
                 write.csv(proposed_seeding, this_global_files[['seed_filename']], row.names = FALSE)
             # }
@@ -626,7 +626,7 @@ for(npi_scenario in npi_scenarios) {
             ## Print average global acceptance rate
             # print(paste("Average global acceptance rate: ",formatC(100*avg_global_accept_rate,digits=2,format="f"),"%"))
 
-            # prints to file of the form llik/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.block.iter.run_id.llik.ext
+            # prints to file of the form llik/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.block.iter.run_id.llik.ext
             arrow::write_parquet(proposed_likelihood_data, this_global_files[['llik_filename']])
 
             # keep track of running average chimeric acceptance rate, for each geoID, since old chimeric likelihood data not kept in memory
@@ -676,7 +676,7 @@ for(npi_scenario in npi_scenarios) {
             chimeric_likelihood_data$accept_avg <- ((effective_index - 1) * old_avg_chimeric_accept_rate + chimeric_likelihood_data$accept) / (effective_index)
 
             ## Write accepted parameters to file
-            # writes to file of the form variable/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.block.iter.run_id.variable.ext
+            # writes to file of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/chimeric/intermediate/slot.block.iter.run_id.variable.ext
             write.csv(initial_seeding,this_chimeric_files[['seed_filename']], row.names = FALSE)
             arrow::write_parquet(initial_init,this_chimeric_files[['init_filename']])
             arrow::write_parquet(initial_snpi,this_chimeric_files[['snpi_filename']])
@@ -757,9 +757,9 @@ for(npi_scenario in npi_scenarios) {
                                                                          chimeric_block_prefix)
         if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
         #####Write currently accepted files to disk
-        #files of the form variables/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.block.run_id.variable.parquet
+        #files of the form variables/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/chimeric/intermediate/slot.block.run_id.variable.parquet
         output_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_block_prefix, opt$this_block)
-        #files of the form variables/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.block.run_id.variable.parquet
+        #files of the form variables/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.block.run_id.variable.parquet
         output_global_files <- inference::create_filename_list(opt$run_id, global_block_prefix, opt$this_block)
 
         warning("Chimeric hosp and seir files not yet supported, just using the most recently generated file of each type")

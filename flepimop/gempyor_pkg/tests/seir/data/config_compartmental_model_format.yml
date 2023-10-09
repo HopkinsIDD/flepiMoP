@@ -43,12 +43,12 @@ seir:
         distribution: fixed
         value: .2
     nu_1:
-      intervention_overlap_operation : "sum"
+      stacked_modifier_method : "sum"
       value:
         distribution: fixed
         value: .3
     nu_2:
-      intervention_overlap_operation : "sum"
+      stacked_modifier_method : "sum"
       value:
         distribution: fixed
         value: .4
@@ -61,7 +61,7 @@ seir:
         distribution: fixed
         value: .6
     rho:
-      intervention_overlap_operation : "prod"
+      stacked_modifier_method : "prod"
       value:
         distribution: fixed
         value: 7

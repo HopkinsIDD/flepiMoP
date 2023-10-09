@@ -601,8 +601,8 @@ initialize_mcmc_first_block <- function(
     chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
     non_llik_types <- paste(c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
 
-    global_files <- create_filename_list(run_id, global_prefix, block - 1, global_types, global_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
-    chimeric_files <- create_filename_list(run_id, chimeric_prefix, block - 1, chimeric_types, chimeric_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.(block-1).run_ID.variable.ext
+    global_files <- create_filename_list(run_id, global_prefix, block - 1, global_types, global_extensions) # makes file names of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
+    chimeric_files <- create_filename_list(run_id, chimeric_prefix, block - 1, chimeric_types, chimeric_extensions) # makes file names of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/chimeric/intermediate/slot.(block-1).run_ID.variable.ext
 
     global_check <- sapply(global_files, file.exists)
     chimeric_check <- sapply(chimeric_files, file.exists)
@@ -735,7 +735,7 @@ initialize_mcmc_first_block <- function(
     ## seir, snpi, spar
     checked_par_files <- c("snpi_filename", "spar_filename", "hnpi_filename", "hpar_filename")
     checked_sim_files <- c("seir_filename", "hosp_filename")
-    # These functions save variables to files of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
+    # These functions save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
     if (any(checked_par_files %in% global_file_names)) {
         if (!all(checked_par_files %in% global_file_names)) {
             stop("Provided some InferenceSimulator input, but not all")
@@ -768,7 +768,7 @@ initialize_mcmc_first_block <- function(
 
     ## Refactor me later:
     global_likelihood_data <- likelihood_calculation_function(hosp_data)
-    arrow::write_parquet(global_likelihood_data, global_files[["llik_filename"]]) # save global likelihood data to file of the form llik/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.llik.ext
+    arrow::write_parquet(global_likelihood_data, global_files[["llik_filename"]]) # save global likelihood data to file of the form llik/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1).run_ID.llik.ext
 
     #print("from inside initialize_mcmc_first_block: column names of likelihood dataframe")
     #print(colnames(global_likelihood_data))
