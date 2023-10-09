@@ -26,13 +26,9 @@ seir:
     dt: 1/6
   parameters:
     alpha:
-      value:
-        distribution: fixed
-        value: .9
+      value: .9
     sigma:
-      value:
-        distribution: fixed
-        value: 1 / 5.2
+      value: 1 / 5.2
     gamma:
       value:
         distribution: uniform
@@ -73,14 +69,14 @@ seir:
       proportional_to: [[["I3"], ["unvaccinated"]]]
       proportion_exponent: [["1", "1"]]
 
-interventions:
+seir_modifiers:
   scenarios:
     - None
     - Scenario1
     - Scenario2
-  settings:
+  modifiers:
     None:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-02
       period_end_date: 2020-05-16
@@ -88,7 +84,7 @@ interventions:
         distribution: fixed
         value: 0
     Wuhan:
-      template: MultiPeriodModifier
+      method: MultiPeriodModifier
       parameter: r0
       groups:
         - periods:
@@ -100,7 +96,7 @@ interventions:
         low: .14
         high: .33
     KansasCity:
-      template: MultiPeriodModifier
+      method: MultiPeriodModifier
       parameter: r0
       groups:
         - periods:
@@ -112,7 +108,7 @@ interventions:
         low: .04
         high: .23
     BrandNew:
-      template: MultiPeriodModifier
+      method: MultiPeriodModifier
       parameter: r0
       groups:
         - periods:
@@ -124,13 +120,13 @@ interventions:
         low: .2
         high: .25
     Scenario1:
-      template: StackedModifier
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - BrandNew
         - KansasCity
         - Wuhan
         - None
     Scenario2:
-      template: StackedModifier
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Wuhan

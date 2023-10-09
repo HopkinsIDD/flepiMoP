@@ -9,7 +9,7 @@ from . import file_paths
 import confuse
 import logging
 from . import compartments
-from . import setup
+from . import model_info
 import numba as nb
 from .utils import read_df
 
@@ -79,12 +79,19 @@ class SeedingAndIC:
         initial_conditions_config: confuse.ConfigView,
     ):
         self.seeding_config = seeding_config
+        print("self.seeding_config", self.seeding_config)
         self.initial_conditions_config = initial_conditions_config
 
     def draw_ic(self, sim_id: int, setup) -> np.ndarray:
         method = "Default"
-        if "method" in self.initial_conditions_config.keys():
+        if self.initial_conditions_config is not None and "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
+
+        if method == "Default":
+            ## JK : This could be specified in the config
+            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
+            y0[0, :] = setup.subpop_pop
+            return y0  # we finish here: no rest and not proportionallity applies
 
         allow_missing_nodes = False
         allow_missing_compartments = False
@@ -98,12 +105,7 @@ class SeedingAndIC:
         # Places to allocate the rest of the population
         rests = []
 
-        if method == "Default":
-            ## JK : This could be specified in the config
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
-            y0[0, :] = setup.subpop_pop
-
-        elif method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
+        if method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
             #  TODO Think about     - Does not support the new way of doing compartment indexing
             if method == "SetInitialConditionsFolderDraw":
                 ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
@@ -250,7 +252,7 @@ class SeedingAndIC:
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
         method = "NoSeeding"
-        if "method" in self.seeding_config.keys():
+        if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
 
         if method == "NegativeBinomialDistributed" or method == "PoissonDistributed":
@@ -303,7 +305,8 @@ class SeedingAndIC:
 
     def load_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
         method = "NoSeeding"
-        if "method" in self.seeding_config.keys():
+
+        if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
         if method not in ["FolderDraw", "SetInitialConditions", "InitialConditionsFolderDraw", "NoSeeding", "FromFile"]:
             raise NotImplementedError(

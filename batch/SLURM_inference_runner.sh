@@ -87,8 +87,8 @@ echo "***************** RUNNING inference_slot.R *****************"
 export LOG_FILE="$FS_RESULTS_PATH/log_${FLEPI_RUN_INDEX}_${FLEPI_SLOT_INDEX}.txt"
 echo "Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R --config $CONFIG_PATH   # path to the config file
                                                --run_id $FLEPI_RUN_INDEX  # Unique identifier for this run
-                                               --npi_scenarios $FLEPI_NPI_SCENARIOS  # name of the intervention to run, or 'all'
-                                               --outcome_scenarios $FLEPI_OUTCOME_SCENARIOS  # name of the outcome scenarios to run, or 'all'
+                                               --seir_modifiers_scenarios $FLEPI_NPI_SCENARIOS  # name of the intervention to run, or 'all'
+                                               --outcome_modifiers_scenarios $FLEPI_OUTCOME_SCENARIOS  # name of the outcome scenarios to run, or 'all'
                                                --jobs 1  # Number of jobs to run in parallel
                                                --iterations_per_slot $FLEPI_ITERATIONS_PER_SLOT # number of iterations to run for this slot
                                                --this_slot $FLEPI_SLOT_INDEX # id of this slot
@@ -102,7 +102,7 @@ echo "Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R --config $CONFI
                                                --is-resume $RESUME_RUN # Is this run a resume
                                                --is-interactive FALSE # Is this run an interactive run" > $LOG_FILE 2>&1 &
 
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p $FLEPI_PATH --this_slot $FLEPI_SLOT_INDEX --config $CONFIG_PATH --run_id $FLEPI_RUN_INDEX --npi_scenarios $FLEPI_NPI_SCENARIOS --outcome_scenarios $FLEPI_OUTCOME_SCENARIOS --jobs 1 --iterations_per_slot $FLEPI_ITERATIONS_PER_SLOT --this_block 1 --stoch_traj_flag $FLEPI_STOCHASTIC_RUN --is-resume $RESUME_RUN --is-interactive FALSE > $LOG_FILE 2>&1
+Rscript $FLEPI_PATH/flepimop/main_scripts/inference_slot.R -p $FLEPI_PATH --this_slot $FLEPI_SLOT_INDEX --config $CONFIG_PATH --run_id $FLEPI_RUN_INDEX --seir_modifiers_scenarios $FLEPI_NPI_SCENARIOS --outcome_modifiers_scenarios $FLEPI_OUTCOME_SCENARIOS --jobs 1 --iterations_per_slot $FLEPI_ITERATIONS_PER_SLOT --this_block 1 --stoch_traj_flag $FLEPI_STOCHASTIC_RUN --is-resume $RESUME_RUN --is-interactive FALSE > $LOG_FILE 2>&1
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
         echo "Error code returned from inference_main.R: $dvc_ret"
