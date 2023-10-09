@@ -117,7 +117,7 @@ suppressMessages(
         subpop_len = opt$subpop_len
     )
 )
-obs_subpop <- config$subpop_setup$subpop
+obs_subpop <- "subpop"
 
 ##Load simulations per slot from config if not defined on command line
 ##command options take precedence
@@ -151,7 +151,6 @@ if (all(seir_modifiers_scenarios == "all")){
     message(paste("Invalid intervention scenario arguments: [",paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
-
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
@@ -199,7 +198,6 @@ if (opt$ground_truth_end != "") {
 if (gt_end_date > lubridate::ymd(config$end_date)) {
     gt_end_date <- lubridate::ymd(config$end_date)
 }
-
 
 # if we want to run inference, do the following:
 
