@@ -526,7 +526,7 @@ validation_list$outcomes$settings<-function(value, full_config,config_name){
   if(is.null(value)){
     print("No outcome settings mentioned default assigned") #Assign Default
   }
-  for (scenario in full_config$outcomes$scenarios){
+  for (scenario in full_config$outcomes_modifiers$scenarios){
     if(!(scenario %in% names(value))){
       print(paste0("No details mentioned about scenario ",scenario," in outcomes"))
       return(FALSE)
