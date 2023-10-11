@@ -66,7 +66,7 @@ import_model_outputs <-
       "/",
       config$interventions$scenarios,
       "/",
-      config$outcomes_modifiers$scenarios
+      config$outcome_modifiers$scenarios
     )
     subdir_ <- paste0(dir_, "/", list.files(dir_),
                       "/",

@@ -382,7 +382,7 @@ tmp_out <- process_sims(scenario_num = scenario_num,
                         plot_samp = plot_samp,
                         gt_data = gt_data,
                         geodata_file = geodata_file_path,
-                        death_filter = config$outcomes_modifiers$scenarios,
+                        death_filter = config$outcome_modifiers$scenarios,
                         summarize_peaks = (smh_or_fch == "smh"),
                         save_reps = save_reps)
 
