@@ -477,7 +477,7 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
   return(hnpi)
 }
 
-##' Fucction perturbs an outcomes parameter file based on
+##' Function perturbs an outcomes parameter file based on
 ##' user-specified distributions
 ##'
 ##' @param hpar the original hospitalization (outcomes) parameters.
