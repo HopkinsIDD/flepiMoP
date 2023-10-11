@@ -368,7 +368,7 @@ peak_ram_ <- peakRAM::peakRAM({
                                  plot_samp = plot_samp,
                                  gt_data = gt_data,
                                  geodata_file = geodata_file_path,
-                                 death_filter = config$outcomes$scenarios,
+                                 death_filter = config$outcomes_modifiers$scenarios,
                                  summarize_peaks = (smh_or_fch == "smh"),
                                  save_reps = save_reps)
         tmp_out <- list(tmp_out, tmp_out_)

@@ -66,7 +66,7 @@ import_model_outputs <-
       "/",
       config$interventions$scenarios,
       "/",
-      config$outcomes$scenarios
+      config$outcomes_modifiers$scenarios
     )
     subdir_ <- paste0(dir_, "/", list.files(dir_),
                       "/",
@@ -280,8 +280,7 @@ Here are the results from your outcomes model. If you ran more than one simulati
 ## add something so that if it doesn't exist, it prints some 'no output' message
 
 # get all outcome variables
-scns <- config$outcomes$scenarios
-list_of_vars_config <- paste0("config$outcomes$settings$", scns)
+list_of_vars_config <- "config$outcomes$outcomes"
 outcomes <- eval(parse(text = list_of_vars_config))
 outcome_vars <- names(outcomes)
 
@@ -494,8 +493,7 @@ In your inference method you specified that your model be fit to `r names(config
 ```{r hosp_trajectories_inference_aggregate, fig.dim = c(10,10), results='asis'}
 if(inference){
   # get all outcome variables
-  scns <- config$outcomes$scenarios
-  list_of_vars_config <- paste0("config$outcomes$settings$", scns)
+  list_of_vars_config <- "config$outcomes$outcomes"
   outcomes <- eval(parse(text = list_of_vars_config))
   outcome_vars <- names(outcomes)
   fit_stats <- names(config$inference$statistics)

@@ -137,9 +137,9 @@ if (!dir.exists(data_dir)){
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
 if(all(outcome_modifiers_scenarios == "all")) {
-    outcome_modifiers_scenarios <- config$outcomes$scenarios
-} else if (!(outcome_modifiers_scenarios %in% config$outcomes$scenarios)){
-    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
+    outcome_modifiers_scenarios <- config$outcomes_modifiers$scenarios
+} else if (!(outcome_modifiers_scenarios %in% config$outcomes_modifiers$scenarios)){
+    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "] did not match any of the named args in", paste(config$outcomes_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
 
@@ -148,20 +148,20 @@ seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
 if (all(seir_modifiers_scenarios == "all")){
     seir_modifiers_scenarios <- config$seir_modifiers$scenarios
 } else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
-    message(paste("Invalid intervention scenario arguments: [",paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
+    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
-if ("hierarchical_stats_geo"%in%names(config$inference)) {
+if ("hierarchical_stats_geo" %in% names(config$inference)) {
     hierarchical_stats <- config$inference$hierarchical_stats_geo
 }
 
 
 ##Create priors if specified
 defined_priors <- list()
-if ("priors"%in%names(config$inference)) {
+if ("priors" %in% names(config$inference)) {
     defined_priors <- config$inference$priors
 }
 

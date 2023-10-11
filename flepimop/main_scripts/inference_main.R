@@ -43,9 +43,9 @@ config <- flepicommon::load_config(opt$config)
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
 if (all(outcome_modifiers_scenarios == "all")) {
-  outcome_modifiers_scenarios <- config$outcomes$scenarios
-} else if (!(outcome_modifiers_scenarios %in% config$outcomes$scenarios)){
-  message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
+  outcome_modifiers_scenarios <- config$outcomes_modifiers$scenarios
+} else if (!(outcome_modifiers_scenarios %in% config$outcomes_modifiers$scenarios)){
+  message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "] did not match any of the named args in", paste(config$outcomes_modifiers$scenarios, collapse = ", "), "\n"))
   quit("yes", status=1)
 }
 
