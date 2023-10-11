@@ -167,7 +167,7 @@ class GempyorSimulator:
                         ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
                         if self.modinf.npi_config_outcomes:
                             ret_outcomes = executor.submit(
-                                outcomes.build_outcomes_Modifiers,
+                                outcomes.build_outcome_modifiers,
                                 self.modinf,
                                 load_ID,
                                 sim_id2load,
@@ -196,7 +196,7 @@ class GempyorSimulator:
                     modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
                 )
                 if self.modinf.npi_config_outcomes:
-                    npi_outcomes = outcomes.build_outcomes_Modifiers(
+                    npi_outcomes = outcomes.build_outcome_modifiers(
                         modinf=self.modinf,
                         load_ID=load_ID,
                         sim_id2load=sim_id2load,
@@ -291,7 +291,7 @@ class GempyorSimulator:
     def get_outcome_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         npi_outcomes = None
         if self.modinf.npi_config_outcomes:
-            npi_outcomes = outcomes.build_outcomes_Modifiers(
+            npi_outcomes = outcomes.build_outcome_modifiers(
                 modinf=self.modinf,
                 load_ID=load_ID,
                 sim_id2load=sim_id2load,

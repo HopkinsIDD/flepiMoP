@@ -48,7 +48,7 @@ outcomes:
           distribution: fixed
           value: 0
 
-outcomes_modifiers:
+outcome_modifiers:
   scenarios:
     - Some
   modifiers:

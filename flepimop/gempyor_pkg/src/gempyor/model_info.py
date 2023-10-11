@@ -17,7 +17,7 @@ class ModelInfo:
         # seeding             # One of seeding or initial_conditions is required when running seir
         # outcomes            # Required if running outcomes
         # seir_modifiers      # Not required. If exists, every modifier will be applied to seir parameters
-        # outcomes_modifiers  # Not required. If exists, every modifier will be applied to outcomes parameters
+        # outcome_modifiers  # Not required. If exists, every modifier will be applied to outcomes parameters
         # inference           # Required if running inference
     ```
     """
@@ -142,18 +142,18 @@ class ModelInfo:
         if config["outcomes"].exists():
             self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
             self.npi_config_outcomes = None
-            if config["outcomes_modifiers"].exists():
-                if config["outcomes_modifiers"]["scenarios"].exists():
-                    self.npi_config_outcomes = config["outcomes_modifiers"]["modifiers"][
+            if config["outcome_modifiers"].exists():
+                if config["outcome_modifiers"]["scenarios"].exists():
+                    self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][
                         self.outcome_modifiers_scenario
                     ]
-                    self.outcome_modifiers_library = config["outcomes_modifiers"]["modifiers"].get()
+                    self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
                 else:
-                    self.outcome_modifiers_library = config["outcomes_modifiers"].get()
+                    self.outcome_modifiers_library = config["outcome_modifiers"].get()
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
             elif self.outcome_modifiers_scenario is not None:
                 raise ValueError(
-                    "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes_modifiers' sections in config"
+                    "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
                 )
             else:
                 logging.info("Running ModelInfo with outcomes but without Outcomes Modifiers")
