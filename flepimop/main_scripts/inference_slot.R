@@ -136,8 +136,12 @@ if (!dir.exists(data_dir)){
 # Parse scenarios arguments
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
-if(all(outcome_modifiers_scenarios == "all")) {
-    outcome_modifiers_scenarios <- config$outcomes_modifiers$scenarios
+if (all(outcome_modifiers_scenarios == "all")) {
+    if (!is.null(config$outcomes_modifiers$scenarios)){
+        outcome_modifiers_scenarios <- config$outcomes_modifiers$scenarios
+    } else {
+        outcome_modifiers_scenarios <- "all"
+    }
 } else if (!(outcome_modifiers_scenarios %in% config$outcomes_modifiers$scenarios)){
     message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "] did not match any of the named args in", paste(config$outcomes_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
@@ -416,8 +420,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         global_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']])
 
         ##Add initial perturbation sd values to parameter files----
-        initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$seir_modifiers$settings)
-        initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$seir_modifiers$settings)
+        initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$seir_modifiers$modifiers)
+        initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$outcomes_modifiers$modifiers)
 
         #Need to write these parameters back to the SAME chimeric file since they have a new column now
         arrow::write_parquet(initial_snpi,first_chimeric_files[['snpi_filename']])
@@ -472,10 +476,10 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             } else {
                 proposed_init <- initial_init
             }
-            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$settings)
-            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$seir_modifiers$settings)
+            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$modifiers)
+            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcomes_modifiers$modifiers)  # NOTE: no scenarios possible right now
             proposed_spar <- initial_spar
-            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_modifiers_scenario]])
+            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$outcomes) # NOTE: no scenarios possible right now
             if (!is.null(config$initial_conditions)){
                 proposed_init <- initial_init
             }
