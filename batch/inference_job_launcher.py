@@ -393,7 +393,7 @@ def launch_batch(
     )
 
     seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
-    outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"]
+    outcome_modifiers_scenarios = config["outcomes"]["scenarios"]
 
     handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 

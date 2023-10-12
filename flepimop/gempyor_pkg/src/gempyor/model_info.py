@@ -144,20 +144,17 @@ class ModelInfo:
             self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
-                    self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
+                    self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][
+                        self.outcome_modifiers_scenario
+                    ]
                     self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
                 else:
                     self.outcome_modifiers_library = config["outcome_modifiers"].get()
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
-                
-            ## NEED TO IMPLEMENT THIS -- CURRENTLY CANNOT USE outcome modifiers
-            # elif self.outcome_modifiers_scenario is not None:
-            #     
-            #     if config["outcome_modifiers"].exists():
-            #         raise ValueError(
-            #             "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
-            #         )
-            #     else
+            elif self.outcome_modifiers_scenario is not None:
+                raise ValueError(
+                    "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
+                )
             else:
                 logging.info("Running ModelInfo with outcomes but without Outcomes Modifiers")
         elif self.outcome_modifiers_scenario is not None:
