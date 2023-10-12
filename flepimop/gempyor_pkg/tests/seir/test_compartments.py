@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import compartments, seir, NPI, file_paths, model_info, subpopulation_structure
+from gempyor import compartments, seir, NPI, file_paths, setup, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -60,17 +60,32 @@ def test_check_transitions_parquet_writing_and_loading():
     assert lhs == rhs
 
 
-def test_ModelInfo_has_compartments_component():
-    os.chdir(os.path.dirname(__file__))
+def test_Setup_has_compartments_component():
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    s = model_info.ModelInfo(
-        config=config,
+    ss = subpopulation_structure.SubpopulationStructure(
+        setup_name="test_values",
+        geodata_file=f"{DATA_DIR}/geodata.csv",
+        mobility_file=f"{DATA_DIR}/mobility.txt",
+        subpop_pop_key="population",
+        subpop_names_key="subpop",
+    )
+
+    s = setup.Setup(
+        setup_name="test_values",
+        subpop_setup=ss,
         nslots=1,
-        seir_modifiers_scenario="None",
+        npi_scenario="None",
+        npi_config_seir=config["interventions"]["settings"]["None"],
+        parameters_config=config["seir"]["parameters"],
+        seir_config=config["seir"],
+        ti=config["start_date"].as_date(),
+        tf=config["end_date"].as_date(),
+        interactive=True,
         write_csv=False,
+        dt=0.25,
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments
@@ -79,10 +94,19 @@ def test_ModelInfo_has_compartments_component():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_full.yml")
 
-    s = model_info.ModelInfo(
-        config=config,
+    s = setup.Setup(
+        setup_name="test_values",
+        subpop_setup=ss,
         nslots=1,
+        npi_scenario="None",
+        npi_config_seir=config["interventions"]["settings"]["None"],
+        parameters_config=config["seir"]["parameters"],
+        seir_config=config["seir"],
+        ti=config["start_date"].as_date(),
+        tf=config["end_date"].as_date(),
+        interactive=True,
         write_csv=False,
+        dt=0.25,
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments

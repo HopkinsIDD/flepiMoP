@@ -106,12 +106,6 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
     return inner
 
 
-def as_list(thing):
-    if type(thing) == list:
-        return thing
-    return [thing]
-
-
 ### A little timer class
 class Timer(object):
     def __init__(self, name):
@@ -173,51 +167,43 @@ def get_log_normal(meanlog, sdlog):
 def as_random_distribution(self):
     "Constructs a random distribution object from a distribution config key"
 
-    if isinstance(self.get(), dict):
-        dist = self["distribution"].get()
-        if dist == "fixed":
-            return functools.partial(
-                np.random.uniform,
-                self["value"].as_evaled_expression(),
-                self["value"].as_evaled_expression(),
-            )
-        elif dist == "uniform":
-            return functools.partial(
-                np.random.uniform,
-                self["low"].as_evaled_expression(),
-                self["high"].as_evaled_expression(),
-            )
-        elif dist == "poisson":
-            return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
-        elif dist == "binomial":
-            if (self["p"] < 0) or (self["p"] > 1):
-                raise ValueError(f"""p value { self["p"] } is out of range [0,1]""")
-            return functools.partial(
-                np.random.binomial,
-                self["n"].as_evaled_expression(),
-                self["p"].as_evaled_expression(),
-            )
-        elif dist == "truncnorm":
-            return get_truncated_normal(
-                mean=self["mean"].as_evaled_expression(),
-                sd=self["sd"].as_evaled_expression(),
-                a=self["a"].as_evaled_expression(),
-                b=self["b"].as_evaled_expression(),
-            ).rvs
-        elif dist == "lognorm":
-            return get_log_normal(
-                meanlog=self["meanlog"].as_evaled_expression(),
-                sdlog=self["sdlog"].as_evaled_expression(),
-            ).rvs
-        else:
-            raise NotImplementedError(f"unknown distribution [got: {dist}]")
-    else:
-        # we allow a fixed value specified directly:
+    dist = self["distribution"].get()
+    if dist == "fixed":
         return functools.partial(
             np.random.uniform,
-            self.as_evaled_expression(),
-            self.as_evaled_expression(),
+            self["value"].as_evaled_expression(),
+            self["value"].as_evaled_expression(),
         )
+    elif dist == "uniform":
+        return functools.partial(
+            np.random.uniform,
+            self["low"].as_evaled_expression(),
+            self["high"].as_evaled_expression(),
+        )
+    elif dist == "poisson":
+        return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
+    elif dist == "binomial":
+        if (self["p"] < 0) or (self["p"] > 1):
+            raise ValueError(f"""p value { self["p"] } is out of range [0,1]""")
+        return functools.partial(
+            np.random.binomial,
+            self["n"].as_evaled_expression(),
+            self["p"].as_evaled_expression(),
+        )
+    elif dist == "truncnorm":
+        return get_truncated_normal(
+            mean=self["mean"].as_evaled_expression(),
+            sd=self["sd"].as_evaled_expression(),
+            a=self["a"].as_evaled_expression(),
+            b=self["b"].as_evaled_expression(),
+        ).rvs
+    elif dist == "lognorm":
+        return get_log_normal(
+            meanlog=self["meanlog"].as_evaled_expression(),
+            sdlog=self["sdlog"].as_evaled_expression(),
+        ).rvs
+    else:
+        raise NotImplementedError(f"unknown distribution [got: {dist}]")
 
 
 def aws_disk_diagnosis():

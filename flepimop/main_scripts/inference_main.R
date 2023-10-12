@@ -7,8 +7,8 @@ options(readr.num_columns = 0)
 option_list = list(
   optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
   optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
-  optparse::make_option(c("-s", "--seir_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention scenario to run, or 'all' to run all of them"),
-  optparse::make_option(c("-d", "--outcome_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenario to run, or 'all' to run all of them"),
+  optparse::make_option(c("-s", "--npi_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention scenario to run, or 'all' to run all of them"),
+  optparse::make_option(c("-d", "--outcome_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenario to run, or 'all' to run all of them"),
   optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("FLEPI_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
   optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
   optparse::make_option(c("-n", "--slots"), action="store", default=Sys.getenv("FLEPI_NUM_SLOTS", as.numeric(NA)), type='integer', help = "Number of slots to run."),
@@ -41,20 +41,21 @@ config <- flepicommon::load_config(opt$config)
 
 # Parse scenarios arguments
 ##If outcome scenarios are specified check their existence
-outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
-if (all(outcome_modifiers_scenarios == "all")) {
-  outcome_modifiers_scenarios <- config$outcomes$scenarios
-} else if (!(outcome_modifiers_scenarios %in% config$outcomes$scenarios)){
-  message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
+
+outcome_scenarios <- opt$outcome_scenarios
+if(all(outcome_scenarios == "all")) {
+  outcome_scenarios<- config$outcomes$scenarios
+} else if (!(outcome_scenarios %in% config$outcomes$scenarios)){
+  message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_scenarios, config$outcome$scenarios)), "]did not match any of the named args in", paste(config$outcomes$scenarios, collapse = ", "), "\n"))
   quit("yes", status=1)
 }
 
 ##If intervention scenarios are specified check their existence
-seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
-if (all(seir_modifiers_scenarios == "all")){
-  seir_modifiers_scenarios <- config$seir_modifiers$scenarios
-} else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
-  message(paste("Invalid intervention scenario arguments: [",paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
+npi_scenarios <- opt$npi_scenarios
+if (all(npi_scenarios == "all")){
+  npi_scenarios <- config$interventions$scenarios
+} else if (!all(npi_scenarios %in% config$interventions$scenarios)) {
+  message(paste("Invalid intervention scenario arguments: [",paste(setdiff(npi_scenarios, config$interventions$scenarios)), "] did not match any of the named args in ", paste(config$interventions$scenarios, collapse = ", "), "\n"))
   quit("yes", status=1)
 }
 
@@ -70,9 +71,9 @@ cl <- parallel::makeCluster(opt$j)
 doParallel::registerDoParallel(cl)
 print(paste0("Making cluster with ", opt$j, " cores."))
 
-flepicommon::prettyprint_optlist(list(seir_modifiers_scenarios=seir_modifiers_scenarios,outcome_modifiers_scenarios=outcome_modifiers_scenarios,slots=seq_len(opt$slots)))
-foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
-foreach(outcome_modifiers_scenario = outcome_modifiers_scenarios) %:%
+flepicommon::prettyprint_optlist(list(npi_scenarios=npi_scenarios,outcome_scenarios=outcome_scenarios,slots=seq_len(opt$slots)))
+foreach(npi_scenario = npi_scenarios) %:%
+foreach(outcome_scenario = outcome_scenarios) %:%
 foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
   print(paste("Slot", flepi_slot, "of", opt$slots))
 
@@ -91,8 +92,8 @@ foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
       file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
         "-c", opt$config,
         "-u", opt$run_id,
-        "-s", opt$seir_modifiers_scenarios,
-        "-d", opt$outcome_modifiers_scenarios,
+        "-s", opt$npi_scenarios,
+        "-d", opt$outcome_scenarios,
         "-j", opt$jobs,
         "-k", opt$iterations_per_slot,
         "-i", flepi_slot,

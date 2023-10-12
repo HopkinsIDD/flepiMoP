@@ -30,7 +30,7 @@ seir: # integration not here --> should default to rk4 + dt=2
         low: 1 / 6
         high: 1 / 2.6
     R0s:
-      timeseries: data/r0s_ts.csv
+      timeserie: data/r0s_ts.csv
     theta_1:
       value:
         distribution: fixed
@@ -40,12 +40,12 @@ seir: # integration not here --> should default to rk4 + dt=2
         distribution: fixed
         value: .2
     nu_1:
-      stacked_modifier_method : "sum"
+      intervention_overlap_operation : "sum"
       value:
         distribution: fixed
         value: .3
     nu_2:
-      stacked_modifier_method : "sum"
+      intervention_overlap_operation : "sum"
       value:
         distribution: fixed
         value: .4
@@ -58,7 +58,7 @@ seir: # integration not here --> should default to rk4 + dt=2
         distribution: fixed
         value: .6
     rho:
-      stacked_modifier_method : "prod"
+      intervention_overlap_operation : "prod"
       value:
         distribution: fixed
         value: 7

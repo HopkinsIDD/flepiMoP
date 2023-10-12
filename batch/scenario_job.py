@@ -121,6 +121,7 @@ def launch_batch(
     vcpu,
     memory,
 ):
+
     config = None
     with open(config_file) as f:
         config = yaml.full_load(f)
@@ -133,14 +134,14 @@ def launch_batch(
     config["nslots"] = slots_per_job
 
     if parallelize_scenarios:
-        seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
-        for s in seir_modifiers_scenarios:
-            seir_modifiers_scenario_job_name = f"{job_name}_{s}"
+        npi_scenarios = config["interventions"]["scenarios"]
+        for s in npi_scenarios:
+            npi_scenario_job_name = f"{job_name}_{s}"
             config["interventions"]["scenarios"] = [s]
             with open(config_file, "w") as f:
                 yaml.dump(config, f, sort_keys=False)
             launch_job_inner(
-                seir_modifiers_scenario_job_name,
+                npi_scenario_job_name,
                 config_file,
                 num_jobs,
                 slots_per_job,
@@ -152,7 +153,7 @@ def launch_batch(
                 vcpu,
                 memory,
             )
-        config["interventions"]["scenarios"] = seir_modifiers_scenarios
+        config["interventions"]["scenarios"] = npi_scenarios
         with open(config_file, "w") as f:
             yaml.dump(config, f, sort_keys=False)
     else:
@@ -190,6 +191,7 @@ def launch_job_inner(
     vcpu,
     memory,
 ):
+
     # Prepare to tar up the current directory, excluding any dvc outputs, so it
     # can be shipped to S3
     dvc_outputs = get_dvc_outputs()

@@ -7,24 +7,25 @@ import tqdm.contrib.concurrent
 from .utils import config, Timer, read_df
 import pyarrow as pa
 import pandas as pd
-from . import NPI, model_info
+from . import NPI, setup
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
+def run_parallel_outcomes(s, *, sim_id2write, nslots=1, n_jobs=1):
     start = time.monotonic()
 
-    sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
+    # sim_id2loads = np.arange(sim_id2load, sim_id2load + s.nslots)
+    sim_id2writes = np.arange(sim_id2write, sim_id2write + s.nslots)
 
     loaded_values = None
-    if (n_jobs == 1) or (modinf.nslots == 1):  # run single process for debugging/profiling purposes
+    if (n_jobs == 1) or (s.nslots == 1):  # run single process for debugging/profiling purposes
         for sim_offset in np.arange(nslots):
             onerun_delayframe_outcomes(
                 sim_id2write=sim_id2writes[sim_offset],
-                modinf=modinf,
+                s=s,
                 load_ID=False,
                 sim_id2load=None,
             )
@@ -38,7 +39,7 @@ def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
         tqdm.contrib.concurrent.process_map(
             onerun_delayframe_outcomes,
             sim_id2writes,
-            modinf,
+            s,
             max_workers=n_jobs,
         )
 
@@ -50,37 +51,35 @@ def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
     return 1
 
 
-def build_outcomes_Modifiers(
-    modinf: model_info.ModelInfo,
+def build_npi_Outcomes(
+    s: setup.Setup,
     load_ID: bool,
     sim_id2load: int,
     config,
     bypass_DF=None,
     bypass_FN=None,
 ):
-    with Timer("Outcomes.Modifiers"):
+    with Timer("Outcomes.NPI"):
         loaded_df = None
         if bypass_DF is not None:
             loaded_df = bypass_DF
         elif bypass_FN is not None:
             loaded_df = read_df(fname=bypass_FN)
         elif load_ID == True:
-            loaded_df = modinf.read_simID(ftype="hnpi", sim_id=sim_id2load)
+            loaded_df = s.read_simID(ftype="hnpi", sim_id=sim_id2load)
 
         if loaded_df is not None:
             npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_outcomes,
-                modinf=modinf,
-                modifiers_library=modinf.outcome_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
+                npi_config=s.npi_config_outcomes,
+                global_config=config,
+                subpops=s.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
             )
         else:
             npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_outcomes,
-                modinf=modinf,
-                modifiers_library=modinf.outcome_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
+                npi_config=s.npi_config_outcomes,
+                global_config=config,
+                subpops=s.subpop_struct.subpop_names,
             )
     return npi
 
@@ -88,25 +87,25 @@ def build_outcomes_Modifiers(
 def onerun_delayframe_outcomes(
     *,
     sim_id2write: int,
-    modinf: model_info.ModelInfo,
+    s: setup.Setup,
     load_ID: bool = False,
     sim_id2load: int = None,
 ):
     with Timer("buildOutcome.structure"):
-        parameters = read_parameters_from_config(modinf)
+        parameters = read_parameters_from_config(s)
 
     npi_outcomes = None
-    if modinf.npi_config_outcomes:
-        npi_outcomes = build_outcomes_Modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+    if s.npi_config_outcomes:
+        npi_outcomes = build_npi_Outcomes(s=s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     loaded_values = None
     if load_ID:
-        loaded_values = modinf.read_simID(ftype="hpar", sim_id=sim_id2load)
+        loaded_values = s.read_simID(ftype="hpar", sim_id=sim_id2load)
 
     # Compute outcomes
     with Timer("onerun_delayframe_outcomes.compute"):
         outcomes, hpar = compute_all_multioutcomes(
-            modinf=modinf,
+            s=s,
             sim_id2write=sim_id2write,
             parameters=parameters,
             loaded_values=loaded_values,
@@ -114,44 +113,43 @@ def onerun_delayframe_outcomes(
         )
 
     with Timer("onerun_delayframe_outcomes.postprocess"):
-        postprocess_and_write(sim_id=sim_id2write, modinf=modinf, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
+        postprocess_and_write(sim_id=sim_id2write, s=s, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
 
 
-def read_parameters_from_config(modinf: model_info.ModelInfo):
+def read_parameters_from_config(s: setup.Setup):
     with Timer("Outcome.structure"):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
-        outcomes_config = modinf.outcomes_config["outcomes"]
-        if modinf.outcomes_config["param_from_file"].exists():
-            if modinf.outcomes_config["param_from_file"].get():
-                # Load the actual csv file
-                branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
-                branching_data = pa.parquet.read_table(branching_file).to_pandas()
-                if "relative_probability" not in list(branching_data["quantity"]):
-                    raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
+        outcomes_config = s.outcomes_config["settings"][s.outcome_scenario]
+        if s.outcomes_config["param_from_file"].get():
+            # Load the actual csv file
+            branching_file = s.outcomes_config["param_subpop_file"].as_str()
+            branching_data = pa.parquet.read_table(branching_file).to_pandas()
+            if "relative_probability" not in list(branching_data["quantity"]):
+                raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
 
-                print(
-                    "Loaded subpops in loaded relative probablity file:",
-                    len(branching_data.subpop.unique()),
-                    "",
-                    end="",
-                )
-                branching_data = branching_data[branching_data["subpop"].isin(modinf.subpop_struct.subpop_names)]
-                print(
-                    "Intersect with seir simulation: ",
-                    len(branching_data.subpop.unique()),
-                    "kept",
-                )
+            print(
+                "Loaded subpops in loaded relative probablity file:",
+                len(branching_data.subpop.unique()),
+                "",
+                end="",
+            )
+            branching_data = branching_data[branching_data["subpop"].isin(s.subpop_struct.subpop_names)]
+            print(
+                "Intersect with seir simulation: ",
+                len(branching_data.subpop.unique()),
+                "kept",
+            )
 
-                if len(branching_data.subpop.unique()) != len(modinf.subpop_struct.subpop_names):
-                    raise ValueError(
-                        f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
-                    )
+            if len(branching_data.subpop.unique()) != len(s.subpop_struct.subpop_names):
+                raise ValueError(
+                    f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
+                )
 
         subclasses = [""]
-        if modinf.outcomes_config["subclasses"].exists():
-            subclasses = modinf.outcomes_config["subclasses"].get()
+        if s.outcomes_config["subclasses"].exists():
+            subclasses = s.outcomes_config["subclasses"].get()
 
         parameters = {}
         for new_comp in outcomes_config:
@@ -177,9 +175,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             )
 
                     parameters[class_name]["probability"] = outcomes_config[new_comp]["probability"]["value"]
-                    if outcomes_config[new_comp]["probability"]["modifier_parameter"].exists():
+                    if outcomes_config[new_comp]["probability"]["intervention_param_name"].exists():
                         parameters[class_name]["probability::npi_param_name"] = (
-                            outcomes_config[new_comp]["probability"]["modifier_parameter"].as_str().lower()
+                            outcomes_config[new_comp]["probability"]["intervention_param_name"].as_str().lower()
                         )
                         logging.debug(
                             f"probability of outcome {new_comp} is affected by intervention "
@@ -190,9 +188,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         parameters[class_name]["probability::npi_param_name"] = f"{new_comp}::probability".lower()
 
                     parameters[class_name]["delay"] = outcomes_config[new_comp]["delay"]["value"]
-                    if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
+                    if outcomes_config[new_comp]["delay"]["intervention_param_name"].exists():
                         parameters[class_name]["delay::npi_param_name"] = (
-                            outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
+                            outcomes_config[new_comp]["delay"]["intervention_param_name"].as_str().lower()
                         )
                         logging.debug(
                             f"delay of outcome {new_comp} is affected by intervention "
@@ -204,9 +202,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
 
                     if outcomes_config[new_comp]["duration"].exists():
                         parameters[class_name]["duration"] = outcomes_config[new_comp]["duration"]["value"]
-                        if outcomes_config[new_comp]["duration"]["modifier_parameter"].exists():
+                        if outcomes_config[new_comp]["duration"]["intervention_param_name"].exists():
                             parameters[class_name]["duration::npi_param_name"] = (
-                                outcomes_config[new_comp]["duration"]["modifier_parameter"].as_str().lower()
+                                outcomes_config[new_comp]["duration"]["intervention_param_name"].as_str().lower()
                             )
                             logging.debug(
                                 f"duration of outcome {new_comp} is affected by intervention "
@@ -217,41 +215,41 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             parameters[class_name]["duration::npi_param_name"] = f"{new_comp}::duration".lower()
 
                         if outcomes_config[new_comp]["duration"]["name"].exists():
-                            parameters[class_name]["outcome_prevalence_name"] = (
+                            parameters[class_name]["duration_name"] = (
                                 outcomes_config[new_comp]["duration"]["name"].as_str() + subclass
                             )
                         else:
-                            parameters[class_name]["outcome_prevalence_name"] = new_comp + "_curr" + subclass
-                    if modinf.outcomes_config["param_from_file"].exists():
-                        if modinf.outcomes_config["param_from_file"].get():
-                            rel_probability = branching_data[
-                                (branching_data["outcome"] == class_name)
-                                & (branching_data["quantity"] == "relative_probability")
-                            ].copy(deep=True)
-                            if len(rel_probability) > 0:
-                                logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
-                                # Sort it in case the relative probablity file is mispecified
-                                rel_probability.subpop = rel_probability.subpop.astype("category")
-                                rel_probability.subpop = rel_probability.subpop.cat.set_categories(
-                                    modinf.subpop_struct.subpop_names
-                                )
-                                rel_probability = rel_probability.sort_values(["subpop"])
-                                parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
-                            else:
-                                logging.debug(
-                                    f"*NOT* Using 'param_from_file' for relative probability in outcome  {class_name}"
-                                )
+                            parameters[class_name]["duration_name"] = new_comp + "_curr" + subclass
+
+                    if s.outcomes_config["param_from_file"].get():
+                        rel_probability = branching_data[
+                            (branching_data["outcome"] == class_name)
+                            & (branching_data["quantity"] == "relative_probability")
+                        ].copy(deep=True)
+                        if len(rel_probability) > 0:
+                            logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
+                            # Sort it in case the relative probablity file is mispecified
+                            rel_probability.subpop = rel_probability.subpop.astype("category")
+                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(
+                                s.subpop_struct.subpop_names
+                            )
+                            rel_probability = rel_probability.sort_values(["subpop"])
+                            parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
+                        else:
+                            logging.debug(
+                                f"*NOT* Using 'param_from_file' for relative probability in outcome  {class_name}"
+                            )
 
                 # We need to compute sum across classes if there is subclasses
                 if subclasses != [""]:
                     parameters[new_comp] = {}
                     parameters[new_comp]["sum"] = [new_comp + c for c in subclasses]
                     if outcomes_config[new_comp]["duration"].exists():
-                        outcome_prevalence_name = new_comp + "_curr"
+                        duration_name = new_comp + "_curr"
                         if outcomes_config[new_comp]["duration"]["name"].exists():
-                            outcome_prevalence_name = outcomes_config[new_comp]["duration"]["name"].as_str()
-                        parameters[outcome_prevalence_name] = {}
-                        parameters[outcome_prevalence_name]["sum"] = [outcome_prevalence_name + c for c in subclasses]
+                            duration_name = outcomes_config[new_comp]["duration"]["name"].as_str()
+                        parameters[duration_name] = {}
+                        parameters[duration_name]["sum"] = [duration_name + c for c in subclasses]
 
             elif outcomes_config[new_comp]["sum"].exists():
                 parameters[new_comp] = {}
@@ -262,10 +260,10 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
     return parameters
 
 
-def postprocess_and_write(sim_id, modinf, outcomes, hpar, npi):
+def postprocess_and_write(sim_id, s, outcomes, hpar, npi):
     outcomes["time"] = outcomes["date"]
-    modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes)
-    modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
+    s.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes)
+    s.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
 
     if npi is None:
         hnpi = pd.DataFrame(
@@ -280,7 +278,7 @@ def postprocess_and_write(sim_id, modinf, outcomes, hpar, npi):
         )
     else:
         hnpi = npi.getReductionDF()
-    modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
+    s.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
 
 
 def dataframe_from_array(data, subpops, dates, comp_name):
@@ -296,26 +294,26 @@ def dataframe_from_array(data, subpops, dates, comp_name):
     return df
 
 
-def read_seir_sim(modinf, sim_id):
-    seir_df = modinf.read_simID(ftype="seir", sim_id=sim_id)
+def read_seir_sim(s, sim_id):
+    seir_df = s.read_simID(ftype="seir", sim_id=sim_id)
 
     return seir_df
 
 
-def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None):
+def compute_all_multioutcomes(*, s, sim_id2write, parameters, loaded_values=None, npi=None):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
-    dates = pd.date_range(modinf.ti, modinf.tf, freq="D")
+    dates = pd.date_range(s.ti, s.tf, freq="D")
 
     outcomes = dataframe_from_array(
-        np.zeros((len(dates), len(modinf.subpop_struct.subpop_names)), dtype=int),
-        modinf.subpop_struct.subpop_names,
+        np.zeros((len(dates), len(s.subpop_struct.subpop_names)), dtype=int),
+        s.subpop_struct.subpop_names,
         dates,
         "zeros",
     ).drop("zeros", axis=1)
 
-    seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
+    seir_sim = read_seir_sim(s, sim_id=sim_id2write)
 
     for new_comp in parameters:
         if "source" in parameters[new_comp]:
@@ -327,16 +325,16 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                 source_array = get_filtered_incidI(
                     seir_sim,
                     dates,
-                    modinf.subpop_struct.subpop_names,
+                    s.subpop_struct.subpop_names,
                     {"incidence": {"infection_stage": "I1"}},
                 )
                 all_data["incidI"] = source_array
                 outcomes = pd.merge(
                     outcomes,
-                    dataframe_from_array(source_array, modinf.subpop_struct.subpop_names, dates, "incidI"),
+                    dataframe_from_array(source_array, s.subpop_struct.subpop_names, dates, "incidI"),
                 )
             elif isinstance(source_name, dict):
-                source_array = get_filtered_incidI(seir_sim, dates, modinf.subpop_struct.subpop_names, source_name)
+                source_array = get_filtered_incidI(seir_sim, dates, s.subpop_struct.subpop_names, source_name)
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 source_array = all_data[source_name]
@@ -351,13 +349,13 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                 ].to_numpy()
             else:
                 probabilities = parameters[new_comp]["probability"].as_random_distribution()(
-                    size=len(modinf.subpop_struct.subpop_names)
+                    size=len(s.subpop_struct.subpop_names)
                 )  # one draw per subpop
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
 
                 delays = parameters[new_comp]["delay"].as_random_distribution()(
-                    size=len(modinf.subpop_struct.subpop_names)
+                    size=len(s.subpop_struct.subpop_names)
                 )  # one draw per subpop
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
@@ -370,18 +368,18 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                     hpar,
                     pd.DataFrame.from_dict(
                         {
-                            "subpop": modinf.subpop_struct.subpop_names,
-                            "quantity": ["probability"] * len(modinf.subpop_struct.subpop_names),
-                            "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
-                            "value": probabilities[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
+                            "subpop": s.subpop_struct.subpop_names,
+                            "quantity": ["probability"] * len(s.subpop_struct.subpop_names),
+                            "outcome": [new_comp] * len(s.subpop_struct.subpop_names),
+                            "value": probabilities[0] * np.ones(len(s.subpop_struct.subpop_names)),
                         }
                     ),
                     pd.DataFrame.from_dict(
                         {
-                            "subpop": modinf.subpop_struct.subpop_names,
-                            "quantity": ["delay"] * len(modinf.subpop_struct.subpop_names),
-                            "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
-                            "value": delays[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
+                            "subpop": s.subpop_struct.subpop_names,
+                            "quantity": ["delay"] * len(s.subpop_struct.subpop_names),
+                            "outcome": [new_comp] * len(s.subpop_struct.subpop_names),
+                            "value": delays[0] * np.ones(len(s.subpop_struct.subpop_names)),
                         }
                     ),
                 ],
@@ -392,7 +390,6 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                     parameter=delays,
                     modification=npi.getReduction(parameters[new_comp]["delay::npi_param_name"].lower()),
                 )
-
                 delays = np.round(delays).astype(int)
                 probabilities = NPI.reduce_parameter(
                     parameter=probabilities,
@@ -402,7 +399,7 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             # Create new compartment incidence:
             all_data[new_comp] = np.empty_like(source_array)
             # Draw with from source compartment
-            if modinf.stoch_traj_flag:
+            if s.stoch_traj_flag:
                 all_data[new_comp] = np.random.binomial(source_array.astype(np.int32), probabilities)
             else:
                 all_data[new_comp] = source_array * (probabilities * np.ones_like(source_array))
@@ -412,7 +409,7 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             stoch_delay_flag = False
             all_data[new_comp] = multishift(all_data[new_comp], delays, stoch_delay_flag=stoch_delay_flag)
             # Produce a dataframe an merge it
-            df_p = dataframe_from_array(all_data[new_comp], modinf.subpop_struct.subpop_names, dates, new_comp)
+            df_p = dataframe_from_array(all_data[new_comp], s.subpop_struct.subpop_names, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
 
             # Make duration
@@ -423,7 +420,7 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                     ]["value"].to_numpy()
                 else:
                     durations = parameters[new_comp]["duration"].as_random_distribution()(
-                        size=len(modinf.subpop_struct.subpop_names)
+                        size=len(s.subpop_struct.subpop_names)
                     )  # one draw per subpop
                 durations = np.repeat(durations[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
                 durations = np.round(durations).astype(int)
@@ -433,10 +430,10 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                         hpar,
                         pd.DataFrame.from_dict(
                             {
-                                "subpop": modinf.subpop_struct.subpop_names,
-                                "quantity": ["duration"] * len(modinf.subpop_struct.subpop_names),
-                                "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
-                                "value": durations[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
+                                "subpop": s.subpop_struct.subpop_names,
+                                "quantity": ["duration"] * len(s.subpop_struct.subpop_names),
+                                "outcome": [new_comp] * len(s.subpop_struct.subpop_names),
+                                "value": durations[0] * np.ones(len(s.subpop_struct.subpop_names)),
                             }
                         ),
                     ],
@@ -462,32 +459,30 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                     # plt.savefig('Daft'+new_comp + '-' + source)
                     # plt.close()
 
-                all_data[parameters[new_comp]["outcome_prevalence_name"]] = np.cumsum(
-                    all_data[new_comp], axis=0
-                ) - multishift(
+                all_data[parameters[new_comp]["duration_name"]] = np.cumsum(all_data[new_comp], axis=0) - multishift(
                     np.cumsum(all_data[new_comp], axis=0),
                     durations,
                     stoch_delay_flag=stoch_delay_flag,
                 )
 
                 df_p = dataframe_from_array(
-                    all_data[parameters[new_comp]["outcome_prevalence_name"]],
-                    modinf.subpop_struct.subpop_names,
+                    all_data[parameters[new_comp]["duration_name"]],
+                    s.subpop_struct.subpop_names,
                     dates,
-                    parameters[new_comp]["outcome_prevalence_name"],
+                    parameters[new_comp]["duration_name"],
                 )
                 outcomes = pd.merge(outcomes, df_p)
 
         elif "sum" in parameters[new_comp]:
             sum_outcome = np.zeros(
-                (len(dates), len(modinf.subpop_struct.subpop_names)),
+                (len(dates), len(s.subpop_struct.subpop_names)),
                 dtype=all_data[parameters[new_comp]["sum"][0]].dtype,
             )
             # Sum all concerned compartment.
             for cmp in parameters[new_comp]["sum"]:
                 sum_outcome += all_data[cmp]
             all_data[new_comp] = sum_outcome
-            df_p = dataframe_from_array(sum_outcome, modinf.subpop_struct.subpop_names, dates, new_comp)
+            df_p = dataframe_from_array(sum_outcome, s.subpop_struct.subpop_names, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
 
     return outcomes, hpar
@@ -498,8 +493,6 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
-    else:
-        raise ValueError("Cannot distinguish is SEIR sourced outcomes needs incidence or prevalence")
 
     diffI = diffI[diffI["mc_value_type"] == vtype].copy()
     diffI.drop(["mc_value_type"], inplace=True, axis=1)
@@ -511,6 +504,7 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
         if isinstance(mc_value, str):
             mc_value = [mc_value]
         df = df[df[f"mc_{mc_type}"].isin(mc_value)]
+
     for mcn in df["mc_name"].unique():
         new_df = df[df["mc_name"] == mcn]
         new_df = new_df.drop([c for c in new_df.columns if "mc_" in c], axis=1)

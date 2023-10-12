@@ -7,46 +7,54 @@ nslots: 1
 
 subpop_setup:
   geodata: geodata.csv
+  mobility: mobility.csv
+  census_year: 2018
+  modeled_states:
+    - HI
+
 
 outcomes:
   method: delayframe
   param_from_file: True
   param_subpop_file: test_rel_subclasses.parquet
   subclasses: ['_A', '_B']
-  outcomes:
-    incidH:
-      source: incidI
-      probability:
-        value:
-          distribution: fixed
-          value: .1
-      delay:
-        value:
-          distribution: fixed
-          value: 7
-      duration:
-        value:
-          distribution: fixed
-          value: 7
-        name: hosp_curr
-    incidD:
-      source: incidI
-      probability:
-        value:
-          distribution: fixed
-          value: .01
-      delay:
-        value:
-          distribution: fixed
-          value: 2
-    incidICU:
-      source: incidH
-      probability:
-        value:
-          distribution: fixed
-          value: .4
-      delay:
-        value:
-          distribution: fixed
-          value: 0
+  scenarios:
+    - high_death_rate
+  settings:
+    high_death_rate:
+      incidH:
+        source: incidI
+        probability:
+          value:
+            distribution: fixed
+            value: .1
+        delay:
+          value:
+            distribution: fixed
+            value: 7
+        duration:
+          value:
+            distribution: fixed
+            value: 7
+          name: hosp_curr
+      incidD:
+        source: incidI
+        probability:
+          value:
+            distribution: fixed
+            value: .01
+        delay:
+          value:
+            distribution: fixed
+            value: 2
+      incidICU:
+        source: incidH
+        probability:
+          value:
+            distribution: fixed
+            value: .4
+        delay:
+          value:
+            distribution: fixed
+            value: 0
 

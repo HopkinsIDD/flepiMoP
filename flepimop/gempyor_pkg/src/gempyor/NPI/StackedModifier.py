@@ -19,16 +19,15 @@ class StackedModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf,
-        modifiers_library,
+        global_config,
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
     ):
         super().__init__(name=npi_config.name)
 
-        self.start_date = modinf.ti
-        self.end_date = modinf.tf
+        self.start_date = global_config["start_date"].as_date()
+        self.end_date = global_config["end_date"].as_date()
 
         self.subpops = subpops
         self.param_name = []
@@ -38,10 +37,14 @@ class StackedModifier(NPIBase):
         self.reduction_number = 0
         sub_npis_unique_names = []
 
-        for scenario in npi_config["modifiers"].get():
+        # the confuse library's config resolution mechanism makes slicing the configuration object expensive; instead,
+        # just preload all settings
+        settings_map = global_config["interventions"]["settings"].get()
+
+        for scenario in npi_config["scenarios"].get():
             # if it's a string, look up the scenario name's config
             if isinstance(scenario, str):
-                settings = modifiers_library.get(scenario)
+                settings = settings_map.get(scenario)
                 if settings is None:
                     raise RuntimeError(f"couldn't find scenario in config file [got: {scenario}]")
                 # via profiling: faster to recreate the confuse view than to fetch+resolve due to confuse isinstance
@@ -55,8 +58,7 @@ class StackedModifier(NPIBase):
 
             sub_npi = NPIBase.execute(
                 npi_config=scenario_npi_config,
-                modinf=modinf,
-                modifiers_library=modifiers_library,
+                global_config=global_config,
                 subpops=subpops,
                 loaded_df=loaded_df,
             )

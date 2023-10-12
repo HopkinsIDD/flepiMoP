@@ -34,12 +34,12 @@ The model can perform inference on the effectiveness of interventions as long as
 An example configuration file where inference is performed on scenario planning interventions is as follows:
 
 ```
-seir_modifiers:
+interventions:
   scenarios:
     - Scenario1
   settings:
     local_variance:
-      method: SinglePeriodModifier
+      template: SinglePeriodModifier
       parameter: r0
       value:
         distribution: truncnorm
@@ -54,7 +54,7 @@ seir_modifiers:
         a: -1
         b: 1
     stayhome:
-      method: SinglePeriodModifier
+      template: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-04
       period_end_date: 2020-04-30
@@ -71,13 +71,13 @@ seir_modifiers:
         a: -1
         b: 1
     Scenario1:
-      method: StackedModifier
+      template: StackedModifier
       scenarios: 
         - local_variance
         - stayhome
 ```
 
-## `seir_modifiers::settings::[setting_name]`
+## `interventions::settings::[setting_name]`
 
 This configuration allows us to infer subpop-level baseline R0 estimates by adding a `local_variance` intervention. The baseline subpop-specific R0 estimate may be calculated as $$R0*(1-local_variance),$$ where R0 is the baseline simulation R0 value, and local_variance is an estimated subpop-specific value.
 
@@ -85,7 +85,7 @@ Interventions may be specified in the same way as before, or with an added `pert
 
 | Item              | Required?             | Type/Format                                     | 
 |-------------------|-----------------------|-------------------------------------------------|
-| method          | **required**          | "SinglePeriodModifier" or "StackedModifier"                         |
+| template          | **required**          | "SinglePeriodModifier" or "StackedModifier"                         |
 | period_start_date | optional for SinglePeriodModifier | date between global `start_date` and `end_date`; default is global `start_date` |
 | period_end_date   | optional for SinglePeriodModifier | date between global `start_date` and `end_date`; default is global `end_date`  |
 | value             | required for SinglePeriodModifier | specifies both the prior distribution and range of support for the final inferred values |

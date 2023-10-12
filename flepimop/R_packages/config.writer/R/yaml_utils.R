@@ -80,8 +80,8 @@
 collapse_intervention<- function(dat){
     #TODO: add number to repeated names
     #TODO add a check that all end_dates are the same
-    mtr <- dat %>%
-        dplyr::filter(method=="MultiPeriodModifier") %>%
+    mtr <- dat %>% as_tibble() %>%
+        dplyr::filter(template=="MultiPeriodModifier") %>%
         dplyr::mutate(end_date=paste0("end_date: ", end_date),
                       start_date=paste0("- start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n              ", start_date:end_date) %>%
@@ -104,8 +104,8 @@ collapse_intervention<- function(dat){
     }
 
     reduce <- dat %>%
-        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, method, type, category, parameter, baseline_modifier, starts_with("value_"), starts_with("pert_")) %>%
-        dplyr::filter(method %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
+        dplyr::select(USPS, subpop, contains("subpop_groups"), start_date, end_date, name, template, type, category, parameter, baseline_scenario, starts_with("value_"), starts_with("pert_")) %>%
+        dplyr::filter(template %in% c("SinglePeriodModifier", "ModifierModifier")) %>%
         dplyr::mutate(end_date=paste0("period_end_date: ", end_date),
                       start_date=paste0("period_start_date: ", start_date)) %>%
         tidyr::unite(col="period", sep="\n      ", start_date:end_date) %>%
@@ -113,10 +113,10 @@ collapse_intervention<- function(dat){
         dplyr::ungroup() %>%
         dplyr::add_count(dplyr::across(-USPS)) %>%
         dplyr::mutate(name = dplyr::case_when(category =="local_variance" | USPS %in% c("all", "") | is.na(USPS) ~ name,
-                                              n==1 & method=="SinglePeriodModifier" ~ paste0(USPS, "_", name),
-                                              method=="SinglePeriodModifier" ~ paste0(subpop, "_", name),
-                                              n==1 & method!="ModifierModifier" ~ paste0(USPS, name),
-                                              method!="ModifierModifier" ~ paste0(subpop, name),
+                                              n==1 & template=="SinglePeriodModifier" ~ paste0(USPS, "_", name),
+                                              template=="SinglePeriodModifier" ~ paste0(subpop, "_", name),
+                                              n==1 & template!="ModifierModifier" ~ paste0(USPS, name),
+                                              template!="ModifierModifier" ~ paste0(subpop, name),
                                               TRUE ~ name),
                       name = stringr::str_remove(name, "^_"))
 
@@ -130,22 +130,22 @@ collapse_intervention<- function(dat){
 
 #' Print intervention text for MultiPeriodModifier interventions
 #'
-#' @param dat df for an intervention with the MTR method with processed name/period; see collapsed_intervention. All rows in the dataframe should have the same intervention name.
+#' @param dat df for an intervention with the MTR template with processed name/period; see collapsed_intervention. All rows in the dataframe should have the same intervention name.
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #'
-yaml_mtr_method <- function(dat){
-    method <- unique(dat$method)
+yaml_mtr_template <- function(dat){
+    template <- unique(dat$template)
     subpop_all <- any(unique(dat$subpop)=="all")
     inference <- !any(is.na(dat$pert_dist))
 
-    if(method=="MultiPeriodModifier" & subpop_all){
+    if(template=="MultiPeriodModifier" & subpop_all){
         cat(paste0(
             "    ", dat$name, ":\n",
-            "      method: MultiPeriodModifier\n",
+            "      template: MultiPeriodModifier\n",
             "      parameter: ", dat$parameter, "\n",
             "      groups:\n",
             '        - subpop: "all"\n'
@@ -162,10 +162,10 @@ yaml_mtr_method <- function(dat){
         }
     }
 
-    if(method=="MultiPeriodModifier" & !subpop_all){
+    if(template=="MultiPeriodModifier" & !subpop_all){
         cat(paste0(
             "    ", dat$name[1], ":\n",
-            "      method: MultiPeriodModifier\n",
+            "      template: MultiPeriodModifier\n",
             "      parameter: ", dat$parameter[1], "\n",
             "      groups:\n"
         ))
@@ -301,9 +301,9 @@ print_value1 <- function(value_type, value_dist, value_mean,
     space3 <- rep(" ", indent_space + 4) %>% paste0(collapse = "")
 
     print_val <- ""
-    if (value_type == "timeseriess" && !is.null(value_type)){
+    if (value_type == "timeseries" && !is.null(value_type)){
         print_val <- paste0(print_val,
-                            space, "timeseries: ", value_mean$timeseries, "\n")
+                            space, "timeserie: ", value_mean$timeserie, "\n")
 
     } else {
 
@@ -356,19 +356,19 @@ print_value1 <- function(value_type, value_dist, value_mean,
 
 #' Print intervention text for SinglePeriodModifier interventions
 #'
-#' @param dat df row for an intervention with the SinglePeriodModifier or ModifierModifier method that has been processed name/period; see collapsed_intervention.
+#' @param dat df row for an intervention with the SinglePeriodModifier or ModifierModifier template that has been processed name/period; see collapsed_intervention.
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #'
-yaml_reduce_method<- function(dat){
+yaml_reduce_template<- function(dat){
 
     cat(paste0(
         "    ", dat$name, ":\n",
-        "      method: ", dat$method,"\n",
-        if(dat$method %in% c("SinglePeriodModifier", "ModifierModifier")){
+        "      template: ", dat$template,"\n",
+        if(dat$template %in% c("SinglePeriodModifier", "ModifierModifier")){
             paste0("      parameter: ", dat$parameter, "\n")
         },
         if(all(dat$subpop == "all")){
@@ -385,8 +385,8 @@ yaml_reduce_method<- function(dat){
             }
         },
         dat$period,
-        if(dat$method == "ModifierModifier"){
-            paste0("      baseline_modifier: ", dat$baseline_modifier, "\n")
+        if(dat$template == "ModifierModifier"){
+            paste0("      baseline_scenario: ", dat$baseline_scenario, "\n")
         }
     ))
 
@@ -441,13 +441,13 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
 
                 next
             }
-            cat(paste0("    ", dat$category[i], ":\n", "      method: StackedModifier\n",
+            cat(paste0("    ", dat$category[i], ":\n", "      template: StackedModifier\n",
                        "      scenarios: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category ==
                                                         "NPI_redux", name, category))
-        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -461,7 +461,7 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
         if (duplicate_names > 1) {
             stop("At least one intervention name is shared by distinct NPIs.")
         }
-        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -497,12 +497,12 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
             if (dat$category[i] %in% c("local_variance", "NPI_redux")) {
                 next
             }
-            cat(paste0("    ", dat$category[i], ":\n", "      method: StackedModifier\n",
+            cat(paste0("    ", dat$category[i], ":\n", "      template: StackedModifier\n",
                        "      scenarios: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category == "NPI_redux", name, category))
-        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     } else {
@@ -515,7 +515,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
         if (duplicate_names > 1) {
             stop("At least one intervention name is shared by distinct NPIs.")
         }
-        cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
+        cat(paste0("    ", scenario, ":\n", "      template: StackedModifier\n",
                    "      scenarios: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
@@ -917,12 +917,12 @@ print_seir <- function(integration_method = "rk4",
             if (nu_list$age_stratified[j]){
                 for (i in 1:length(age_strata)) {
                     seir <- paste0(seir, "    ", nu_label_, ifelse(nu_list$age_stratified[j], age_strata[i], ""), resume_modifier, ": \n",
-                                   "      stacked_modifier_method: ", nu_list$overlap_operation[j], "\n",
+                                   "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n",
                                    print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
                 }
             } else {
                 seir <- paste0(seir, "    ", nu_label_, ": \n",
-                               "      stacked_modifier_method: ", nu_list$overlap_operation[j], "\n",
+                               "      intervention_overlap_operation: ", nu_list$overlap_operation[j], "\n",
                                print_value(value_dist = nu_list$distrib[j], value_mean = nu_list$value[j]))
             }
         }
@@ -1010,18 +1010,18 @@ print_interventions <- function (
         stack = TRUE,
         compartment = TRUE){
 
-    cat(paste0("\nseir_modifiers:\n", "  scenarios:\n", "    - ",
+    cat(paste0("\ninterventions:\n", "  scenarios:\n", "    - ",
                scenario, "\n", "  settings:\n"))
     outcome_dat <- dat %>% collapse_intervention() %>% dplyr::filter(type == "outcome")
     dat <- collapse_intervention(dat) %>% dplyr::filter(type == "transmission")
     for (i in 1:nrow(dat)) {
         if (i > nrow(dat))
             break
-        if (dat$method[i] == "MultiPeriodModifier") {
-            dat %>% dplyr::filter(name == dat$name[i]) %>% yaml_mtr_method(.)
+        if (dat$template[i] == "MultiPeriodModifier") {
+            dat %>% dplyr::filter(name == dat$name[i]) %>% yaml_mtr_template(.)
             dat <- dat %>% dplyr::filter(name != dat$name[i] | dplyr::row_number() == i)
         } else {
-            yaml_reduce_method(dat[i, ])
+            yaml_reduce_template(dat[i, ])
         }
     }
     yaml_stack1(dat, scenario, stack)
@@ -1034,13 +1034,13 @@ print_interventions <- function (
         for (i in 1:nrow(outcome_dat)) {
             if (i > nrow(outcome_dat))
                 break
-            if (outcome_dat$method[i] == "MultiPeriodModifier") {
+            if (outcome_dat$template[i] == "MultiPeriodModifier") {
                 outcome_dat %>% dplyr::filter(name == outcome_dat$name[i]) %>%
-                    yaml_mtr_method(.)
+                    yaml_mtr_template(.)
                 outcome_dat <- outcome_dat %>%
                     dplyr::filter(name != outcome_dat$name[i] | dplyr::row_number() == i)
             } else {
-                yaml_reduce_method(outcome_dat[i, ])
+                yaml_reduce_template(outcome_dat[i, ])
             }
         }
         cat(paste0("\n"))
@@ -1211,7 +1211,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                      "      incidH_", outcomes_base_data$var_compartment[i], ":\n",
                                      "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
                                      "        probability:\n",
-                                     if ("incidH" %in% intervention_params) paste0("          modifier_parameter: \"", incidItoHparam, "\"\n"),
+                                     if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoHparam, "\"\n"),
                                      print_value(value_dist = incidH_prob_dist,
                                                  value_mean = incidH_prob_value * outcomes_base_data$incidH[i],
                                                  indent_space = 10),
@@ -1229,7 +1229,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                      "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
                                      "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                                      "        probability:\n",
-                                     if ("incidH" %in% intervention_params) paste0("          modifier_parameter: \"", incidItoHparam, "\"\n"),
+                                     if ("incidH" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoHparam, "\"\n"),
                                      print_value(value_dist = incidH_prob_dist,
                                                  value_mean = incidH_prob_value * outcomes_base_data$incidH[i],
                                                  indent_space = 10),
@@ -1247,7 +1247,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                      "      incidD_", outcomes_base_data$var_compartment[i], ":\n",
                                      "        source: incidI_", outcomes_base_data$var_compartment[i], "\n",
                                      "        probability:\n",
-                                     if ("incidD" %in% intervention_params) paste0("          modifier_parameter: \"", incidItoDparam, "\"\n"),
+                                     if ("incidD" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoDparam, "\"\n"),
                                      print_value(value_dist = incidD_prob_dist,
                                                  value_mean = incidD_prob_value * outcomes_base_data$incidD[i],
                                                  indent_space = 10),
@@ -1261,7 +1261,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                      "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
                                      "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                                      "        probability:\n",
-                                     if ("incidD" %in% intervention_params) paste0("          modifier_parameter: \"", incidItoDparam, "\"\n"),
+                                     if ("incidD" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoDparam, "\"\n"),
                                      print_value(value_dist = incidD_prob_dist,
                                                  value_mean = incidD_prob_value * outcomes_base_data$incidD[i],
                                                  indent_space = 10),
@@ -1275,7 +1275,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                      "      incidC_", outcomes_base_data$var_compartment[i], ":\n",
                                      "        source: incidI_", outcomes_base_data$var_compartment[i],  "\n",
                                      "        probability:\n",
-                                     if ("incidC" %in% intervention_params) paste0("          modifier_parameter: \"", incidItoCparam, "\"\n"),
+                                     if ("incidC" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoCparam, "\"\n"),
                                      print_value(value_dist = incidC_prob_dist,
                                                  value_mean = incidC_prob_value * outcomes_base_data$incidC[i],
                                                  value_sd = incidC_prob_sd,
@@ -1294,7 +1294,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                      "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
                                      "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                                      "        probability:\n",
-                                     if ("incidC" %in% intervention_params) paste0("          modifier_parameter: \"", incidItoCparam, "\"\n"),
+                                     if ("incidC" %in% intervention_params) paste0("          intervention_param_name: \"", incidItoCparam, "\"\n"),
                                      print_value(value_dist = incidC_prob_dist,
                                                  value_mean = incidC_prob_value * outcomes_base_data$incidC[i],
                                                  value_sd = incidC_prob_sd,
@@ -1316,7 +1316,7 @@ print_outcomes <- function (resume_modifier = NULL,
                                  "            variant_type: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
                                  "            age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                                  "        probability:\n",
-                                 if("incidI" %in% intervention_params) paste0('          modifier_parameter: "incidI_total"\n'),
+                                 if("incidI" %in% intervention_params) paste0('          intervention_param_name: "incidI_total"\n'),
                                  print_value(value_dist = "fixed",
                                              value_mean = 1,
                                              indent_space = 10),
@@ -1396,10 +1396,10 @@ print_outcomes <- function (resume_modifier = NULL,
         cat(paste0(outcomes, mget(outcomes_included) %>% unlist() %>% paste0(collapse = "")))
 
         if (incl_interventions) {
-            cat(paste0("  seir_modifiers:\n",
+            cat(paste0("  interventions:\n",
                        "    settings:\n",
                        "      ", ifr, ":\n",
-                       "        method: StackedModifier\n",
+                       "        template: StackedModifier\n",
                        "        scenarios: [\"outcome_interventions\"]\n"))
         }
 
@@ -1446,10 +1446,10 @@ print_outcomes <- function (resume_modifier = NULL,
             if (nrow(dat) > 0) {
                 outcome_interventions <- paste0(unique(dat$name), collapse = "\", \"")
 
-                cat(paste0("  seir_modifiers:\n",
+                cat(paste0("  interventions:\n",
                            "    settings:\n",
                            "      ", ifr, ":\n",
-                           "        method: StackedModifier\n",
+                           "        template: StackedModifier\n",
                            "        scenarios: [\"", outcome_interventions, "\"]\n"))
             }
         }
