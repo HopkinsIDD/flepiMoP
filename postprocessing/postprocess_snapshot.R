@@ -82,7 +82,7 @@ import_model_outputs <- function(scn_dir, outcome, global_opt, final_opt,
                  outcome, "/",
                  config$name, "/",
                  config$interventions$scenarios, "/",
-                 config$outcomes_modifiers$scenarios)
+                 config$outcomes$scenarios)
   subdir_ <- paste0(dir_, "/", list.files(dir_),
                     "/",
                     global_opt,
