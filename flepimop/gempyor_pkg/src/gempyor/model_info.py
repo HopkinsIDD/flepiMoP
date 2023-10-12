@@ -124,7 +124,7 @@ class ModelInfo:
                     self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
                     self.seir_modifiers_library = config["seir_modifiers"]["modifiers"].get()
                 else:
-                    self.seir_modifiers_library = config["seir_modifiers"].get()
+                    self.seir_modifiers_library = config["seir_modifiers"]["modifiers"].get()
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
             elif self.seir_modifiers_scenario is not None:
                 raise ValueError(
@@ -147,17 +147,18 @@ class ModelInfo:
                     self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
                     self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
                 else:
-                    self.outcome_modifiers_library = config["outcome_modifiers"].get()
+                    self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
                 
             ## NEED TO IMPLEMENT THIS -- CURRENTLY CANNOT USE outcome modifiers
-            # elif self.outcome_modifiers_scenario is not None:
-            #     
-            #     if config["outcome_modifiers"].exists():
-            #         raise ValueError(
-            #             "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
-            #         )
-            #     else
+            elif self.outcome_modifiers_scenario is not None:
+                
+                if config["outcome_modifiers"].exists():
+                    raise ValueError(
+                        "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
+                    )
+                else:
+                    self.outcome_modifiers_scenario = None
             else:
                 logging.info("Running ModelInfo with outcomes but without Outcomes Modifiers")
         elif self.outcome_modifiers_scenario is not None:
