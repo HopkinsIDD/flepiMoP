@@ -50,7 +50,7 @@ def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
     return 1
 
 
-def build_outcome_modifiers(
+def build_outcomes_Modifiers(
     modinf: model_info.ModelInfo,
     load_ID: bool,
     sim_id2load: int,
@@ -97,7 +97,7 @@ def onerun_delayframe_outcomes(
 
     npi_outcomes = None
     if modinf.npi_config_outcomes:
-        npi_outcomes = build_outcome_modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_outcomes = build_outcomes_Modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
 
     loaded_values = None
     if load_ID:

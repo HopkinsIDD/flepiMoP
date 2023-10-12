@@ -42,7 +42,7 @@ def test_full_npis_read_write():
     #    sim_id2write=1, modinf=inference_simulator.s, load_ID=False, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_outcome_modifiers(
+    npi_outcomes = outcomes.build_outcomes_Modifiers(
         inference_simulator.modinf, load_ID=False, sim_id2load=None, config=config
     )
     # npi_seir = seir.build_npi_SEIR(
@@ -75,7 +75,7 @@ def test_full_npis_read_write():
     #    sim_id2write=1, modinf=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_outcome_modifiers(
+    npi_outcomes = outcomes.build_outcomes_Modifiers(
         inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config
     )
     inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
@@ -101,7 +101,7 @@ def test_full_npis_read_write():
     #    sim_id2write=1, modinf=inference_simulator.s, load_ID=True, sim_id2load=1
     # )
 
-    npi_outcomes = outcomes.build_outcome_modifiers(
+    npi_outcomes = outcomes.build_outcomes_Modifiers(
         inference_simulator.modinf, load_ID=True, sim_id2load=1, config=config
     )
     inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())

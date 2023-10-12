@@ -55767,7 +55767,7 @@ seir_modifiers:
       method: StackedModifier
       modifiers: ["local_variance", "local_variance_chi3", "NPI", "seasonal", "vaccination"]
 
-outcome_modifiers:
+outcomes_modifiers:
   scenarios:
     - outcome_interventions
   modifiers:

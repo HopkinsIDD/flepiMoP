@@ -6636,7 +6636,7 @@ seir_modifiers:
       modifiers: ["local_variance", "NPI", "seasonal", "vaccination", "variant"]
 
 
-outcome_modifiers:
+outcomes_modifiers:
   scenarios:
     - med
   modifiers:
