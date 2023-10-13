@@ -79,7 +79,6 @@ class SeedingAndIC:
         initial_conditions_config: confuse.ConfigView,
     ):
         self.seeding_config = seeding_config
-        print("self.seeding_config", self.seeding_config)
         self.initial_conditions_config = initial_conditions_config
 
     def draw_ic(self, sim_id: int, setup) -> np.ndarray:
