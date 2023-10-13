@@ -12,10 +12,20 @@ suppressMessages(library(purrr))
 options(warn = 1)
 options(readr.num_columns = 0)
 
+required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
+
+# Load gempyor module
+gempyor <- reticulate::import("gempyor")
+
+#Temporary
+#print("Setting random number seed")
+#set.seed(1) # set within R
+#reticulate::py_run_string(paste0("rng_seed = ", 1)) #set within Python
+
 option_list = list(
     optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
     optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
-    optparse::make_option(c("-s", "--seir_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
+    optparse::make_option(c("-s", "--seir_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_SEIR_SCENARIOS", 'all'), type='character', help="name of the intervention to run, or 'all' to run all of them"),
     optparse::make_option(c("-d", "--outcome_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenarios to run, or 'all' to run all of them"),
     optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("FLEPI_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
     optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
@@ -133,9 +143,16 @@ if (!dir.exists(data_dir)){
     suppressWarnings(dir.create(data_dir, recursive = TRUE))
 }
 
-# Parse scenarios arguments
+
+
+# ~ Parse Scenario Arguments ----------------------------------------------
+
+# if opt$outcome_modifiers_scenarios is specified
+
+
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
+
 if (all(outcome_modifiers_scenarios == "all")) {
     if (!is.null(config$outcome_modifiers$scenarios)){
         outcome_modifiers_scenarios <- config$outcome_modifiers$scenarios
@@ -169,10 +186,6 @@ if ("priors" %in% names(config$inference)) {
     defined_priors <- config$inference$priors
 }
 
-
-
-## Runner Script---------------------------------------------------------------------
-
 ## backwards compatibility with configs that don't have inference$gt_source parameter will use the previous default data source (USA Facts)
 if (is.null(config$inference$gt_source)){
     gt_source <- "usafacts"
@@ -203,7 +216,11 @@ if (gt_end_date > lubridate::ymd(config$end_date)) {
     gt_end_date <- lubridate::ymd(config$end_date)
 }
 
-# if we want to run inference, do the following:
+
+
+# Setup Obs, Initial Stats, and Likelihood fn -----------------------------
+
+# ~ WITH Inference ----------------------------------------------------
 
 if (config$inference$do_inference){
 
@@ -276,6 +293,9 @@ if (config$inference$do_inference){
     }
     print("Running WITH inference")
 
+
+# ~ WITHOUT Inference ---------------------------------------------------
+
 } else {
 
     subpopnames <- obs_subpop
@@ -306,20 +326,13 @@ if (config$inference$do_inference){
     print("Running WITHOUT inference")
 }
 
-required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
 
-# Load gempyor module
-gempyor <- reticulate::import("gempyor")
 
-#Temporary
-#print("Setting random number seed")
-#set.seed(1) # set within R
-#reticulate::py_run_string(paste0("rng_seed = ", 1)) #set within Python
-
-# Scenario loop -----
+# Run Model Looping through Scenarios -------------------------------------
 
 print(paste("Chimeric reset is", (opt$reset_chimeric_on_accept)))
 print(names(opt))
+
 if (!opt$reset_chimeric_on_accept) {
     warning("We recommend setting reset_chimeric_on_accept TRUE, since reseting chimeric chains on global acceptances more closely matches normal MCMC behaviour")
 }
