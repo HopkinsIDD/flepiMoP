@@ -706,7 +706,7 @@ class BatchJobHandler(object):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()
-            cur_env_vars.append({"name": "FLEPI_NPI_SCENARIOS", "value": s})
+            cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
             cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
             cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
@@ -833,7 +833,7 @@ class BatchJobHandler(object):
                 block_idx = 1
                 while block_idx < self.num_blocks:
                     cur_env_vars = base_env_vars.copy()
-                    cur_env_vars.append({"name": "FLEPI_NPI_SCENARIOS", "value": s})
+                    cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
                     cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
                     cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
                     cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"})

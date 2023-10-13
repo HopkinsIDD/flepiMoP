@@ -1,3 +1,5 @@
+## Preamble ---------------------------------------------------------------------
+
 suppressMessages(library(parallel))
 suppressMessages(library(foreach))
 suppressMessages(library(parallel))
@@ -7,7 +9,7 @@ options(readr.num_columns = 0)
 option_list = list(
   optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
   optparse::make_option(c("-u","--run_id"), action="store", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
-  optparse::make_option(c("-s", "--seir_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_NPI_SCENARIOS", 'all'), type='character', help="name of the intervention scenario to run, or 'all' to run all of them"),
+  optparse::make_option(c("-s", "--seir_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_SEIR_SCENARIOS", 'all'), type='character', help="name of the intervention scenario to run, or 'all' to run all of them"),
   optparse::make_option(c("-d", "--outcome_modifiers_scenarios"), action="store", default=Sys.getenv("FLEPI_OUTCOME_SCENARIOS", 'all'), type='character', help="name of the outcome scenario to run, or 'all' to run all of them"),
   optparse::make_option(c("-j", "--jobs"), action="store", default=Sys.getenv("FLEPI_NJOBS", parallel::detectCores()), type='integer', help="Number of jobs to run in parallel"),
   optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
@@ -39,8 +41,24 @@ print(paste('Running ',opt$j,' jobs in parallel'))
 
 config <- flepicommon::load_config(opt$config)
 
-# Parse scenarios arguments
-##If outcome scenarios are specified check their existence
+
+
+
+# Run Specifics -----------------------------------------------------------
+
+if(is.na(opt$iterations_per_slot)) {
+  opt$iterations_per_slot <- config$inference$iterations_per_slot
+}
+
+if(is.na(opt$slots)) {
+  opt$slots <- config$nslots
+}
+
+
+
+# Scenario Arguments ------------------------------------------------------
+
+## If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
 if (all(outcome_modifiers_scenarios == "all")) {
     if (!is.null(config$outcome_modifiers$scenarios)){
@@ -53,7 +71,7 @@ if (all(outcome_modifiers_scenarios == "all")) {
   quit("yes", status=1)
 }
 
-##If intervention scenarios are specified check their existence
+## If intervention scenarios are specified check their existence
 seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
 if (all(seir_modifiers_scenarios == "all")){
   seir_modifiers_scenarios <- config$seir_modifiers$scenarios
@@ -62,13 +80,10 @@ if (all(seir_modifiers_scenarios == "all")){
   quit("yes", status=1)
 }
 
-if(is.na(opt$iterations_per_slot)) {
-  opt$iterations_per_slot <- config$inference$iterations_per_slot
-}
 
-if(is.na(opt$slots)) {
-  opt$slots <- config$nslots
-}
+
+# Run Scenarios and Slots in Parallel -------------------------------------
+
 
 cl <- parallel::makeCluster(opt$j)
 doParallel::registerDoParallel(cl)
