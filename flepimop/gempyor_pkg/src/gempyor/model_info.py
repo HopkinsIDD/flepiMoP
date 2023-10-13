@@ -178,10 +178,10 @@ class ModelInfo:
         self.out_run_id = out_run_id
 
         if in_prefix is None:
-            in_prefix = f"model_output/{self.setup_name}/{in_run_id}/"
+            in_prefix = f"{self.setup_name}/{in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
-            out_prefix = f"model_output/{self.setup_name}/{out_run_id}/"
+            out_prefix = f"{self.setup_name}/{out_run_id}/"
         self.out_prefix = out_prefix
 
         if self.write_csv or self.write_parquet:
@@ -241,6 +241,9 @@ class ModelInfo:
             extension=extension,
         )
         return fn
+    
+    def get_setup_name(self):
+        return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
         return read_df(
