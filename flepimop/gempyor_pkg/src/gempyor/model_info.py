@@ -92,7 +92,6 @@ class ModelInfo:
                 config["initial_conditions"] if config["initial_conditions"].exists() else None
             )
             self.seeding_config = config["seeding"] if config["seeding"].exists() else None
-            print("self.seeding_config", self.seeding_config)
 
             if self.seeding_config is None and self.initial_conditions_config is None:
                 logging.critical(
@@ -149,10 +148,9 @@ class ModelInfo:
                 else:
                     self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
-                
+
             ## NEED TO IMPLEMENT THIS -- CURRENTLY CANNOT USE outcome modifiers
             elif self.outcome_modifiers_scenario is not None:
-                
                 if config["outcome_modifiers"].exists():
                     raise ValueError(
                         "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
@@ -241,7 +239,7 @@ class ModelInfo:
             extension=extension,
         )
         return fn
-    
+
     def get_setup_name(self):
         return self.setup_name
 
