@@ -17,8 +17,7 @@ def create_file_name_without_extension(run_id, prefix, index, ftype, create_dire
 
 
 def run_id():
-    return datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d.%H:%M:%S.%Z")
-
+    return datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M%S%Z")
 
 def create_dir_name(run_id, prefix, ftype):
     return os.path.dirname(create_file_name_without_extension(run_id, prefix, 1, ftype, create_directory=False))
