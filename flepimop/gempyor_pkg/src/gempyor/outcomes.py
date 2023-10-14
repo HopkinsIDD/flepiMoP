@@ -129,7 +129,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                 branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
                 branching_data = pa.parquet.read_table(branching_file).to_pandas()
                 if "relative_probability" not in list(branching_data["quantity"]):
-                    raise ValueError(f"No 'relative_probability' quantity in {branching_file}, therefor making it useless")
+                    raise ValueError(
+                        f"No 'relative_probability' quantity in {branching_file}, therefor making it useless"
+                    )
 
                 print(
                     "Loaded subpops in loaded relative probablity file:",
@@ -229,7 +231,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                                 & (branching_data["quantity"] == "relative_probability")
                             ].copy(deep=True)
                             if len(rel_probability) > 0:
-                                logging.debug(f"Using 'param_from_file' for relative probability in outcome {class_name}")
+                                logging.debug(
+                                    f"Using 'param_from_file' for relative probability in outcome {class_name}"
+                                )
                                 # Sort it in case the relative probablity file is mispecified
                                 rel_probability.subpop = rel_probability.subpop.astype("category")
                                 rel_probability.subpop = rel_probability.subpop.cat.set_categories(
