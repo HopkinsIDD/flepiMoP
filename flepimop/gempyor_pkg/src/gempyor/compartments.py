@@ -467,8 +467,10 @@ class Compartments:
 
         if not operators: # empty list means all have been tried. Usually there just remains one string in string_list at that time.
             raise ValueError(
-                f"""Could not parse string {string_list}. This usually mean that '{string_list[0]}' is a parameter name that is not defined
-                or that an operator is not in the list of supported operator: ^,*,/,+,-."""
+                f"""Could not parse string {string_list}. 
+    This usually mean that '{string_list[0]}' is a parameter name that is not defined
+    or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-.
+    The defined parameters are {parameter_names}."""
             )
 
         split_strings = [x.split(operators[0]) for x in string_list]
