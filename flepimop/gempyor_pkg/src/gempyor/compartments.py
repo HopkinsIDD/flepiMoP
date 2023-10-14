@@ -460,6 +460,19 @@ class Compartments:
         },
         operators=["^", "*", "/", "+", "-"],
     ):
+        """This is called recursusively for each operator. It parse the string according to the first operators
+        parameters: array with the value of each parameter
+        parameter_names: list of string with all defined parameters under parameters (not unique parameters, really parameters)
+        string"""
+
+        if not operators: # empty list means all have been tried. Usually there just remains one string in string_list at that time.
+            raise ValueError(
+                f"""Could not parse string {string_list}. 
+    This usually mean that '{string_list[0]}' is a parameter name that is not defined
+    or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-.
+    The defined parameters are {parameter_names}."""
+            )
+
         split_strings = [x.split(operators[0]) for x in string_list]
         rc_size = [len(string_list)]
         for x in parameters.shape[1:]:

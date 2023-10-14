@@ -551,13 +551,17 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             ## Update the prefix
             gempyor_inference_runner$update_prefix(new_prefix=global_local_prefix)
             ## Run the simulator
-            err <- gempyor_inference_runner$one_simulation(
+            tryCatch({
+                 gempyor_inference_runner$one_simulation(
                 sim_id2write=this_index,
                 load_ID=TRUE,
                 sim_id2load=this_index)
-            if (err != 0){
-                stop("GempyorSimulator failed to run")
-            }
+            }, error = function(e) {
+                print("GempyorSimulator failed to run (call on l. 538 of inference_slot.R).")
+                print("Here is all the debug information I could find:")
+                for(m in reticulate::py_last_error()) cat(m)
+                stop("GempyorSimulator failed to run... stopping")
+            })
 
             if (config$inference$do_inference){
                 sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%

@@ -5,7 +5,7 @@
 run_id <- function(){
   rc <- "test"
   try({
-    rc <- format(lubridate::now(),"%Y.%m.%d.%H:%M:%S.%Z")
+    rc <- format(lubridate::now(),"%Y%m%d_%H%M%S%Z")
   }, silent=TRUE)
   return(rc)
 }

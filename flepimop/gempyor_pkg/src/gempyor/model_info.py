@@ -92,7 +92,6 @@ class ModelInfo:
                 config["initial_conditions"] if config["initial_conditions"].exists() else None
             )
             self.seeding_config = config["seeding"] if config["seeding"].exists() else None
-            print("self.seeding_config", self.seeding_config)
 
             if self.seeding_config is None and self.initial_conditions_config is None:
                 logging.critical(
@@ -149,10 +148,9 @@ class ModelInfo:
                 else:
                     self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
                     raise ValueError("Not implemented yet")  # TODO create a Stacked from all
-                
+
             ## NEED TO IMPLEMENT THIS -- CURRENTLY CANNOT USE outcome modifiers
             elif self.outcome_modifiers_scenario is not None:
-                
                 if config["outcome_modifiers"].exists():
                     raise ValueError(
                         "An outcome modifiers scenario was provided to ModelInfo but no 'outcome_modifiers' sections in config"
@@ -178,10 +176,10 @@ class ModelInfo:
         self.out_run_id = out_run_id
 
         if in_prefix is None:
-            in_prefix = f"model_output/{self.setup_name}/{in_run_id}/"
+            in_prefix = f"{self.setup_name}/{in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
-            out_prefix = f"model_output/{self.setup_name}/{out_run_id}/"
+            out_prefix = f"{self.setup_name}/{out_run_id}/"
         self.out_prefix = out_prefix
 
         if self.write_csv or self.write_parquet:
@@ -241,6 +239,9 @@ class ModelInfo:
             extension=extension,
         )
         return fn
+
+    def get_setup_name(self):
+        return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
         return read_df(
