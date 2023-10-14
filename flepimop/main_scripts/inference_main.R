@@ -58,7 +58,7 @@ if(is.na(opt$slots)) {
 
 # Scenario Arguments ------------------------------------------------------
 
-## If outcome scenarios are specified check their existence
+##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
 if (all(outcome_modifiers_scenarios == "all")) {
     if (!is.null(config$outcome_modifiers$scenarios)){
@@ -66,18 +66,24 @@ if (all(outcome_modifiers_scenarios == "all")) {
     } else {
         outcome_modifiers_scenarios <- "all"
     }
-} else if (!(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)){
-  message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
-  quit("yes", status=1)
+} else if (!all(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)) {
+    message(paste("Invalid outcome scenario arguments: [",paste(setdiff(outcome_modifiers_scenarios, config$outcome_modifiers$scenarios)),
+                  "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
+    quit("yes", status=1)
 }
 
-## If intervention scenarios are specified check their existence
+##If intervention scenarios are specified check their existence
 seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
-if (all(seir_modifiers_scenarios == "all")){
-  seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+if (all(seir_modifiers_scenarios == "all")) {
+    if (!is.null(config$seir_modifiers$scenarios)){
+        seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+    } else {
+        seir_modifiers_scenarios <- "all"
+    }
 } else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
-  message(paste("Invalid intervention scenario arguments: [",paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
-  quit("yes", status=1)
+    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)),
+                  "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
+    quit("yes", status=1)
 }
 
 
