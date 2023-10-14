@@ -148,37 +148,47 @@ if (!dir.exists(data_dir)){
 # ~ Parse Scenario Arguments ----------------------------------------------
 
 # if opt$outcome_modifiers_scenarios is specified
+#  --> run only those scenarios
+#  If it is not or is "all"
 
 
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
-
 if (all(outcome_modifiers_scenarios == "all")) {
     if (!is.null(config$outcome_modifiers$scenarios)){
         outcome_modifiers_scenarios <- config$outcome_modifiers$scenarios
     } else {
         outcome_modifiers_scenarios <- "all"
     }
-} else if (!(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)){
-    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
+} else if (!all(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)) {
+    message(paste("Invalid outcome scenario arguments: [",paste(setdiff(outcome_modifiers_scenarios, config$outcome_modifiers$scenarios)),
+                  "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
 
 ##If intervention scenarios are specified check their existence
 seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
-if (all(seir_modifiers_scenarios == "all")){
-    seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+if (all(seir_modifiers_scenarios == "all")) {
+    if (!is.null(config$seir_modifiers$scenarios)){
+        seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+    } else {
+        seir_modifiers_scenarios <- "all"
+    }
 } else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
-    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
+    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)),
+                  "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
+
+
+
+# ~ Other Stats and Inference Args ----------------------------------------
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
 if ("hierarchical_stats_geo" %in% names(config$inference)) {
     hierarchical_stats <- config$inference$hierarchical_stats_geo
 }
-
 
 ##Create priors if specified
 defined_priors <- list()
@@ -328,6 +338,8 @@ if (config$inference$do_inference){
 
 
 
+
+
 # Run Model Looping through Scenarios -------------------------------------
 
 print(paste("Chimeric reset is", (opt$reset_chimeric_on_accept)))
@@ -362,7 +374,11 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         ## create_prefix(prefix="USA/", "inference", "med", "2022.03.04.10.18.42.CET", sep='/', trailing_separator='.')
         ## would be "USA/inference/med/2022.03.04.10.18.42.CET."
 
-        slot_prefix <- flepicommon::create_prefix(config$name,seir_modifiers_scenario,outcome_modifiers_scenario,opt$run_id,sep='/',trailing_separator='/')
+        setup_prefix <- flepicommon::create_setup_prefix(config$setup_name,
+                                                         seir_modifiers_scenario, outcome_modifiers_scenario,
+                                                         trailing_separator='')
+        slot_prefix <- file.path(setup_prefix, opt$run_id)
+
 
         gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
         cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
@@ -382,7 +398,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         gempyor_inference_runner <- gempyor$GempyorSimulator(
             config_path=opt$config,
             run_id=opt$run_id,
-            prefix=global_block_prefix,
+            slot_prefix=global_block_prefix,
+            block_info=file.path("global", "intermediate", flepicommon::create_prefix(slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')),
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
             stoch_traj_flag=opt$stoch_traj_flag,
