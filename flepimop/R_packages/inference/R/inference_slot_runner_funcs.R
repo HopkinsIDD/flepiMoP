@@ -134,7 +134,7 @@ aggregate_and_calc_loc_likelihoods <- function(
         } else {
             stop("unsupported hierarchical stat module")
         }
-        
+
 
 
 
@@ -516,7 +516,7 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
         #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seir','parquet'),
         #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
         # )
- 
+
         # rc$hosp_prevblk <- file.copy(
         #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'hosp','parquet'),
         #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
@@ -558,10 +558,11 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
 create_filename_list <- function(
         run_id,
         prefix,
+        suffix,
         index,
         types = c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik"),
-        extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
-) {
+        extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")) {
+
     if(length(types) != length(extensions)){
         stop("Please specify the same number of types and extensions.  Given",length(types),"and",length(extensions))
     }
@@ -569,7 +570,7 @@ create_filename_list <- function(
         x=types,
         y=extensions,
         function(x,y){
-            flepicommon::create_file_name(run_id = run_id,prefix = prefix,index = index,type = x,extension = y, create_directory = TRUE)
+            flepicommon::create_file_name(run_id = run_id, prefix = prefix, suffix = suffix, index = index, type = x, extension = y, create_directory = TRUE)
         }
     )
     names(rc) <- paste(names(rc),"filename",sep='_')
