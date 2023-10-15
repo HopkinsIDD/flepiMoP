@@ -148,37 +148,47 @@ if (!dir.exists(data_dir)){
 # ~ Parse Scenario Arguments ----------------------------------------------
 
 # if opt$outcome_modifiers_scenarios is specified
+#  --> run only those scenarios
+#  If it is not or is "all"
 
+
+##If intervention scenarios are specified check their existence
+seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
+if (all(seir_modifiers_scenarios == "all")) {
+    if (!is.null(config$seir_modifiers$scenarios)){
+        seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+    } else {
+        seir_modifiers_scenarios <- "all"
+    }
+} else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
+    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)),
+                  "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
+    quit("yes", status=1)
+}
 
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
-
 if (all(outcome_modifiers_scenarios == "all")) {
     if (!is.null(config$outcome_modifiers$scenarios)){
         outcome_modifiers_scenarios <- config$outcome_modifiers$scenarios
     } else {
         outcome_modifiers_scenarios <- "all"
     }
-} else if (!(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)){
-    message(paste("Invalid outcome scenario argument:[",paste(setdiff(outcome_modifiers_scenarios, config$outcome$scenarios)), "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
+} else if (!all(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)) {
+    message(paste("Invalid outcome scenario arguments: [",paste(setdiff(outcome_modifiers_scenarios, config$outcome_modifiers$scenarios)),
+                  "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
     quit("yes", status=1)
 }
 
-##If intervention scenarios are specified check their existence
-seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
-if (all(seir_modifiers_scenarios == "all")){
-    seir_modifiers_scenarios <- config$seir_modifiers$scenarios
-} else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
-    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)), "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
-    quit("yes", status=1)
-}
+
+
+# ~ Other Stats and Inference Args ----------------------------------------
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
 if ("hierarchical_stats_geo" %in% names(config$inference)) {
     hierarchical_stats <- config$inference$hierarchical_stats_geo
 }
-
 
 ##Create priors if specified
 defined_priors <- list()
@@ -328,6 +338,8 @@ if (config$inference$do_inference){
 
 
 
+
+
 # Run Model Looping through Scenarios -------------------------------------
 
 print(paste("Chimeric reset is", (opt$reset_chimeric_on_accept)))
@@ -339,11 +351,21 @@ if (!opt$reset_chimeric_on_accept) {
 
 for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
-    print(paste0("Running intervention scenario: ", seir_modifiers_scenario))
+    if (!is.null(config$seir_modifiers)){
+        print(paste0("Running seir modifier scenario: ", seir_modifiers_scenario))
+    } else {
+        print(paste0("No seir modifier scenarios"))
+        seir_modifiers_scenario <- NULL
+    }
 
     for(outcome_modifiers_scenario in outcome_modifiers_scenarios) {
 
-        print(paste0("Running outcome scenario: ", outcome_modifiers_scenario))
+        if (!is.null(config$outcome_modifiers)){
+            print(paste0("Running outcome modifier scenario: ", outcome_modifiers_scenario))
+        } else {
+            print(paste0("No outcome modifier scenarios"))
+            outcome_modifiers_scenario <- NULL
+        }
 
         reset_chimeric_files <- FALSE
 
@@ -362,31 +384,57 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         ## create_prefix(prefix="USA/", "inference", "med", "2022.03.04.10.18.42.CET", sep='/', trailing_separator='.')
         ## would be "USA/inference/med/2022.03.04.10.18.42.CET."
 
-        slot_prefix <- flepicommon::create_prefix(config$name,seir_modifiers_scenario,outcome_modifiers_scenario,opt$run_id,sep='/',trailing_separator='/')
+        setup_prefix <- flepicommon::create_setup_prefix(config$setup_name,
+                                                         seir_modifiers_scenario, outcome_modifiers_scenario,
+                                                         trailing_separator='')
+        inference_prefix <- file.path(setup_prefix, opt$run_id)
 
-        gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
-        cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
-        ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
-        gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
 
-        chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
-        chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
-        global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
+        # gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
+        # cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
+        # ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
+        # gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
+
+        gf_suffix <- flepicommon::create_prefix(prefix="",'global','final',sep='/',trailing_separator='')
+        cf_suffix <- flepicommon::create_prefix(prefix="",'chimeric','final',sep='/',trailing_separator='')
+        ci_suffix <- flepicommon::create_prefix(prefix="",'chimeric','intermediate',sep='/',trailing_separator='')
+        gi_suffix <- flepicommon::create_prefix(prefix="",'global','intermediate',sep='/',trailing_separator='')
+
+        filename_prefix <- flepicommon::create_prefix(prefix="", slot=list(opt$this_slot,"%09d"), opt$run_id, sep='.', trailing_separator='')
+
+        # chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
+        # chimeric_local_prefix <- flepicommon::create_prefix(prefix=chimeric_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
+        # global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='.')
+        # global_local_prefix <- flepicommon::create_prefix(prefix=global_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
+
+
         global_local_prefix <- flepicommon::create_prefix(prefix=global_block_prefix, slot=list(opt$this_block,"%09d"), sep='.', trailing_separator='.')
 
+
         print("prefixes created successfully.")
+
+
+        #swap scenarios for py_none() to pass to Gempyor
+        if (is.null(seir_modifiers_scenario)){
+            seir_modifiers_scenario <- reticulate::py_none()
+        }
+        if (is.null(outcome_modifiers_scenario)){
+            outcome_modifiers_scenario <- reticulate::py_none()
+        }
 
 
         ### Set up initial conditions ----------
         ## python configuration: build simulator model initialized with compartment and all.
         gempyor_inference_runner <- gempyor$GempyorSimulator(
             config_path=opt$config,
-            run_id=opt$run_id,
-            prefix=global_block_prefix,
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
             stoch_traj_flag=opt$stoch_traj_flag,
-            initialize=TRUE  # Shall we pre-compute now things that are not pertubed by inference
+            initialize=TRUE,  # Shall we pre-compute now things that are not pertubed by inference
+            run_id=opt$run_id,
+            prefix = inference_prefix,
+            suffix = gi_suffix,
+            index = flepicommon::create_prefix(slot=list(opt$this_slot,"%09d"), sep='.', trailing_separator='')
         )
         print("gempyor_inference_runner created successfully.")
 
@@ -394,8 +442,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         ## Using the prefixes, create standardized files of each type (e.g., seir) of the form
         ## {variable}/{prefix}{block-1}.{run_id}.{variable}.{ext}
         ## N.B.: prefix should end in "{slot}."
-        first_global_files <- inference::create_filename_list(opt$run_id, global_block_prefix, opt$this_block - 1)
-        first_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_block_prefix, opt$this_block - 1)
+        first_global_files <- inference::create_filename_list(opt$run_id, inference_prefix, gi_suffix, opt$this_block - 1)
+        first_chimeric_files <- inference::create_filename_list(opt$run_id, inference_prefix, ci_suffix, opt$this_block - 1)
         ## print("RUNNING: initialization of first block")
         ## Functions within this function save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),run_id.variable.ext and also copied into the /chimeric/ version, which are referenced by first_global_files and first_chimeric_files
         inference::initialize_mcmc_first_block(
@@ -432,17 +480,21 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         chimeric_likelihood_data <- arrow::read_parquet(first_chimeric_files[['llik_filename']])
         global_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']])
 
-        ##Add initial perturbation sd values to parameter files----
-        initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$seir_modifiers$modifiers)
-        initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$outcome_modifiers$modifiers)
+        ## Add initial perturbation sd values to parameter files----
+        # - Need to write these parameters back to the SAME chimeric file since they have a new column now
+        # - Also need to add this column to the global file (it will always be equal in the first block) (MIGHT NOT BE WORKING)
 
-        #Need to write these parameters back to the SAME chimeric file since they have a new column now
-        arrow::write_parquet(initial_snpi,first_chimeric_files[['snpi_filename']])
-        arrow::write_parquet(initial_hnpi,first_chimeric_files[['hnpi_filename']])
+        if (!is.null(config$seir_modifiers$modifiers)){
+            initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$seir_modifiers$modifiers)
+            arrow::write_parquet(initial_snpi, first_chimeric_files[['snpi_filename']])
+            arrow::write_parquet(initial_snpi, first_global_files[['snpi_filename']])
+        }
+        if (!is.null(config$outcome_modifiers$modifiers)){
+            initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$outcome_modifiers$modifiers)
+            arrow::write_parquet(initial_hnpi, first_chimeric_files[['hnpi_filename']])
+            arrow::write_parquet(initial_hnpi, first_global_files[['hnpi_filename']])
+        }
 
-        # Also need to add this column to the global file (it will always be equal in the first block) (MIGHT NOT BE WORKING)
-        arrow::write_parquet(initial_snpi,first_global_files[['snpi_filename']])
-        arrow::write_parquet(initial_hnpi,first_global_files[['hnpi_filename']])
 
         #####Get the full likelihood (WHY IS THIS A DATA FRAME)
         # Compute total loglik for each sim
@@ -468,8 +520,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             ## Using the prefixes, create standardized files of each type (e.g., seir) of the form
             ## {variable}/{prefix}{block-1}.{run_id}.{variable}.{ext}
             ## N.B.: prefix should end in "{block}."
-            this_global_files <- inference::create_filename_list(opt$run_id, global_local_prefix, this_index)
-            this_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_local_prefix, this_index)
+            this_global_files <- inference::create_filename_list(opt$run_id, inference_prefix, gi_suffix, this_index)
+            this_chimeric_files <- inference::create_filename_list(opt$run_id, inference_prefix, ci_suffix, this_index)
 
             ### Do perturbations from accepted parameters to get proposed parameters ----
 
@@ -489,8 +541,12 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             } else {
                 proposed_init <- initial_init
             }
-            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$modifiers)
-            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)  # NOTE: no scenarios possible right now
+            if (!is.null(config$seir_modifiers$modifiers)){
+                proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$modifiers)
+            }
+            if (!is.null(config$outcome_modifiers$modifiers)){
+                proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)  # NOTE: no scenarios possible right now
+            }
             proposed_spar <- initial_spar
             proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$outcomes) # NOTE: no scenarios possible right now
             if (!is.null(config$initial_conditions)){
@@ -535,7 +591,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             gempyor_inference_runner$update_prefix(new_prefix=global_local_prefix)
             ## Run the simulator
             tryCatch({
-                 gempyor_inference_runner$one_simulation(
+                gempyor_inference_runner$one_simulation(
                 sim_id2write=this_index,
                 load_ID=TRUE,
                 sim_id2load=this_index)
@@ -593,7 +649,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             proposed_likelihood <- sum(proposed_likelihood_data$ll)
 
             ## For logging
-            print(paste("Current likelihood",formatC(global_likelihood,digits=2,format="f"),"Proposed likelihood",formatC(proposed_likelihood,digits=2,format="f")))
+            print(paste("Current likelihood",formatC(global_likelihood,digits=2,format="f"),"Proposed likelihood",
+                        formatC(proposed_likelihood,digits=2,format="f")))
 
             ## Global likelihood acceptance or rejection decision ----
 
@@ -606,8 +663,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                     print("by default because it's the first iteration of a block 1")
                 }
 
-                old_global_files <- inference::create_filename_list(opt$run_id, global_local_prefix, current_index)
-                old_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_local_prefix, current_index)
+                old_global_files <- inference::create_filename_list(opt$run_id, inference_prefix, gi_suffix, current_index)
+                old_chimeric_files <- inference::create_filename_list(opt$run_id, inference_prefix, ci_suffix,  current_index)
 
                 #IMPORTANT: This is the index of the most recent globally accepted parameters
                 current_index <- this_index
@@ -736,7 +793,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                        unit = c("Gb", "Gb"),
                                        .before = 1)
 
-                    this_global_memprofile <- inference::create_filename_list(opt$run_id, global_local_prefix, this_index,
+                    this_global_memprofile <- inference::create_filename_list(opt$run_id,
+                                                                              inference_prefix, gi_suffix,
+                                                                              this_index,
                                                                               types = "memprof", extensions = "parquet")
                     arrow::write_parquet(curr_obj_sizes, this_global_memprofile[['memprof_filename']])
                     rm(curr_obj_sizes)
@@ -777,12 +836,12 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
         #####Write currently accepted files to disk
         #files of the form variables/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/chimeric/intermediate/slot.block.run_id.variable.parquet
-        output_chimeric_files <- inference::create_filename_list(opt$run_id, chimeric_block_prefix, opt$this_block)
+        output_chimeric_files <- inference::create_filename_list(opt$run_id, inference_prefix, ci_suffix, , opt$this_block)
         #files of the form variables/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.block.run_id.variable.parquet
-        output_global_files <- inference::create_filename_list(opt$run_id, global_block_prefix, opt$this_block)
+        output_global_files <- inference::create_filename_list(opt$run_id, inference_prefix, gi_suffix, opt$this_block)
 
         warning("Chimeric hosp and seir files not yet supported, just using the most recently generated file of each type")
-        this_index_global_files <- inference::create_filename_list(opt$run_id, global_local_prefix, this_index)
+        this_index_global_files <- inference::create_filename_list(opt$run_id, inference_prefix, gi_suffix, this_index)
         file.copy(this_index_global_files[['hosp_filename']],output_chimeric_files[['hosp_filename']])
         file.copy(this_index_global_files[['seir_filename']],output_chimeric_files[['seir_filename']])
     }
