@@ -38,6 +38,8 @@ class ModelInfo:
         out_run_id=None,
         out_prefix=None,
         stoch_traj_flag=False,
+        inference_filename_prefix = "",
+        inference_filepath_suffix = "",
         setup_name=None,  # override config setup_name
     ):
         self.nslots = nslots
@@ -48,6 +50,7 @@ class ModelInfo:
 
         self.seir_modifiers_scenario = seir_modifiers_scenario
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
+
 
         # 1. Create a setup name that contains every scenario.
         if setup_name is None:
@@ -182,6 +185,11 @@ class ModelInfo:
             out_prefix = f"{self.setup_name}/{out_run_id}/"
         self.out_prefix = out_prefix
 
+
+        # make the inference paths:
+        self.inference_filename_prefix = inference_filename_prefix
+        self.inference_filepath_suffix = inference_filepath_suffix
+
         if self.write_csv or self.write_parquet:
             self.timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             ftypes = []
@@ -190,7 +198,9 @@ class ModelInfo:
             if config["outcomes"].exists():
                 ftypes.extend(["hosp", "hpar", "hnpi"])
             for ftype in ftypes:
-                datadir = file_paths.create_dir_name(self.out_run_id, self.out_prefix, ftype)
+                datadir = file_paths.create_dir_name(run_id=self.out_run_id, prefix=self.out_prefix, ftype=ftype, 
+                                                    inference_filename_prefix=inference_filename_prefix, 
+                                                    inference_filepath_suffix=inference_filepath_suffix)
                 os.makedirs(datadir, exist_ok=True)
 
             if self.write_parquet and self.write_csv:
@@ -235,6 +245,8 @@ class ModelInfo:
             run_id=run_id,
             prefix=prefix,
             index=sim_id + self.first_sim_index - 1,
+            inference_filepath_suffix = self.inference_filepath_suffix,
+            inference_filename_prefix = self.inference_filename_prefix,
             ftype=ftype,
             extension=extension,
         )
