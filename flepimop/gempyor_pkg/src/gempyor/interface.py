@@ -88,7 +88,7 @@ class GempyorSimulator:
             in_run_id=in_run_id,
             in_prefix=in_prefix,
             inference_filename_prefix = inference_filename_prefix,
-            inference_filepath_suffix  = inference_filepath_suffix,
+            inference_filepath_suffix = inference_filepath_suffix,
             out_run_id=out_run_id,
             out_prefix=out_prefix,
             stoch_traj_flag=stoch_traj_flag,
