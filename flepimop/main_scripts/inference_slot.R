@@ -564,8 +564,10 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             if (!is.null(config$seir_modifiers$modifiers)){
                 proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$modifiers)
             }
+            # TODO we need a hnpi for inference
+            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)
             if (!is.null(config$outcome_modifiers$modifiers)){
-                proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)  # NOTE: no scenarios possible right now
+                  proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)# NOTE: no scenarios possible right now
             } 
             proposed_spar <- initial_spar
             proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$outcomes) # NOTE: no scenarios possible right now

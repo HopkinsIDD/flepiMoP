@@ -304,7 +304,7 @@ def simulate(
         outcome_modifiers_scenarios = None
         if config["outcomes"].exists() and config["outcome_modifiers"].exists():
             if config["outcome_modifiers"]["scenarios"].exists():
-                outcome_modifiers_scenarios = config["outcomes"]["scenarios"].as_str_seq()
+                outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
 
     outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
     seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
