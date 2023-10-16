@@ -394,10 +394,13 @@ def launch_batch(
 
     seir_modifiers_scenarios = None
     outcome_modifiers_scenarios = None
-    if config["seir_modifiers"]["scenarios"].exists():
-        seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
-    if config["outcome_modifiers"]["scenarios"].exists():
-        outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"]
+    if config["seir_modifiers"].exists():
+        if config["seir_modifiers"]["scenarios"].exists():
+            seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+    if config["outcomes"].exists() and config["outcome_modifiers"].exists():
+        if config["outcome_modifiers"]["scenarios"].exists():
+            outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
+
 
     handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 
