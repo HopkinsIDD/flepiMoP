@@ -331,8 +331,9 @@ class Compartments:
                 if not candidate in unique_strings:
                     unique_strings.append(candidate)
 
-            assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
-            assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
+            # parenthesis are now supported
+            #assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
+            #assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
             assert reduce(lambda a, b: a and b, [(x.find("%") == -1) for x in unique_strings])
             assert reduce(lambda a, b: a and b, [(x.find(" ") == -1) for x in unique_strings])
 
