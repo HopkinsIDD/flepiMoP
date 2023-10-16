@@ -391,6 +391,9 @@ def launch_batch(
         continuation_location,
         continuation_run_id,
     )
+    config.clear()
+    config.read(user=False)
+    config.set_file(config_file)
 
     seir_modifiers_scenarios = None
     outcome_modifiers_scenarios = None
