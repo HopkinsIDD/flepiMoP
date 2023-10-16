@@ -43,7 +43,7 @@ class GempyorSimulator:
         self,
         config_path,
         run_id="test_run_id",
-        prefix="test_prefix",
+        prefix=None,
         first_sim_index=1,
         seir_modifiers_scenario=None,
         outcome_modifiers_scenario=None,
@@ -97,7 +97,7 @@ class GempyorSimulator:
         print(
             f"""  gempyor >> Running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** simulation;\n"""
             f"""  gempyor >> ModelInfo {self.modinf.setup_name}; index: {self.modinf.first_sim_index}; run_id: {in_run_id},\n"""
-            f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
+            f"""  gempyor >> prefix: {self.modinf.in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
         self.already_built = False  # whether we have already build the costly objects that need just one build

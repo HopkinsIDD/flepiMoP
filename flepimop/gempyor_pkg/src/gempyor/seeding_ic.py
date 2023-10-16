@@ -267,7 +267,7 @@ class SeedingAndIC:
         elif method == "FolderDraw":
             seeding = pd.read_csv(
                 setup.get_input_filename(
-                    ftype=setup.seeding_config["seeding_file_type"],
+                    ftype=setup.seeding_config["seeding_file_type"].get(),
                     sim_id=sim_id,
                     extension_override="csv",
                 ),
