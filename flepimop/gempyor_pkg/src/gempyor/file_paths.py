@@ -13,7 +13,7 @@ def create_file_name_without_extension(run_id, prefix, index, ftype, inference_f
     if create_directory:
         os.makedirs(create_dir_name(run_id, prefix, ftype, inference_filepath_suffix, inference_filename_prefix), exist_ok=True)
     filename = pathlib.Path("model_output", prefix, ftype, inference_filepath_suffix,
-                            f"{inference_filename_prefix}.{index:>09}.{run_id}.{ftype}") 
+                            f"{inference_filename_prefix}{index:>09}.{run_id}.{ftype}") 
     print(f" making {filename}")
     # old:  "model_output/%s/%s%09d.%s.%s" % (ftype, prefix, index, run_id, ftype)
     
