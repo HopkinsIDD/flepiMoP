@@ -391,18 +391,17 @@ def launch_batch(
         continuation_location,
         continuation_run_id,
     )
-    config.clear()
-    config.read(user=False)
-    config.set_file(config_file)
+
 
     seir_modifiers_scenarios = None
     outcome_modifiers_scenarios = None
-    if config["seir_modifiers"].exists():
-        if config["seir_modifiers"]["scenarios"].exists():
-            seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
-    if config["outcomes"].exists() and config["outcome_modifiers"].exists():
-        if config["outcome_modifiers"]["scenarios"].exists():
-            outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
+    # here the config is a dict
+    if "seir_modifiers" in config:
+        if "scenarios" in config["seir_modifiers"]:
+            seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
+    if "outcome_modifiers" in config:
+        if "scenarios" in config["outcome_modifiers"]:
+            outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"]
 
     handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 
