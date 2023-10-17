@@ -3,7 +3,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .utils import config, Timer
+from .utils import config, Timer, as_list
 from . import file_paths
 from functools import reduce
 import logging
@@ -331,8 +331,9 @@ class Compartments:
                 if not candidate in unique_strings:
                     unique_strings.append(candidate)
 
-            assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
-            assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
+            # parenthesis are now supported
+            #assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
+            #assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
             assert reduce(lambda a, b: a and b, [(x.find("%") == -1) for x in unique_strings])
             assert reduce(lambda a, b: a and b, [(x.find(" ") == -1) for x in unique_strings])
 
@@ -443,8 +444,57 @@ class Compartments:
         )
 
     def parse_parameters(self, parameters, parameter_names, unique_strings):
-        parsed_parameters = self.parse_parameter_strings_to_numpy_arrays(parameters, parameter_names, unique_strings)
+        #parsed_parameters_old = self.parse_parameter_strings_to_numpy_arrays(parameters, parameter_names, unique_strings)
+        parsed_parameters = self.parse_parameter_strings_to_numpy_arrays_v2(parameters, parameter_names, unique_strings)
+        #for i in range(len(unique_strings)):
+        #    print(unique_strings[i], (parsed_parameters[i]==parsed_parameters_old[i]).all())
         return parsed_parameters
+    
+    def parse_parameter_strings_to_numpy_arrays_v2(
+        self,
+        parameters,
+        parameter_names,
+        string_list):
+
+        # is using eval a better way ???
+        import sympy as sp
+
+        # Validate input lengths
+        if len(parameters) != len(parameter_names):
+            raise ValueError("Number of parameter values does not match the number of parameter names.")
+
+        # Define the symbols used in the formulas
+        symbolic_parameters_namespace = {name:sp.symbols(name) for name in parameter_names}
+
+        symbolic_parameters = [sp.symbols(name) for name in parameter_names]
+
+        parsed_formulas = []
+        for formula in string_list:
+            try:
+                # here it is very important to pass locals so that e.g if the  gamma parameter
+                # is defined, it is not converted into the gamma scipy function
+                f = sp.sympify(formula,  locals=symbolic_parameters_namespace)
+                parsed_formulas.append(f)
+            except Exception as e:
+                print(f"Cannot parse formula: '{formula}' from paramters {parameter_names}")
+                raise(e)  # Print the error message for debugging
+
+        # the list order needs to be right.
+        parameter_values = {
+            param: value for param, value in zip(symbolic_parameters, parameters)
+        }
+        parameter_values_list = [parameter_values[param] for param in symbolic_parameters]
+
+        # Create a lambdify function for substitution
+        substitution_function = sp.lambdify(symbolic_parameters, parsed_formulas)
+
+        # Apply the lambdify function with parameter values as a list
+        substituted_formulas = substitution_function(*parameter_values_list)
+        for i in range(len(substituted_formulas)):
+            if string_list[i] == "1": # this should not happen anymore, but apparently it submmit one
+                substituted_formulas[i] = np.ones_like(substituted_formulas[i+1])
+
+        return np.array(substituted_formulas)
 
     def parse_parameter_strings_to_numpy_arrays(
         self,
@@ -460,6 +510,19 @@ class Compartments:
         },
         operators=["^", "*", "/", "+", "-"],
     ):
+        """This is called recursusively for each operator. It parse the string according to the first operators
+        parameters: array with the value of each parameter
+        parameter_names: list of string with all defined parameters under parameters (not unique parameters, really parameters)
+        string"""
+
+        if not operators: # empty list means all have been tried. Usually there just remains one string in string_list at that time.
+            raise ValueError(
+                f"""Could not parse string {string_list}. 
+    This usually mean that '{string_list[0]}' is a parameter name that is not defined
+    or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-.
+    The defined parameters are {parameter_names}."""
+            )
+
         split_strings = [x.split(operators[0]) for x in string_list]
         rc_size = [len(string_list)]
         for x in parameters.shape[1:]:
@@ -490,6 +553,8 @@ class Compartments:
                 parameter_name_index = [it for it, x in enumerate(parameter_names) if x == string[parameter_index]]
                 tmp_rc[parameter_index] = parameters[parameter_name_index]
             rc[sit] = reduce(operator_reduce_lambdas[operators[0]], tmp_rc)
+
+        
         return rc
 
     def get_compartments_explicitDF(self):
@@ -573,12 +638,6 @@ def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
         return as_list(rc)
     else:
         return rc
-
-
-def as_list(thing):
-    if type(thing) == list:
-        return thing
-    return [thing]
 
 
 def list_recursive_convert_to_string(thing):

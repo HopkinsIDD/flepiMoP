@@ -7,22 +7,56 @@ nslots: 1
 
 subpop_setup:
   geodata: geodata.csv
-  mobility: mobility.csv
-  census_year: 2018
-  modeled_states:
-    - HI
 
-interventions:
+outcomes:
+  method: delayframe
+  param_from_file: False
+  outcomes:
+    incidH:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .2
+      delay:
+        value:
+          distribution: fixed
+          value: 14
+      duration:
+        value:
+          distribution: fixed
+          value: 14
+        name: hosp_curr
+    incidD:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .02
+      delay:
+        value:
+          distribution: fixed
+          value: 4
+    incidICU:
+      source: incidH
+      probability:
+        value:
+          distribution: fixed
+          value: .8
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+
+outcome_modifiers:
   scenarios:
-    - None
-  settings:
-    None:
-      template: SinglePeriodModifierR0
-      value:
-        distribution: fixed
-        value: 0
+    - Some
+  modifiers:
+    Some:
+      method: StackedModifier
+      modifiers: ["times2H", "ICUprobability", "times2D"]
     Hduration:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: "incidH::duration"
       subpop: "all"
       period_start_date: 2020-04-01
@@ -31,7 +65,7 @@ interventions:
         distribution: fixed
         value: .5
     Hdelay:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: "incidH::delay"
       subpop: "all"
       period_start_date: 2020-04-01
@@ -40,7 +74,7 @@ interventions:
         distribution: fixed
         value: .5
     Hprobability:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: "incidH::probability"
       subpop: "all"
       period_start_date: 2020-04-01
@@ -49,7 +83,7 @@ interventions:
         distribution: fixed
         value: 0.5
     Ddelay:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: "incidD::delay"
       subpop: "all"
       period_start_date: 2020-04-01
@@ -58,7 +92,7 @@ interventions:
         distribution: fixed
         value: .5
     Dprobability:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: "incidD::probability"
       subpop: "all"
       period_start_date: 2020-04-01
@@ -67,7 +101,7 @@ interventions:
         distribution: fixed
         value: .5
     ICUprobability:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: "incidICU::probability"
       subpop: "all"
       period_start_date: 2020-04-01
@@ -76,58 +110,8 @@ interventions:
         distribution: fixed
         value: .5
     times2D:
-      template: StackedModifier
-      scenarios: ["Ddelay", "Dprobability"]
+      method: StackedModifier
+      modifiers: ["Ddelay", "Dprobability"]
     times2H:
-      template: StackedModifier
-      scenarios: ["Hdelay", "Hprobability", "Hduration"]
-
-
-
-outcomes:
-  method: delayframe
-  param_from_file: False
-  scenarios:
-    - high_death_rate
-  settings:
-    high_death_rate:
-      incidH:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .2
-        delay:
-          value:
-            distribution: fixed
-            value: 14
-        duration:
-          value:
-            distribution: fixed
-            value: 14
-          name: hosp_curr
-      incidD:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .02
-        delay:
-          value:
-            distribution: fixed
-            value: 4
-      incidICU:
-        source: incidH
-        probability:
-          value:
-            distribution: fixed
-            value: .8
-        delay:
-          value:
-            distribution: fixed
-            value: 0
-  interventions:
-    settings:
-      high_death_rate:
-        template: StackedModifier
-        scenarios: ["times2H", "ICUprobability", "times2D"]
+      method: StackedModifier
+      modifiers: ["Hdelay", "Hprobability", "Hduration"]

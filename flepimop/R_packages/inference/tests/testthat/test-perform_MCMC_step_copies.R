@@ -8,7 +8,7 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","seir_modifiers_scenario","outcome_modifiers_scenario",run_id,sep='/',trailing_separator='/')
     gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
     gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
     global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(slot,"%09d"), sep='.',
@@ -20,15 +20,15 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
     ##get file names
-    seed_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv')
-    init_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'init','parquet')
-    seir_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet')
-    hosp_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet')
-    llik_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet')
-    snpi_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet')
-    spar_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet')
-    hnpi_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet')
-    hpar_src <- flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet')
+    seed_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'seed','csv')
+    init_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'init','parquet')
+    seir_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'seir','parquet')
+    hosp_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'hosp','parquet')
+    llik_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'llik','parquet')
+    snpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'snpi','parquet')
+    spar_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'spar','parquet')
+    hnpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'hnpi','parquet')
+    hpar_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_local_prefix,current_index,'hpar','parquet')
 
 
 
@@ -44,7 +44,7 @@ test_that("MCMC step copies (global) are correctly performed when we are not at 
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
 
     ##print(hosp_src)
-    ##print(flepicommon::create_file_name(run_id,gf_prefix,slot,'hosp','parquet'))
+    ##print(flepicommon::create_file_name(run_id=run_id, prefix=gf_prefix,slot,'hosp','parquet'))
 
     res <- perform_MCMC_step_copies_global(current_index,
                                     slot,
@@ -70,7 +70,7 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","seir_modifiers_scenario","outcome_modifiers_scenario",run_id,sep='/',trailing_separator='/')
     gf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','final',sep='/',trailing_separator='/')
     gi_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'global','intermediate',sep='/',trailing_separator='/')
     global_block_prefix <- flepicommon::create_prefix(prefix=gi_prefix, slot=list(slot,"%09d"), sep='.',
@@ -82,15 +82,15 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
     ##get file names
-    seed_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'seed','csv')
-    init_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'init','parquet')
-    seir_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'seir','parquet')
-    hosp_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'hosp','parquet')
-    llik_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'llik','parquet')
-    snpi_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'snpi','parquet')
-    spar_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'spar','parquet')
-    hnpi_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'hnpi','parquet')
-    hpar_src <- flepicommon::create_file_name(run_id,global_block_prefix,block-1,'hpar','parquet')
+    seed_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'seed','csv')
+    init_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'init','parquet')
+    seir_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'seir','parquet')
+    hosp_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'hosp','parquet')
+    llik_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'llik','parquet')
+    snpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'snpi','parquet')
+    spar_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'spar','parquet')
+    hnpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'hnpi','parquet')
+    hpar_src <- flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block-1,'hpar','parquet')
 
     ##create the copy from  files
     readr::write_csv(data.frame(file="seed"), seed_src)
@@ -104,7 +104,7 @@ test_that("MCMC step copies (global) are correctly performed when we are at the 
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
 
     print(hosp_src)
-    print(flepicommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet'))
+    print(flepicommon::create_file_name(run_id=run_id, prefix=global_block_prefix,block,'hosp','parquet'))
 
     res <- perform_MCMC_step_copies_global(current_index,
                                     slot,
@@ -130,7 +130,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","seir_modifiers_scenario","outcome_modifiers_scenario",run_id,sep='/',trailing_separator='/')
     cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
     ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
     chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(slot,"%09d"), sep='.',
@@ -142,14 +142,14 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
     ##get file names
-    seed_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv')
-    seir_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet')
-    hosp_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet')
-    llik_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet')
-    snpi_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet')
-    spar_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet')
-    hnpi_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet')
-    hpar_src <- flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet')
+    seed_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'seed','csv')
+    seir_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'seir','parquet')
+    hosp_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'hosp','parquet')
+    llik_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'llik','parquet')
+    snpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'snpi','parquet')
+    spar_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'spar','parquet')
+    hnpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'hnpi','parquet')
+    hpar_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_local_prefix,current_index,'hpar','parquet')
 
 
 
@@ -164,7 +164,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are not a
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
 
     ##print(hosp_src)
-    ##print(flepicommon::create_file_name(run_id,cf_prefix,slot,'hosp','parquet'))
+    ##print(flepicommon::create_file_name(run_id=run_id, prefix=cf_prefix,slot,'hosp','parquet'))
 
     res <- perform_MCMC_step_copies_chimeric(current_index,
                                            slot,
@@ -191,7 +191,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     slot <- 2
     block <- 5
     run_id <- "TEST_RUN"
-    slot_prefix <- flepicommon::create_prefix("config","npi_scenario","outcome_scenario",run_id,sep='/',trailing_separator='/')
+    slot_prefix <- flepicommon::create_prefix("config","seir_modifiers_scenario","outcome_modifiers_scenario",run_id,sep='/',trailing_separator='/')
     cf_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','final',sep='/',trailing_separator='/')
     ci_prefix <- flepicommon::create_prefix(prefix=slot_prefix,'chimeric','intermediate',sep='/',trailing_separator='/')
     chimeric_block_prefix <- flepicommon::create_prefix(prefix=ci_prefix, slot=list(slot,"%09d"), sep='.',
@@ -203,14 +203,14 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     dir.create("MCMC_step_copy_test")
     setwd("MCMC_step_copy_test")
     ##get file names
-    seed_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'seed','csv')
-    seir_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'seir','parquet')
-    hosp_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hosp','parquet')
-    llik_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'llik','parquet')
-    snpi_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'snpi','parquet')
-    spar_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'spar','parquet')
-    hnpi_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hnpi','parquet')
-    hpar_src <- flepicommon::create_file_name(run_id,chimeric_block_prefix,block-1,'hpar','parquet')
+    seed_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'seed','csv')
+    seir_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'seir','parquet')
+    hosp_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'hosp','parquet')
+    llik_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'llik','parquet')
+    snpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'snpi','parquet')
+    spar_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'spar','parquet')
+    hnpi_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'hnpi','parquet')
+    hpar_src <- flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block-1,'hpar','parquet')
 
 
 
@@ -225,7 +225,7 @@ test_that("MCMC step copies (chimeric) are correctly performed when we are at th
     arrow::write_parquet(data.frame(file="hpar"), hpar_src)
 
     print(hosp_src)
-    print(flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet'))
+    print(flepicommon::create_file_name(run_id=run_id, prefix=chimeric_block_prefix,block,'hosp','parquet'))
 
     res <- perform_MCMC_step_copies_chimeric(current_index,
                                            slot,

@@ -119,6 +119,7 @@ census_data <- census_data %>%
 terr_census_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","census_tracts_island_areas_2010.gz.parquet"))
 
 census_data <- terr_census_data %>%
+  dplyr::rename(subpop = geoid) %>%
   dplyr::filter(length(filterUSPS) == 0 | ((USPS %in% filterUSPS) & !(USPS %in% census_data)))%>%
   rbind(census_data)
 
@@ -219,3 +220,4 @@ if(state_level & !file.exists(paste0(config$data_path, "/", config$subpop_setup$
 
 
 ## @endcond
+

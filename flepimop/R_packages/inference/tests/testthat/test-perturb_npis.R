@@ -11,7 +11,7 @@ test_that("perturb_snpi always stays within support", {
         reduction = rep(-.099,times=N)
     )
     npi_settings <- list(test_npi = list(
-        template = "SinglePeriodModifier",
+        method = "SinglePeriodModifier",
         parameter = "r0",
         value = list(
           distribution = "truncnorm",
@@ -43,7 +43,7 @@ test_that("perturb_snpi has a median of 0 after 10000 sims",{
         reduction = rep(0,times=N)
     )
     npi_settings <- list(
-        template = "SinglePeriodModifier",
+        method = "SinglePeriodModifier",
         parameter = "r0",
         value = list(
           distribution = "truncnorm",
@@ -87,7 +87,7 @@ test_that("perturb_snpi does not perturb npis without a perturbation section", {
         reduction = rep(-.099,times=N)
     )
     npi_settings <- list(test_npi = list(
-        template = "SinglePeriodModifier",
+        method = "SinglePeriodModifier",
         parameter = "r0",
         value = list(
           distribution = "truncnorm",
