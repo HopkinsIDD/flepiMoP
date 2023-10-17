@@ -79,8 +79,12 @@ class ModelInfo:
             mobility_file=spatial_base_path / spatial_config["mobility"].get()
             if spatial_config["mobility"].exists()
             else None,
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
+            subpop_pop_key=spatial_config["subpop_pop_key"].get()
+            if spatial_config["subpop_pop_key"].exists()
+            else None,
+            subpop_names_key=spatial_config["subpop_names_key"].get()
+            if spatial_config["subpop_names_key"].exists()
+            else None,
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
