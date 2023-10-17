@@ -27,31 +27,31 @@
 #     gamma: <random distribution>
 #     R0s: <random distribution>
 #
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     - <scenario 1 name>
 #     - <scenario 2 name>
 #     - ...
 #   settings:
 #     <scenario 1 name>:
-#       template: choose one - "SinglePeriodModifier", ", "StackedModifier"
+#       method: choose one - "SinglePeriodModifier", ", "StackedModifier"
 #       ...
 #     <scenario 2 name>:
-#       template: choose one - "SinglePeriodModifier", "", "StackedModifier"
+#       method: choose one - "SinglePeriodModifier", "", "StackedModifier"
 #       ...
 #
 # seeding:
 #   method: choose one - "PoissonDistributed", "FolderDraw"
 # ```
 #
-# ### interventions::scenarios::settings::<scenario name>
+# ### seir_modifiers::scenarios::settings::<scenario name>
 #
-# If {template} is
+# If {method} is
 # ```yaml
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     <scenario name>:
-#       template: SinglePeriodModifier
+#       method: SinglePeriodModifier
 #       parameter: choose one - "alpha, sigma, gamma, r0"
 #       period_start_date: <date>
 #       period_end_date: <date>
@@ -59,24 +59,24 @@
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is
+# If {method} is
 # ```yaml
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     <scenario name>:
-#       template:
+#       method:
 #       period_start_date: <date>
 #       period_end_date: <date>
 #       value: <random distribution>
 #       subpop: <list of strings> optional
 # ```
 #
-# If {template} is StackedModifier
+# If {method} is StackedModifier
 # ```yaml
-# interventions:
+# seir_modifiers:
 #   scenarios:
 #     <scenario name>:
-#       template: StackedModifier
+#       method: StackedModifier
 #       scenarios: <list of scenario names>
 # ```
 #
@@ -157,13 +157,12 @@
 ## @cond
 
 import multiprocessing
-import pathlib
-import time, os
+import time, os, itertools
 
 import click
 
-from gempyor import seir, outcomes, setup, file_paths, subpopulation_structure
-from gempyor.utils import config
+from gempyor import seir, outcomes, model_info, file_paths
+from gempyor.utils import config, as_list
 
 # from .profile import profile_options
 
@@ -180,9 +179,9 @@ from gempyor.utils import config
 )
 @click.option(
     "-s",
-    "--npi_scenario",
-    "npi_scenarios",
-    envvar="FLEPI_NPI_SCENARIOS",
+    "--seir_modifiers_scenario",
+    "seir_modifiers_scenarios",
+    envvar="FLEPI_SEIR_SCENARIO",
     type=str,
     default=[],
     multiple=True,
@@ -190,9 +189,9 @@ from gempyor.utils import config
 )
 @click.option(
     "-d",
-    "--scenarios_outcomes",
-    "scenarios_outcomes",
-    envvar="FLEPI_DEATHRATES",
+    "--outcome_modifiers_scenario",
+    "outcome_modifiers_scenarios",
+    envvar="FLEPI_OUTCOME_SCENARIO",
     type=str,
     default=[],
     multiple=True,
@@ -263,11 +262,6 @@ from gempyor.utils import config
     help="unique identifier for the run",
 )
 @click.option(
-    "--interactive/--batch",
-    default=False,
-    help="run in interactive or batch mode [default: batch]",
-)
-@click.option(
     "--write-csv/--no-write-csv",
     default=False,
     show_default=True,
@@ -284,129 +278,84 @@ def simulate(
     config_file,
     in_run_id,
     out_run_id,
-    npi_scenarios,
-    scenarios_outcomes,
+    seir_modifiers_scenarios,
+    outcome_modifiers_scenarios,
     in_prefix,
     nslots,
     jobs,
-    interactive,
     write_csv,
     write_parquet,
     first_sim_index,
     stoch_traj_flag,
 ):
-    spatial_path_prefix = ""
     config.clear()
     config.read(user=False)
     config.set_file(config_file)
-    spatial_config = config["subpop_setup"]
-    spatial_base_path = config["data_path"].get()
-    spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
 
-    if not npi_scenarios:
-        npi_scenarios = config["interventions"]["scenarios"].as_str_seq()
-    print(f"NPI Scenarios to be run: {', '.join(npi_scenarios)}")
+    # Compute the list of scenarios to run. Since multiple = True, it's always a list.
+    if not seir_modifiers_scenarios:
+        seir_modifiers_scenarios = None
+        if config["seir_modifiers"].exists():
+            if config["seir_modifiers"]["scenarios"].exists():
+                seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+        # Model Info handles the case of the default scneario
+    if not outcome_modifiers_scenarios:
+        outcome_modifiers_scenarios = None
+        if config["outcomes"].exists() and config["outcome_modifiers"].exists():
+            if config["outcome_modifiers"]["scenarios"].exists():
+                outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
 
-    print(f"Outcomes scenarios to be run: {', '.join(scenarios_outcomes)}")
+    outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
+    seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
+    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
 
-    if in_prefix is None:
-        in_prefix = config["name"].get() + "/"
+    scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
+    print("Combination of modifiers scenarios to be run: ")
+    print(scenarios_combinations)
+    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
+        print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcome_modifiers_scenario}")
 
     if not nslots:
         nslots = config["nslots"].as_number()
     print(f"Simulations to be run: {nslots}")
 
-    subpop_setup = subpopulation_structure.SubpopulationStructure(
-        setup_name=config["setup_name"].get(),
-        geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-        mobility_file=spatial_base_path / spatial_config["mobility"].get()
-        if spatial_config["mobility"].exists()
-        else None,
-        subpop_pop_key="population",
-        subpop_names_key="subpop",
-    )
+    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
+        start = time.monotonic()
+        print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
 
-    start = time.monotonic()
-    for npi_scenario in npi_scenarios:
-        s = setup.Setup(
-            setup_name=config["name"].get() + "/" + str(npi_scenario) + "/",
-            subpop_setup=subpop_setup,
+        modinf = model_info.ModelInfo(
+            config=config,
             nslots=nslots,
-            npi_scenario=npi_scenario,
-            npi_config_seir=config["interventions"]["settings"][npi_scenario],
-            seeding_config=config["seeding"],
-            initial_conditions_config=config["initial_conditions"],
-            parameters_config=config["seir"]["parameters"],
-            seir_config=config["seir"],
-            ti=config["start_date"].as_date(),
-            tf=config["end_date"].as_date(),
-            interactive=interactive,
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            outcome_modifiers_scenario=outcome_modifiers_scenario,
             write_csv=write_csv,
             write_parquet=write_parquet,
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
-            in_prefix=config["name"].get() + "/",
+            # in_prefix=config["name"].get() + "/",
             out_run_id=out_run_id,
-            out_prefix=config["name"].get() + "/" + str(npi_scenario) + "/" + out_run_id + "/",
+            # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
             stoch_traj_flag=stoch_traj_flag,
         )
 
         print(
             f"""
->> Scenario: {npi_scenario} from config {config_file}
->> Starting {s.nslots} model runs beginning from {s.first_sim_index} on {jobs} processes
->> Setup *** {s.setup_name} *** from {s.ti} to {s.tf}
+    >> Running from config {config_file}
+    >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
+    >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
+    >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
+    >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories
     """
         )
-        seir.run_parallel_SEIR(s, config=config, n_jobs=jobs)
-    print(f">> All SEIR runs completed in {time.monotonic() - start:.1f} seconds")
-
-    if config["outcomes"].exists():
-        if not scenarios_outcomes:
-            scenarios_outcomes = config["outcomes"]["scenarios"].as_str_seq()
-        start = time.monotonic()
-        for scenario_outcomes in scenarios_outcomes:
-            print(f"outcome {scenario_outcomes}")
-
-            out_prefix = config["name"].get() + "/" + str(scenario_outcomes) + "/"
-
-            s = setup.Setup(
-                setup_name=config["name"].get() + "/" + str(scenarios_outcomes) + "/",
-                subpop_setup=subpop_setup,
-                nslots=nslots,
-                outcomes_config=config["outcomes"],
-                outcomes_scenario=scenario_outcomes,
-                ti=config["start_date"].as_date(),
-                tf=config["end_date"].as_date(),
-                write_csv=write_csv,
-                write_parquet=write_parquet,
-                first_sim_index=first_sim_index,
-                in_run_id=in_run_id,
-                in_prefix=in_prefix,
-                out_run_id=out_run_id,
-                out_prefix=out_prefix,
-                stoch_traj_flag=stoch_traj_flag,
-            )
-
-            outdir = file_paths.create_dir_name(out_run_id, out_prefix, "hosp")
-            os.makedirs(outdir, exist_ok=True)
-
-            print(
-                f"""
-    >> Starting {nslots} model runs beginning from {first_sim_index} on {jobs} processes
-    >> Scenario: {scenario_outcomes} 
-    >> writing to folder : {out_prefix}
-    >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories"""
-            )
-
-            if config["outcomes"]["method"].get() == "delayframe":
-                outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, s=s, nslots=nslots, n_jobs=jobs)
-            else:
-                raise ValueError(f"Only method 'delayframe' is supported at the moment.")
-
-        print(f">> All Outcomes runs completed in {time.monotonic() - start:.1f} seconds")
-    else:
-        print("No observable found in config")
+        # (there should be a run function)
+        if config["seir"].exists():
+            seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
+        if config["outcomes"].exists():
+            outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs)
+        print(
+            f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
+        )
 
 
 if __name__ == "__main__":

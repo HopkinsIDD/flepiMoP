@@ -47,12 +47,12 @@ seir:
         distribution: fixed
         value: 5
 
-interventions:
+seir_modifiers:
   scenarios:
     - inference
-  settings:
+  modifiers:
     all_independent:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: r1
       subpop: "all"
       period_start_date: 2020-01-01
@@ -64,7 +64,7 @@ interventions:
         a: -1
         b: 1
     all_together:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: r2
       subpop: "all"
       subpop_groups: "all"
@@ -77,7 +77,7 @@ interventions:
         a: -1
         b: 1
     two_groups:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: r3
       subpop: "all"
       subpop_groups: 
@@ -98,7 +98,7 @@ interventions:
         a: -1
         b: 1
     one_group:
-      template: SinglePeriodModifier
+      method: SinglePeriodModifier
       parameter: r4
       subpop: ["01000", "02000", "04000", "06000"]
       subpop_groups: 
@@ -111,9 +111,8 @@ interventions:
         sd: 0.025
         a: 0
         b: 0.9
-
     mt_reduce:
-      template: MultiPeriodModifier
+      method: MultiPeriodModifier
       parameter: r5
       groups:
         - subpop: ["09000", "10000"]
@@ -136,9 +135,8 @@ interventions:
         sd: 0.05
         a: -1
         b: 1
-
     scn_error:
-      template: MultiPeriodModifier
+      method: MultiPeriodModifier
       parameter: r1
       groups:
         - subpop: ["09000", "10000"]
@@ -161,10 +159,9 @@ interventions:
         sd: 0.05
         a: -1
         b: 1
-
     inference:
-      template: StackedModifier
-      scenarios: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
+      method: StackedModifier
+      modifiers: ["all_independent", "all_together", "two_groups", "one_group", "mt_reduce"]
     error:
-      template: StackedModifier
-      scenarios: ["scn_error"]
+      method: StackedModifier
+      modifiers: ["scn_error"]

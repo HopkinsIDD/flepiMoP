@@ -9,7 +9,8 @@ class MultiPeriodModifier(NPIBase):
         self,
         *,
         npi_config,
-        global_config,
+        modinf,
+        modifiers_library,
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
@@ -24,8 +25,8 @@ class MultiPeriodModifier(NPIBase):
         )
 
         self.sanitize = sanitize
-        self.start_date = global_config["start_date"].as_date()
-        self.end_date = global_config["end_date"].as_date()
+        self.start_date = modinf.ti
+        self.end_date = modinf.tf
 
         self.subpops = subpops
 
