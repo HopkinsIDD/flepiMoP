@@ -404,7 +404,6 @@ def launch_batch(
         if config["outcome_modifiers"]["scenarios"].exists():
             outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
 
-
     handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 
     # Set job_name as environmental variable so it can be pulled for pushing to git

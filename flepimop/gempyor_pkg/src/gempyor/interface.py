@@ -51,8 +51,8 @@ class GempyorSimulator:
         rng_seed=None,
         nslots=1,
         initialize=True,
-        inference_filename_prefix = "",  # usually for {global or chimeric}/{intermediate or final}
-        inference_filepath_suffix = "",  # usually for the slot_id
+        inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
+        inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
@@ -87,8 +87,8 @@ class GempyorSimulator:
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=in_prefix,
-            inference_filename_prefix = inference_filename_prefix,
-            inference_filepath_suffix = inference_filepath_suffix,
+            inference_filename_prefix=inference_filename_prefix,
+            inference_filepath_suffix=inference_filepath_suffix,
             out_run_id=out_run_id,
             out_prefix=out_prefix,
             stoch_traj_flag=stoch_traj_flag,
