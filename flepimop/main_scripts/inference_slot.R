@@ -433,7 +433,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 run_id=opt$run_id,
                 prefix=reticulate::py_none(), # we let gempyor create setup prefix
                 inference_filepath_suffix=global_intermediate_filepath_suffix,
-                inference_filename_prefix=slotblock_filename_prefix,
+                inference_filename_prefix=slotblock_filename_prefix
                 #index = 
                 )
             }, error = function(e) {
