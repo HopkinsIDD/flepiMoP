@@ -38,6 +38,7 @@ export LAST_JOB_OUTPUT=$(echo $LAST_JOB_OUTPUT | sed 's/\/$//')
 if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is nonzero --> if LAST_JOB_OUTPUT is not empty, the we download the output from the last job
 	if [[ $FLEPI_BLOCK_INDEX -eq 1 ]]; then  # always true for slurm submissions
 		export RESUME_RUN_INDEX=$OLD_FLEPI_RUN_INDEX
+        export RESUME_FLEPI_RUN_INDEX=$OLD_FLEPI_RUN_INDEX # not sure which one is used
 		echo "RESUME_DISCARD_SEEDING is set to $RESUME_DISCARD_SEEDING"
 		if [[ $RESUME_DISCARD_SEEDING == "true" ]]; then
 			export PARQUET_TYPES="spar snpi hpar hnpi init"
@@ -46,6 +47,7 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
 		fi
 	else                                 # if we are not in the first block, we need to resume from the last job, with seeding an all.
 		export RESUME_RUN_INDEX=$FLEPI_RUN_INDEX
+        export RESUME_FLEPI_RUN_INDEX=$FLEPI_RUN_INDEX # not sure which one is read
 		export PARQUET_TYPES="seed spar snpi seir hpar hnpi hosp llik init"
 	fi
 	for filetype in $PARQUET_TYPES
