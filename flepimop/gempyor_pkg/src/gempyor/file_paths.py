@@ -38,6 +38,7 @@ def create_file_name_without_extension(
     filename = pathlib.Path(
         "model_output",
         prefix,
+        run_id,
         ftype,
         inference_filepath_suffix,
         f"{inference_filename_prefix}{index:>09}.{run_id}.{ftype}",

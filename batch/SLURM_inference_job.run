@@ -176,42 +176,42 @@ echo "***************** DONE UPLOADING RESULT TO S3 (OR NOT) *****************"
 echo "***************** COPYING RESULTS TO RESULT DIRECTORY *****************"
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "init"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/chimeric/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX','chimeric/intermediate/%09d.%09d.'% ($FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX),'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
 for type in "seed"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/chimeric/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','csv'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX','chimeric/intermediate/%09d.%09d.'% ($FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX),'$type','csv'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
 for type in "seed"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','csv'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX','global/intermediate/%09d.%09d.'% ($FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX),'$type','csv'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof" "init"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX,'$type','parquet'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX','global/intermediate/%09d.%09d.'% ($FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX),'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
     for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar" "memprof" "init"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','parquet'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX','global/final/%09d.'% $FLEPI_SLOT_INDEX,'$type','parquet'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
     for type in "seed"
 do
-    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/global/final/', $FLEPI_SLOT_INDEX,'$type','csv'))")
+    export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX','global/final/%09d.'% $FLEPI_SLOT_INDEX,'$type','csv'))")
     export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
