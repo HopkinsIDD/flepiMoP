@@ -839,7 +839,7 @@ class BatchJobHandler(object):
                     cur_env_vars = base_env_vars.copy()
                     cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
                     cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
-                    cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+                    cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"})
                     cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"})
                     cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
                     cur_env_vars.append({"name": "OLD_FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
