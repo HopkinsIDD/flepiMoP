@@ -134,7 +134,7 @@ def test_constant_population_rk4jit_integration_fail():
             out_prefix=prefix,
             stoch_traj_flag=True,
         )
-        modinf.integration_method = "rk4.jit"
+        modinf.seir_config["integration"]["method"] = "rk4.jit"
 
         seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
         initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
@@ -197,7 +197,7 @@ def test_constant_population_rk4jit_integration():
         stoch_traj_flag=False,
     )
     # s.integration_method = "rk4.jit"
-    assert modinf.integration_method == "rk4.jit"
+    assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
     seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
     initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
@@ -209,8 +209,8 @@ def test_constant_population_rk4jit_integration():
         subpops=modinf.subpop_struct.subpop_names,
     )
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nsubpops)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
@@ -220,7 +220,7 @@ def test_constant_population_rk4jit_integration():
     ) = modinf.compartments.get_transition_array()
     parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
     states = seir.steps_SEIR(
-        s,
+        modinf,
         parsed_parameters,
         transition_array,
         proportion_array,
@@ -519,7 +519,8 @@ def test_continuation_resume():
         out_prefix=prefix,
     )
     # Convert Subview object to string using str
-    modinf.initial_file_type = str(modinf.initial_conditions_config["initial_file_type"])
+    # modinf.initial_conditions_config["initial_file_type"] = str(modinf.initial_conditions_config["initial_file_type"])
+    # modinf.initial_file_type = str(modinf.initial_conditions_config["initial_file_type"])
     seir.onerun_SEIR(sim_id2write=sim_id2write, modinf=modinf, config=config)
 
     states_new = pq.read_table(
@@ -575,8 +576,7 @@ def test_inference_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    # Convert Subview object to string using str
-    initial_file_type = str(modinf.initial_conditions_config["initial_file_type"])
+
     seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
     npis_old = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet")

@@ -160,7 +160,7 @@ class SeedingAndIC:
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
-                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+                ic_df = setup.read_simID(ftype=str(self.initial_conditions_config["initial_file_type"]), sim_id=sim_id)
             elif method == "FromFile":
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
