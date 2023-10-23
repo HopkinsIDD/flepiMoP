@@ -1,16 +1,17 @@
-name: minimal
-setup_name: minimal
+name: minimal_test
+setup_name: minimal_test_setup
 start_date: 2020-01-31
 end_date: 2020-05-31
 data_path: data
-nslots: 15
+nslots: 5
 
 
 subpop_setup:
   geodata: geodata.csv
-  mobility: mobility.txt
+  mobility: mobility.csv
   subpop_pop_key: population
   subpop_names_key: subpop
+
 
 seeding:
   method: FolderDraw
@@ -29,9 +30,7 @@ seir:
     dt: 1/6
   parameters:
     alpha:
-      value:
-        distribution: fixed
-        value: .9
+      value: .9
     sigma:
       value:
         distribution: fixed

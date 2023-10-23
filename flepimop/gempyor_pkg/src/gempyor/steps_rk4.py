@@ -145,6 +145,7 @@ def rk4_integration(
                     number_move = source_number * compound_adjusted_rate  ## to initialize typ
                     for spatial_node in range(nspatial_nodes):
                         number_move[spatial_node] = np.random.binomial(
+                            # number_move[spatial_node] = random.binomial(
                             source_number[spatial_node],
                             compound_adjusted_rate[spatial_node],
                         )

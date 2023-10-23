@@ -7,6 +7,8 @@ nslots: 1
 
 subpop_setup:
   geodata: geodata.csv
+  subpop_pop_key: population
+  subpop_names_key: subpop
 
 outcomes:
   method: delayframe

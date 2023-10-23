@@ -4,45 +4,32 @@ import os
 import pathlib
 import confuse
 
-from gempyor import NPI, setup 
+from gempyor import NPI, model_info
 from gempyor.utils import config
 
-DATA_DIR  = os.path.dirname(__file__) + "/data"
+DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
+
 
 class Test_SinglePeriodModifier:
     def test_SinglePeriodModifier_success(self):
-       config.clear()
-       config.read(user=False)
-       config.set_file(f"{DATA_DIR}/config_minimal.yaml")
+        config.clear()
+        config.read(user=False)
+        config.set_file(f"{DATA_DIR}/config_test.yml")
 
-       ss = setup.SubpopulationStructure(
-          setup_name="test_seir",
-          geodata_file=f"{DATA_DIR}/geodata.csv",
-          mobility_file=f"{DATA_DIR}/mobility.csv",
-          popnodes_key="population",
-          subpop_names_key="subpop",
-       )
+        s = model_info.ModelInfo(
+            setup_name="test_seir",
+            config=config,
+            nslots=1,
+            seir_modifiers_scenario="None",
+            outcome_modifiers_scenario=None,
+            write_csv=False,
+        )
 
-       s = setup.Setup(
-          setup_name="test_seir",
-          spatial_setup=ss,
-          nslots=1,
-          npi_scenario="None",
-          npi_config_seir=config["interventions"]["settings"]["None"],
-          parameters_config=config["seir"]["parameters"],
-          seeding_config=config["seeding"],
-          ti=config["start_date"].as_date(),
-          tf=config["end_date"].as_date(),
-          interactive=True,
-          write_csv=False,
- #        first_sim_index=first_sim_index,
- #        in_run_id=run_id,
- #        in_prefix=prefix,
- #        out_run_id=run_id,
- #        out_prefix=prefix,
-          dt=0.25,
-       )
-	
-       test = NPI.SinglePeriodModifier(npi_config=s.npi_config_seir, global_config=config,subpops=s.subpop_struct.subpop_names)
-      
+        test = NPI.SinglePeriodModifier(
+            npi_config=s.npi_config_seir,
+            modinf=s,
+            modifiers_library="",
+            subpops=s.subpop_struct.subpop_names,
+            loaded_df=None,
+        )

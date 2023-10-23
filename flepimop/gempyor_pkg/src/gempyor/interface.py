@@ -50,7 +50,6 @@ class GempyorSimulator:
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
-        initialize=True,
         inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
         inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this

@@ -18,6 +18,8 @@ subpop_setup:
   mobility: mobility_2011-2015_statelevel.csv
   include_in_report: include_in_report
   state_level: TRUE
+  subpop_pop_key: population
+  subpop_names_key: subpop
 
 
 

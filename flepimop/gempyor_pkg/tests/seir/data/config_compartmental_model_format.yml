@@ -8,6 +8,8 @@ nslots: 15
 subpop_setup:
   geodata: geodata.csv
   mobility: mobility.txt
+  subpop_pop_key: population
+  subpop_names_key: subpop
 
 compartments:
   infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
