@@ -121,29 +121,31 @@ seir_modifiers:
       modifiers:
         - Wuhan
 
-outcome_modifiers:
-  scenarios:
-    - DelayedTesting
-  modifiers:
-    DelayedTesting:
-      method:SinglePeriodModifier
-      parameter: incidC::probability
-      period_start_date: 2020-03-15
-      period_end_date: 2020-05-01
-      subpop: 'all'
+# until outcome_mofifiers format can be usable
+#
+#outcome_modifiers:
+#  scenarios:
+#    - DelayedTesting
+#  modifiers:
+#    DelayedTesting:
+#      method:SinglePeriodModifier
+#      parameter: incidC::probability
+#      period_start_date: 2020-03-15
+#      period_end_date: 2020-05-01
+#      subpop: 'all'
       value: 0.5
-    DelayedHosp:
-      method:SinglePeriodModifier
-      parameter: incidD::delay
-      period_start_date: 2020-04-01
-      period_end_date: 2020-05-01
-      subpop: 'all'
-      value: -1.0
-    LongerHospStay:
-      method:SinglePeriodModifier
-      parameter: incidH::duration
-      period_start_date: 2020-04-15
-      period_end_date: 2020-05-01
-      subpop: 'all'
-      value: -0.5
+#    DelayedHosp:
+#      method:SinglePeriodModifier
+#      parameter: incidD::delay
+#      period_start_date: 2020-04-01
+#      period_end_date: 2020-05-01
+#      subpop: 'all'
+#      value: -1.0
+#    LongerHospStay:
+#      method:SinglePeriodModifier
+#      parameter: incidH::duration
+#      period_start_date: 2020-04-15
+#      period_end_date: 2020-05-01
+#      subpop: 'all'
+#      value: -0.5
 
