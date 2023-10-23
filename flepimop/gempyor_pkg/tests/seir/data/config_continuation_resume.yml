@@ -9,6 +9,8 @@ subpop_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.txt
+  subpop_pop_key: population
+  subpop_names_key: subpop
 
 initial_conditions:
   method: InitialConditionsFolderDraw
