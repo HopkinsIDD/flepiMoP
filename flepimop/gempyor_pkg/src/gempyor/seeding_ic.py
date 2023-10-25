@@ -245,8 +245,14 @@ class SeedingAndIC:
                 print(
                     f"ERROR: subpop_names {pl} (idx: pl_idx) has a population from initial condition of {n_y0} while population from geodata is {n_pop} (absolute difference should be < 1, here is {abs(n_y0-n_pop)})"
                 )
-        if error:
-            raise ValueError()
+        ignore_population_checks = False
+        if "ignore_population_checks" in self.initial_conditions_config.keys():
+            if self.initial_conditions_config["ignore_population_checks"].get():
+                ignore_population_checks = True
+        if error and not ignore_population_checks:
+            raise ValueError(f""" geodata and initial condition do not agree on population size (see messages above). Use ignore_population_checks: True to ignore""")
+        elif error and ignore_population_checks:
+            print(""" Ignoring the previous population mismatch errors because you added flag 'ignore_population_checks'. This is dangerous""")
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
