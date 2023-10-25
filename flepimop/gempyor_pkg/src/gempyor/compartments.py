@@ -484,8 +484,13 @@ class Compartments:
         # Apply the lambdify function with parameter values as a list
         substituted_formulas = substitution_function(*parameter_values_list)
         for i in range(len(substituted_formulas)):
-            if string_list[i] == "1":  # this should not happen anymore, but apparently it submmit one
-                substituted_formulas[i] = np.ones_like(substituted_formulas[i + 1])
+            # sometime it's "1" or "1*1*1*..." which produce an int or float instead of an array
+            # in this case we find the next array and set it to that size,
+            # TODO: instead of searching for the next array, better to just use the parameter shape.
+            if not isinstance(substituted_formulas[i], np.ndarray):
+                for k in range(len(substituted_formulas)): 
+                     if isinstance(substituted_formulas[k], np.ndarray):
+                         substituted_formulas[i] = substituted_formulas[i] * np.ones_like(substituted_formulas[k])
 
         return np.array(substituted_formulas)
 
