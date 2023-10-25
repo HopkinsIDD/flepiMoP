@@ -366,7 +366,7 @@ class GempyorSimulator:
         parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, subpop in enumerate(self.modinf.spatset.subpop_names):
+        for i, subpop in enumerate(self.modinf.subpop_struct.subpop_names):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
                 columns=self.modinf.parameters.pnames,
