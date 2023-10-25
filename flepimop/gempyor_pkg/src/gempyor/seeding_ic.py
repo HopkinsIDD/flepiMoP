@@ -92,11 +92,11 @@ class SeedingAndIC:
             y0[0, :] = setup.subpop_pop
             return y0  # we finish here: no rest and not proportionallity applies
 
-        allow_missing_nodes = False
+        allow_missing_subpops = False
         allow_missing_compartments = False
-        if "allow_missing_nodes" in self.initial_conditions_config.keys():
-            if self.initial_conditions_config["allow_missing_nodes"].get():
-                allow_missing_nodes = True
+        if "allow_missing_subpops" in self.initial_conditions_config.keys():
+            if self.initial_conditions_config["allow_missing_subpops"].get():
+                allow_missing_subpops = True
         if "allow_missing_compartments" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["allow_missing_compartments"].get():
                 allow_missing_compartments = True
@@ -143,7 +143,7 @@ class SeedingAndIC:
                             rests.append([comp_idx, pl_idx])
                         else:
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
-                elif allow_missing_nodes:
+                elif allow_missing_subpops:
                     logger.critical(
                         f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
                     )
@@ -156,7 +156,7 @@ class SeedingAndIC:
                         y0[0, pl_idx] = setup.subpop_pop[pl_idx]
                 else:
                     raise ValueError(
-                        f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
+                        f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_subpops=TRUE to bypass this error"
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
@@ -207,7 +207,7 @@ class SeedingAndIC:
                 for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
                     if pl in ic_df.columns:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
-                    elif allow_missing_nodes:
+                    elif allow_missing_subpops:
                         logger.critical(
                             f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
                         )
@@ -217,7 +217,7 @@ class SeedingAndIC:
                         y0[0, pl_idx] = setup.subpop_pop[pl_idx]
                     else:
                         raise ValueError(
-                            f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_nodes=TRUE to bypass this error"
+                            f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_subpops=TRUE to bypass this error"
                         )
         else:
             raise NotImplementedError(f"unknown initial conditions method [got: {method}]")
