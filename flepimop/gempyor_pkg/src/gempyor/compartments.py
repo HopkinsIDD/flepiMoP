@@ -325,14 +325,14 @@ class Compartments:
                 for y in x:
                     candidate = reduce(lambda a, b: a + "*" + b, y)
                     candidate = candidate.replace(" ", "")
-                    candidate = candidate.replace("*1", "")
+                    # candidate = candidate.replace("*1", "")
                     if not candidate in unique_strings:
                         unique_strings.append(candidate)
 
             for x in self.transitions["rate"]:
                 candidate = reduce(lambda a, b: a + "*" + b, x)
                 candidate = candidate.replace(" ", "")
-                candidate = candidate.replace("*1", "")
+                # candidate = candidate.replace("*1", "")
                 if not candidate in unique_strings:
                     unique_strings.append(candidate)
 
@@ -345,7 +345,7 @@ class Compartments:
             for it, elem in enumerate(self.transitions["rate"]):
                 candidate = reduce(lambda a, b: a + "*" + b, elem)
                 candidate = candidate.replace(" ", "")
-                candidate = candidate.replace("*1", "")
+                # candidate = candidate.replace("*1", "")
                 if not candidate in unique_strings:
                     raise ValueError("Something went wrong")
                 rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
@@ -385,7 +385,7 @@ class Compartments:
                 for y in elem:
                     candidate = reduce(lambda a, b: a + "*" + b, y)
                     candidate = candidate.replace(" ", "")
-                    candidate = candidate.replace("*1", "")
+                    # candidate = candidate.replace("*1", "")
                     if not candidate in unique_strings:
                         raise ValueError("Something went wrong")
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
