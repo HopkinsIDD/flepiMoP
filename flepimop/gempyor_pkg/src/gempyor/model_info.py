@@ -178,14 +178,14 @@ class ModelInfo:
         self.in_run_id = in_run_id
 
         if out_run_id is None:
-            out_run_id = file_paths.run_id()
+            out_run_id = in_run_id
         self.out_run_id = out_run_id
 
         if in_prefix is None:
-            in_prefix = f"{self.setup_name}/{in_run_id}/"
+            in_prefix = f"{self.setup_name}/{self.in_run_id}/"
         self.in_prefix = in_prefix
         if out_prefix is None:
-            out_prefix = f"{self.setup_name}/{out_run_id}/"
+            out_prefix = f"{self.setup_name}/{self.out_run_id}/"
         self.out_prefix = out_prefix
 
         # make the inference paths:
@@ -262,14 +262,14 @@ class ModelInfo:
         return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
-        return read_df(
-            fname=self.get_filename(
+        fname=self.get_filename(
                 ftype=ftype,
                 sim_id=sim_id,
                 input=input,
                 extension_override=extension_override,
             )
-        )
+        #print(f"Readings {fname}")
+        return read_df(fname=fname)
 
     def write_simID(
         self,
@@ -285,6 +285,7 @@ class ModelInfo:
             input=input,
             extension_override=extension_override,
         )
+        #print(f"Writing {fname}")
         write_df(
             fname=fname,
             df=df,
