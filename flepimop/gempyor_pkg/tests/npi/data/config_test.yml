@@ -80,6 +80,8 @@ seir_modifiers:
     - None
     - Scenario1
     - Scenario2
+    - Social_Distancing
+    - Fatigue
   modifiers:
     None:
       method: SinglePeriodModifier
@@ -120,7 +122,21 @@ seir_modifiers:
       method: StackedModifier
       modifiers:
         - Wuhan
-
+    Social_Distancing:
+      method: SinglePeriodModifier
+      parameter: beta
+      period_start_date: 2020-03-15
+      period_end_date: 2020-05-31
+      subpop: ['all']
+      value: 0.6
+    Fatigue: 
+      method: ModifierModifier
+      baseline_scenario: Social_Distancing
+      parameter: beta
+      period_start_date: 2020-05-01
+      period_end_date: 2020-05-31
+      subpop: ['all']
+      value: 0.5
 #outcome_modifiers:
 #  scenarios:
 #    - DelayedTesting
