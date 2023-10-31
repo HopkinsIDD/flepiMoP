@@ -505,20 +505,20 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
     else:
         raise ValueError("Cannot distinguish is SEIR sourced outcomes needs incidence or prevalence")
 
-    diffI = diffI[diffI["mc_value_type"] == vtype].copy()
-    diffI.drop(["mc_value_type"], inplace=True, axis=1)
+    diffI = diffI[diffI["mc_value_type"] == vtype]
+    #diffI.drop(["mc_value_type"], inplace=True, axis=1)
     filters = filters[vtype]
 
     incidI_arr = np.zeros((len(dates), len(subpops)), dtype=int)
-    df = diffI.copy()
+    df = diffI
     for mc_type, mc_value in filters.items():
         if isinstance(mc_value, str):
             mc_value = [mc_value]
         df = df[df[f"mc_{mc_type}"].isin(mc_value)]
     for mcn in df["mc_name"].unique():
         new_df = df[df["mc_name"] == mcn]
-        new_df = new_df.drop([c for c in new_df.columns if "mc_" in c], axis=1)
-        new_df = new_df.drop("date", axis=1)
+        new_df = new_df.drop(["date"]+[c for c in new_df.columns if "mc_" in c], axis=1)
+        #new_df = new_df.drop("date", axis=1)
         incidI_arr = incidI_arr + new_df.to_numpy()
     return incidI_arr
 

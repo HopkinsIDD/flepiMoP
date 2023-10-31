@@ -162,7 +162,7 @@ import time, os, itertools
 import click
 
 from gempyor import seir, outcomes, model_info, file_paths
-from gempyor.utils import config, as_list
+from gempyor.utils import config, as_list, profile
 
 # from .profile import profile_options
 
@@ -247,7 +247,7 @@ from gempyor.utils import config, as_list
     "out_run_id",
     envvar="FLEPI_RUN_INDEX",
     type=str,
-    default=file_paths.run_id(),
+    default=None,
     show_default=True,
     help="Unique identifier for the run",
 )
@@ -274,6 +274,7 @@ from gempyor.utils import config, as_list
     help="write parquet file output at end of simulation",
 )
 # @profile_options
+#@profile()
 def simulate(
     config_file,
     in_run_id,
