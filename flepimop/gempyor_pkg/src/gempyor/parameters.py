@@ -34,7 +34,6 @@ class Parameters:
         self.npar = len(self.pnames)
         if self.npar != len(set([name.lower() for name in self.pnames])):
             raise ValueError("Parameters of the SEIR model have the same name (remember that case is not sufficient!)")
-            #NOTE: this lines was not eliminated so been targeted in test
 
         # Attributes of dictionary
         for idx, pn in enumerate(self.pnames):
