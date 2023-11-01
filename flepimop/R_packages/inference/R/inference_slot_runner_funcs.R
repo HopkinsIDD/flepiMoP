@@ -228,162 +228,112 @@ perform_MCMC_step_copies_global <- function(current_index,
                                             slot_filename_prefix
                                             ) {
 
+    rc_file_types <- c("seed", "init", "seir", "hosp", "llik", "snpi", "hnpi", "spar", "hpar")
+    rc_file_ext <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
+
     rc <- list()
 
-    if(current_index != 0){ #move files from global/intermediate/slot.block.run to global/final/slot
-        rc$seed_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='seed',extension='csv'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='seed',extension='csv'),
-            overwrite = TRUE
-        )
+    if(current_index != 0){
 
-        rc$init_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='init',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='init',extension='parquet'),
-            overwrite = TRUE
-        )
+        #move files from global/intermediate/slot.block.run to global/final/slot
 
-        rc$seir_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='seir',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='seir',extension='parquet'),
-            overwrite = TRUE
-        )
+        ## Replacing:
+        # rc$seed_gf <- file.copy(
+        #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='seed',extension='csv'),
+        #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='seed',extension='csv'),
+        #     overwrite = TRUE
+        # )
 
-        rc$hosp_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='hosp',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='hosp',extension='parquet'),
-            overwrite = TRUE
-        )
+        for (i in 1:length(file_type)){
+            rc[[paste0(rc_file_types[i], "_gf")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slotblock_filename_prefix,
+                                              index = current_index,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = "global/final",
+                                              filename_prefix = "",
+                                              index=slot,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
 
-        rc$llik_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='llik',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='llik',extension='parquet'),
-            overwrite = TRUE
-        )
 
-        rc$snpi_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='snpi',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='snpi',extension='parquet'),
-            overwrite = TRUE
-        )
-
-        rc$hnpi_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='hnpi',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='hnpi',extension='parquet'),
-            overwrite = TRUE
-        )
-
-        rc$spar_gf <-file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='spar',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='spar',extension='parquet'),
-            overwrite = TRUE
-        )
-
-        rc$hpar_gf <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='hpar',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix="global/final",filename_prefix="", index=slot,type='hpar',extension='parquet'),
-            overwrite = TRUE
-        )
         #move files from global/intermediate/slot.block.run to global/intermediate/slot.block
-        rc$seed_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='seed','csv'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seed','csv')
-        )
 
-        rc$init_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='init',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='init',extension='parquet')
-        )
+        ## Replacing:
+        # rc$seed_block <- file.copy(
+        #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='seed','csv'),
+        #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seed','csv')
+        # )
 
-        rc$seir_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='seir',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seir',extension='parquet')
-        )
+        for (i in 1:length(file_type)){
+            rc[[paste0(rc_file_types[i], "_block")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slotblock_filename_prefix,
+                                              index = current_index,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index=block,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
 
-        rc$hosp_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='hosp',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='hosp',extension='parquet')
-        )
+     } else {
 
+         #move files from global/intermediate/slot.(block-1) to global/intermediate/slot.block
 
-        rc$llik_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='llik',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='llik',extension='parquet')
-        )
-
-        rc$snpi_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='snpi',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='snpi',extension='parquet')
-        )
-
-        rc$hnpi_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='hnpi',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='hnpi',extension='parquet')
-        )
-
-        rc$spar_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='spar',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='spar',extension='parquet')
-        )
-
-
-        rc$hpar_block <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,index=current_index,type='hpar',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='hpar',extension='parquet')
-        )
-    } else { #move files from global/intermediate/slot.(block-1) to global/intermediate/slot.block
-        rc$seed_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1 ,type='seed','csv'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seed','csv')
-        )
-
-        rc$init_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1 ,type='init',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='init',extension='parquet')
-        )
-
-
-        rc$seir_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1 ,type='seir',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seir',extension='parquet')
-        )
-
-        rc$hosp_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1 ,type='hosp',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='hosp',extension='parquet')
-        )
-
-        rc$llik_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1,type='llik',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='llik',extension='parquet')
-        )
-
-
-        rc$snpi_prvblk <-file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1,type='snpi',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='snpi',extension='parquet')
-        )
-
-        rc$hnpi_prvblk <-file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1,type='hnpi',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='hnpi',extension='parquet')
-        )
-
-        rc$spar_prvblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1,type='spar',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='spar',extension='parquet')
-        )
-
-        rc$hpar_prvblk <- file.copy(
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1,type='hpar',extension='parquet'),
-            flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='hpar',extension='parquet')
-        )
+         ## Replacing:
+        # rc$seed_prevblk <- file.copy(
+        #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1 ,type='seed','csv'),
+        #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seed','csv')
+        # )
+         for (i in 1:length(file_type)){
+             rc[[paste0(rc_file_types[i], "_prevblk")]] <- file.copy(
+                 flepicommon::create_file_name(run_id = run_id,
+                                               prefix = setup_prefix,
+                                               filepath_suffix = global_intermediate_filepath_suffix,
+                                               filename_prefix = slot_filename_prefix,
+                                               index = block - 1,
+                                               type = rc_file_types[i],
+                                               extension = rc_file_ext[i]),
+                 flepicommon::create_file_name(run_id = run_id,
+                                               prefix = setup_prefix,
+                                               filepath_suffix = global_intermediate_filepath_suffix,
+                                               filename_prefix = slot_filename_prefix,
+                                               index=block,
+                                               type = rc_file_types[i],
+                                               extension = rc_file_ext[i]),
+                 overwrite = TRUE
+             )
+         }
     }
 
-
     return(rc)
-
 }
+
+
+
+
+
+
+
+
+
 
 ##'
 ##' Function that performs the necessary file copies the end of an MCMC iteration of
@@ -739,7 +689,43 @@ initialize_mcmc_first_block <- function(
     }
 
 
+
+
+     ## initial conditions (init)
+
+    if (!is.null(config$initial_conditions)){
+        if ("init_filename" %in% global_file_names) {
+
+            if (config$initial_conditions$method == "SetInitialConditions"){
+
+                if (is.null(config$initial_conditions$initial_conditions_file)) {
+                    stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
+                }
+                initial_init_file <- config$initial_conditions$initial_conditions_file
+
+                if (file.exists(config$initial_conditions$initial_conditions_file)) {
+                    stop("ERROR: Initial conditions file specified but does not exist.")
+                }
+                if (grepl(".csv", initial_init_file)){
+                    initial_init <- readr::read_csv(initial_init_file)
+                    config$initial_conditions$initial_conditions_file <- gsub(".csv", ".parquet", config$initial_conditions$initial_conditions_file)
+                    arrow::write_parquet(initial_init, config$initial_conditions$initial_conditions_file)
+                }
+
+                err <- !(file.copy(config$initial_conditions$initial_conditions_file, global_files[["init_filename"]]))
+                if (err != 0) {
+                    stop("Could not copy initial conditions file")
+                }
+
+            } else if (config$initial_conditions$method == "FromFile") {
+                stop("ERROR: Method 'FromFile' Initial conditions has not been implemented yet for Inference.")
+            }
+        }
+    }
+
+
     ## seir, snpi, spar
+
     checked_par_files <- c("snpi_filename", "spar_filename", "hnpi_filename", "hpar_filename")
     checked_sim_files <- c("seir_filename", "hosp_filename")
     # These functions save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
