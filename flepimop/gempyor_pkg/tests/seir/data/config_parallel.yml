@@ -9,8 +9,7 @@ subpop_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.csv
-  subpop_pop_key: population
-  subpop_names_key: subpop
+
 
 seeding:
   seeding_file_type: seed

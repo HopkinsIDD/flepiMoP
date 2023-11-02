@@ -16,8 +16,6 @@ compartments:
 subpop_setup:
   geodata: geodata_2019_statelevel.csv
   mobility: mobility_2011-2015_statelevel.csv
-  subpop_pop_key: population
-  subpop_names_key: subpop
 
 
 seeding:
