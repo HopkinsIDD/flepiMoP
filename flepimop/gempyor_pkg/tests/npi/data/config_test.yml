@@ -9,8 +9,6 @@ nslots: 5
 subpop_setup:
   geodata: geodata.csv
   mobility: mobility.csv
-  subpop_pop_key: population
-  subpop_names_key: subpop
 
 
 seeding:

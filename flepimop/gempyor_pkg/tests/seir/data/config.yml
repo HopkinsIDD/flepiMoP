@@ -9,8 +9,7 @@ nslots: 15
 subpop_setup:
   geodata: geodata.csv
   mobility: mobility.txt
-  subpop_pop_key: population
-  subpop_names_key: subpop
+
 
 seeding:
   method: FolderDraw
