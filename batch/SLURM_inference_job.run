@@ -107,7 +107,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     # in filename is always a seir file
     export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_CONTINUATION_RUN_ID',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID'
-                                                                                                        inference_filepath_suffix='/global/final/',
+                                                                                                        inference_filepath_suffix='/global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='seir',
                                                                                                         extension='$extension'))")
