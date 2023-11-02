@@ -79,12 +79,8 @@ class ModelInfo:
             mobility_file=spatial_base_path / spatial_config["mobility"].get()
             if spatial_config["mobility"].exists()
             else None,
-            subpop_pop_key=spatial_config["subpop_pop_key"].get()
-            if spatial_config["subpop_pop_key"].exists()
-            else None,
-            subpop_names_key=spatial_config["subpop_names_key"].get()
-            if spatial_config["subpop_names_key"].exists()
-            else None,
+            subpop_pop_key="population",
+            subpop_names_key="subpop",
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
@@ -262,13 +258,13 @@ class ModelInfo:
         return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
-        fname=self.get_filename(
-                ftype=ftype,
-                sim_id=sim_id,
-                input=input,
-                extension_override=extension_override,
-            )
-        #print(f"Readings {fname}")
+        fname = self.get_filename(
+            ftype=ftype,
+            sim_id=sim_id,
+            input=input,
+            extension_override=extension_override,
+        )
+        # print(f"Readings {fname}")
         return read_df(fname=fname)
 
     def write_simID(
@@ -285,7 +281,7 @@ class ModelInfo:
             input=input,
             extension_override=extension_override,
         )
-        #print(f"Writing {fname}")
+        # print(f"Writing {fname}")
         write_df(
             fname=fname,
             df=df,
