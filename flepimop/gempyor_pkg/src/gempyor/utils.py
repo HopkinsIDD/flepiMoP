@@ -190,7 +190,7 @@ def as_random_distribution(self):
         elif dist == "poisson":
             return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
         elif dist == "binomial":
-            p = self["p"].as_number()
+            p = self["p"].as_evaled_expression()
             if (p < 0) or (p > 1):
                 raise ValueError(f"""p value { p } is out of range [0,1]""")
                 # if (self["p"] < 0) or (self["p"] > 1):
