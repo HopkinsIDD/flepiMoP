@@ -35,9 +35,6 @@ def test_check_values():
 
         seeding[0, 0] = 1
 
-        # if np.all(seeding == 0):
-        #    warnings.warn("provided seeding has only value 0", UserWarning)
-
         if np.all(modinf.mobility.data < 1):
             warnings.warn("highest mobility value is less than 1", UserWarning)
 
@@ -518,9 +515,7 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    # Convert Subview object to string using str
-    # modinf.initial_conditions_config["initial_file_type"] = str(modinf.initial_conditions_config["initial_file_type"])
-    # modinf.initial_file_type = str(modinf.initial_conditions_config["initial_file_type"])
+
     seir.onerun_SEIR(sim_id2write=sim_id2write, modinf=modinf, config=config)
 
     states_new = pq.read_table(
