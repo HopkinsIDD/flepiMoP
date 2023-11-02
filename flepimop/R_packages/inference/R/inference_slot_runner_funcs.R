@@ -703,7 +703,7 @@ initialize_mcmc_first_block <- function(
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
 
-                if (file.exists(config$initial_conditions$initial_conditions_file)) {
+                if (!file.exists(config$initial_conditions$initial_conditions_file)) {
                     stop("ERROR: Initial conditions file specified but does not exist.")
                 }
                 if (grepl(".csv", initial_init_file)){
