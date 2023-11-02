@@ -176,7 +176,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
         do
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='chimeric/intermediate'
+                                                                                                        inference_filepath_suffix='chimeric/intermediate',
                                                                                                         iference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -187,7 +187,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
         do
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/intermediate'
+                                                                                                        inference_filepath_suffix='global/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -198,7 +198,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/intermediate'
+                                                                                                        inference_filepath_suffix='global/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -209,7 +209,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/final/',
+                                                                                                        inference_filepath_suffix='global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='parquet'))")
@@ -219,7 +219,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/final/',
+                                                                                                        inference_filepath_suffix='global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")
@@ -248,7 +248,7 @@ for type in "seed"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX
-                                                                                                        inference_filepath_suffix='chimeric/intermediate/',
+                                                                                                        inference_filepath_suffix='chimeric/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         $FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -287,7 +287,7 @@ done
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                     prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                    inference_filepath_suffix='global/final/',
+                                                                                                    inference_filepath_suffix='global/final',
                                                                                                     index=$FLEPI_SLOT_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='parquet'))")
@@ -299,7 +299,7 @@ done
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                     prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                    inference_filepath_suffix='global/final/',
+                                                                                                    inference_filepath_suffix='global/final',
                                                                                                     index=$FLEPI_SLOT_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='csv'))")
