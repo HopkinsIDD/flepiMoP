@@ -317,6 +317,6 @@ def rk4_integration(
         print(
             "load the name space with: \nwith open('integration_dump.pkl','rb') as fn_dump:\n    states, states_daily_incid, ncompartments, nspatial_nodes, ndays, parameters, dt, transitions, proportion_info,  transition_sum_compartments, initial_conditions, seeding_data, seeding_amounts, mobility_data, mobility_row_indices, mobility_data_indices, population,  stochastic_p,  method = pickle.load(fn_dump)"
         )
-        print("/!\ Invalid integration, will cause problems for downstream users /!\ ")
+        print("/!\\ Invalid integration, will cause problems for downstream users /!\\ ")
         # raise ValueError("Invalid Integration...")
     return states, states_daily_incid
