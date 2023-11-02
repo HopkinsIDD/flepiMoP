@@ -21,7 +21,7 @@ option_list = list(
   optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
   optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   # optparse::make_option(c("-p", "--flepimop-repo"), action="store", dest = "flepimop_repo", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo"),
-  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, hpar, snpi, hnpi, llik"), type='character', help="path to the flepimop repo")
+  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, hpar, snpi, llik"), type='character', help="path to the flepimop repo")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -159,13 +159,14 @@ print(end_time - start_time)
 # Compare inference statistics sim_var to data_var
 if("hosp" %in% model_outputs){
   
-  gg_cols <- 8
+  gg_cols <- 2
   num_nodes <- length(unique(outputs_global$hosp %>% .[,subpop]))
   pdf_dims <- data.frame(width = gg_cols*2, length = num_nodes/gg_cols * 2)
   
   fname <- paste0("pplot/hosp_mod_outputs_", opt$run_id,".pdf")
-  # pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
-  pdf(fname, width = 20, height = 18)
+  pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
+  # pdf(fname, width = 20, height = 18)
+  # pdf(fname)
   fit_stats <- names(config$inference$statistics)
   
   for(i in 1:length(fit_stats)){
@@ -250,8 +251,9 @@ if("hosp" %in% model_outputs){
   ## hosp by highest and lowest llik
   
   fname <- paste0("pplot/hosp_by_llik_mod_outputs_", opt$run_id,".pdf")
-  pdf_dims <- data.frame(width = gg_cols*4, length = num_nodes/gg_cols * 3)
-  pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
+  # pdf_dims <- data.frame(width = gg_cols*2, length = num_nodes/gg_cols * 2)
+  # pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
+  pdf(fname, width = 20, height = 20)
 
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
@@ -269,7 +271,7 @@ if("hosp" %in% model_outputs){
       )
       
       high_low_hosp_llik <- copy(outputs_global$hosp) %>% 
-        .[high_low_llik, on = c("slot", "subpop")]
+        .[high_low_llik, on = c("slot", "subpop"), allow.cartesian = TRUE]
       
       hosp_llik_plots <- lapply(unique(high_low_hosp_llik %>% .[, subpop]),
                            function(e){
