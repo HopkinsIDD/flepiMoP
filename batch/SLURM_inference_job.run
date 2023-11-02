@@ -99,7 +99,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     echo "We are doing a continuation"
     export INIT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/intermediate'
+                                                                                                        inference_filepath_suffix='global/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX-1,
                                                                                                         ftype='$FLEPI_CONTINUATION_FTYPE',
