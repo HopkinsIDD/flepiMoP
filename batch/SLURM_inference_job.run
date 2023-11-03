@@ -82,7 +82,7 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
                 aws s3 cp --quiet $LAST_JOB_OUTPUT/$IN_FILENAME $OUT_FILENAME
             else
                 # cp does not create directorys, so we make the directories first
-                export $OUT_FILENAME_DIR="$(dirname "${OUT_FILENAME}")"
+                export OUT_FILENAME_DIR="$(dirname "${OUT_FILENAME}")"
                 mkdir -p $OUT_FILENAME_DIR
                 cp $LAST_JOB_OUTPUT/$IN_FILENAME $OUT_FILENAME
             fi
@@ -115,7 +115,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
         aws s3 cp --quiet $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $INIT_FILENAME
     else
         # cp does not create directorys, so we make the directories first
-        export $OUT_FILENAME_DIR="$(dirname "${INIT_FILENAME}")"
+        export OUT_FILENAME_DIR="$(dirname "${INIT_FILENAME}")"
         mkdir -p $OUT_FILENAME_DIR
         cp $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $INIT_FILENAME
     fi
@@ -240,7 +240,7 @@ do
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='parquet'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -253,7 +253,7 @@ do
                                                                                                         $FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -266,7 +266,7 @@ do
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -279,7 +279,7 @@ do
                                                                                                     index=$FLEPI_BLOCK_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='parquet'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -291,7 +291,7 @@ do
                                                                                                     index=$FLEPI_SLOT_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='parquet'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -303,7 +303,7 @@ do
                                                                                                     index=$FLEPI_SLOT_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='csv'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
