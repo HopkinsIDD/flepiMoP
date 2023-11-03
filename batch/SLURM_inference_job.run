@@ -82,7 +82,7 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
                 aws s3 cp --quiet $LAST_JOB_OUTPUT/$IN_FILENAME $OUT_FILENAME
             else
                 # cp does not create directorys, so we make the directories first
-                export $OUT_FILENAME_DIR="$(dirname "${OUT_FILENAME}")"
+                export OUT_FILENAME_DIR="$(dirname "${OUT_FILENAME}")"
                 mkdir -p $OUT_FILENAME_DIR
                 cp $LAST_JOB_OUTPUT/$IN_FILENAME $OUT_FILENAME
             fi
@@ -99,7 +99,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     echo "We are doing a continuation"
     export INIT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/intermediate'
+                                                                                                        inference_filepath_suffix='global/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX-1,
                                                                                                         ftype='$FLEPI_CONTINUATION_FTYPE',
@@ -107,7 +107,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     # in filename is always a seir file
     export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_CONTINUATION_RUN_ID',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID'
-                                                                                                        inference_filepath_suffix='/global/final/',
+                                                                                                        inference_filepath_suffix='/global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='seir',
                                                                                                         extension='$extension'))")
@@ -115,7 +115,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
         aws s3 cp --quiet $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $INIT_FILENAME
     else
         # cp does not create directorys, so we make the directories first
-        export $OUT_FILENAME_DIR="$(dirname "${INIT_FILENAME}")"
+        export OUT_FILENAME_DIR="$(dirname "${INIT_FILENAME}")"
         mkdir -p $OUT_FILENAME_DIR
         cp $FLEPI_CONTINUATION_LOCATION/$IN_FILENAME $INIT_FILENAME
     fi
@@ -176,7 +176,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
         do
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='chimeric/intermediate'
+                                                                                                        inference_filepath_suffix='chimeric/intermediate',
                                                                                                         iference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -187,7 +187,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
         do
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/intermediate'
+                                                                                                        inference_filepath_suffix='global/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -198,7 +198,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/intermediate'
+                                                                                                        inference_filepath_suffix='global/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
@@ -209,7 +209,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/final/',
+                                                                                                        inference_filepath_suffix='global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='parquet'))")
@@ -219,7 +219,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
     do
         export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                        inference_filepath_suffix='global/final/',
+                                                                                                        inference_filepath_suffix='global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")
@@ -240,7 +240,7 @@ do
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='parquet'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -248,12 +248,12 @@ for type in "seed"
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX
-                                                                                                        inference_filepath_suffix='chimeric/intermediate/',
+                                                                                                        inference_filepath_suffix='chimeric/intermediate',
                                                                                                         inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         $FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -266,7 +266,7 @@ do
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -279,7 +279,7 @@ do
                                                                                                     index=$FLEPI_BLOCK_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='parquet'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -287,11 +287,11 @@ done
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                     prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                    inference_filepath_suffix='global/final/',
+                                                                                                    inference_filepath_suffix='global/final',
                                                                                                     index=$FLEPI_SLOT_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='parquet'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done
@@ -299,11 +299,11 @@ done
 do
     export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                     prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
-                                                                                                    inference_filepath_suffix='global/final/',
+                                                                                                    inference_filepath_suffix='global/final',
                                                                                                     index=$FLEPI_SLOT_INDEX,
                                                                                                     ftype='$type',
                                                                                                     extension='csv'))")
-    export $OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
+    export OUT_FILENAME_DIR="$(dirname "${FS_RESULTS_PATH}/${FILENAME}")"
     mkdir -p $OUT_FILENAME_DIR
     cp --parents $FILENAME $FS_RESULTS_PATH
 done

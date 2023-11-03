@@ -248,7 +248,7 @@ class Compartments:
 
         return rc
 
-    def toFile(self, compartments_file, transitions_file, write_parquet=False):
+    def toFile(self, compartments_file='compartments.parquet', transitions_file='transitions.parquet', write_parquet=True):
         out_df = self.compartments.copy()
         if write_parquet:
             pa_df = pa.Table.from_pandas(out_df, preserve_index=False)

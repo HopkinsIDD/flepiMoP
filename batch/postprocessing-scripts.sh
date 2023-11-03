@@ -1,7 +1,7 @@
 
 # START: your postprocessing scripts goes here.
 
-Rscript $FLEPI_PATH/postprocessing/postprocess_snapshot.R -c $CONFIG_PATH --run-id $FLEPI_RUN_INDEX --results-path $FS_RESULTS_PATH --flepimop-repo $FLEPI_PATH
+Rscript $FLEPI_PATH/postprocessing/postprocess_snapshot.R -c $CONFIG_PATH --run-id $FLEPI_RUN_INDEX --results-path $FS_RESULTS_PATH
 
 # END: your postprocessing scripts goes here.
 

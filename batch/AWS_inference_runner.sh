@@ -107,7 +107,7 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 		for liketype in "global" "chimeric"
 		do
 			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
-																					prefix=prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX','',
+																					prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
 																					inference_filepath_suffix='$liketype/intermediate',
 																					inference_filename_prefix=%09d.'% $FLEPI_SLOT_INDEX,
 																					index=$FLEPI_BLOCK_INDEX-1,
@@ -116,8 +116,9 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 			if [ $FLEPI_BLOCK_INDEX -eq 1 ]; then
 				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$RESUME_FLEPI_RUN_INDEX',
 																											prefix='$FLEPI_PREFIX/$RESUME_FLEPI_RUN_INDEX',
-																											inference_filepath_suffix='$liketype/final/',
-																											index=$FLEPI_SLOT_INDEX,'$filetype',
+																											inference_filepath_suffix='$liketype/final',
+																											index=$FLEPI_SLOT_INDEX,
+																											ftype='$filetype',
 																											extension='$extension'))")
 			else
 				export IN_FILENAME=$OUT_FILENAME

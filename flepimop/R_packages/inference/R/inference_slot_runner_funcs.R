@@ -244,7 +244,7 @@ perform_MCMC_step_copies_global <- function(current_index,
         #     overwrite = TRUE
         # )
 
-        for (i in 1:length(file_type)){
+        for (i in 1:length(rc_file_types)){
             rc[[paste0(rc_file_types[i], "_gf")]] <- file.copy(
                 flepicommon::create_file_name(run_id = run_id,
                                               prefix = setup_prefix,
@@ -273,7 +273,7 @@ perform_MCMC_step_copies_global <- function(current_index,
         #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seed','csv')
         # )
 
-        for (i in 1:length(file_type)){
+        for (i in 1:length(rc_file_types)){
             rc[[paste0(rc_file_types[i], "_block")]] <- file.copy(
                 flepicommon::create_file_name(run_id = run_id,
                                               prefix = setup_prefix,
@@ -302,7 +302,7 @@ perform_MCMC_step_copies_global <- function(current_index,
         #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block - 1 ,type='seed','csv'),
         #     flepicommon::create_file_name(run_id=run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix,index=block,type='seed','csv')
         # )
-         for (i in 1:length(file_type)){
+         for (i in 1:length(rc_file_types)){
              rc[[paste0(rc_file_types[i], "_prevblk")]] <- file.copy(
                  flepicommon::create_file_name(run_id = run_id,
                                                prefix = setup_prefix,
@@ -703,7 +703,7 @@ initialize_mcmc_first_block <- function(
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
 
-                if (file.exists(config$initial_conditions$initial_conditions_file)) {
+                if (!file.exists(config$initial_conditions$initial_conditions_file)) {
                     stop("ERROR: Initial conditions file specified but does not exist.")
                 }
                 if (grepl(".csv", initial_init_file)){
