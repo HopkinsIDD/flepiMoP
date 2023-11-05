@@ -56,6 +56,7 @@ gt_cl <- NULL
 if (any(outcomes_time_=="weekly")) {
   # Incident
   gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
+  # gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
                                       outcomes = outcomes_gt_[outcomes_time_gt_=="weekly"]) 
   
   # Cumulative
@@ -158,7 +159,8 @@ forecast_st_plt <- forecast_st %>%
   mutate(target_type = paste0(incid_cum, outcome))
 
 pltdat_truth <- dat_st_cl2 %>% 
-  filter(aggr_target) %>% rename(gt = value) %>%
+  # filter(aggr_target) %>% 
+  rename(gt = value) %>%
   mutate(target = gsub("incid", "inc", target)) %>%
   rename(target_type = target) %>%
   filter(USPS %in% unique(forecast_st_plt$USPS)) %>%
