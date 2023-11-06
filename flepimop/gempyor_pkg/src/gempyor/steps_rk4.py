@@ -145,6 +145,7 @@ def rk4_integration(
                     number_move = source_number * compound_adjusted_rate  ## to initialize typ
                     for spatial_node in range(nspatial_nodes):
                         number_move[spatial_node] = np.random.binomial(
+                            # number_move[spatial_node] = random.binomial(
                             source_number[spatial_node],
                             compound_adjusted_rate[spatial_node],
                         )
@@ -316,6 +317,6 @@ def rk4_integration(
         print(
             "load the name space with: \nwith open('integration_dump.pkl','rb') as fn_dump:\n    states, states_daily_incid, ncompartments, nspatial_nodes, ndays, parameters, dt, transitions, proportion_info,  transition_sum_compartments, initial_conditions, seeding_data, seeding_amounts, mobility_data, mobility_row_indices, mobility_data_indices, population,  stochastic_p,  method = pickle.load(fn_dump)"
         )
-        print("/!\ Invalid integration, will cause problems for downstream users /!\ ")
+        print("/!\\ Invalid integration, will cause problems for downstream users /!\\ ")
         # raise ValueError("Invalid Integration...")
     return states, states_daily_incid
