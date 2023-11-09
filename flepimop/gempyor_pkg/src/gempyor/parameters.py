@@ -71,17 +71,20 @@ class Parameters:
                     print("loaded dates:", df.index)
                     raise ValueError(
                         f"""ERROR loading file {fn_name} for parameter {pn}: 
-                    the 'date' index of the provided file does not cover the whole config time span from
-                    {ti}->{tf}, where we have dates from {str(df.index[0])} to {str(df.index[-1])}"""
+                    the 'date' entries of the provided file do not include all the days specified to be modeled by 
+                    the config. the provided file includes {len(df.index)} days between {str(df.index[0])} to {str(df.index[-1])}, 
+                    while there are {len(pd.date_range(ti, tf))} days in the config time span of {ti}->{tf}. The file must contain entries for the
+                    the exact start and end dates from the config. """
                     )
-                # check the date range, need the lenght to be equal
                 if not (pd.date_range(ti, tf) == df.index).all():
                     print("config dates:", pd.date_range(ti, tf))
                     print("loaded dates:", df.index)
                     raise ValueError(
                         f"""ERROR loading file {fn_name} for parameter {pn}: 
-                    the 'date' index of the provided file does not cover the whole config time span from
-                    {ti}->{tf}"""
+                    the 'date' entries of the provided file do not include all the days specified to be modeled by 
+                    the config. the provided file includes {len(df.index)} days between {str(df.index[0])} to {str(df.index[-1])}, 
+                    while there are {len(pd.date_range(ti, tf))} days in the config time span of {ti}->{tf}. The file must contain entries for the
+                    the exact start and end dates from the config. """
                     )
 
                 self.pdata[pn]["ts"] = df
