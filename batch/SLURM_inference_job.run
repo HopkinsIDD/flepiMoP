@@ -177,7 +177,7 @@ if [[ $S3_UPLOAD == "true" ]]; then
             export FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
                                                                                                         inference_filepath_suffix='chimeric/intermediate',
-                                                                                                        iference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
+                                                                                                        inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
                                                                                                         index=$FLEPI_BLOCK_INDEX,
                                                                                                         ftype='$type',
                                                                                                         extension='csv'))")

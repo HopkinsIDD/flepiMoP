@@ -35,9 +35,6 @@ def test_check_values():
 
         seeding[0, 0] = 1
 
-        if np.all(seeding == 0):
-            warnings.warn("provided seeding has only value 0", UserWarning)
-
         if np.all(modinf.mobility.data < 1):
             warnings.warn("highest mobility value is less than 1", UserWarning)
 
@@ -105,6 +102,130 @@ def test_constant_population_legacy_integration():
         seeding_amounts,
     )
 
+    completepop = modinf.subpop_pop.sum()
+    origpop = modinf.subpop_pop
+    for it in range(modinf.n_days):
+        totalpop = 0
+        for i in range(modinf.nsubpops):
+            totalpop += states[0].sum(axis=1)[it, i]
+            assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+        assert completepop - 1e-3 < totalpop < completepop + 1e-3
+
+
+def test_constant_population_rk4jit_integration_fail():
+    with pytest.raises(ValueError, match=r".*with.*method.*integration.*"):
+        config.set_file(f"{DATA_DIR}/config.yml")
+
+        first_sim_index = 1
+        run_id = "test"
+        prefix = ""
+        modinf = model_info.ModelInfo(
+            config=config,
+            nslots=1,
+            seir_modifiers_scenario="None",
+            write_csv=False,
+            first_sim_index=first_sim_index,
+            in_run_id=run_id,
+            in_prefix=prefix,
+            out_run_id=run_id,
+            out_prefix=prefix,
+            stoch_traj_flag=True,
+        )
+        modinf.seir_config["integration"]["method"] = "rk4.jit"
+
+        seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+        initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
+
+        npi = NPI.NPIBase.execute(
+            npi_config=modinf.npi_config_seir,
+            modinf=modinf,
+            modifiers_library=modinf.seir_modifiers_library,
+            subpops=modinf.subpop_struct.subpop_names,
+        )
+
+        params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+        params = modinf.parameters.parameters_reduce(params, npi)
+
+        (
+            unique_strings,
+            transition_array,
+            proportion_array,
+            proportion_info,
+        ) = modinf.compartments.get_transition_array()
+        parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+
+        states = seir.steps_SEIR(
+            modinf,
+            parsed_parameters,
+            transition_array,
+            proportion_array,
+            proportion_info,
+            initial_conditions,
+            seeding_data,
+            seeding_amounts,
+        )
+        completepop = modinf.subpop_pop.sum()
+        origpop = modinf.subpop_pop
+        for it in range(modinf.n_days):
+            totalpop = 0
+            for i in range(modinf.nsubpops):
+                totalpop += states[0].sum(axis=1)[it, i]
+                assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+            assert completepop - 1e-3 < totalpop < completepop + 1e-3
+
+
+def test_constant_population_rk4jit_integration():
+    # config.set_file(f"{DATA_DIR}/config.yml")
+    config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
+
+    first_sim_index = 1
+    run_id = "test"
+    prefix = ""
+    modinf = model_info.ModelInfo(
+        config=config,
+        nslots=1,
+        seir_modifiers_scenario="None",
+        write_csv=False,
+        first_sim_index=first_sim_index,
+        in_run_id=run_id,
+        in_prefix=prefix,
+        out_run_id=run_id,
+        out_prefix=prefix,
+        stoch_traj_flag=False,
+    )
+    # s.integration_method = "rk4.jit"
+    assert modinf.seir_config["integration"]["method"].get() == "rk4"
+
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
+
+    npi = NPI.NPIBase.execute(
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
+    )
+
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
+
+    (
+        unique_strings,
+        transition_array,
+        proportion_array,
+        proportion_info,
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    states = seir.steps_SEIR(
+        modinf,
+        parsed_parameters,
+        transition_array,
+        proportion_array,
+        proportion_info,
+        initial_conditions,
+        seeding_data,
+        seeding_amounts,
+    )
     completepop = modinf.subpop_pop.sum()
     origpop = modinf.subpop_pop
     for it in range(modinf.n_days):
@@ -394,6 +515,7 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
+
     seir.onerun_SEIR(sim_id2write=sim_id2write, modinf=modinf, config=config)
 
     states_new = pq.read_table(
@@ -449,6 +571,7 @@ def test_inference_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
+
     seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
     npis_old = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet")

@@ -10,6 +10,7 @@ subpop_setup:
   geodata: geodata.csv
   mobility: mobility.txt
 
+
 initial_conditions:
   method: InitialConditionsFolderDraw
   #seeding_file_type: seed

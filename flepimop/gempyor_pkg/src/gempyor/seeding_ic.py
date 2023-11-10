@@ -34,6 +34,8 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
 
     n_seeding_ignored_before = 0
     n_seeding_ignored_after = 0
+
+    #id_seed = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
         if row["subpop"] not in setup.subpop_struct.subpop_names:
             raise ValueError(
@@ -42,6 +44,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
 
         if (row["date"].date() - setup.ti).days >= 0:
             if (row["date"].date() - setup.ti).days < len(nb_seed_perday):
+                
                 nb_seed_perday[(row["date"].date() - setup.ti).days] = (
                     nb_seed_perday[(row["date"].date() - setup.ti).days] + 1
                 )
@@ -51,6 +54,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
                 seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict)
                 seeding_dict["seeding_subpops"][idx] = setup.subpop_struct.subpop_names.index(row["subpop"])
                 seeding_amounts[idx] = amounts[idx]
+                #id_seed+=1
             else:
                 n_seeding_ignored_after += 1
         else:
@@ -160,7 +164,7 @@ class SeedingAndIC:
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
-                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id)
             elif method == "FromFile":
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
@@ -250,9 +254,13 @@ class SeedingAndIC:
             if self.initial_conditions_config["ignore_population_checks"].get():
                 ignore_population_checks = True
         if error and not ignore_population_checks:
-            raise ValueError(f""" geodata and initial condition do not agree on population size (see messages above). Use ignore_population_checks: True to ignore""")
+            raise ValueError(
+                f""" geodata and initial condition do not agree on population size (see messages above). Use ignore_population_checks: True to ignore"""
+            )
         elif error and ignore_population_checks:
-            print(""" Ignoring the previous population mismatch errors because you added flag 'ignore_population_checks'. This is dangerous""")
+            print(
+                """ Ignoring the previous population mismatch errors because you added flag 'ignore_population_checks'. This is dangerous"""
+            )
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
@@ -295,7 +303,15 @@ class SeedingAndIC:
             raise NotImplementedError(f"unknown seeding method [got: {method}]")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
+        print(seeding.shape)
         seeding = seeding.sort_values(by="date", axis="index").reset_index()
+        print(seeding)
+        mask = (seeding['date'].dt.date > setup.ti) & (seeding['date'].dt.date <= setup.tf)
+        seeding = seeding.loc[mask].reset_index()
+        print(seeding.shape)
+        print(seeding)
+        
+        # TODO: print.
 
         amounts = np.zeros(len(seeding))
         if method == "PoissonDistributed":
@@ -305,6 +321,7 @@ class SeedingAndIC:
             amounts = np.random.negative_binomial(n=5, p=5 / (seeding["amount"] + 5))
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
+
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
 
