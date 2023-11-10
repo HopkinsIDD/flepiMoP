@@ -301,7 +301,7 @@ print_value1 <- function(value_type, value_dist, value_mean,
     space3 <- rep(" ", indent_space + 4) %>% paste0(collapse = "")
 
     print_val <- ""
-    if (value_type == "timeseriess" && !is.null(value_type)){
+    if (value_type == "timeseries" && !is.null(value_type)){
         print_val <- paste0(print_val,
                             space, "timeseries: ", value_mean$timeseries, "\n")
 
@@ -1974,15 +1974,19 @@ seir_chunk <- function(resume_modifier = NULL,
                    "      proportion_exponent: [\n",
                    "        [",rate_propexp_parts, ",\"1\",\"1\",\"1\"],\n",
                    "        [",rate_alpha_parts, ",\"1\",\"1\",\"1\"]]\n",
-                   "      rate: [\n",
-                   paste0(sapply(X = na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)),
-                              function(x = X){ paste0("        ",x,",\n")}) ),
-                   "      ]\n"),
+                   "      rate: [",
+                   ifelse(nchar(rate_seir_parts)<100,
+                          paste(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "),
+                          paste0("\n        ", paste(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ",\n        "))),
+                   "]\n"),
                paste0(
                    "      proportional_to: [\"source\"]\n",
                    "      proportion_exponent: [[\"1\",\"1\",\"1\",\"1\"]]\n",
-                   "      rate: [", paste(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "), "]\n")),
-                   # "      rate: [", glue::glue_collapse(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "), "]\n")),
+                   "      rate: [",
+                   ifelse(nchar(rate_seir_parts)<100,
+                          paste(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ", "),
+                          paste0("\n        ", paste(na.omit(c(rate_seir_parts, rate_vacc_parts, rate_var_parts, rate_age_parts)), collapse = ",\n        "))),
+                   "]\n")),
         "\n")
 
     return(tmp)

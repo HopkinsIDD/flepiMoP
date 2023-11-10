@@ -43,7 +43,7 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
 
-    assert type(modinf.mobility) == scipy.sparse.csr.csr_matrix
+    assert type(modinf.mobility) == scipy.sparse.csr_matrix
     mobility_data = modinf.mobility.data
     mobility_data = mobility_data.astype("float64")
     assert type(modinf.compartments.compartments.shape[0]) == int

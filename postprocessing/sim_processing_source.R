@@ -30,83 +30,90 @@ combine_and_format_sims <- function(outcome_vars = "incid",
                                     end_date = opt$end_date,
                                     geodata,
                                     death_filter = opt$death_filter) {
-
-    res_subpop_all <- arrow::open_dataset(sprintf("%shosp",scenario_dir),
-                                         partitioning = c("location", "seir_modifiers_scenario", "outcome_modifiers_scenario", "config", "lik_type", "is_final")) %>%
-        select(time, subpop, outcome_modifiers_scenario, starts_with(outcome_vars)) %>%
-        filter(time>=forecast_date & time<=end_date) %>%
-        collect() %>%
-        filter(stringr::str_detect(outcome_modifiers_scenario, death_filter)) %>%
-        mutate(time=as.Date(time)) %>%
-        group_by(time, subpop, outcome_modifiers_scenario) %>%
-        dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
-        ungroup()
-
-    if (quick_run){
-        res_subpop_all <- res_subpop_all %>% filter(sim_num %in% 1:20)
-    }
-    gc()
-
-    # ~ Subset if testing
-    if (testing){
-        res_subpop_all <- res_subpop_all %>% filter(sim_num %in% sample(.$sim_num, 10, replace = FALSE))
-    }
-
-
-    # pull out just the total outcomes of interest
-    cols_aggr <- expand_grid(a="incid",b=outcomes_) %>% mutate(d=paste0(a,b)) %>% pull(d)
-    cols_aggr <- cols_aggr[cols_aggr %in% colnames(res_subpop_all)]
-
-    if(!keep_all_compartments & !keep_variant_compartments & !keep_vacc_compartments){
-        res_subpop_all <- res_subpop_all %>%
-            select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_aggr))
-
-    } else if (keep_variant_compartments){
-        # pull out just the variant outcomes
-        cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", variants_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
-        cols_vars <- cols_vars[cols_vars %in% colnames(res_subpop_all)]
-        res_subpop_all <- res_subpop_all %>%
-            select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_vars))
-    } else if (keep_all_compartments){
-        # remove the aggregate outcomes
-        res_subpop_all <- res_subpop_all %>%
-            select(-all_of(cols_vars), -all_of(cols_aggr))
-    } else if (keep_vacc_compartments){
-        # pull out just the variant outcomes
-        cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", vacc_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
-        cols_vars <- cols_vars[cols_vars %in% colnames(res_subpop_all)]
-        res_subpop_all <- res_subpop_all %>%
-            select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_vars))
-    }
-
-
-    # Merge in Geodata
-
-    if(county_level){
-        res_state <- res_subpop_all %>%
-            inner_join(geodata %>% select(subpop, USPS)) %>%
-            group_by_at(c("USPS", "time", "sim_num", compartment_types)) %>%
-            summarise(across(starts_with("incid"), sum)) %>%
-            as_tibble()
-    } else {
-        res_state <- res_subpop_all %>%
-            inner_join(geodata %>% select(subpop, USPS))
-    }
-    rm(res_subpop_all)
-
-    # ~ Add US totals
-    res_us <- res_state %>%
-        group_by(time, sim_num, outcome_modifiers_scenario) %>%
-        summarise(across(starts_with("incid"), sum)) %>%
-        as_tibble() %>%
-        mutate(USPS = "US")
-    res_state <- res_state %>%
-        bind_rows(res_us)
-    rm(res_us)
-
-    return(res_state)
+  
+  dirs <- list.dirs(path = scenario_dir, recursive = TRUE, full.names = TRUE)
+  dirs <- dirs[str_detect(dirs, '/hosp')][1]
+  res_subpop_all <- arrow::open_dataset(dirs,
+                                        partitioning = c("lik_type", "is_final")) %>%
+    select(time, subpop, starts_with(outcome_vars)) %>%
+    # select(time, subpop, outcome_modifiers_scenario, starts_with(outcome_vars)) %>%
+    filter(time>=forecast_date & time<=end_date) %>%
+    collect() %>%
+    # filter(stringr::str_detect(outcome_modifiers_scenario, death_filter)) %>%
+    mutate(time=as.Date(time)) %>%
+    # group_by(time, subpop, outcome_modifiers_scenario) %>%
+    group_by(time, subpop) %>%
+    dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
+    ungroup()
+  
+  if (quick_run){
+    res_subpop_all <- res_subpop_all %>% filter(sim_num %in% 1:20)
+  }
+  gc()
+  
+  # ~ Subset if testing
+  if (testing){
+    res_subpop_all <- res_subpop_all %>% filter(sim_num %in% sample(.$sim_num, 10, replace = FALSE))
+  }
+  
+  # pull out just the total outcomes of interest
+  cols_aggr <- expand_grid(a="incid",b=outcomes_) %>% mutate(d=paste0(a,b)) %>% pull(d)
+  cols_aggr <- cols_aggr[cols_aggr %in% colnames(res_subpop_all)]
+  cols_aggr <- "incidH_14to15"
+  if(!keep_all_compartments & !keep_variant_compartments & !keep_vacc_compartments){
+    res_subpop_all <- res_subpop_all %>%
+      # select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_aggr))
+      select(time, subpop, sim_num, all_of(cols_aggr))
+    
+    
+  } else if (keep_variant_compartments){
+    # pull out just the variant outcomes
+    cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", variants_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
+    cols_vars <- cols_vars[cols_vars %in% colnames(res_subpop_all)]
+    res_subpop_all <- res_subpop_all %>%
+      # select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_vars))
+      select(time, subpop, sim_num, all_of(cols_vars))
+  } else if (keep_all_compartments){
+    # remove the aggregate outcomes
+    res_subpop_all <- res_subpop_all %>%
+      select(-all_of(cols_vars), -all_of(cols_aggr))
+  } else if (keep_vacc_compartments){
+    # pull out just the variant outcomes
+    cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", vacc_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
+    cols_vars <- cols_vars[cols_vars %in% colnames(res_subpop_all)]
+    res_subpop_all <- res_subpop_all %>%
+      # select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_vars))
+      select(time, subpop, sim_num, all_of(cols_vars))
+  }
+  
+  
+  # Merge in Geodata
+  
+  if(county_level){
+    res_state <- res_subpop_all %>%
+      inner_join(geodata %>% select(subpop, USPS)) %>%
+      group_by_at(c("USPS", "time", "sim_num", compartment_types)) %>%
+      summarise(across(starts_with("incid"), sum)) %>%
+      as_tibble()
+  } else {
+    res_state <- res_subpop_all %>%
+      inner_join(geodata %>% select(subpop, USPS))
+  }
+  rm(res_subpop_all)
+  
+  # ~ Add US totals
+  res_us <- res_state %>%
+    # group_by(time, sim_num, outcome_modifiers_scenario) %>%
+    group_by(time, sim_num) %>%
+    summarise(across(starts_with("incid"), sum)) %>%
+    as_tibble() %>%
+    mutate(USPS = "US")
+  res_state <- res_state %>%
+    bind_rows(res_us)
+  rm(res_us)
+  
+  return(res_state)
 }
-
 
 
 
@@ -120,25 +127,28 @@ load_simulations <- function(geodata,
                              keep_compartments = TRUE,
                              testing = FALSE){
 
-    res_subpop <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
-                                     partitioning =c("location",
-                                                     "seir_modifiers_scenario",
-                                                     "outcome_modifiers_scenario",
-                                                     "config",
-                                                     "lik_type",
-                                                     "is_final")) %>%
-        select(time, subpop, starts_with("incid"), outcome_modifiers_scenario)%>%
-        filter(time>=forecast_date & time<=end_date)%>%
-        collect() %>%
-        filter(stringr::str_detect(outcome_modifiers_scenario, death_filter))%>%
-        mutate(time=as.Date(time)) %>%
-        group_by(time, subpop, outcome_modifiers_scenario) %>%
-        dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
-        ungroup() %>%
-        pivot_longer(cols=starts_with("incid"),
-                     names_to = c("outcome",compartment_types),
-                     names_pattern = "(.*)_(.*)_(.*)_(.*)", values_to = "value") %>%
-        filter(!is.na(outcome))
+  
+  dirs <- list.dirs(path = scenario_dir, recursive = TRUE, full.names = TRUE)
+  dirs <- dirs[str_detect(dirs, '/hosp')][1]
+  res_subpop <- arrow::open_dataset(dirs,
+                                        partitioning = c("lik_type", "is_final")) %>%
+        # select(time, subpop, starts_with("incid"), outcome_modifiers_scenario)%>%
+    select(time, subpop, starts_with("incid"))%>%
+    filter(time>=forecast_date & time<=end_date)%>%
+    collect() %>%
+    # filter(stringr::str_detect(outcome_modifiers_scenario, death_filter))%>%
+    # filter(stringr::str_detect(death_filter))%>%
+    mutate(time=as.Date(time)) %>%
+    group_by(time, subpop) %>%
+    # group_by(time, subpop, outcome_modifiers_scenario) %>%
+    dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
+    ungroup() %>%
+    pivot_longer(cols=starts_with("incid"),
+                 names_to = c("outcome",compartment_types),
+                 names_pattern = paste0(paste(rep("(.*)_",length(compartment_types)), sep="", collapse=""),"(.*)"), 
+                 values_to = "value") %>%
+                 # names_pattern = "(.*)_(.*)_(.*)_(.*)", values_to = "value") %>%
+    filter(!is.na(outcome))
 
     res_subpop <- res_subpop %>%
         pivot_wider(names_from = outcome, values_from = value)
@@ -169,11 +179,12 @@ load_simulations <- function(geodata,
         res_state <- res_subpop %>%
             inner_join(geodata %>% select(subpop, USPS))
 
-        if (keep_compartments){
-            res_state_long <- res_subpop_long %>%
-                inner_join(geodata %>% select(subpop, USPS))
-        }
-        rm(res_subpop_long, res_subpop)
+        # if (keep_compartments){
+        #     res_state_long <- res_subpop_long %>%
+        #         inner_join(geodata %>% select(subpop, USPS))
+        # }
+        # rm(res_subpop_long, res_subpop)
+        rm(res_subpop)
     }
 
     # ADD US TOTAL
@@ -205,13 +216,6 @@ load_simulations <- function(geodata,
 
     return(res_state)
 }
-
-
-
-
-
-
-
 
 
 trans_sims_wide <- function(geodata,
@@ -291,8 +295,6 @@ trans_sims_wide <- function(geodata,
 }
 
 
-
-
 load_simulations_orig <- function(geodata,
                                   sim_directory = arguments$args,
                                   forecast_date = opt$forecast_date,
@@ -302,24 +304,24 @@ load_simulations_orig <- function(geodata,
                                   keep_compartments = TRUE,
                                   testing = FALSE){
 
-    res_subpop <- arrow::open_dataset(sprintf("%s/hosp", sim_directory),
-                                     partitioning =c("location",
-                                                     "seir_modifiers_scenario",
-                                                     "outcome_modifiers_scenario",
-                                                     "config",
-                                                     "lik_type",
-                                                     "is_final")) %>%
-        select(time, subpop, starts_with("incid"), outcome_modifiers_scenario)%>%
+  dirs <- list.dirs(path = scenario_dir, recursive = TRUE, full.names = TRUE)
+  dirs <- dirs[str_detect(dirs, '/hosp')][1]
+  res_subpop <- arrow::open_dataset(dirs,
+                                    partitioning = c("lik_type", "is_final")) %>%
+    # select(time, subpop, starts_with("incid"), outcome_modifiers_scenario)%>%
         filter(time>=forecast_date & time<=end_date)%>%
         collect() %>%
-        filter(stringr::str_detect(outcome_modifiers_scenario, death_filter))%>%
+        # filter(stringr::str_detect(outcome_modifiers_scenario, death_filter))%>%
         mutate(time=as.Date(time)) %>%
-        group_by(time, subpop, outcome_modifiers_scenario) %>%
+        # group_by(time, subpop, outcome_modifiers_scenario) %>%
+    group_by(time, subpop) %>%
         dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
         ungroup() %>%
         pivot_longer(cols=starts_with("incid"),
                      names_to = c("outcome",compartment_types),
-                     names_pattern = "(.*)_(.*)_(.*)_(.*)", values_to = "value") %>%
+                     names_pattern = paste0(paste(rep("(.*)_",length(compartment_types)), sep="", collapse=""),"(.*)"), 
+                     values_to = "value") %>%
+    # names_pattern = "(.*)_(.*)_(.*)_(.*)", values_to = "value") %>%
         filter(!is.na(outcome))
 
     res_subpop_long <- res_subpop
@@ -563,8 +565,6 @@ calibrate_outcome <- function(outcome_calib = "incidH",
     # }
     return(list(incid_sims_recalib = incid_sims_recalib, inc_calibrator = inc_calibrator))
 }
-
-
 
 
 
@@ -1023,658 +1023,660 @@ combine_and_format_scenarios <- function(
 # RUN PROCESSING - All ----------------------------------------------------
 
 process_sims <- function(
-        scenario_num,
-        scenarios_all,
-        scenario_names,
-        scenario_ids,
-        proj_id,
-        projection_date,
-        forecast_date,
-        end_date,
-        smh_or_fch,
-        round_num,
-        subname_all,
-        config_subname,
-        round_directory,
-        full_fit = FALSE,
-        testing = FALSE,
-        quick_run = FALSE,
-        outcomes_ = c("I","C","H","D"),
-        outcomes_time_ = c("weekly","weekly","weekly","weekly"),
-        outcomes_cum_ = c(TRUE, TRUE, TRUE, TRUE),
-        outcomes_cumfromgt = c(FALSE, FALSE, TRUE, FALSE),
-        outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE),
-        n_calib_days = 0,
-        likelihood_prune = FALSE,
-        keep_variant_compartments = keep_variant_compartments,
-        keep_vacc_compartments = keep_vacc_compartments,
-        keep_all_compartments = keep_all_compartments,
-        variants_ = variants_,
-        vacc_ = vacc_,
-        geodata_file = "data/geodata_2019_statelevel.csv",
-        death_filter = "med",
-        plot_samp,
-        gt_data,
-        summarize_peaks = FALSE,
-        save_reps = FALSE) {
-
-
-
-    # SETUP -------------------------------------------------------------------
-    # print(scenarios_all)
-    print(scenarios_all[scenario_num])
-
-    opt <- list()
-    errors <- list()
-    scenario <- scenarios_all[scenario_num]  #"baseline_lowVac"
-    scenario_name <- scenario_names[scenario_num]
-    scenario_id <- scenario_ids[scenario_num]
-    opt$scenario <- scenario
-    opt$scenario_name <- scenario_name
-    opt$projection_date <- projection_date
-    opt$forecast_date <- opt$projection_date # same as projection date unless FULL fit, which gets fixed below
-    opt$end_date <- end_date
-
-    config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenario, subname_all[1], config_subname)), collapse="_"), ".yml")
-    config <- flepicommon::load_config(config_name)
-
-    if (smh_or_fch=="fch") {
-        scenario <- proj_id
-        opt$scenario <- proj_id
+    config_name,
+    scenario_num, # setup : change
+    scenarios_all, # setup: change
+    scenario_names, #set up : change
+    scenario_ids, # setup: change used once
+    proj_id, # change setup?
+    projection_date,
+    forecast_date,
+    end_date,
+    smh_or_fch,
+    round_num,
+    subname_all,
+    config_subname,
+    round_directory,
+    full_fit = FALSE,
+    testing = FALSE,
+    quick_run = FALSE,
+    outcomes_ = c("I","C","H","D"),
+    outcomes_time_ = c("weekly","weekly","weekly","weekly"),
+    outcomes_cum_ = c(TRUE, TRUE, TRUE, TRUE),
+    outcomes_cumfromgt = c(FALSE, FALSE, TRUE, FALSE),
+    outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE),
+    n_calib_days = 0,
+    likelihood_prune = FALSE,
+    keep_variant_compartments = keep_variant_compartments,
+    keep_vacc_compartments = keep_vacc_compartments,
+    keep_all_compartments = keep_all_compartments,
+    variants_ = variants_,
+    vacc_ = vacc_,
+    geodata_file = "data/geodata_2019_statelevel.csv",
+    # death_filter = "med",
+    plot_samp,
+    gt_data,
+    summarize_peaks = FALSE,
+    save_reps = FALSE) {
+  
+  
+  
+  # SETUP -------------------------------------------------------------------
+  # print(scenarios_all)
+  print(scenarios_all[scenario_num])
+  
+  opt <- list()
+  errors <- list()
+  scenario <- scenarios_all[scenario_num]  #"baseline_lowVac"
+  scenario_name <- scenario_names[scenario_num]
+  scenario_id <- scenario_ids[scenario_num]
+  opt$scenario <- scenarios_all[scenario_num]  #"baseline_lowVac"
+  opt$scenario_name <- scenario_names[scenario_num]
+  opt$projection_date <- projection_date
+  opt$forecast_date <- opt$projection_date # same as projection date unless FULL fit, which gets fixed below
+  opt$end_date <- end_date
+  
+  # config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenario, subname_all[1], config_subname)), collapse="_"), ".yml")
+  config <- flepicommon::load_config(config_name)
+  
+  # if (smh_or_fch=="fch") {
+  #   scenario <- proj_id
+  #   opt$scenario <- proj_id
+  # }
+  
+  #......................................................
+  
+  print( opt$scenario )
+  
+  opt$args <- scenario_dir <- paste0(round_directory, "/", opt$scenario, "/")
+  out_sub_dir <- NA
+  
+  if (testing)    out_sub_dir <- "testing"
+  if (quick_run)  out_sub_dir <- "quick"
+  if (full_fit)   opt$forecast_date <- forecast_date
+  opt$projection_date <- lubridate::as_date(opt$projection_date)
+  opt$forecast_date <- lubridate::as_date(opt$forecast_date)
+  forecast_date <- opt$forecast_date
+  
+  
+  reich_locs <- read_csv("https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-locations/locations.csv")
+  
+  
+  if (full_fit){
+    if(!(exists('forecast_date') & !is.na(forecast_date) & !is.null(forecast_date))){
+      opt$forecast_date <- "2020-01-01"
+    }else{
+      opt$forecast_date <- forecast_date
     }
-
-    #......................................................
-
-    print( opt$scenario )
-
-    opt$args <- scenario_dir <- paste0(round_directory, "/", opt$scenario, "/")
-    out_sub_dir <- NA
-
-    if (testing)    out_sub_dir <- "testing"
-    if (quick_run)  out_sub_dir <- "quick"
-    if (full_fit)   opt$forecast_date <- forecast_date
-    opt$projection_date <- lubridate::as_date(opt$projection_date)
-    opt$forecast_date <- lubridate::as_date(opt$forecast_date)
-    forecast_date <- opt$forecast_date
-
-
-    reich_locs <- read_csv("https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-locations/locations.csv")
-
-
-    if (full_fit){
-        if(!(exists('forecast_date') & !is.na(forecast_date) & !is.null(forecast_date))){
-            opt$forecast_date <- "2020-01-01"
-        }else{
-            opt$forecast_date <- forecast_date
-        }
-    }
-
-    opt$projection_date <- lubridate::as_date(opt$projection_date)
-    opt$forecast_date <- lubridate::as_date(opt$forecast_date)
-
-    variants_ <- opt$variants
-
-    #......................................................
-
-    opt$geodata <- geodata_file #"data/geodata_2019_statelevel.csv"   #geodata_territories_2019_statelevel.csv"
-    opt$death_filter <- death_filter #"med"
-    opt$outfile <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, ifelse(full_fit, "_FULL", ""),ifelse(likelihood_prune, "_LLprune",""), ".csv")
-    opt$vaccfile <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, "_vaccdata", ifelse(full_fit, "_FULL", ""), ".csv")
-    opt$vaccsumm <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, "_vaccsummary", ifelse(full_fit, "_FULL", ""), ".csv")
-    opt$indiv_sims <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, ifelse(full_fit, "_FULL", ""), ".parquet")
-
-    opt$outdir <- ifelse(!is.na(out_sub_dir), paste0(round_directory, out_sub_dir), file.path(round_directory))
-    opt$reichify <- TRUE
-    dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
-    print(opt$outdir)
-
-    projections_file_path <- file.path(opt$outdir, opt$outfile)
-    projections_file_path
-
-    opt$forecast_date <- as.Date(opt$forecast_date)
-    opt$end_date <- as.Date(opt$end_date)
-
-    # Functions ---------------------------------------------------------------
-
-    # Load Data ---------------------------------------------------------------
-
-    # ~ Geodata
-    geodata <- suppressMessages(readr::read_csv(opt$geodata, col_types = readr::cols(subpop=readr::col_character())))
-
-    # ~ Ground truth
-    if (!exists("gt_data")){
-        gt_data <- readr::read_csv(file.path(round_directory, "gt_data_clean.csv"))
-    }
-
-
-    # Projections -----------------------------------------------------------
-
-    res_state <- combine_and_format_sims(outcome_vars = paste0("incid", outcomes_),
-                                         scenario_dir = opt$args,
-                                         quick_run = quick_run,
-                                         testing  = testing,
-                                         outcomes_ = outcomes_,
-                                         keep_variant_compartments = keep_variant_compartments,
-                                         keep_vacc_compartments = keep_vacc_compartments,
-                                         keep_all_compartments = keep_all_compartments,
-                                         variants_ = variants_,
-                                         vacc_ = vacc_,
-                                         county_level=FALSE,
-                                         forecast_date = opt$forecast_date,
-                                         end_date = opt$end_date,
-                                         geodata = geodata,
-                                         death_filter = opt$death_filter)
-
-    if(exists("res_state")){
-        print(paste("Successfully combined sims for:", scenario))
+  }
+  
+  opt$projection_date <- lubridate::as_date(opt$projection_date)
+  opt$forecast_date <- lubridate::as_date(opt$forecast_date)
+  
+  # variants_ <- opt$variants
+  opt$variants <- variants_
+  
+  #......................................................
+  
+  # opt$death_filter <- death_filter #"med"
+  opt$outfile <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, ifelse(full_fit, "_FULL", ""),ifelse(likelihood_prune, "_LLprune",""), ".csv")
+  opt$vaccfile <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, "_vaccdata", ifelse(full_fit, "_FULL", ""), ".csv")
+  opt$vaccsumm <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, "_vaccsummary", ifelse(full_fit, "_FULL", ""), ".csv")
+  opt$indiv_sims <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario, ifelse(full_fit, "_FULL", ""), ".parquet")
+  
+  opt$outdir <- ifelse(!is.na(out_sub_dir), paste0(round_directory, out_sub_dir), file.path(round_directory))
+  opt$reichify <- TRUE
+  dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
+  print(opt$outdir)
+  
+  projections_file_path <- file.path(opt$outdir, opt$outfile)
+  projections_file_path
+  
+  opt$forecast_date <- as.Date(opt$forecast_date)
+  opt$end_date <- as.Date(opt$end_date)
+  
+  # Functions ---------------------------------------------------------------
+  
+  # Load Data ---------------------------------------------------------------
+  
+  # ~ Geodata
+  geodata <- suppressMessages(readr::read_csv(geodata_file, col_types = readr::cols(subpop=readr::col_character())))
+  
+  # ~ Ground truth
+  if (!exists("gt_data")){
+    gt_data <- readr::read_csv(file.path(round_directory, "gt_data_clean.csv"))
+  }
+  
+  
+  # Projections -----------------------------------------------------------
+  
+  res_state <- combine_and_format_sims(outcome_vars = paste0("incid", outcomes_),
+                                       scenario_dir = opt$args,
+                                       quick_run = quick_run,
+                                       testing  = testing,
+                                       outcomes_ = outcomes_,
+                                       keep_variant_compartments = keep_variant_compartments,
+                                       keep_vacc_compartments = keep_vacc_compartments,
+                                       keep_all_compartments = keep_all_compartments,
+                                       variants_ = variants_,
+                                       vacc_ = vacc_,
+                                       county_level=FALSE,
+                                       forecast_date = opt$forecast_date,
+                                       end_date = opt$end_date,
+                                       geodata = geodata,
+                                       death_filter = config$outcome_modifiers$scenarios)
+  
+  if(exists("res_state")){
+    print(paste("Successfully combined sims for:", scenario))
+  } else {
+    errors <- append(errors, "res_state not created.")
+    stop("res_state not created.")
+  }
+  
+  # 
+  # # ~ Individual Sims & Likelihoods -----------------------------------------
+  # 
+  # if (likelihood_prune) {
+  #   
+  #   # add sim_id to sims
+  #   sim_ids <- tibble(filename = list.files(sprintf("%s/hosp",opt$args), recursive = TRUE))
+  #   sim_ids <- sim_ids %>%
+  #     separate(filename, into=c(letters), sep= "[/]", remove=FALSE) %>%
+  #     mutate(sim_id = as.integer(substr(g, 1, 9))) %>%
+  #     select(sim_id) %>%
+  #     mutate(sim_num = seq_along(sim_id))
+  #   
+  #   res_state <- res_state %>%
+  #     mutate(sim_num=as.integer(sim_num)) %>%
+  #     left_join(sim_ids)
+  #   
+  #   # Pull Likelihood for pruning runs
+  #   res_llik <- arrow::open_dataset(sprintf("%s/llik",opt$args),
+  #                                   partitioning =c("location",
+  #                                                   "seir_modifiers_scenario",
+  #                                                   "outcome_modifiers_scenario",
+  #                                                   "config",
+  #                                                   "lik_type",
+  #                                                   "is_final")) %>%
+  #     select(filename, subpop, seir_modifiers_scenario, outcome_modifiers_scenario, ll)%>%
+  #     collect() %>%
+  #     distinct() %>%
+  #     filter(stringr::str_detect(outcome_modifiers_scenario, config$outcome_modifiers$scenarios))%>%
+  #     separate(filename, into=c(letters[1:9]), sep= "[/]", remove=FALSE) %>%
+  #     mutate(sim_id = as.integer(substr(i, 1, 9))) %>%
+  #     as_tibble()
+  #   
+  #   
+  #   res_llik %>% filter(subpop=='06000') %>%
+  #     ggplot(aes(x=sim_id, y=ll)) +
+  #     geom_point()
+  #   
+  #   res_llik %>% filter(subpop=='06000') %>%
+  #     ggplot(aes(y=ll)) +
+  #     geom_histogram()
+  #   
+  #   res_llik %>% filter(subpop=='06000') %>%
+  #     mutate(lik = log(-ll)) %>%
+  #     ggplot(aes(y=lik)) +
+  #     geom_histogram()
+  #   
+  #   res_lik_ests <- res_llik %>%
+  #     mutate(lik = log(-ll)) %>%
+  #     group_by(subpop) %>%
+  #     mutate(mean_ll = mean(ll),
+  #            median_ll = median(ll),
+  #            low_ll = quantile(ll, 0.025),
+  #            high_ll = quantile(ll, 0.975)) %>%
+  #     mutate(mean_lik = mean(lik),
+  #            median_lik = median(lik),
+  #            low_lik = quantile(lik, 0.025),
+  #            high_lik = quantile(lik, 0.975)) %>%
+  #     mutate(below025_ll = ll<low_ll,
+  #            below025_lik = lik>high_lik)
+  #   
+  #   # to exclude the same number from each state, we will use quantile approximates
+  #   n_excl <- ceiling(nrow(sim_ids)*(1-likelihood_prune_percentkeep))
+  #   
+  #   res_lik_ests <- res_lik_ests %>%
+  #     group_by(subpop, seir_modifiers_scenario, outcome_modifiers_scenario) %>%
+  #     arrange(ll) %>%
+  #     mutate(rank = seq_along(subpop),
+  #            excl_rank = rank<=n_excl) %>%
+  #     ungroup()
+  #   
+  #   # res_lik_ests %>%
+  #   #   group_by(subpop) %>%
+  #   #   summarise(n_excl_ll = sum(below025_ll),
+  #   #             n_excl_lik = sum(below025_lik)) %>% View
+  #   # res_lik_ests %>%
+  #   #   group_by(sim_id) %>%
+  #   #   summarise(n_excl_ll = sum(below025_ll),
+  #   #             n_excl_lik = sum(below025_lik)) %>% View
+  #   
+  #   res_lik_excl <- res_lik_ests %>%
+  #     select(subpop, sim_id, exclude=excl_rank, ll, lik)
+  #   
+  #   res_state <- res_state %>% left_join(res_lik_excl) #%>% select(-outcome_modifiers_scenario)
+  #   
+  #   # Save it
+  #   # arrow::write_parquet(res_state_indivs, file.path(opt$outdir, opt$indiv_sims))
+  #   # If pruning by LLik
+  #   res_state <- res_state %>%
+  #     filter(!exclude) %>%
+  #     select(-sim_id, -exclude) %>%
+  #     group_by(time, subpop, USPS, outcome_modifiers_scenario) %>%
+  #     dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
+  #     ungroup()
+  #   
+  # }
+  # 
+  # 
+  # 
+  # # ~ Plot some sims ------------------------------
+  # 
+  # plot_samp = ifelse(smh_or_fch=="smh", plot_samp, FALSE)
+  # if (plot_samp) {
+  #   
+  #   gt_data_wUS <- gt_data %>%
+  #     bind_rows(gt_data %>%
+  #                 group_by())
+  #   
+  #   plot_sims <- function(state_ = "MD", res_state_long=res_state_long, gt_data = gt_data_wUS, samp_=NULL){
+  #     
+  #     if (is.null(samp_)){
+  #       samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
+  #     }
+  #     
+  #     print(
+  #       cowplot::plot_grid(
+  #         ggplot() +
+  #           geom_line(data=res_state_long %>% filter(sim_num %in% samp_) %>%
+  #                       filter(USPS == state_) %>%
+  #                       filter(outcome == "incidD"),
+  #                     aes(x=time, y=value, color=sim_num)) +
+  #           # geom_point(data = gt_data %>% filter(source == state_) %>% rename("value"=incidD, "USPS"=source, "time"=Update),
+  #           #            aes(x=time, y=value), alpha=.25, pch=20) +
+  #           ggtitle(paste0(state_, " - incidD")),
+  #         ggplot() +
+  #           geom_line(data=res_state_long %>% filter(sim_num %in% samp_) %>%
+  #                       filter(USPS == state_) %>%
+  #                       filter(outcome == "incidC"),
+  #                     aes(x=time, y=value, color=sim_num)) +
+  #           # geom_point(data = gt_data %>% filter(source == state_) %>% rename("value"=incidC, "USPS"=source, "time"=Update),
+  #           #            aes(x=time, y=value), alpha=.25, pch=20) +
+  #           ggtitle(paste0(state_, " - incidC")),
+  #         res_state_long %>% filter(sim_num %in% samp_) %>%
+  #           filter(USPS == state_) %>%
+  #           filter(outcome == "incidI") %>%
+  #           ggplot(aes(x=time, y=value, color=sim_num)) +
+  #           geom_line() + ggtitle(paste0(state_, " - incidI")),
+  #         align="hv", axis = "lr", nrow=3))
+  #     
+  #   }
+  #   
+  #   states_ <- sort(unique(res_state_long$USPS))
+  #   pdf(file= paste0(opt$outdir, paste0("SampleSims_",opt$scenario,".pdf")))
+  #   samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
+  #   sapply(states_, plot_sims, res_state_long=res_state_long, gt_data = gt_data, samp_=samp_)
+  #   dev.off()
+  #   
+  #   # samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
+  #   # plot_sims(state_ = "US", res_state_long=res_state_long, gt_data = gt_data, samp_)
+  #   plot_sims(state_ = "CA", res_state_long=res_state_long, gt_data = gt_data, samp_)
+  #   # plot_sims(state_ = "MD", res_state_long=res_state_long, gt_data = gt_data, samp_)
+  # }
+  # 
+  # 
+  
+  # GET SIM OUTCOMES -------------------------------------------------------------------
+  
+  use_obs_data_forcum <- ifelse(any(outcomes_cumfromgt),TRUE, FALSE)
+  gt_data_2 <- gt_data
+  # colnames(gt_data_2) <- gsub("cumI", "cumC", colnames(gt_data_2))
+  gt_data_2 <- gt_data_2 %>% mutate(cumH = 0) # incidH is only cumulative from start of simulation
+  
+  # outcomes_gt_ <- outcomes_[outcomes_!="I"]
+  # outcomes_cum_gt_ <- outcomes_cum_[outcomes_!="I"]
+  #
+  # gt_data_2 <- gt_data_2 %>%
+  #   select(USPS, subpop, time, paste0("incid", outcomes_gt_), paste0("cum", outcomes_[outcomes_cum_gt_]))
+  
+  # ~ Weekly Outcomes -----------------------------------------------------------
+  
+  if (any(outcomes_time_=="weekly")) {
+    
+    # Incident
+    weekly_incid_sims <- get_weekly_incid(res_state, outcomes = outcomes_[outcomes_time_=="weekly"])
+    weekly_incid_sims_formatted <- format_weekly_outcomes(weekly_incid_sims, point_est=0.5, opt)
+    
+    if(exists("weekly_incid_sims_formatted")){
+      print(paste("Successfully created weekly incidence for:", scenario))
     } else {
-        errors <- append(errors, "res_state not created.")
+      errors <- append(errors, "weekly incidence not created.")
+      stop("res_state not created.")
+    }
+    
+    
+    # Calibrate
+    outcomes_calib_weekly <- outcomes_[outcomes_calibrate & outcomes_time_=="weekly"]
+    if (length(outcomes_calib_weekly)>0 & n_calib_days>0){
+      weekly_incid_sims_calibrations <- calibrate_outcome(outcome_calib = paste0("incid", outcomes_calib_weekly),
+                                                          weekly_outcome = TRUE,
+                                                          n_calib_days = n_calib_days,
+                                                          gt_data = gt_data,
+                                                          incid_sims_formatted = weekly_incid_sims_formatted,
+                                                          incid_sims = weekly_incid_sims,
+                                                          projection_date = projection_date,
+                                                          quick_run = quick_run, testing = testing,
+                                                          keep_variant_compartments = keep_variant_compartments,
+                                                          keep_vacc_compartments = keep_vacc_compartments,
+                                                          keep_all_compartments = keep_all_compartments,
+                                                          variants_ = NULL, vacc_ = NULL,
+                                                          death_filter = config$outcome_modifiers$scenarios,
+                                                          opt = opt,
+                                                          geodata = geodata,
+                                                          scenario_dir = scenario_dir)
+      
+      weekly_incid_sims <- weekly_incid_sims_calibrations$incid_sims_recalib
+      
+      weekly_incid_sims_recalib_formatted <- format_weekly_outcomes(
+        weekly_inc_outcome = weekly_incid_sims %>% filter(outcome_name %in% paste0("incid", outcomes_calib_weekly)),
+        point_est=0.5, opt)
+      weekly_incid_sims_formatted <- weekly_incid_sims_formatted %>%
+        filter(!(outcome %in% paste0("incid", outcomes_calib_weekly))) %>%
+        bind_rows(weekly_incid_sims_recalib_formatted)
+      rm(weekly_incid_sims_calibrations)
+    }
+    
+    
+    # Cumulative
+    weekly_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_time_=="weekly"]
+    if (length(weekly_cum_outcomes_)>0) {
+      weekly_cum_sims <- get_cum_sims(sim_data = weekly_incid_sims %>%
+                                        mutate(agestrat="age0to130") %>%
+                                        rename(outcome = outcome_name, value = outcome) %>%
+                                        filter(outcome %in% paste0("incid", weekly_cum_outcomes_)),
+                                      obs_data = gt_data_2,
+                                      gt_cum_vars = paste0("cum", outcomes_[outcomes_cumfromgt]), # variables to get cum from GT
+                                      forecast_date = lubridate::as_date(opt$forecast_date),
+                                      aggregation="week",
+                                      loc_column = "USPS",
+                                      use_obs_data = use_obs_data_forcum)
+      
+      weekly_cum_sims_formatted <- format_weekly_outcomes(
+        weekly_cum_sims %>% rename(outcome_name = outcome, outcome = value),
+        point_est = 0.5,
+        opt = opt)
+      
+      if(exists("weekly_cum_sims_formatted")){
+        print(paste("Successfully created weekly cumulative for:", scenario))
+      } else {
+        errors <- append(errors, "weekly cumulative not created.")
         stop("res_state not created.")
+      }
     }
-
-
-    # ~ Individual Sims & Likelihoods -----------------------------------------
-
-    if (likelihood_prune) {
-
-        # add sim_id to sims
-        sim_ids <- tibble(filename = list.files(sprintf("%s/hosp",opt$args), recursive = TRUE))
-        sim_ids <- sim_ids %>%
-            separate(filename, into=c(letters), sep= "[/]", remove=FALSE) %>%
-            mutate(sim_id = as.integer(substr(g, 1, 9))) %>%
-            select(sim_id) %>%
-            mutate(sim_num = seq_along(sim_id))
-
-        res_state <- res_state %>%
-            mutate(sim_num=as.integer(sim_num)) %>%
-            left_join(sim_ids)
-
-        # Pull Likelihood for pruning runs
-        res_llik <- arrow::open_dataset(sprintf("%s/llik",opt$args),
-                                        partitioning =c("location",
-                                                        "seir_modifiers_scenario",
-                                                        "outcome_modifiers_scenario",
-                                                        "config",
-                                                        "lik_type",
-                                                        "is_final")) %>%
-            select(filename, subpop, seir_modifiers_scenario, outcome_modifiers_scenario, ll)%>%
-            collect() %>%
-            distinct() %>%
-            filter(stringr::str_detect(outcome_modifiers_scenario, opt$death_filter))%>%
-            separate(filename, into=c(letters[1:9]), sep= "[/]", remove=FALSE) %>%
-            mutate(sim_id = as.integer(substr(i, 1, 9))) %>%
-            as_tibble()
-
-
-        res_llik %>% filter(subpop=='06000') %>%
-            ggplot(aes(x=sim_id, y=ll)) +
-            geom_point()
-
-        res_llik %>% filter(subpop=='06000') %>%
-            ggplot(aes(y=ll)) +
-            geom_histogram()
-
-        res_llik %>% filter(subpop=='06000') %>%
-            mutate(lik = log(-ll)) %>%
-            ggplot(aes(y=lik)) +
-            geom_histogram()
-
-        res_lik_ests <- res_llik %>%
-            mutate(lik = log(-ll)) %>%
-            group_by(subpop) %>%
-            mutate(mean_ll = mean(ll),
-                   median_ll = median(ll),
-                   low_ll = quantile(ll, 0.025),
-                   high_ll = quantile(ll, 0.975)) %>%
-            mutate(mean_lik = mean(lik),
-                   median_lik = median(lik),
-                   low_lik = quantile(lik, 0.025),
-                   high_lik = quantile(lik, 0.975)) %>%
-            mutate(below025_ll = ll<low_ll,
-                   below025_lik = lik>high_lik)
-
-        # to exclude the same number from each state, we will use quantile approximates
-        n_excl <- ceiling(nrow(sim_ids)*(1-likelihood_prune_percentkeep))
-
-        res_lik_ests <- res_lik_ests %>%
-            group_by(subpop, seir_modifiers_scenario, outcome_modifiers_scenario) %>%
-            arrange(ll) %>%
-            mutate(rank = seq_along(subpop),
-                   excl_rank = rank<=n_excl) %>%
-            ungroup()
-
-        # res_lik_ests %>%
-        #   group_by(subpop) %>%
-        #   summarise(n_excl_ll = sum(below025_ll),
-        #             n_excl_lik = sum(below025_lik)) %>% View
-        # res_lik_ests %>%
-        #   group_by(sim_id) %>%
-        #   summarise(n_excl_ll = sum(below025_ll),
-        #             n_excl_lik = sum(below025_lik)) %>% View
-
-        res_lik_excl <- res_lik_ests %>%
-            select(subpop, sim_id, exclude=excl_rank, ll, lik)
-
-        res_state <- res_state %>% left_join(res_lik_excl) #%>% select(-outcome_modifiers_scenario)
-
-        # Save it
-        # arrow::write_parquet(res_state_indivs, file.path(opt$outdir, opt$indiv_sims))
-        # If pruning by LLik
-        res_state <- res_state %>%
-            filter(!exclude) %>%
-            select(-sim_id, -exclude) %>%
-            group_by(time, subpop, USPS, outcome_modifiers_scenario) %>%
-            dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
-            ungroup()
-
-    }
-
-
-
-    # ~ Plot some sims ------------------------------
-
-    plot_samp = ifelse(smh_or_fch=="smh", plot_samp, FALSE)
-    if (plot_samp) {
-
-        gt_data_wUS <- gt_data %>%
-            bind_rows(gt_data %>%
-                          group_by())
-
-        plot_sims <- function(state_ = "MD", res_state_long=res_state_long, gt_data = gt_data_wUS, samp_=NULL){
-
-            if (is.null(samp_)){
-                samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
-            }
-
-            print(
-                cowplot::plot_grid(
-                    ggplot() +
-                        geom_line(data=res_state_long %>% filter(sim_num %in% samp_) %>%
-                                      filter(USPS == state_) %>%
-                                      filter(outcome == "incidD"),
-                                  aes(x=time, y=value, color=sim_num)) +
-                        # geom_point(data = gt_data %>% filter(source == state_) %>% rename("value"=incidD, "USPS"=source, "time"=Update),
-                        #            aes(x=time, y=value), alpha=.25, pch=20) +
-                        ggtitle(paste0(state_, " - incidD")),
-                    ggplot() +
-                        geom_line(data=res_state_long %>% filter(sim_num %in% samp_) %>%
-                                      filter(USPS == state_) %>%
-                                      filter(outcome == "incidC"),
-                                  aes(x=time, y=value, color=sim_num)) +
-                        # geom_point(data = gt_data %>% filter(source == state_) %>% rename("value"=incidC, "USPS"=source, "time"=Update),
-                        #            aes(x=time, y=value), alpha=.25, pch=20) +
-                        ggtitle(paste0(state_, " - incidC")),
-                    res_state_long %>% filter(sim_num %in% samp_) %>%
-                        filter(USPS == state_) %>%
-                        filter(outcome == "incidI") %>%
-                        ggplot(aes(x=time, y=value, color=sim_num)) +
-                        geom_line() + ggtitle(paste0(state_, " - incidI")),
-                    align="hv", axis = "lr", nrow=3))
-
-        }
-
-        states_ <- sort(unique(res_state_long$USPS))
-        pdf(file= paste0(opt$outdir, paste0("SampleSims_",opt$scenario,".pdf")))
-        samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
-        sapply(states_, plot_sims, res_state_long=res_state_long, gt_data = gt_data, samp_=samp_)
-        dev.off()
-
-        # samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
-        # plot_sims(state_ = "US", res_state_long=res_state_long, gt_data = gt_data, samp_)
-        plot_sims(state_ = "CA", res_state_long=res_state_long, gt_data = gt_data, samp_)
-        # plot_sims(state_ = "MD", res_state_long=res_state_long, gt_data = gt_data, samp_)
-    }
-
-
-
-    # GET SIM OUTCOMES -------------------------------------------------------------------
-
-    use_obs_data_forcum <- ifelse(any(outcomes_cumfromgt),TRUE, FALSE)
-    gt_data_2 <- gt_data
-    # colnames(gt_data_2) <- gsub("cumI", "cumC", colnames(gt_data_2))
-    gt_data_2 <- gt_data_2 %>% mutate(cumH = 0) # incidH is only cumulative from start of simulation
-
-    # outcomes_gt_ <- outcomes_[outcomes_!="I"]
-    # outcomes_cum_gt_ <- outcomes_cum_[outcomes_!="I"]
-    #
-    # gt_data_2 <- gt_data_2 %>%
-    #   select(USPS, subpop, time, paste0("incid", outcomes_gt_), paste0("cum", outcomes_[outcomes_cum_gt_]))
-
-    # ~ Weekly Outcomes -----------------------------------------------------------
-
-    if (any(outcomes_time_=="weekly")) {
-
-        # Incident
-        weekly_incid_sims <- get_weekly_incid(res_state, outcomes = outcomes_[outcomes_time_=="weekly"])
-        weekly_incid_sims_formatted <- format_weekly_outcomes(weekly_incid_sims, point_est=0.5, opt)
-
-        if(exists("weekly_incid_sims_formatted")){
-            print(paste("Successfully created weekly incidence for:", scenario))
-        } else {
-            errors <- append(errors, "weekly incidence not created.")
-            stop("res_state not created.")
-        }
-
-
-        # Calibrate
-        outcomes_calib_weekly <- outcomes_[outcomes_calibrate & outcomes_time_=="weekly"]
-        if (length(outcomes_calib_weekly)>0 & n_calib_days>0){
-            weekly_incid_sims_calibrations <- calibrate_outcome(outcome_calib = paste0("incid", outcomes_calib_weekly),
-                                                                weekly_outcome = TRUE,
-                                                                n_calib_days = n_calib_days,
-                                                                gt_data = gt_data,
-                                                                incid_sims_formatted = weekly_incid_sims_formatted,
-                                                                incid_sims = weekly_incid_sims,
-                                                                projection_date = projection_date,
-                                                                quick_run = quick_run, testing = testing,
-                                                                keep_variant_compartments = keep_variant_compartments,
-                                                                keep_vacc_compartments = keep_vacc_compartments,
-                                                                keep_all_compartments = keep_all_compartments,
-                                                                variants_ = NULL, vacc_ = NULL,
-                                                                death_filter = death_filter,
-                                                                opt = opt,
-                                                                geodata = geodata,
-                                                                scenario_dir = scenario_dir)
-
-            weekly_incid_sims <- weekly_incid_sims_calibrations$incid_sims_recalib
-
-            weekly_incid_sims_recalib_formatted <- format_weekly_outcomes(
-                weekly_inc_outcome = weekly_incid_sims %>% filter(outcome_name %in% paste0("incid", outcomes_calib_weekly)),
-                point_est=0.5, opt)
-            weekly_incid_sims_formatted <- weekly_incid_sims_formatted %>%
-                filter(!(outcome %in% paste0("incid", outcomes_calib_weekly))) %>%
-                bind_rows(weekly_incid_sims_recalib_formatted)
-            rm(weekly_incid_sims_calibrations)
-        }
-
-
-        # Cumulative
-        weekly_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_time_=="weekly"]
-        if (length(weekly_cum_outcomes_)>0) {
-            weekly_cum_sims <- get_cum_sims(sim_data = weekly_incid_sims %>%
-                                                mutate(agestrat="age0to130") %>%
-                                                rename(outcome = outcome_name, value = outcome) %>%
-                                                filter(outcome %in% paste0("incid", weekly_cum_outcomes_)),
-                                            obs_data = gt_data_2,
-                                            gt_cum_vars = paste0("cum", outcomes_[outcomes_cumfromgt]), # variables to get cum from GT
-                                            forecast_date = lubridate::as_date(opt$forecast_date),
-                                            aggregation="week",
-                                            loc_column = "USPS",
-                                            use_obs_data = use_obs_data_forcum)
-
-            weekly_cum_sims_formatted <- format_weekly_outcomes(
-                weekly_cum_sims %>% rename(outcome_name = outcome, outcome = value),
-                point_est = 0.5,
-                opt = opt)
-
-            if(exists("weekly_cum_sims_formatted")){
-                print(paste("Successfully created weekly cumulative for:", scenario))
-            } else {
-                errors <- append(errors, "weekly cumulative not created.")
-                stop("res_state not created.")
-            }
-        }
-    }
-
-
-    # ~ Daily Outcomes -----------------------------------------------------------
-
-    if (any(outcomes_time_=="daily")) {
-
-        # Incident
-        daily_incid_sims <- get_daily_incid(res_state, outcomes = outcomes_[outcomes_time_=="daily"])
-        daily_incid_sims_formatted <- format_daily_outcomes(daily_incid_sims, point_est=0.5, opt)
-
-        if(exists("daily_incid_sims_formatted")){
-            print(paste("Successfully created daily incidence for:", scenario))
-        } else {
-            errors <- append(errors, "daily incidence not created.")
-            stop("res_state not created.")
-        }
-
-        # Calibrate
-        outcomes_calib_daily <- outcomes_[outcomes_calibrate & outcomes_time_=="daily"]
-        if (length(outcomes_calib_daily)>0 & n_calib_days>0){
-            daily_incid_sims_calibrations <- calibrate_outcome(outcome_calib = paste0("incid", outcomes_calib_daily),
-                                                               weekly_outcome = FALSE,
-                                                               n_calib_days = n_calib_days,
-                                                               gt_data = gt_data,
-                                                               incid_sims_formatted = daily_incid_sims_formatted,
-                                                               incid_sims = daily_incid_sims,
-                                                               projection_date = projection_date,
-                                                               quick_run = quick_run, testing = testing,
-                                                               keep_variant_compartments = keep_variant_compartments,
-                                                               keep_vacc_compartments = keep_vacc_compartments,
-                                                               keep_all_compartments = keep_all_compartments,
-                                                               variants_ = NULL, vacc_ = NULL,
-                                                               death_filter = death_filter,
-                                                               opt = opt,
-                                                               geodata = geodata,
-                                                               scenario_dir = scenario_dir)
-            daily_incid_sims <- daily_incid_sims_calibrations$incid_sims_recalib
-
-            daily_incid_sims_recalib_formatted <- format_daily_outcomes(
-                daily_inc_outcome = daily_incid_sims %>% filter(outcome_name %in% paste0("incid", outcomes_calib_daily)),
-                point_est=0.5, opt)
-            daily_incid_sims_formatted <- daily_incid_sims_formatted %>%
-                filter(!(outcome %in% paste0("incid", outcomes_calib_daily))) %>%
-                bind_rows(daily_incid_sims_recalib_formatted)
-            rm(daily_incid_sims_calibrations)
-        }
-
-        # Cumulative
-        daily_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_time_=="daily"]
-        if (length(daily_cum_outcomes_)>0){
-            daily_cum_sims <- get_cum_sims(sim_data = daily_incid_sims  %>%
-                                               mutate(agestrat="age0to130") %>%
-                                               rename(outcome = outcome_name, value = outcome) %>%
-                                               filter(outcome %in% paste0("incid", daily_cum_outcomes_)),
-                                           obs_data = gt_data_2,
-                                           gt_cum_vars = paste0("cum", outcomes_[outcomes_cumfromgt]), # variables to get cum from GT
-                                           forecast_date = lubridate::as_date(opt$forecast_date),
-                                           aggregation="day",
-                                           loc_column = "USPS",
-                                           use_obs_data = use_obs_data_forcum)
-
-            daily_cum_sims_formatted <- format_daily_outcomes(
-                daily_cum_sims %>% rename(outcome_name = outcome, outcome = value),
-                point_est=0.5,
-                opt = opt)
-
-            if(exists("daily_cum_sims_formatted")){
-                print(paste("Successfully created daily cumulative for:", scenario))
-            } else {
-                errors <- append(errors, "daily cumulative not created.")
-                stop("res_state not created.")
-            }
-        }
-    }
-
-
-
-    # ~ Combine Daily, Weekly, Cum ----------------------------------------------
-
-    all_sims_formatted <- mget(objects(pattern = "_sims_formatted$")) %>%
-        data.table::rbindlist() %>%
-        as_tibble()
-
-
-
-
-
-    # SAVE REPLICATES -----------------------------------------------
-
-    if (save_reps) {
-
-        weekly_reps <- weekly_incid_sims %>%
-            mutate(time = lubridate::as_date(time)) %>%
-            filter(time >= lubridate::as_date(projection_date) & time <= lubridate::as_date(end_date)) %>%
-            filter(sim_num %in% sample(unique(weekly_incid_sims$sim_num), ifelse(quick_run, 20, 100), replace = FALSE)) %>%
-            pivot_wider(names_from = sim_num, values_from = outcome, names_prefix = "sim_") %>%
-            mutate(age_group = "0-130",
-                   scenario_id = scenario_id, scenario_name=scenario_name) %>%
-            mutate(model_projection_date=opt$forecast_date) %>%
-            rename(target_end_date=time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
-            mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
-            mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
-            mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
-            mutate(target=sprintf(paste0("%d wk ahead inc ", target), ahead)) %>%
-            pivot_longer(cols=dplyr::starts_with("sim_"), names_to = "sample", values_to = "value") %>%
-            mutate(sample = gsub("sim_", "", sample)) %>%
-            as_tibble() %>%
-            mutate(age_group = "0-130",
-                   scenario_id = scenario_id, scenario_name=scenario_name, model_projection_date=projection_date) %>%
-            select(scenario_id, scenario_name, model_projection_date, target,
-                   target_end_date, sample, location=USPS, value, age_group)
-
-        replicate_file <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario_name, "_100reps.parquet")
-        arrow::write_parquet(weekly_reps, file.path(opt$outdir, replicate_file))
-
-        if(exists("weekly_reps")) {
-            print(paste("Successfully created 'weekly_reps' for:", scenario))
-        } else {
-            errors <- append(errors, "'weekly_reps' not created.")
-            stop("'weekly_reps' not created.")
-        }
-    }
-
-
-
-
-
-    # PEAK SUMMARY -------------------------------------------------------------
-    # currently only incidH
-
-    if (summarize_peaks) {
-        peak_timing <- weekly_incid_sims %>%
-            filter(outcome_name=="incidH") %>%
-            rename(incidH = outcome) %>%
-            group_by(USPS, sim_num) %>%
-            mutate(sim_peak_size = max(incidH, na.rm=TRUE)) %>%
-            mutate(is_peak = as.integer(incidH==sim_peak_size)) %>%
-            ungroup() %>%
-            group_by(USPS, time) %>%
-            summarise(prob_peak = mean(is_peak, na.rm=TRUE)) %>%
-            as_tibble() %>%
-            group_by(USPS) %>%
-            arrange(time) %>%
-            mutate(cum_peak_prob = cumsum(prob_peak)) %>%
-            ungroup()
-
-        peak_timing <- peak_timing %>%
-            mutate(time = lubridate::as_date(time)) %>%
-            filter(time >= lubridate::as_date(projection_date) & time <= lubridate::as_date(end_date)) %>%
-            mutate(age_group = "0-130",
-                   quantile = NA, type = "point",
-                   outcome_name = "incidH",
-                   scenario_id = scenario_id, scenario_name=scenario_name) %>%
-            mutate(model_projection_date=opt$forecast_date) %>%
-            rename(target_end_date=time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
-            mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
-            mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
-            mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
-            mutate(target=sprintf(paste0("%d wk ahead peak time ", target), ahead)) %>%
-            as_tibble() %>%
-            mutate(age_group = "0-130",
-                   model_projection_date=projection_date,
-                   forecast_date = forecast_date) %>%
-            select(model_projection_date, target,
-                   target_end_date, quantile, type,
-                   location = USPS, value=cum_peak_prob, age_group)
-
-        # PEAK SIZE
-
-        peak_size <- weekly_incid_sims %>%
-            filter(outcome_name=="incidH") %>%
-            group_by(USPS, sim_num, outcome_name) %>%
-            summarise(peak_size = max(outcome, na.rm=TRUE)) %>%
-            as_tibble() %>%
-            mutate(age_group = "0-130") %>%
-            rename(outcome = peak_size) %>%
-            group_by(USPS, outcome_name, age_group) %>%
-            summarize(x=list(enframe(c(quantile(outcome, probs=c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99), na.rm=TRUE),
-                                       mean=mean(outcome, na.rm=TRUE)), "quantile","outcome"))) %>%
-            unnest(x) %>%
-            pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
-            mutate(forecast_date=opt$forecast_date) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
-            mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
-            mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
-            mutate(target = paste0("peak size ", target)) %>%
-            pivot_longer(cols=dplyr::starts_with("quant_"), names_to = "quantile", values_to = "value") %>%
-            mutate(type="quantile") %>%
-            mutate(quantile2=suppressWarnings(readr::parse_number(quantile)/100)) %>%
-            mutate(type=replace(type, grepl("mean", quantile),"point")) %>%
-            as_tibble() %>%
-            mutate(target_end_date=NA,
-                   forecast_date = forecast_date,
-                   model_projection_date = projection_date) %>%
-            select(model_projection_date, target,
-                   target_end_date, quantile = quantile2, type, location=USPS, value, age_group)
-
-        if (point_est!="mean"){
-            peak_size <- change_point_est(dat = peak_size, point_estimate = point_est)
-        }
-
-        peaks_ <- peak_timing %>%
-            full_join(peak_size) %>%
-            rename(USPS = location) %>%
-            left_join(reich_locs %>% select(location, USPS = abbreviation)) %>%
-            mutate(age_group = "0-130") %>%
-            filter(location %in% reich_locs$location) %>%
-            select(-USPS) %>%
-            as_tibble() %>%
-            mutate(forecast_date = forecast_date)
-    }
-
-
-
-
-    # PUT TOGETHER AND SAVE ---------------------------------------------------
-
-    full_forecast <- all_sims_formatted %>%
-        as_tibble() %>%
-        filter(target_end_date<=opt$end_date) %>%
-        mutate(age_group = "0-130") %>%
-        filter(location %in% reich_locs$location) %>%
-        select(-USPS, -outcome)
-
-    if (!full_fit) {
-        full_forecast <- full_forecast %>%
-            filter(target_end_date >= lubridate::as_date(forecast_date) | (target == "peak size hosp"))
-    }
-
-    if (summarize_peaks){
-        full_forecast <- full_forecast %>% full_join(peaks_)
-    }
-
-    full_forecast <- full_forecast %>%
-        mutate(scenario_id = scenario_id, scenario_name = scenario_name, model_projection_date = projection_date) %>%
-        select(scenario_id, scenario_name, model_projection_date, target,
-               target_end_date, quantile, type, location, value, age_group)
-
-
-    # ---- Save it all
-
-    dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
-    print(file.path(opt$outdir, opt$outfile))
-    opt$outfile <- gsub(".csv", ".parquet", opt$outfile)
-    arrow::write_parquet(full_forecast, file.path(opt$outdir, opt$outfile))
-
-    paste0("Outputs saved to : ", file.path(opt$outdir, opt$outfile))
-
-
-    if (exists("full_forecast")) {
-        print(paste("Successfully created 'full_forecast' for:", scenario))
+  }
+  
+  
+  # ~ Daily Outcomes -----------------------------------------------------------
+  
+  if (any(outcomes_time_=="daily")) {
+    
+    # Incident
+    daily_incid_sims <- get_daily_incid(res_state, outcomes = outcomes_[outcomes_time_=="daily"])
+    daily_incid_sims_formatted <- format_daily_outcomes(daily_incid_sims, point_est=0.5, opt)
+    
+    if(exists("daily_incid_sims_formatted")){
+      print(paste("Successfully created daily incidence for:", scenario))
     } else {
-        errors <- append(errors, "'full_forecast' not created.")
-        stop("'full_forecast' not created.")
+      errors <- append(errors, "daily incidence not created.")
+      stop("res_state not created.")
     }
-
-    return(errors)
+    
+    # Calibrate
+    outcomes_calib_daily <- outcomes_[outcomes_calibrate & outcomes_time_=="daily"]
+    if (length(outcomes_calib_daily)>0 & n_calib_days>0){
+      daily_incid_sims_calibrations <- calibrate_outcome(outcome_calib = paste0("incid", outcomes_calib_daily),
+                                                         weekly_outcome = FALSE,
+                                                         n_calib_days = n_calib_days,
+                                                         gt_data = gt_data,
+                                                         incid_sims_formatted = daily_incid_sims_formatted,
+                                                         incid_sims = daily_incid_sims,
+                                                         projection_date = projection_date,
+                                                         quick_run = quick_run, testing = testing,
+                                                         keep_variant_compartments = keep_variant_compartments,
+                                                         keep_vacc_compartments = keep_vacc_compartments,
+                                                         keep_all_compartments = keep_all_compartments,
+                                                         variants_ = NULL, vacc_ = NULL,
+                                                         death_filter = config$outcome_modifiers$scenarios,
+                                                         opt = opt,
+                                                         geodata = geodata,
+                                                         scenario_dir = scenario_dir)
+      daily_incid_sims <- daily_incid_sims_calibrations$incid_sims_recalib
+      
+      daily_incid_sims_recalib_formatted <- format_daily_outcomes(
+        daily_inc_outcome = daily_incid_sims %>% filter(outcome_name %in% paste0("incid", outcomes_calib_daily)),
+        point_est=0.5, opt)
+      daily_incid_sims_formatted <- daily_incid_sims_formatted %>%
+        filter(!(outcome %in% paste0("incid", outcomes_calib_daily))) %>%
+        bind_rows(daily_incid_sims_recalib_formatted)
+      rm(daily_incid_sims_calibrations)
+    }
+    
+    # Cumulative
+    daily_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_time_=="daily"]
+    if (length(daily_cum_outcomes_)>0){
+      daily_cum_sims <- get_cum_sims(sim_data = daily_incid_sims  %>%
+                                       mutate(agestrat="age0to130") %>%
+                                       rename(outcome = outcome_name, value = outcome) %>%
+                                       filter(outcome %in% paste0("incid", daily_cum_outcomes_)),
+                                     obs_data = gt_data_2,
+                                     gt_cum_vars = paste0("cum", outcomes_[outcomes_cumfromgt]), # variables to get cum from GT
+                                     forecast_date = lubridate::as_date(opt$forecast_date),
+                                     aggregation="day",
+                                     loc_column = "USPS",
+                                     use_obs_data = use_obs_data_forcum)
+      
+      daily_cum_sims_formatted <- format_daily_outcomes(
+        daily_cum_sims %>% rename(outcome_name = outcome, outcome = value),
+        point_est=0.5,
+        opt = opt)
+      
+      if(exists("daily_cum_sims_formatted")){
+        print(paste("Successfully created daily cumulative for:", scenario))
+      } else {
+        errors <- append(errors, "daily cumulative not created.")
+        stop("res_state not created.")
+      }
+    }
+  }
+  
+  
+  
+  # ~ Combine Daily, Weekly, Cum ----------------------------------------------
+  
+  all_sims_formatted <- mget(objects(pattern = "_sims_formatted$")) %>%
+    data.table::rbindlist() %>%
+    as_tibble()
+  
+  
+  
+  
+  
+  # SAVE REPLICATES -----------------------------------------------
+  
+  if (save_reps) {
+    
+    weekly_reps <- weekly_incid_sims %>%
+      mutate(time = lubridate::as_date(time)) %>%
+      # filter(time >= lubridate::as_date(projection_date) & time <= lubridate::as_date(end_date)) %>%
+      # filter(sim_num %in% sample(unique(weekly_incid_sims$sim_num), ifelse(quick_run, 20, 100), replace = FALSE)) %>%
+      filter(sim_num %in% sample(unique(weekly_incid_sims$sim_num), ifelse(quick_run, 20, 3), replace = FALSE)) %>%
+      pivot_wider(names_from = sim_num, values_from = outcome, names_prefix = "sim_") %>%
+      mutate(age_group = "0-130",
+             scenario_id = scenario_id, scenario_name=scenario_name) %>%
+      mutate(model_projection_date=opt$forecast_date) %>%
+      rename(target_end_date=time) %>%
+      mutate(location=as.character(cdlTools::fips(USPS))) %>%
+      mutate(location = ifelse(USPS=="US", "US", location)) %>%
+      mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
+      mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
+      mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
+      mutate(target=sprintf(paste0("%d wk ahead inc ", target), ahead)) %>%
+      pivot_longer(cols=dplyr::starts_with("sim_"), names_to = "sample", values_to = "value") %>%
+      mutate(sample = gsub("sim_", "", sample)) %>%
+      as_tibble() %>%
+      mutate(age_group = "0-130",
+             scenario_id = scenario_id, scenario_name=scenario_name, model_projection_date=projection_date) %>%
+      select(scenario_id, scenario_name, model_projection_date, target,
+             target_end_date, sample, location=USPS, value, age_group)
+    
+    replicate_file <- paste0(opt$projection_date, "-JHU_IDD-CovidSP-", opt$scenario_name, "_100reps.parquet")
+    arrow::write_parquet(weekly_reps, file.path(opt$outdir, replicate_file))
+    
+    if(exists("weekly_reps")) {
+      print(paste("Successfully created 'weekly_reps' for:", scenario))
+    } else {
+      errors <- append(errors, "'weekly_reps' not created.")
+      stop("'weekly_reps' not created.")
+    }
+  }
+  
+  
+  
+  
+  
+  # PEAK SUMMARY -------------------------------------------------------------
+  # currently only incidH
+  
+  if (summarize_peaks) {
+    peak_timing <- weekly_incid_sims %>%
+      filter(outcome_name=="incidH") %>%
+      rename(incidH = outcome) %>%
+      group_by(USPS, sim_num) %>%
+      mutate(sim_peak_size = max(incidH, na.rm=TRUE)) %>%
+      mutate(is_peak = as.integer(incidH==sim_peak_size)) %>%
+      ungroup() %>%
+      group_by(USPS, time) %>%
+      summarise(prob_peak = mean(is_peak, na.rm=TRUE)) %>%
+      as_tibble() %>%
+      group_by(USPS) %>%
+      arrange(time) %>%
+      mutate(cum_peak_prob = cumsum(prob_peak)) %>%
+      ungroup()
+    
+    peak_timing <- peak_timing %>%
+      mutate(time = lubridate::as_date(time)) %>%
+      filter(time >= lubridate::as_date(projection_date) & time <= lubridate::as_date(end_date)) %>%
+      mutate(age_group = "0-130",
+             quantile = NA, type = "point",
+             outcome_name = "incidH",
+             scenario_id = scenario_id, scenario_name=scenario_name) %>%
+      mutate(model_projection_date=opt$forecast_date) %>%
+      rename(target_end_date=time) %>%
+      mutate(location=as.character(cdlTools::fips(USPS))) %>%
+      mutate(location = ifelse(USPS=="US", "US", location)) %>%
+      mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
+      mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
+      mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
+      mutate(target=sprintf(paste0("%d wk ahead peak time ", target), ahead)) %>%
+      as_tibble() %>%
+      mutate(age_group = "0-130",
+             model_projection_date=projection_date,
+             forecast_date = forecast_date) %>%
+      select(model_projection_date, target,
+             target_end_date, quantile, type,
+             location = USPS, value=cum_peak_prob, age_group)
+    
+    # PEAK SIZE
+    
+    peak_size <- weekly_incid_sims %>%
+      filter(outcome_name=="incidH") %>%
+      group_by(USPS, sim_num, outcome_name) %>%
+      summarise(peak_size = max(outcome, na.rm=TRUE)) %>%
+      as_tibble() %>%
+      mutate(age_group = "0-130") %>%
+      rename(outcome = peak_size) %>%
+      group_by(USPS, outcome_name, age_group) %>%
+      summarize(x=list(enframe(c(quantile(outcome, probs=c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99), na.rm=TRUE),
+                                 mean=mean(outcome, na.rm=TRUE)), "quantile","outcome"))) %>%
+      unnest(x) %>%
+      pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
+      mutate(forecast_date=opt$forecast_date) %>%
+      mutate(location=as.character(cdlTools::fips(USPS))) %>%
+      mutate(location = ifelse(USPS=="US", "US", location)) %>%
+      mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
+      mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
+      mutate(target = paste0("peak size ", target)) %>%
+      pivot_longer(cols=dplyr::starts_with("quant_"), names_to = "quantile", values_to = "value") %>%
+      mutate(type="quantile") %>%
+      mutate(quantile2=suppressWarnings(readr::parse_number(quantile)/100)) %>%
+      mutate(type=replace(type, grepl("mean", quantile),"point")) %>%
+      as_tibble() %>%
+      mutate(target_end_date=NA,
+             forecast_date = forecast_date,
+             model_projection_date = projection_date) %>%
+      select(model_projection_date, target,
+             target_end_date, quantile = quantile2, type, location=USPS, value, age_group)
+    
+    if (point_est!="mean"){
+      peak_size <- change_point_est(dat = peak_size, point_estimate = point_est)
+    }
+    
+    peaks_ <- peak_timing %>%
+      full_join(peak_size) %>%
+      rename(USPS = location) %>%
+      left_join(reich_locs %>% select(location, USPS = abbreviation)) %>%
+      mutate(age_group = "0-130") %>%
+      filter(location %in% reich_locs$location) %>%
+      select(-USPS) %>%
+      as_tibble() %>%
+      mutate(forecast_date = forecast_date)
+  }
+  
+  
+  
+  
+  # PUT TOGETHER AND SAVE ---------------------------------------------------
+  
+  full_forecast <- all_sims_formatted %>%
+    as_tibble() %>%
+    filter(target_end_date<=opt$end_date) %>%
+    mutate(age_group = "0-130") %>%
+    filter(location %in% reich_locs$location) %>%
+    select(-USPS, -outcome)
+  
+  if (!full_fit) {
+    full_forecast <- full_forecast %>%
+      filter(target_end_date >= lubridate::as_date(forecast_date) | (target == "peak size hosp"))
+  }
+  
+  if (summarize_peaks){
+    full_forecast <- full_forecast %>% full_join(peaks_)
+  }
+  
+  full_forecast <- full_forecast %>%
+    mutate(scenario_id = scenario_id, scenario_name = scenario_name, model_projection_date = projection_date) %>%
+    select(scenario_id, scenario_name, model_projection_date, target,
+           target_end_date, quantile, type, location, value, age_group)
+  
+  
+  # ---- Save it all
+  
+  dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
+  print(file.path(opt$outdir, opt$outfile))
+  opt$outfile <- gsub(".csv", ".parquet", opt$outfile)
+  arrow::write_parquet(full_forecast, file.path(opt$outdir, opt$outfile))
+  
+  paste0("Outputs saved to : ", file.path(opt$outdir, opt$outfile))
+  
+  
+  if (exists("full_forecast")) {
+    print(paste("Successfully created 'full_forecast' for:", scenario))
+  } else {
+    errors <- append(errors, "'full_forecast' not created.")
+    stop("'full_forecast' not created.")
+  }
+  
+  return(errors)
 }
