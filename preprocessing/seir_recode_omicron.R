@@ -35,7 +35,7 @@ opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
 print(paste0("Using config files: ", opt$config, " and ", opt$res_config))
 config <- flepicommon::load_config(opt$config)
 
-if (exists(config$initial_conditions$resumed_config)){
+if (!is.null(config$initial_conditions$resumed_config)){
   opt$res_config <- config$initial_conditions$resumed_config
 }
 
