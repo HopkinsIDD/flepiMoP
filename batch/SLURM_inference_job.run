@@ -99,6 +99,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     else
         echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $INIT_FILENAME)"
     fi
+    Rscript $FLEPI_PATH/preprocessing/seir_recode_omicron.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2_evo.yml
     #Rscript $FLEPI_PATH/flepimop/main_scripts/seir_init_immuneladder.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
     #Rscript $FLEPI_PATH/preprocessing/seir_init_immuneladder_r17phase3_preOm.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
 fi
