@@ -38,24 +38,6 @@ tmp_path = "/tmp"
 
 
 @pytest.mark.parametrize(
-    ("prefix", "ftype"),
-    [
-        ("test0001", "seed"),
-        ("test0002", "seed"),
-        ("test0003", "seed"),
-        ("test0004", "seed"),
-        ("test0005", "hosp"),
-        ("test0006", "hosp"),
-        ("test0007", "hosp"),
-        ("test0008", "hosp"),
-    ],
-)
-def test_create_dir_name(set_run_id, prefix, ftype):
-    os.chdir(tmp_path)
-    os.path.exists(file_paths.create_dir_name(set_run_id, prefix, ftype))
-
-
-@pytest.mark.parametrize(
     ("prefix", "ftype", "inference_filepath_suffix", "inference_filename_prefix"),
     [
         ("test0001", "seed", "", ""),

@@ -258,13 +258,13 @@ class ModelInfo:
         return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
-        fname=self.get_filename(
-                ftype=ftype,
-                sim_id=sim_id,
-                input=input,
-                extension_override=extension_override,
-            )
-        #print(f"Readings {fname}")
+        fname = self.get_filename(
+            ftype=ftype,
+            sim_id=sim_id,
+            input=input,
+            extension_override=extension_override,
+        )
+        # print(f"Readings {fname}")
         return read_df(fname=fname)
 
     def write_simID(
@@ -281,7 +281,7 @@ class ModelInfo:
             input=input,
             extension_override=extension_override,
         )
-        #print(f"Writing {fname}")
+        # print(f"Writing {fname}")
         write_df(
             fname=fname,
             df=df,

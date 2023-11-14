@@ -145,6 +145,8 @@ def test_constant_population_rk4jit_integration_fail():
 
         params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
         params = modinf.parameters.parameters_reduce(params, npi)
+
+
         (
             unique_strings,
             transition_array,
@@ -515,6 +517,7 @@ def test_continuation_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
+
     seir.onerun_SEIR(sim_id2write=sim_id2write, modinf=modinf, config=config)
 
     states_new = pq.read_table(
@@ -570,6 +573,7 @@ def test_inference_resume():
         out_run_id=run_id,
         out_prefix=prefix,
     )
+
     seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
     npis_old = pq.read_table(
         file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet")

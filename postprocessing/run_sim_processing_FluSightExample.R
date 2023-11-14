@@ -10,9 +10,7 @@ gc()
 library(inference)
 library(tidyverse)
 library(doParallel)
-
-
-
+gempyor <- reticulate::import("gempyor")
 
 # SETUP -------------------------------------------------------------------
 
@@ -25,48 +23,61 @@ flepimop_local_dir <- "../flepiMoP"
 
 
 # ~ Main Run Options -----------------------------------------------------------
-pull_gt <- TRUE
-full_fit <- FALSE
+pull_gt <- FALSE
+full_fit <- TRUE
 
 # ~ Round -----------------------------------------------------------------
-round_num <- 3
-fch_date <- "Jan15"
-config_subname <- "2022_Jan15"
+round_num <- 4 #actually don't think we need this?
+# fch_date <- "Jan15"
+# config_subname <- "training"
+config_name <- "config_SMH_Flu_2023_R1_medVax_H3_training.yml"
+config <- flepicommon::load_config(config_name)
+#I THINK WANT TO REORGANISE - JUST SAVE BY CONFIG
 
 # ~ Application -----------------------------------------------------------
-smh_or_fch <- "fch" #"fch" or "smh"
-disease <- "flu" # covid19 or flu
-repo <- "../../shared/SMH_Flu"
-subdir <- NULL  #used for testing purposes
-
-smh_or_fch <- tolower(smh_or_fch)
-if(smh_or_fch == "fch"){ subdir <- file.path("FCH", fch_date) }   #"excluding_vacchosp"  #NULL # can be changed to add subanalysis
+smh_or_fch <- ifelse(grepl("FCH", config_name), "fch", "smh") #"fch" or "smh"
+disease <- config$disease # covid19 or flu
+# repo <- "../../shared/SMH_Flu"
+repo <- "../runs-flepi"
+subdir <- "test" #NULL  #used for testing purposes 
+if(smh_or_fch == "fch"){ subdir <- file.path("FCH", fch_date) }# can be changed to add subanalysis (I DON'T LIKE THIS AND THE ABOVE LINE)
 
 # ~ Scenarios -------------------------------------------------------------
 
-scenarios <- c("highVE_optImm", "highVE_pesImm", "lowVE_optImm", "lowVE_pesImm") # include all, it will subset later based on what you put in `scenario_num`
-scenario_s3_buckets <- c("20221220T173349", "20230115T202608", "20221220T174219", "20221220T174814") # automatically pull from s3 if the data are not local already
-override_pull_from_s3 <- c(FALSE, FALSE, FALSE, FALSE) # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
+## THIS HAS TO BE EDITED FOR EVERY ROUND - what are the scenarios
+if (disease == "flu"){
+  scenarios <- c("highVax_H3", "highVax_H1", "medVax_H3", "medVax_H1", "lowVax_H3", "lowVax_H1") # include all, it will subset later based on what you put in `scenario_num`
+  fch_scenario_num = 3
+  scenario_s3_buckets <- c("20221220T173349", "20230115T202608", "20231103T130842", "20221220T174814","20221220T174814","20221220T174814") # automatically pull from s3 if the data are not local already
+  override_pull_from_s3 <- c(FALSE, FALSE, FALSE, FALSE) # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
+} else if (disease == "covid19"){
+  scenarios <- c("65Boo_lowIE") # include all, it will subset later based on what you put in `scenario_num`
+  fch_scenario_num = 1
+  scenario_s3_buckets <- c("20221220T173349") # automatically pull from s3 if the data are not local already
+  override_pull_from_s3 <- c(FALSE) # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
+}
 
-scenario_num = 1:4 # which scenarios to process right now
-fch_scenario_num = 2
 if(tolower(smh_or_fch) == "fch"){
   scenario_num <- fch_scenario_num
+}else{
+  # scenario_num = 1:6 # which scenarios to process right now (ONLY FOR SMH)
+  scenario_num = 3
 }
 n_weeks <- 41
 
 # ~ Config Specifics ------------------------------------------------------
 subname <- NA
 subname_all <- NA
+config_subname <- stringr::str_extract(config_name, paste0("(?<=", scenarios[scenario_num], "_).*?(?=\\.yml)"))
 
-# ~ Outcomes to Include (for processing and plotting) ---------------------------------------------------
-outcomes_ <- c("I","C","H","D")
-outcomes_time_ <- c("weekly","weekly","weekly","weekly")
-outcomes_cum_ <- c(FALSE, FALSE, FALSE, FALSE)
-
-# ~ Calibration -----------------------------------------------------------
-outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE) # match outcomes_
-n_calib_days = 14 # need one for each outcome to calibrate
+# # ~ Outcomes to Include (for processing and plotting) ---------------------------------------------------
+# outcomes_ <- c("I","C","H","D")
+# outcomes_time_ <- c("weekly","weekly","weekly","weekly")
+# outcomes_cum_ <- c(FALSE, FALSE, FALSE, FALSE)
+# 
+# # ~ Calibration -----------------------------------------------------------
+# outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE) # match outcomes_
+# n_calib_days = 14 # need one for each outcome to calibrate
 
 # ~ Other Run Options -----------------------------------------------------
 plot_samp <- FALSE
@@ -81,33 +92,16 @@ keep_vacc_compartments <- FALSE
 likelihood_sims <- FALSE
 
 
-
-
-
-
-
-
 # OTHER SETUP -------------------------------------------------------------
 
 proj_dir <- getwd()
 
-
-# subset scenarios
-if(tolower(smh_or_fch) == "fch"){
-  scenario_num <- fch_scenario_num
-}
 scenarios <- scenarios[scenario_num]
 scenario_s3_buckets <- scenario_s3_buckets[scenario_num] # automatically pull from s3 if the data are not local already
 override_pull_from_s3 <- override_pull_from_s3[scenario_num] # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
 
 
 geodata_file_path = file.path(config$data_path, config$subpop_setup$geodata)
-
-
-
-
-
-
 
 
 # SUBMISSION & PROCESSING SPECIFICS ----------------------------------------------------
@@ -125,7 +119,9 @@ if (smh_or_fch == "fch" & disease == "flu"){
     outcomes_ <- c("I","C","H","D")
     outcomes_time_ <- c("weekly","weekly","weekly","weekly")
     outcomes_cum_ <- c(FALSE, FALSE, FALSE, FALSE)
-    outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE)
+    outcomes_cumfromgt = c(FALSE, FALSE, FALSE, FALSE)
+    outcomes_calibrate = c(FALSE, FALSE, FALSE, FALSE)
+    n_calib_days = 14 # need one for each outcome to calibrate
 }
 
 # Flu Projections (Flu SMH: https://github.com/midas-network/flu-scenario-modeling-hub)
@@ -140,18 +136,20 @@ if (smh_or_fch == "smh" & disease == "flu"){
     outcomes_time_ <- c("weekly","weekly","weekly","weekly")
     outcomes_cum_ <- c(TRUE, TRUE, TRUE, TRUE)
     outcomes_cumfromgt = c(FALSE, FALSE, FALSE, FALSE)
-    outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE)
+    outcomes_calibrate = c(FALSE, FALSE, FALSE, FALSE)
+    n_calib_days = 14 # need one for each outcome to calibrate
 }
 
 # COVID-19 Forecasts (COVID-19 FCH: https://github.com/reichlab/covid19-forecast-hub/blob/master/data-processed/README.md#Data-formatting)
 if (smh_or_fch == "fch" & disease == "covid19"){
 
     select_submission_targets <- function(data_comb){
-        targets <- c(paste0(1:20, " wk ahead cum death"),
-                     paste0(1:20, " wk ahead inc death"),
-                     paste0(1:8, " wk ahead inc case"),
-                     paste0(0:130, " day ahead inc hosp"))
-
+        # targets <- c(paste0(1:20, " wk ahead cum death"),
+        #              paste0(1:20, " wk ahead inc death"),
+        #              paste0(1:8, " wk ahead inc case"),
+        #              paste0(0:130, " day ahead inc hosp"))
+      targets <- c(paste0(0:130, " day ahead inc hosp"))
+      
         data_comb <- data_comb %>%
             filter(type != "point-mean" & !(is.na(quantile) & type == "quantile")) %>%
             mutate(quantile = round(quantile, 3)) %>%
@@ -175,13 +173,14 @@ if (smh_or_fch == "fch" & disease == "covid19"){
     outcomes_cum_ <- c(FALSE, FALSE, FALSE, TRUE)
     outcomes_cumfromgt = c(FALSE, FALSE, FALSE, TRUE)
     outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE) # match outcomes_
+    n_calib_days = 14 # need one for each outcome to calibrate
 }
 
 # COVID-19 Projections (COVID-19 SMH: https://github.com/midas-network/covid-scenario-modeling-hub)
 if (smh_or_fch == "smh" & disease == "covid19"){
     select_submission_targets <- function(data_comb){
         data_comb %>%
-            filter(grepl("inc hosp|inc death|cum hosp|cum death|peak size|peak time", target))
+            filter(grepl("inc hosp|inc death|cum hosp|cum death", target))
     }
     forecast_date_name <- "model_projection_date"
     outcomes_ <- c("I","C","H","D")
@@ -189,9 +188,8 @@ if (smh_or_fch == "smh" & disease == "covid19"){
     outcomes_cum_ <- c(TRUE, TRUE, TRUE, TRUE)
     outcomes_cumfromgt = c(FALSE, FALSE, FALSE, FALSE)
     outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE)
+    n_calib_days = 14 # need one for each outcome to calibrate
 }
-
-
 
 
 
@@ -221,11 +219,6 @@ source(paste0(source_loc, "/postprocessing/sim_processing_source.R"))
 
 #........................................................................................................
 
-
-# Get Config for details
-config_name <- paste0(paste(na.omit(c("config", toupper(smh_or_fch), paste0("R", round_num), scenarios[1], subname_all[1], config_subname)), collapse="_"), ".yml")
-config <- flepicommon::load_config(config_name)
-
 # change n_weeks if FCH (limit to 12 weeks)
 projection_date <- lubridate::as_date(config$end_date_groundtruth)+1 # first day after groundtruth cutoff
 forecast_date <- lubridate::as_date(config$start_date)+21 # date to start plotting from
@@ -236,30 +229,33 @@ if (tolower(smh_or_fch)=="fch") {
     n_weeks <- 4
     end_date <- lubridate::as_date(projection_date + n_weeks*7) - 1
 }
+
 point_est <- 0.5   # alternative: "mean"
-compartment_types = c("vacc","variant","agestrat") # types of compartments, other than standard SEIR
+compartment_types = c("vacc","variant","agestrat","season") # types of compartments, other than standard SEIR
+# compartment_types = c("vacc","variant","agestrat") # types of compartments, other than standard SEIR
 keep_which_compartments <- c("variant") # types of compartments, other than standard SEIR
-scenario_ids = paste0(c(LETTERS[1:4]), "-", lubridate::as_date(config$end_date_groundtruth)+1)[scenario_num]
+scenario_ids = paste0(c(LETTERS[1:6]), "-", lubridate::as_date(config$end_date_groundtruth)+1)[scenario_num]
 scenario_names <- scenarios
 scenarios_all <- scenarios
-variants_ <- config$seir$compartments$variant_type
-vacc_ <- config$seir$compartments$vaccination_stage
+variants_ <- config$compartments$variant_type
+vacc_ <- config$compartments$vaccination_stage
 county_level <- FALSE
 plot_projections <- TRUE
 
 save_reps <- smh_or_fch=="smh" & !full_fit
 
 # create the repo where everything will be saved
-round_directory <- do.call(file.path, as.list(na.omit(c(repo, paste0("R",round_num), subdir))))
+# round_directory <- do.call(file.path, as.list(na.omit(c(repo, paste0("R",round_num), subdir))))
+round_directory <- do.call(file.path, 
+                           as.list(na.omit(c(repo, 
+                                             stringr::str_extract(config_name, paste0("(?<=", "config", "_).*?(?=\\.yml)")), # save results in config name
+                                             subdir))))
 dir.create(round_directory, recursive = TRUE, showWarnings = FALSE)
 print(round_directory)
 
 # Create Directories for Sim Data
 scenario_dir <- file.path(round_directory, scenarios_all)
 lapply(scenario_dir, dir.create, recursive = TRUE)
-
-
-
 
 
 # PULL SIMS FROM S3 -------------------------------------------------------
@@ -280,7 +276,11 @@ if (any(pull_from_s3)) {
 
         scn <- scen_to_repull[i]
         # pull s3 bucket
-        sys_call_s3 <- paste0('aws s3 cp --recursive s3://idd-inference-runs/USA-', scenario_s3_buckets[scn], '/model_output/hosp ', scenario_dir[scn], '/hosp --exclude="*" --include="*/final/*"')
+        sys_call_s3 <- paste0('aws s3 cp --recursive s3://idd-inference-runs/USA-', scenario_s3_buckets[scn], 
+                              '/model_output/',
+                              # paste(config$name,config$seir_modifiers$scenarios,config$outcome_modifiers$scenarios,sep="_"),
+                              ' ',
+                              scenario_dir[scn], ' --exclude="*" --include="*hosp/global/final/*"')
         system(sys_call_s3)
     }
     # stopCluster(cl)
@@ -288,15 +288,13 @@ if (any(pull_from_s3)) {
 
 
 
-
-
 # LOAD GROUND TRUTH -------------------------------------------------------
 
 Sys.setenv(CONFIG_PATH = config_name)
 Sys.setenv(FLEPI_PATH = source_loc)
-if (disease == "flu"){
+if (disease == "flu" & pull_gt){
     source(paste0(source_loc, "/datasetup/build_flu_data.R"))
-} else if (disease == "covid19"){
+} else if (disease == "covid19" & pull_gt){
     source(paste0(source_loc, "/datasetup/build_covid_data.R"))
 }
 
@@ -336,8 +334,7 @@ peak_ram_ <- peakRAM::peakRAM({
         print(scenarios_all[scenario_num])
         scenario_dir <- paste0(round_directory, "/", scenarios_all[i], "/")
 
-        #source("postprocessing/process_sims_parallel_NEW.R", local=TRUE)
-        tmp_out_ <- process_sims(scenario_num = scenario_num,
+        tmp_out_ <- process_sims(config_name,scenario_num = scenario_num,
                                  scenarios_all = scenarios_all,
                                  scenario_names = scenario_names,
                                  scenario_ids = scenario_ids,
@@ -368,7 +365,7 @@ peak_ram_ <- peakRAM::peakRAM({
                                  plot_samp = plot_samp,
                                  gt_data = gt_data,
                                  geodata_file = geodata_file_path,
-                                 death_filter = config$outcome_modifiers$scenarios,
+                                 # death_filter = config$outcome_modifiers$scenarios,
                                  summarize_peaks = (smh_or_fch == "smh"),
                                  save_reps = save_reps)
         tmp_out <- list(tmp_out, tmp_out_)

@@ -10,6 +10,7 @@ subpop_setup:
   geodata: geodata.csv
   mobility: mobility.csv
 
+
 seeding:
   seeding_file_type: seed
   method: FolderDraw

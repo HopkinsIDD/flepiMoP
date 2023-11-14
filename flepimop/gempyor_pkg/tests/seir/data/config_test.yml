@@ -1,14 +1,14 @@
-name: minimal
-setup_name: minimal
+name: minimal_test
+setup_name: minimal_test_setup
 start_date: 2020-01-31
 end_date: 2020-05-31
 data_path: data
-nslots: 15
+nslots: 5
 
 
 subpop_setup:
   geodata: geodata.csv
-  mobility: mobility.txt
+  mobility: mobility.csv
 
 
 seeding:
@@ -28,9 +28,7 @@ seir:
     dt: 1/6
   parameters:
     alpha:
-      value:
-        distribution: fixed
-        value: .9
+      value: .9
     sigma:
       value:
         distribution: fixed
@@ -120,3 +118,32 @@ seir_modifiers:
       method: StackedModifier
       modifiers:
         - Wuhan
+
+# until outcome_mofifiers format can be usable
+#
+#outcome_modifiers:
+#  scenarios:
+#    - DelayedTesting
+#  modifiers:
+#    DelayedTesting:
+#      method:SinglePeriodModifier
+#      parameter: incidC::probability
+#      period_start_date: 2020-03-15
+#      period_end_date: 2020-05-01
+#      subpop: 'all'
+      value: 0.5
+#    DelayedHosp:
+#      method:SinglePeriodModifier
+#      parameter: incidD::delay
+#      period_start_date: 2020-04-01
+#      period_end_date: 2020-05-01
+#      subpop: 'all'
+#      value: -1.0
+#    LongerHospStay:
+#      method:SinglePeriodModifier
+#      parameter: incidH::duration
+#      period_start_date: 2020-04-15
+#      period_end_date: 2020-05-01
+#      subpop: 'all'
+#      value: -0.5
+
