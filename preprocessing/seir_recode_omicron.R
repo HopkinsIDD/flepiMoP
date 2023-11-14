@@ -28,6 +28,7 @@ option_list <- list(
   optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', default = Sys.getenv("FLEPI_PATH", "flepiMoP/"), help="path to the flepiMoP directory"),
   optparse::make_option(c("-v", "--recode_variant"), action="store", type='character', default = Sys.getenv("RECODE_VAR", "OMICRON"), help="variant you want to change all variant_types to"),
   optparse::make_option(c("--in_filename"), action="store", type='character', default = Sys.getenv("IN_FILENAME"), help="seir file global intermediate name"), # This is the CONTINUED SEIR filename
+  optparse::make_option(c("--in_seed_filename"), action="store", type='character', default = Sys.getenv("IN_SEED_FILENAME"), help="seed file global intermediate name"), # This is the CONTINUED SEED filename
   optparse::make_option(c("--init_filename"), action="store", type='character', default = Sys.getenv("INIT_FILENAME"), help="init file global intermediate name") # This is the new init filename
   )
 opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
@@ -62,6 +63,12 @@ compartment_tracts <- names(res_config$compartments)
 
 # new config start date
 transition_date <- lubridate::as_date(config$start_date) 
+print(opt$init_filename)
+
+# seir file from continued run
+continued_seir <- arrow::read_parquet(opt$init_filename)
+head(continued_seir)
+unique(continued_seir$mc_variant_type)
 
 # seir file from continued run
 continued_seir <- arrow::read_parquet(opt$in_filename) 
@@ -75,9 +82,20 @@ seir_dt <- continued_seir %>% mutate(date = lubridate::as_date(date))  %>%
   mutate(mc_variant_type = opt$recode_variant) %>%
   group_by(across(c(-value))) %>%
   summarise(value = sum(value, na.rm = TRUE)) %>%  
-  dplyr::mutate(mc_name = paste(mc_infection_stage, mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_"))
+  dplyr::mutate(mc_name = paste(mc_infection_stage, mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
   pivot_wider(names_from = geoid, values_from = value) 
   
+
+# PULL SEED FILES -------------------------------------------------------------------
+## Read in SEED files from resume, and remove other variants
+
+# seir file from continued run
+continued_seed <- readr::read_csv(opt$in_filename) 
+
+# remove all but Omicron
+seed_dt <- continued_seed %>% mutate(date = lubridate::as_date(date))  %>%
+  filter(destination_variant_type == "OMICRON")
+
 
 
 # SAVE --------------------------------------------------------------------
@@ -89,6 +107,13 @@ arrow::write_parquet(seir_dt, new_init_file)
 
 cat(paste0("\nWriting modified init file to: \n  -- ", new_init_file, "\n\n"))
 
+  
+# rewrite to SAME seed file
+rewrite_seed_filename <- opt$in_seed_filename
+
+write.csv(seed_dt, rewrite_seed_filename,row.names = FALSE)
+
+cat(paste0("\nWriting modified seed file to: \n  -- ", rewrite_seed_filename, "\n\n"))
 
 
 
