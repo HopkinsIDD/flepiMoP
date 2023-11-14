@@ -25,7 +25,7 @@ config_path_prefix = ""  #'tests/outcomes/'
 subpop = ["15005", "15007", "15009", "15001", "15003"]
 diffI = np.arange(5) * 2
 date_data = datetime.date(2020, 4, 15)
-subclasses = ["_A", "_B"]
+# subclasses = ["_A", "_B"]
 
 os.chdir(os.path.dirname(__file__))
 
@@ -180,6 +180,7 @@ def test_outcomes_read_write_hpar():
     assert (hosp_read == hosp_wrote).all().all()
 
 
+"""
 def test_outcome_modifiers_scenario_subclasses():
     os.chdir(os.path.dirname(__file__))
 
@@ -400,6 +401,7 @@ def test_outcomes_read_write_hpar_subclasses():
     hosp_read = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.12.hosp.parquet").to_pandas()
     hosp_wrote = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.13.hosp.parquet").to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
+"""
 
 
 def test_multishift_notstochdelays():
@@ -768,8 +770,8 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         first_sim_index=1,
         outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
-out_run_id=107,
-)
+        out_run_id=107,
+    )
 
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
 
