@@ -32,8 +32,11 @@ option_list = list(
     optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
     optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
     optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
-    optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid")
+    optparse::make_option(c("-g", "--geoid_len"), action="store", default=Sys.getenv("GEOID_LENGTH", 5), type='integer', help = "number of digits in geoid"),
+    optparse::make_option(c("-a", "--incl_aggr_likelihood"), action = "store", default = Sys.getenv("INCL_AGGR_LIKELIHOOD", TRUE), type = 'logical', help = 'Should the likelihood be calculated with the aggregate estiamtes.')
 )
+
+
 
 parser=optparse::OptionParser(option_list=option_list)
 opt = optparse::parse_args(parser)
@@ -59,6 +62,12 @@ if (opt$config == ""){
     ))
 }
 config = flepicommon::load_config(opt$config)
+
+
+if (!is.null(config$inference$incl_aggr_likelihood)){
+    print("Using config option for `incl_aggr_likelihood`.")
+    opt$incl_aggr_likelihood <- config$inference$incl_aggr_likelihood
+}
 
 
 if (!is.null(config$seeding)){
@@ -140,14 +149,14 @@ if (all(npi_scenarios == "all")){
 
 ##Creat heirarchical stats object if specified
 hierarchical_stats <- list()
-if ("hierarchical_stats_geo"%in%names(config$inference)) {
+if ("hierarchical_stats_geo" %in% names(config$inference)) {
     hierarchical_stats <- config$inference$hierarchical_stats_geo
 }
 
 
 ##Create priors if specified
 defined_priors <- list()
-if ("priors"%in%names(config$inference)) {
+if ("priors" %in% names(config$inference)) {
     defined_priors <- config$inference$priors
 }
 
@@ -201,6 +210,7 @@ if (config$inference$do_inference){
     #     variant_filename = config$seeding$variant_filename
     # )
 
+    # Read observed ground truth
     obs <- suppressMessages(
         readr::read_csv(config$inference$gt_data_path,
                         col_types = readr::cols(FIPS = readr::col_character(),
@@ -211,6 +221,20 @@ if (config$inference$do_inference){
         dplyr::right_join(tidyr::expand_grid(FIPS = unique(.$FIPS), date = unique(.$date))) %>%
         dplyr::mutate_if(is.numeric, dplyr::coalesce, 0) %>%
         dplyr::rename(!!obs_nodename := FIPS)
+
+    # add aggregate groundtruth to the obs data for the likelihood calc
+    if (opt$incl_aggr_likelihood){
+        obs <- obs %>%
+            dplyr::bind_rows(
+                obs %>%
+                    dplyr::select(date, where(is.numeric)) %>%
+                    dplyr::group_by(date) %>%
+                    summarise(across(everything(), sum)) %>% # no likelihood is calculated for time periods with missing data for any subpop
+                    mutate(source = "Total",
+                           FIPS = "Total",
+                           geoid = "Total")
+            )
+    }
 
     geonames <- unique(obs[[obs_nodename]])
 
@@ -234,7 +258,7 @@ if (config$inference$do_inference){
 
     likelihood_calculation_fun <- function(sim_hosp){
 
-        sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$time >= min(obs$date),sim_hosp$time <= max(obs$date))
+        sim_hosp <- dplyr::filter(sim_hosp, sim_hosp$time >= min(obs$date), sim_hosp$time <= max(obs$date))
         lhs <- unique(sim_hosp[[obs_nodename]])
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]
@@ -476,7 +500,7 @@ for(npi_scenario in npi_scenarios) {
                 }
                 proposed_seeding <- initial_seeding
             }
-            
+
             # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$interventions$settings, chimeric_likelihood_data)
             # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$interventions$settings, chimeric_likelihood_data)
@@ -511,6 +535,18 @@ for(npi_scenario in npi_scenarios) {
             if (config$inference$do_inference){
                 sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
                     dplyr::filter(time >= min(obs$date),time <= max(obs$date))
+
+                # add aggregate groundtruth to the obs data for the likelihood calc
+                if (opt$incl_aggr_likelihood){
+                    sim_hosp <- sim_hosp %>%
+                        dplyr::bind_rows(
+                            sim_hosp %>%
+                                dplyr::select(-tidyselect::all_of(obs_nodename), -starts_with("date")) %>%
+                                dplyr::group_by(time) %>%
+                                dplyr::summarise(dplyr::across(tidyselect::everything(), sum)) %>% # no likelihood is calculated for time periods with missing data for any subpop
+                                dplyr::mutate(!!obs_nodename := "Total")
+                        )
+                }
 
                 lhs <- unique(sim_hosp[[obs_nodename]])
                 rhs <- unique(names(data_stats))
@@ -598,7 +634,7 @@ for(npi_scenario in npi_scenarios) {
 
             effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index
             avg_global_accept_rate <- ((effective_index-1)*old_avg_global_accept_rate + proposed_likelihood_data$accept)/(effective_index) # update running average acceptance probability
-            proposed_likelihood_data$accept_avg <-avg_global_accept_rate
+            proposed_likelihood_data$accept_avg <- avg_global_accept_rate
             proposed_likelihood_data$accept_prob <- exp(min(c(0, proposed_likelihood - global_likelihood))) #acceptance probability
 
 
