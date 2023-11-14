@@ -160,7 +160,7 @@ class SeedingAndIC:
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
-                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id)
             elif method == "FromFile":
                 ic_df = read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
@@ -250,9 +250,13 @@ class SeedingAndIC:
             if self.initial_conditions_config["ignore_population_checks"].get():
                 ignore_population_checks = True
         if error and not ignore_population_checks:
-            raise ValueError(f""" geodata and initial condition do not agree on population size (see messages above). Use ignore_population_checks: True to ignore""")
+            raise ValueError(
+                f""" geodata and initial condition do not agree on population size (see messages above). Use ignore_population_checks: True to ignore"""
+            )
         elif error and ignore_population_checks:
-            print(""" Ignoring the previous population mismatch errors because you added flag 'ignore_population_checks'. This is dangerous""")
+            print(
+                """ Ignoring the previous population mismatch errors because you added flag 'ignore_population_checks'. This is dangerous"""
+            )
         return y0
 
     def draw_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
