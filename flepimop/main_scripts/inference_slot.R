@@ -429,12 +429,10 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 seir_modifiers_scenario=seir_modifiers_scenario,
                 outcome_modifiers_scenario=outcome_modifiers_scenario,
                 stoch_traj_flag=opt$stoch_traj_flag,
-                initialize=TRUE,  # Shall we pre-compute now things that are not pertubed by inference
                 run_id=opt$run_id,
                 prefix=reticulate::py_none(), # we let gempyor create setup prefix
                 inference_filepath_suffix=global_intermediate_filepath_suffix,
                 inference_filename_prefix=slotblock_filename_prefix
-                #index =
             )
         }, error = function(e) {
             print("GempyorSimulator failed to run (call on l. 426 of inference_slot.R).")
@@ -544,7 +542,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             ## Using the prefixes, create standardized files of each type (e.g., seir) of the form
             ## {variable}/{prefix}{block-1}.{run_id}.{variable}.{ext}
             ## N.B.: prefix should end in "{block}."
-            this_global_files <- inference::create_filename_list(run_id=opt$run_id,  prefix = setup_prefix, filepath_suffix=global_intermediate_filepath_suffix,filename_prefix=slotblock_filename_prefix,  index=this_index)
+            this_global_files <- inference::create_filename_list(run_id=opt$run_id,  prefix = setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=this_index)
             this_chimeric_files <- inference::create_filename_list(run_id=opt$run_id, prefix = setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=this_index)
 
             ### Do perturbations from accepted parameters to get proposed parameters ----
