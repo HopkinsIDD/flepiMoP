@@ -17,6 +17,7 @@ subpop_setup:
   geodata: geodata_2019_statelevel.csv
   mobility: mobility_2011-2015_statelevel.csv
 
+
 seeding:
   variant_filename: data/variant/variant_props_long.csv
   seeding_compartments:

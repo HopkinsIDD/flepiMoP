@@ -50,7 +50,6 @@ class GempyorSimulator:
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
-        initialize=True,
         inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
         inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
@@ -100,7 +99,7 @@ class GempyorSimulator:
             f"""  gempyor >> prefix: {self.modinf.in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
-        self.already_built = False  # whether we have already build the costly objects that need just one build
+        self.already_built = False  # whether we have already built the costly objects that need just one build
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
         self.modinf.in_prefix = new_prefix

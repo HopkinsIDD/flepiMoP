@@ -8,6 +8,7 @@ nslots: 1
 subpop_setup:
   geodata: geodata.csv
 
+
 outcomes:
   method: delayframe
   param_from_file: False

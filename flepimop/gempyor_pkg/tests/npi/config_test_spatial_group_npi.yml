@@ -20,7 +20,6 @@ subpop_setup:
   state_level: TRUE
 
 
-
 seir:
   integration:
     method: legacy
