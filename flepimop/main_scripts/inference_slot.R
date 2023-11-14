@@ -437,7 +437,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 #index =
             )
         }, error = function(e) {
-            print("GempyorSimulator failed to run (call on l. 538 of inference_slot.R).")
+            print("GempyorSimulator failed to run (call on l. 426 of inference_slot.R).")
             print("Here is all the debug information I could find:")
             for(m in reticulate::py_last_error()) cat(m)
             stop("GempyorSimulator failed to run... stopping")
@@ -623,7 +623,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                     load_ID=TRUE,
                     sim_id2load=this_index)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 538 of inference_slot.R).")
+                print("GempyorSimulator failed to run (call on l. 620 of inference_slot.R).")
                 print("Here is all the debug information I could find:")
                 for(m in reticulate::py_last_error()) cat(m)
                 stop("GempyorSimulator failed to run... stopping")
