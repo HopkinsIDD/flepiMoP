@@ -35,9 +35,6 @@ def test_check_values():
 
         seeding[0, 0] = 1
 
-        #if np.all(seeding == 0):
-        #    warnings.warn("provided seeding has only value 0", UserWarning)
-
         if np.all(modinf.mobility.data < 1):
             warnings.warn("highest mobility value is less than 1", UserWarning)
 
@@ -119,57 +116,45 @@ def test_constant_population_rk4jit_integration_fail():
     with pytest.raises(ValueError, match=r".*with.*method.*integration.*"):
         config.set_file(f"{DATA_DIR}/config.yml")
 
-        ss = setup.SpatialSetup(
-            setup_name="test_seir",
-            geodata_file=f"{DATA_DIR}/geodata.csv",
-            mobility_file=f"{DATA_DIR}/mobility.txt",
-            popnodes_key="population",
-            nodenames_key="geoid",
-        )
-
         first_sim_index = 1
         run_id = "test"
         prefix = ""
-        s = setup.Setup(
-            setup_name="test_seir",
-            spatial_setup=ss,
+        modinf = model_info.ModelInfo(
+            config=config,
             nslots=1,
-            npi_scenario="None",
-            npi_config_seir=config["interventions"]["settings"]["None"],
-            parameters_config=config["seir"]["parameters"],
-            seeding_config=config["seeding"],
-            ti=config["start_date"].as_date(),
-            tf=config["end_date"].as_date(),
-            interactive=True,
+            seir_modifiers_scenario="None",
             write_csv=False,
             first_sim_index=first_sim_index,
             in_run_id=run_id,
             in_prefix=prefix,
             out_run_id=run_id,
             out_prefix=prefix,
-            dt=0.25,
-            stoch_traj_flag=True
+            stoch_traj_flag=True,
         )
-        s.integration_method = "rk4.jit"
+        modinf.seir_config["integration"]["method"] = "rk4.jit"
 
-        seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-        initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+        seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+        initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-        npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, geoids=s.spatset.nodenames)
+        npi = NPI.NPIBase.execute(
+            npi_config=modinf.npi_config_seir,
+            modinf=modinf,
+            modifiers_library=modinf.seir_modifiers_library,
+            subpops=modinf.subpop_struct.subpop_names,
+        )
 
-        params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
-        params = s.parameters.parameters_reduce(params, npi)
-
+        params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+        params = modinf.parameters.parameters_reduce(params, npi)
         (
             unique_strings,
             transition_array,
             proportion_array,
             proportion_info,
-        ) = s.compartments.get_transition_array()
-        parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+        ) = modinf.compartments.get_transition_array()
+        parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
         states = seir.steps_SEIR(
-            s,
+            modinf,
             parsed_parameters,
             transition_array,
             proportion_array,
@@ -179,61 +164,60 @@ def test_constant_population_rk4jit_integration_fail():
             seeding_amounts,
         )
 
-def test_constant_population_rk4jit_integration():
-    #config.set_file(f"{DATA_DIR}/config.yml")
-    config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
+        completepop = modinf.subpop_pop.sum()
+        origpop = modinf.subpop_pop
+        for it in range(modinf.n_days):
+            totalpop = 0
+            for i in range(modinf.nsubpops):
+                totalpop += states[0].sum(axis=1)[it, i]
+                assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+            assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
-    ss = setup.SpatialSetup(
-        setup_name="test_seir",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
-        nodenames_key="geoid",
-    )
+
+def test_constant_population_rk4jit_integration():
+    # config.set_file(f"{DATA_DIR}/config.yml")
+    config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
 
     first_sim_index = 1
     run_id = "test"
     prefix = ""
-    s = setup.Setup(
-        setup_name="test_seir",
-        spatial_setup=ss,
+    modinf = model_info.ModelInfo(
+        config=config,
         nslots=1,
-        npi_scenario="None",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seeding_config=config["seeding"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
-        interactive=True,
+        seir_modifiers_scenario="None",
         write_csv=False,
         first_sim_index=first_sim_index,
         in_run_id=run_id,
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        dt=0.25,
-        stoch_traj_flag=False
-        )
-    #s.integration_method = "rk4.jit"
-    assert s.integration_method == "rk4.jit"
+        stoch_traj_flag=False,
+    )
+    # s.integration_method = "rk4.jit"
+    assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = s.seedingAndIC.load_seeding(sim_id=100, setup=s)
-    initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+    seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id=100, setup=modinf)
+    initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-    npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, geoids=s.spatset.nodenames)
+    npi = NPI.NPIBase.execute(
+        npi_config=modinf.npi_config_seir,
+        modinf=modinf,
+        modifiers_library=modinf.seir_modifiers_library,
+        subpops=modinf.subpop_struct.subpop_names,
+    )
 
-    params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
-    params = s.parameters.parameters_reduce(params, npi)
+    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(params, npi)
 
     (
         unique_strings,
         transition_array,
         proportion_array,
         proportion_info,
-    ) = s.compartments.get_transition_array()
-    parsed_parameters = s.compartments.parse_parameters(params, s.parameters.pnames, unique_strings)
+    ) = modinf.compartments.get_transition_array()
+    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
     states = seir.steps_SEIR(
-        s,
+        modinf,
         parsed_parameters,
         transition_array,
         proportion_array,
@@ -242,14 +226,15 @@ def test_constant_population_rk4jit_integration():
         seeding_data,
         seeding_amounts,
     )
-    completepop = s.popnodes.sum()
-    origpop = s.popnodes
-    for it in range(s.n_days):
+    completepop = modinf.subpop_pop.sum()
+    origpop = modinf.subpop_pop
+    for it in range(modinf.n_days):
         totalpop = 0
-        for i in range(s.nnodes):
+        for i in range(modinf.nsubpops):
             totalpop += states[0].sum(axis=1)[it, i]
             assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
+
 
 def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     os.chdir(os.path.dirname(__file__))
