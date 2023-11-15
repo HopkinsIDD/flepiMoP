@@ -81,19 +81,6 @@ seir_dt <- continued_seir %>% mutate(date = lubridate::as_date(date))  %>%
   summarise(value = sum(value, na.rm = TRUE)) %>%  
   dplyr::mutate(mc_name = paste(mc_infection_stage, mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
   pivot_wider(names_from = geoid, values_from = value) 
-  
-
-# PULL SEED FILES -------------------------------------------------------------------
-## Read in SEED files from resume, and remove other variants
-
-# seir file from continued run
-continued_seed <- readr::read_csv(opt$in_seed_filename) 
-
-# remove all but Omicron
-seed_dt <- continued_seed %>% mutate(date = lubridate::as_date(date))  %>%
-  filter(destination_variant_type == "OMICRON") %>%
-  mutate(source_variant_type = "OMICRON")  
-
 
 # SAVE --------------------------------------------------------------------
   
@@ -104,6 +91,24 @@ arrow::write_parquet(seir_dt, new_init_file)
 
 cat(paste0("\nWriting modified init file to: \n  -- ", new_init_file, "\n\n"))
 
+  
+
+# PULL SEED FILES -------------------------------------------------------------------
+## Read in SEED files from resume, and remove other variants
+
+# variants to keep 
+variant_comp <- config$compartments$variant_type
+
+# seed file from continued run
+continued_seed <- readr::read_csv(opt$in_seed_filename) 
+
+# remove all but Omicron
+seed_dt <- continued_seed %>% mutate(date = lubridate::as_date(date))  %>%
+  filter(destination_variant_type %in% variant_comp) %>%
+  mutate(source_variant_type = opt$recode_variant)  
+
+
+# SAVE --------------------------------------------------------------------
   
 # rewrite to SAME seed file
 rewrite_seed_filename <- opt$in_seed_filename
