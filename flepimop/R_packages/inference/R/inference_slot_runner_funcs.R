@@ -740,7 +740,7 @@ initialize_mcmc_first_block <- function(
             tryCatch({
                 gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 748 of inference_slot_runner_funcs.R).")
+                print("GempyorSimulator failed to run (call on l. 740 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
                 for(m in reticulate::py_last_error()) cat(m)
                 stop("GempyorSimulator failed to run... stopping")
@@ -758,7 +758,7 @@ initialize_mcmc_first_block <- function(
             tryCatch({
                 gempyor_inference_runner$one_simulation(sim_id2write = block - 1, load_ID = TRUE, sim_id2load = block - 1)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 766 of inference_slot_runner_funcs.R).")
+                print("GempyorSimulator failed to run (call on l. 758 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
                 for(m in reticulate::py_last_error()) cat(m)
                 stop("GempyorSimulator failed to run... stopping")
