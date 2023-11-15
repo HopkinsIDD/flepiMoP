@@ -70,9 +70,6 @@ continued_seir <- arrow::read_parquet(opt$init_filename)
 head(continued_seir)
 unique(continued_seir$mc_variant_type)
 
-# seir file from continued run
-continued_seir <- arrow::read_parquet(opt$in_filename) 
-
 # subset at start date, smoosh all to Omicron
 seir_dt <- continued_seir %>% mutate(date = lubridate::as_date(date))  %>%
   select(-mc_name) %>%
@@ -90,12 +87,12 @@ seir_dt <- continued_seir %>% mutate(date = lubridate::as_date(date))  %>%
 ## Read in SEED files from resume, and remove other variants
 
 # seir file from continued run
-continued_seed <- readr::read_csv(opt$in_filename) 
+continued_seed <- readr::read_csv(opt$in_seed_filename) 
 
 # remove all but Omicron
 seed_dt <- continued_seed %>% mutate(date = lubridate::as_date(date))  %>%
-  filter(destination_variant_type == "OMICRON")
-
+  filter(destination_variant_type == "OMICRON") %>%
+  mutate(source_variant_type = "OMICRON")  
 
 
 # SAVE --------------------------------------------------------------------
