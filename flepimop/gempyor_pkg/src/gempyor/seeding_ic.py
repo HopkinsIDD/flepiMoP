@@ -50,8 +50,8 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
                 )
                 source_dict = {grp_name: row[f"source_{grp_name}"] for grp_name in cmp_grp_names}
                 destination_dict = {grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names}
-                seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(source_dict)
-                seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict)
+                seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(source_dict, error_info = f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)")
+                seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict, error_info = f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)")
                 seeding_dict["seeding_subpops"][idx] = setup.subpop_struct.subpop_names.index(row["subpop"])
                 seeding_amounts[idx] = amounts[idx]
                 #id_seed+=1

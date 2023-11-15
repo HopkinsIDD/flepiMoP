@@ -283,7 +283,7 @@ class Compartments:
 
         return
 
-    def get_comp_idx(self, comp_dict: dict) -> int:
+    def get_comp_idx(self, comp_dict: dict, error_info: str = "no information") -> int:
         """
         return the index of a compartiment given a filter. The filter has to isolate a compartiment,
         but it ignore columns that don't exist:
@@ -294,7 +294,7 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}"
+                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'." 
             )
         return comp_idx[0]
 
