@@ -303,13 +303,13 @@ class SeedingAndIC:
             raise NotImplementedError(f"unknown seeding method [got: {method}]")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
-        print(seeding.shape)
+        #print(seeding.shape)
         seeding = seeding.sort_values(by="date", axis="index").reset_index()
-        print(seeding)
+        #print(seeding)
         mask = (seeding['date'].dt.date > setup.ti) & (seeding['date'].dt.date <= setup.tf)
         seeding = seeding.loc[mask].reset_index()
-        print(seeding.shape)
-        print(seeding)
+        #print(seeding.shape)
+        #print(seeding)
         
         # TODO: print.
 
