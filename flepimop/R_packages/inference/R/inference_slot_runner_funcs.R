@@ -634,7 +634,9 @@ initialize_mcmc_first_block <- function(
     ## seed
     if (!is.null(config$seeding)){
         if ("seed_filename" %in% global_file_names) {
+          print("need to create seeding directory")
             if(!file.exists(config$seeding$lambda_file)) {
+              print("Will create seeding lambda file using flepimop/main_scripts/create_seeding.R")
                 err <- system(paste(
                     opt$rpath,
                     paste(opt$flepi_path, "flepimop", "main_scripts", "create_seeding.R", sep = "/"),
@@ -644,6 +646,7 @@ initialize_mcmc_first_block <- function(
                     stop("Could not run seeding")
                 }
             }
+          print("Will copy seeding lambda file to the seeding directory")
             err <- !(file.copy(config$seeding$lambda_file, global_files[["seed_filename"]]))
             if (err != 0) {
                 stop("Could not copy seeding")
