@@ -476,7 +476,7 @@ class Compartments:
                 f = sp.sympify(formula, locals=symbolic_parameters_namespace)
                 parsed_formulas.append(f)
             except Exception as e:
-                print(f"Cannot parse formula: '{formula}' from paramters {parameter_names}")
+                print(f"Cannot parse formula: '{formula}' from parameters {parameter_names}")
                 raise (e)  # Print the error message for debugging
 
         # the list order needs to be right.
