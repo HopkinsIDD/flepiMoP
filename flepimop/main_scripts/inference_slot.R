@@ -124,7 +124,8 @@ suppressMessages(
             config$data_path,
             config$subpop_setup$geodata, sep = "/"
         ),
-        subpop_len = opt$subpop_len
+        subpop_len = ifelse(config$name == "USA", opt$subpop_len, 0),
+        state_name = ifelse(config$name == "USA" & state_level == TRUE, TRUE, FALSE)
     )
 )
 obs_subpop <- "subpop"
