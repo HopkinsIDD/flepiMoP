@@ -326,14 +326,7 @@ class SeedingAndIC:
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
 
     def load_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
-        method = "NoSeeding"
-
-        if self.seeding_config is not None and "method" in self.seeding_config.keys():
-            method = self.seeding_config["method"].as_str()
-        if method not in ["FolderDraw", "SetInitialConditions", "InitialConditionsFolderDraw", "NoSeeding", "FromFile"]:
-            raise NotImplementedError(
-                f"Seeding method in inference run must be FolderDraw, SetInitialConditions, FromFile or InitialConditionsFolderDraw [got: {method}]"
-            )
+        """ only difference with draw seeding is that the sim_id is now sim_id2load"""
         return self.draw_seeding(sim_id=sim_id, setup=setup)
 
     def load_ic(self, sim_id: int, setup) -> nb.typed.Dict:
