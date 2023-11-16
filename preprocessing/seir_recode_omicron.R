@@ -26,7 +26,7 @@ option_list <- list(
   optparse::make_option(c("--res_config"), action = "store", default = Sys.getenv("RESUMED_CONFIG_PATH", NA), type = "character", help = "path to the previous config file"),
   optparse::make_option(c("-c", "--config"), action = "store", default = Sys.getenv("CONFIG_PATH"), type = "character", help = "path to the config file"),
   optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', default = Sys.getenv("FLEPI_PATH", "flepiMoP/"), help="path to the flepiMoP directory"),
-  optparse::make_option(c("-v", "--recode_variant"), action="store", type='character', default = Sys.getenv("RECODE_VAR", "OMICRON"), help="variant you want to change all variant_types to"),
+  optparse::make_option(c("-v", "--recode_variant"), action="store", type='character', default = Sys.getenv("RECODE_VAR", "DELTA"), help="variant you want to change all variant_types to"),
   optparse::make_option(c("--in_filename"), action="store", type='character', default = Sys.getenv("IN_FILENAME"), help="seir file global intermediate name"), # This is the CONTINUED SEIR filename
   optparse::make_option(c("--in_seed_filename"), action="store", type='character', default = Sys.getenv("IN_SEED_FILENAME"), help="seed file global intermediate name"), # This is the CONTINUED SEED filename
   optparse::make_option(c("--init_filename"), action="store", type='character', default = Sys.getenv("INIT_FILENAME"), help="init file global intermediate name") # This is the new init filename
@@ -76,7 +76,8 @@ seir_dt <- continued_seir %>% mutate(date = lubridate::as_date(date))  %>%
   filter(mc_value_type == "prevalence") %>%
   filter(date == transition_date) %>%
   pivot_longer(cols = -c(starts_with("mc_"), date), names_to = "geoid", values_to = "value") %>%
-  mutate(mc_variant_type = opt$recode_variant) %>%
+  #mutate(mc_variant_type = opt$recode_variant) %>%
+  mutate(mc_variant_type = ifelse(mc_variant_type %in% c("WILD","ALPHA"),"DELTA",mc_variant_type)) %>% 
   group_by(across(c(-value))) %>%
   summarise(value = sum(value, na.rm = TRUE)) %>%  
   dplyr::mutate(mc_name = paste(mc_infection_stage, mc_vaccination_stage, mc_variant_type, mc_age_strata, sep = "_")) %>%
