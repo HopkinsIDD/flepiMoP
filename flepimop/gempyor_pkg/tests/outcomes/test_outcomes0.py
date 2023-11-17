@@ -25,7 +25,6 @@ config_path_prefix = ""  #'tests/outcomes/'
 geoid = ["15005", "15007", "15009", "15001", "15003"]
 diffI = np.arange(5) * 2
 date_data = datetime.date(2020, 4, 15)
-#subclasses = ["_A", "_B"]
 
 os.chdir(os.path.dirname(__file__))
 

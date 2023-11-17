@@ -170,19 +170,20 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                     #        else:
                     #            parameters[class_name]["source"] = src_name
                     parameters[new_comp]["source"] = src_name
-                else:
-                    # else:
-                    #    if subclasses != [""]:
-                    #        raise ValueError("Subclasses not compatible with outcomes from compartments ")
-                    #    elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
-                    #        parameters[class_name]["source"] = dict(src_name)
+                # else:
+                # else:
+                #    if subclasses != [""]:
+                #        raise ValueError("Subclasses not compatible with outcomes from compartments ")
+                #    elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
+                #        parameters[class_name]["source"] = dict(src_name)
 
-                    if ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
-                        parameters[new_comp]["source"] = dict(src_name)
-                    else:
-                        raise ValueError(
-                            f"unsure how to read outcome {new_comp}: not a str, nor an incidence or prevalence: {src_name}"
-                        )
+                elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
+                    parameters[new_comp]["source"] = dict(src_name)
+
+                else:
+                    raise ValueError(
+                        f"unsure how to read outcome {new_comp}: not a str, nor an incidence or prevalence: {src_name}"
+                    )
 
                 parameters[new_comp]["probability"] = outcomes_config[new_comp]["probability"]["value"]
                 if outcomes_config[new_comp]["probability"]["modifier_parameter"].exists():
@@ -251,17 +252,6 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             logging.debug(
                                 f"*NOT* Using 'param_from_file' for relative probability in outcome  {new_comp}"
                             )
-
-                # We need to compute sum across classes if there is subclasses
-                # if subclasses != [""]:
-                #    parameters[new_comp] = {}
-                #    parameters[new_comp]["sum"] = [new_comp + c for c in subclasses]
-                #    if outcomes_config[new_comp]["duration"].exists():
-                #        outcome_prevalence_name = new_comp + "_curr"
-                #        if outcomes_config[new_comp]["duration"]["name"].exists():
-                #            outcome_prevalence_name = outcomes_config[new_comp]["duration"]["name"].as_str()
-                #        parameters[outcome_prevalence_name] = {}
-                #        parameters[outcome_prevalence_name]["sum"] = [outcome_prevalence_name + c for c in subclasses]
 
             elif outcomes_config[new_comp]["sum"].exists():
                 parameters[new_comp] = {}
