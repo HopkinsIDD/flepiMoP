@@ -151,111 +151,107 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
                     )
 
-        subclasses = [""]
-        if modinf.outcomes_config["subclasses"].exists():
-            subclasses = modinf.outcomes_config["subclasses"].get()
+        # subclasses = [""]
+        # if modinf.outcomes_config["subclasses"].exists():
+        #    subclasses = modinf.outcomes_config["subclasses"].get()
 
         parameters = {}
         for new_comp in outcomes_config:
             if outcomes_config[new_comp]["source"].exists():
-                for subclass in subclasses:
-                    class_name = new_comp + subclass
-                    parameters[class_name] = {}
-                    # Read the config for this compartement
-                    src_name = outcomes_config[new_comp]["source"].get()
-                    if isinstance(src_name, str):
-                        if src_name != "incidI":
-                            parameters[class_name]["source"] = src_name + subclass
-                        else:
-                            parameters[class_name]["source"] = src_name
-                    else:
-                        if subclasses != [""]:
-                            raise ValueError("Subclasses not compatible with outcomes from compartments ")
-                        elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
-                            parameters[class_name]["source"] = dict(src_name)
-                        else:
-                            raise ValueError(
-                                f"unsure how to read outcome {class_name}: not a str, nor an incidence or prevalence: {src_name}"
-                            )
+                # for subclass in subclasses:
+                #    class_name = new_comp + subclass
+                #    parameters[class_name] = {}
+                parameters[new_comp] = {}
+                # Read the config for this compartement
+                src_name = outcomes_config[new_comp]["source"].get()
+                if isinstance(src_name, str):
+                    #    if src_name != "incidI":
+                    #        parameters[class_name]["source"] = src_name + subclass
+                    #        else:
+                    #            parameters[class_name]["source"] = src_name
+                    parameters[new_comp]["source"] = src_name
+                # else:
+                # else:
+                #    if subclasses != [""]:
+                #        raise ValueError("Subclasses not compatible with outcomes from compartments ")
+                #    elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
+                #        parameters[class_name]["source"] = dict(src_name)
 
-                    parameters[class_name]["probability"] = outcomes_config[new_comp]["probability"]["value"]
-                    if outcomes_config[new_comp]["probability"]["modifier_parameter"].exists():
-                        parameters[class_name]["probability::npi_param_name"] = (
-                            outcomes_config[new_comp]["probability"]["modifier_parameter"].as_str().lower()
+                elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
+                    parameters[new_comp]["source"] = dict(src_name)
+
+                else:
+                    raise ValueError(
+                        f"unsure how to read outcome {new_comp}: not a str, nor an incidence or prevalence: {src_name}"
+                    )
+
+                parameters[new_comp]["probability"] = outcomes_config[new_comp]["probability"]["value"]
+                if outcomes_config[new_comp]["probability"]["modifier_parameter"].exists():
+                    parameters[new_comp]["probability::npi_param_name"] = (
+                        outcomes_config[new_comp]["probability"]["modifier_parameter"].as_str().lower()
+                    )
+                    logging.debug(
+                        f"probability of outcome {new_comp} is affected by intervention "
+                        f"named {parameters[new_comp]['probability::npi_param_name']} "
+                        f"instead of {new_comp}::probability"
+                    )
+                else:
+                    parameters[new_comp]["probability::npi_param_name"] = f"{new_comp}::probability".lower()
+
+                parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
+                if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
+                    parameters[new_comp]["delay::npi_param_name"] = (
+                        outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
+                    )
+                    logging.debug(
+                        f"delay of outcome {new_comp} is affected by intervention "
+                        f"named {parameters[new_comp]['delay::npi_param_name']} "
+                        f"instead of {new_comp}::delay"
+                    )
+                else:
+                    parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
+
+                if outcomes_config[new_comp]["duration"].exists():
+                    parameters[new_comp]["duration"] = outcomes_config[new_comp]["duration"]["value"]
+                    if outcomes_config[new_comp]["duration"]["modifier_parameter"].exists():
+                        parameters[new_comp]["duration::npi_param_name"] = (
+                            outcomes_config[new_comp]["duration"]["modifier_parameter"].as_str().lower()
                         )
                         logging.debug(
-                            f"probability of outcome {new_comp} is affected by intervention "
-                            f"named {parameters[class_name]['probability::npi_param_name']} "
-                            f"instead of {new_comp}::probability"
+                            f"duration of outcome {new_comp} is affected by intervention "
+                            f"named {parameters[new_comp]['duration::npi_param_name']} "
+                            f"instead of {new_comp}::duration"
                         )
                     else:
-                        parameters[class_name]["probability::npi_param_name"] = f"{new_comp}::probability".lower()
+                        parameters[new_comp]["duration::npi_param_name"] = f"{new_comp}::duration".lower()
 
-                    parameters[class_name]["delay"] = outcomes_config[new_comp]["delay"]["value"]
-                    if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
-                        parameters[class_name]["delay::npi_param_name"] = (
-                            outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
-                        )
-                        logging.debug(
-                            f"delay of outcome {new_comp} is affected by intervention "
-                            f"named {parameters[class_name]['delay::npi_param_name']} "
-                            f"instead of {new_comp}::delay"
+                    if outcomes_config[new_comp]["duration"]["name"].exists():
+                        parameters[new_comp]["outcome_prevalence_name"] = (
+                            #    outcomes_config[new_comp]["duration"]["name"].as_str() + subclass
+                            outcomes_config[new_comp]["duration"]["name"].as_str()
                         )
                     else:
-                        parameters[class_name]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
-
-                    if outcomes_config[new_comp]["duration"].exists():
-                        parameters[class_name]["duration"] = outcomes_config[new_comp]["duration"]["value"]
-                        if outcomes_config[new_comp]["duration"]["modifier_parameter"].exists():
-                            parameters[class_name]["duration::npi_param_name"] = (
-                                outcomes_config[new_comp]["duration"]["modifier_parameter"].as_str().lower()
+                        # parameters[class_name]["outcome_prevalence_name"] = new_comp + "_curr" + subclass
+                        parameters[new_comp]["outcome_prevalence_name"] = new_comp + "_curr"
+                if modinf.outcomes_config["param_from_file"].exists():
+                    if modinf.outcomes_config["param_from_file"].get():
+                        rel_probability = branching_data[
+                            (branching_data["outcome"] == new_comp)
+                            & (branching_data["quantity"] == "relative_probability")
+                        ].copy(deep=True)
+                        if len(rel_probability) > 0:
+                            logging.debug(f"Using 'param_from_file' for relative probability in outcome {new_comp}")
+                            # Sort it in case the relative probablity file is mispecified
+                            rel_probability.subpop = rel_probability.subpop.astype("category")
+                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(
+                                modinf.subpop_struct.subpop_names
                             )
+                            rel_probability = rel_probability.sort_values(["subpop"])
+                            parameters[new_comp]["rel_probability"] = rel_probability["value"].to_numpy()
+                        else:
                             logging.debug(
-                                f"duration of outcome {new_comp} is affected by intervention "
-                                f"named {parameters[class_name]['duration::npi_param_name']} "
-                                f"instead of {new_comp}::duration"
+                                f"*NOT* Using 'param_from_file' for relative probability in outcome  {new_comp}"
                             )
-                        else:
-                            parameters[class_name]["duration::npi_param_name"] = f"{new_comp}::duration".lower()
-
-                        if outcomes_config[new_comp]["duration"]["name"].exists():
-                            parameters[class_name]["outcome_prevalence_name"] = (
-                                outcomes_config[new_comp]["duration"]["name"].as_str() + subclass
-                            )
-                        else:
-                            parameters[class_name]["outcome_prevalence_name"] = new_comp + "_curr" + subclass
-                    if modinf.outcomes_config["param_from_file"].exists():
-                        if modinf.outcomes_config["param_from_file"].get():
-                            rel_probability = branching_data[
-                                (branching_data["outcome"] == class_name)
-                                & (branching_data["quantity"] == "relative_probability")
-                            ].copy(deep=True)
-                            if len(rel_probability) > 0:
-                                logging.debug(
-                                    f"Using 'param_from_file' for relative probability in outcome {class_name}"
-                                )
-                                # Sort it in case the relative probablity file is mispecified
-                                rel_probability.subpop = rel_probability.subpop.astype("category")
-                                rel_probability.subpop = rel_probability.subpop.cat.set_categories(
-                                    modinf.subpop_struct.subpop_names
-                                )
-                                rel_probability = rel_probability.sort_values(["subpop"])
-                                parameters[class_name]["rel_probability"] = rel_probability["value"].to_numpy()
-                            else:
-                                logging.debug(
-                                    f"*NOT* Using 'param_from_file' for relative probability in outcome  {class_name}"
-                                )
-
-                # We need to compute sum across classes if there is subclasses
-                if subclasses != [""]:
-                    parameters[new_comp] = {}
-                    parameters[new_comp]["sum"] = [new_comp + c for c in subclasses]
-                    if outcomes_config[new_comp]["duration"].exists():
-                        outcome_prevalence_name = new_comp + "_curr"
-                        if outcomes_config[new_comp]["duration"]["name"].exists():
-                            outcome_prevalence_name = outcomes_config[new_comp]["duration"]["name"].as_str()
-                        parameters[outcome_prevalence_name] = {}
-                        parameters[outcome_prevalence_name]["sum"] = [outcome_prevalence_name + c for c in subclasses]
 
             elif outcomes_config[new_comp]["sum"].exists():
                 parameters[new_comp] = {}
@@ -506,7 +502,7 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
         raise ValueError("Cannot distinguish is SEIR sourced outcomes needs incidence or prevalence")
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
-    #diffI.drop(["mc_value_type"], inplace=True, axis=1)
+    # diffI.drop(["mc_value_type"], inplace=True, axis=1)
     filters = filters[vtype]
 
     incidI_arr = np.zeros((len(dates), len(subpops)), dtype=int)
@@ -517,8 +513,8 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
         df = df[df[f"mc_{mc_type}"].isin(mc_value)]
     for mcn in df["mc_name"].unique():
         new_df = df[df["mc_name"] == mcn]
-        new_df = new_df.drop(["date"]+[c for c in new_df.columns if "mc_" in c], axis=1)
-        #new_df = new_df.drop("date", axis=1)
+        new_df = new_df.drop(["date"] + [c for c in new_df.columns if "mc_" in c], axis=1)
+        # new_df = new_df.drop("date", axis=1)
         incidI_arr = incidI_arr + new_df.to_numpy()
     return incidI_arr
 

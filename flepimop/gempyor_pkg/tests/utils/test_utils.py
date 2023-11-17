@@ -2,6 +2,7 @@ import pytest
 import datetime
 import os
 import pandas as pd
+
 #import dask.dataframe as dd
 import pyarrow as pa
 import time
@@ -83,9 +84,5 @@ def test_get_truncated_normal_success():
 
 def test_get_log_normal_success():
 	utils.get_log_normal(meanlog=0, sdlog=1)
-
-
-
-
 
 
