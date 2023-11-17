@@ -32,9 +32,6 @@ def create_file_name_without_extension(
     run_id, prefix, index, ftype, inference_filepath_suffix, inference_filename_prefix, create_directory=True
 ):
     if create_directory:
-        os.makedirs(create_dir_name(run_id, prefix, ftype), exist_ok=True)
-# hardcoded, target dir to be modified later
-    return "model_output/%s/%s%09d.%s.%s" % (ftype, prefix, index, run_id, ftype)
         os.makedirs(
             create_dir_name(run_id, prefix, ftype, inference_filepath_suffix, inference_filename_prefix), exist_ok=True
         )
