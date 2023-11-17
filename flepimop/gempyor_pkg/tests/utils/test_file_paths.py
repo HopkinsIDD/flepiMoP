@@ -2,6 +2,7 @@ import pytest
 import datetime
 import os
 from mock import MagicMock
+
 from typing import Callable, Any
 from gempyor import file_paths
 

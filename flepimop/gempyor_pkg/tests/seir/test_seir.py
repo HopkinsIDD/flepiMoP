@@ -149,6 +149,7 @@ def test_constant_population_rk4jit_integration_fail():
         params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
         params = modinf.parameters.parameters_reduce(params, npi)
 
+
         (
             unique_strings,
             transition_array,
@@ -167,6 +168,7 @@ def test_constant_population_rk4jit_integration_fail():
             seeding_data,
             seeding_amounts,
         )
+
         completepop = modinf.subpop_pop.sum()
         origpop = modinf.subpop_pop
         for it in range(modinf.n_days):
