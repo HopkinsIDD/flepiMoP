@@ -17,7 +17,6 @@ Imports:
     stringr,
     data.table,
     rlang,
-    cdlTools,
     ggraph,
     plyr,
     doParallel,

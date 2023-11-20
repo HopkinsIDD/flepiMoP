@@ -587,7 +587,6 @@ print_header <- function (
 #' @param census_year integer(year)
 #' @param modeled_states vector of sub-populations (i.e., locations) that will be modeled. This can be different from the subpop IDs. For the US, state abbreviations are often used. This component is only used for filtering the data to the set of populations.
 #' @param geodata_file path to file relative to data_path Geodata is a .csv with column headers, with at least two columns: subpop and popnodes
-#' @param popnodes is the name of a column in geodata that specifies the population of the subpop column
 #' @param subpop is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
 #' @param mobility_file path to file relative to data_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the subpop column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
 #' @param state_level whether this is a state-level run
@@ -604,12 +603,13 @@ print_subpop_setup <- function (
         mobility_file = "mobility.csv",
         state_level = TRUE) {
 
+    modeled_states_ <- ifelse(!is.null(modeled_states),
+                              paste0("  modeled_states:\n",
+                                     paste(as.vector(sapply(modeled_states, function(x) paste0("     - ", x, "\n"))), collapse = "")),"")
     cat(
         paste0("subpop_setup:\n",
-               "  census_year: ", census_year, "\n"),
-        ifelse(!is.null(modeled_states),
-                paste0("  modeled_states:\n",
-               paste(as.vector(sapply(modeled_states, function(x) paste0("     - ", x, "\n"))), collapse = "")),""),
+               "  census_year: ", census_year, "\n",
+               modeled_states_),
         paste0("\n",
                "  geodata: ", geodata_file, "\n",
                "  mobility: ", mobility_file, "\n",
@@ -617,6 +617,7 @@ print_subpop_setup <- function (
                "\n")
     )
 }
+
 
 
 
@@ -754,7 +755,122 @@ print_seeding <- function(method = "FolderDraw",
 }
 
 
+#' Print Seeding Section of the config
+#' @description Prints the seeding section of the configuration file
+#' @param seasonid vector of IDs pertaining to each season
+#' @param method There are two different seeding methods: 1) based on air importation (FolderDraw) and 2) based on earliest identified cases (PoissonDistributed). FolderDraw is required if the importation section is present and requires folder_path. Otherwise, put PoissonDistributed, which requires lambda_file.
+#' @param seeding_file_type indicates which seeding file type the SEIR model will look for, "seed", which is generated from inference::create_seeding.R, or "impa", which refers to importation
+#' @param folder_path path to folder where importation inference files will be saved
+#' @param lambda_file path to seeding file
+#' @param population_file
+#' @param date_sd standard deviation for the proposal value of the seeding date, in number of days (date_sd )
+#' @param amount_sd
+#' @param variant_filename path to file with variant proportions per day per variant. Variant names: 'wild', 'alpha', 'delta'
+#' @param compartment whether to print config with compartments
+#' @param variant_compartments vector of variant compartment names
+#' @param vaccine_compartments
+#' @param age_strata_seed
+#' @param seeding_outcome
+#' @param seeding_inflation_ratio
+#' @param capitalize_variants
+#' @param additional_seeding
+#' @param start_date_addedseed
+#' @param end_date_addedseed
+#' @param added_lambda_file
+#' @param filter_previous_seedingdates
+#' @param filter_remove_variants
+#' @param fix_original_seeding
+#' @param fix_added_seeding
+#'
+#' @details
+#' ## The model performns inference on the seeding date and initial number of seeding infections in each subpop with the default settings
+#' ## The method for determining the proposal distribution for the seeding amount is hard-coded in the inference package (R/pkgs/inference/R/functions/perturb_seeding.R). It is pertubed with a normal distribution where the mean of the distribution 10 times the number of confirmed cases on a given date and the standard deviation is 1.
+#'
+#' @return
+#'
+#' @export
+#'
+#' @examples
+#'
+print_seeding_multiseason <- function(
+        seasonid = NA,
+        method = "FolderDraw",
+        seeding_file_type = "seed",
+        lambda_file = "data/seeding.csv",
+        use_pop_seeding = FALSE,
+        population_file = "data/seeding_agestrat.csv",
+        date_sd = 1,
+        amount_sd = 1,
+        variant_filename = "data/variant/variant_props_long.csv",
+        compartment = TRUE,
+        variant_compartments = c("WILD", "ALPHA", "DELTA"),
+        vaccine_compartments = "unvaccinated",
+        compartment_combos = compartment_combos,
+        age_strata_seed = "0_64",
+        seeding_outcome = NULL, # incidH
+        seeding_inflation_ratio = NULL, # 200
+        capitalize_variants = TRUE,
+        additional_seeding = FALSE,
+        start_date_addedseed = NULL,
+        end_date_addedseed = NULL,
+        added_lambda_file = "data/seeding_territories_R17_phase2_added.csv",
+        filter_previous_seedingdates = FALSE,
+        filter_remove_variants = c("WILD"),
+        fix_original_seeding = FALSE,
+        fix_added_seeding = FALSE
+){
 
+    if (capitalize_variants) {
+        variant_compartments <- stringr::str_to_upper(variant_compartments)
+    }
+
+    seeding_comp <- "seeding:\n"
+    age_strata_seed <- paste0("age", age_strata_seed)
+    seeding_comp <- paste0(seeding_comp,
+                           "  variant_filename: ", variant_filename, "\n",
+                           "  seeding_compartments:\n")
+
+    if (all(is.na(seasonid))){
+        seasonidname <- seasonid <- ""
+    } else {
+        seasonidname <- paste0("_", seasonid)
+    }
+
+    for(s in 1:length(seasonid)){
+
+        var_comparts <- compartment_combos %>% filter(seasonid == seasonid[s]) %>% pull(variant)
+        for (i in 1:length(var_comparts)) {
+            seeding_comp <- paste0(
+                seeding_comp,
+                "    ", var_comparts[i], seasonidname[s], ":\n",
+                "      source_compartment: [\"S\", \"", vaccine_compartments, "\", \"",
+                var_comparts[1], "\", \"", age_strata_seed, "\", \"", seasonid[s],"\"]\n",
+                "      destination_compartment: [\"E\", \"", vaccine_compartments, "\", \"",
+                var_comparts[i], "\", \"", age_strata_seed, "\", \"", seasonid[s],"\"]\n")
+        }
+    }
+
+    seeding <- paste0(seeding_comp,
+                      "  method: ", method, "\n",
+                      "  seeding_file_type: ", seeding_file_type, "\n",
+                      if(!is.null(seeding_outcome)) paste0("  seeding_outcome: ",seeding_outcome, "\n"),
+                      if(!is.null(seeding_inflation_ratio)) paste0("  seeding_inflation_ratio: ", seeding_inflation_ratio, "\n"),
+                      "  lambda_file: ", lambda_file, "\n",
+                      if (use_pop_seeding) paste0("  pop_seed_file: ", population_file, "\n"),
+                      "  date_sd: ", date_sd, "\n",
+                      "  amount_sd: ", amount_sd, "\n",
+                      if(additional_seeding) paste0(
+                          "  added_seeding: \n",
+                          "    start_date: ", start_date_addedseed, "\n",
+                          "    end_date: ", end_date_addedseed, "\n",
+                          "    added_lambda_file: ", added_lambda_file, "\n",
+                          "    filter_previous_seedingdates: ", filter_previous_seedingdates, "\n",
+                          "    filter_remove_variants: ", filter_remove_variants, "\n",
+                          "    fix_original_seeding: ", fix_original_seeding, "\n",
+                          "    fix_added_seeding: ", fix_added_seeding, "\n"),
+                      "\n")
+    cat(seeding)
+}
 
 
 
@@ -995,25 +1111,41 @@ print_seir <- function(integration_method = "rk4",
 #' @description Print transmission and outcomes interventions and stack them
 #'
 #' @param dat dataframe with processed intervention names/periods; see collapsed_interventions
-#' @param scenario name of the scenario
-#' @param compartment
-#' @param stack
+#' @param seir_scenarios name of the seir scenarios
+#' @param outcome_scenarios name of the outcome scenarios
+#' @param stack logical, whether to stack interventions 
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #'
-print_interventions <- function (
+print_interventions <- function(
         dat,
-        scenario = "Inference",
-        stack = TRUE,
-        compartment = TRUE){
+        seir_scenarios = "Inference",
+        outcome_scenarios = "med",
+        stack = TRUE){
 
-    cat(paste0("\nseir_modifiers:\n", "  scenarios:\n", "    - ",
-               scenario, "\n", "  settings:\n"))
-    outcome_dat <- dat %>% collapse_intervention() %>% dplyr::filter(type == "outcome")
-    dat <- collapse_intervention(dat) %>% dplyr::filter(type == "transmission")
+    suppressMessages({
+        outcome_dat <- collapse_intervention(dat) %>% dplyr::filter(type == "outcome")
+        dat <- collapse_intervention(dat) %>% dplyr::filter(type == "transmission")
+    })
+
+    #temp fix
+    if (nrow(outcome_dat)==0){
+        outcome_scenarios <- "fake"
+        outcome_dat <- dat[1,] %>%
+            mutate(name = "fake_mod",
+                   parameter = "FakeParameter::probability",
+                   type = "outcome",
+                   category = "fake_outcomes")
+    }
+
+    cat(paste0("\nseir_modifiers:\n",
+               "  scenarios:\n",
+               "    - ", seir_scenarios, "\n",
+               "  modifiers:\n"))
+
     for (i in 1:nrow(dat)) {
         if (i > nrow(dat))
             break
@@ -1024,25 +1156,28 @@ print_interventions <- function (
             yaml_reduce_method(dat[i, ])
         }
     }
-    yaml_stack1(dat, scenario, stack)
+    yaml_stack1(dat, seir_scenarios, stack)
+
     if (nrow(outcome_dat) > 0) {
-        if (compartment) {
-            yaml_stack2(dat = outcome_dat, scenario = "outcome_interventions",
-                        stack = stack)
-            cat(paste0("\n"))
-        }
+        cat(paste0("\noutcome_modifiers:\n",
+                   "  scenarios:\n", "    - ",
+                   outcome_scenarios, "\n",
+                   "  modifiers:\n"))
+
         for (i in 1:nrow(outcome_dat)) {
             if (i > nrow(outcome_dat))
                 break
             if (outcome_dat$method[i] == "MultiPeriodModifier") {
-                outcome_dat %>% dplyr::filter(name == outcome_dat$name[i]) %>%
-                    yaml_mtr_method(.)
-                outcome_dat <- outcome_dat %>%
-                    dplyr::filter(name != outcome_dat$name[i] | dplyr::row_number() == i)
+                outcome_dat %>% dplyr::filter(name == outcome_dat$name[i]) %>% yaml_mtr_method(.)
+                outcome_dat <- outcome_dat %>% dplyr::filter(name != outcome_dat$name[i] | dplyr::row_number() == i)
             } else {
                 yaml_reduce_method(outcome_dat[i, ])
             }
         }
+        if (length(unique(outcome_dat$category)>1)){
+            yaml_stack1(outcome_dat, outcome_scenarios, FALSE)
+        }
+
         cat(paste0("\n"))
     }
 }

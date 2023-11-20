@@ -348,17 +348,6 @@
       "Hash": "ac6cdb8552c61bd36b0e54d07cf2aab7",
       "Requirements": []
     },
-    "cdlTools": {
-      "Package": "cdlTools",
-      "Version": "0.15",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "330978ce333c8b2f29bfa7744cd29e22",
-      "Requirements": [
-        "httr",
-        "raster"
-      ]
-    },
     "cellranger": {
       "Package": "cellranger",
       "Version": "1.1.0",
@@ -445,7 +434,6 @@
         "magrittr",
         "readr",
         "tidyverse",
-        "tigris",
         "yaml"
       ]
     },
@@ -1798,16 +1786,7 @@
         "withr"
       ]
     },
-    "rgdal": {
-      "Package": "rgdal",
-      "Version": "1.5-32",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "7e8f18c3a55c90a44ea05e0620c05a7e",
-      "Requirements": [
-        "sp"
-      ]
-    },
+
     "rlang": {
       "Package": "rlang",
       "Version": "1.0.6",
@@ -2195,25 +2174,6 @@
         "tibble",
         "tidyr",
         "xml2"
-      ]
-    },
-    "tigris": {
-      "Package": "tigris",
-      "Version": "1.6",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d049cc17ef0d4a82f8d2ffb4ba520a76",
-      "Requirements": [
-        "dplyr",
-        "httr",
-        "magrittr",
-        "maptools",
-        "rappdirs",
-        "rgdal",
-        "sf",
-        "sp",
-        "stringr",
-        "uuid"
       ]
     },
     "timechange": {

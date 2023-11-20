@@ -25,9 +25,9 @@ proj_data <- data_comb
 # STATE DATA --------------------------------------------------------------
 
 # State Data #
-state_cw <- cdlTools::census2010FIPS %>%
-  distinct(State, State.ANSI) %>%
-  dplyr::rename(USPS = State, location = State.ANSI) %>%
+state_cw <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>% 
+  dplyr::distinct(state, state_code) %>%
+  dplyr::select(USPS = state, location = state_code) %>%
   dplyr::mutate(location = str_pad(location, 2, side = "left", pad = "0")) %>%
   distinct(location, USPS) %>%
   dplyr::mutate(location = as.character(location), USPS = as.character(USPS)) %>%

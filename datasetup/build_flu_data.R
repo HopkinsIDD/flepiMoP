@@ -4,7 +4,7 @@
 
 library(dplyr)
 library(tidyr)
-library(tidycensus)
+# library(tidycensus)
 library(readr)
 library(lubridate)
 
