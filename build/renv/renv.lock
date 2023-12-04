@@ -348,17 +348,6 @@
       "Hash": "ac6cdb8552c61bd36b0e54d07cf2aab7",
       "Requirements": []
     },
-    "cdlTools": {
-      "Package": "cdlTools",
-      "Version": "0.15",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "330978ce333c8b2f29bfa7744cd29e22",
-      "Requirements": [
-        "httr",
-        "raster"
-      ]
-    },
     "cellranger": {
       "Package": "cellranger",
       "Version": "1.1.0",
