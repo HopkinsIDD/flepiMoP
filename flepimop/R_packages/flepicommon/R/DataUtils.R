@@ -906,17 +906,7 @@ get_groundtruth_from_source <- function(
   variant_props_file = "data/variant/variant_props_long.csv"
 ) {
 
-  if(source == "reichlab" & scale == "US county"){
-
-    rc <- get_reichlab_cty_data()
-    rc <- dplyr::select(rc, Update, FIPS, source, !!variables)
-
-  } else if(source == "reichlab" & scale == "US state"){
-
-    rc <- get_reichlab_st_data()
-    rc <- dplyr::select(rc, Update, FIPS, source, !!variables)
-
-  } else if(source == "usafacts" & scale == "US county"){
+ if (source == "usafacts" & scale == "US county"){
 
     rc <- get_USAFacts_data(tempfile(), tempfile(), incl_unassigned = incl_unass) %>%
       dplyr::select(Update, FIPS, source, !!variables) %>%
