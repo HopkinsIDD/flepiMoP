@@ -163,7 +163,6 @@ download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigne
 ##'  $ Confirmed: num [1:198] 3 4 1 3 5 1 3 5 2 3 ...
 ##'  $ Deaths   : num [1:198] 0 0 0 0 0 0 0 0 0 0 ...
 ##'
-##' @importFrom plyr revalue
 ##' @return the case data frame
 ##'
 get_islandareas_data <- function() {
@@ -180,7 +179,7 @@ get_islandareas_data <- function() {
 
   nyt_data <- dplyr::filter(nyt_data, state %in% names(ISLAND_AREAS))
   nyt_data <- dplyr::rename(nyt_data, Update=date, source=state, FIPS=fips, Confirmed=cases, Deaths=deaths) # Rename columns
-  nyt_data <- dplyr::mutate(nyt_data, FIPS=paste0(FIPS,"000"), source=plyr::revalue(source, ISLAND_AREAS, warn_missing=FALSE))
+  nyt_data <- dplyr::mutate(nyt_data, FIPS=paste0(FIPS,"000"), source=dplyr::recode(source, ISLAND_AREAS))
 
   validation_date <- Sys.getenv("VALIDATION_DATE")
   if ( validation_date != '' ) {
