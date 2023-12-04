@@ -945,10 +945,7 @@
         "foreach",
         "glue",
         "lubridate",
-        "raster",
-        "reshape2",
         "rlang",
-        "sf",
         "stringdist",
         "stringi",
         "stringr",
@@ -1520,16 +1517,6 @@
       "Hash": "2ebe8c2ec200da649738b0fc35a9b1a1",
       "Requirements": []
     },
-    "plyr": {
-      "Package": "plyr",
-      "Version": "1.8.8",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d744387aef9047b0b48be2933d78e862",
-      "Requirements": [
-        "Rcpp"
-      ]
-    },
     "png": {
       "Package": "png",
       "Version": "0.1-7",
@@ -1767,18 +1754,6 @@
         "rmarkdown",
         "rstudioapi",
         "withr"
-      ]
-    },
-    "reshape2": {
-      "Package": "reshape2",
-      "Version": "1.4.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "bb5996d0bd962d214a11140d77589917",
-      "Requirements": [
-        "Rcpp",
-        "plyr",
-        "stringr"
       ]
     },
     "reticulate": {
