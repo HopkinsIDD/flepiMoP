@@ -37,7 +37,7 @@
 
 library(dplyr)
 library(tidyr)
-library(tidycensus)
+# library(tidycensus)
 
 
 option_list = list(
@@ -64,38 +64,38 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 # census_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","census_tracts_2010.gz.parquet"))
 
 
-# Get census key
-census_key = Sys.getenv("CENSUS_API_KEY")
-if(length(config$importation$census_api_key) != 0){
-  census_key = config$importation$census_api_key
-}
-if(census_key == ""){
-  stop("no census key found -- please set CENSUS_API_KEY environment variable or specify importation::census_api_key in config file")
-}
-tidycensus::census_api_key(key = census_key)
-
+# # Get census key
+# census_key = Sys.getenv("CENSUS_API_KEY")
+# if(length(config$importation$census_api_key) != 0){
+#   census_key = config$importation$census_api_key
+# }
+# if(census_key == ""){
+#   stop("no census key found -- please set CENSUS_API_KEY environment variable or specify importation::census_api_key in config file")
+# }
+# tidycensus::census_api_key(key = census_key)
+#
 
 
 
 # GEODATA (CENSUS DATA) -------------------------------------------------------------
 
 
-census_data <- tidycensus::get_acs(geography="county", state=filterUSPS,
-                                   variables="B01003_001", year=config$spatial_setup$census_year,
-                                   keep_geo_vars=TRUE, geometry=FALSE, show_call=TRUE)
-census_data <- census_data %>%
-  dplyr::rename(population=estimate, geoid=GEOID) %>%
-  dplyr::select(geoid, population) %>%
-  dplyr::mutate(geoid = substr(geoid,1,5))
+# census_data <- tidycensus::get_acs(geography="county", state=filterUSPS,
+#                                    variables="B01003_001", year=config$spatial_setup$census_year,
+#                                    keep_geo_vars=TRUE, geometry=FALSE, show_call=TRUE)
+census_data <- arrow::read_parquet("datasetup/usdata/us_county_census_2019.parquet") %>%
+  dplyr::rename(population=estimate, subpop=GEOID) %>%
+  dplyr::select(subpop, population) %>%
+  dplyr::mutate(subpop = substr(subpop,1,5))
 
 # Add USPS column
-data(fips_codes)
+fips_codes <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet")
 fips_geoid_codes <- dplyr::mutate(fips_codes, geoid=paste0(state_code,county_code)) %>%
   dplyr::group_by(geoid) %>%
   dplyr::summarize(USPS=unique(state))
 
-census_data <- dplyr::left_join(census_data, fips_geoid_codes, by="geoid")
-
+census_data <- dplyr::left_join(census_data, fips_subpop_codes, by="subpop") %>%
+    dplyr::filter(USPS %in% filterUSPS)
 
 # Make each territory one county.
 # Puerto Rico is the only one in the 2018 ACS estimates right now. Aggregate it.
