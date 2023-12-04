@@ -388,7 +388,6 @@ dependencies:
   - r-remotes=2.4.2=r42hc72bb7e_1
   - r-reprex=2.0.2=r42hc72bb7e_1
   - r-reticulate=1.25=r42h884c59f_0
-  - r-rgdal=1.5_32=r42h282678f_2
   - r-rlang=1.0.6=r42h7525677_1
   - r-rmarkdown=2.20=r42hc72bb7e_0
   - r-roxygen2=7.2.3=r42h38f115c_0

@@ -1773,16 +1773,6 @@
         "withr"
       ]
     },
-    "rgdal": {
-      "Package": "rgdal",
-      "Version": "1.5-32",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "7e8f18c3a55c90a44ea05e0620c05a7e",
-      "Requirements": [
-        "sp"
-      ]
-    },
     "rlang": {
       "Package": "rlang",
       "Version": "1.0.6",
