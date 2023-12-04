@@ -180,7 +180,7 @@ get_islandareas_data <- function() {
 
   nyt_data <- dplyr::filter(nyt_data, state %in% names(ISLAND_AREAS))
   nyt_data <- dplyr::rename(nyt_data, Update=date, source=state, FIPS=fips, Confirmed=cases, Deaths=deaths) # Rename columns
-  nyt_data <- dplyr::mutate(nyt_data, FIPS=paste0(FIPS,"000"), source=dplyr::recode(source, ISLAND_AREAS, warn_missing=FALSE))
+  nyt_data <- dplyr::mutate(nyt_data, FIPS=paste0(FIPS,"000"), source=dplyr::recode(source, ISLAND_AREAS))
 
   validation_date <- Sys.getenv("VALIDATION_DATE")
   if ( validation_date != '' ) {
