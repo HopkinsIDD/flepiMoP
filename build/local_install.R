@@ -8,7 +8,7 @@ local({r <- getOption("repos")
 
 library(devtools)
 
-install.packages(c("covidcast","data.table","vroom","dplyr","RSocrata"), quiet=TRUE)
+install.packages(c("covidcast","data.table","vroom","dplyr"), quiet=TRUE)
 # devtools::install_github("hrbrmstr/cdcfluview")
 
 # To run if operating in the container -----
