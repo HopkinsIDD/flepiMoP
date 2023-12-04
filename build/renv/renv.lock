@@ -434,7 +434,6 @@
         "magrittr",
         "readr",
         "tidyverse",
-        "tigris",
         "yaml"
       ]
     },
@@ -2149,25 +2148,6 @@
         "tibble",
         "tidyr",
         "xml2"
-      ]
-    },
-    "tigris": {
-      "Package": "tigris",
-      "Version": "1.6",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d049cc17ef0d4a82f8d2ffb4ba520a76",
-      "Requirements": [
-        "dplyr",
-        "httr",
-        "magrittr",
-        "maptools",
-        "rappdirs",
-        "rgdal",
-        "sf",
-        "sp",
-        "stringr",
-        "uuid"
       ]
     },
     "timechange": {

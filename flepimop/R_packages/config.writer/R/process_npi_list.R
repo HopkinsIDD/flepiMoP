@@ -51,7 +51,7 @@ load_geodata_file <- function(filename,
     }
 
     if(state_name) {
-        geodata <- tigris::fips_codes %>%
+        geodata <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>%
             dplyr::distinct(state, state_name) %>%
             dplyr::rename(USPS = state) %>%
             dplyr::rename(state = state_name) %>%
