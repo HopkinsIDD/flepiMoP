@@ -261,7 +261,6 @@ dependencies:
   - r-bslib=0.4.2=r42hc72bb7e_0
   - r-cachem=1.0.6=r42h06615bd_1
   - r-callr=3.7.3=r42hc72bb7e_0
-  - r-cdltools=0.15=r42h76d94ec_0
   - r-cellranger=1.1.0=r42hc72bb7e_1005
   - r-class=7.3_21=r42h133d619_0
   - r-classint=0.4_8=r42h8da6f51_0

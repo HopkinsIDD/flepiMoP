@@ -444,7 +444,6 @@ dependencies:
   - conda-forge/noarch::seaborn-base==0.12.2=pyhd8ed1ab_0
   - conda-forge/linux-64::r-arrow==10.0.1=r42hcb278e6_0
   - conda-forge/noarch::r-bslib==0.4.2=r42hc72bb7e_0
-  - defaults/linux-64::r-cdltools==0.15=r42h76d94ec_0
   - conda-forge/noarch::r-gargle==1.3.0=r42h785f33e_0
   - conda-forge/linux-64::r-gert==1.5.0=r42hf3f2ec2_3
   - conda-forge/noarch::r-gh==1.3.1=r42hc72bb7e_1

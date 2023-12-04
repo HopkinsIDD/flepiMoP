@@ -597,7 +597,8 @@ reichify_cum_ests <- function(cum_ests, cum_var="cumH",
         filter(time>opt$forecast_date) %>%
         mutate(forecast_date=opt$forecast_date) %>%
         rename(target_end_date=time) %>%
-        mutate(location=as.character(cdlTools::fips(USPS))) %>%
+        dplyr::select(-location) %>%
+        dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
         mutate(location = ifelse(USPS=="US", "US", location)) %>%
         mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
         rename(value=!!sym(cum_var)) %>%
@@ -671,8 +672,7 @@ reichify_inc_ests <- function(weekly_inc_outcome, opt){
         pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
         mutate(forecast_date=opt$forecast_date) %>%
         rename(target_end_date=time) %>%
-        mutate(location=as.character(cdlTools::fips(USPS))) %>%
-        mutate(location = ifelse(USPS=="US", "US", location)) %>%
+        dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
         mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
         mutate(ahead=round(as.numeric(target_end_date - forecast_date)/7)) %>%
         mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -711,8 +711,7 @@ format_daily_outcomes <- function(daily_inc_outcome, point_est=0.5, opt){
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date = opt$forecast_date) %>%
             rename(target_end_date = time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
+            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead = round(as.numeric(target_end_date - forecast_date))) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -758,8 +757,7 @@ format_weekly_outcomes <- function(weekly_inc_outcome, point_est=0.5, opt){
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
+            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - forecast_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -816,8 +814,7 @@ get_weekly_incid2 <- function(res_state, point_est=0.5, outcome_var="incidI", op
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = !!sym(outcome_var)) %>%
             mutate(forecast_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
+            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - forecast_date)/7))%>%
             mutate(target=sprintf(paste0("%d wk ahead inc ", outcome_short), ahead)) %>%
@@ -1515,8 +1512,7 @@ process_sims <- function(
                    scenario_id = scenario_id, scenario_name=scenario_name) %>%
             mutate(model_projection_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
+            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -1572,8 +1568,7 @@ process_sims <- function(
                    scenario_id = scenario_id, scenario_name=scenario_name) %>%
             mutate(model_projection_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
+            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -1601,8 +1596,7 @@ process_sims <- function(
             unnest(x) %>%
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date=opt$forecast_date) %>%
-            mutate(location=as.character(cdlTools::fips(USPS))) %>%
-            mutate(location = ifelse(USPS=="US", "US", location)) %>%
+            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
             mutate(target = paste0("peak size ", target)) %>%
