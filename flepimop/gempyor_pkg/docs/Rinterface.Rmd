@@ -263,7 +263,7 @@ conda activate flepimop-env
 python -m ipykernel install --user --name flepimop-env --display-name "Python (flepimop-env)"
 export R_PROFILE=$FLEPI_PATH/slurm_batch/Rprofile
 conda install r-devtools  r-gridExtra r-ggfortify r-flextable r-doparallel r-reticulate r-truncnorm r-arrow
-conda install r-tidycensus r-optparse
+conda install r-optparse
 conda env export --from-history > environment_cross.yml
 conda env export > environment.yml
 ```

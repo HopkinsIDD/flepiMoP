@@ -485,7 +485,6 @@ dependencies:
   - conda-forge/linux-64::r-haven==2.5.1=r42h7525677_0
   - conda-forge/linux-64::r-profvis==0.3.7=r42h06615bd_1
   - conda-forge/linux-64::r-testthat==3.1.6=r42h38f115c_0
-  - conda-forge/noarch::r-tidycensus==1.3.2=r42hc72bb7e_0
   - conda-forge/noarch::r-devtools==2.4.5=r42hc72bb7e_1
   - conda-forge/noarch::r-flextable==0.8.5=r42hc72bb7e_0
   - conda-forge/noarch::r-modelr==0.1.10=r42hc72bb7e_0
