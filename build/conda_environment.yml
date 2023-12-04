@@ -408,7 +408,6 @@ dependencies:
   - conda-forge/linux-64::r-openssl==2.0.5=r42habfbb5e_0
   - conda-forge/linux-64::r-promises==1.2.0.1=r42h7525677_1
   - conda-forge/linux-64::r-raster==3.5_21=r42h7525677_1
-  - conda-forge/linux-64::r-rgdal==1.5_32=r42h282678f_2
   - conda-forge/noarch::r-rversions==2.1.2=r42hc72bb7e_1
   - conda-forge/linux-64::r-s2==1.1.1=r42h5be344c_0
   - conda-forge/noarch::r-scales==1.2.1=r42hc72bb7e_1
