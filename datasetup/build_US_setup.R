@@ -84,14 +84,14 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 # census_data <- tidycensus::get_acs(geography="county", state=filterUSPS,
 #                                    variables="B01003_001", year=config$subpop_setup$census_year,
 #                                    keep_geo_vars=TRUE, geometry=FALSE, show_call=TRUE)
-census_data <- arrow::read_parquet("datasetup/usdata/us_county_census_2019.parquet") %>%
+census_data <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/us_county_census_2019.parquet")) %>%
   dplyr::rename(population=estimate, subpop=GEOID) %>%
   dplyr::select(subpop, population) %>%
   dplyr::mutate(subpop = substr(subpop,1,5))
 
 # Add USPS column
 #data(fips_codes)
-fips_codes <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet")
+fips_codes <- arrow::read_parquet(paste0(opt$p,"datasetup/usdata/fips_us_county.parquet"))
 fips_subpop_codes <- dplyr::mutate(fips_codes, subpop=paste0(state_code,county_code)) %>%
   dplyr::group_by(subpop) %>%
   dplyr::summarize(USPS=unique(state))
