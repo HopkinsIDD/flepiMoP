@@ -151,32 +151,14 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
                     )
 
-        # subclasses = [""]
-        # if modinf.outcomes_config["subclasses"].exists():
-        #    subclasses = modinf.outcomes_config["subclasses"].get()
-
         parameters = {}
         for new_comp in outcomes_config:
             if outcomes_config[new_comp]["source"].exists():
-                # for subclass in subclasses:
-                #    class_name = new_comp + subclass
-                #    parameters[class_name] = {}
                 parameters[new_comp] = {}
                 # Read the config for this compartement
                 src_name = outcomes_config[new_comp]["source"].get()
                 if isinstance(src_name, str):
-                    #    if src_name != "incidI":
-                    #        parameters[class_name]["source"] = src_name + subclass
-                    #        else:
-                    #            parameters[class_name]["source"] = src_name
                     parameters[new_comp]["source"] = src_name
-                # else:
-                # else:
-                #    if subclasses != [""]:
-                #        raise ValueError("Subclasses not compatible with outcomes from compartments ")
-                #    elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
-                #        parameters[class_name]["source"] = dict(src_name)
-
                 elif ("incidence" in src_name.keys()) or ("prevalence" in src_name.keys()):
                     parameters[new_comp]["source"] = dict(src_name)
 

@@ -149,7 +149,6 @@ def test_constant_population_rk4jit_integration_fail():
         params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
         params = modinf.parameters.parameters_reduce(params, npi)
 
-
         (
             unique_strings,
             transition_array,

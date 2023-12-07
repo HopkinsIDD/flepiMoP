@@ -36,9 +36,7 @@ class TestSeeding:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.Seeding(
-            config=s.seeding_config
-        )
+        sic = seeding_ic.Seeding(config=s.seeding_config)
         s.seeding_config["method"] = "NoSeeding"
 
         seeding = sic.draw(sim_id=100, setup=s)
