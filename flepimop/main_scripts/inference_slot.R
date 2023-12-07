@@ -14,9 +14,6 @@ options(readr.num_columns = 0)
 
 required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
 
-# Load gempyor module
-gempyor <- reticulate::import("gempyor")
-
 #Temporary
 #print("Setting random number seed")
 #set.seed(1) # set within R
@@ -61,6 +58,10 @@ if (opt[["is-interactive"]]) {
 flepicommon::prettyprint_optlist(opt)
 
 reticulate::use_python(Sys.which(opt$python), required = TRUE)
+
+# Load gempyor module
+gempyor <- reticulate::import("gempyor")
+
 ## Block loads the config file and geodata
 if (opt$config == ""){
     optparse::print_help(parser)
