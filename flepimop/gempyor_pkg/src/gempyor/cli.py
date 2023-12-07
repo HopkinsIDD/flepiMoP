@@ -2,6 +2,7 @@ import click
 from .compartments import compartments
 from gempyor.utils import config
 
+
 @click.group()
 @click.option(
     "-c",
@@ -17,11 +18,9 @@ def cli(config_file):
     config.read(user=False)
     config.set_file(config_file)
 
+
 cli.add_command(compartments)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
-
-

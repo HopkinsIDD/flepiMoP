@@ -248,7 +248,9 @@ class Compartments:
 
         return rc
 
-    def toFile(self, compartments_file='compartments.parquet', transitions_file='transitions.parquet', write_parquet=True):
+    def toFile(
+        self, compartments_file="compartments.parquet", transitions_file="transitions.parquet", write_parquet=True
+    ):
         out_df = self.compartments.copy()
         if write_parquet:
             pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
@@ -294,7 +296,7 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'." 
+                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'."
             )
         return comp_idx[0]
 
@@ -493,7 +495,7 @@ class Compartments:
             # in this case we find the next array and set it to that size,
             # TODO: instead of searching for the next array, better to just use the parameter shape.
             if not isinstance(substituted_formulas[i], np.ndarray):
-                for k in range(len(substituted_formulas)): 
+                for k in range(len(substituted_formulas)):
                     if isinstance(substituted_formulas[k], np.ndarray):
                         substituted_formulas[i] = substituted_formulas[i] * np.ones_like(substituted_formulas[k])
 
@@ -650,18 +652,18 @@ def list_recursive_convert_to_string(thing):
     return str(thing)
 
 
-
 @click.group()
 def compartments():
     pass
 
+
 # TODO: CLI arguments
 @compartments.command()
 def plot():
-    assert config["compartments"].exists() 
-    assert config["seir"].exists() 
+    assert config["compartments"].exists()
+    assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
-    
+
     # TODO: this should be a command like build compartments.
     (
         unique_strings,
@@ -669,15 +671,16 @@ def plot():
         proportion_array,
         proportion_info,
     ) = comp.get_transition_array()
-    
+
     comp.plot(output_file="transition_graph", source_filters=[], destination_filters=[])
 
     print("wrote file transition_graph")
 
+
 @compartments.command()
 def export():
-    assert config["compartments"].exists() 
-    assert config["seir"].exists() 
+    assert config["compartments"].exists()
+    assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
     (
         unique_strings,
@@ -685,5 +688,5 @@ def export():
         proportion_array,
         proportion_info,
     ) = comp.get_transition_array()
-    comp.toFile('compartments_file.csv', 'transitions_file.csv')
+    comp.toFile("compartments_file.csv", "transitions_file.csv")
     print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")

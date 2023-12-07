@@ -392,7 +392,6 @@ def launch_batch(
         continuation_run_id,
     )
 
-
     seir_modifiers_scenarios = None
     outcome_modifiers_scenarios = None
     # here the config is a dict
@@ -712,7 +711,9 @@ class BatchJobHandler(object):
             cur_env_vars = base_env_vars.copy()
             cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
             cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
-            cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"}) # TODO: get it from gempyor and makes it contains run_id also in scripts
+            cur_env_vars.append(
+                {"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"}
+            )  # TODO: get it from gempyor and makes it contains run_id also in scripts
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):

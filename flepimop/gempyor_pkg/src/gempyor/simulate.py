@@ -274,7 +274,7 @@ from gempyor.utils import config, as_list, profile
     help="write parquet file output at end of simulation",
 )
 # @profile_options
-#@profile()
+# @profile()
 def simulate(
     config_file,
     in_run_id,

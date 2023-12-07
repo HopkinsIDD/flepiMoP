@@ -21,9 +21,7 @@ class TestIC:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.InitialConditions(
-            config=s.initial_conditions_config
-        )
+        sic = seeding_ic.InitialConditions(config=s.initial_conditions_config)
         assert sic.initial_conditions_config == s.initial_conditions_config
 
     def test_IC_allow_missing_node_compartments_success(self):
@@ -49,8 +47,7 @@ class TestIC:
         print(initial_conditions)
 
     def test_IC_IC_notImplemented_fail(self):
-        with pytest.raises(NotImplementedError,
-                           match=r".*unknown.*initial.*conditions.*"):
+        with pytest.raises(NotImplementedError, match=r".*unknown.*initial.*conditions.*"):
             config.clear()
             config.read(user=False)
             config.set_file(f"{DATA_DIR}/config.yml")
@@ -64,7 +61,6 @@ class TestIC:
                 write_csv=False,
             )
             s.initial_conditions_config["method"] = "unknown"
-            sic = seeding_ic.InitialConditions(
-                config=s.initial_conditions_config)
+            sic = seeding_ic.InitialConditions(config=s.initial_conditions_config)
 
             sic.draw(sim_id=100, setup=s)

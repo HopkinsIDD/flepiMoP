@@ -452,12 +452,13 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         ## {variable}/{prefix}{block-1}.{run_id}.{variable}.{ext}
         ## N.B.: prefix should end in "{slot}."
         first_global_files <- inference::create_filename_list(run_id=opt$run_id,
-                                                              prefix=setup_prefix,
-                                                              filepath_suffix=global_intermediate_filepath_suffix,
-                                                              filename_prefix=slotblock_filename_prefix,
-                                                              index=opt$this_block - 1)
+                                                                prefix=setup_prefix,
+                                                                filepath_suffix=global_intermediate_filepath_suffix,
+                                                                filename_prefix=slotblock_filename_prefix,
+                                                                index=opt$this_block - 1)
         first_chimeric_files <- inference::create_filename_list(run_id=opt$run_id,
-                                                                prefix=setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix,
+                                                                prefix=setup_prefix, 
+                                                                filepath_suffix=chimeric_intermediate_filepath_suffix,
                                                                 filename_prefix=slotblock_filename_prefix,
                                                                 index=opt$this_block - 1)
 

@@ -35,7 +35,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
     n_seeding_ignored_before = 0
     n_seeding_ignored_after = 0
 
-    #id_seed = 0
+    # id_seed = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
         if row["subpop"] not in setup.subpop_struct.subpop_names:
             raise ValueError(
@@ -44,17 +44,21 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
 
         if (row["date"].date() - setup.ti).days >= 0:
             if (row["date"].date() - setup.ti).days < len(nb_seed_perday):
-                
                 nb_seed_perday[(row["date"].date() - setup.ti).days] = (
                     nb_seed_perday[(row["date"].date() - setup.ti).days] + 1
                 )
                 source_dict = {grp_name: row[f"source_{grp_name}"] for grp_name in cmp_grp_names}
                 destination_dict = {grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names}
-                seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(source_dict, error_info = f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)")
-                seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(destination_dict, error_info = f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)")
+                seeding_dict["seeding_sources"][idx] = setup.compartments.get_comp_idx(
+                    source_dict, error_info=f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)"
+                )
+                seeding_dict["seeding_destinations"][idx] = setup.compartments.get_comp_idx(
+                    destination_dict,
+                    error_info=f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)",
+                )
                 seeding_dict["seeding_subpops"][idx] = setup.subpop_struct.subpop_names.index(row["subpop"])
                 seeding_amounts[idx] = amounts[idx]
-                #id_seed+=1
+                # id_seed+=1
             else:
                 n_seeding_ignored_after += 1
         else:
@@ -303,14 +307,14 @@ class SeedingAndIC:
             raise NotImplementedError(f"unknown seeding method [got: {method}]")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
-        #print(seeding.shape)
+        # print(seeding.shape)
         seeding = seeding.sort_values(by="date", axis="index").reset_index()
-        #print(seeding)
-        mask = (seeding['date'].dt.date > setup.ti) & (seeding['date'].dt.date <= setup.tf)
+        # print(seeding)
+        mask = (seeding["date"].dt.date > setup.ti) & (seeding["date"].dt.date <= setup.tf)
         seeding = seeding.loc[mask].reset_index()
-        #print(seeding.shape)
-        #print(seeding)
-        
+        # print(seeding.shape)
+        # print(seeding)
+
         # TODO: print.
 
         amounts = np.zeros(len(seeding))
@@ -322,11 +326,10 @@ class SeedingAndIC:
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
 
-
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
 
     def load_seeding(self, sim_id: int, setup) -> nb.typed.Dict:
-        """ only difference with draw seeding is that the sim_id is now sim_id2load"""
+        """only difference with draw seeding is that the sim_id is now sim_id2load"""
         return self.draw_seeding(sim_id=sim_id, setup=setup)
 
     def load_ic(self, sim_id: int, setup) -> nb.typed.Dict:
@@ -336,19 +339,21 @@ class SeedingAndIC:
     def seeding_write(self, seeding, fname, extension):
         raise NotImplementedError(f"It is not yet possible to write the seeding to a file")
 
+
 class SimulationComponent:
     def __init__(self, config: confuse.ConfigView):
         raise NotImplementedError("This method should be overridden in subclasses.")
-        
+
     def load(self, sim_id: int, setup) -> np.ndarray:
         raise NotImplementedError("This method should be overridden in subclasses.")
-    
+
     def draw(self, sim_id: int, setup) -> np.ndarray:
         raise NotImplementedError("This method should be overridden in subclasses.")
-    
+
     def write_to_file(self, sim_id: int, setup):
         raise NotImplementedError("This method should be overridden in subclasses.")
-    
+
+
 class Seeding(SimulationComponent):
     def __init__(self, config: confuse.ConfigView):
         self.seeding_config = config
@@ -393,14 +398,14 @@ class Seeding(SimulationComponent):
             raise NotImplementedError(f"unknown seeding method [got: {method}]")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
-        #print(seeding.shape)
+        # print(seeding.shape)
         seeding = seeding.sort_values(by="date", axis="index").reset_index()
-        #print(seeding)
-        mask = (seeding['date'].dt.date > setup.ti) & (seeding['date'].dt.date <= setup.tf)
+        # print(seeding)
+        mask = (seeding["date"].dt.date > setup.ti) & (seeding["date"].dt.date <= setup.tf)
         seeding = seeding.loc[mask].reset_index()
-        #print(seeding.shape)
-        #print(seeding)
-        
+        # print(seeding.shape)
+        # print(seeding)
+
         # TODO: print.
 
         amounts = np.zeros(len(seeding))
@@ -412,17 +417,17 @@ class Seeding(SimulationComponent):
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
 
-
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
-    
+
     def load(self, sim_id: int, setup) -> nb.typed.Dict:
-        """ only difference with draw seeding is that the sim_id is now sim_id2load"""
+        """only difference with draw seeding is that the sim_id is now sim_id2load"""
         return self.draw(sim_id=sim_id, setup=setup)
-    
+
+
 class InitialConditions(SimulationComponent):
     def __init__(self, config: confuse.ConfigView):
         self.initial_conditions_config = config
-        
+
     def draw(self, sim_id: int, setup) -> np.ndarray:
         method = "Default"
         if self.initial_conditions_config is not None and "method" in self.initial_conditions_config.keys():
@@ -600,6 +605,6 @@ class InitialConditions(SimulationComponent):
                 """ Ignoring the previous population mismatch errors because you added flag 'ignore_population_checks'. This is dangerous"""
             )
         return y0
-    
+
     def load(self, sim_id: int, setup) -> nb.typed.Dict:
         return self.draw(sim_id=sim_id, setup=setup)

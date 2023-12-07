@@ -20,7 +20,7 @@ os.chdir(os.path.dirname(__file__))
 
 
 def test_parameters_from_timeserie_file():
-#   if True:
+    #   if True:
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml")
@@ -32,19 +32,20 @@ def test_parameters_from_timeserie_file():
         outcome_scenario="high_death_rate",
         stoch_traj_flag=False,
     )
-    
+
     p = parameters.Parameters(
-       parameter_config=config["seir"]["parameters"], 
-       ti=config["start_date"].as_date(),
-       tf=config["end_date"].as_date(),
-       nodenames=inference_simulator.s.spatset.nodenames,
-       config_version="v3")
-   
-    #p = inference_simulator.s.parameters
+        parameter_config=config["seir"]["parameters"],
+        ti=config["start_date"].as_date(),
+        tf=config["end_date"].as_date(),
+        nodenames=inference_simulator.s.spatset.nodenames,
+        config_version="v3",
+    )
+
+    # p = inference_simulator.s.parameters
     p_draw = p.parameters_quick_draw(n_days=inference_simulator.s.n_days, nnodes=inference_simulator.s.nnodes)
 
     p_df = p.getParameterDF(p_draw)["parameter"]
-    
+
     for pn in p.pnames:
         if pn == "R0s":
             assert pn not in p_df
@@ -54,7 +55,7 @@ def test_parameters_from_timeserie_file():
     initial_df = read_df("data/r0s_ts.csv").set_index("date")
 
     assert (p_draw[p.pnames2pindex["R0s"]] == initial_df.values).all()
-    
+
     ### test what happen when the order of geoids is not respected (expected: reput them in order)
 
     ### test what happens with incomplete data (expected: fail)
