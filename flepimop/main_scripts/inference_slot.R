@@ -108,6 +108,7 @@ suppressMessages(
             config$data_path,
             config$spatial_setup$geodata, sep = "/"
         ),
+        flepi_path = opt$flepi_path,
         geoid_len = opt$geoid_len
     )
 )
