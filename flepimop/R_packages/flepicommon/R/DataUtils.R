@@ -21,7 +21,8 @@
 load_geodata_file <- function(filename,
                               geoid_len = 0,
                               geoid_pad = "0",
-                              state_name = TRUE
+                              state_name = TRUE,
+                              flepi_path = "flepiMoP"
 ) {
 
     if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
@@ -37,7 +38,7 @@ load_geodata_file <- function(filename,
     }
 
     if(state_name) {
-        geodata <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>%
+        geodata <- arrow::read_parquet(file.path(flepi_path,"datasetup/usdata/fips_us_county.parquet")) %>%
             dplyr::distinct(state, state_name) %>%
             dplyr::rename(USPS = state) %>%
             dplyr::rename(state = state_name) %>%

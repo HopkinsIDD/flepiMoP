@@ -44,6 +44,7 @@ library(purrr)
 
 option_list <- list(
     optparse::make_option(c("-c", "--config"), action = "store", default = Sys.getenv("CONFIG_PATH"), type = "character", help = "path to the config file"),
+    optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP/")),
     optparse::make_option(c("-k", "--keep_all_seeding"), action="store",default=TRUE,type='logical',help="Whether to filter away seeding prior to the start date of the simulation.")
 )
 opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
@@ -267,7 +268,8 @@ geodata <- flepicommon::load_geodata_file(
     file.path(config$data_path, config$spatial_setup$geodata),
     5,
     "0",
-    TRUE
+    TRUE,
+    flepi_path = opt$flepi_path
 )
 
 all_geoids <- geodata[[config$spatial_setup$nodenames]]
