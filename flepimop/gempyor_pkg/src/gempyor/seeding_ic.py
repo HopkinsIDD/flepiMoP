@@ -144,7 +144,7 @@ class SeedingAndIC:
                                 ic_df_compartment_val = 0.0
                             else:
                                 raise ValueError(
-                                    f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
+                                    f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
                                                  Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
                                 )
                         if "rest" in str(ic_df_compartment_val).strip().lower():
@@ -153,7 +153,7 @@ class SeedingAndIC:
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_subpops:
                     logger.critical(
-                        f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
+                        f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
                     )
                     if "proportional" in self.initial_conditions_config.keys():
                         if self.initial_conditions_config["proportional"].get():
@@ -205,7 +205,7 @@ class SeedingAndIC:
                         ic_df_compartment = pd.DataFrame(0, columns=ic_df_compartment.columns, index=[0])
                     else:
                         raise ValueError(
-                            f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}."
+                            f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}."
                         )
                 elif ic_df_compartment["mc_name"].iloc[0] != comp_name:
                     print(
@@ -217,7 +217,7 @@ class SeedingAndIC:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
                     elif allow_missing_subpops:
                         logger.critical(
-                            f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
+                            f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
                         )
                         if "proportion" in self.initial_conditions_config.keys():
                             if self.initial_conditions_config["proportion"].get():
@@ -243,7 +243,7 @@ class SeedingAndIC:
             if self.initial_conditions_config["proportional"].get():
                 y0 = y0 * setup.subpop_pop[pl_idx]
 
-        # check that the inputed values sums to the node_population:
+        # check that the inputed values sums to the subpop population:
         error = False
         for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
             n_y0 = y0[:, pl_idx].sum()
@@ -483,7 +483,7 @@ class InitialConditions(SimulationComponent):
                                 ic_df_compartment_val = 0.0
                             else:
                                 raise ValueError(
-                                    f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
+                                    f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
                                                  Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
                                 )
                         if "rest" in str(ic_df_compartment_val).strip().lower():
@@ -492,7 +492,7 @@ class InitialConditions(SimulationComponent):
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_subpops:
                     logger.critical(
-                        f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
+                        f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
                     )
                     if "proportional" in self.initial_conditions_config.keys():
                         if self.initial_conditions_config["proportional"].get():
@@ -544,7 +544,7 @@ class InitialConditions(SimulationComponent):
                         ic_df_compartment = pd.DataFrame(0, columns=ic_df_compartment.columns, index=[0])
                     else:
                         raise ValueError(
-                            f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in node {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}."
+                            f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {ic_df_compartment[pl]}."
                         )
                 elif ic_df_compartment["mc_name"].iloc[0] != comp_name:
                     print(
@@ -556,7 +556,7 @@ class InitialConditions(SimulationComponent):
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
                     elif allow_missing_subpops:
                         logger.critical(
-                            f"No initial conditions for for node {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
+                            f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
                         )
                         if "proportion" in self.initial_conditions_config.keys():
                             if self.initial_conditions_config["proportion"].get():
@@ -582,7 +582,7 @@ class InitialConditions(SimulationComponent):
             if self.initial_conditions_config["proportional"].get():
                 y0 = y0 * setup.subpop_pop[pl_idx]
 
-        # check that the inputed values sums to the node_population:
+        # check that the inputed values sums to the subpop population:
         error = False
         for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
             n_y0 = y0[:, pl_idx].sum()
