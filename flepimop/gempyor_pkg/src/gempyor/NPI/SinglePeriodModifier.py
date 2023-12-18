@@ -15,6 +15,7 @@ class SinglePeriodModifier(NPIBase):
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[],
     ):
         super().__init__(
             name=getattr(
