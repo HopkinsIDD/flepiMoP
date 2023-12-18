@@ -13,10 +13,12 @@ def reduce_parameter(
         modification = modification.T
         modification.index = pd.to_datetime(modification.index.astype(str))
         modification = modification.resample("1D").ffill().to_numpy()  # Type consistency:
-    if method == "prod":
+    if method == "reduction_product":
         return parameter * (1 - modification)
     elif method == "sum":
         return parameter + modification
+    elif method == "product":
+        return parameter*modification
     else:
         raise ValueError(f"Unknown method to do NPI reduction, got {method}")
 

@@ -102,7 +102,7 @@ def test_parameters_quick_draw_old():
     assert params.pnames == ["alpha", "sigma", "gamma", "R0s"]
     assert params.npar == 4
     assert params.stacked_modifier_method["sum"] == []
-    assert params.stacked_modifier_method["prod"] == [pn.lower() for pn in params.pnames]
+    assert params.stacked_modifier_method["product"] == [pn.lower() for pn in params.pnames]
 
     p_array = params.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
     print(p_array.shape)

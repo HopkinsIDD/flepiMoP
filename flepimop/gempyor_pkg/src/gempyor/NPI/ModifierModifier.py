@@ -18,6 +18,7 @@ class ModifierModifier(NPIBase):
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[]
     ):
         super().__init__(name=npi_config.name)
 
@@ -103,6 +104,8 @@ class ModifierModifier(NPIBase):
                     self.parameters["start_date"][index],
                     self.parameters["end_date"][index],
                 )
+                if param not in pnames_overlap_operation_reductionprod:
+                    raise ValueError("We can only ")
                 self.reductions[param].loc[index, period_range] *= 1 - self.parameters["reduction"][index]
 
         # self.__checkErrors()

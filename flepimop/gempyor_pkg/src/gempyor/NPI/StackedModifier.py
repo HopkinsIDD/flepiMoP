@@ -24,6 +24,7 @@ class StackedModifier(NPIBase):
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[],
     ):
         super().__init__(name=npi_config.name)
 
@@ -59,25 +60,27 @@ class StackedModifier(NPIBase):
                 modifiers_library=modifiers_library,
                 subpops=subpops,
                 loaded_df=loaded_df,
-            )
+            ) # Why does it 
 
             new_params = sub_npi.param_name  # either a list (if stacked) or a string
             new_params = [new_params] if isinstance(new_params, str) else new_params  # convert to list
-            # Add each parameter at first encounter
+            # Add each parameter at first encounter, with a neutral start
             for new_p in new_params:
                 if new_p not in self.param_name:
                     self.param_name.append(new_p)
                     if new_p in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",new_p):
                         self.reductions[new_p] = 0
-                    else:
+                    else:  # for the reductionprod and product method, the initial neutral is 1 )
                         self.reductions[new_p] = 1
 
             for param in self.param_name:
                 reduction = sub_npi.getReduction(param, default=0.0)
                 if param in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",param):
                     self.reductions[param] += reduction
-                else:
+                elif param in pnames_overlap_operation_reductionprod:
                     self.reductions[param] *= 1 - reduction
+                else:
+                    self.reductions[param] * reduction
 
             # FIXME: getReductionToWrite() returns a concat'd set of stacked scenario params, which is
             # serialized as a giant dataframe to parquet. move this writing to be incremental, but need to
@@ -95,7 +98,7 @@ class StackedModifier(NPIBase):
                     self.reduction_params.clear()
 
         for param in self.param_name:
-            if not param in pnames_overlap_operation_sum:  # re.match("^transition_rate \d+$",param):
+            if param in pnames_overlap_operation_reductionprod:  # re.match("^transition_rate \d+$",param):
                 self.reductions[param] = 1 - self.reductions[param]
 
         # check that no NPI is called several times, and retourn them

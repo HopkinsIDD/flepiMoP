@@ -14,6 +14,7 @@ class MultiPeriodModifier(NPIBase):
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[],
         sanitize=False,
     ):
         super().__init__(
