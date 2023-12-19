@@ -60,7 +60,7 @@ class StackedModifier(NPIBase):
                 modifiers_library=modifiers_library,
                 subpops=subpops,
                 loaded_df=loaded_df,
-            ) # Why does it 
+            )
 
             new_params = sub_npi.param_name  # either a list (if stacked) or a string
             new_params = [new_params] if isinstance(new_params, str) else new_params  # convert to list
