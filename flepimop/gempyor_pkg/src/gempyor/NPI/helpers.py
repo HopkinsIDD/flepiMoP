@@ -7,7 +7,7 @@ import typing
 def reduce_parameter(
     parameter: np.ndarray,
     modification: typing.Union[pd.DataFrame, float],
-    method: str = "prod",
+    method: str = "product",
 ) -> np.ndarray:
     if isinstance(modification, pd.DataFrame):
         modification = modification.T
@@ -18,7 +18,7 @@ def reduce_parameter(
     elif method == "sum":
         return parameter + modification
     elif method == "product":
-        return parameter*modification
+        return parameter * modification
     else:
         raise ValueError(f"Unknown method to do NPI reduction, got {method}")
 
