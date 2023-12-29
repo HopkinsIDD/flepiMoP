@@ -306,11 +306,13 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             # 2. compute duration if needed
             source_name = parameters[new_comp]["source"]
             if isinstance(source_name, dict):
-                source_array = get_filtered_incidI(seir_sim, dates, modinf.subpop_struct.subpop_names, source_name)
+                source_array = get_filtered_incidI(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 if source_name in all_data:
                     source_array = all_data[source_name]
+                else:
+                    raise ValueError(f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes.")
 
             if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
                 ## This may be unnecessary
@@ -464,14 +466,14 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
     return outcomes, hpar
 
 
-def get_filtered_incidI(diffI, dates, subpops, filters):
+def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
         # TODO: this error should mention which outcomes is affected.
-        raise ValueError("Cannot distinguish this outcome's source: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
+        raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
     # diffI.drop(["mc_value_type"], inplace=True, axis=1)
