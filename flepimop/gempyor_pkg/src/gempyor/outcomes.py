@@ -305,23 +305,12 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             # 1. compute incidence from binomial draw
             # 2. compute duration if needed
             source_name = parameters[new_comp]["source"]
-            if source_name == "incidI" and "incidI" not in all_data:  # create incidI
-                source_array = get_filtered_incidI(
-                    seir_sim,
-                    dates,
-                    modinf.subpop_struct.subpop_names,
-                    {"incidence": {"infection_stage": "I1"}},
-                )
-                all_data["incidI"] = source_array
-                outcomes = pd.merge(
-                    outcomes,
-                    dataframe_from_array(source_array, modinf.subpop_struct.subpop_names, dates, "incidI"),
-                )
-            elif isinstance(source_name, dict):
+            if isinstance(source_name, dict):
                 source_array = get_filtered_incidI(seir_sim, dates, modinf.subpop_struct.subpop_names, source_name)
                 # we don't keep source in this cases
             else:  # already defined outcomes
-                source_array = all_data[source_name]
+                if source_name in all_data:
+                    source_array = all_data[source_name]
 
             if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
                 ## This may be unnecessary
@@ -481,7 +470,8 @@ def get_filtered_incidI(diffI, dates, subpops, filters):
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
-        raise ValueError("Cannot distinguish is SEIR sourced outcomes needs incidence or prevalence")
+        # TODO: this error should mention which outcomes is affected.
+        raise ValueError("Cannot distinguish this outcome's source: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
     # diffI.drop(["mc_value_type"], inplace=True, axis=1)
