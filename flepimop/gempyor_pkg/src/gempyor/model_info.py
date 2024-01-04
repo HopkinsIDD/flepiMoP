@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelInfo:
+    # TODO: update this documentation add explaination about the construction of ModelInfo
     """
     Parse config and hold some results, with main config sections.
     ```
@@ -108,10 +109,8 @@ class ModelInfo:
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
             )
-            self.seedingAndIC = seeding_ic.SeedingAndIC(
-                seeding_config=self.seeding_config,
-                initial_conditions_config=self.initial_conditions_config,
-            )
+            self.seeding = seeding_ic.Seeding(config = self.seeding_config)
+            self.initial_conditions = seeding_ic.InitialConditions(config = self.initial_conditions_config)
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
