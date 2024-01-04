@@ -472,7 +472,6 @@ def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
-        # TODO: this error should mention which outcomes is affected.
         raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
 
     diffI = diffI[diffI["mc_value_type"] == vtype]

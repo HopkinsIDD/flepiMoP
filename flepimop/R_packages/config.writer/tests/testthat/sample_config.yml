@@ -11931,7 +11931,9 @@ outcomes:
   outcomes:
     med:
       incidH:
-        source: incidI
+      source:
+        incidence:
+          infection_stage: ["I1"]
         probability:
           value:
             distribution: fixed
@@ -11946,7 +11948,9 @@ outcomes:
             value: 7
           name: hosp_curr
       incidD:
-        source: incidI
+      source:
+        incidence:
+          infection_stage: ["I1"]
         probability:
           value:
             distribution: fixed

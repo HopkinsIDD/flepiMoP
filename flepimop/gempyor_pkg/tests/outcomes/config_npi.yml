@@ -13,6 +13,18 @@ outcomes:
   method: delayframe
   param_from_file: False
   outcomes:
+    incidI:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
     incidH:
       source: incidI
       probability:
