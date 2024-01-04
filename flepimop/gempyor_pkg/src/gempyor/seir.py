@@ -43,6 +43,11 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
 
+
+    ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
+    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type 
+    ## is 32 bits." so upstream user need to specifcally cast everything to int64
+    ## Somehow only mobility data is caseted by this function, but perhaps we should handle it all here ?
     assert type(modinf.mobility) == scipy.sparse.csr_matrix
     mobility_data = modinf.mobility.data
     mobility_data = mobility_data.astype("float64")
