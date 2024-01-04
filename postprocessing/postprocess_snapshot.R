@@ -131,7 +131,7 @@ setup_prefix <- paste0(config$name,
                        ifelse(is.null(config$seir_modifiers$scenarios),"",paste0("_",config$seir_modifiers$scenarios[scenario_num])),
                        ifelse(is.null(config$outcome_modifiers$scenarios),"",paste0("_",config$outcome_modifiers$scenarios[scenario_num])))
 
-res_dir <- file.path(opt$results_path, config$model_output_dirname)
+res_dir <- file.path(opt$results_path, ifelse(is.null(config$model_output_dirname),"model_output", config$model_output_dirname))
 print(res_dir)
 
 results_filelist <- file.path(res_dir, 
