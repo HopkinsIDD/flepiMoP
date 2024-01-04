@@ -5,9 +5,8 @@ import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
 
-from . import NPI, model_info, file_paths, steps_rk4
-from .utils import config, Timer, aws_disk_diagnosis, read_df
-import pyarrow as pa
+from . import NPI, model_info, steps_rk4
+from .utils import Timer, aws_disk_diagnosis, read_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -237,11 +236,11 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = modinf.seedingAndIC.load_ic(sim_id2load, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id2load, setup=modinf)
+            initial_conditions = modinf.initial_conditions.load(sim_id2load, setup=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.load(sim_id2load, setup=modinf)
         else:
-            initial_conditions = modinf.seedingAndIC.draw_ic(sim_id2write, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seedingAndIC.draw_seeding(sim_id2write, setup=modinf)
+            initial_conditions = modinf.initial_conditions.draw(sim_id2write, setup=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.draw(sim_id2write, setup=modinf)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters

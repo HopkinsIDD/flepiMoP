@@ -9,17 +9,15 @@
 # function terminated successfully
 
 
-import pathlib
-from . import seir, model_info, file_paths
+from . import seir, model_info
 from . import outcomes
-from .utils import config, Timer, read_df, profile
+from .utils import config, Timer, read_df
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
-### Logger configuration
+# Logger configuration
 import logging
 import os
-import functools
 import multiprocessing as mp
 import pandas as pd
 import pyarrow.parquet as pq
@@ -224,13 +222,13 @@ class GempyorSimulator:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.modinf.seedingAndIC.load_ic(sim_id2load, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.load_seeding(
+                    initial_conditions = self.modinf.initial_conditions.load(sim_id2load, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.load(
                         sim_id2load, setup=self.modinf
                     )
                 else:
-                    initial_conditions = self.modinf.seedingAndIC.draw_ic(sim_id2write, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seedingAndIC.draw_seeding(
+                    initial_conditions = self.modinf.initial_conditions.draw(sim_id2write, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.draw(
                         sim_id2write, setup=self.modinf
                     )
                 self.debug_seeding_data = seeding_data
