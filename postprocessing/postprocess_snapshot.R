@@ -63,6 +63,8 @@ config <- flepicommon::load_config(opt$config)
 geodata <- setDT(read.csv(file.path(config$data_path, config$subpop_setup$geodata))) %>%
   .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")]
 
+subpops <- unique(geodata$subpop)
+
 ## gt_data MUST exist directly after a run
 gt_data <- data.table::fread(config$inference$gt_data_path) %>%
   .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")]
@@ -280,7 +282,7 @@ if("hosp" %in% model_outputs){
                                # { if(config$subpop_setup$subpop == 'subpop'){
                                #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                # } %>% 
-                               # .[get(config$subpop_setup$subpop) == e] %>%
+                               .[get(subpops) == e] %>%
                                # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                # } %>%
                                ggplot() +
@@ -293,7 +295,7 @@ if("hosp" %in% model_outputs){
                                             # { if(config$subpop_setup$subpop == 'subpop'){
                                             #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                             # } %>% 
-                                            # .[get(config$subpop_setup$subpop) == e] %>%
+                                            .[get(subpops) == e] %>%
                                             # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                             # } ,
                                           aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
