@@ -282,7 +282,7 @@ if("hosp" %in% model_outputs){
                                # { if(config$subpop_setup$subpop == 'subpop'){
                                #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                # } %>% 
-                               .[get(subpops) == e] %>%
+                               .[subpop == e] %>%
                                # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                # } %>%
                                ggplot() +
@@ -291,11 +291,11 @@ if("hosp" %in% model_outputs){
                                # scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
                                geom_point(data = gt_data %>%
-                                            .[, ..cols_data], #%>%
+                                            .[, ..cols_data] %>%
                                             # { if(config$subpop_setup$subpop == 'subpop'){
                                             #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                             # } %>% 
-                                            .[get(subpops) == e] %>%
+                                            .[subpop == e] ,#%>%
                                             # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                             # } ,
                                           aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
