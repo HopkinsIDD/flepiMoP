@@ -16,7 +16,7 @@ outcomes:
     incidI:
       source:
         incidence:
-          infection_stage: ["I1"]
+          infection_stage: "I1"
       probability:
         value:
           distribution: fixed
