@@ -21,7 +21,7 @@ option_list = list(
   optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),
   optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   # optparse::make_option(c("-p", "--flepimop-repo"), action="store", dest = "flepimop_repo", default=Sys.getenv("FLEPI_PATH", Sys.getenv("FLEPI_PATH")), type='character', help="path to the flepimop repo"),
-  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, hpar, snpi, llik"), type='character', help="path to the flepimop repo")
+  optparse::make_option(c("-o", "--select-outputs"), action="store", dest = "select_outputs", default=Sys.getenv("OUTPUTS","hosp, hnpi, snpi, llik"), type='character', help="path to the flepimop repo")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -62,6 +62,8 @@ config <- flepicommon::load_config(opt$config)
 # Pull in subpop data
 geodata <- setDT(read.csv(file.path(config$data_path, config$subpop_setup$geodata))) %>%
   .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")]
+
+subpops <- unique(geodata$subpop)
 
 ## gt_data MUST exist directly after a run
 gt_data <- data.table::fread(config$inference$gt_data_path) %>%
@@ -131,7 +133,7 @@ setup_prefix <- paste0(config$name,
                        ifelse(is.null(config$seir_modifiers$scenarios),"",paste0("_",config$seir_modifiers$scenarios[scenario_num])),
                        ifelse(is.null(config$outcome_modifiers$scenarios),"",paste0("_",config$outcome_modifiers$scenarios[scenario_num])))
 
-res_dir <- file.path(opt$results_path, config$model_output_dirname)
+res_dir <- file.path(opt$results_path, ifelse(is.null(config$model_output_dirname),"model_output", config$model_output_dirname))
 print(res_dir)
 
 results_filelist <- file.path(res_dir, 
@@ -280,7 +282,7 @@ if("hosp" %in% model_outputs){
                                # { if(config$subpop_setup$subpop == 'subpop'){
                                #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                # } %>% 
-                               # .[get(config$subpop_setup$subpop) == e] %>%
+                               .[subpop == e] %>%
                                # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                # } %>%
                                ggplot() +
@@ -289,11 +291,11 @@ if("hosp" %in% model_outputs){
                                # scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
                                geom_point(data = gt_data %>%
-                                            .[, ..cols_data], #%>%
+                                            .[, ..cols_data] %>%
                                             # { if(config$subpop_setup$subpop == 'subpop'){
                                             #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
                                             # } %>% 
-                                            # .[get(config$subpop_setup$subpop) == e] %>%
+                                            .[subpop == e] ,#%>%
                                             # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
                                             # } ,
                                           aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
@@ -318,9 +320,10 @@ if("hosp" %in% model_outputs){
 if("hnpi" %in% model_outputs){
   
   gg_cols <- 4
-  num_nodes <- length(unique(outputs_global$hosp %>% .[,subpop]))
+  num_nodes <- length(unique(outputs_global$hnpi %>% .[,subpop]))
   pdf_dims <- data.frame(width = gg_cols*3, length = num_nodes/gg_cols * 2)
-  
+  #pdf_dims <- data.frame(width = 20, length = 5)
+
   fname <- paste0("pplot/hnpi_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
   
@@ -340,7 +343,8 @@ if("hnpi" %in% model_outputs){
              geom_jitter(aes(group = npi_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
              facet_wrap(~subpop, scales = 'free') +
              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-             theme_classic()
+	     theme_classic() +
+	     theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6))
          }
   )
   
