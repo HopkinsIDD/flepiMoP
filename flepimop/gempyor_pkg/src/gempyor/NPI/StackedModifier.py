@@ -31,6 +31,9 @@ class StackedModifier(NPIBase):
         self.start_date = modinf.ti
         self.end_date = modinf.tf
 
+        self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
+        self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
+
         self.subpops = subpops
         self.param_name = []
         self.reductions = {}  # {param: 1 for param in REDUCE_PARAMS}
@@ -74,13 +77,14 @@ class StackedModifier(NPIBase):
                         self.reductions[new_p] = 1
 
             for param in self.param_name:
-                reduction = sub_npi.getReduction(param, default=0.0)
+                # Get reduction return a neutral value for this overlap operation if no parameeter exists
+                reduction = sub_npi.getReduction(param)
                 if param in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",param):
                     self.reductions[param] += reduction
                 elif param in pnames_overlap_operation_reductionprod:
                     self.reductions[param] *= 1 - reduction
                 else:
-                    self.reductions[param] * reduction
+                    self.reductions[param] *= reduction
 
             # FIXME: getReductionToWrite() returns a concat'd set of stacked scenario params, which is
             # serialized as a giant dataframe to parquet. move this writing to be incremental, but need to
@@ -115,9 +119,15 @@ class StackedModifier(NPIBase):
                 raise ValueError(
                     f"The intervention in config: {self.name} has reduction of {param} with value {self.reductions.get(param).max().max()} which is greater than 100% reduced."
                 )
+            
+    def get_default(self, param):
+        if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
+            return 0.0
+        else:
+            return 1.0
 
-    def getReduction(self, param, default=0.0):
-        return self.reductions.get(param, default)
+    def getReduction(self, param):
+        return self.reductions.get(param, self.get_default(param))
 
     def getReductionToWrite(self):
         if self.reduction_cap_exceeded:
