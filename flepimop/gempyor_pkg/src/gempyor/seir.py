@@ -5,9 +5,8 @@ import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
 
-from . import NPI, model_info, file_paths, steps_rk4
-from .utils import config, Timer, aws_disk_diagnosis, read_df
-import pyarrow as pa
+from . import NPI, model_info, steps_rk4
+from .utils import Timer, aws_disk_diagnosis, read_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,6 +42,11 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
 
+
+    ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
+    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type 
+    ## is 32 bits." so upstream user need to specifcally cast everything to int64
+    ## Somehow only mobility data is caseted by this function, but perhaps we should handle it all here ?
     assert type(modinf.mobility) == scipy.sparse.csr_matrix
     mobility_data = modinf.mobility.data
     mobility_data = mobility_data.astype("float64")
@@ -234,11 +238,11 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = modinf.seedingAndIC.load_ic(sim_id2load, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seedingAndIC.load_seeding(sim_id2load, setup=modinf)
+            initial_conditions = modinf.initial_conditions.load(sim_id2load, setup=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.load(sim_id2load, setup=modinf)
         else:
-            initial_conditions = modinf.seedingAndIC.draw_ic(sim_id2write, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seedingAndIC.draw_seeding(sim_id2write, setup=modinf)
+            initial_conditions = modinf.initial_conditions.draw(sim_id2write, setup=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.draw(sim_id2write, setup=modinf)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
