@@ -96,7 +96,7 @@ class SubpopulationStructure:
                 for r in row:
                     errmsg += f"\n sum accross row {r} exceed population of subpop '{self.subpop_names[r]}' ({self.subpop_pop[r]}), by {-tmp[r]}"
                 raise ValueError(
-                    f"The following rows in the mobility data exceed the source subpop populations in geodata:{errmsg}"
+                    f"The following entries in the mobility data exceed the source subpop populations in geodata:{errmsg}"
                 )
         else:
             logging.critical("No mobility matrix specified -- assuming no one moves")
