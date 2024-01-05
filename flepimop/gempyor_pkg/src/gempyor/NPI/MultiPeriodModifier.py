@@ -31,6 +31,9 @@ class MultiPeriodModifier(NPIBase):
 
         self.subpops = subpops
 
+        self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
+        self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
+
         self.npi = pd.DataFrame(
             0.0,
             index=self.subpops,
@@ -249,13 +252,18 @@ class MultiPeriodModifier(NPIBase):
         if len(affected_subpops) != len(affected_subpops_grp):
             raise ValueError(f"In NPI {self.name}, some subpops belong to several groups. This is unsupported.")
         return affected_subpops
+    
+    def get_default(self, param):
+        if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
+            return 0.0
+        else:
+            return 1.0
 
-    def getReduction(self, param, default=0.0):
+    def getReduction(self, param):
         "Return the reduction for this param, `default` if no reduction defined"
-
         if param == self.param_name:
             return self.npi
-        return default
+        return self.get_default(param)
 
     def getReductionToWrite(self):
         df_list = []
