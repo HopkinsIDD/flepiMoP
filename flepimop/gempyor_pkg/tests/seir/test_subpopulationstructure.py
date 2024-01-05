@@ -72,7 +72,7 @@ def test_subpopulation_structure_not_existed_subpop_pop_key_fail():
 
 
 def test_subpopulation_structure_subpop_population_zero_fail():
-    with pytest.raises(ValueError, match=r".*nodes with population zero.*"):
+    with pytest.raises(ValueError, match=r".*subpops with population zero.*"):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME,
             geodata_file=f"{DATA_DIR}/geodata0.csv",
@@ -150,7 +150,7 @@ def test_subpopulation_structure_mobility_no_extension_fail():
 
 def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
     with pytest.raises(
-        ValueError, match=r"The following entries in the mobility data exceed the source node populations.*"
+        ValueError, match=r"The following entries in the mobility data exceed the source subpop populations.*"
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME,
@@ -163,7 +163,7 @@ def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
 
 def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
     with pytest.raises(
-        ValueError, match=r"The following rows in the mobility data exceed the source node populations.*"
+        ValueError, match=r"The following entries in the mobility data exceed the source subpop populations.*"
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME,
