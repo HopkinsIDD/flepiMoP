@@ -145,11 +145,7 @@ outcomes:
         modifier_parameter: incidICU_probability
         value:
           distribution: fixed
-          value: .8
-      delay:
-        value:
-          distribution: fixed
-          value: 0
+          value: .8  # test with no delay
     incidICU_1dose:
       source: incidH_1dose
       probability:
@@ -157,10 +153,6 @@ outcomes:
         value:
           distribution: fixed
           value: .8
-      delay:
-        value:
-          distribution: fixed
-          value: 0
     incidD_0dose:
       source: incidI_0dose
       probability:
