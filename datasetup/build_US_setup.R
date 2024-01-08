@@ -84,9 +84,9 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 #                                    variables="B01003_001", year=config$spatial_setup$census_year,
 #                                    keep_geo_vars=TRUE, geometry=FALSE, show_call=TRUE)
 census_data <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/us_county_census_2019.parquet")) %>%
-  dplyr::rename(population=estimate, subpop=GEOID) %>%
-  dplyr::select(subpop, population) %>%
-  dplyr::mutate(subpop = substr(subpop,1,5))
+  dplyr::rename(population=estimate, geoid=GEOID) %>%
+  dplyr::select(geoid, population) %>%
+  dplyr::mutate(geoid = substr(geoid,1,5))
 
 # Add USPS column
 fips_codes <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/fips_us_county.parquet"))
@@ -94,7 +94,7 @@ fips_geoid_codes <- dplyr::mutate(fips_codes, geoid=paste0(state_code,county_cod
   dplyr::group_by(geoid) %>%
   dplyr::summarize(USPS=unique(state))
 
-census_data <- dplyr::left_join(census_data, fips_subpop_codes, by="subpop") %>%
+census_data <- dplyr::left_join(census_data, fips_geoid_codes, by="geoid") %>%
     dplyr::filter(USPS %in% filterUSPS)
 
 # Make each territory one county.
