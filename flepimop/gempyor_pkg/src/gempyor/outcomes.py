@@ -180,17 +180,23 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                 else:
                     parameters[new_comp]["probability::npi_param_name"] = f"{new_comp}::probability".lower()
 
-                parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
-                if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
-                    parameters[new_comp]["delay::npi_param_name"] = (
-                        outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
-                    )
-                    logging.debug(
-                        f"delay of outcome {new_comp} is affected by intervention "
-                        f"named {parameters[new_comp]['delay::npi_param_name']} "
-                        f"instead of {new_comp}::delay"
-                    )
+                if outcomes_config[new_comp]["delay"].exists():
+                    parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
+                    if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
+                        parameters[new_comp]["delay::npi_param_name"] = (
+                            outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
+                        )
+                        logging.debug(
+                            f"delay of outcome {new_comp} is affected by intervention "
+                            f"named {parameters[new_comp]['delay::npi_param_name']} "
+                            f"instead of {new_comp}::delay"
+                        )
+                    else:
+                        parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
                 else:
+                    logging.critical(f"No delay for outcome {new_comp}, using a 0 delay")
+                    outcomes_config[new_comp]["delay"] = {"value": 0}
+                    parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
                     parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
 
                 if outcomes_config[new_comp]["duration"].exists():
