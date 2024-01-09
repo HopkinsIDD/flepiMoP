@@ -489,6 +489,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             if (opt$stoch_traj_flag) {
                 initial_seeding$amount <- as.integer(round(initial_seeding$amount))
             }
+        }else{
+            initial_seeding <- NULL
         }
 
         initial_snpi <- arrow::read_parquet(first_chimeric_files[['snpi_filename']])
