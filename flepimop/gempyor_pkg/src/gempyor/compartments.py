@@ -319,7 +319,7 @@ class Compartments:
                             rc = compartment
                     if rc == -1:
                         print(self.compartments)
-                        raise ValueError(f"Could find {colname} defined by {elem} in compartments")
+                        raise ValueError(f"Could not find {colname} defined by {elem} in compartments")
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -414,7 +414,7 @@ class Compartments:
                             if self.compartments["name"][compartment] == elem3:
                                 rc = compartment
                         if rc == -1:
-                            raise ValueError(f"Could find proportional_to {elem3} in compartments")
+                            raise ValueError(f"Could not find proportional_to {elem3} in compartments")
 
                         proportion_array[proportion_index] = rc
                         proportion_index += 1
