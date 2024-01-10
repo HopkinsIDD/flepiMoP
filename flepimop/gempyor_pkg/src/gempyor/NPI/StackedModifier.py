@@ -79,6 +79,7 @@ class StackedModifier(NPIBase):
                         self.reductions[new_p] = 1
 
             for param in self.param_name:
+                
                 # Get reduction return a neutral value for this overlap operation if no parameeter exists
                 reduction = sub_npi.getReduction(param)
                 if param in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",param):
