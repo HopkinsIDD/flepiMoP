@@ -34,8 +34,15 @@ class MultiPeriodModifier(NPIBase):
         self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
         self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
 
+        self.param_name = npi_config["parameter"].as_str().lower()
+
+        # Value when the NPI is not active. 
+        default_value = 1.0
+        if self.param_name in self.pnames_overlap_operation_sum or self.param_name in self.pnames_overlap_operation_reductionprod:
+            default_value=0.0
+
         self.npi = pd.DataFrame(
-            0.0,
+            default_value,
             index=self.subpops,
             columns=pd.date_range(self.start_date, self.end_date),
         )
@@ -46,12 +53,12 @@ class MultiPeriodModifier(NPIBase):
                 "parameter": [""] * len(self.subpops),
                 "start_date": [[self.start_date]] * len(self.subpops),
                 "end_date": [[self.end_date]] * len(self.subpops),
-                "reduction": [0.0] * len(self.subpops),
+                "reduction": [default_value] * len(self.subpops),
             },
             index=self.subpops,
         )
 
-        self.param_name = npi_config["parameter"].as_str().lower()
+        
 
         if (loaded_df is not None) and self.name in loaded_df["npi_name"].values:
             self.__createFromDf(loaded_df, npi_config)
@@ -113,8 +120,8 @@ class MultiPeriodModifier(NPIBase):
         ###     raise ValueError(f"Invalid parameter name: {self.param_name}. Must be one of {REDUCE_PARAMS}")
 
         # Validate
-        if (self.npi == 0).all(axis=None):
-            print(f"Warning: The intervention in config: {self.name} does nothing.")
+        #if (self.npi == 0).all(axis=None):
+        #    print(f"Warning: The intervention in config: {self.name} does nothing.")
 
         # if (self.npi > 1).any(axis=None):
         #     raise ValueError(

@@ -33,13 +33,20 @@ class SinglePeriodModifier(NPIBase):
 
         self.subpops = subpops
 
+        # Get name of the parameter to reduce
+        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
+
+        default_value = 1.0
+        if self.param_name in self.pnames_overlap_operation_sum or self.param_name in self.pnames_overlap_operation_reductionprod:
+            default_value=0.0
+
         self.npi = pd.DataFrame(
-            0.0,
+            default_value,
             index=self.subpops,
             columns=pd.date_range(self.start_date, self.end_date),
         )
         self.parameters = pd.DataFrame(
-            0.0,
+            default_value,
             index=self.subpops,
             columns=["npi_name", "start_date", "end_date", "parameter", "reduction"],
         )
@@ -99,8 +106,6 @@ class SinglePeriodModifier(NPIBase):
         #      )
 
     def __createFromConfig(self, npi_config):
-        # Get name of the parameter to reduce
-        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
         # Optional config field "subpop"
         # If values of "subpop" is "all" or unspecified, run on all subpops.
@@ -138,7 +143,6 @@ class SinglePeriodModifier(NPIBase):
         self.affected_subpops = set(self.subpops)
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
             self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
-        self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         self.parameters["npi_name"] = self.name
