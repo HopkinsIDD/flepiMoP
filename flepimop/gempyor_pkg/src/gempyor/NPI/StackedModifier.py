@@ -116,11 +116,12 @@ class StackedModifier(NPIBase):
         self.__checkErrors()
 
     def __checkErrors(self):
-        for param, reduction in self.reductions.items():
-            if isinstance(reduction, pd.DataFrame) and (reduction > 1).any(axis=None):
-                raise ValueError(
-                    f"The intervention in config: {self.name} has reduction of {param} with value {self.reductions.get(param).max().max()} which is greater than 100% reduced."
-                )
+        pass
+        # for param, reduction in self.reductions.items():
+        #     if isinstance(reduction, pd.DataFrame) and (reduction > 1).any(axis=None):
+        #         raise ValueError(
+        #             f"The intervention in config: {self.name} has reduction of {param} with value {self.reductions.get(param).max().max()} which is greater than 100% reduced."
+        #         )
             
     def get_default(self, param):
         if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:

@@ -116,10 +116,10 @@ class MultiPeriodModifier(NPIBase):
         if (self.npi == 0).all(axis=None):
             print(f"Warning: The intervention in config: {self.name} does nothing.")
 
-        if (self.npi > 1).any(axis=None):
-            raise ValueError(
-                f"The intervention in config: {self.name} has reduction of {self.param_name} is greater than 1"
-            )
+        # if (self.npi > 1).any(axis=None):
+        #     raise ValueError(
+        #         f"The intervention in config: {self.name} has reduction of {self.param_name} is greater than 1"
+        #     )
 
     def __createFromConfig(self, npi_config):
         # Get name of the parameter to reduce
