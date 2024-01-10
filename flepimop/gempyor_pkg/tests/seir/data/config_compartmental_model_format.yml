@@ -62,7 +62,7 @@ seir:
         distribution: fixed
         value: .6
     rho:
-      stacked_modifier_method : "prod"
+      stacked_modifier_method : "product"
       value:
         distribution: fixed
         value: 7

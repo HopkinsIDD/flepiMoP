@@ -81,6 +81,8 @@ def test_constant_population_legacy_integration():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -144,6 +146,8 @@ def test_constant_population_rk4jit_integration_fail():
             modinf=modinf,
             modifiers_library=modinf.seir_modifiers_library,
             subpops=modinf.subpop_struct.subpop_names,
+            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+            pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
         )
 
         params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -208,6 +212,8 @@ def test_constant_population_rk4jit_integration():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -270,6 +276,8 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -354,6 +362,8 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -414,6 +424,8 @@ def test_steps_SEIR_no_spread():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -656,6 +668,9 @@ def test_parallel_compartments_with_vacc():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+           
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -741,6 +756,8 @@ def test_parallel_compartments_no_vacc():
         modinf=modinf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
+        pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -755,7 +772,6 @@ def test_parallel_compartments_no_vacc():
     parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
 
     for i in range(5):
-        modinf.npi_config_seir = config["seir_modifiers"]["settings"]["Scenario_vacc"]
         states = seir.steps_SEIR(
             modinf,
             parsed_parameters,

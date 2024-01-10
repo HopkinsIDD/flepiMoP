@@ -15,6 +15,7 @@ class SinglePeriodModifier(NPIBase):
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[],
     ):
         super().__init__(
             name=getattr(
@@ -26,6 +27,9 @@ class SinglePeriodModifier(NPIBase):
 
         self.start_date = modinf.ti
         self.end_date = modinf.tf
+
+        self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
+        self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
 
         self.subpops = subpops
 
@@ -174,11 +178,17 @@ class SinglePeriodModifier(NPIBase):
             for group in self.spatial_groups["grouped"]:
                 self.parameters.loc[group, "reduction"] = loaded_df.loc[",".join(group), "reduction"]
 
-    def getReduction(self, param, default=0.0):
+    def get_default(self, param):
+        if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
+            return 0.0
+        else:
+            return 1.0
+        
+    def getReduction(self, param):
         "Return the reduction for this param, `default` if no reduction defined"
         if param == self.param_name:
             return self.npi
-        return default
+        return self.get_default(param)
 
     def getReductionToWrite(self):
         # spatially ungrouped dataframe

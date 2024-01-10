@@ -127,14 +127,7 @@ seir_modifiers:
       period_end_date: 2020-05-31
       subpop: ['all']
       value: 0.6
-    Fatigue: 
-      method: ModifierModifier
-      baseline_scenario: Social_Distancing
-      parameter: beta
-      period_start_date: 2020-05-01
-      period_end_date: 2020-05-31
-      subpop: ['all']
-      value: 0.5
+
 #outcome_modifiers:
 #  scenarios:
 #    - DelayedTesting

@@ -74,6 +74,7 @@ def build_outcome_modifiers(
                 modifiers_library=modinf.outcome_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
+                # TODO: support other operation than product
             )
         else:
             npi = NPI.NPIBase.execute(
@@ -81,6 +82,7 @@ def build_outcome_modifiers(
                 modinf=modinf,
                 modifiers_library=modinf.outcome_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
+                # TODO: support other operation than product
             )
     return npi
 
@@ -311,23 +313,14 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             # 1. compute incidence from binomial draw
             # 2. compute duration if needed
             source_name = parameters[new_comp]["source"]
-            if source_name == "incidI" and "incidI" not in all_data:  # create incidI
-                source_array = get_filtered_incidI(
-                    seir_sim,
-                    dates,
-                    modinf.subpop_struct.subpop_names,
-                    {"incidence": {"infection_stage": "I1"}},
-                )
-                all_data["incidI"] = source_array
-                outcomes = pd.merge(
-                    outcomes,
-                    dataframe_from_array(source_array, modinf.subpop_struct.subpop_names, dates, "incidI"),
-                )
-            elif isinstance(source_name, dict):
-                source_array = get_filtered_incidI(seir_sim, dates, modinf.subpop_struct.subpop_names, source_name)
+            if isinstance(source_name, dict):
+                source_array = get_filtered_incidI(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
                 # we don't keep source in this cases
             else:  # already defined outcomes
-                source_array = all_data[source_name]
+                if source_name in all_data:
+                    source_array = all_data[source_name]
+                else:
+                    raise ValueError(f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes.")
 
             if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
                 ## This may be unnecessary
@@ -481,13 +474,13 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
     return outcomes, hpar
 
 
-def get_filtered_incidI(diffI, dates, subpops, filters):
+def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
-        raise ValueError("Cannot distinguish is SEIR sourced outcomes needs incidence or prevalence")
+        raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
     # diffI.drop(["mc_value_type"], inplace=True, axis=1)

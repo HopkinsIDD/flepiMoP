@@ -28,7 +28,9 @@ class Parameters:
 
         self.pdata = {}
         self.pnames2pindex = {}
-        self.stacked_modifier_method = {"sum": [], "prod": []}
+        self.stacked_modifier_method = {"sum": [],
+                                        "product": [],
+                                        "reduction_product":[]}
 
         self.pnames = self.pconfig.keys()
         self.npar = len(self.pnames)
@@ -91,7 +93,7 @@ class Parameters:
             if self.pconfig[pn]["stacked_modifier_method"].exists():
                 self.pdata[pn]["stacked_modifier_method"] = self.pconfig[pn]["stacked_modifier_method"].as_str()
             else:
-                self.pdata[pn]["stacked_modifier_method"] = "prod"
+                self.pdata[pn]["stacked_modifier_method"] = "product"
                 logging.debug(f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs")
             self.stacked_modifier_method[self.pdata[pn]["stacked_modifier_method"]].append(pn.lower())
 
