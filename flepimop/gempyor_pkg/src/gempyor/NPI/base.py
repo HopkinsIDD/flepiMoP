@@ -32,6 +32,7 @@ class NPIBase(abc.ABC):
         subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[],
     ):
         """
         npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI
@@ -49,4 +50,5 @@ class NPIBase(abc.ABC):
             subpops=subpops,
             loaded_df=loaded_df,
             pnames_overlap_operation_sum=pnames_overlap_operation_sum,
+            pnames_overlap_operation_reductionprod=pnames_overlap_operation_reductionprod,
         )
