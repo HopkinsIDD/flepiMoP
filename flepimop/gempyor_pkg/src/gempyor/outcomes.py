@@ -74,6 +74,7 @@ def build_outcome_modifiers(
                 modifiers_library=modinf.outcome_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
+                # TODO: support other operation than product
             )
         else:
             npi = NPI.NPIBase.execute(
@@ -81,6 +82,7 @@ def build_outcome_modifiers(
                 modinf=modinf,
                 modifiers_library=modinf.outcome_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
+                # TODO: support other operation than product
             )
     return npi
 
