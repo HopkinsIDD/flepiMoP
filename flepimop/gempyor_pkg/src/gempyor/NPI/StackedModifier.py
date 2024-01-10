@@ -63,6 +63,8 @@ class StackedModifier(NPIBase):
                 modifiers_library=modifiers_library,
                 subpops=subpops,
                 loaded_df=loaded_df,
+                pnames_overlap_operation_sum=pnames_overlap_operation_sum,
+                pnames_overlap_operation_reductionprod=pnames_overlap_operation_reductionprod
             )
 
             new_params = sub_npi.param_name  # either a list (if stacked) or a string

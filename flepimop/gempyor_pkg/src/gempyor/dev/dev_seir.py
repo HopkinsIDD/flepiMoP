@@ -47,6 +47,9 @@ npi = NPI.NPIBase.execute(
     modinf=modinf,
     modifiers_library=modinf.seir_modifiers_library,
     subpops=modinf.subpop_struct.subpop_names,
+    pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+    pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+    
 )
 
 params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
