@@ -52,6 +52,12 @@ class ModelInfo:
         self.seir_modifiers_scenario = seir_modifiers_scenario
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
 
+        # Auto-detect old config
+        if config["interventions"].exists():
+            raise ValueError("""This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
+                             Please use flepiMoP Version 1.1 (Commit SHA: 0c30c23937dd496d33c2b9fa7c6edb198ad80dac) to run this config. \
+                             (use git checkout v1.1 inside the flepiMoP directory)""")
+
         # 1. Create a setup name that contains every scenario.
         if setup_name is None:
             self.setup_name = config["name"].get()
