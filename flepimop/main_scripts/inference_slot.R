@@ -460,6 +460,15 @@ for(npi_scenario in npi_scenarios) {
 
             startTimeCountEach = Sys.time()
 
+            # reduction in perturbation sd with increasing iteration
+            if (opt$use_iter_pert_decrease){
+                # simple linearly decreasing perturbation
+                pert_adj <- (opt$iterations_per_slot - this_index + 1) / opt$iterations_per_slot
+            } else {
+                pert_adj <- 1
+            }
+
+
             ## Create filenames
 
             ## Using the prefixes, create standardized files of each type (e.g., seir) of the form
@@ -476,15 +485,19 @@ for(npi_scenario in npi_scenarios) {
                     date_sd = config$seeding$date_sd,
                     date_bounds = c(gt_start_date, gt_end_date),
                     amount_sd = config$seeding$amount_sd,
+                    pert_adj = pert_adj,
                     continuous = !(opt$stoch_traj_flag)
                 )
             } else {
                 proposed_seeding <- initial_seeding
             }
-            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$interventions$settings)
-            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$interventions$settings)
+
+
+
+            proposed_snpi <- inference::perturb_snpi(initial_snpi, config$interventions$settings, pert_adj)
+            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$interventions$settings, pert_adj)
             proposed_spar <- initial_spar
-            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_scenario]])
+            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$settings[[outcome_scenario]], pert_adj)
             if (!is.null(config$initial_conditions)){
                 proposed_init <- initial_init
             }

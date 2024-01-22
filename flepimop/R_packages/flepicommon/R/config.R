@@ -100,6 +100,37 @@ as_random_distribution <- function(obj) {
   }
 }
 
+
+##'
+##'Evaluates an expression, returning a numeric value
+##'@examples
+##'as_evaled_expression("2+2") -> 4
+##'
+##'@param obj the string to evaluate
+##'@return a float evaluation of the expression
+##'
+##'@export
+as_random_distribution_pertadj <- function(obj, pert_adj = 1) {
+  require(purrr)
+
+  if (obj$distribution == "uniform") {
+    return(purrr::partial(runif, min=as_evaled_expression(obj$low), max=as_evaled_expression(obj$high)))
+  } else if (obj$distribution == "poisson") {
+    return(purrr::partial(rpois, lambda=as_evaled_expression(obj$lam)))
+  } else if (obj$distribution == "binomial") {
+    return(purrr::partial(rbinom, size=as_evaled_expression(obj$size), prob=as_evaled_expression(obj$prob)))
+  } else if (obj$distribution == "lognormal") {
+    return(purrr::partial(rlnorm, meanlog=as_evaled_expression(obj$meanlog), sdlog=as_evaled_expression(obj$sdlog)))
+  } else if (obj$distribution == "truncnorm") {
+    return(purrr::partial(truncnorm::rtruncnorm, mean = as_evaled_expression(obj$mean), sd = as_evaled_expression(obj$sd)*pert_adj, a = as_evaled_expression(obj$a), b = as_evaled_expression(obj$b)))
+  } else if (obj$distribution == "fixed") {
+    return(purrr::partial(rep,x=as_evaled_expression(obj$value)))
+  } else {
+      stop("unknown distribution")
+  }
+}
+
+
 ##'
 ##' Takes a list of parameters and converts to a pdf
 ##'

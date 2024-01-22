@@ -345,7 +345,7 @@ compute_totals <- function(sim_hosp) {
 ##' @return a perturbed data frame
 ##'
 ##' @export
-perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, continuous = FALSE) {
+perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, pert_adj = 1, continuous = FALSE) {
 
   if (!("no_perturb" %in% colnames(seeding))){
       perturb <- !logical(nrow(seeding))
@@ -354,11 +354,11 @@ perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, contin
   }
 
   if (date_sd > 0) {
-    seeding$date[perturb] <- pmin(pmax(seeding$date + round(rnorm(nrow(seeding),0,date_sd)), date_bounds[1]), date_bounds[2])[perturb]
+    seeding$date[perturb] <- pmin(pmax(seeding$date + round(rnorm(nrow(seeding),0,date_sd*pert_adj)), date_bounds[1]), date_bounds[2])[perturb]
   }
   if (amount_sd > 0) {
     round_func <- ifelse(continuous, function(x){return(x)}, round)
-    seeding$amount[perturb] <- round_func(pmax(rnorm(nrow(seeding),seeding$amount, amount_sd),0))[perturb]
+    seeding$amount[perturb] <- round_func(pmax(rnorm(nrow(seeding),seeding$amount, amount_sd*pert_adj),0))[perturb]
   }
 
   return(seeding)
@@ -377,7 +377,7 @@ perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, contin
 ##'
 ##' @return a perturbed data frame
 ##' @export
-perturb_snpi <- function(snpi, intervention_settings) {
+perturb_snpi <- function(snpi, intervention_settings, pert_adj = 1) {
   ##Loop over all interventions
   for (intervention in names(intervention_settings)) { # consider doing unique(npis$npi_name) instead
 
@@ -386,7 +386,8 @@ perturb_snpi <- function(snpi, intervention_settings) {
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
 
       ##get the random distribution from flepicommon package
-      pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
+      # pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
+      pert_dist <- flepicommon::as_random_distribution_pertadj(intervention_settings[[intervention]][['perturbation']], pert_adj)
 
       ##get the npi values for this distribution
       ind <- (snpi[["npi_name"]] == intervention)
@@ -421,7 +422,7 @@ perturb_snpi <- function(snpi, intervention_settings) {
 ##'
 ##' @return a perturbed data frame
 ##' @export
-perturb_hnpi <- function(hnpi, intervention_settings) {
+perturb_hnpi <- function(hnpi, intervention_settings, pert_adj = 1) {
   ##Loop over all interventions
   for (intervention in names(intervention_settings)) { # consider doing unique(npis$npi_name) instead
 
@@ -430,7 +431,8 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
     if ('perturbation' %in% names(intervention_settings[[intervention]])){
 
       ##get the random distribution from flepicommon package
-      pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
+      # pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
+      pert_dist <- flepicommon::as_random_distribution_pertadj(intervention_settings[[intervention]][['perturbation']], pert_adj)
 
       ##get the npi values for this distribution
       ind <- (hnpi[["npi_name"]] == intervention)
@@ -463,7 +465,7 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
 ##'
 ##' @return a perturbed data frame
 ##' @export
-perturb_hpar <- function(hpar, intervention_settings) {
+perturb_hpar <- function(hpar, intervention_settings, pert_adj = 1) {
   ##Loop over all interventions
 
   for(intervention in names(intervention_settings)){
@@ -471,7 +473,8 @@ perturb_hpar <- function(hpar, intervention_settings) {
       if('perturbation' %in% names(intervention_settings[[intervention]][[quantity]])){
         intervention_quantity <- intervention_settings[[intervention]][[quantity]]
         ## get the random distribution from flepicommon package
-        pert_dist <- flepicommon::as_random_distribution(intervention_quantity[['perturbation']])
+        # pert_dist <- flepicommon::as_random_distribution(intervention_quantity[['perturbation']])
+        pert_dist <- flepicommon::as_random_distribution_pertadj(intervention_settings[[intervention]][['perturbation']], pert_adj)
 
         ##get the hpar values for this distribution
         ind <- (hpar[["outcome"]] == intervention) & (hpar[["quantity"]] == quantity) # & (hpar[['source']] == intervention_settings[[intervention]][['source']])
