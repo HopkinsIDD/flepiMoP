@@ -5,16 +5,17 @@ test_that("initialize_mcmc_first_block works for block > 1",{
     create_filename_list(
       "test_run",
       "global",
+      "filepath_suffix", "filename_prefix",
       1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed","init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
       "chimeric",
       1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed","init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     )
   )
 
@@ -28,8 +29,10 @@ test_that("initialize_mcmc_first_block works for block > 1",{
     initialize_mcmc_first_block(
       run_id = "test_run",
       block = 2,
-      global_prefix = "global",
-      chimeric_prefix = "chimeric",
+      setup_prefix = "prefix",
+      global_intermediate_filepath_suffix = "global",
+      chimeric_intermediate_filepath_suffix = "chimeric",
+      filename_prefix = "filename_prefix",
       gempyor_inference_runner = NULL,
       likelihood_calculation_function = NULL,
       is_resume = FALSE
@@ -40,16 +43,18 @@ test_that("initialize_mcmc_first_block works for block > 1",{
     create_filename_list(
       "test_run",
       "global",
+      "filepath_suffix", "filename_prefix",
       1,
       c("seed", "init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
       "chimeric",
+      "filepath_suffix", "filename_prefix",
       1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed","init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     )
   )
 
@@ -62,8 +67,10 @@ test_that("initialize_mcmc_first_block works for block > 1",{
     initialize_mcmc_first_block(
       run_id = "test_run",
       block = 2,
-      global_prefix = "global",
-      chimeric_prefix = "chimeric",
+      setup_prefix = "prefix",
+      global_intermediate_filepath_suffix = "global",
+      chimeric_intermediate_filepath_suffix = "chimeric",
+      filename_prefix = "filename_prefix",
       gempyor_inference_runner = NULL,
       likelihood_calculation_function = NULL,
       is_resume = FALSE
@@ -82,16 +89,18 @@ test_that("initialize_mcmc_first_block works for block < 1",{
     create_filename_list(
       "test_run",
       "global",
+      "filepath_suffix", "filename_prefix",
       -1,
       c("seed","init",  "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
       "chimeric",
+      "filepath_suffix", "filename_prefix",
       -1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed","init",  "seir", "snpi", "spar", "hosp", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     )
   )
 
@@ -105,8 +114,10 @@ test_that("initialize_mcmc_first_block works for block < 1",{
     initialize_mcmc_first_block(
       run_id = "test_run",
       block = 0,
-      global_prefix = "global",
-      chimeric_prefix = "chimeric",
+      setup_prefix = "prefix",
+      global_intermediate_filepath_suffix = "global",
+      chimeric_intermediate_filepath_suffix = "chimeric",
+      filename_prefix = "filename_prefix",
       gempyor_inference_runner = NULL,
       likelihood_calculation_function = NULL,
       is_resume = FALSE
@@ -117,16 +128,18 @@ test_that("initialize_mcmc_first_block works for block < 1",{
     create_filename_list(
       "test_run",
       "global",
+      "filepath_suffix", "filename_prefix",
       -1,
       c("seed","init", "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
       "chimeric",
+      "filepath_suffix", "filename_prefix",
       -1,
-      c("seed", "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("seed", "init", "seir", "snpi", "spar", "hosp", "hpar","llik"),
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     )
   )
 
@@ -139,8 +152,10 @@ test_that("initialize_mcmc_first_block works for block < 1",{
     initialize_mcmc_first_block(
       run_id = "test_run",
       block = 0,
-      global_prefix = "global",
-      chimeric_prefix = "chimeric",
+      setup_prefix = "prefix",
+      global_intermediate_filepath_suffix = "global",
+      chimeric_intermediate_filepath_suffix = "chimeric",
+      filename_prefix = "filename_prefix",
       gempyor_inference_runner = NULL,
       likelihood_calculation_function = NULL,
       is_resume = FALSE
