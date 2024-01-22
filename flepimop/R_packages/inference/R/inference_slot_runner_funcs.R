@@ -541,8 +541,9 @@ create_filename_list <- function(
 ##'@param slot what is the current slot number
 ##'@param block what is the current block
 ##'@param run_id what is the id of this run
-##'@param global_prefix the prefix to use for global files
-##'@param chimeric_prefix the prefix to use for chimeric files
+##'@param global_intermediate_filepath_suffix the suffix to use for global files
+##'@param chimeric_intermediate_filepath_suffix the suffix to use for chimeric files
+##'@param filename_prefix
 ##'@param gempyor_inference_runner An already initialized copy of python inference runner
 ##'@export
 initialize_mcmc_first_block <- function(
