@@ -522,7 +522,14 @@ create_filename_list <- function(
         x=types,
         y=extensions,
         function(x,y){
-            flepicommon::create_file_name(run_id = run_id, prefix = prefix, filepath_suffix = filepath_suffix, filename_prefix = filename_prefix, index = index, type = x, extension = y, create_directory = TRUE)
+            flepicommon::create_file_name(run_id = run_id, 
+                             prefix = prefix, 
+                             filepath_suffix = filepath_suffix, 
+                             filename_prefix = filename_prefix, 
+                             index = index, 
+                             type = x, 
+                             extension = y, 
+                             create_directory = TRUE)
         }
     )
     names(rc) <- paste(names(rc),"filename",sep='_')

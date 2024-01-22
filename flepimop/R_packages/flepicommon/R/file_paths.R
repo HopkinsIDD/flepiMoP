@@ -49,8 +49,19 @@ create_prefix <- function(..., prefix='',sep='-',trailing_separator=""){
 
 ## Function for creating file names from their components
 ##' @export
-create_file_name <- function(run_id, prefix, filepath_suffix, filename_prefix, index, type, extension='parquet', create_directory = TRUE){
-  rc <- sprintf("model_output/%s/%s/%s/%s/%s%09d.%s.%s.%s", prefix,run_id, type, filepath_suffix, filename_prefix, index, run_id, type, extension)
+create_file_name <- function(run_id, 
+                             prefix, 
+                             filepath_suffix, 
+                             filename_prefix, 
+                             index, 
+                             type, 
+                             extension='parquet', 
+                             create_directory = TRUE){
+  rc <- sprintf("model_output/%s/%s/%s/%s/%s%09d.%s.%s.%s", 
+                prefix, run_id, type, 
+                filepath_suffix, filename_prefix, 
+                index, run_id, type, extension)
+  
   if(create_directory){ # Add filename prefix here.
     if(!dir.exists(dirname(rc))){
       dir.create(dirname(rc), recursive = TRUE)
