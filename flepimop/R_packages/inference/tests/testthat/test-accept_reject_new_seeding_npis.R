@@ -19,6 +19,12 @@ test_that("all blocks are accpeted when all proposals are better",{
                             name=rep(c("X","Y","Z"),3),
                             value=(1:9)*10)
 
+    init_orig <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
+                            date=16:30,
+                            value=1:15)
+    init_prop <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
+                            date=16:30,
+                            value=(1:15)*10)
 
     hpar_orig <- npis_orig
     hpar_orig$value <- runif(nrow(hpar_orig))
@@ -31,6 +37,8 @@ test_that("all blocks are accpeted when all proposals are better",{
 
 
     tmp <- accept_reject_new_seeding_npis(
+      init_orig = init_orig,
+      init_prop = init_prop,
       seeding_orig = seed_orig,
       seeding_prop = seed_prop,
       snpi_orig = npis_orig,
@@ -74,6 +82,12 @@ test_that("all blocks are rejected when all proposals are 1x10^12 times worse",{
                             name=rep(c("X","Y","Z"),3),
                             value=(1:9)*10)
 
+    init_orig <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
+                            date=16:30,
+                            value=1:15)
+    init_prop <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
+                            date=16:30,
+                            value=(1:15)*10)
 
     hpar_orig <- npis_orig
     hpar_orig$value <- runif(nrow(hpar_orig))
@@ -87,6 +101,8 @@ test_that("all blocks are rejected when all proposals are 1x10^12 times worse",{
 
 
     tmp <- accept_reject_new_seeding_npis(
+      init_orig = init_orig,
+      init_prop = init_prop,
       seeding_orig = seed_orig,
       seeding_prop = seed_prop,
       snpi_orig = npis_orig,
@@ -129,7 +145,12 @@ test_that("only middle block is accepted when appropriate",{
                             name=rep(c("X","Y","Z"),3),
                             value=(1:9)*10)
 
-
+    init_orig <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
+                            date=16:30,
+                            value=1:15)
+    init_prop <- data.frame(subpop=c(rep("A",5),rep("B",5),rep("C",5)),
+                            date=16:30,
+                            value=(1:15)*10)
 
     hpar_orig <- npis_orig
     hpar_orig$value <- runif(nrow(hpar_orig))
@@ -143,6 +164,8 @@ test_that("only middle block is accepted when appropriate",{
 
 
     tmp <- accept_reject_new_seeding_npis(
+      init_orig = init_orig,
+      init_prop = init_prop,
       seeding_orig = seed_orig,
       seeding_prop = seed_prop,
       snpi_orig = npis_orig,
