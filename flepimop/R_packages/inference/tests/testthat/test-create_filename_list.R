@@ -4,7 +4,7 @@ test_that("create_filename_list produces a file of each type",{
     
   expect_error({
     create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix",1,c("type1","type2"),"extension")
-  },NA)
+  })
     
   expect_equal({
     gsub(".*[.]","",create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix", 1,"type","extension")[['type_filename']])
@@ -16,11 +16,11 @@ test_that("create_filename_list produces a file of each type",{
 
   expect_error({
     create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix", 1)
-  },NA)
+  })
 
   expect_error({
     create_filename_list("run_id","prefix",1,c("a","b","c"),c("csv","parquet","fake"))
-  },NA)
+  })
 
   expect_equal({
     names(create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix", 1, c("a","b","c"), c("csv","parquet","fake")))
