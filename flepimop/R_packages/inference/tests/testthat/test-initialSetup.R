@@ -1,6 +1,7 @@
 context("initial MCMC setup")
 
 test_that("initialize_mcmc_first_block works for block > 1",{
+    
   filenames <- c(
     create_filename_list(
       "test_run",
@@ -13,6 +14,7 @@ test_that("initialize_mcmc_first_block works for block > 1",{
     create_filename_list(
       "test_run",
       "chimeric",
+      "filepath_suffix", "filename_prefix",
       1,
       c("seed","init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
       c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
@@ -46,7 +48,7 @@ test_that("initialize_mcmc_first_block works for block > 1",{
       "filepath_suffix", "filename_prefix",
       1,
       c("seed", "init", "seir", "snpi", "spar", "hosp", "hnpi", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
@@ -85,6 +87,7 @@ test_that("initialize_mcmc_first_block works for block > 1",{
 })
 
 test_that("initialize_mcmc_first_block works for block < 1",{
+    
   filenames <- c(
     create_filename_list(
       "test_run",
@@ -92,7 +95,7 @@ test_that("initialize_mcmc_first_block works for block < 1",{
       "filepath_suffix", "filename_prefix",
       -1,
       c("seed","init",  "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",
@@ -100,7 +103,7 @@ test_that("initialize_mcmc_first_block works for block < 1",{
       "filepath_suffix", "filename_prefix",
       -1,
       c("seed","init",  "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet", "parquet")
     )
   )
 
@@ -131,7 +134,7 @@ test_that("initialize_mcmc_first_block works for block < 1",{
       "filepath_suffix", "filename_prefix",
       -1,
       c("seed","init", "seir", "snpi", "spar", "hosp", "hpar","llik"),
-      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
+      c("csv","parquet","parquet","parquet","parquet","parquet","parquet","parquet")
     ),
     create_filename_list(
       "test_run",

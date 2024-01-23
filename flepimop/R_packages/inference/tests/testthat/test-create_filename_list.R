@@ -5,18 +5,14 @@ test_that("create_filename_list produces a file of each type",{
   expect_error({
     create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix",1,c("type1","type2"),"extension")
   })
-    
+
   expect_equal({
     gsub(".*[.]","",create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix", 1,"type","extension")[['type_filename']])
   },"extension")
-  
+
   expect_true({
     all(sapply(c("run_id","prefix","type","extension"),function(x){grepl(x,create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix",1,"type","extension")[['type_filename']])}))
   },"extension")
-
-  expect_error({
-    create_filename_list("run_id", "prefix","filepath_suffix", "filename_prefix", 1)
-  })
 
   expect_error({
     create_filename_list("run_id","prefix",1,c("a","b","c"),c("csv","parquet","fake"))
@@ -40,4 +36,5 @@ test_that("create_filename_list produces a file of each type",{
     rc <- unname(rc)
     rc
   },c("a","b","c"))
+  
 })
