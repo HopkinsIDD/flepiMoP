@@ -131,7 +131,7 @@ foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
         "-R", opt[["is-resume"]],
         "-I", opt[["is-interactive"]],
         "-L", opt$reset_chimeric_on_accept,
-        paste("2>&1 | tee log_inference_slot", flepi_slot, ".txt", sep="") 
+        paste("2>&1 | tee log_inference_slot", flepi_slot, ".txt", sep=""),
       sep = " ")
     )
   if(err != 0){quit("no")}
