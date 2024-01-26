@@ -52,13 +52,13 @@ class Parameters:
                 fn_name = self.pconfig[pn]["timeseries"].get()
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
-                if len(df.columns) >= len(subpop_names):  # one ts per subpop
-                    df = df[subpop_names]  # make sure the order of subpops is the same as the reference
-                    # (subpop_names from spatial setup) and select the columns
-                elif len(df.columns) == 1:
+                if len(df.columns) == 1: # if only one ts, assume it applies to all subpops
                     df = pd.DataFrame(
                         pd.concat([df] * len(subpop_names), axis=1).values, index=df.index, columns=subpop_names
                     )
+                elif len(df.columns) >= len(subpop_names):  # one ts per subpop
+                    df = df[subpop_names]  # make sure the order of subpops is the same as the reference
+                    # (subpop_names from spatial setup) and select the columns
                 else:
                     print("loaded col :", sorted(list(df.columns)))
                     print("geodata col:", sorted(subpop_names))
