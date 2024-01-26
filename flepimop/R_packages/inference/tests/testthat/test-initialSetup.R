@@ -1,6 +1,6 @@
-context("initial MCMC setup")
+# context("initial MCMC setup")
 
-test_that("initialize_mcmc_first_block works for block > 1",{
+# test_that("initialize_mcmc_first_block works for block > 1",{
 #     
 #     filenames <- c(
 #         create_filename_list(
@@ -180,4 +180,4 @@ test_that("initialize_mcmc_first_block works for block > 1",{
 #         any(file.exists(filenames))
 #     })
     
-})
+# })
