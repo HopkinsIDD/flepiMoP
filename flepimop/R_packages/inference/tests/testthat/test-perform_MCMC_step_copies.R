@@ -1,6 +1,6 @@
-context("perform_MCMC_step_copies")
-
-
+# context("perform_MCMC_step_copies")
+# 
+# 
 
     ## ** NEED TO REVISE TO WORK!!! ***
 
@@ -252,7 +252,7 @@ context("perform_MCMC_step_copies")
 #     ##clean up
 #     setwd("..")
 #     unlink("MCMC_step_copy_test", recursive=TRUE)
-
-
-})
+# 
+# 
+# })
 
