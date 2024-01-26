@@ -465,14 +465,14 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         ## print("RUNNING: initialization of first block")
         ## Functions within this function save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),run_id.variable.ext and also copied into the /chimeric/ version, which are referenced by first_global_files and first_chimeric_files
         inference::initialize_mcmc_first_block(
-            run_id=opt$run_id,
-            block=opt$this_block,
-            setup_prefix=setup_prefix,
-            filename_prefix=slotblock_filename_prefix,
-            global_intermediate_filepath_suffix=global_intermediate_filepath_suffix,
-            chimeric_intermediate_filepath_suffix=chimeric_intermediate_filepath_suffix,
-            gempyor_inference_runner=gempyor_inference_runner,
-            likelihood_calculation_function=likelihood_calculation_fun,
+            run_id = opt$run_id,
+            block = opt$this_block,
+            setup_prefix = setup_prefix,
+            global_intermediate_filepath_suffix = global_intermediate_filepath_suffix,
+            chimeric_intermediate_filepath_suffix = chimeric_intermediate_filepath_suffix, 
+            filename_prefix = slotblock_filename_prefix,
+            gempyor_inference_runner = gempyor_inference_runner,
+            likelihood_calculation_function = likelihood_calculation_fun,
             is_resume = opt[['is-resume']]
         )
         print("First MCMC block initialized successfully.")

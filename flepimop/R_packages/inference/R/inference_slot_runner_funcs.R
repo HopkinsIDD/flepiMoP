@@ -522,7 +522,14 @@ create_filename_list <- function(
         x=types,
         y=extensions,
         function(x,y){
-            flepicommon::create_file_name(run_id = run_id, prefix = prefix, filepath_suffix = filepath_suffix, filename_prefix = filename_prefix, index = index, type = x, extension = y, create_directory = TRUE)
+            flepicommon::create_file_name(run_id = run_id, 
+                             prefix = prefix, 
+                             filepath_suffix = filepath_suffix, 
+                             filename_prefix = filename_prefix, 
+                             index = index, 
+                             type = x, 
+                             extension = y, 
+                             create_directory = TRUE)
         }
     )
     names(rc) <- paste(names(rc),"filename",sep='_')
@@ -534,8 +541,9 @@ create_filename_list <- function(
 ##'@param slot what is the current slot number
 ##'@param block what is the current block
 ##'@param run_id what is the id of this run
-##'@param global_prefix the prefix to use for global files
-##'@param chimeric_prefix the prefix to use for chimeric files
+##'@param global_intermediate_filepath_suffix the suffix to use for global files
+##'@param chimeric_intermediate_filepath_suffix the suffix to use for chimeric files
+##'@param filename_prefix
 ##'@param gempyor_inference_runner An already initialized copy of python inference runner
 ##'@export
 initialize_mcmc_first_block <- function(
@@ -557,9 +565,9 @@ initialize_mcmc_first_block <- function(
     non_llik_types <- paste(c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
     # create_filename_list(run_id, prefix, suffix, index, types = c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik"), extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet"))
     # makes file names of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
-    global_files <- create_filename_list(run_id=run_id,  prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix = filename_prefix, index=block - 1, types=global_types, extension=global_extensions)
+    global_files <- create_filename_list(run_id=run_id,  prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix = filename_prefix, index=block - 1, types=global_types, extensions=global_extensions)
     # makes file names of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/chimeric/intermediate/slot.(block-1).run_ID.variable.ext
-    chimeric_files <- create_filename_list(run_id=run_id, prefix=setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix = filename_prefix, index=block - 1, types=chimeric_types, extension=chimeric_extensions)
+    chimeric_files <- create_filename_list(run_id=run_id, prefix=setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix = filename_prefix, index=block - 1, types=chimeric_types, extensions=chimeric_extensions)
 
     global_check <- sapply(global_files, file.exists)
     chimeric_check <- sapply(chimeric_files, file.exists)
