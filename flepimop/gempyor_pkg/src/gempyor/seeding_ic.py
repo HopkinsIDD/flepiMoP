@@ -580,7 +580,7 @@ class InitialConditions(SimulationComponent):
 
         if "proportional" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["proportional"].get():
-                y0 = y0 * setup.subpop_pop[pl_idx]
+                y0 = y0 * setup.subpop_pop
 
         # check that the inputed values sums to the subpop population:
         error = False
