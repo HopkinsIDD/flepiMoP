@@ -489,6 +489,8 @@ class InitialConditions(SimulationComponent):
                         if "rest" in str(ic_df_compartment_val).strip().lower():
                             rests.append([comp_idx, pl_idx])
                         else:
+                            if isinstance(ic_df_compartment_val, pd.Series): # it can also be float if we allow allow_missing_compartments
+                                ic_df_compartment_val = float(ic_df_compartment_val.iloc[0])
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_subpops:
                     logger.critical(
