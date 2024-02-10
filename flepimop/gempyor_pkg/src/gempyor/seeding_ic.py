@@ -555,7 +555,7 @@ class InitialConditions(SimulationComponent):
 
                 for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
                     if pl in ic_df.columns:
-                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
+                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
                     elif allow_missing_subpops:
                         logger.critical(
                             f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
