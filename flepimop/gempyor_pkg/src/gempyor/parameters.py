@@ -145,7 +145,8 @@ class Parameters:
 
         for idx, pn in enumerate(self.pnames):
             if pn in param_df["parameter"].values:
-                pval = float(param_df[param_df["parameter"] == pn].value)
+                print(param_df[param_df["parameter"] == pn])
+                pval = float(param_df[param_df["parameter"] == pn]["value"].iloc[0])
                 param_arr[idx] = np.full((n_days, nsubpops), pval)
             elif "ts" in self.pdata[pn]:
                 param_arr[idx] = self.pdata[pn]["ts"].values
