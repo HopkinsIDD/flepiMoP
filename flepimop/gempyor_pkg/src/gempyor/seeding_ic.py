@@ -145,7 +145,7 @@ class SeedingAndIC:
                             else:
                                 raise ValueError(
                                     f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
-                                                 Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
+                                                Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
                                 )
                         if "rest" in str(ic_df_compartment_val).strip().lower():
                             rests.append([comp_idx, pl_idx])
@@ -469,9 +469,9 @@ class InitialConditions(SimulationComponent):
                             ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
                         else:
                             filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
-                            ic_df_compartment = states_pl.copy()
+                            ic_df_compartment_val = states_pl.copy()
                             for mc_name, mc_value in filters.items():
-                                ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value][
+                                ic_df_compartment_val = ic_df_compartment_val[ic_df_compartment_val["mc_" + mc_name] == mc_value][
                                     "amount"
                                 ]
                         if len(ic_df_compartment_val) > 1:
