@@ -145,7 +145,7 @@ class SeedingAndIC:
                             else:
                                 raise ValueError(
                                     f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
-                                                 Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
+                                                Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
                                 )
                         if "rest" in str(ic_df_compartment_val).strip().lower():
                             rests.append([comp_idx, pl_idx])
@@ -469,9 +469,9 @@ class InitialConditions(SimulationComponent):
                             ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
                         else:
                             filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
-                            ic_df_compartment = states_pl.copy()
+                            ic_df_compartment_val = states_pl.copy()
                             for mc_name, mc_value in filters.items():
-                                ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value][
+                                ic_df_compartment_val = ic_df_compartment_val[ic_df_compartment_val["mc_" + mc_name] == mc_value][
                                     "amount"
                                 ]
                         if len(ic_df_compartment_val) > 1:
@@ -489,6 +489,8 @@ class InitialConditions(SimulationComponent):
                         if "rest" in str(ic_df_compartment_val).strip().lower():
                             rests.append([comp_idx, pl_idx])
                         else:
+                            if isinstance(ic_df_compartment_val, pd.Series): # it can also be float if we allow allow_missing_compartments
+                                ic_df_compartment_val = float(ic_df_compartment_val.iloc[0])
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_subpops:
                     logger.critical(
@@ -553,7 +555,7 @@ class InitialConditions(SimulationComponent):
 
                 for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
                     if pl in ic_df.columns:
-                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl])
+                        y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
                     elif allow_missing_subpops:
                         logger.critical(
                             f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
@@ -580,7 +582,7 @@ class InitialConditions(SimulationComponent):
 
         if "proportional" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["proportional"].get():
-                y0 = y0 * setup.subpop_pop[pl_idx]
+                y0 = y0 * setup.subpop_pop
 
         # check that the inputed values sums to the subpop population:
         error = False

@@ -276,7 +276,7 @@ class GempyorSimulator:
                 outcomes.postprocess_and_write(
                     sim_id=sim_id2write,
                     modinf=self.modinf,
-                    outcomes=outcomes_df,
+                    outcomes_df=outcomes_df,
                     hpar=hpar_df,
                     npi=npi_outcomes,
                 )

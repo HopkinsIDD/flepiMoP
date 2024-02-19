@@ -72,13 +72,13 @@ def test_outcome():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.1
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")]["value"]
+                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")]["value"].iloc[0]
             )
             == 7
         )
@@ -86,7 +86,7 @@ def test_outcome():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "duration")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 7
         )
@@ -94,13 +94,13 @@ def test_outcome():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.01
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")]["value"]
+                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")]["value"].iloc[0]
             )
             == 2
         )
@@ -108,7 +108,7 @@ def test_outcome():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.4
         )
@@ -116,7 +116,7 @@ def test_outcome():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "delay")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0
         )
@@ -261,13 +261,13 @@ def test_outcomes_npi():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.1 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")]["value"]
+                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")]["value"].iloc[0]
             )
             == 7 * 2
         )
@@ -275,7 +275,7 @@ def test_outcomes_npi():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "duration")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 7 * 2
         )
@@ -283,13 +283,13 @@ def test_outcomes_npi():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.01 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")]["value"]
+                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")]["value"].iloc[0]
             )
             == 2 * 2
         )
@@ -297,7 +297,7 @@ def test_outcomes_npi():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.4 * 2
         )
@@ -305,7 +305,7 @@ def test_outcomes_npi():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "delay")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0 * 2
         )
@@ -433,13 +433,13 @@ def test_outcomes_npi_custom_pname():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.1 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")]["value"]
+                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")]["value"].iloc[0]
             )
             == 7 * 2
         )
@@ -447,7 +447,7 @@ def test_outcomes_npi_custom_pname():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "duration")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 7 * 2
         )
@@ -455,13 +455,13 @@ def test_outcomes_npi_custom_pname():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.01 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")]["value"]
+                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")]["value"].iloc[0]
             )
             == 2 * 2
         )
@@ -469,7 +469,7 @@ def test_outcomes_npi_custom_pname():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "probability")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0.4 * 2
         )
@@ -477,7 +477,7 @@ def test_outcomes_npi_custom_pname():
             float(
                 hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "delay")][
                     "value"
-                ]
+                ].iloc[0]
             )
             == 0 * 2
         )
@@ -646,7 +646,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidH_{p_comp}")
                         & (hpar["quantity"] == "probability")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 0.1 * 2
             )
@@ -656,7 +656,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidH_{p_comp}")
                         & (hpar["quantity"] == "delay")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 7 * 2
             )
@@ -666,7 +666,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidH_{p_comp}")
                         & (hpar["quantity"] == "duration")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 7 * 2
             )
@@ -676,7 +676,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidD_{p_comp}")
                         & (hpar["quantity"] == "probability")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 0.01 * 2
             )
@@ -686,7 +686,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidD_{p_comp}")
                         & (hpar["quantity"] == "delay")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 2 * 2
             )
@@ -696,7 +696,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidICU_{p_comp}")
                         & (hpar["quantity"] == "probability")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 0.4 * 2
             )
@@ -706,7 +706,7 @@ def test_outcomes_pcomp():
                         (hpar["subpop"] == place)
                         & (hpar["outcome"] == f"incidICU_{p_comp}")
                         & (hpar["quantity"] == "delay")
-                    ]["value"]
+                    ]["value"].iloc[0]
                 )
                 == 0 * 2
             )
