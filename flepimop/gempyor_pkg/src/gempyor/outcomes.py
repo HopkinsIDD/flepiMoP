@@ -107,7 +107,7 @@ def onerun_delayframe_outcomes(
 
     # Compute outcomes
     with Timer("onerun_delayframe_outcomes.compute"):
-        outcomes, hpar = compute_all_multioutcomes(
+        outcomes_df, hpar = compute_all_multioutcomes(
             modinf=modinf,
             sim_id2write=sim_id2write,
             parameters=parameters,
@@ -116,7 +116,7 @@ def onerun_delayframe_outcomes(
         )
 
     with Timer("onerun_delayframe_outcomes.postprocess"):
-        postprocess_and_write(sim_id=sim_id2write, modinf=modinf, outcomes=outcomes, hpar=hpar, npi=npi_outcomes)
+        postprocess_and_write(sim_id=sim_id2write, modinf=modinf, outcomes_df=outcomes_df, hpar=hpar, npi=npi_outcomes)
 
 
 def read_parameters_from_config(modinf: model_info.ModelInfo):
@@ -252,9 +252,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
     return parameters
 
 
-def postprocess_and_write(sim_id, modinf, outcomes, hpar, npi):
-    outcomes["time"] = outcomes["date"]
-    modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes)
+def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
+    outcomes_df["time"] = outcomes_df["date"]
+    modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
     modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
 
     if npi is None:
@@ -271,6 +271,9 @@ def postprocess_and_write(sim_id, modinf, outcomes, hpar, npi):
     else:
         hnpi = npi.getReductionDF()
     modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
+
+    return outcomes_df, hpar, hnpi
+
 
 
 def dataframe_from_array(data, subpops, dates, comp_name):
@@ -292,7 +295,7 @@ def read_seir_sim(modinf, sim_id):
     return seir_df
 
 
-def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None):
+def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None, bypass_seir=None):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
@@ -304,8 +307,10 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
         dates,
         "zeros",
     ).drop("zeros", axis=1)
-
-    seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
+    if bypass_seir is None:
+        seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
+    else:
+        seir_sim = bypass_seir
 
     for new_comp in parameters:
         if "source" in parameters[new_comp]:
