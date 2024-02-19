@@ -95,7 +95,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
 
         if (s$period == "1 weeks") {
             period_unit_validator <- function(dates, units) {
-                return(length(unique(dates)) == 7)
+                return(length(unique(dates)) <= 7 & length(unique(dates)) > 0)
             }
         } else if (s$period == "1 days") {
             period_unit_validator <- function(dates, units) {
