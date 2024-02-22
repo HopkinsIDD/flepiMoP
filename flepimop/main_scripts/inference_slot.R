@@ -742,7 +742,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
                 ## Chimeric likelihood acceptance or rejection decisions (one round) -----
                 #  "Chimeric" means GeoID-specific
-                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+                if (!is.null(config$initial_conditions)){
                     initial_init <- NULL
                     proposed_init <- NULL
                 }
