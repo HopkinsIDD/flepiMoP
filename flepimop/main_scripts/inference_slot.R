@@ -498,8 +498,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
         initial_hpar <- arrow::read_parquet(first_chimeric_files[['hpar_filename']])
 
-        if (!is.null(config$initial_conditions)){
-            initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
+        if (!is.null(config$initial_conditions) & config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw")){
+            # initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
             initial_init <- arrow::read_parquet(first_chimeric_files[['init_filename']])
         }
 
@@ -563,7 +563,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             } else {
                 proposed_seeding <- initial_seeding
             }
-            if (!is.null(config$initial_conditions)){
+            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                 if (infer_initial_conditions) {
                     proposed_init <- inference::perturb_init(initial_init, config$initial_conditions$perturbation)
                 } else {
@@ -589,7 +589,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 proposed_hnpi <- initial_hnpi
                 proposed_spar <- initial_spar
                 proposed_hpar <- initial_hpar
-                if (!is.null(config$initial_conditions)){
+                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                     proposed_init <- initial_init
                 }
                 if (!is.null(config$seeding)){
@@ -614,7 +614,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             if (!is.null(config$seeding)){
                 readr::write_csv(proposed_seeding, this_global_files[['seed_filename']])
             }
-            if (!is.null(config$initial_conditions)){
+            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                 arrow::write_parquet(proposed_init, this_global_files[['init_filename']])
             }
 
@@ -742,7 +742,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
                 ## Chimeric likelihood acceptance or rejection decisions (one round) -----
                 #  "Chimeric" means GeoID-specific
-                if (is.null(config$initial_conditions)){
+                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                     initial_init <- NULL
                     proposed_init <- NULL
                 }
@@ -765,7 +765,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
 
                 # Update accepted parameters to start next simulation
-                if (!is.null(config$initial_conditions)){
+                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                     initial_init <- seeding_npis_list$init
                 }
                 initial_seeding <- seeding_npis_list$seeding
@@ -775,7 +775,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 chimeric_likelihood_data <- seeding_npis_list$ll
             } else {
                 print("Resetting chimeric files to global")
-                if (!is.null(config$initial_conditions)){
+                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                     initial_init <- proposed_init
                 }
                 initial_seeding <- proposed_seeding
@@ -796,7 +796,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             if (!is.null(config$seeding)){
                 readr::write_csv(initial_seeding,this_chimeric_files[['seed_filename']])
             }
-            if (!is.null(config$initial_conditions)){
+            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                 arrow::write_parquet(initial_init, this_chimeric_files[['init_filename']])
             }
             arrow::write_parquet(initial_snpi,this_chimeric_files[['snpi_filename']])
