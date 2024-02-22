@@ -729,7 +729,7 @@ initialize_mcmc_first_block <- function(
                 }
 
             } else if (config$initial_conditions$method == "FromFile") {
-                stop("ERROR: Method 'FromFile' Initial conditions has not been implemented yet for Inference.")
+                # stop("ERROR: Method 'FromFile' Initial conditions has not been implemented yet for Inference.")
             }
         }
     }
