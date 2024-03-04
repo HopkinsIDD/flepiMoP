@@ -485,8 +485,7 @@ def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_fr
     all_files = [f.key for f in all_files]
     if restart_from_run_id is None:
         print("WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎...")
-        restart_from_run_id = all_files[0].split("/")[6]
-
+        restart_from_run_id = all_files[0].split("/")[3]
         if user_confirmation(question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True):
             print(f"great, continuing with run_id {restart_from_run_id}...")
         else:
