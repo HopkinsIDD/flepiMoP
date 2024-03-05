@@ -62,8 +62,10 @@ if [[ -n "$LAST_JOB_OUTPUT" ]]; then  # -n Checks if the length of a string is n
 			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                                 prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
                                                                                                                 inference_filepath_suffix='$liketype/intermediate',
-                                                                                                                inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
-                                                                                                                index=$FLEPI_BLOCK_INDEX-1,
+                                                                                                                # inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
+                                                                                                                # index=$FLEPI_BLOCK_INDEX-1,
+                                                                                                                inference_filename_prefix='%09d.' % $FLEPI_SLOT_INDEX,
+                                                                                                                index='{:09d}.{:09d}'.format(1, $FLEPI_BLOCK_INDEX-1),
                                                                                                                 ftype='$filetype',
                                                                                                                 extension='$extension'))")
 			if [[ $FLEPI_BLOCK_INDEX -eq 1 ]]; then
@@ -100,8 +102,10 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     export INIT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
                                                                                                         prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
                                                                                                         inference_filepath_suffix='global/intermediate',
-                                                                                                        inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
-                                                                                                        index=$FLEPI_BLOCK_INDEX-1,
+                                                                                                        # inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
+                                                                                                        # index=$FLEPI_BLOCK_INDEX-1,
+                                                                                                        inference_filename_prefix='%09d.' % $FLEPI_SLOT_INDEX,
+                                                                                                        index='{:09d}.{:09d}'.format(1, $FLEPI_BLOCK_INDEX-1),
                                                                                                         ftype='$FLEPI_CONTINUATION_FTYPE',
                                                                                                         extension='$extension'))")
     # in filename is always a seir file
