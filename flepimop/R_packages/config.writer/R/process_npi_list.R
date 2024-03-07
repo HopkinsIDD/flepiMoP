@@ -57,8 +57,7 @@ find_truncnorm_mean_parameter <- function(a, b, mean, sd) {
 #' @export
 #'
 
-npi_recode_scenario <- function(data
-                                ){
+npi_recode_scenario <- function(data){
 
     data %>%
         dplyr::mutate(scenario = action,
