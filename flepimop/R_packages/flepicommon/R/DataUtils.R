@@ -37,7 +37,8 @@ load_geodata_file <- function(filename,
     }
 
     if(state_name) {
-        geodata <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>%
+        utils::data(fips_us_county, package = "flepicommon") # arrow::read_parquet("datasetup/usdata/fips_us_county.parquet")
+        geodata <- fips_us_county %>%  
             dplyr::distinct(state, state_name) %>%
             dplyr::rename(USPS = state) %>%
             dplyr::rename(state = state_name) %>%
