@@ -14,53 +14,7 @@
 #' @return The result of calling `rhs(lhs)`.
 NULL
 
-##' load_geodata_file
-##'
-##' Convenience function to load the geodata file
-##'
-##' @param filename filename of geodata file
-##' @param subpop_len length of subpop character string
-##' @param subpop_pad what to pad the subpop character string with
-##' @param state_name whether to add column state with the US state name; defaults to TRUE for forecast or scenario hub runs.
-##'
-##' @details
-##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and subpop with the geo IDs of the area. .
-##'
-##' @return a data frame with columns for state USPS, county subpop and population
-##' @examples
-##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
-##' geodata
-##'
-##' @export
 
-load_geodata_file <- function(filename,
-                              subpop_len = 0,
-                              subpop_pad = "0",
-                              state_name = TRUE) {
-
-    if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
-    geodata <- readr::read_csv(filename) %>%
-        dplyr::mutate(subpop = as.character(subpop))
-
-    if (!("subpop" %in% names(geodata))) {
-        stop(paste(filename, "does not have a column named subpop"))
-    }
-
-    if (subpop_len > 0) {
-        geodata$subpop <- stringr::str_pad(geodata$subpop, subpop_len, pad = subpop_pad)
-    }
-
-    if(state_name) {
-        geodata <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>%
-            dplyr::distinct(state, state_name) %>%
-            dplyr::rename(USPS = state) %>%
-            dplyr::rename(state = state_name) %>%
-            dplyr::mutate(state = dplyr::recode(state, "U.S. Virgin Islands" = "Virgin Islands")) %>%
-            dplyr::right_join(geodata)
-    }
-
-    return(geodata)
-}
 
 ##' find_truncnorm_mean_parameter
 ##'
