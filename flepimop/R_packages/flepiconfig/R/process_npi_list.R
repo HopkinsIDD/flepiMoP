@@ -109,8 +109,8 @@ npi_recode_scenario_mult <- function(data){
 #' @export
 #'
 #' @examples
-#' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
-#' npi_dat <- process_npi_shub(intervention_path = system.file("extdata", "intervention_data.csv", package = "config.writer"), geodata)
+#' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "flepiconfig"))
+#' npi_dat <- process_npi_shub(intervention_path = system.file("extdata", "intervention_data.csv", package = "flepiconfig"), geodata)
 #'
 #' npi_dat
 process_npi_usa <- function (intervention_path,
@@ -215,7 +215,7 @@ process_npi_ca <- function(intervention_path,
 #' @return
 #' @examples
 #'
-#' variant <- generate_variant_b117(variant_path = system.file("extdata", "strain_replace_mmwr.csv", package = "config.writer"))
+#' variant <- generate_variant_b117(variant_path = system.file("extdata", "strain_replace_mmwr.csv", package = "flepiconfig"))
 #' variant
 #'
 #' @export
@@ -301,8 +301,8 @@ generate_variant_b117 <- function(variant_path,
 #'
 #' @examples
 #'
-#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "config.writer"),
-#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "config.writer"))
+#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "flepiconfig"),
+#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "flepiconfig"))
 #' variant
 #'
 generate_multiple_variants <- function(variant_path_1,
@@ -399,8 +399,8 @@ generate_multiple_variants <- function(variant_path_1,
 #'
 #' @examples
 #'
-#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "config.writer"),
-#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "config.writer"))
+#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "flepiconfig"),
+#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "flepiconfig"))
 #' variant
 #'
 generate_multiple_variants_state <- function(variant_path_1,
@@ -520,8 +520,8 @@ generate_multiple_variants_state <- function(variant_path_1,
 #'
 #' @examples
 #'
-#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "config.writer"),
-#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "config.writer"))
+#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "flepiconfig"),
+#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "flepiconfig"))
 #' variant
 #'
 generate_compartment_variant <- function(variant_path = "../COVID19_USA/data/variant/variant_props_long.csv",

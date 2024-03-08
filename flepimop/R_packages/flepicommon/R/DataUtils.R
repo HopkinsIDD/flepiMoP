@@ -13,7 +13,7 @@
 ##'
 ##' @return a data frame with columns for state USPS, county subpop and population
 ##' @examples
-##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
+##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "flepiconfig"))
 ##' geodata
 ##'
 ##' @export

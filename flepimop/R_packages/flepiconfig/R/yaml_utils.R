@@ -1081,7 +1081,7 @@ print_seir <- function(integration_method = "rk4",
                        ifelse(use_descriptions & !(is.na(seir_dat$description[i]) |
                                                        is.null(seir_dat$description[i]) | seir_dat$description[i] == ""),
                               paste0("# ", seir_dat$transition[i], " - ", seir_dat$description[i], "\n"), ""),
-                       config.writer::seir_chunk(resume_modifier = resume_modifier,
+                       flepiconfig::seir_chunk(resume_modifier = resume_modifier,
                                                  SEIR_source = strsplit(seir_dat$SEIR_source[i], ",")[[1]],
                                                  SEIR_dest = strsplit(seir_dat$SEIR_dest[i], ",")[[1]],
                                                  vaccine_compartments_source = strsplit(seir_dat$vaccine_compartments_source[i], ",")[[1]],
