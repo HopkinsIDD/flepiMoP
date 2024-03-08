@@ -421,12 +421,12 @@
       "Hash": "2ba81b120c1655ab696c935ef33ea716",
       "Requirements": []
     },
-    "config.writer": {
-      "Package": "config.writer",
+    "flepiconfig": {
+      "Package": "flepiconfig",
       "Version": "1.0.0",
       "Source": "Local",
       "RemoteType": "local",
-      "RemoteUrl": "~/pkgs/config.writer/",
+      "RemoteUrl": "~/pkgs/flepiconfig/",
       "Hash": "6926b00e7a264696bc5b5ec3147bdd6e",
       "Requirements": [
         "MMWRweek",

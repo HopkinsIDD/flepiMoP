@@ -1,4 +1,4 @@
-Package: config.writer
+Package: flepiconfig
 Title: Config creator for flepiMoP 
 Version: 3.0.0
 Imports:

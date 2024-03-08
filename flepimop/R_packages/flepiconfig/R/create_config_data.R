@@ -681,7 +681,7 @@ set_variant_params <- function(b117_only = FALSE, variant_path, variant_path_2 =
     } else {
         # we can get rid of this B117 part eventually
         if (b117_only) {
-            variant_data <- config.writer::generate_variant_b117(variant_path = variant_path,
+            variant_data <- flepiconfig::generate_variant_b117(variant_path = variant_path,
                                                                  sim_start_date = sim_start_date, sim_end_date = sim_end_date,
                                                                  variant_lb = variant_lb, variant_effect = variant_effect,
                                                                  month_shift = month_shift) %>% dplyr::mutate(subpop = "all",
