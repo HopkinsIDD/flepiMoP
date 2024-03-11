@@ -25,7 +25,7 @@ proj_data <- data_comb
 # STATE DATA --------------------------------------------------------------
 
 # State Data #
-state_cw <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>%
+state_cw <- arrow::read_parquet(paste0(source_loc, "/datasetup/usdata/fips_us_county.parquet")) %>%
   dplyr::distinct(state, state_code) %>%
   dplyr::select(USPS = state, location = state_code) %>%
   dplyr::mutate(location = str_pad(location, 2, side = "left", pad = "0")) %>%
