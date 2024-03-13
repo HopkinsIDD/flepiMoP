@@ -8,7 +8,6 @@ config <- NA
 ##'
 ##' @param x 
 ##' @param name 
-##' @export
 '$.config' <- function(x, name) {
   if (name %in% names(x)) {
     return(x[[name]])
