@@ -126,12 +126,12 @@ process_npi_usa <- function (intervention_path,
     if (!all(lubridate::is.Date(og$start_date), lubridate::is.Date(og$end_date))) {
         og <- og %>% dplyr::mutate(dplyr::across(tidyselect::ends_with("_date"), ~lubridate::mdy(.x)))
     }
-    if ("method" %in% colnames(og)) {
-        og <- og %>% dplyr::mutate(name = dplyr::if_else(method == "MultiPeriodModifier", scenario_mult, scenario)) %>%
-            dplyr::select(USPS, subpop, start_date, end_date, name, method)
+    if ("modifier_method" %in% colnames(og)) {
+        og <- og %>% dplyr::mutate(name = dplyr::if_else(modifier_method == "MultiPeriodModifier", scenario_mult, scenario)) %>%
+            dplyr::select(USPS, subpop, start_date, end_date, name, modifier_method)
     } else {
-        og <- og %>% dplyr::mutate(method = "MultiPeriodModifier") %>%
-            dplyr::select(USPS, subpop, start_date, end_date, name = scenario_mult, method)
+        og <- og %>% dplyr::mutate(modifier_method = "MultiPeriodModifier") %>%
+            dplyr::select(USPS, subpop, start_date, end_date, name = scenario_mult, modifier_method)
     }
     if (prevent_overlap) {
         og <- og %>% dplyr::group_by(USPS, subpop) %>%
