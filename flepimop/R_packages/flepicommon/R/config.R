@@ -6,6 +6,9 @@ config <- NA
 ##'
 ##'Overrides the $ operator for S3 'config' objects to ensure that named args exist.
 ##'
+##' @param x 
+##' @param name 
+##' @export
 '$.config' <- function(x, name) {
   if (name %in% names(x)) {
     return(x[[name]])
@@ -127,6 +130,17 @@ as_density_distribution <- function(obj) {
   }
 }
 
+
+
+
+#' Check that the value is within the bounds of the distribution
+#'
+#' @param value 
+#' @param obj 
+#'
+#' @return a boolean indicating whether the value is within the bounds of the distribution
+#' @export
+#'
 check_within_bounds <- function(value, obj) {
   # Using & so it's vectorized for a vector of value with a single distribution
   if (obj$distribution == "uniform") {
