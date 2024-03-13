@@ -446,13 +446,13 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
                 next
             }
             cat(paste0("    ", dat$category[i], ":\n", "      method: StackedModifier\n",
-                       "      scenarios: [\"", dat$name[i], "\"]\n"))
+                       "      modifiers: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category ==
                                                         "NPI_redux", name, category))
         cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
-                   "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
+                   "      modifiers: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     }
     else {
@@ -466,7 +466,7 @@ yaml_stack1 <- function (dat, scenario = "Inference", stack = TRUE){
             stop("At least one intervention name is shared by distinct NPIs.")
         }
         cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
-                   "      scenarios: [\"", paste0(dat, collapse = "\", \""),
+                   "      modifiers: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
 }
@@ -502,12 +502,12 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
                 next
             }
             cat(paste0("    ", dat$category[i], ":\n", "      method: StackedModifier\n",
-                       "      scenarios: [\"", dat$name[i], "\"]\n"))
+                       "      modifiers: [\"", dat$name[i], "\"]\n"))
         }
         dat <- dat %>% dplyr::filter(category != "base_npi") %>%
             dplyr::mutate(category = dplyr::if_else(category == "NPI_redux", name, category))
         cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
-                   "      scenarios: [\"", paste0(dat$category, collapse = "\", \""),
+                   "      modifiers: [\"", paste0(dat$category, collapse = "\", \""),
                    "\"]\n"))
     } else {
         dat <- dat %>% dplyr::group_by(category, USPS, subpop) %>%
@@ -520,7 +520,7 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
             stop("At least one intervention name is shared by distinct NPIs.")
         }
         cat(paste0("    ", scenario, ":\n", "      method: StackedModifier\n",
-                   "      scenarios: [\"", paste0(dat, collapse = "\", \""),
+                   "      modifiers: [\"", paste0(dat, collapse = "\", \""),
                    "\"]\n"))
     }
 }
@@ -1381,7 +1381,7 @@ print_outcomes <- function (resume_modifier = NULL,
     "outcomes:\n",
     "  method: delayframe\n",
     ifelse(!is.null(param_from_file), paste0("  param_from_file: ", param_from_file, "\n"), ""),
-    ifelse(!is.null(outcomes_parquet_file), paste0("  param_place_file: \"", outcomes_parquet_file, "\"\n"), ""),
+    ifelse(!is.null(outcomes_parquet_file), paste0("  param_subpop_file: \"", outcomes_parquet_file, "\"\n"), ""),
     "  outcomes:\n")
   
   for (i in 1:nrow(outcomes_base_data)){
