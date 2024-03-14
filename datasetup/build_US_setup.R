@@ -91,7 +91,7 @@ census_data <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/us_county_cen
 
 # Add USPS column
 #data(fips_codes)
-fips_codes <- arrow::read_parquet(paste0(opt$p,"datasetup/usdata/fips_us_county.parquet"))
+fips_codes <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/fips_us_county.parquet"))
 fips_subpop_codes <- dplyr::mutate(fips_codes, subpop=paste0(state_code,county_code)) %>%
   dplyr::group_by(subpop) %>%
   dplyr::summarize(USPS=unique(state))
