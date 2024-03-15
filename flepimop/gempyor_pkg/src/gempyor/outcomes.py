@@ -261,7 +261,7 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
         hnpi = pd.DataFrame(
             columns=[
                 "subpop",
-                "npi_name",
+                "modifier_name",
                 "start_date",
                 "end_date",
                 "parameter",

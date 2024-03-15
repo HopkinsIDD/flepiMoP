@@ -159,19 +159,19 @@ def test_spatial_groups():
     npi_df = npi.getReductionDF()
 
     # all independent: r1
-    df = npi_df[npi_df["npi_name"] == "all_independent"]
+    df = npi_df[npi_df["modifier_name"] == "all_independent"]
     assert len(df) == inference_simulator.modinf.nsubpops
     for g in df["subpop"]:
         assert "," not in g
 
     # all the same: r2
-    df = npi_df[npi_df["npi_name"] == "all_together"]
+    df = npi_df[npi_df["modifier_name"] == "all_together"]
     assert len(df) == 1
     assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.modinf.subpop_struct.subpop_names)
     assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.modinf.nsubpops
 
     # two groups: r3
-    df = npi_df[npi_df["npi_name"] == "two_groups"]
+    df = npi_df[npi_df["modifier_name"] == "two_groups"]
     assert len(df) == inference_simulator.modinf.nsubpops - 2
     for g in ["01000", "02000", "04000", "06000"]:
         assert g not in df["subpop"]
@@ -179,7 +179,7 @@ def test_spatial_groups():
     assert len(df[df["subpop"] == "04000,06000"]) == 1
 
     # mtr group: r5
-    df = npi_df[npi_df["npi_name"] == "mt_reduce"]
+    df = npi_df[npi_df["modifier_name"] == "mt_reduce"]
     assert len(df) == 4
     assert df.subpop.to_list() == ["09000,10000", "02000", "06000", "01000,04000"]
     assert df[df["subpop"] == "09000,10000"]["start_date"].iloc[0] == "2020-12-01,2021-12-01"
