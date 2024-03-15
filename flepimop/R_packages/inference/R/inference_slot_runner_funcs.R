@@ -151,8 +151,8 @@ aggregate_and_calc_loc_likelihoods <- function(
         if (defined_priors[[prior]]$module %in% c("seir_interventions", "seir")) {
             #' @importFrom magrittr %>%
             ll_adjs <- snpi %>%
-                dplyr::filter(npi_name == defined_priors[[prior]]$name) %>%
-                dplyr::mutate(likadj = calc_prior_likadj(reduction,
+                dplyr::filter(modifier_name == defined_priors[[prior]]$name) %>%
+                dplyr::mutate(likadj = calc_prior_likadj(value,
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
@@ -161,8 +161,8 @@ aggregate_and_calc_loc_likelihoods <- function(
         } else if (defined_priors[[prior]]$module == "outcomes_interventions") {
             #' @importFrom magrittr %>%
             ll_adjs <- hnpi %>%
-                dplyr::filter(npi_name == defined_priors[[prior]]$name) %>%
-                dplyr::mutate(likadj = calc_prior_likadj(reduction,
+                dplyr::filter(modifier_name == defined_priors[[prior]]$name) %>%
+                dplyr::mutate(likadj = calc_prior_likadj(value,
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%

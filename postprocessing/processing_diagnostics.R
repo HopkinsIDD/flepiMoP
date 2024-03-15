@@ -146,14 +146,14 @@ spar <- import_s3_outcome(work_dir, "spar", "global", "final")
 # DERIVED OBJECTS ---------------------------------------------------------
 
 bind_hnpi_llik <- full_join(x = hnpi, y = llik)
-if(all(!is.na(hnpi$npi_name))){
+if(all(!is.na(hnpi$modifier_name))){
   var_bind_hnpi_llik <- bind_hnpi_llik %>%
-    group_by(npi_name) %>%
-    summarize(var = var(reduction)) %>%
+    group_by(modifier_name) %>%
+    summarize(var = var(value)) %>%
     filter(var > 0.0001)
   pivot_bind_hnpi_llik <- bind_hnpi_llik %>%
-    dplyr::filter(npi_name %in% var_bind_hnpi_llik$npi_name) %>%
-    pivot_wider(names_from = npi_name, values_from = reduction)
+    dplyr::filter(modifier_name %in% var_bind_hnpi_llik$modifier_name) %>%
+    pivot_wider(names_from = modifier_name, values_from = value)
 }
 
 bind_hosp_llik <- full_join(x = hosp, y = llik) %>%
@@ -176,12 +176,12 @@ int_llik <- rbind(global_int_llik %>%
 
 bind_snpi_llik <- full_join(x = snpi, y = llik)
 var_bind_snpi_llik <- bind_snpi_llik %>%
-  group_by(npi_name) %>%
-  summarize(var = var(reduction)) %>%
+  group_by(modifier_name) %>%
+  summarize(var = var(value)) %>%
   filter(var > 0.0001)
 pivot_bind_snpi_llik <- bind_snpi_llik %>%
-  dplyr::filter(npi_name %in% var_bind_snpi_llik$npi_name) %>%
-  pivot_wider(names_from = npi_name, values_from = reduction)
+  dplyr::filter(modifier_name %in% var_bind_snpi_llik$modifier_name) %>%
+  pivot_wider(names_from = modifier_name, values_from = value)
 
 bind_spar_llik <- full_join(x = spar, y = llik)
 var_bind_spar_llik <- bind_spar_llik %>%
@@ -239,13 +239,13 @@ for(i in 1:length(USPS)){
   print(paste0("Preparing plots for ", state))
   
   # hnpi
-  if(all(is.na(hnpi$npi_name))){
+  if(all(is.na(hnpi$modifier_name))){
     print("hnpi files are empty")
   } else {
     hnpi_plot[[i]] <- pivot_bind_hnpi_llik %>%
       filter(USPS == state) %>%
-      dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
-      pivot_longer(cols = all_of(var_bind_hnpi_llik$npi_name)) %>%
+      dplyr::select(ll, all_of(var_bind_hnpi_llik$modifier_name)) %>%
+      pivot_longer(cols = all_of(var_bind_hnpi_llik$modifier_name)) %>%
       drop_na(value) %>%
       ggplot(aes(x = name, y = value)) +
       geom_violin(scale = "width") +
@@ -258,8 +258,8 @@ for(i in 1:length(USPS)){
     
     hnpi_llik_plot[[i]] <- pivot_bind_hnpi_llik %>%
       filter(USPS == state) %>%
-      dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
-      pivot_longer(cols = all_of(var_bind_hnpi_llik$npi_name)) %>%
+      dplyr::select(ll, all_of(var_bind_hnpi_llik$modifier_name)) %>%
+      pivot_longer(cols = all_of(var_bind_hnpi_llik$modifier_name)) %>%
       drop_na(value) %>%
       ggplot(aes(x = value, y = ll)) +
       geom_point(size = 0.5, alpha = 0.8) +
@@ -365,8 +365,8 @@ for(i in 1:length(USPS)){
   # snpi
   snpi_plot[[i]] <- pivot_bind_snpi_llik %>%
     filter(USPS == state) %>%
-    dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
-    pivot_longer(cols = all_of(var_bind_snpi_llik$npi_name)) %>%
+    dplyr::select(ll, all_of(var_bind_snpi_llik$modifier_name)) %>%
+    pivot_longer(cols = all_of(var_bind_snpi_llik$modifier_name)) %>%
     drop_na(value) %>%
     ggplot(aes(x = name, y = value)) +
     geom_violin(scale = "width") +
@@ -374,12 +374,12 @@ for(i in 1:length(USPS)){
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-    labs(x = "reduction", title = paste0(state, " snpi reduction values"))
+    labs(x = "value", title = paste0(state, " snpi values"))
   
   snpi_llik_plot[[i]] <- pivot_bind_snpi_llik %>%
     filter(USPS == state) %>%
-    dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
-    pivot_longer(cols = all_of(var_bind_snpi_llik$npi_name)) %>%
+    dplyr::select(ll, all_of(var_bind_snpi_llik$modifier_name)) %>%
+    pivot_longer(cols = all_of(var_bind_snpi_llik$modifier_name)) %>%
     drop_na(value) %>%
     ggplot(aes(x = value, y = ll)) +
     geom_point(size = 0.5, alpha = 0.8) +
@@ -419,7 +419,7 @@ for(i in 1:length(USPS)){
   state_plot1[[i]] <- plot_grid(int_llik_plot[[i]],
                                 seed_plot[[i]],
                                 nrow = 2, ncol = 1)
-  if(all(is.na(hnpi$npi_name))){
+  if(all(is.na(hnpi$modifier_name))){
     state_plot2[[i]] <- NA
   } else {
     state_plot2[[i]] <- plot_grid(hnpi_plot[[i]],

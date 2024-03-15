@@ -106,42 +106,42 @@ get_minimal_setup <- function () {
 
     ##The file containing information on the given npis. Creating 2 by default.
     npi1 <- dplyr::tibble(subpop=subpop,
-                   npi_name = "local_variance",
+                   modifier_name = "local_variance",
                    start_date = "2020-01-01",
                    end_date = "2020-06-30",
                    parameter = "r0",
-                   reduction = runif(6,-.5, .5))
+                   value = runif(6,-.5, .5))
 
     npi2A <- dplyr::tibble(subpop = subpop[1:3],
-                    npi_name = "full_lockdown_CA",
+                    modifier_name = "full_lockdown_CA",
                     start_date = "2020-03-25",
                     end_date = "2020-06-01",
                     parameter = "r0",
-                    reduction = runif(3,-.8, -.5))
+                    value = runif(3,-.8, -.5))
 
     npi2B <- dplyr::tibble(subpop = subpop[4:6],
-                    npi_name = "full_lockdown_NY",
+                    modifier_name = "full_lockdown_NY",
                     start_date = "2020-03-15",
                     end_date = "2020-05-22",
                     parameter = "r0",
-                    reduction = runif(3,-.8, -.5))
+                    value = runif(3,-.8, -.5))
 
     snpi <- dplyr::bind_rows(npi1, npi2A, npi2B)
 
     ##The file containing information on the given hospitalization npis. Creating 2 by default.
     npi1 <- dplyr::tibble(subpop=subpop,
-                   npi_name = "local_variance",
+                   modifier_name = "local_variance",
                    start_date = "2020-01-01",
                    end_date = "2020-06-30",
                    parameter = "hosp::inf",
-                   reduction = runif(6,-.5, .5))
+                   value = runif(6,-.5, .5))
 
     npi2 <- dplyr::tibble(subpop = subpop[1:3],
-                    npi_name = "full_lockdown_CA",
+                    modifier_name = "full_lockdown_CA",
                     start_date = "2020-03-25",
                     end_date = "2020-06-01",
                     parameter = "confirmed::inf",
-                    reduction = runif(3,-.8, -.5))
+                    value = runif(3,-.8, -.5))
 
 
     hnpi <- dplyr::bind_rows(npi1, npi2)
@@ -421,7 +421,7 @@ test_that("likelihoood insenstive to parameters with no multi-level compoenent o
     stuff <- get_minimal_setup()
 
     snpi2 <- stuff$snpi
-    snpi2$reduction <- snpi2$reduction*runif(6)
+    snpi2$value <- snpi2$value*runif(6)
 
 
     tmp1 <- aggregate_and_calc_loc_likelihoods(
@@ -471,11 +471,11 @@ test_that("likelihood is senstive to changes to correct npi paramerers when mult
     )
 
     snpi2 <- stuff$snpi
-    snpi2$reduction[snpi2$npi_name=="local_variance"] <- snpi2$reduction[snpi2$npi_name=="local_variance"]*runif(6)
+    snpi2$value[snpi2$modifier_name=="local_variance"] <- snpi2$value[snpi2$modifier_name=="local_variance"]*runif(6)
 
 
     snpi3 <- stuff$snpi
-    snpi3$reduction[snpi3$npi_name=="full_lockdown_NY"] <- snpi3$reduction[snpi3$npi_name=="full_lockdown_NY"]*runif(3)
+    snpi3$value[snpi3$modifier_name=="full_lockdown_NY"] <- snpi3$value[snpi3$modifier_name=="full_lockdown_NY"]*runif(3)
 
 
     tmp1 <- aggregate_and_calc_loc_likelihoods(
@@ -616,11 +616,11 @@ test_that("when prior is specified, likilhood is higher when nearer prior mean f
 
     #makes it closer to 0
     snpi2 <- stuff$snpi
-    snpi2$reduction[snpi2$npi_name=="local_variance"] <- snpi2$reduction[snpi2$npi_name=="local_variance"]/4
+    snpi2$value[snpi2$modifier_name=="local_variance"] <- snpi2$value[snpi2$modifier_name=="local_variance"]/4
 
 
     snpi3 <- stuff$snpi
-    snpi3$reduction[snpi3$npi_name=="full_lockdown_NY"] <- snpi3$reduction[snpi3$npi_name=="full_lockdown_NY"]/4
+    snpi3$value[snpi3$modifier_name=="full_lockdown_NY"] <- snpi3$value[snpi3$modifier_name=="full_lockdown_NY"]/4
 
 
     tmp1 <- aggregate_and_calc_loc_likelihoods(
@@ -762,14 +762,14 @@ test_that("Hierarchical structure works on interventions not defined for all loc
 
 
     snpi2 <- stuff$snpi
-    snpi2$reduction[snpi2$npi_name=="local_variance"] <- snpi2$reduction[snpi2$npi_name=="local_variance"]*runif(6)
+    snpi2$value[snpi2$modifier_name=="local_variance"] <- snpi2$value[snpi2$modifier_name=="local_variance"]*runif(6)
 
 
     snpi3 <- stuff$snpi
-    snpi3$reduction[snpi3$npi_name=="full_lockdown_NY"] <- snpi3$reduction[snpi3$npi_name=="full_lockdown_NY"]*runif(3)
+    snpi3$value[snpi3$modifier_name=="full_lockdown_NY"] <- snpi3$value[snpi3$modifier_name=="full_lockdown_NY"]*runif(3)
 
     snpi4 <- stuff$snpi
-    snpi4$reduction[snpi3$npi_name=="full_lockdown_CA"] <- snpi3$reduction[snpi3$npi_name=="full_lockdown_CA"]*runif(3)
+    snpi4$value[snpi3$modifier_name=="full_lockdown_CA"] <- snpi3$value[snpi3$modifier_name=="full_lockdown_CA"]*runif(3)
 
 
     tmp1 <- aggregate_and_calc_loc_likelihoods(

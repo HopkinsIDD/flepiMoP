@@ -9,8 +9,8 @@ test_that("penalty is  based on selected stat", {
     ##makes data frame with stats
     infer_frame <- data.frame(subpop=rep(c("01001","01002","01003",
                                           "06001", "06002", "06003"),2),
-                              npi_name=rep(c("npi 1", "npi 2"), each=6),
-                              reduction=c(npi1,npi2))
+                              modifier_name=rep(c("npi 1", "npi 2"), each=6),
+                              value=c(npi1,npi2))
 
 
 
@@ -48,8 +48,8 @@ test_that("NPIs with equal values have highe LL than npis with different values"
     ##makes data frame with stats
     infer_frame <- data.frame(subpop=rep(c("01001","01002","01003",
                                           "06001", "06002", "06003"),2),
-                              npi_name=rep(c("npi 1", "npi 2"), each=6),
-                              reduction=c(npi1,npi2))
+                              modifier_name=rep(c("npi 1", "npi 2"), each=6),
+                              value=c(npi1,npi2))
 
 
 
@@ -83,8 +83,8 @@ test_that("Groups with equal values have highe LL than npis with different value
     ##makes data frame with stats
     infer_frame <- data.frame(subpop=rep(c("01001","01002","01003",
                                           "06001", "06002", "06003"),2),
-                              npi_name=rep(c("npi 1", "npi 2"), each=6),
-                              reduction=c(npi1,npi2))
+                              modifier_name=rep(c("npi 1", "npi 2"), each=6),
+                              value=c(npi1,npi2))
 
 
 
@@ -128,8 +128,8 @@ test_that("equal values use minimum variance", {
 
     ##makes data frame with stats
     infer_frame <- dplyr::tibble(subpop=c("01001","01002","01003"),
-                              npi_name=rep("npi 1", 3),
-                              reduction=npi1)
+                              modifier_name=rep("npi 1", 3),
+                              value=npi1)
 
 
 
@@ -156,7 +156,7 @@ test_that("transforms give the appropriate likelihoods", {
     # val <-  c(0.25698943, 0.23411552, 0.09412548)
     ##makes data frame with stats
     infer_frame <- dplyr::tibble(subpop=c("01001","01002","01003"),
-                              npi_name=rep("val1", each=3),
+                              modifier_name=rep("val1", each=3),
                               value=val)
 
 
@@ -203,7 +203,7 @@ test_that("sensible things are returned whern there is only 1 subpop in a locati
 
     ##makes data frame with stats
     infer_frame <- dplyr::tibble(subpop=c("01001", "06001", "06002","06003"),
-                              npi_name=rep("val1", 4),
+                              modifier_name=rep("val1", 4),
                               value=val)
 
 
@@ -235,7 +235,7 @@ test_that("logit transform does not blow up on 0 or 1", {
 
     ##makes data frame with stats
     infer_frame <- dplyr::tibble(subpop=c("01001","01002","01003"),
-                              npi_name=rep("val1", each=3),
+                              modifier_name=rep("val1", each=3),
                               value=val)
 
 
