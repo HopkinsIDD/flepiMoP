@@ -97,7 +97,7 @@ class StackedModifier(NPIBase):
                 if len(self.reduction_params) < REDUCTION_METADATA_CAP:
                     sub_npi_df = sub_npi.getReductionToWrite()
                     # build a list of unique npi names
-                    sub_npis_unique_names.extend(sub_npi_df["npi_name"].unique())
+                    sub_npis_unique_names.extend(sub_npi_df["modifier_name"].unique())
                     self.reduction_params.append(sub_npi_df)
                     self.reduction_number += len(self.reduction_params)
                 else:

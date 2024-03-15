@@ -48,10 +48,10 @@ class SinglePeriodModifier(NPIBase):
         self.parameters = pd.DataFrame(
             default_value,
             index=self.subpops,
-            columns=["npi_name", "start_date", "end_date", "parameter", "reduction"],
+            columns=["modifier_name", "start_date", "end_date", "parameter", "reduction"],
         )
 
-        if (loaded_df is not None) and self.name in loaded_df["npi_name"].values:
+        if (loaded_df is not None) and self.name in loaded_df["modifier_name"].values:
             self.__createFromDf(loaded_df, npi_config)
         else:
             self.__createFromConfig(npi_config)
@@ -118,7 +118,7 @@ class SinglePeriodModifier(NPIBase):
         # Create reduction
         self.dist = npi_config["value"].as_random_distribution()
 
-        self.parameters["npi_name"] = self.name
+        self.parameters["modifier_name"] = self.name
         self.parameters["start_date"] = (
             npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
         )
@@ -138,17 +138,17 @@ class SinglePeriodModifier(NPIBase):
 
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.subpop
-        loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
+        loaded_df = loaded_df[loaded_df["modifier_name"] == self.name]
 
         self.affected_subpops = set(self.subpops)
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
             self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
-        self.parameters["npi_name"] = self.name
+        self.parameters["modifier_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
-        # self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
+        # self.parameters = loaded_df[["modifier_name", "start_date", "end_date", "parameter", "reduction"]].copy()
         # dates are picked from config
         self.parameters["start_date"] = (
             npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
@@ -209,7 +209,7 @@ class SinglePeriodModifier(NPIBase):
             row_group = pd.DataFrame.from_dict(
                 {
                     "subpop": ",".join(group),
-                    "npi_name": df_group["npi_name"],
+                    "modifier_name": df_group["modifier_name"],
                     "parameter": df_group["parameter"],
                     "start_date": df_group["start_date"].astype("str"),
                     "end_date": df_group["end_date"].astype("str"),
