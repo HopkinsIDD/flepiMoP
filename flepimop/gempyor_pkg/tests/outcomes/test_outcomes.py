@@ -352,7 +352,7 @@ def test_outcomes_read_write_hnpi2():
     )
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
+    hnpi_read["value"] = np.random.random(len(hnpi_read)) * 2 - 1
     out_hnpi = pa.Table.from_pandas(hnpi_read, preserve_index=False)
     pa.parquet.write_table(out_hnpi, file_paths.create_file_name(105, "", 1, "hnpi", "parquet"))
     import random
@@ -515,7 +515,7 @@ def test_outcomes_read_write_hnpi2_custom_pname():
     prefix = ""
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
+    hnpi_read["value"] = np.random.random(len(hnpi_read)) * 2 - 1
     out_hnpi = pa.Table.from_pandas(hnpi_read, preserve_index=False)
     pa.parquet.write_table(out_hnpi, file_paths.create_file_name(105, prefix, 1, "hnpi", "parquet"))
     import random
