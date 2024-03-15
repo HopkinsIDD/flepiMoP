@@ -52,7 +52,7 @@ def test_full_npis_read_write():
     inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
+    hnpi_read["value"] = np.random.random(len(hnpi_read)) * 2 - 1
     out_hnpi = pa.Table.from_pandas(hnpi_read, preserve_index=False)
     pa.parquet.write_table(out_hnpi, file_paths.create_file_name(105, "", 1, "hnpi", "parquet"))
     import random
@@ -208,7 +208,7 @@ def test_spatial_groups():
     inference_simulator.modinf.write_simID(ftype="snpi", sim_id=1, df=npi_df)
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.105.snpi.parquet").to_pandas()
-    snpi_read["reduction"] = np.random.random(len(snpi_read)) * 2 - 1
+    snpi_read["value"] = np.random.random(len(snpi_read)) * 2 - 1
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(106, "", 1, "snpi", "parquet"))
 

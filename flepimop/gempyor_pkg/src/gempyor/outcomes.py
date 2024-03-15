@@ -265,7 +265,7 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
                 "start_date",
                 "end_date",
                 "parameter",
-                "reduction",
+                "value",
             ]
         )
     else:

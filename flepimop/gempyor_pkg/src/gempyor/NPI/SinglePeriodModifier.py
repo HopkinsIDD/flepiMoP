@@ -48,7 +48,7 @@ class SinglePeriodModifier(NPIBase):
         self.parameters = pd.DataFrame(
             default_value,
             index=self.subpops,
-            columns=["modifier_name", "start_date", "end_date", "parameter", "reduction"],
+            columns=["modifier_name", "start_date", "end_date", "parameter", "value"],
         )
 
         if (loaded_df is not None) and self.name in loaded_df["modifier_name"].values:
@@ -63,11 +63,11 @@ class SinglePeriodModifier(NPIBase):
         # for index in self.parameters.index:
         #    period_range = pd.date_range(self.parameters["start_date"][index], self.parameters["end_date"][index])
         ## This the line that does the work
-        #    self.npi_old.loc[index, period_range] = np.tile(self.parameters["reduction"][index], (len(period_range), 1)).T
+        #    self.npi_old.loc[index, period_range] = np.tile(self.parameters["value"][index], (len(period_range), 1)).T
 
         period_range = pd.date_range(self.parameters["start_date"].iloc[0], self.parameters["end_date"].iloc[0])
         self.npi.loc[self.parameters.index, period_range] = np.tile(
-            self.parameters["reduction"][:], (len(period_range), 1)
+            self.parameters["value"][:], (len(period_range), 1)
         ).T
 
         # self.__checkErrors()
@@ -128,13 +128,13 @@ class SinglePeriodModifier(NPIBase):
         self.parameters["parameter"] = self.param_name
         self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_subpops))
         if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "reduction"] = self.dist(
+            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = self.dist(
                 size=len(self.spatial_groups["ungrouped"])
             )
         if self.spatial_groups["grouped"]:
             for group in self.spatial_groups["grouped"]:
                 drawn_value = self.dist(size=1) * np.ones(len(group))
-                self.parameters.loc[group, "reduction"] = drawn_value
+                self.parameters.loc[group, "value"] = drawn_value
 
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.subpop
@@ -148,7 +148,7 @@ class SinglePeriodModifier(NPIBase):
         self.parameters["modifier_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
-        # self.parameters = loaded_df[["modifier_name", "start_date", "end_date", "parameter", "reduction"]].copy()
+        # self.parameters = loaded_df[["modifier_name", "start_date", "end_date", "parameter", "value"]].copy()
         # dates are picked from config
         self.parameters["start_date"] = (
             npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
@@ -175,12 +175,12 @@ class SinglePeriodModifier(NPIBase):
 
         self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_subpops))
         if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "reduction"] = loaded_df.loc[
-                self.spatial_groups["ungrouped"], "reduction"
+            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = loaded_df.loc[
+                self.spatial_groups["ungrouped"], "value"
             ]
         if self.spatial_groups["grouped"]:
             for group in self.spatial_groups["grouped"]:
-                self.parameters.loc[group, "reduction"] = loaded_df.loc[",".join(group), "reduction"]
+                self.parameters.loc[group, "value"] = loaded_df.loc[",".join(group), "value"]
 
     def get_default(self, param):
         if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
@@ -213,7 +213,7 @@ class SinglePeriodModifier(NPIBase):
                     "parameter": df_group["parameter"],
                     "start_date": df_group["start_date"].astype("str"),
                     "end_date": df_group["end_date"].astype("str"),
-                    "reduction": df_group["reduction"],
+                    "value": df_group["value"],
                 }
             ).set_index("subpop")
             df = pd.concat([df, row_group])
