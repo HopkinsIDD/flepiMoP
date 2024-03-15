@@ -564,6 +564,7 @@ accept_reject_proposals <- function(
     if (!all(orig_lls$subpop == prop_lls$subpop)) {
         stop("subpop must match")
     }
+    
     ##draw accepts/rejects
     ratio <- exp(prop_lls$ll - orig_lls$ll)
     accept <- ratio > runif(length(ratio), 0, 1)

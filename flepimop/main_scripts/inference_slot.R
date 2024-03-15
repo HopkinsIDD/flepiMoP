@@ -757,11 +757,6 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 ## Chimeric likelihood acceptance or rejection decisions (one round) -----
                 #  "Chimeric" means Subpopulation-specific (i.e., each state or county in the US has a chimeric likelihood)
                 
-                if (!is.null(config$initial_conditions)){
-                    # initial_init <- NULL
-                    proposed_init <- initial_init
-                }
-                
                 seeding_npis_list <- inference::accept_reject_proposals(
                     init_orig = initial_init,
                     init_prop = proposed_init,
@@ -779,7 +774,6 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 
                 # Update accepted parameters to start next simulation
                 if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                    
                     initial_init <- seeding_npis_list$init
                 }
                 initial_seeding <- seeding_npis_list$seeding
