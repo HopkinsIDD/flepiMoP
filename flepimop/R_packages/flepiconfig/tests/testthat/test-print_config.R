@@ -47,14 +47,14 @@ generate_config <- function(){
                                compartment = FALSE,
                                gt_column_name = c("death_incid", "confirmed_incid"))
 
-    print_inference_hierarchical(npi_name = c("local_variance", "probability_incidI_incidC"),
+    print_inference_hierarchical(modifier_name = c("local_variance", "probability_incidI_incidC"),
                                  module = c("seir", "hospitalization"),
                                  geo_group_col = "USPS",
                                  transform = c("none", "logit"),
                                  compartment = FALSE)
 
     print_inference_prior(dat = interventions,
-                          npi_name = c("local_variance", "Seas_jan", "Seas_feb", "Seas_mar",
+                          modifier_name = c("local_variance", "Seas_jan", "Seas_feb", "Seas_mar",
                                        "Seas_may", "Seas_jun", "Seas_jul", "Seas_aug", "Seas_sep",
                                        "Seas_oct", "Seas_nov", "Seas_dec"),
                           param_mean = NULL)
