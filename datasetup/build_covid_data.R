@@ -380,7 +380,7 @@ locs <- filterUSPS
 us_data <- us_data %>%
     filter(source %in% locs) %>%
     filter(!is.na(source)) %>%
-    rename(date = Update)
+    rename(date = Update, subpop = FIPS)
 
 
 
