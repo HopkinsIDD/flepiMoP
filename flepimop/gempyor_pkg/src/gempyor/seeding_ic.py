@@ -38,11 +38,10 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
     # id_seed = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
         if row["subpop"] not in setup.subpop_struct.subpop_names:
-            raise ValueError(
-                f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata."
+            logging.debug(
+                f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata... Skipping"
             )
-
-        if (row["date"].date() - setup.ti).days >= 0:
+        elif (row["date"].date() - setup.ti).days >= 0:
             if (row["date"].date() - setup.ti).days < len(nb_seed_perday):
                 nb_seed_perday[(row["date"].date() - setup.ti).days] = (
                     nb_seed_perday[(row["date"].date() - setup.ti).days] + 1
