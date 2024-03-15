@@ -206,7 +206,7 @@ single_loc_inference_test <- function(to_fit,
             }
             
             # Upate seeding and NPIs by location
-            seeding_npis_list <- accept_reject_new_seeding_npis(
+            seeding_npis_list <- accept_reject_proposals(
                 seeding_orig = initial_seeding,
                 seeding_prop = current_seeding,
                 npis_orig = distinct(initial_npis, value, modifier_name, subpop),
@@ -493,7 +493,7 @@ multi_loc_inference_test <- function(to_fit,
             }
             
             # Upate seeding and NPIs by location
-            seeding_npis_list <- accept_reject_new_seeding_npis(
+            seeding_npis_list <- accept_reject_proposals(
                 seeding_orig = initial_seeding,
                 seeding_prop = current_seeding,
                 npis_orig = distinct(initial_npis, value, modifier_name, subpop),

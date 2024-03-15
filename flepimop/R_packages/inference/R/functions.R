@@ -531,7 +531,6 @@ perturb_hpar <- function(hpar, intervention_settings) {
 ##' Function to go through to accept or reject proposed parameters for each subpop based
 ##' on a subpop specific likelihood.
 ##'
-##'
 ##' @param seeding_orig original seeding data frame (must have column subpop)
 ##' @param seeding_prop proposal seeding (must have column subpop)
 ##' @param snpi_orig original npi data frame  (must have column subpop)
@@ -542,7 +541,7 @@ perturb_hpar <- function(hpar, intervention_settings) {
 ##' @param prop_lls proposal ll fata frame (must have column ll and subpop)
 ##' @return a new data frame with the confirmed seedin.
 ##' @export
-accept_reject_new_seeding_npis <- function(
+accept_reject_proposals <- function(
         init_orig,
         init_prop,
         seeding_orig,
