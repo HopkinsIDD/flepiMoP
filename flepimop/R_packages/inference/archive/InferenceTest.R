@@ -97,7 +97,7 @@ single_loc_inference_test <- function(to_fit,
             write_csv(seeding_file, append = file.exists(seeding_file))
         
         initial_npis %>% 
-            distinct(reduction, npi_name, subpop) %>% 
+            distinct(value, modifier_name, subpop) %>% 
             mutate(slot = s, index = 0) %>% 
             write_csv(npi_file, append = file.exists(npi_file))
         
@@ -108,7 +108,7 @@ single_loc_inference_test <- function(to_fit,
                                                 S0 = S0, 
                                                 gamma = gamma,
                                                 sigma = sigma,
-                                                beta_mults = 1-initial_npis$reduction) %>% 
+                                                beta_mults = 1-initial_npis$value) %>% 
             single_hosp_run(config) %>% 
             dplyr::filter(time %in% obs$date)
         
@@ -206,16 +206,16 @@ single_loc_inference_test <- function(to_fit,
             }
             
             # Upate seeding and NPIs by location
-            seeding_npis_list <- accept_reject_new_seeding_npis(
+            seeding_npis_list <- accept_reject_proposals(
                 seeding_orig = initial_seeding,
                 seeding_prop = current_seeding,
-                npis_orig = distinct(initial_npis, reduction, npi_name, subpop),
-                npis_prop = distinct(current_npis, reduction, npi_name, subpop),
+                npis_orig = distinct(initial_npis, value, modifier_name, subpop),
+                npis_prop = distinct(current_npis, value, modifier_name, subpop),
                 orig_lls = previous_likelihood_data,
                 prop_lls = log_likelihood_data
             )
             initial_seeding <- seeding_npis_list$seeding
-            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -reduction), by = c("subpop", "npi_name"))
+            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -value), by = c("subpop", "modifier_name"))
             previous_likelihood_data <- seeding_npis_list$ll
             
             # Write to file
@@ -346,12 +346,12 @@ multi_loc_inference_test <- function(to_fit,
             write_csv(seeding_file, append = file.exists(seeding_file))
         
         initial_npis %>% 
-            distinct(reduction, npi_name, subpop) %>% 
+            distinct(value, modifier_name, subpop) %>% 
             mutate(slot = s, index = 0) %>% 
             write_csv(npi_file, append = file.exists(npi_file))
         
-        npi_mat <- select(initial_npis, date, subpop, reduction) %>% 
-            pivot_wider(values_from = "reduction", names_from = "subpop", id_cols = "date")
+        npi_mat <- select(initial_npis, date, subpop, value) %>% 
+            pivot_wider(values_from = "value", names_from = "subpop", id_cols = "date")
         
         # Simulate epi
         initial_sim_hosp <- simulate_multi_epi(times = sim_times,
@@ -493,16 +493,16 @@ multi_loc_inference_test <- function(to_fit,
             }
             
             # Upate seeding and NPIs by location
-            seeding_npis_list <- accept_reject_new_seeding_npis(
+            seeding_npis_list <- accept_reject_proposals(
                 seeding_orig = initial_seeding,
                 seeding_prop = current_seeding,
-                npis_orig = distinct(initial_npis, reduction, npi_name, subpop),
-                npis_prop = distinct(current_npis, reduction, npi_name, subpop),
+                npis_orig = distinct(initial_npis, value, modifier_name, subpop),
+                npis_prop = distinct(current_npis, value, modifier_name, subpop),
                 orig_lls = previous_likelihood_data,
                 prop_lls = current_likelihood_data
             )
             initial_seeding <- seeding_npis_list$seeding
-            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -reduction), by = c("subpop", "npi_name"))
+            initial_npis <- inner_join(seeding_npis_list$npis, select(current_npis, -value), by = c("subpop", "modifier_name"))
             previous_likelihood_data <- seeding_npis_list$ll
             
             # Write to file
@@ -798,7 +798,7 @@ multi_hosp_run <- function(epi, N, config) {
 npis_dataframe <- function(config, random = F, subpop = 1, offset = 0, intervention_multi = 1) {
     
     times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
-    npis <- tibble(date = times, reduction = 0, npi_name = "local_variation", subpop = subpop)
+    npis <- tibble(date = times, value = 0, modifier_name = "local_variation", subpop = subpop)
     interventions <- config$interventions$settings
     date_changes <- map_chr(interventions[1:2], 
                             ~ifelse(is.null(.$period_start_date),
@@ -809,17 +809,17 @@ npis_dataframe <- function(config, random = F, subpop = 1, offset = 0, intervent
     
     # Apply interventions
     for (d in 1:length(date_changes)) {
-        npis$reduction[times >= date_changes[d]] <- interventions[[d]]$value$mean * intervention_multi
-        npis$npi_name[times >= date_changes[d]] <- names(interventions)[d]
+        npis$value[times >= date_changes[d]] <- interventions[[d]]$value$mean * intervention_multi
+        npis$modifier_name[times >= date_changes[d]] <- names(interventions)[d]
     }
     
     if(random) {
         # Randomly assign interventions
         for (d in 1:length(date_changes)) {
             if (names(interventions)[d] == "local_variation") {
-                npis$reduction[times >= date_changes[d]] <- runif(1, -.5, .5)
+                npis$value[times >= date_changes[d]] <- runif(1, -.5, .5)
             } else {
-                npis$reduction[times >= date_changes[d]] <- runif(1, 0, 1)
+                npis$value[times >= date_changes[d]] <- runif(1, 0, 1)
             }
         }
     }
@@ -853,7 +853,7 @@ synthetic_data <- function(S0, seeding, config) {
                                S0 = S0,
                                gamma = gamma,
                                sigma = sigma,
-                               beta_mults = 1-npis$reduction)
+                               beta_mults = 1-npis$value)
     
     # - - - -
     # Setup fake data
@@ -895,8 +895,8 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
     gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
     sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
-    npi_mat <- select(npis, date, subpop, reduction) %>% 
-        pivot_wider(values_from = "reduction", names_from = "subpop", id_cols = "date")
+    npi_mat <- select(npis, date, subpop, value) %>% 
+        pivot_wider(values_from = "value", names_from = "subpop", id_cols = "date")
     
     # Simulate epi
     epi <- simulate_multi_epi(times = times,
@@ -933,16 +933,16 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
 perturb_expand_npis <- function(npis, intervention_settings, multi = F) {
     if(multi) {
         npis %>% 
-            distinct(reduction, npi_name, subpop) %>%
+            distinct(value, modifier_name, subpop) %>%
             group_by(subpop) %>% 
             group_map(~perturb_npis(.x, intervention_settings) %>% 
                           mutate(subpop = .y$subpop[1])) %>% 
             bind_rows() %>% 
-            inner_join(select(npis, -reduction), by = c("npi_name", "subpop"))
+            inner_join(select(npis, -value), by = c("modifier_name", "subpop"))
     } else {
         npis %>% 
-            distinct(reduction, npi_name) %>% 
+            distinct(value, modifier_name) %>% 
             perturb_npis(intervention_settings) %>% 
-            inner_join(select(npis, -reduction), by = c("npi_name"))
+            inner_join(select(npis, -value), by = c("modifier_name"))
     }
 }

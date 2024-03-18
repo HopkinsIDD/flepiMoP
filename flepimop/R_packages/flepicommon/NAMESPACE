@@ -2,10 +2,10 @@
 
 export(aggregate_counties_to_state)
 export(as_density_distribution)
-export(check_within_bounds)
 export(as_evaled_expression)
 export(as_random_distribution)
 export(check_config)
+export(check_within_bounds)
 export(create_file_name)
 export(create_prefix)
 export(create_setup_prefix)

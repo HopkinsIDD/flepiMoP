@@ -338,9 +338,9 @@ if("hnpi" %in% model_outputs){
              # .[get(config$subpop_setup$subpop) == i] %>%
              # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
              # } %>%
-             ggplot(aes(npi_name,reduction)) + 
+             ggplot(aes(modifier_name,value)) + 
              geom_violin() +
-             geom_jitter(aes(group = npi_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
+             geom_jitter(aes(group = modifier_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
              facet_wrap(~subpop, scales = 'free') +
              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
 	     theme_classic() +
@@ -441,9 +441,9 @@ if("snpi" %in% model_outputs){
                            outputs_global$snpi %>%
                              .[outputs_global$llik, on = c("subpop", "slot")] %>%
                              .[subpop == i] %>%
-                             ggplot(aes(npi_name,reduction)) + 
+                             ggplot(aes(modifier_name,value)) + 
                              geom_violin() + 
-                             geom_jitter(aes(group = npi_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
+                             geom_jitter(aes(group = modifier_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
                              theme_bw(base_size = 10) +
                              theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
                              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
@@ -460,9 +460,9 @@ if("snpi" %in% model_outputs){
                            outputs_global$snpi %>%
                              .[subpop == i] %>%
                              .[ll_across_nodes, on = c("slot")] %>%
-                             ggplot(aes(npi_name,reduction)) + 
+                             ggplot(aes(modifier_name,value)) + 
                              geom_violin() + 
-                             geom_jitter(aes(group = npi_name, color = ll_sum), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
+                             geom_jitter(aes(group = modifier_name, color = ll_sum), size = 0.5, height = 0, width = 0.2, alpha = 0.5) +
                              theme_bw(base_size = 10) +
                              theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
                              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +

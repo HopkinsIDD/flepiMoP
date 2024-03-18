@@ -52,7 +52,7 @@ def test_full_npis_read_write():
     inference_simulator.modinf.write_simID(ftype="hnpi", sim_id=1, df=npi_outcomes.getReductionDF())
 
     hnpi_read = pq.read_table(f"{config_path_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_read["reduction"] = np.random.random(len(hnpi_read)) * 2 - 1
+    hnpi_read["value"] = np.random.random(len(hnpi_read)) * 2 - 1
     out_hnpi = pa.Table.from_pandas(hnpi_read, preserve_index=False)
     pa.parquet.write_table(out_hnpi, file_paths.create_file_name(105, "", 1, "hnpi", "parquet"))
     import random
@@ -159,19 +159,19 @@ def test_spatial_groups():
     npi_df = npi.getReductionDF()
 
     # all independent: r1
-    df = npi_df[npi_df["npi_name"] == "all_independent"]
+    df = npi_df[npi_df["modifier_name"] == "all_independent"]
     assert len(df) == inference_simulator.modinf.nsubpops
     for g in df["subpop"]:
         assert "," not in g
 
     # all the same: r2
-    df = npi_df[npi_df["npi_name"] == "all_together"]
+    df = npi_df[npi_df["modifier_name"] == "all_together"]
     assert len(df) == 1
     assert set(df["subpop"].iloc[0].split(",")) == set(inference_simulator.modinf.subpop_struct.subpop_names)
     assert len(df["subpop"].iloc[0].split(",")) == inference_simulator.modinf.nsubpops
 
     # two groups: r3
-    df = npi_df[npi_df["npi_name"] == "two_groups"]
+    df = npi_df[npi_df["modifier_name"] == "two_groups"]
     assert len(df) == inference_simulator.modinf.nsubpops - 2
     for g in ["01000", "02000", "04000", "06000"]:
         assert g not in df["subpop"]
@@ -179,7 +179,7 @@ def test_spatial_groups():
     assert len(df[df["subpop"] == "04000,06000"]) == 1
 
     # mtr group: r5
-    df = npi_df[npi_df["npi_name"] == "mt_reduce"]
+    df = npi_df[npi_df["modifier_name"] == "mt_reduce"]
     assert len(df) == 4
     assert df.subpop.to_list() == ["09000,10000", "02000", "06000", "01000,04000"]
     assert df[df["subpop"] == "09000,10000"]["start_date"].iloc[0] == "2020-12-01,2021-12-01"
@@ -208,7 +208,7 @@ def test_spatial_groups():
     inference_simulator.modinf.write_simID(ftype="snpi", sim_id=1, df=npi_df)
 
     snpi_read = pq.read_table(f"{config_path_prefix}model_output/snpi/000000001.105.snpi.parquet").to_pandas()
-    snpi_read["reduction"] = np.random.random(len(snpi_read)) * 2 - 1
+    snpi_read["value"] = np.random.random(len(snpi_read)) * 2 - 1
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(106, "", 1, "snpi", "parquet"))
 

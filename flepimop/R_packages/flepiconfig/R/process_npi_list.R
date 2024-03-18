@@ -14,53 +14,7 @@
 #' @return The result of calling `rhs(lhs)`.
 NULL
 
-##' load_geodata_file
-##'
-##' Convenience function to load the geodata file
-##'
-##' @param filename filename of geodata file
-##' @param subpop_len length of subpop character string
-##' @param subpop_pad what to pad the subpop character string with
-##' @param state_name whether to add column state with the US state name; defaults to TRUE for forecast or scenario hub runs.
-##'
-##' @details
-##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and subpop with the geo IDs of the area. .
-##'
-##' @return a data frame with columns for state USPS, county subpop and population
-##' @examples
-##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
-##' geodata
-##'
-##' @export
 
-load_geodata_file <- function(filename,
-                              subpop_len = 0,
-                              subpop_pad = "0",
-                              state_name = TRUE) {
-
-    if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
-    geodata <- readr::read_csv(filename) %>%
-        dplyr::mutate(subpop = as.character(subpop))
-
-    if (!("subpop" %in% names(geodata))) {
-        stop(paste(filename, "does not have a column named subpop"))
-    }
-
-    if (subpop_len > 0) {
-        geodata$subpop <- stringr::str_pad(geodata$subpop, subpop_len, pad = subpop_pad)
-    }
-
-    if(state_name) {
-        geodata <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>%
-            dplyr::distinct(state, state_name) %>%
-            dplyr::rename(USPS = state) %>%
-            dplyr::rename(state = state_name) %>%
-            dplyr::mutate(state = dplyr::recode(state, "U.S. Virgin Islands" = "Virgin Islands")) %>%
-            dplyr::right_join(geodata)
-    }
-
-    return(geodata)
-}
 
 ##' find_truncnorm_mean_parameter
 ##'
@@ -103,8 +57,7 @@ find_truncnorm_mean_parameter <- function(a, b, mean, sd) {
 #' @export
 #'
 
-npi_recode_scenario <- function(data
-                                ){
+npi_recode_scenario <- function(data){
 
     data %>%
         dplyr::mutate(scenario = action,
@@ -156,8 +109,8 @@ npi_recode_scenario_mult <- function(data){
 #' @export
 #'
 #' @examples
-#' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
-#' npi_dat <- process_npi_shub(intervention_path = system.file("extdata", "intervention_data.csv", package = "config.writer"), geodata)
+#' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "flepiconfig"))
+#' npi_dat <- process_npi_shub(intervention_path = system.file("extdata", "intervention_data.csv", package = "flepiconfig"), geodata)
 #'
 #' npi_dat
 process_npi_usa <- function (intervention_path,
@@ -173,12 +126,12 @@ process_npi_usa <- function (intervention_path,
     if (!all(lubridate::is.Date(og$start_date), lubridate::is.Date(og$end_date))) {
         og <- og %>% dplyr::mutate(dplyr::across(tidyselect::ends_with("_date"), ~lubridate::mdy(.x)))
     }
-    if ("method" %in% colnames(og)) {
-        og <- og %>% dplyr::mutate(name = dplyr::if_else(method == "MultiPeriodModifier", scenario_mult, scenario)) %>%
-            dplyr::select(USPS, subpop, start_date, end_date, name, method)
+    if ("modifier_method" %in% colnames(og)) {
+        og <- og %>% dplyr::mutate(name = dplyr::if_else(modifier_method == "MultiPeriodModifier", scenario_mult, scenario)) %>%
+            dplyr::select(USPS, subpop, start_date, end_date, name, modifier_method)
     } else {
-        og <- og %>% dplyr::mutate(method = "MultiPeriodModifier") %>%
-            dplyr::select(USPS, subpop, start_date, end_date, name = scenario_mult, method)
+        og <- og %>% dplyr::mutate(modifier_method = "MultiPeriodModifier") %>%
+            dplyr::select(USPS, subpop, start_date, end_date, name = scenario_mult, modifier_method)
     }
     if (prevent_overlap) {
         og <- og %>% dplyr::group_by(USPS, subpop) %>%
@@ -262,7 +215,7 @@ process_npi_ca <- function(intervention_path,
 #' @return
 #' @examples
 #'
-#' variant <- generate_variant_b117(variant_path = system.file("extdata", "strain_replace_mmwr.csv", package = "config.writer"))
+#' variant <- generate_variant_b117(variant_path = system.file("extdata", "strain_replace_mmwr.csv", package = "flepiconfig"))
 #' variant
 #'
 #' @export
@@ -348,8 +301,8 @@ generate_variant_b117 <- function(variant_path,
 #'
 #' @examples
 #'
-#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "config.writer"),
-#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "config.writer"))
+#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "flepiconfig"),
+#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "flepiconfig"))
 #' variant
 #'
 generate_multiple_variants <- function(variant_path_1,
@@ -446,8 +399,8 @@ generate_multiple_variants <- function(variant_path_1,
 #'
 #' @examples
 #'
-#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "config.writer"),
-#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "config.writer"))
+#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "flepiconfig"),
+#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "flepiconfig"))
 #' variant
 #'
 generate_multiple_variants_state <- function(variant_path_1,
@@ -567,8 +520,8 @@ generate_multiple_variants_state <- function(variant_path_1,
 #'
 #' @examples
 #'
-#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "config.writer"),
-#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "config.writer"))
+#' variant <- generate_multiple_variants(variant_path_1 = system.file("extdata", "B117-fits.csv", package = "flepiconfig"),
+#'                                       variant_path_2 = system.file("extdata", "B617-fits.csv", package = "flepiconfig"))
 #' variant
 #'
 generate_compartment_variant <- function(variant_path = "../COVID19_USA/data/variant/variant_props_long.csv",
