@@ -196,7 +196,7 @@ if (gt_end_date > lubridate::ymd(config$end_date)) {
 if (is.na(opt$iterations_per_slot)){
   opt$iterations_per_slot <- config$inference$iterations_per_slot
 }
-print(paste("Running",opt$iterations_per_slot,"simulations"))
+print(paste("Running",opt$iterations_per_slot,"simulations for slot ",opt$this_slot))
 
 # if opt$outcome_modifiers_scenarios is specified
 #  --> run only those scenarios
@@ -422,6 +422,22 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     setup_prefix <- gempyor_inference_runner$modinf$get_setup_name() # file name piece of the form [config$name]_[seir_modifier_scenario]_[outcome_modifier_scenario]
     print("gempyor_inference_runner created successfully.")
     
+    
+    # Get names of files where output from the initial simulation will be saved
+    ## {prefix}/{run_id}/{type}/{suffix}/{prefix}.{index = block-1}.{run_id}.{type}.{ext}
+    ## N.B.: prefix should end in "{slot}." NOTE: Potential problem. Prefix is {slot}.{block} but then "index" includes block also??
+    first_global_files <- inference::create_filename_list(run_id=opt$run_id,
+                                                          prefix=setup_prefix,
+                                                          filepath_suffix=global_intermediate_filepath_suffix,
+                                                          filename_prefix=slotblock_filename_prefix,
+                                                          index=opt$this_block - 1)
+    first_chimeric_files <- inference::create_filename_list(run_id=opt$run_id,
+                                                            prefix=setup_prefix, 
+                                                            filepath_suffix=chimeric_intermediate_filepath_suffix,
+                                                            filename_prefix=slotblock_filename_prefix,
+                                                            index=opt$this_block - 1)
+    
+    
     print("RUNNING: MCMC initialization for the first block")
     # Output saved to files of the form {setup_prefix}/{run_id}/{type}/global/intermediate/{slotblock_filename_prefix}.(block-1).{run_id}.{type}.{ext}
     # also copied into the /chimeric/ version, which are referenced by first_global_files and first_chimeric_files
@@ -439,23 +455,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     print("First MCMC block initialized successfully.")
     
     # So far no acceptances have occurred
-    current_index <- 0
+    last_accepted_index <- 0
     
     # Load files with this the output of initialize_mcmc_first_block
-    
-    # Get names of files where output from this initial simulation will be saved
-    ## {prefix}/{run_id}/{type}/{suffix}/{prefix}.{index = block-1}.{run_id}.{type}.{ext}
-    ## N.B.: prefix should end in "{slot}." NOTE: Potential problem. Prefix is {slot}.{block} but then "index" includes block also??
-    first_global_files <- inference::create_filename_list(run_id=opt$run_id,
-                                                          prefix=setup_prefix,
-                                                          filepath_suffix=global_intermediate_filepath_suffix,
-                                                          filename_prefix=slotblock_filename_prefix,
-                                                          index=opt$this_block - 1)
-    first_chimeric_files <- inference::create_filename_list(run_id=opt$run_id,
-                                                            prefix=setup_prefix, 
-                                                            filepath_suffix=chimeric_intermediate_filepath_suffix,
-                                                            filename_prefix=slotblock_filename_prefix,
-                                                            index=opt$this_block - 1)
     
     # load those files (chimeric currently identical to global)
     initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
@@ -500,8 +502,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     global_likelihood_total <- sum(global_likelihood_data$ll)
     
     #####LOOP NOTES
-    ### initial means accepted/current
-    ### current means proposed
+    ### this_index is the current MCMC iteration
+    ### last_accepted_index is the index of the most recent globally accepted iternation
     
     startTimeCount=Sys.time()
     
@@ -513,7 +515,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     
     for (this_index in seq_len(opt$iterations_per_slot)) {
       
-      print(paste("Running simulation", this_index))
+      print(paste("Running iteration", this_index))
       
       startTimeCountEach = Sys.time()
       
@@ -524,7 +526,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       ### Perturb accepted parameters to get proposed parameters ----
       
       # since the first iteration is accepted by default, we don't perturb it, so proposed = initial
-      if ((opt$this_block == 1) && (current_index == 0)) {
+      if ((opt$this_block == 1) && (last_accepted_index == 0)) {
         
         proposed_spar <- initial_spar
         proposed_hpar <- initial_hpar
@@ -572,7 +574,6 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       
       # Write proposed parameters to files for other code to read. 
       # Temporarily stored in global files, which are eventually overwritten with global accepted values
-      # Note - this is causing a problem as global files have PROPOSED parameters and are never getting overwritten with ACCEPTED parameters
       arrow::write_parquet(proposed_spar,this_global_files[['spar_filename']])
       arrow::write_parquet(proposed_hpar,this_global_files[['hpar_filename']])
       arrow::write_parquet(proposed_snpi,this_global_files[['snpi_filename']])
@@ -656,57 +657,70 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # note - we already have a catch for the first block thing earlier (we set proposed = initial likelihood) - shouldn't need 2!
       global_accept <- ifelse(  #same value for all subpopulations
         inference::iterateAccept(global_likelihood_total, proposed_likelihood_total) || 
-          ((current_index == 0) && (opt$this_block == 1)),1,0
+          ((last_accepted_index == 0) && (opt$this_block == 1)),1,0
       )
       
       # only do global accept if all subpopulations accepted?
       if (global_accept == 1 | config$inference$do_inference == FALSE) { 
         
         print("**** GLOBAL ACCEPT (Recording) ****")
-        if ((opt$this_block == 1) && (current_index == 0)) {
+        if ((opt$this_block == 1) && (last_accepted_index == 0)) {
           print("by default because it's the first iteration of a block 1")
         }
         
-        # last accepted values?
-        #old_global_files <- inference::create_filename_list(run_id=opt$run_id, prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=current_index)
-        #old_chimeric_files <- inference::create_filename_list(run_id=opt$run_id, prefix=setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix,  index=current_index)
+        # Update the index of the most recent globally accepted parameters
+        last_accepted_index <- this_index
         
-        #IMPORTANT: This is the index of the most recent globally accepted parameters
-        current_index <- this_index
-        
+        # Calculate acceptance statistics for the global chain. Note all this applies same value to each subpopulation
         global_likelihood_data <- proposed_likelihood_data # this is used for next iteration
-        global_likelihood_data$accept <- 1 # global acceptance decision (0/1), same recorded for each geoID
         global_likelihood_total <- proposed_likelihood_total # this is used for next iteration
+        
+        global_likelihood_data$accept <- 1 # global acceptance decision (0/1), same recorded for each geoID
+        effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index # total index of all MCMC iterations in slot
+        avg_global_accept_rate <- ((effective_index-1)*old_avg_global_accept_rate + global_accept)/(effective_index) 
+        global_likelihood_data$accept_avg <-avg_global_accept_rate # update running average acceptance probability
+        global_likelihood_data$accept_prob <- exp(min(c(0, proposed_likelihood_total - global_likelihood_total))) #acceptance probability
+        arrow::write_parquet(global_likelihood_data, this_global_files[['llik_filename']]) # update likelihood saved to file
+        
+        old_avg_global_accept_rate <- avg_global_accept_rate # keep track, since old global likelihood data not kept in memory
+        # print(paste("Average global acceptance rate: ",formatC(100*avg_global_accept_rate,digits=2,format="f"),"%")) 
+        
         
         if (opt$reset_chimeric_on_accept) {
           reset_chimeric_files <- TRUE # triggers globally accepted parameters to push back to chimeric
         }
         
         # File saving: If global accept occurs, the global parameter files are already correct as they contain the proposed values
-        
+
       } else {
         print("**** GLOBAL REJECT (Recording) ****")
         
         # File saving: If global reject occurs, remove "proposed" parameters from global files and instead replacing with the last accepted values
-        sapply(this_global_files, file.remove) # removes files with "this index"
+        
+        sapply(this_global_files, file.remove) # removes global files with "this index"
+        
+        old_global_files <- inference::create_filename_list(run_id=opt$run_id, # get filenames of last accepted files
+                                                            prefix=setup_prefix, 
+                                                            filepath_suffix=global_intermediate_filepath_suffix, 
+                                                            filename_prefix=slotblock_filename_prefix, 
+                                                            index=last_accepted_index)
         
         for (type in names(this_global_files)) {
-          file.copy(this_global_files[[type]], old_global_files[[type]], overwrite = TRUE) 
+          file.copy(this_global_files[[type]], old_global_files[[type]], overwrite = TRUE) # replace with last accepted values
         }
         
       }
       
-      # Calculate some statistics about the global chain. Note all this applies same value to each subpopulation
-      effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index
-      avg_global_accept_rate <- ((effective_index-1)*old_avg_global_accept_rate + global_accept)/(effective_index) # update running average acceptance probability
-      global_likelihood_data$accept_avg <-avg_global_accept_rate
+      # Calculate acceptance statistics for the global chain. Note all this applies same value to each subpopulation
+      global_likelihood_data$accept <- 1 # global acceptance decision (0/1), same recorded for each geoID
+      effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index # total index of all MCMC iterations in slot
+      avg_global_accept_rate <- ((effective_index-1)*old_avg_global_accept_rate + global_accept)/(effective_index) 
+      global_likelihood_data$accept_avg <-avg_global_accept_rate # update running average acceptance probability
       global_likelihood_data$accept_prob <- exp(min(c(0, proposed_likelihood_total - global_likelihood_total))) #acceptance probability
-      arrow::write_parquet(global_likelihood_data, this_global_files[['llik_filename']]) # save to file
+      arrow::write_parquet(global_likelihood_data, this_global_files[['llik_filename']]) # update likelihood saved to file
       
       old_avg_global_accept_rate <- avg_global_accept_rate # keep track, since old global likelihood data not kept in memory
-      
-      ## Print average global acceptance rate
-      # print(paste("Average global acceptance rate: ",formatC(100*avg_global_accept_rate,digits=2,format="f"),"%"))
+      # print(paste("Average global acceptance rate: ",formatC(100*avg_global_accept_rate,digits=2,format="f"),"%")) 
       
       ## Chimeric likelihood acceptance or rejection decisions (one round) ---------------------------------------------------------------------------
       
@@ -762,7 +776,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           new_seeding<- proposed_seeding
         }
         new_spar <- initial_spar
-        newl_hpar <- proposed_hpar
+        new_hpar <- proposed_hpar
         new_snpi <- proposed_snpi
         new_hnpi <- proposed_hnpi
         chimeric_likelihood_data <- global_likelihood_data
@@ -789,40 +803,35 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       arrow::write_parquet(new_hnpi,this_chimeric_files[['hnpi_filename']])
       arrow::write_parquet(chimeric_likelihood_data, this_chimeric_files[['llik_filename']])
       
-      print(paste("Current index is ",current_index))
+      print(paste("Current accepted index is ",last_accepted_index))
       
-      # remove old "initial" values from memory
-      rm(initial_spar, initial_hpar, initial_snpi, initial_hnpi)
-      if (!is.null(config$initial_conditions)){
-        rm(initial_init)
-      }
-      if (!is.null(config$seeding)){
-        rm(initial_seeding)
-      }
       
       # set initial values to start next iteration
       if (!is.null(config$initial_conditions)){
-        new_init <- proposed_init
+        initial_init <- new_init
       }
       if (!is.null(config$seeding)){
-        new_seeding<- proposed_seeding
+        initial_seeding<- new_seeding
       }
-      new_spar <- proposed_spar
-      new_hpar <- proposed_hpar
-      new_snpi <- proposed_snpi
-      new_hnpi <- proposed_hnpi
+      initial_spar <- new_spar
+      initial_hpar <- new_hpar
+      initial_snpi <- new_snpi
+      initial_hnpi <- new_hnpi
       
-      # remove proposed values from memory
+      # remove "new" and "proposed" values from memory
       rm(proposed_spar, proposed_hpar, proposed_snpi,proposed_hnpi)
+      rm(new_spar, new_hpar, new_snpi,new_hnpi)
       if (!is.null(config$initial_conditions)){
         rm(proposed_init)
+        rm(new_init)
       }
       if (!is.null(config$seeding)){
         rm(proposed_seeding)
+        rm(new_seeding)
       }
       
       endTimeCountEach=difftime(Sys.time(), startTimeCountEach, units = "secs")
-      print(paste("Time to run this MCMC iteration is ",formatC(endTimeCountEach,digits=2,format="f")," seconds"))
+      print(paste("Time to run MCMC iteration",this_index,"of slot",opt$this_slot," is ",formatC(endTimeCountEach,digits=2,format="f")," seconds"))
       
       # memory profiler to diagnose memory creep
       
@@ -865,15 +874,17 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     # Create "final" files after MCMC chain is completed
     #   Will fail if unsuccessful
     # moves the most recently globally accepted parameter values from global/intermediate file to global/final
-    cpy_res_global <- inference::perform_MCMC_step_copies_global(current_index = current_index,
+    print("Copying latest global files to final")
+    cpy_res_global <- inference::perform_MCMC_step_copies_global(current_index = last_accepted_index,
                                                                  slot = opt$this_slot,
                                                                  block = opt$this_block,
                                                                  run_id = opt$run_id,
                                                                  global_intermediate_filepath_suffix = global_intermediate_filepath_suffix,
                                                                  slotblock_filename_prefix = slotblock_filename_prefix,
                                                                  slot_filename_prefix = slot_filename_prefix)
-    #if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
+    if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
     # moves the most recent chimeric parameter values from chimeric/intermediate file to chimeric/final
+    print("Copying latest chimeric files to final")
     cpy_res_chimeric <- inference::perform_MCMC_step_copies_chimeric(current_index = this_index,
                                                                      slot = opt$this_slot,
                                                                      block = opt$this_block,
@@ -881,21 +892,25 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                                      chimeric_intermediate_filepath_suffix = chimeric_intermediate_filepath_suffix,
                                                                      slotblock_filename_prefix = slotblock_filename_prefix,
                                                                      slot_filename_prefix = slot_filename_prefix)
-    #if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
+    if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
     
     #####Write currently accepted files to disk
-    #files of the form variables/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/chimeric/intermediate/slot.block.run_id.variable.parquet
+    #NOTE: Don't understand why we write these files that don't have an iteration index
+    #files of the form ../chimeric/intermediate/{slot}.{block}.{run_id}.{variable}.parquet
     output_chimeric_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix,  filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix, index=opt$this_block)
-    #files of the form variables/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.block.run_id.variable.parquet
+    #files of the form .../global/intermediate/{slot}.{block}.{run_id}.{variable}.parquet
     output_global_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix,filepath_suffix=global_intermediate_filepath_suffix,filename_prefix=slot_filename_prefix,  index=opt$this_block)
     
     warning("Chimeric hosp and seir files not yet supported, just using the most recently generated file of each type")
+    #files of the form .../global/intermediate/{slot}.{block}.{iteration}.{run_id}.{variable}.parquet
     this_index_global_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=this_index)
+    
+    # copy files from most recent global to end of block chimeric??
     file.copy(this_index_global_files[['hosp_filename']],output_chimeric_files[['hosp_filename']])
     file.copy(this_index_global_files[['seir_filename']],output_chimeric_files[['seir_filename']])
     
     endTimeCount=difftime(Sys.time(), startTimeCount, units = "secs")
-    print(paste("Time to run all MCMC iterations is ",formatC(endTimeCount,digits=2,format="f")," seconds"))
+    print(paste("Time to run all MCMC iterations of slot ",opt$this_slot," is ",formatC(endTimeCount,digits=2,format="f")," seconds"))
     
   }
 }

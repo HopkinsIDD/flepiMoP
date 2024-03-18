@@ -139,8 +139,7 @@ foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
         "-R", opt[["is-resume"]],
         "-I", opt[["is-interactive"]],
         "-L", opt$reset_chimeric_on_accept,
-      #paste("2>&1 | tee log_inference_slot", flepi_slot, ".txt", sep=""),
-      paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""),
+      #paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""), # works
       #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
       sep = " ")
     )
