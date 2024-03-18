@@ -691,7 +691,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         }
         
         # File saving: If global accept occurs, the global parameter files are already correct as they contain the proposed values
-
+        
       } else {
         print("**** GLOBAL REJECT (Recording) ****")
         
@@ -870,7 +870,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       }
       
     }
-
+    
     # Create "final" files after MCMC chain is completed
     #   Will fail if unsuccessful
     # moves the most recently globally accepted parameter values from global/intermediate file to global/final
