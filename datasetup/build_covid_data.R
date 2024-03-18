@@ -31,7 +31,10 @@ if (exists("config$inference$gt_source")) {
 }
 
 outdir <- config$data_path
-filterUSPS <- config$subpop_setup$modeled_states
+# filterUSPS <- config$subpop_setup$modeled_states
+filterUSPS <- c("WY","VT","DC","AK","ND","SD","DE","MT","RI","ME","NH","HI","ID","WV","NE","NM",
+                "KS","NV","MS","AR","UT","IA","CT","OK","OR","KY","LA","AL","SC","MN","CO","WI",
+                "MD","MO","IN","TN","MA","AZ","WA","VA","NJ","MI","NC","GA","OH","IL","PA","NY","FL","TX","CA")
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
@@ -372,11 +375,12 @@ us_data <- us_data %>%
     filter(Update >= lubridate::as_date(config$start_date) & Update <= lubridate::as_date(end_date_))
 
 # Filter to states we care about
-locs <- config$subpop_setup$modeled_states
+# locs <- config$subpop_setup$modeled_states
+locs <- filterUSPS
 us_data <- us_data %>%
     filter(source %in% locs) %>%
     filter(!is.na(source)) %>%
-    rename(date = Update)
+    rename(date = Update, subpop = FIPS)
 
 
 

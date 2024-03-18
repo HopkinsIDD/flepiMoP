@@ -38,4 +38,4 @@ Suggests:
     testthat (>= 2.1.0),
     vctrs
 RoxygenNote: 7.2.3
-
+LazyData: true

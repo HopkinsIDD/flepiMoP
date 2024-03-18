@@ -1,4 +1,4 @@
-context("accept_reject_new_seeding_npis")
+context("accept_reject_proposals")
 
 
 test_that("all blocks are accpeted when all proposals are better",{
@@ -36,7 +36,7 @@ test_that("all blocks are accpeted when all proposals are better",{
     prop_lls <-  data.frame(subpop=c("A","B","C"),ll=rep(-9,3))
 
 
-    tmp <- accept_reject_new_seeding_npis(
+    tmp <- accept_reject_proposals(
       init_orig = init_orig,
       init_prop = init_prop,
       seeding_orig = seed_orig,
@@ -100,7 +100,7 @@ test_that("all blocks are rejected when all proposals are 1x10^12 times worse",{
     prop_lls <-  data.frame(subpop=c("A","B","C"),ll=rep(-13,3))
 
 
-    tmp <- accept_reject_new_seeding_npis(
+    tmp <- accept_reject_proposals(
       init_orig = init_orig,
       init_prop = init_prop,
       seeding_orig = seed_orig,
@@ -163,7 +163,7 @@ test_that("only middle block is accepted when appropriate",{
     prop_lls$ll[prop_lls$subpop=="B"] <- -1
 
 
-    tmp <- accept_reject_new_seeding_npis(
+    tmp <- accept_reject_proposals(
       init_orig = init_orig,
       init_prop = init_prop,
       seeding_orig = seed_orig,

@@ -52,7 +52,6 @@ if (length(config) == 0) {
 }
 
 outdir <- config$data_path
-filterUSPS <- config$subpop_setup$modeled_states
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
@@ -75,6 +74,9 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 
 
+filterUSPS <- c("WY","VT","DC","AK","ND","SD","DE","MT","RI","ME","NH","HI","ID","WV","NE","NM",
+                "KS","NV","MS","AR","UT","IA","CT","OK","OR","KY","LA","AL","SC","MN","CO","WI",
+                "MD","MO","IN","TN","MA","AZ","WA","VA","NJ","MI","NC","GA","OH","IL","PA","NY","FL","TX","CA")
 
 # GEODATA (CENSUS DATA) -------------------------------------------------------------
 
@@ -91,13 +93,12 @@ census_data <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/us_county_cen
 
 # Add USPS column
 #data(fips_codes)
-fips_codes <- arrow::read_parquet(paste0(opt$p,"datasetup/usdata/fips_us_county.parquet"))
+fips_codes <- arrow::read_parquet(paste0(opt$p,"/datasetup/usdata/fips_us_county.parquet"))
 fips_subpop_codes <- dplyr::mutate(fips_codes, subpop=paste0(state_code,county_code)) %>%
   dplyr::group_by(subpop) %>%
   dplyr::summarize(USPS=unique(state))
 
-census_data <- dplyr::left_join(census_data, fips_subpop_codes, by="subpop") %>%
-    dplyr::filter(USPS %in% filterUSPS)
+census_data <- dplyr::left_join(census_data, fips_subpop_codes, by="subpop") 
 
 
 # Make each territory one county.
@@ -151,6 +152,10 @@ if (length(config$subpop_setup$geodata) > 0) {
 } else {
   geodata_file <- 'geodata.csv'
 }
+
+# manually remove PR
+census_data <- census_data %>% filter(USPS != "PR")
+
 write.csv(file = file.path(outdir, geodata_file), census_data, row.names=FALSE)
 print(paste("Wrote geodata file:", file.path(outdir, geodata_file)))
 

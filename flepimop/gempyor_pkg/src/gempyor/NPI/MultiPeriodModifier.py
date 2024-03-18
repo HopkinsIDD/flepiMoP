@@ -49,18 +49,18 @@ class MultiPeriodModifier(NPIBase):
 
         self.parameters = pd.DataFrame(
             data={
-                "npi_name": [""] * len(self.subpops),
+                "modifier_name": [""] * len(self.subpops),
                 "parameter": [""] * len(self.subpops),
                 "start_date": [[self.start_date]] * len(self.subpops),
                 "end_date": [[self.end_date]] * len(self.subpops),
-                "reduction": [default_value] * len(self.subpops),
+                "value": [default_value] * len(self.subpops),
             },
             index=self.subpops,
         )
 
         
 
-        if (loaded_df is not None) and self.name in loaded_df["npi_name"].values:
+        if (loaded_df is not None) and self.name in loaded_df["modifier_name"].values:
             self.__createFromDf(loaded_df, npi_config)
         else:
             self.__createFromConfig(npi_config)
@@ -80,7 +80,7 @@ class MultiPeriodModifier(NPIBase):
                     self.parameters["end_date"][affected_subpops_grp[0]][sub_index],
                 )
                 self.npi.loc[affected_subpops_grp, period_range] = np.tile(
-                    self.parameters["reduction"][affected_subpops_grp],
+                    self.parameters["value"][affected_subpops_grp],
                     (len(period_range), 1),
                 ).T
 
@@ -88,7 +88,7 @@ class MultiPeriodModifier(NPIBase):
         #    for sub_index in range(len(self.parameters["start_date"][index])):
         #        period_range = pd.date_range(self.parameters["start_date"][index][sub_index], self.parameters["end_date"][index][sub_index])
         #        ## This the line that does the work
-        #        self.npi_old.loc[index, period_range] = np.tile(self.parameters["reduction"][index], (len(period_range), 1)).T
+        #        self.npi_old.loc[index, period_range] = np.tile(self.parameters["value"][index], (len(period_range), 1)).T
         # print(f'{self.name}, : {(self.npi_old == self.npi).all().all()}')
 
         # self.__checkErrors()
@@ -136,7 +136,7 @@ class MultiPeriodModifier(NPIBase):
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         dist = npi_config["value"].as_random_distribution()
-        self.parameters["npi_name"] = self.name
+        self.parameters["modifier_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
         self.spatial_groups = []
@@ -161,13 +161,13 @@ class MultiPeriodModifier(NPIBase):
             for subpop in this_spatial_group["ungrouped"]:
                 self.parameters.at[subpop, "start_date"] = start_dates
                 self.parameters.at[subpop, "end_date"] = end_dates
-                self.parameters.at[subpop, "reduction"] = dist(size=1)
+                self.parameters.at[subpop, "value"] = dist(size=1)
             for group in this_spatial_group["grouped"]:
                 drawn_value = dist(size=1)
                 for subpop in group:
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
-                    self.parameters.at[subpop, "reduction"] = drawn_value
+                    self.parameters.at[subpop, "value"] = drawn_value
 
     def __get_affected_subpops_grp(self, grp_config):
         if grp_config["subpop"].get() == "all":
@@ -178,14 +178,14 @@ class MultiPeriodModifier(NPIBase):
 
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.subpop
-        loaded_df = loaded_df[loaded_df["npi_name"] == self.name]
+        loaded_df = loaded_df[loaded_df["modifier_name"] == self.name]
         self.affected_subpops = self.__get_affected_subpops(npi_config)
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
-        self.parameters["npi_name"] = self.name
+        self.parameters["modifier_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
-        # self.parameters = loaded_df[["npi_name", "start_date", "end_date", "parameter", "reduction"]].copy()
+        # self.parameters = loaded_df[["modifier_name", "start_date", "end_date", "parameter", "value"]].copy()
         # self.parameters["start_date"] = [[datetime.date.fromisoformat(date) for date in strdate.split(",")] for strdate in self.parameters["start_date"]]
         # self.parameters["end_date"] =   [[datetime.date.fromisoformat(date) for date in strdate.split(",")] for strdate in self.parameters["end_date"]]
         # self.affected_subpops = set(self.parameters.index)
@@ -216,24 +216,24 @@ class MultiPeriodModifier(NPIBase):
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
                     dist = npi_config["value"].as_random_distribution()
-                    self.parameters.at[subpop, "reduction"] = dist(size=1)
+                    self.parameters.at[subpop, "value"] = dist(size=1)
                 else:
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
-                    self.parameters.at[subpop, "reduction"] = loaded_df.at[subpop, "reduction"]
+                    self.parameters.at[subpop, "value"] = loaded_df.at[subpop, "value"]
             for group in this_spatial_group["grouped"]:
                 if ",".join(group) in loaded_df.index:  # ordered, so it's ok
                     for subpop in group:
                         self.parameters.at[subpop, "start_date"] = start_dates
                         self.parameters.at[subpop, "end_date"] = end_dates
-                        self.parameters.at[subpop, "reduction"] = loaded_df.at[",".join(group), "reduction"]
+                        self.parameters.at[subpop, "value"] = loaded_df.at[",".join(group), "value"]
                 else:
                     dist = npi_config["value"].as_random_distribution()
                     drawn_value = dist(size=1)
                     for subpop in group:
                         self.parameters.at[subpop, "start_date"] = start_dates
                         self.parameters.at[subpop, "end_date"] = end_dates
-                        self.parameters.at[subpop, "reduction"] = drawn_value
+                        self.parameters.at[subpop, "value"] = drawn_value
 
         self.parameters = self.parameters.loc[list(self.affected_subpops)]
         # self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops) ]
@@ -295,13 +295,13 @@ class MultiPeriodModifier(NPIBase):
                 row_group = pd.DataFrame.from_dict(
                     {
                         "subpop": ",".join(group),
-                        "npi_name": df_group["npi_name"],
+                        "modifier_name": df_group["modifier_name"],
                         "parameter": df_group["parameter"],
                         "start_date": df_group["start_date"].apply(
                             lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])
                         ),
                         "end_date": df_group["end_date"].apply(lambda l: ",".join([d.strftime("%Y-%m-%d") for d in l])),
-                        "reduction": df_group["reduction"],
+                        "value": df_group["value"],
                     }
                 ).set_index("subpop")
                 df_list.append(row_group)
