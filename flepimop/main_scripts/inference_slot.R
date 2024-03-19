@@ -498,7 +498,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
         initial_hpar <- arrow::read_parquet(first_chimeric_files[['hpar_filename']])
         
-        if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+        if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
             # initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
             initial_init <- arrow::read_parquet(first_chimeric_files[['init_filename']])
         }
@@ -563,7 +563,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             } else {
                 proposed_seeding <- initial_seeding
             }
-            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                 if (infer_initial_conditions) {
                     proposed_init <- inference::perturb_init(initial_init, config$initial_conditions$perturbation)
                 } else {
@@ -589,7 +589,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 proposed_hnpi <- initial_hnpi
                 proposed_spar <- initial_spar
                 proposed_hpar <- initial_hpar
-                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                     proposed_init <- initial_init
                 }
                 if (!is.null(config$seeding)){
@@ -773,7 +773,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 )
                 
                 # Update accepted parameters to start next simulation
-                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions", "SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
                     initial_init <- seeding_npis_list$init
                 }
                 initial_seeding <- seeding_npis_list$seeding
