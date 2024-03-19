@@ -498,10 +498,10 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
         initial_hpar <- arrow::read_parquet(first_chimeric_files[['hpar_filename']])
         
-        if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-            # initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
-            initial_init <- arrow::read_parquet(first_chimeric_files[['init_filename']])
-        }
+        # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions", "SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"))){
+        #     # initial_init <- arrow::read_parquet(first_global_files[['init_filename']])
+        #     initial_init <- arrow::read_parquet(first_chimeric_files[['init_filename']])
+        # }
         
         
         chimeric_likelihood_data <- arrow::read_parquet(first_chimeric_files[['llik_filename']])
@@ -552,60 +552,63 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             
             ### Do perturbations from accepted parameters to get proposed parameters ----
             
-            if (!is.null(config$seeding)){
-                proposed_seeding <- inference::perturb_seeding(
-                    seeding = initial_seeding,
-                    date_sd = config$seeding$date_sd,
-                    date_bounds = c(gt_start_date, gt_end_date),
-                    amount_sd = config$seeding$amount_sd,
-                    continuous = !(opt$stoch_traj_flag)
-                )
-            } else {
-                proposed_seeding <- initial_seeding
-            }
-            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                if (infer_initial_conditions) {
-                    proposed_init <- inference::perturb_init(initial_init, config$initial_conditions$perturbation)
-                } else {
-                    proposed_init <- initial_init
-                }
-            }
-            if (!is.null(config$seir_modifiers$modifiers)){
-                proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$modifiers)
-            }
-            # TODO we need a hnpi for inference
-            proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)
-            if (!is.null(config$outcome_modifiers$modifiers)){
-                proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)# NOTE: no scenarios possible right now
-            }
-            proposed_spar <- initial_spar
-            proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$outcomes) # NOTE: no scenarios possible right now
-            
-            
             
             # since the first iteration is accepted by default, we don't perturb it
             if ((opt$this_block == 1) && (current_index == 0)) {
+                
                 proposed_snpi <- initial_snpi
                 proposed_hnpi <- initial_hnpi
                 proposed_spar <- initial_spar
                 proposed_hpar <- initial_hpar
-                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                    proposed_init <- initial_init
-                }
+                
+                # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions", "SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"))){
+                #     proposed_init <- initial_init
+                # }
                 if (!is.null(config$seeding)){
                     proposed_seeding <- initial_seeding
                 }
+            } else {
+                
+                if (!is.null(config$seeding)){
+                    proposed_seeding <- inference::perturb_seeding(
+                        seeding = initial_seeding,
+                        date_sd = config$seeding$date_sd,
+                        date_bounds = c(gt_start_date, gt_end_date),
+                        amount_sd = config$seeding$amount_sd,
+                        continuous = !(opt$stoch_traj_flag)
+                    )
+                } else {
+                    proposed_seeding <- initial_seeding
+                }
+                # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("FromFile","SetInitialConditions","SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+                #     if (infer_initial_conditions) {
+                #         proposed_init <- inference::perturb_init(initial_init, config$initial_conditions$perturbation)
+                #     } else {
+                #         proposed_init <- initial_init
+                #     }
+                # }
+                if (!is.null(config$seir_modifiers$modifiers)){
+                    proposed_snpi <- inference::perturb_snpi(initial_snpi, config$seir_modifiers$modifiers)
+                }
+                # TODO we need a hnpi for inference
+                proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)
+                if (!is.null(config$outcome_modifiers$modifiers)){
+                    proposed_hnpi <- inference::perturb_hnpi(initial_hnpi, config$outcome_modifiers$modifiers)# NOTE: no scenarios possible right now
+                }
+                proposed_spar <- initial_spar
+                proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$outcomes) # NOTE: no scenarios possible right now
+                
+                # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$seir_modifiers$settings, chimeric_likelihood_data)
+                # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$seir_modifiers$settings, chimeric_likelihood_data)
+                # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$seir_modifiers$settings, chimeric_likelihood_data)
+                # proposed_hpar <- inference::perturb_hpar_from_file(initial_hpar, config$seir_modifiers$settings, chimeric_likelihood_data)
+                
             }
             
-            # proposed_snpi <- inference::perturb_snpi_from_file(initial_snpi, config$seir_modifiers$settings, chimeric_likelihood_data)
-            # proposed_hnpi <- inference::perturb_hnpi_from_file(initial_hnpi, config$seir_modifiers$settings, chimeric_likelihood_data)
-            # proposed_spar <- inference::perturb_spar_from_file(initial_spar, config$seir_modifiers$settings, chimeric_likelihood_data)
-            # proposed_hpar <- inference::perturb_hpar_from_file(initial_hpar, config$seir_modifiers$settings, chimeric_likelihood_data)
             
             
             ## Write files that need to be written for other code to read
             # writes to file of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.block.iter.run_id.variable.ext
-            
             
             arrow::write_parquet(proposed_snpi,this_global_files[['snpi_filename']])
             arrow::write_parquet(proposed_hnpi,this_global_files[['hnpi_filename']])
@@ -614,9 +617,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             if (!is.null(config$seeding)){
                 readr::write_csv(proposed_seeding, this_global_files[['seed_filename']])
             }
-            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                arrow::write_parquet(proposed_init, this_global_files[['init_filename']])
-            }
+            # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw"))){
+            #     arrow::write_parquet(proposed_init, this_global_files[['init_filename']])
+            # }
             
             
             ## Run the simulator
@@ -742,9 +745,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 
                 print("Resetting chimeric files to global")
                 
-                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                    initial_init <- proposed_init
-                }
+                # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw"))){
+                #     initial_init <- proposed_init
+                # }
                 initial_seeding <- proposed_seeding
                 initial_snpi <- proposed_snpi
                 initial_hnpi <- proposed_hnpi
@@ -756,6 +759,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 
                 ## Chimeric likelihood acceptance or rejection decisions (one round) -----
                 #  "Chimeric" means Subpopulation-specific (i.e., each state or county in the US has a chimeric likelihood)
+                
+                proposed_init <- NULL
+                initial_init <- proposed_init
                 
                 seeding_npis_list <- inference::accept_reject_proposals(
                     init_orig = initial_init,
@@ -773,9 +779,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                 )
                 
                 # Update accepted parameters to start next simulation
-                if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditions", "SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                    initial_init <- seeding_npis_list$init
-                }
+                # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions", "SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"))){
+                #     initial_init <- seeding_npis_list$init
+                # }
                 initial_seeding <- seeding_npis_list$seeding
                 initial_snpi <- seeding_npis_list$snpi
                 initial_hnpi <- seeding_npis_list$hnpi
@@ -794,9 +800,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             if (!is.null(config$seeding)){
                 readr::write_csv(initial_seeding,this_chimeric_files[['seed_filename']])
             }
-            if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
-                arrow::write_parquet(initial_init, this_chimeric_files[['init_filename']])
-            }
+            # if (!is.null(config$initial_conditions) & (config$initial_conditions$method %in% c("SetInitialConditionsFolderDraw","InitialConditionsFolderDraw"))){
+            #     arrow::write_parquet(initial_init, this_chimeric_files[['init_filename']])
+            # }
             arrow::write_parquet(initial_snpi,this_chimeric_files[['snpi_filename']])
             arrow::write_parquet(initial_hnpi,this_chimeric_files[['hnpi_filename']])
             arrow::write_parquet(initial_spar,this_chimeric_files[['spar_filename']])
@@ -806,7 +812,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             print(paste("Current index is ",current_index))
             
             ###Memory management
-            rm(proposed_init)
+            # rm(proposed_init)
             rm(proposed_snpi)
             rm(proposed_hnpi)
             rm(proposed_hpar)
