@@ -58,29 +58,29 @@ if(is.na(opt$slots)) {
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
 if (all(outcome_modifiers_scenarios == "all")) {
-    if (!is.null(config$outcome_modifiers$scenarios)){
-        outcome_modifiers_scenarios <- config$outcome_modifiers$scenarios
-    } else {
-        outcome_modifiers_scenarios <- "all"
-    }
+  if (!is.null(config$outcome_modifiers$scenarios)){
+    outcome_modifiers_scenarios <- config$outcome_modifiers$scenarios
+  } else {
+    outcome_modifiers_scenarios <- "all"
+  }
 } else if (!all(outcome_modifiers_scenarios %in% config$outcome_modifiers$scenarios)) {
-    message(paste("Invalid outcome scenario arguments: [",paste(setdiff(outcome_modifiers_scenarios, config$outcome_modifiers$scenarios)),
-                  "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
-    quit("yes", status=1)
+  message(paste("Invalid outcome scenario arguments: [",paste(setdiff(outcome_modifiers_scenarios, config$outcome_modifiers$scenarios)),
+                "] did not match any of the named args in", paste(config$outcome_modifiers$scenarios, collapse = ", "), "\n"))
+  quit("yes", status=1)
 }
 
 ##If intervention scenarios are specified check their existence
 seir_modifiers_scenarios <- opt$seir_modifiers_scenarios
 if (all(seir_modifiers_scenarios == "all")) {
-    if (!is.null(config$seir_modifiers$scenarios)){
-        seir_modifiers_scenarios <- config$seir_modifiers$scenarios
-    } else {
-        seir_modifiers_scenarios <- "all"
-    }
+  if (!is.null(config$seir_modifiers$scenarios)){
+    seir_modifiers_scenarios <- config$seir_modifiers$scenarios
+  } else {
+    seir_modifiers_scenarios <- "all"
+  }
 } else if (!all(seir_modifiers_scenarios %in% config$seir_modifiers$scenarios)) {
-    message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)),
-                  "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
-    quit("yes", status=1)
+  message(paste("Invalid intervention scenario arguments: [", paste(setdiff(seir_modifiers_scenarios, config$seir_modifiers$scenarios)),
+                "] did not match any of the named args in ", paste(config$seir_modifiers$scenarios, collapse = ", "), "\n"))
+  quit("yes", status=1)
 }
 
 
@@ -94,23 +94,23 @@ print(paste0("Making cluster with ", opt$j, " cores."))
 
 flepicommon::prettyprint_optlist(list(seir_modifiers_scenarios=seir_modifiers_scenarios,outcome_modifiers_scenarios=outcome_modifiers_scenarios,slots=seq_len(opt$slots)))
 foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
-foreach(outcome_modifiers_scenario = outcome_modifiers_scenarios) %:%
-foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
-  print(paste("Slot", flepi_slot, "of", opt$slots))
-
-  ground_truth_start_text <- NULL
-  ground_truth_end_text <- NULL
-  if (nchar(opt$ground_truth_start) > 0) {
-    ground_truth_start_text <- c("--ground_truth_start", opt$ground_truth_start)
-  }
-  if (nchar(opt$ground_truth_start) > 0) {
-    ground_truth_end_text <- c("--ground_truth_end", opt$ground_truth_end)
-  }
-
-  err <- system(
-    paste(
-      opt$rpath,
-      file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
+  foreach(outcome_modifiers_scenario = outcome_modifiers_scenarios) %:%
+  foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
+    print(paste("Slot", flepi_slot, "of", opt$slots))
+    
+    ground_truth_start_text <- NULL
+    ground_truth_end_text <- NULL
+    if (nchar(opt$ground_truth_start) > 0) {
+      ground_truth_start_text <- c("--ground_truth_start", opt$ground_truth_start)
+    }
+    if (nchar(opt$ground_truth_start) > 0) {
+      ground_truth_end_text <- c("--ground_truth_end", opt$ground_truth_end)
+    }
+    
+    err <- system(
+      paste(
+        opt$rpath,
+        file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$seir_modifiers_scenarios,
@@ -128,11 +128,11 @@ foreach(flepi_slot = seq_len(opt$slots)) %dopar% {
         "-R", opt[["is-resume"]],
         "-I", opt[["is-interactive"]],
         "-L", opt$reset_chimeric_on_accept,
-      #paste("2>&1 | tee log_inference_slot", flepi_slot, ".txt", sep=""),
-      paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""),
-      #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
-      sep = " ")
+        #paste("2>&1 | tee log_inference_slot", flepi_slot, ".txt", sep=""),
+        paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""),
+        #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
+        sep = " ")
     )
-  if(err != 0){quit("no")}
-}
+    if(err != 0){quit("no")}
+  }
 parallel::stopCluster(cl)
