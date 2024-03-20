@@ -104,7 +104,7 @@ if (!is.null(config$seeding)){
   if (!('amount_sd' %in% names(config$seeding))) {
     config$seeding$amount_sd <- 1
   }
-  if (!(config$seeding$method %in% c('FolderDraw','InitialConditionsFolderDraw'))){
+  if (!(config$seeding$method %in% c('FolderDraw'))){
     stop("Inference requires the seeding method be 'FolderDraw' if seeding section is included")
   }
 } else {
@@ -414,7 +414,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         inference_filename_prefix=slotblock_filename_prefix
       )
     }, error = function(e) {
-      print("GempyorSimulator failed to run (call on l. 426 of inference_slot.R).")
+      print("GempyorSimulator failed to run (call on l. 417 of inference_slot.R).")
       print("Here is all the debug information I could find:")
       for(m in reticulate::py_last_error()) cat(m)
       stop("GempyorSimulator failed to run... stopping")
@@ -457,7 +457,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     # So far no acceptances have occurred
     last_accepted_index <- 0
     
-    # Load files with this the output of initialize_mcmc_first_block
+    # Load files with the output of initialize_mcmc_first_block
     
     # load those files (chimeric currently identical to global)
     initial_spar <- arrow::read_parquet(first_chimeric_files[['spar_filename']])
@@ -477,29 +477,12 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     }else{
       initial_seeding <- NULL
     }
-    chimeric_likelihood_data <- arrow::read_parquet(first_chimeric_files[['llik_filename']])
-    global_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']]) # they are the same ... don't need to load both
-    
-    # Add initial perturbation sd values to parameter files (TEMPORARY HACK)
-    #   Note: these files created in gempyor but want to add a new column when inference being done
-    # - Need to write these parameters back to the SAME files since they have a new column now
-    if (!is.null(config$seir_modifiers$modifiers)){
-      initial_snpi <- inference::add_perturb_column_snpi(initial_snpi,config$seir_modifiers$modifiers)
-      arrow::write_parquet(initial_snpi, first_chimeric_files[['snpi_filename']])
-      arrow::write_parquet(initial_snpi, first_global_files[['snpi_filename']])
-      initial_snpi <- arrow::read_parquet(first_chimeric_files[['snpi_filename']])
-    }
-    if (!is.null(config$outcome_modifiers$modifiers)){
-      initial_hnpi <- inference::add_perturb_column_hnpi(initial_hnpi,config$outcome_modifiers$modifiers)
-      arrow::write_parquet(initial_hnpi, first_chimeric_files[['hnpi_filename']])
-      arrow::write_parquet(initial_hnpi, first_global_files[['hnpi_filename']])
-      initial_hnpi <- arrow::read_parquet(first_chimeric_files[['hnpi_filename']])
-    }
-    
+    chimeric_current_likelihood_data <- arrow::read_parquet(first_chimeric_files[['llik_filename']])
+    global_current_likelihood_data <- arrow::read_parquet(first_global_files[['llik_filename']]) # they are the same ... don't need to load both
     
     #####Get the full likelihood (WHY IS THIS A DATA FRAME)
     # Compute total loglik for each sim
-    global_likelihood_total <- sum(global_likelihood_data$ll)
+    global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
     
     #####LOOP NOTES
     ### this_index is the current MCMC iteration
@@ -510,8 +493,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     ## Loop over simulations in this block --------------------------------------------
     
     # keep track of running average global acceptance rate, since old global likelihood data not kept in memory. Each geoID has same value for acceptance rate in global case, so we just take the 1st entry
-    old_avg_global_accept_rate <- global_likelihood_data$accept_avg[1]
-    old_avg_chimeric_accept_rate <- chimeric_likelihood_data$accept_avg
+    old_avg_global_accept_rate <- global_current_likelihood_data$accept_avg[1]
+    old_avg_chimeric_accept_rate <- chimeric_current_likelihood_data$accept_avg
     
     for (this_index in seq_len(opt$iterations_per_slot)) {
       
@@ -594,7 +577,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           load_ID=TRUE,
           sim_id2load=this_index)
       }, error = function(e) {
-        print("GempyorSimulator failed to run (call on l. 620 of inference_slot.R).")
+        print("GempyorSimulator failed to run (call on l. 597 of inference_slot.R).")
         print("Here is all the debug information I could find:")
         for(m in reticulate::py_last_error()) cat(m)
         stop("GempyorSimulator failed to run... stopping")
@@ -639,16 +622,23 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       
       rm(sim_hosp)
       
+      # write proposed likelihood to global file
+      arrow::write_parquet(proposed_likelihood_data, this_global_files[['llik_filename']])
+      
       ## UNCOMMENT TO DEBUG
-      ## print(global_likelihood_data)
-      ## print(chimeric_likelihood_data)
-      ## print(proposed_likelihood_data)
+      # print('current global likelihood')
+      # print(global_current_likelihood_data)
+      # print('current chimeric likelihood')
+      # print(chimeric_current_likelihood_data)
+      #print('proposed likelihood')
+      #print(proposed_likelihood_data)
       
       ## Compute total loglik for each sim
       proposed_likelihood_total <- sum(proposed_likelihood_data$ll)
       ## For logging
-      print(paste("Current likelihood",formatC(global_likelihood_total,digits=2,format="f"),"Proposed likelihood",
+      print(paste("Current likelihood",formatC(global_current_likelihood_total,digits=2,format="f"),"Proposed likelihood",
                   formatC(proposed_likelihood_total,digits=2,format="f")))
+      
       
       ## Global likelihood acceptance or rejection decision -----------
       
@@ -656,7 +646,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # Accept if MCMC acceptance decision = 1 or it's the first iteration of the first block
       # note - we already have a catch for the first block thing earlier (we set proposed = initial likelihood) - shouldn't need 2!
       global_accept <- ifelse(  #same value for all subpopulations
-        inference::iterateAccept(global_likelihood_total, proposed_likelihood_total) || 
+        inference::iterateAccept(global_current_likelihood_total, proposed_likelihood_total) || 
           ((last_accepted_index == 0) && (opt$this_block == 1)),1,0
       )
       
@@ -664,6 +654,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       if (global_accept == 1 | config$inference$do_inference == FALSE) { 
         
         print("**** GLOBAL ACCEPT (Recording) ****")
+        
         if ((opt$this_block == 1) && (last_accepted_index == 0)) {
           print("by default because it's the first iteration of a block 1")
         }
@@ -671,24 +662,20 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         # Update the index of the most recent globally accepted parameters
         last_accepted_index <- this_index
         
-        # Calculate acceptance statistics for the global chain. Note all this applies same value to each subpopulation
-        global_likelihood_data <- proposed_likelihood_data # this is used for next iteration
-        global_likelihood_total <- proposed_likelihood_total # this is used for next iteration
-        
-        global_likelihood_data$accept <- 1 # global acceptance decision (0/1), same recorded for each geoID
-        effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index # total index of all MCMC iterations in slot
-        avg_global_accept_rate <- ((effective_index-1)*old_avg_global_accept_rate + global_accept)/(effective_index) 
-        global_likelihood_data$accept_avg <-avg_global_accept_rate # update running average acceptance probability
-        global_likelihood_data$accept_prob <- exp(min(c(0, proposed_likelihood_total - global_likelihood_total))) #acceptance probability
-        arrow::write_parquet(global_likelihood_data, this_global_files[['llik_filename']]) # update likelihood saved to file
-        
-        old_avg_global_accept_rate <- avg_global_accept_rate # keep track, since old global likelihood data not kept in memory
-        # print(paste("Average global acceptance rate: ",formatC(100*avg_global_accept_rate,digits=2,format="f"),"%")) 
-        
-        
         if (opt$reset_chimeric_on_accept) {
           reset_chimeric_files <- TRUE # triggers globally accepted parameters to push back to chimeric
         }
+        
+        # Update current global likelihood to proposed likelihood and record some acceptance statistics
+        
+        #acceptance probability for this iteration
+        this_accept_prob <- exp(min(c(0, proposed_likelihood_total - global_current_likelihood_total))) 
+        
+        global_current_likelihood_data <- proposed_likelihood_data # this is used for next iteration
+        global_current_likelihood_total <- proposed_likelihood_total # this is used for next iteration
+        
+        global_current_likelihood_data$accept <- 1 # global acceptance decision (0/1), same for each geoID
+        global_current_likelihood_data$accept_prob <- this_accept_prob
         
         # File saving: If global accept occurs, the global parameter files are already correct as they contain the proposed values
         
@@ -697,37 +684,53 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         
         # File saving: If global reject occurs, remove "proposed" parameters from global files and instead replacing with the last accepted values
         
-        sapply(this_global_files, file.remove) # removes global files with "this index"
-        
-        old_global_files <- inference::create_filename_list(run_id=opt$run_id, # get filenames of last accepted files
+        # get filenames of last accepted files
+        old_global_files <- inference::create_filename_list(run_id=opt$run_id, 
                                                             prefix=setup_prefix, 
-                                                            filepath_suffix=global_intermediate_filepath_suffix, 
+                                                            filepath_suffix=global_intermediate_filepath_suffix,
                                                             filename_prefix=slotblock_filename_prefix, 
                                                             index=last_accepted_index)
+        #debug
+        #print('names of files from last accepted run, which will be copied to global files for this run')
+        #old_global_files[['llik_filename']]
+        #this_global_files[['llik_filename']]
         
+        # Update current global likelihood to last accepted one, and record some acceptance statistics
+        
+        # Replace current global files with last accepted values
         for (type in names(this_global_files)) {
-          file.copy(this_global_files[[type]], old_global_files[[type]], overwrite = TRUE) # replace with last accepted values
+          file.copy(old_global_files[[type]],this_global_files[[type]], overwrite = TRUE) 
         }
         
+        #acceptance probability for this iteration
+        this_accept_prob <- exp(min(c(0, proposed_likelihood_total - global_current_likelihood_total))) 
+        
+        #NOTE: Don't technically need the next 2 lines, as the values saved to memory are last accepted values, but confusing to track these variable names if we skip this
+        global_current_likelihood_data <- arrow::read_parquet(this_global_files[['llik_filename']])
+        global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
+        
+        global_current_likelihood_data$accept <- 0 # global acceptance decision (0/1), same for each geoID
+        global_current_likelihood_data$accept_prob <- this_accept_prob
+        
       }
-      
-      # Calculate acceptance statistics for the global chain. Note all this applies same value to each subpopulation
-      global_likelihood_data$accept <- 1 # global acceptance decision (0/1), same recorded for each geoID
-      effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index # total index of all MCMC iterations in slot
+
+      # Calculate more acceptance statistics for the global chain. Same value to each subpopulation
+      effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index # index after all blocks
       avg_global_accept_rate <- ((effective_index-1)*old_avg_global_accept_rate + global_accept)/(effective_index) 
-      global_likelihood_data$accept_avg <-avg_global_accept_rate # update running average acceptance probability
-      global_likelihood_data$accept_prob <- exp(min(c(0, proposed_likelihood_total - global_likelihood_total))) #acceptance probability
-      arrow::write_parquet(global_likelihood_data, this_global_files[['llik_filename']]) # update likelihood saved to file
-      
+      global_current_likelihood_data$accept_avg <-avg_global_accept_rate # update running average acceptance probability
       old_avg_global_accept_rate <- avg_global_accept_rate # keep track, since old global likelihood data not kept in memory
+      
       # print(paste("Average global acceptance rate: ",formatC(100*avg_global_accept_rate,digits=2,format="f"),"%")) 
       
+      # Update global likelihood files
+      arrow::write_parquet(global_current_likelihood_data, this_global_files[['llik_filename']]) # update likelihood saved to file
+
       ## Chimeric likelihood acceptance or rejection decisions (one round) ---------------------------------------------------------------------------
-      
       
       if (!reset_chimeric_files) { # will make separate acceptance decision for each subpop
         
         #  "Chimeric" means GeoID-specific
+        print("Making chimeric acceptance decision")
         
         if (is.null(config$initial_conditions)){
           initial_init <- NULL
@@ -738,7 +741,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           proposed_seeding <- NULL
         }
         
-        chimeric_acceptance_list <- inference::accept_reject_new_seeding_npis( # need to rename this function!!
+        chimeric_acceptance_list <- inference::accept_reject_proposals( # need to rename this function!!
           init_orig = initial_init,
           init_prop = proposed_init,
           seeding_orig = initial_seeding,
@@ -749,7 +752,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           hnpi_prop = proposed_hnpi,
           hpar_orig = initial_hpar,
           hpar_prop = proposed_hpar,
-          orig_lls = chimeric_likelihood_data,
+          orig_lls = chimeric_current_likelihood_data,
           prop_lls = proposed_likelihood_data
         )
         
@@ -764,11 +767,11 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         new_hpar <- chimeric_acceptance_list$hpar
         new_snpi <- chimeric_acceptance_list$snpi
         new_hnpi <- chimeric_acceptance_list$hnpi
-        chimeric_likelihood_data <- chimeric_acceptance_list$ll
+        chimeric_current_likelihood_data <- chimeric_acceptance_list$ll
         
       } else { # Proposed values were globally accepted and will be copied to chimeric
         
-        print("Resetting chimeric files to global")
+        print("Resetting chimeric values to global due to global acceptance")
         if (!is.null(config$initial_conditions)){
           new_init <- proposed_init
         }
@@ -779,16 +782,20 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         new_hpar <- proposed_hpar
         new_snpi <- proposed_snpi
         new_hnpi <- proposed_hnpi
-        chimeric_likelihood_data <- global_likelihood_data
+        chimeric_current_likelihood_data <- proposed_likelihood_data
+        
         reset_chimeric_files <- FALSE
+        
+        chimeric_current_likelihood_data$accept <- 1
       }
       
-      # Calculate statistics of the chimeric chain
+      # Calculate acceptance statistics of the chimeric chain
+      
       effective_index <- (opt$this_block - 1) * opt$iterations_per_slot + this_index
-      avg_chimeric_accept_rate <- ((effective_index - 1) * old_avg_chimeric_accept_rate + chimeric_likelihood_data$accept) / (effective_index) # running average acceptance rate
-      chimeric_likelihood_data$accept_avg <- avg_chimeric_accept_rate
-      # chimeric_likelihood_data$accept_prob <- exp(min(c(0, chimeric_likelihood_data$ll - global_likelihood_data$ll))) #acceptance probability
-      old_avg_chimeric_accept_rate <- avg_chimeric_accept_rate # 
+      avg_chimeric_accept_rate <- ((effective_index - 1) * old_avg_chimeric_accept_rate + chimeric_current_likelihood_data$accept) / (effective_index) # running average acceptance rate
+      chimeric_current_likelihood_data$accept_avg <- avg_chimeric_accept_rate
+      chimeric_current_likelihood_data$accept_prob <- exp(min(c(0, proposed_likelihood_data$ll - chimeric_current_likelihood_data$ll))) #acceptance probability
+      old_avg_chimeric_accept_rate <- avg_chimeric_accept_rate 
       
       ## Write accepted chimeric parameters to file
       if (!is.null(config$seeding)){
@@ -801,7 +808,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       arrow::write_parquet(new_hpar,this_chimeric_files[['hpar_filename']])
       arrow::write_parquet(new_snpi,this_chimeric_files[['snpi_filename']])
       arrow::write_parquet(new_hnpi,this_chimeric_files[['hnpi_filename']])
-      arrow::write_parquet(chimeric_likelihood_data, this_chimeric_files[['llik_filename']])
+      arrow::write_parquet(chimeric_current_likelihood_data, this_chimeric_files[['llik_filename']])
       
       print(paste("Current accepted index is ",last_accepted_index))
       
@@ -870,6 +877,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       }
       
     }
+    
+    # Ending this MCMC iteration
     
     # Create "final" files after MCMC chain is completed
     #   Will fail if unsuccessful
