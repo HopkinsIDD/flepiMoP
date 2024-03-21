@@ -576,7 +576,9 @@ accept_reject_proposals <- function(
     
     for (subpop in orig_lls$subpop[accept]) {
         rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop == subpop, ]
-        rc_init[rc_init$subpop == subpop, ] <- init_prop[init_prop$subpop == subpop, ]
+        if("subpop" %in% colnames(rc_init)){
+          rc_init[rc_init$subpop == subpop, ] <- init_prop[init_prop$subpop == subpop, ]
+        }else{rc_init <- init_prop}
         rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
         rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
         rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
