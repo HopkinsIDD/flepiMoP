@@ -707,14 +707,14 @@ initialize_mcmc_first_block <- function(
     if (!is.null(config$initial_conditions)){
         if ("init_filename" %in% global_file_names) {
             
-            if (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions")){
+            if (config$initial_conditions$method == "SetInitialConditions"){
                 
                 if (is.null(config$initial_conditions$initial_conditions_file)) {
                     stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
                 
-                if (!file.exists(initial_init_file)) {
+                if (!file.exists(config$initial_conditions$initial_conditions_file)) {
                     stop("ERROR: Initial conditions file specified but does not exist.")
                 }
                 if (grepl(".csv", initial_init_file)){
@@ -728,9 +728,9 @@ initialize_mcmc_first_block <- function(
                     stop("Could not copy initial conditions file")
                 }
                 
-        #     } else if (config$initial_conditions$method == "FromFile") {
-        #         # stop("ERROR: Method 'FromFile' Initial conditions has not been implemented yet for Inference.")
-        #     }
+            } else if (config$initial_conditions$method == "FromFile") {
+                # stop("ERROR: Method 'FromFile' Initial conditions has not been implemented yet for Inference.")
+            }
         }
     }
     
