@@ -414,7 +414,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         inference_filename_prefix=slotblock_filename_prefix
       )
     }, error = function(e) {
-      print("GempyorSimulator failed to run (call on l. 417 of inference_slot.R).")
+      print("GempyorSimulator failed to run (call on l. 405 of inference_slot.R).")
       print("Here is all the debug information I could find:")
       for(m in reticulate::py_last_error()) cat(m)
       stop("GempyorSimulator failed to run... stopping")
@@ -577,7 +577,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           load_ID=TRUE,
           sim_id2load=this_index)
       }, error = function(e) {
-        print("GempyorSimulator failed to run (call on l. 597 of inference_slot.R).")
+        print("GempyorSimulator failed to run (call on l. 575 of inference_slot.R).")
         print("Here is all the debug information I could find:")
         for(m in reticulate::py_last_error()) cat(m)
         stop("GempyorSimulator failed to run... stopping")
@@ -690,10 +690,6 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                             filepath_suffix=global_intermediate_filepath_suffix,
                                                             filename_prefix=slotblock_filename_prefix, 
                                                             index=last_accepted_index)
-        #debug
-        #print('names of files from last accepted run, which will be copied to global files for this run')
-        #old_global_files[['llik_filename']]
-        #this_global_files[['llik_filename']]
         
         # Update current global likelihood to last accepted one, and record some acceptance statistics
         
