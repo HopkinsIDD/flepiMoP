@@ -151,8 +151,8 @@ aggregate_and_calc_loc_likelihoods <- function(
         if (defined_priors[[prior]]$module %in% c("seir_interventions", "seir")) {
             #' @importFrom magrittr %>%
             ll_adjs <- snpi %>%
-                dplyr::filter(npi_name == defined_priors[[prior]]$name) %>%
-                dplyr::mutate(likadj = calc_prior_likadj(reduction,
+                dplyr::filter(modifier_name == defined_priors[[prior]]$name) %>%
+                dplyr::mutate(likadj = calc_prior_likadj(value,
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
@@ -161,8 +161,8 @@ aggregate_and_calc_loc_likelihoods <- function(
         } else if (defined_priors[[prior]]$module == "outcomes_interventions") {
             #' @importFrom magrittr %>%
             ll_adjs <- hnpi %>%
-                dplyr::filter(npi_name == defined_priors[[prior]]$name) %>%
-                dplyr::mutate(likadj = calc_prior_likadj(reduction,
+                dplyr::filter(modifier_name == defined_priors[[prior]]$name) %>%
+                dplyr::mutate(likadj = calc_prior_likadj(value,
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
@@ -686,7 +686,7 @@ initialize_mcmc_first_block <- function(
             tryCatch({
                 gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 668 of inference_slot_runner_funcs.R).")
+                print("GempyorSimulator failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
                 for(m in reticulate::py_last_error()) cat(m)
                 stop("GempyorSimulator failed to run... stopping")
@@ -704,7 +704,7 @@ initialize_mcmc_first_block <- function(
             tryCatch({
                 gempyor_inference_runner$one_simulation(sim_id2write = block - 1, load_ID = TRUE, sim_id2load = block - 1)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 686 of inference_slot_runner_funcs.R).")
+                print("GempyorSimulator failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
                 for(m in reticulate::py_last_error()) cat(m)
                 stop("GempyorSimulator failed to run... stopping")
