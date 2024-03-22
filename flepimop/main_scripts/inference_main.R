@@ -1,10 +1,21 @@
-## Preamble ---------------------------------------------------------------------
+# About ------------------------------------------------------------------------
+
+## This script processes the options for an inference run and then creates a separate parallel processing job for each combination of SEIR parameter modification scenario, outcome parameter modification scenario, and independent MCMC chain ("slot")
+
+
+# Run Options ---------------------------------------------------------------------
 
 suppressMessages(library(parallel))
 suppressMessages(library(foreach))
 suppressMessages(library(parallel))
 suppressMessages(library(doParallel))
 options(readr.num_columns = 0)
+
+# There are multiple ways to specify options when inference_main.R is run, which take the following precedence:
+#  1) (optional) options called along with the script at the command line (ie > Rscript inference_main.R -c my_config.yml)
+#  2) (optional) environmental variables set by the user (ie user could set > export CONFIG_PATH = ~/flepimop_sample/my_config.yml to not have t specify it each time the script is run)
+# If neither are specified, then a default value is used, given by the second argument of Sys.getenv() commands below. 
+#  *3) For some options, a default doesn't exist, and the value specified in the config will be used if the option is not specified at the command line or by an environmental variable (iterations_per_slot, slots)
 
 option_list = list(
   optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH"), type='character', help="path to the config file"),
@@ -23,7 +34,7 @@ option_list = list(
   optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
   optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
   optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("RUN_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
-  optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", FALSE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs')
+  optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", TRUE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs')
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -41,7 +52,7 @@ print(paste('Running ',opt$j,' jobs in parallel'))
 
 config <- flepicommon::load_config(opt$config)
 
-# Run Specifics -----------------------------------------------------------
+# Slots +  Iteration Options -----------------------------------------------------------
 
 if(is.na(opt$iterations_per_slot)) {
   opt$iterations_per_slot <- config$inference$iterations_per_slot
@@ -53,7 +64,7 @@ if(is.na(opt$slots)) {
 
 
 
-# Scenario Arguments ------------------------------------------------------
+# Scenario Options  ------------------------------------------------------
 
 ##If outcome scenarios are specified check their existence
 outcome_modifiers_scenarios <- opt$outcome_modifiers_scenarios
@@ -128,8 +139,7 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
         "-R", opt[["is-resume"]],
         "-I", opt[["is-interactive"]],
         "-L", opt$reset_chimeric_on_accept,
-        #paste("2>&1 | tee log_inference_slot", flepi_slot, ".txt", sep=""),
-        paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""),
+        #paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""), # works on Mac only, not windows
         #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
         sep = " ")
     )
