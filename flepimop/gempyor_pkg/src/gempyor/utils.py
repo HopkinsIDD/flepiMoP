@@ -237,6 +237,20 @@ def as_random_distribution(self):
             self.as_evaled_expression(),
         )
 
+def get_all_filenames(path, filters=[]) -> list:
+    from pathlib import Path
+    fn_list = []
+    for f in Path(str(path)).rglob(f'*'):
+        if f.is_file(): # not a folder
+            f = str(f)
+            if not filters:
+                fn_list.append(f)
+            else:
+                if all(c in f for c in filters):
+                    fn_list.append(str(f))
+                else:
+                    pass
+    return fn_list
 
 def aws_disk_diagnosis():
     import os
