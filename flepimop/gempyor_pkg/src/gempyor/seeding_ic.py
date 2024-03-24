@@ -622,3 +622,14 @@ def InitialConditionsFactory(config: confuse.ConfigView):
                     )
                 return klass
     return InitialConditions(config)
+
+def SeedingFactory(config: confuse.ConfigView):
+    if config is not None and "method" in config.keys():
+            if config["method"].as_str() == "plugin":
+                klass = utils.search_and_import_plugins_class(
+                    plugin_file_path=config["plugin_file_path"].as_str(), 
+                    class_name="Seeding",
+                    config=config
+                    )
+                return klass
+    return Seeding(config)
