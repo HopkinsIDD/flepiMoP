@@ -237,10 +237,22 @@ def as_random_distribution(self):
             self.as_evaled_expression(),
         )
 
-def get_all_filenames(path, filters=[]) -> list:
+def list_filenames(folder: str = '.', filters:list = []) -> list:
+    """
+    return the list of all filename and path in the provided folders. 
+    If filters [list] is provided, then only the files that contains each of the 
+    substrings in filter will be returned. Example to get all hosp file:
+    ```
+        gempyor.utils.list_filenames(folder="model_output/", filters=["hosp"])
+    ```
+        and be sure we only get parquet:
+    ```
+        gempyor.utils.list_filenames(folder="model_output/", filters=["hosp" , ".parquet"])
+    ```
+    """
     from pathlib import Path
     fn_list = []
-    for f in Path(str(path)).rglob(f'*'):
+    for f in Path(str(folder)).rglob(f'*'):
         if f.is_file(): # not a folder
             f = str(f)
             if not filters:
