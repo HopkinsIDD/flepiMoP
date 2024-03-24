@@ -9,7 +9,7 @@ from . import file_paths
 import confuse
 import logging
 from . import compartments
-from . import model_info
+from . import utils
 import numba as nb
 from .utils import read_df
 
@@ -607,5 +607,18 @@ class InitialConditions(SimulationComponent):
             )
         return y0
 
-    def load(self, sim_id: int, setup) -> nb.typed.Dict:
+    def load(self, sim_id: int, setup) -> np.ndarray:
         return self.draw(sim_id=sim_id, setup=setup)
+    
+# TODO: rename config to initial_conditions_config as it shadows the global config
+    
+def InitialConditionsFactory(config: confuse.ConfigView):
+    if config is not None and "method" in config.keys():
+            if config["method"].as_str() == "plugin":
+                klass = utils.search_and_import_plugins_class(
+                    plugin_file_path=config["plugin_file_path"].as_str(), 
+                    class_name="InitialConditions",
+                    config=config
+                    )
+                return klass
+    return InitialConditions(config)
