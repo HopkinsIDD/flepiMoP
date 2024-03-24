@@ -20,7 +20,7 @@ class TestSeeding:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.Seeding(config=s.seeding_config)
+        sic = seeding_ic.SeedingFactory(config=s.seeding_config)
         assert sic.seeding_config == s.seeding_config
 
     def test_Seeding_draw_success(self):
@@ -36,7 +36,7 @@ class TestSeeding:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.Seeding(config=s.seeding_config)
+        sic = seeding_ic.SeedingFactory(config=s.seeding_config)
         s.seeding_config["method"] = "NoSeeding"
 
         seeding = sic.draw(sim_id=100, setup=s)
