@@ -38,7 +38,7 @@ load_geodata_file <- function(filename,
 
     if(state_name) {
         utils::data(fips_us_county, package = "flepicommon") # arrow::read_parquet("datasetup/usdata/fips_us_county.parquet")
-        geodata <- fips_us_county %>%  
+        geodata <- fips_us_county %>%
             dplyr::distinct(state, state_name) %>%
             dplyr::rename(USPS = state) %>%
             dplyr::rename(state = state_name) %>%
@@ -48,6 +48,31 @@ load_geodata_file <- function(filename,
 
     return(geodata)
 }
+
+
+
+
+
+#' Read parquet files with check for existence to understand errors
+#'
+#' @param file The file to read
+#'
+#' @return
+#' @export
+#'
+#' @examples
+read_parquet_with_check <- function(file){
+    if(!file.exists(file)){
+        stop(paste("File",file,"does not exist"))
+    }
+    arrow::read_parquet(file)
+}
+
+
+
+
+
+
 
 
 
@@ -113,11 +138,11 @@ read_file_of_type <- function(extension,...){
 # ##' @importFrom cdlTools fips census2010FIPS stateNames
 # ##'
 # download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigned = FALSE){
-# 
+#
 #   dir.create(dirname(filename), showWarnings = FALSE, recursive = TRUE)
 #   message(paste("Downloading", url, "to", filename))
 #   download.file(url, filename, "auto")
-# 
+#
 #   usafacts_data <- readr::read_csv(filename)
 #   names(usafacts_data) <- stringr::str_to_lower(names(usafacts_data))
 #   usafacts_data <- dplyr::select(usafacts_data, -statefips,-`county name`) %>% # drop statefips columns
@@ -141,13 +166,13 @@ read_file_of_type <- function(extension,...){
 #   date_func <- ifelse(any(grepl("^\\d\\d\\d\\d",col_names)),lubridate::ymd, lubridate::mdy)
 #   usafacts_data <- tidyr::pivot_longer(usafacts_data, tidyselect::all_of(date_cols), names_to="Update", values_to=value_col_name)
 #   usafacts_data <- dplyr::mutate(usafacts_data, Update=date_func(Update), FIPS=sprintf("%05d", FIPS))
-# 
+#
 #   validation_date <- Sys.getenv("VALIDATION_DATE")
 #   if ( validation_date != '' ) {
 #     print(paste("(DataUtils.R) Limiting USAFacts data to:", validation_date, sep=" "))
 #     usafacts_data <- dplyr::filter(usafacts_data, Update < validation_date )
 #   }
-# 
+#
 #   return(usafacts_data)
 # }
 
