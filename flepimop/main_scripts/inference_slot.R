@@ -481,6 +481,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     chimeric_current_likelihood_data <- flepicommon::read_parquet_with_check(first_chimeric_files[['llik_filename']])
     global_current_likelihood_data <- flepicommon::read_parquet_with_check(first_global_files[['llik_filename']]) # they are the same ... don't need to load both
 
+
     #####Get the full likelihood (WHY IS THIS A DATA FRAME)
     # Compute total loglik for each sim
     global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
