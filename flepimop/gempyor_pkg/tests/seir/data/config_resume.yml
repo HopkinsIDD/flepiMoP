@@ -6,12 +6,10 @@ data_path: data
 nslots: 15
 
 
-spatial_setup:
+subpop_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.txt
-  popnodes: population
-  nodenames: geoid
 
 seeding:
   method: InitialConditionsFolderDraw
@@ -75,14 +73,14 @@ seir:
       rate: ["3 * gamma", 1]
       proportional_to: [[["I3"], ["unvaccinated"]]]
       proportion_exponent: [["1", "1"]]
-interventions:
+seir_modifiers:
   scenarios:
     - None
     - Scenario1
     - Scenario2
-  settings:
+  modifiers:
     None:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-16
@@ -90,7 +88,7 @@ interventions:
         distribution: fixed
         value: 0
     Wuhan:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-16
@@ -99,7 +97,7 @@ interventions:
         low: .14
         high: .33
     KansasCity:
-      template: ReduceR0
+      method: SinglePeriodModifierR0
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-16
@@ -108,11 +106,11 @@ interventions:
         low: .04
         high: .23
     Scenario1:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Wuhan
         - None
     Scenario2:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Wuhan

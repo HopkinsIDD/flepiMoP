@@ -40,7 +40,7 @@ proportion_exponent_col = 2
     ## Initial Conditions
     "float64[:,:],"  ## initial_conditions [ ncompartments x nspatial_nodes ]
     ## Seeding
-    "DictType(unicode_type, int64[:]),"  # seeding keys: 'seeding_places', 'seeding_destinations', 'seeding_sources'
+    "DictType(unicode_type, int64[:]),"  # seeding keys: 'seeding_subpops', 'seeding_destinations', 'seeding_sources'
     "float64[:],"  # seeding_amounts
     ## Mobility
     "float64[:],"  # mobility_data [ nmobility_instances ]
@@ -109,20 +109,20 @@ def steps_SEIR_nb(
                 seeding_data["day_start_idx"][today + 1],
             ):
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
-                seeding_places = seeding_data["seeding_places"][seeding_instance_idx]
+                seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
                 seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
-                states_next[seeding_sources][seeding_places] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_places] = states_next[seeding_sources][seeding_places] * (
-                    states_next[seeding_sources][seeding_places] > 0
+                states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
+                    states_next[seeding_sources][seeding_subpops] > 0
                 )
-                states_next[seeding_destinations][seeding_places] += this_seeding_amounts
+                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_places] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
 
         total_infected = 0
         for transition_index in range(ntransitions):

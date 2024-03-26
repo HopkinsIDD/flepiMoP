@@ -11,10 +11,10 @@ library(lubridate)
 
 # PULL GEODATA ------------------------------------------------------------
 
-# Pull in geoid data
+# Pull in subpop data
 geodata_states <- read.csv(paste0("./data/",
-                                  config$spatial_setup$geodata)) %>%
-  mutate(geoid = stringr::str_pad(geoid, width = 5, side = "left", pad = "0"))
+                                  config$subpop_setup$geodata)) %>%
+  mutate(subpop = stringr::str_pad(subpop, width = 5, side = "left", pad = "0"))
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -23,7 +23,7 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
                  outcome, "/",
                  config$name, "/",
                  config$interventions$scenarios, "/",
-                 config$outcomes$scenarios)
+                 config$outcome_modifiers$scenarios)
   subdir_ <- paste0(dir_, "/", list.files(dir_),
                     "/",
                     global_opt,
@@ -43,7 +43,7 @@ import_s3_outcome <- function(scn_dir, outcome, global_opt, final_opt){
     }
     if(outcome == "hosp"){
       dat <- arrow::read_parquet(paste(subdir_, subdir_list[i], sep = "/")) %>%
-        select(date, geoid, incidI, incidC, incidH, incidD)
+        select(date, subpop, incidI, incidC, incidH, incidD)
     }
     if(any(grepl("csv", subdir_list))){
       dat <- read.csv(paste(subdir_, subdir_list[i], sep = "/"))
@@ -73,35 +73,35 @@ outcomes_list <-
 scenario_dir <- file.path(scenario_dir, config$model_output_dirname)
 
 hnpi <- import_s3_outcome(scenario_dir, "hnpi", "global", "final") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 hosp <- import_s3_outcome(scenario_dir, "hosp", "global", "final") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 hpar <- import_s3_outcome(scenario_dir, "hpar", "global", "final") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 llik <- import_s3_outcome(scenario_dir, "llik", "global", "final") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 global_int_llik <- import_s3_outcome(scenario_dir, "llik", "global", "intermediate") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 chimeric_int_llik <- import_s3_outcome(scenario_dir, "llik", "chimeric", "intermediate") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 seed <- import_s3_outcome(scenario_dir, "seed", "global", "final") %>%
-  mutate(geoid = stringr::str_pad(place, width = 5, side = "left", pad = "0")) %>%
-  full_join(geodata_states, by = "geoid")
+  mutate(subpop = stringr::str_pad(subpop, width = 5, side = "left", pad = "0")) %>%
+  full_join(geodata_states, by = "subpop")
 snpi <- import_s3_outcome(scenario_dir, "snpi", "global", "final") %>%
-  full_join(geodata_states, by = "geoid")
+  full_join(geodata_states, by = "subpop")
 spar <- import_s3_outcome(scenario_dir, "spar", "global", "final")
 
 # DERIVED OBJECTS ---------------------------------------------------------
 
 bind_hnpi_llik <- full_join(x = hnpi, y = llik)
-if(all(!is.na(hnpi$npi_name))){
+if(all(!is.na(hnpi$modifier_name))){
   var_bind_hnpi_llik <- bind_hnpi_llik %>%
-    group_by(npi_name) %>%
-    summarize(var = var(reduction)) %>%
+    group_by(modifier_name) %>%
+    summarize(var = var(value)) %>%
     filter(var > 0.0001)
   pivot_bind_hnpi_llik <- bind_hnpi_llik %>%
-    dplyr::filter(npi_name %in% var_bind_hnpi_llik$npi_name) %>%
-    pivot_wider(names_from = npi_name, values_from = reduction)
+    dplyr::filter(modifier_name %in% var_bind_hnpi_llik$modifier_name) %>%
+    pivot_wider(names_from = modifier_name, values_from = value)
 }
 
 bind_hosp_llik <- full_join(x = hosp, y = llik) %>%
@@ -124,12 +124,12 @@ int_llik <- rbind(global_int_llik %>%
 
 bind_snpi_llik <- full_join(x = snpi, y = llik)
 var_bind_snpi_llik <- bind_snpi_llik %>%
-  group_by(npi_name) %>%
-  summarize(var = var(reduction)) %>%
+  group_by(modifier_name) %>%
+  summarize(var = var(value)) %>%
   filter(var > 0.0001)
 pivot_bind_snpi_llik <- bind_snpi_llik %>%
-  dplyr::filter(npi_name %in% var_bind_snpi_llik$npi_name) %>%
-  pivot_wider(names_from = npi_name, values_from = reduction)
+  dplyr::filter(modifier_name %in% var_bind_snpi_llik$modifier_name) %>%
+  pivot_wider(names_from = modifier_name, values_from = value)
 
 bind_spar_llik <- full_join(x = spar, y = llik)
 var_bind_spar_llik <- bind_spar_llik %>%
@@ -187,13 +187,13 @@ for(i in 1:length(USPS)){
   print(paste0("Preparing plots for ", state))
   
   # hnpi
-  if(all(is.na(hnpi$npi_name))){
+  if(all(is.na(hnpi$modifier_name))){
     print("hnpi files are empty")
   } else {
     hnpi_plot[[i]] <- pivot_bind_hnpi_llik %>%
       filter(USPS == state) %>%
-      dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
-      pivot_longer(cols = all_of(var_bind_hnpi_llik$npi_name)) %>%
+      dplyr::select(ll, all_of(var_bind_hnpi_llik$modifier_name)) %>%
+      pivot_longer(cols = all_of(var_bind_hnpi_llik$modifier_name)) %>%
       drop_na(value) %>%
       ggplot(aes(x = name, y = value)) +
       geom_violin(scale = "width") +
@@ -206,8 +206,8 @@ for(i in 1:length(USPS)){
     
     hnpi_llik_plot[[i]] <- pivot_bind_hnpi_llik %>%
       filter(USPS == state) %>%
-      dplyr::select(ll, all_of(var_bind_hnpi_llik$npi_name)) %>%
-      pivot_longer(cols = all_of(var_bind_hnpi_llik$npi_name)) %>%
+      dplyr::select(ll, all_of(var_bind_hnpi_llik$modifier_name)) %>%
+      pivot_longer(cols = all_of(var_bind_hnpi_llik$modifier_name)) %>%
       drop_na(value) %>%
       ggplot(aes(x = value, y = ll)) +
       geom_point(size = 0.5, alpha = 0.8) +
@@ -231,7 +231,7 @@ for(i in 1:length(USPS)){
   
   filter_gt_data <- gt_data %>%
     filter(USPS == state) %>%
-    select(USPS, geoid, time, dplyr::contains("incid") & !dplyr::contains("_")) %>%
+    select(USPS, subpop, time, dplyr::contains("incid") & !dplyr::contains("_")) %>%
     pivot_longer(dplyr::contains('incid'), names_to = "outcome", values_to = "value") %>%
     rename(date = time) %>%
     mutate(week = lubridate::week(date)) %>%
@@ -313,8 +313,8 @@ for(i in 1:length(USPS)){
   # snpi
   snpi_plot[[i]] <- pivot_bind_snpi_llik %>%
     filter(USPS == state) %>%
-    dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
-    pivot_longer(cols = all_of(var_bind_snpi_llik$npi_name)) %>%
+    dplyr::select(ll, all_of(var_bind_snpi_llik$modifier_name)) %>%
+    pivot_longer(cols = all_of(var_bind_snpi_llik$modifier_name)) %>%
     drop_na(value) %>%
     ggplot(aes(x = name, y = value)) +
     geom_violin(scale = "width") +
@@ -322,12 +322,12 @@ for(i in 1:length(USPS)){
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
-    labs(x = "reduction", title = paste0(state, " snpi reduction values"))
+    labs(x = "value", title = paste0(state, " snpi values"))
   
   snpi_llik_plot[[i]] <- pivot_bind_snpi_llik %>%
     filter(USPS == state) %>%
-    dplyr::select(ll, all_of(var_bind_snpi_llik$npi_name)) %>%
-    pivot_longer(cols = all_of(var_bind_snpi_llik$npi_name)) %>%
+    dplyr::select(ll, all_of(var_bind_snpi_llik$modifier_name)) %>%
+    pivot_longer(cols = all_of(var_bind_snpi_llik$modifier_name)) %>%
     drop_na(value) %>%
     ggplot(aes(x = value, y = ll)) +
     geom_point(size = 0.5, alpha = 0.8) +
@@ -367,7 +367,7 @@ for(i in 1:length(USPS)){
   state_plot1[[i]] <- plot_grid(int_llik_plot[[i]],
                                 seed_plot[[i]],
                                 nrow = 2, ncol = 1)
-  if(all(is.na(hnpi$npi_name))){
+  if(all(is.na(hnpi$modifier_name))){
     state_plot2[[i]] <- NA
   } else {
     state_plot2[[i]] <- plot_grid(hnpi_plot[[i]],

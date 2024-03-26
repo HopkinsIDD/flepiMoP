@@ -8,7 +8,7 @@ We describe these options below and present default values in the example config
 
 # Modifications to `seeding`
 
-The model can perform inference on the seeding date and initial number of seeding infections in each geoid. An example of this new config section is:
+The model can perform inference on the seeding date and initial number of seeding infections in each subpop. An example of this new config section is:
 
 ```
 seeding:
@@ -34,12 +34,13 @@ The model can perform inference on the effectiveness of interventions as long as
 An example configuration file where inference is performed on scenario planning interventions is as follows:
 
 ```
-interventions:
+seir_modifiers:
   scenarios:
     - Scenario1
   settings:
     local_variance:
-      template: ReduceR0
+      method: SinglePeriodModifier
+      parameter: r0
       value:
         distribution: truncnorm
         mean: 0
@@ -53,7 +54,8 @@ interventions:
         a: -1
         b: 1
     stayhome:
-      template: ReduceR0
+      method: SinglePeriodModifier
+      parameter: r0
       period_start_date: 2020-04-04
       period_end_date: 2020-04-30
       value:
@@ -69,31 +71,31 @@ interventions:
         a: -1
         b: 1
     Scenario1:
-      template: Stacked
+      method: StackedModifier
       scenarios: 
         - local_variance
         - stayhome
 ```
 
-## `interventions::settings::[setting_name]`
+## `seir_modifiers::settings::[setting_name]`
 
-This configuration allows us to infer geoid-level baseline R0 estimates by adding a `local_variance` intervention. The baseline geoid-specific R0 estimate may be calculated as $$R0*(1-local_variance),$$ where R0 is the baseline simulation R0 value, and local_variance is an estimated geoid-specific value.
+This configuration allows us to infer subpop-level baseline R0 estimates by adding a `local_variance` intervention. The baseline subpop-specific R0 estimate may be calculated as $$R0*(1-local_variance),$$ where R0 is the baseline simulation R0 value, and local_variance is an estimated subpop-specific value.
 
-Interventions may be specified in the same way as before, or with an added `perturbation` section that indicates that inference should be performed on a given intervention's effectiveness. As previously, interventions with perturbations may be specified for all modeled locations or for explicit `affected_geoids.` In this setup, both the prior distribution and the range of the support of the final inferred value are specified by the `value` section. In the configuration above, the inference algorithm will search 0 to 0.9 for all geoids to estimate the effectiveness of the `stayhome` intervention period. The prior distribution on intervention effectiveness follows a truncated normal distribution with a mean of 0.6 and a standard deviation of 0.3. The `perturbation` section specifies the perturbation/step size between the previously-accepted values and the next proposal value.
+Interventions may be specified in the same way as before, or with an added `perturbation` section that indicates that inference should be performed on a given intervention's effectiveness. As previously, interventions with perturbations may be specified for all modeled locations or for explicit `subpop.` In this setup, both the prior distribution and the range of the support of the final inferred value are specified by the `value` section. In the configuration above, the inference algorithm will search 0 to 0.9 for all subpop to estimate the effectiveness of the `stayhome` intervention period. The prior distribution on intervention effectiveness follows a truncated normal distribution with a mean of 0.6 and a standard deviation of 0.3. The `perturbation` section specifies the perturbation/step size between the previously-accepted values and the next proposal value.
 
 | Item              | Required?             | Type/Format                                     | 
 |-------------------|-----------------------|-------------------------------------------------|
-| template          | **required**          | "ReduceR0" or "Stacked"                         |
-| period_start_date | optional for ReduceR0 | date between global `start_date` and `end_date`; default is global `start_date` |
-| period_end_date   | optional for ReduceR0 | date between global `start_date` and `end_date`; default is global `end_date`  |
-| value             | required for ReduceR0 | specifies both the prior distribution and range of support for the final inferred values |
-| perturbation      | optional for ReduceR0 | this option indicates whether inference will be performed on this setting and how the proposal value will be identified from the last accepted value |
-| affected_geoids   | optional for ReduceR0 | list of geoids, which must be in geodata        |
+| method          | **required**          | "SinglePeriodModifier" or "StackedModifier"                         |
+| period_start_date | optional for SinglePeriodModifier | date between global `start_date` and `end_date`; default is global `start_date` |
+| period_end_date   | optional for SinglePeriodModifier | date between global `start_date` and `end_date`; default is global `end_date`  |
+| value             | required for SinglePeriodModifier | specifies both the prior distribution and range of support for the final inferred values |
+| perturbation      | optional for SinglePeriodModifier | this option indicates whether inference will be performed on this setting and how the proposal value will be identified from the last accepted value |
+| subpop   | optional for SinglePeriodModifier | list of subpop, which must be in geodata        |
 
 
 # New `inference` section
 
-This section configures the settings for the inference algorithm. The below example shows the settings for some typical default settings, where the model is calibrated to the weekly incident deaths and weekly incident confirmed cases for each geoid.
+This section configures the settings for the inference algorithm. The below example shows the settings for some typical default settings, where the model is calibrated to the weekly incident deaths and weekly incident confirmed cases for each subpop.
 
 ```
 inference:

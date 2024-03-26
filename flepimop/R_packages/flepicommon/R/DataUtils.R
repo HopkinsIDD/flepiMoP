@@ -4,40 +4,41 @@
 ##' Convenience function to load the geodata file
 ##'
 ##' @param filename filename of geodata file
-##' @param geoid_len length of geoid character string
-##' @param geoid_pad what to pad the geoid character string with
+##' @param subpop_len length of subpop character string
+##' @param subpop_pad what to pad the subpop character string with
 ##' @param state_name whether to add column state with the US state name; defaults to TRUE for forecast or scenario hub runs.
 ##'
 ##' @details
-##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and geoid with the geo IDs of the area. .
+##' Currently, the package only supports a geodata object with at least two columns: USPS with the state abbreviation and subpop with the geo IDs of the area. .
 ##'
-##' @return a data frame with columns for state USPS, county geoid and population
+##' @return a data frame with columns for state USPS, county subpop and population
 ##' @examples
-##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "config.writer"))
+##' geodata <- load_geodata_file(filename = system.file("extdata", "geodata_territories_2019_statelevel.csv", package = "flepiconfig"))
 ##' geodata
 ##'
 ##' @export
 
 load_geodata_file <- function(filename,
-                              geoid_len = 0,
-                              geoid_pad = "0",
+                              subpop_len = 0,
+                              subpop_pad = "0",
                               state_name = TRUE
 ) {
 
     if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
     geodata <- readr::read_csv(filename) %>%
-        dplyr::mutate(geoid = as.character(geoid))
+        dplyr::mutate(subpop = as.character(subpop))
 
-    if (!("geoid" %in% names(geodata))) {
-        stop(paste(filename, "does not have a column named geoid"))
+    if (!("subpop" %in% names(geodata))) {
+        stop(paste(filename, "does not have a column named subpop"))
     }
 
-    if (geoid_len > 0) {
-        geodata$geoid <- stringr::str_pad(geodata$geoid, geoid_len, pad = geoid_pad)
+    if (subpop_len > 0) {
+        geodata$subpop <- stringr::str_pad(geodata$subpop, subpop_len, pad = subpop_pad)
     }
 
     if(state_name) {
-        geodata <- tigris::fips_codes %>%
+        utils::data(fips_us_county, package = "flepicommon") # arrow::read_parquet("datasetup/usdata/fips_us_county.parquet")
+        geodata <- fips_us_county %>%
             dplyr::distinct(state, state_name) %>%
             dplyr::rename(USPS = state) %>%
             dplyr::rename(state = state_name) %>%
@@ -47,6 +48,31 @@ load_geodata_file <- function(filename,
 
     return(geodata)
 }
+
+
+
+
+
+#' Read parquet files with check for existence to understand errors
+#'
+#' @param file The file to read
+#'
+#' @return
+#' @export
+#'
+#' @examples
+read_parquet_with_check <- function(file){
+    if(!file.exists(file)){
+        stop(paste("File",file,"does not exist"))
+    }
+    arrow::read_parquet(file)
+}
+
+
+
+
+
+
 
 
 
@@ -69,7 +95,7 @@ read_file_of_type <- function(extension,...){
             time=col_date(),
             uid=col_character(),
             comp=col_character(),
-            geoid=col_character()
+            subpop=col_character()
         )))})
     }
     if(extension == 'parquet'){
@@ -88,66 +114,67 @@ read_file_of_type <- function(extension,...){
             read_file_of_type(extension)(filename)
         })
     }
-    if(extension == 'shp'){
-        return(sf::st_read)
-    }
+    # if(extension == 'shp'){
+    #     return(sf::st_read)
+    # }
     stop(paste("read_file_of_type cannot read files of type",extension))
 }
 
 
 
-
-##'
-##' Download USAFacts data
-##'
-##' Downloads the USAFacts case and death count data
-##'
-##' @param filename where case data will be stored
-##' @param url URL to CSV on USAFacts website
-##' @param value_col_name Confirmed or Deaths
-##' @param incl_unassigned Includes data unassigned to counties (default is FALSE)
-##' @return data frame
-##' @importFrom magrittr %>%
-##' @import cdlTools
-##'
-download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigned = FALSE){
-
-  dir.create(dirname(filename), showWarnings = FALSE, recursive = TRUE)
-  message(paste("Downloading", url, "to", filename))
-  download.file(url, filename, "auto")
-
-  usafacts_data <- readr::read_csv(filename)
-  names(usafacts_data) <- stringr::str_to_lower(names(usafacts_data))
-  usafacts_data <- dplyr::select(usafacts_data, -statefips,-`county name`) %>% # drop statefips columns
-    dplyr::rename(FIPS=countyfips, source=state)
-  if (!incl_unassigned){
-      usafacts_data <- dplyr::filter(usafacts_data, FIPS!=0 & FIPS!=1) # Remove "Statewide Unallocated" cases
-  } else{
-      cw <- data.frame(source = sort(unique(usafacts_data$source)),
-                        FIPS = cdlTools::fips(sort(unique(usafacts_data$source)))
-                        ) %>%
-        dplyr::mutate(FIPS = as.numeric(paste0(FIPS, "000"))) %>%
-        dplyr::distinct(source, FIPS)
-      assigned <- dplyr::filter(usafacts_data, FIPS!=0 & FIPS!=1)
-      unassigned <- dplyr::filter(usafacts_data, FIPS==0 | FIPS==1) %>%
-        dplyr::select(-FIPS) %>%
-        dplyr::left_join(cw, by = c("source"))
-      usafacts_data <- dplyr::bind_rows(assigned, unassigned)
-  }
-  col_names <- names(usafacts_data)
-  date_cols <- col_names[grepl("^\\d+[-/]\\d+[-/]\\d+$", col_names)]
-  date_func <- ifelse(any(grepl("^\\d\\d\\d\\d",col_names)),lubridate::ymd, lubridate::mdy)
-  usafacts_data <- tidyr::pivot_longer(usafacts_data, tidyselect::all_of(date_cols), names_to="Update", values_to=value_col_name)
-  usafacts_data <- dplyr::mutate(usafacts_data, Update=date_func(Update), FIPS=sprintf("%05d", FIPS))
-
-  validation_date <- Sys.getenv("VALIDATION_DATE")
-  if ( validation_date != '' ) {
-    print(paste("(DataUtils.R) Limiting USAFacts data to:", validation_date, sep=" "))
-    usafacts_data <- dplyr::filter(usafacts_data, Update < validation_date )
-  }
-
-  return(usafacts_data)
-}
+# DEFUNCT FUINCTION TO PULL DATA FROM USAfacts
+#
+# ##'
+# ##' Download USAFacts data
+# ##'
+# ##' Downloads the USAFacts case and death count data
+# ##'
+# ##' @param filename where case data will be stored
+# ##' @param url URL to CSV on USAFacts website
+# ##' @param value_col_name Confirmed or Deaths
+# ##' @param incl_unassigned Includes data unassigned to counties (default is FALSE)
+# ##' @return data frame
+# ##' @importFrom magrittr %>%
+# ##' @importFrom cdlTools fips census2010FIPS stateNames
+# ##'
+# download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigned = FALSE){
+#
+#   dir.create(dirname(filename), showWarnings = FALSE, recursive = TRUE)
+#   message(paste("Downloading", url, "to", filename))
+#   download.file(url, filename, "auto")
+#
+#   usafacts_data <- readr::read_csv(filename)
+#   names(usafacts_data) <- stringr::str_to_lower(names(usafacts_data))
+#   usafacts_data <- dplyr::select(usafacts_data, -statefips,-`county name`) %>% # drop statefips columns
+#     dplyr::rename(FIPS=countyfips, source=state)
+#   if (!incl_unassigned){
+#       usafacts_data <- dplyr::filter(usafacts_data, FIPS!=0 & FIPS!=1) # Remove "Statewide Unallocated" cases
+#   } else{
+#       cw <- data.frame(source = sort(unique(usafacts_data$source)),
+#                         FIPS = cdlTools::fips(sort(unique(usafacts_data$source)))
+#                         ) %>%
+#         dplyr::mutate(FIPS = as.numeric(paste0(FIPS, "000"))) %>%
+#         dplyr::distinct(source, FIPS)
+#       assigned <- dplyr::filter(usafacts_data, FIPS!=0 & FIPS!=1)
+#       unassigned <- dplyr::filter(usafacts_data, FIPS==0 | FIPS==1) %>%
+#         dplyr::select(-FIPS) %>%
+#         dplyr::left_join(cw, by = c("source"))
+#       usafacts_data <- dplyr::bind_rows(assigned, unassigned)
+#   }
+#   col_names <- names(usafacts_data)
+#   date_cols <- col_names[grepl("^\\d+[-/]\\d+[-/]\\d+$", col_names)]
+#   date_func <- ifelse(any(grepl("^\\d\\d\\d\\d",col_names)),lubridate::ymd, lubridate::mdy)
+#   usafacts_data <- tidyr::pivot_longer(usafacts_data, tidyselect::all_of(date_cols), names_to="Update", values_to=value_col_name)
+#   usafacts_data <- dplyr::mutate(usafacts_data, Update=date_func(Update), FIPS=sprintf("%05d", FIPS))
+#
+#   validation_date <- Sys.getenv("VALIDATION_DATE")
+#   if ( validation_date != '' ) {
+#     print(paste("(DataUtils.R) Limiting USAFacts data to:", validation_date, sep=" "))
+#     usafacts_data <- dplyr::filter(usafacts_data, Update < validation_date )
+#   }
+#
+#   return(usafacts_data)
+# }
 
 
 ##'
@@ -163,7 +190,6 @@ download_USAFacts_data <- function(filename, url, value_col_name, incl_unassigne
 ##'  $ Confirmed: num [1:198] 3 4 1 3 5 1 3 5 2 3 ...
 ##'  $ Deaths   : num [1:198] 0 0 0 0 0 0 0 0 0 0 ...
 ##'
-##' @importFrom plyr revalue
 ##' @return the case data frame
 ##'
 get_islandareas_data <- function() {
@@ -180,7 +206,7 @@ get_islandareas_data <- function() {
 
   nyt_data <- dplyr::filter(nyt_data, state %in% names(ISLAND_AREAS))
   nyt_data <- dplyr::rename(nyt_data, Update=date, source=state, FIPS=fips, Confirmed=cases, Deaths=deaths) # Rename columns
-  nyt_data <- dplyr::mutate(nyt_data, FIPS=paste0(FIPS,"000"), source=plyr::revalue(source, ISLAND_AREAS, warn_missing=FALSE))
+  nyt_data <- dplyr::mutate(nyt_data, FIPS=paste0(FIPS,"000"), source=dplyr::recode(source, ISLAND_AREAS))
 
   validation_date <- Sys.getenv("VALIDATION_DATE")
   if ( validation_date != '' ) {
@@ -213,7 +239,7 @@ get_islandareas_data <- function() {
 #' @export
 #'
 #' @examples
-fix_negative_counts_single_geoid <- function(.x,.y, incid_col_name, date_col_name, cum_col_name, type){
+fix_negative_counts_single_subpop <- function(.x,.y, incid_col_name, date_col_name, cum_col_name, type){
   original_names <- names(.x)
 
   .x <- dplyr::arrange(.x,!!rlang::sym(date_col_name))
@@ -278,7 +304,7 @@ fix_negative_counts_single_geoid <- function(.x,.y, incid_col_name, date_col_nam
 
 # Add missing dates, fix counts that go negative, and fix NA values
 #
-# See fix_negative_counts_single_geoid() for more details on the algorithm,
+# See fix_negative_counts_single_subpop() for more details on the algorithm,
 # specified by argument "type"
 #' Title
 #'
@@ -311,7 +337,7 @@ fix_negative_counts <- function(
   df <- dplyr::group_by(df, FIPS,source)
     # Add missing dates
   df <- tidyr::complete(df, !!rlang::sym(date_col_name) := min_date + seq_len(max_date - min_date)-1)
-  df <- dplyr::group_map(df, fix_negative_counts_single_geoid,
+  df <- dplyr::group_map(df, fix_negative_counts_single_subpop,
                           incid_col_name=incid_col_name,
                           date_col_name=date_col_name,
                           cum_col_name=cum_col_name,
@@ -324,7 +350,7 @@ fix_negative_counts <- function(
 
 # Add missing dates, fix counts that go negative, and fix NA values for global dataset (group by Country_Region and Province_State instead of by FIPS)
 #
-# See fix_negative_counts_single_geoid() for more details on the algorithm,
+# See fix_negative_counts_single_subpop() for more details on the algorithm,
 # specified by argument "type"
 #' Title
 #'
@@ -357,7 +383,7 @@ fix_negative_counts_global <- function(
   df <- dplyr::group_by(df, Country_Region, Province_State, source)
     # Add missing dates
   df <- tidyr::complete(df, !!rlang::sym(date_col_name) := min_date + seq_len(max_date - min_date)-1)
-  df <- dplyr::group_map(df, fix_negative_counts_single_geoid,
+  df <- dplyr::group_map(df, fix_negative_counts_single_subpop,
                           incid_col_name=incid_col_name,
                           date_col_name=date_col_name,
                           cum_col_name=cum_col_name,
@@ -719,160 +745,9 @@ get_CSSE_global_data <- function(case_data_filename = "data/case_data/jhucsse_ca
 
 
 
-##'
-##' Download Reich Lab data
-##'
-##' Downloads the Reich Lab's US case and death count data
-##'
-##' @param filename where case data will be stored
-##' @param value_col_name
-##' @param url URL to CSV on Reich Lab website
-##'
-##' @return data frame
-##'
-##' @importFrom magrittr %>%
-##' @export
-##'
-download_reichlab_data <- function(filename, url, value_col_name){
-
-  dir.create(dirname(filename), showWarnings = FALSE, recursive = TRUE)
-  message(paste("Downloading", url, "to", filename))
-  download.file(url, filename, "auto")
-
-  reichlab_data <- readr::read_csv(filename, col_types = list("location" = readr::col_character()))
-  reichlab_data <- tibble::as_tibble(reichlab_data)
-  reichlab_data <- dplyr::mutate(reichlab_data, Update = as.Date(date),
-                  source = cdlTools::fips(stringr::str_sub(location, 1, 2), to = "Abbreviation"),
-                  scale = ifelse(nchar(location)==2, "state", "county"))
-  reichlab_data <- dplyr::filter(reichlab_data, location != "US")
-  reichlab_data <- dplyr::rename(reichlab_data, !!value_col_name := value,
-                  FIPS = location)
-  reichlab_data <- dplyr::mutate(reichlab_data, FIPS = ifelse(stringr::str_length(FIPS)<=2, paste0(FIPS, "000"), stringr::str_pad(FIPS, 5, pad = "0")))
-  reichlab_data <- dplyr::select(reichlab_data, FIPS, source, scale, Update, !!value_col_name)
-
-  validation_date <- Sys.getenv("VALIDATION_DATE")
-  if ( validation_date != '' ) {
-    print(paste("(DataUtils.R) Limiting Reich Lab data to:", validation_date, sep=" "))
-    reichlab_data <- dplyr::filter(reichlab_data, Update < validation_date)
-  }
-
-  return(reichlab_data)
-}
 
 
 
-
-##'
-##' Pull state-level case and death count data from Reich Lab
-##'
-##' Pulls the Reich Lab incident and cumulative case count and death data.
-##'
-##' Returned data preview:
-##' tibble
-##'  $ Update     : Date "2020-01-22" "2020-01-23" ...
-##'  $ Confirmed  : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ Deaths     : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ incidI     : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ incidDeath : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ FIPS       : chr "01000" "01000" "01000" ...
-##'  $ source     : chr "NY" "NY" "NY" "NY" ...
-##'
-##' @param cum_case_filename
-##' @param cum_death_filename
-##' @param inc_case_filename
-##' @param inc_death_filename
-##'
-##' @return the case and deaths data frame
-##'
-##'
-##' @export
-##'
-get_reichlab_st_data <- function(cum_case_filename = "data/case_data/rlab_cum_case_data.csv",
-                  cum_death_filename = "data/case_data/rlab_cum_death_data.csv",
-                  inc_case_filename = "data/case_data/rlab_inc_case_data.csv",
-                  inc_death_filename = "data/case_data/rlab_inc_death_data.csv"){
-
-  REICHLAB_CUM_CASE_DATA_URL <-  "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Cumulative%20Cases.csv"
-  REICHLAB_CUM_DEATH_DATA_URL <- "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Cumulative%20Deaths.csv"
-  REICHLAB_INC_CASE_DATA_URL <- "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Incident%20Cases.csv"
-  REICHLAB_INC_DEATH_DATA_URL <- "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Incident%20Deaths.csv"
-
-  rlab_cum_case <- download_reichlab_data(cum_case_filename, REICHLAB_CUM_CASE_DATA_URL, "Confirmed")
-  rlab_cum_death <- download_reichlab_data(cum_death_filename, REICHLAB_CUM_DEATH_DATA_URL, "Deaths")
-  rlab_inc_case <- download_reichlab_data(inc_case_filename, REICHLAB_INC_CASE_DATA_URL, "incidI")
-  rlab_inc_death <- download_reichlab_data(inc_death_filename, REICHLAB_INC_DEATH_DATA_URL, "incidDeath")
-
-  rlab_st_data <- dplyr::full_join(rlab_cum_case, rlab_cum_death)
-  rlab_st_data <- dplyr::full_join(rlab_st_data, rlab_inc_case)
-  rlab_st_data <- dplyr::full_join(rlab_st_data, rlab_inc_death)
-  rlab_st_data <- dplyr::filter(rlab_st_data, scale == "state")
-  rlab_st_data <- dplyr::select(rlab_st_data, Update, Confirmed, Deaths, incidI, incidDeath, FIPS, source)
-  rlab_st_data <- dplyr::mutate(rlab_st_data, incidDeath = ifelse(is.na(incidDeath), 0, incidDeath),
-                  incidI = ifelse(is.na(incidI), 0, incidI),
-                  Confirmed = ifelse(is.na(Confirmed) & Update < "2020-02-01", 0, Confirmed),
-                  Deaths = ifelse(is.na(Deaths) & Update < "2020-02-01", 0, Deaths))
-  rlab_st_data <- dplyr::arrange(rlab_st_data, source, FIPS, Update)
-
-  return(rlab_st_data)
-
-}
-
-
-
-##'
-##' Pull county-level case and death count data from Reich Lab
-##'
-##' Pulls the Reich Lab incident and cumulative case count and death data.
-##'
-##' Returned data preview:
-##' tibble
-##'  $ Update     : Date "2020-01-22" "2020-01-23" ...
-##'  $ Confirmed  : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ Deaths     : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ incidI     : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ incidDeath : num 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ FIPS       : chr "01001" "01001" "01001" ...
-##'  $ source     : chr "NY" "NY" "NY" "NY" ...
-##'
-##' @param cum_case_filename
-##' @param cum_death_filename
-##' @param inc_case_filename
-##' @param inc_death_filename
-##'
-##' @return the case and deaths data frame
-##'
-##'
-##' @export
-##'
-get_reichlab_cty_data <- function(cum_case_filename = "data/case_data/rlab_cum_case_data.csv",
-                  cum_death_filename = "data/case_data/rlab_cum_death_data.csv",
-                  inc_case_filename = "data/case_data/rlab_inc_case_data.csv",
-                  inc_death_filename = "data/case_data/rlab_inc_death_data.csv"){
-
-  REICHLAB_CUM_CASE_DATA_URL <-  "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Cumulative%20Cases.csv"
-  REICHLAB_CUM_DEATH_DATA_URL <- "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Cumulative%20Deaths.csv"
-  REICHLAB_INC_CASE_DATA_URL <- "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Incident%20Cases.csv"
-  REICHLAB_INC_DEATH_DATA_URL <- "https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-truth/truth-Incident%20Deaths.csv"
-
-  rlab_cum_case <- download_reichlab_data(cum_case_filename, REICHLAB_CUM_CASE_DATA_URL, "Confirmed")
-  rlab_cum_death <- download_reichlab_data(cum_death_filename, REICHLAB_CUM_DEATH_DATA_URL, "Deaths")
-  rlab_inc_case <- download_reichlab_data(inc_case_filename, REICHLAB_INC_CASE_DATA_URL, "incidI")
-  rlab_inc_death <- download_reichlab_data(inc_death_filename, REICHLAB_INC_DEATH_DATA_URL, "incidDeath")
-
-  rlab_cty_data <- dplyr::full_join(rlab_cum_case, rlab_cum_death)
-  rlab_cty_data <- dplyr::full_join(rlab_cty_data, rlab_inc_case)
-  rlab_cty_data <- dplyr::full_join(rlab_cty_data, rlab_inc_death)
-  rlab_cty_data <- dplyr::filter(rlab_cty_data, scale == "county")
-  rlab_cty_data <- dplyr::select(rlab_cty_data, Update, Confirmed, Deaths, incidI, incidDeath, FIPS, source)
-  rlab_cty_data <- dplyr::mutate(rlab_cty_data, incidDeath = ifelse(is.na(incidDeath), 0, incidDeath),
-                  incidI = ifelse(is.na(incidI), 0, incidI),
-                  Confirmed = ifelse(is.na(Confirmed) & Update < "2020-02-01", 0, Confirmed),
-                  Deaths = ifelse(is.na(Deaths) & Update < "2020-02-01", 0, Deaths))
-  rlab_cty_data <- dplyr::arrange(rlab_cty_data, source, FIPS, Update)
-
-  return(rlab_cty_data)
-
-}
 
 #' get_covidcast_data
 #'
@@ -1057,17 +932,7 @@ get_groundtruth_from_source <- function(
   variant_props_file = "data/variant/variant_props_long.csv"
 ) {
 
-  if(source == "reichlab" & scale == "US county"){
-
-    rc <- get_reichlab_cty_data()
-    rc <- dplyr::select(rc, Update, FIPS, source, !!variables)
-
-  } else if(source == "reichlab" & scale == "US state"){
-
-    rc <- get_reichlab_st_data()
-    rc <- dplyr::select(rc, Update, FIPS, source, !!variables)
-
-  } else if(source == "usafacts" & scale == "US county"){
+ if (source == "usafacts" & scale == "US county"){
 
     rc <- get_USAFacts_data(tempfile(), tempfile(), incl_unassigned = incl_unass) %>%
       dplyr::select(Update, FIPS, source, !!variables) %>%

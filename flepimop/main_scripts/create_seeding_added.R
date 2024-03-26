@@ -13,9 +13,9 @@
 # end_date: <date>
 # data_path: <path to directory>
 
-# spatial_setup:
+# subpop_setup:
 #   geodata: <path to file>
-#   nodenames: <string>
+#   subpop: <string>
 #
 # seeding:
 #   lambda_file: <path to file>
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
@@ -55,14 +55,14 @@ if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-if (is.null(config$spatial_setup$us_model)) {
-    config$spatial_setup$us_model <- FALSE
-    if ("modeled_states" %in% names(config$spatial_setup)) {
-        config$spatial_setup$us_model <- TRUE
+if (is.null(config$subpop_setup$us_model)) {
+    config$subpop_setup$us_model <- FALSE
+    if ("modeled_states" %in% names(config$subpop_setup)) {
+        config$subpop_setup$us_model <- TRUE
     }
 }
 
-is_US_run <- config$spatial_setup$us_model
+is_US_run <- config$subpop_setup$us_model
 seed_variants <- "variant_filename" %in% names(config$seeding)
 
 
@@ -151,15 +151,15 @@ if (seed_variants) {
 
 ## Check some data attributes:
 ## This is a hack:
-if ("geoid" %in% names(cases_deaths)) {
-    cases_deaths$FIPS <- cases_deaths$geoid
+if ("subpop" %in% names(cases_deaths)) {
+    cases_deaths$FIPS <- cases_deaths$subpop
     warning("Changing FIPS name in seeding. This is a hack")
 }
 if ("date" %in% names(cases_deaths)) {
     cases_deaths$Update <- cases_deaths$date
     warning("Changing Update name in seeding. This is a hack")
 }
-obs_nodename <- config$spatial_setup$nodenames
+obs_subpop <- config$subpop_setup$subpop
 required_column_names <- NULL
 
 check_required_names <- function(df, cols, msg) {
@@ -264,18 +264,18 @@ all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
 geodata <- flepicommon::load_geodata_file(
-    file.path(config$data_path, config$spatial_setup$geodata),
+    file.path(config$data_path, config$subpop_setup$geodata),
     5,
     "0",
     TRUE
 )
 
-all_geoids <- geodata[[config$spatial_setup$nodenames]]
+all_subpop <- geodata[[config$subpop_setup$subpop]]
 
 
 
 incident_cases <- incident_cases %>%
-    dplyr::filter(FIPS %in% all_geoids) %>%
+    dplyr::filter(FIPS %in% all_subpop) %>%
     dplyr::select(!!!required_column_names)
 incident_cases <- incident_cases %>% filter(value>0)
 
@@ -305,7 +305,7 @@ incident_cases <- incident_cases %>%
     dplyr::ungroup() %>%
     dplyr::select(!!!rlang::syms(required_column_names))
 
-names(incident_cases)[1:3] <- c("place", "date", "amount")
+names(incident_cases)[1:3] <- c("subpop", "date", "amount")
 
 incident_cases <- incident_cases %>%
     dplyr::filter(!is.na(amount) | !is.na(date))
@@ -332,12 +332,12 @@ if (!("no_perturb" %in% colnames(incident_cases))){
 #         seeding_pop$no_perturb <- TRUE
 #     }
 #     seeding_pop <- seeding_pop %>%
-#         dplyr::filter(place %in% all_geoids) %>%
+#         dplyr::filter(subpop %in% all_subpop) %>%
 #         dplyr::select(!!!colnames(incident_cases))
 #
 #     incident_cases <- incident_cases %>%
 #         dplyr::bind_rows(seeding_pop) %>%
-#         dplyr::arrange(place, date)
+#         dplyr::arrange(subpop, date)
 # }
 
 

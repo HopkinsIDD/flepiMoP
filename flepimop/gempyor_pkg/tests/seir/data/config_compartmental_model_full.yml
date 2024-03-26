@@ -5,11 +5,10 @@ end_date: 2020-05-31
 data_path: data
 nslots: 15
 
-spatial_setup:
+subpop_setup:
   geodata: geodata.csv
   mobility: mobility.txt
-  popnodes: population
-  nodenames: geoid
+
 
 seeding:
   method: FolderDraw
@@ -50,12 +49,12 @@ seir:
         distribution: fixed
         value: .2
     nu_1:
-      intervention_overlap_operation : "sum"
+      stacked_modifier_method : "sum"
       value:
         distribution: fixed
         value: .3
     nu_2:
-      intervention_overlap_operation : "sum"
+      stacked_modifier_method : "sum"
       value:
         distribution: fixed
         value: .4
@@ -68,7 +67,7 @@ seir:
         distribution: fixed
         value: .6
     rho:
-      intervention_overlap_operation : "prod"
+      stacked_modifier_method : "product"
       value:
         distribution: fixed
         value: 7
@@ -109,14 +108,14 @@ seir:
       proportion_exponent: [[1,1,1]]
       rate: ["nu_2", 1, 1]
 
-interventions:
+seir_modifiers:
   scenarios:
     - None
     - Scenario1
     - Scenario2
-  settings:
+  modifiers:
     None:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
@@ -124,7 +123,7 @@ interventions:
         distribution: fixed
         value: 0
     Wuhan:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: r0
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
@@ -133,24 +132,24 @@ interventions:
         low: .14
         high: .33
     KansasCity:
-      template: MultiTimeReduce
+      method: MultiPeriodModifier
       parameter: r0
       groups:
         - periods:
             - start_date: 2020-04-01
               end_date: 2020-05-15
-          affected_geoids: "all"
+          subpop: "all"
       value:
         distribution: uniform
         low: .04
         high: .23
     Scenario1:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - KansasCity
         - Wuhan
         - None
     Scenario2:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Wuhan

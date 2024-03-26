@@ -3,15 +3,16 @@ test_that("load_config works", {
   cat("yaml: TRUE\n",file=fname)
   fname_bad <- tempfile()
   cat("yaml: TRUE\n yaml2: FALSE\n",file=fname_bad)
-
+  fname_nonsense <- ";lkdjaoijdsfjoasidjfaoiwerfj q2fu8ja8erfasdiofj aewr;fj aff409a urfa8rf a';j 38i a0fuadf "
+  
   expect_equal(
     load_config(fname)$yaml,
     TRUE
   )
 
   expect_error(
-    load_config(";lkdjaoijdsfjoasidjfaoiwerfj q2fu8ja8erfasdiofj aewr;fj aff409a urfa8rf a';j 38i a0fuadf "),
-    "Could not find"
+    load_config(fname_nonsense),
+    paste0("Could not find file: ", fname_nonsense)
   )
 
   expect_error(

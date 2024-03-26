@@ -5,7 +5,7 @@
 ##'
 ##' @param all_locations all of the locations to calculate likelihood for
 ##' @param modeled_outcome  the hospital data for the simulations
-##' @param obs_nodename the name of the column containing locations.
+##' @param obs_subpop the name of the column containing locations.
 ##' @param config the full configuration setup
 ##' @param obs the full observed data
 ##' @param ground_truth_data the data we are going to compare to aggregated to the right statistic
@@ -24,7 +24,7 @@
 aggregate_and_calc_loc_likelihoods <- function(
         all_locations,
         modeled_outcome,
-        obs_nodename,
+        obs_subpop,
         targets_config,
         obs,
         ground_truth_data,
@@ -51,8 +51,8 @@ aggregate_and_calc_loc_likelihoods <- function(
             ## Filter to this location
             dplyr::filter(
                 modeled_outcome,
-                !!rlang::sym(obs_nodename) == location,
-                time %in% unique(obs$date[obs$geoid == location])
+                !!rlang::sym(obs_subpop) == location,
+                time %in% unique(obs$date[obs$subpop == location])
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
@@ -85,18 +85,18 @@ aggregate_and_calc_loc_likelihoods <- function(
         likelihood_data[[location]] <- dplyr::tibble(
             ll = this_location_log_likelihood,
             filename = hosp_file,
-            geoid = location,
+            subpop = location,
             accept = 0, # acceptance decision (0/1) . Will be updated later when accept/reject decisions made
             accept_avg = 0, # running average acceptance decision
             accept_prob = 0 # probability of acceptance of proposal
         )
-        names(likelihood_data)[names(likelihood_data) == 'geoid'] <- obs_nodename
+        names(likelihood_data)[names(likelihood_data) == 'subpop'] <- obs_subpop
     }
 
     #' @importFrom magrittr %>%
     likelihood_data <- likelihood_data %>% do.call(what = rbind)
 
-    ##Update  likelihood data based on hierarchical_stats
+    ##Update  likelihood data based on hierarchical_stats (NOT SUPPORTED FOR INIT FILES)
     for (stat in names(hierarchical_stats)) {
 
         if (hierarchical_stats[[stat]]$module %in% c("seir_interventions", "seir")) {
@@ -137,8 +137,9 @@ aggregate_and_calc_loc_likelihoods <- function(
 
 
 
+
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_nodename) %>%
+        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             tidyr::replace_na(list(likadj = 0)) %>% ##avoid unmatched location problems
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
@@ -150,22 +151,22 @@ aggregate_and_calc_loc_likelihoods <- function(
         if (defined_priors[[prior]]$module %in% c("seir_interventions", "seir")) {
             #' @importFrom magrittr %>%
             ll_adjs <- snpi %>%
-                dplyr::filter(npi_name == defined_priors[[prior]]$name) %>%
-                dplyr::mutate(likadj = calc_prior_likadj(reduction,
+                dplyr::filter(modifier_name == defined_priors[[prior]]$name) %>%
+                dplyr::mutate(likadj = calc_prior_likadj(value,
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         } else if (defined_priors[[prior]]$module == "outcomes_interventions") {
             #' @importFrom magrittr %>%
             ll_adjs <- hnpi %>%
-                dplyr::filter(npi_name == defined_priors[[prior]]$name) %>%
-                dplyr::mutate(likadj = calc_prior_likadj(reduction,
+                dplyr::filter(modifier_name == defined_priors[[prior]]$name) %>%
+                dplyr::mutate(likadj = calc_prior_likadj(value,
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         }  else if (defined_priors[[prior]]$module %in% c("outcomes_parameters", "hospitalization")) {
 
@@ -175,7 +176,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                                                          defined_priors[[prior]]$likelihood$dist,
                                                          defined_priors[[prior]]$likelihood$param
                 )) %>%
-                dplyr::select(geoid, likadj)
+                dplyr::select(subpop, likadj)
 
         } else  if (hierarchical_stats[[stat]]$module == "seir_parameters") {
             stop("We currently do not support priors on seir parameters, since we don't do inference on them except via npis.")
@@ -184,7 +185,7 @@ aggregate_and_calc_loc_likelihoods <- function(
         }
 
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_nodename) %>%
+        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
     }
@@ -222,166 +223,91 @@ perform_MCMC_step_copies_global <- function(current_index,
                                             slot,
                                             block,
                                             run_id,
-                                            global_local_prefix,
-                                            gf_prefix,
-                                            global_block_prefix) {
+                                            global_intermediate_filepath_suffix,
+                                            slotblock_filename_prefix,
+                                            slot_filename_prefix
+) {
+
+    rc_file_types <- c("seed", "init", "seir", "hosp", "llik", "snpi", "hnpi", "spar", "hpar")
+    rc_file_ext <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
 
     rc <- list()
 
-    if(current_index != 0){ #move files from global/intermediate/slot.block.run to global/final/slot
-        rc$seed_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'seed','csv'),
-            overwrite = TRUE
-        )
+    if(current_index != 0){
 
-        rc$init_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'init','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'init','parquet'),
-            overwrite = TRUE
-        )
+        #move files from global/intermediate/slot.block.run to global/final/slot
 
-        rc$seir_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'seir','parquet'),
-            overwrite = TRUE
-        )
-
-        rc$hosp_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'hosp','parquet'),
-            overwrite = TRUE
-        )
-
-        rc$llik_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'llik','parquet'),
-            overwrite = TRUE
-        )
-
-        rc$snpi_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'snpi','parquet'),
-            overwrite = TRUE
-        )
-
-        rc$hnpi_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'hnpi','parquet'),
-            overwrite = TRUE
-        )
-
-        rc$spar_gf <-file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'spar','parquet'),
-            overwrite = TRUE
-        )
-
-        rc$hpar_gf <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet'),
-            flepicommon::create_file_name(run_id,gf_prefix,slot,'hpar','parquet'),
-            overwrite = TRUE
-        )
-        #move files from global/intermediate/slot.block.run to global/intermediate/slot
-        rc$seed_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seed','csv'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
-        )
-
-        rc$init_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'init','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'init','parquet')
-        )
-
-        rc$seir_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'seir','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
-        )
-
-        rc$hosp_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hosp','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet')
-        )
+        for (i in 1:length(rc_file_types)){
+            rc[[paste0(rc_file_types[i], "_gf")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slotblock_filename_prefix,
+                                              index = current_index,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = "global/final",
+                                              filename_prefix = "",
+                                              index=slot,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
 
 
-        rc$llik_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'llik','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'llik','parquet')
-        )
+        #move files from global/intermediate/slot.block.run to global/intermediate/slot.block
 
-        rc$snpi_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'snpi','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'snpi','parquet')
-        )
+        for (i in 1:length(rc_file_types)){
+            rc[[paste0(rc_file_types[i], "_block")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slotblock_filename_prefix,
+                                              index = current_index,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index=block,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
 
-        rc$hnpi_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hnpi','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'hnpi','parquet')
-        )
+    } else {
 
-        rc$spar_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'spar','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'spar','parquet')
-        )
+        #move files from global/intermediate/slot.(block-1) to global/intermediate/slot.block
 
-
-        rc$hpar_block <- file.copy(
-            flepicommon::create_file_name(run_id,global_local_prefix,current_index,'hpar','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'hpar','parquet')
-        )
-    } else { #move files from global/intermediate/slot.(block-1) to global/intermediate/slot.block
-        rc$seed_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seed','csv'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'seed','csv')
-        )
-
-        rc$init_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'init','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'init','parquet')
-        )
-
-
-        rc$seir_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'seir','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'seir','parquet')
-        )
-
-        rc$hosp_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1 ,'hosp','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'hosp','parquet')
-        )
-
-        rc$llik_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'llik','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'llik','parquet')
-        )
-
-
-        rc$snpi_prvblk <-file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'snpi','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'snpi','parquet')
-        )
-
-        rc$hnpi_prvblk <-file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'hnpi','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'hnpi','parquet')
-        )
-
-        rc$spar_prvblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'spar','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'spar','parquet')
-        )
-
-        rc$hpar_prvblk <- file.copy(
-            flepicommon::create_file_name(run_id,global_block_prefix,block - 1,'hpar','parquet'),
-            flepicommon::create_file_name(run_id,global_block_prefix,block,'hpar','parquet')
-        )
+        for (i in 1:length(rc_file_types)){
+            rc[[paste0(rc_file_types[i], "_prevblk")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index = block - 1,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = global_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index=block,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
     }
 
-
     return(rc)
-
 }
+
 
 ##'
 ##' Function that performs the necessary file copies the end of an MCMC iteration of
@@ -403,150 +329,87 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
                                               slot,
                                               block,
                                               run_id,
-                                              chimeric_local_prefix,
-                                              cf_prefix,
-                                              chimeric_block_prefix) {
+                                              chimeric_intermediate_filepath_suffix,
+                                              slotblock_filename_prefix,
+                                              slot_filename_prefix) {
 
+
+    rc_file_types <- c("seed", "init", "llik", "snpi", "hnpi", "spar", "hpar")
+    rc_file_ext <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
 
     rc <- list()
 
-    if(current_index != 0){ #move files from chimeric/intermediate/slot.block.run to chimeric/final/slot
-        rc$seed_gf <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv'),
-            flepicommon::create_file_name(run_id,cf_prefix,slot,'seed','csv'),
-            overwrite = TRUE
-        )
+    if(current_index != 0){
 
-        # No chimeric SEIR or HOSP files, nor INIT file for now
+        #move files from chimeric/intermediate/slot.block.run to chimeric/final/slot
 
-        # rc$seir_gf <- file.copy(
-        #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
-        #   flepicommon::create_file_name(run_id,cf_prefix,slot,'seir','parquet'),
-        #   overwrite = TRUE
-        # )
-        #
-        # rc$hosp_gf <- file.copy(
-        #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet'),
-        #   flepicommon::create_file_name(run_id,cf_prefix,slot,'hosp','parquet'),
-        #   overwrite = TRUE
-        # )
-
-        rc$llik_gf <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet'),
-            flepicommon::create_file_name(run_id,cf_prefix,slot,'llik','parquet'),
-            overwrite = TRUE
-        )
+        for (i in 1:length(rc_file_types)){
+            rc[[paste0(rc_file_types[i], "_gf")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = chimeric_intermediate_filepath_suffix,
+                                              filename_prefix = slotblock_filename_prefix,
+                                              index = current_index,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = "chimeric/final",
+                                              filename_prefix = "",
+                                              index=slot,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
 
 
-        rc$snpi_gf <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet'),
-            flepicommon::create_file_name(run_id,cf_prefix,slot,'snpi','parquet'),
-            overwrite = TRUE
-        )
+        #move files from chimeric/intermediate/slot.block.run to chimeric/intermediate/slot.block
 
-        rc$hnpi_gf <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet'),
-            flepicommon::create_file_name(run_id,cf_prefix,slot,'hnpi','parquet'),
-            overwrite = TRUE
-        )
+        for (i in 1:length(rc_file_types)){
+            rc[[paste0(rc_file_types[i], "_block")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = chimeric_intermediate_filepath_suffix,
+                                              filename_prefix = slotblock_filename_prefix,
+                                              index = current_index,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = chimeric_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index=block,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
 
-        rc$spar_gf <-file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet'),
-            flepicommon::create_file_name(run_id,cf_prefix,slot,'spar','parquet'),
-            overwrite = TRUE
-        )
+    } else {
 
-        rc$hpar_gf <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet'),
-            flepicommon::create_file_name(run_id,cf_prefix,slot,'hpar','parquet'),
-            overwrite = TRUE
-        )
-        #move files from chimeric/intermediate/slot.block.run to chimeric/intermediate/slot
-        rc$seed_block <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seed','csv'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
-        )
+        #move files from chimeric/intermediate/slot.(block-1) to chimeric/intermediate/slot.block
 
-        # no chimeric SEIR or HOSP files
-
-        # rc$seir_block <- file.copy(
-        #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'seir','parquet'),
-        #   flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
-        # )
-        #
-        # rc$hosp_block <- file.copy(
-        #   flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hosp','parquet'),
-        #   flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
-        # )
-
-        rc$llik_block <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'llik','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'llik','parquet')
-        )
-
-        rc$snpi_block <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'snpi','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'snpi','parquet')
-        )
-
-        rc$hnpi_block <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hnpi','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hnpi','parquet')
-        )
-
-        rc$spar_block <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'spar','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'spar','parquet')
-        )
-
-
-        rc$hpar_block <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_local_prefix,current_index,'hpar','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hpar','parquet')
-        )
-    } else { #move files from chimeric/intermediate/slot.(block-1) to chimeric/intermediate/slot.block
-        rc$seed_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seed','csv'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seed','csv')
-        )
-
-        # Joseph: commented these as well
-        # rc$seir_prevblk <- file.copy(
-        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'seir','parquet'),
-        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'seir','parquet')
-        # )
- 
-        # rc$hosp_prevblk <- file.copy(
-        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1 ,'hosp','parquet'),
-        #     flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hosp','parquet')
-        # )
-
-        rc$llik_prevblk <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'llik','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'llik','parquet')
-        )
-
-        rc$snpi_prvblk <-file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'snpi','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'snpi','parquet')
-        )
-
-        rc$hnpi_prvblk <-file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'hnpi','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hnpi','parquet')
-        )
-
-        rc$spar_prvblk <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'spar','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'spar','parquet')
-        )
-
-        rc$hpar_prvblk <- file.copy(
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block - 1,'hpar','parquet'),
-            flepicommon::create_file_name(run_id,chimeric_block_prefix,block,'hpar','parquet')
-        )
+        for (i in 1:length(rc_file_types)){
+            rc[[paste0(rc_file_types[i], "_prevblk")]] <- file.copy(
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = chimeric_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index = block - 1,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                flepicommon::create_file_name(run_id = run_id,
+                                              prefix = setup_prefix,
+                                              filepath_suffix = chimeric_intermediate_filepath_suffix,
+                                              filename_prefix = slot_filename_prefix,
+                                              index=block,
+                                              type = rc_file_types[i],
+                                              extension = rc_file_ext[i]),
+                overwrite = TRUE
+            )
+        }
     }
-
 
     return(rc)
 
@@ -557,10 +420,12 @@ perform_MCMC_step_copies_chimeric <- function(current_index,
 create_filename_list <- function(
         run_id,
         prefix,
+        filepath_suffix,
+        filename_prefix,
         index,
         types = c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik"),
-        extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
-) {
+        extensions = c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")) {
+
     if(length(types) != length(extensions)){
         stop("Please specify the same number of types and extensions.  Given",length(types),"and",length(extensions))
     }
@@ -568,7 +433,14 @@ create_filename_list <- function(
         x=types,
         y=extensions,
         function(x,y){
-            flepicommon::create_file_name(run_id = run_id,prefix = prefix,index = index,type = x,extension = y, create_directory = TRUE)
+            flepicommon::create_file_name(run_id = run_id,
+                                          prefix = prefix,
+                                          filepath_suffix = filepath_suffix,
+                                          filename_prefix = filename_prefix,
+                                          index = index,
+                                          type = x,
+                                          extension = y,
+                                          create_directory = TRUE)
         }
     )
     names(rc) <- paste(names(rc),"filename",sep='_')
@@ -580,32 +452,39 @@ create_filename_list <- function(
 ##'@param slot what is the current slot number
 ##'@param block what is the current block
 ##'@param run_id what is the id of this run
-##'@param global_prefix the prefix to use for global files
-##'@param chimeric_prefix the prefix to use for chimeric files
+##'@param global_intermediate_filepath_suffix the suffix to use for global files
+##'@param chimeric_intermediate_filepath_suffix the suffix to use for chimeric files
+##'@param filename_prefix
 ##'@param gempyor_inference_runner An already initialized copy of python inference runner
 ##'@export
 initialize_mcmc_first_block <- function(
         run_id,
         block,
-        global_prefix,
-        chimeric_prefix,
+        setup_prefix,
+        global_intermediate_filepath_suffix,
+        chimeric_intermediate_filepath_suffix,
+        filename_prefix,
         gempyor_inference_runner,
         likelihood_calculation_function,
         is_resume = FALSE) {
 
-    ## Only works on these files:
     global_types <- c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar", "llik")
     global_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
-    chimeric_types <- c("seed", "snpi", "hnpi", "spar", "hpar", "llik")
-    chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet")
+    chimeric_types <- c("seed", "init", "snpi", "hnpi", "spar", "hpar", "llik")
+    chimeric_extensions <- c("csv", "parquet", "parquet", "parquet", "parquet", "parquet", "parquet")
     non_llik_types <- paste(c("seed", "init", "seir", "snpi", "hnpi", "spar", "hosp", "hpar"), "filename", sep = "_")
 
-    global_files <- create_filename_list(run_id, global_prefix, block - 1, global_types, global_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.variable.ext
-    chimeric_files <- create_filename_list(run_id, chimeric_prefix, block - 1, chimeric_types, chimeric_extensions) # makes file names of the form variable/name/npi_scenario/outcome_scenario/run_id/chimeric/intermediate/slot.(block-1).run_ID.variable.ext
+    # Get names of files saved at end of previous block, to initiate this block from
+    # makes file names of the form {setup_prefix}/{run_id}/{global_type}/global/intermediate/{filename_prefix}.(block-1).{run_id}.{global_type}.{ext}
+    global_files <- create_filename_list(run_id=run_id,  prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix = filename_prefix, index=block - 1, types=global_types, extensions=global_extensions)
+    # makes file names of the form {setup_prefix}/{run_id}/{chimeric_type}/chimeric/intermediate/{filename_prefix}.(block-1).{run_id}.{chimeric_type}.{ext}
+    chimeric_files <- create_filename_list(run_id=run_id, prefix=setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix = filename_prefix, index=block - 1, types=chimeric_types, extensions=chimeric_extensions)
+
+    ## If this isn't the first block, all of the files should definitely exist
 
     global_check <- sapply(global_files, file.exists)
     chimeric_check <- sapply(chimeric_files, file.exists)
-    ## If this isn't the first block, all of the files should definitely exist
+
     if (block > 1) {
 
         if (any(!global_check)) {
@@ -676,7 +555,9 @@ initialize_mcmc_first_block <- function(
     ## seed
     if (!is.null(config$seeding)){
         if ("seed_filename" %in% global_file_names) {
+            print("need to create seeding directory")
             if(!file.exists(config$seeding$lambda_file)) {
+                print("Will create seeding lambda file using flepimop/main_scripts/create_seeding.R") #Need to document this
                 err <- system(paste(
                     opt$rpath,
                     paste(opt$flepi_path, "flepimop", "main_scripts", "create_seeding.R", sep = "/"),
@@ -686,6 +567,7 @@ initialize_mcmc_first_block <- function(
                     stop("Could not run seeding")
                 }
             }
+            print("Will copy seeding lambda file to the seeding directory")
             err <- !(file.copy(config$seeding$lambda_file, global_files[["seed_filename"]]))
             if (err != 0) {
                 stop("Could not copy seeding")
@@ -693,6 +575,7 @@ initialize_mcmc_first_block <- function(
         }
 
         # additional seeding for new variants or introductions to add to fitted seeding (for resumes)
+        #   need to document!!
         if (!is.null(config$seeding$added_seeding) & is_resume & block <= 1){
             if(!file.exists(config$seeding$added_seeding$added_lambda_file)) {
                 err <- system(paste(
@@ -731,21 +614,82 @@ initialize_mcmc_first_block <- function(
     }
 
 
+    ## initial conditions (init)
+
+    if (!is.null(config$initial_conditions)){
+        if ("init_filename" %in% global_file_names) {
+
+            if (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions")){
+
+                if (is.null(config$initial_conditions$initial_conditions_file)) {
+                    stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
+                }
+                initial_init_file <- config$initial_conditions$initial_conditions_file
+
+                if (!file.exists(config$initial_conditions$initial_conditions_file)) {
+                    stop("ERROR: Initial conditions file specified but does not exist.")
+                }
+                if (grepl(".csv", initial_init_file)){
+                    initial_init <- readr::read_csv(initial_init_file)
+                    arrow::write_parquet(initial_init, global_files[["init_filename"]])
+                }else{
+                    err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
+                    if (err != 0) {
+                        stop("Could not copy initial conditions file")
+                    }
+                }
+
+            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
+                print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
+                      and no copying to global or chimeric files is being done.")
+
+                if (is.null(config$initial_conditions$initial_file_type)) {
+                    stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
+                }
+                initial_init_file <- global_files[[paste0(config$initial_conditions$initial_file_type, "_filename")]]
+
+                if (!file.exists(initial_init_file)) {
+                    stop("ERROR: Initial conditions file specified but does not exist.")
+                }
+                if (grepl(".csv", initial_init_file)){ 
+                    initial_init <- readr::read_csv(initial_init_file)
+                    arrow::write_parquet(initial_init, global_files[["init_filename"]])
+                }else{
+                    err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
+                    if (err != 0) {
+                        stop("Could not copy initial conditions file")
+                    }
+                }
+
+            }
+        }
+    }
+
+
     ## seir, snpi, spar
+
     checked_par_files <- c("snpi_filename", "spar_filename", "hnpi_filename", "hpar_filename")
     checked_sim_files <- c("seir_filename", "hosp_filename")
-    # These functions save variables to files of the form variable/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
+    # These functions save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
     if (any(checked_par_files %in% global_file_names)) {
         if (!all(checked_par_files %in% global_file_names)) {
-            stop("Provided some InferenceSimulator input, but not all")
+            stop("Provided some GempyorSimulator input, but not all")
         }
         if (any(checked_sim_files %in% global_file_names)) {
             if (!all(checked_sim_files %in% global_file_names)) {
                 stop("Provided only one of hosp or seir input file, with some output files. Not supported anymore")
             }
-            gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
+            tryCatch({
+                gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
+            }, error = function(e) {
+                print("GempyorSimulator failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
+                print("Here is all the debug information I could find:")
+                for(m in reticulate::py_last_error()) cat(m)
+                stop("GempyorSimulator failed to run... stopping")
+            })
+            #gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
         } else {
-            stop("Provided some InferenceSimulator output(seir, hosp), but not InferenceSimulator input")
+            stop("Provided some GempyorSimulator output(seir, hosp), but not GempyorSimulator input")
         }
     } else {
         if (any(checked_sim_files %in% global_file_names)) {
@@ -753,7 +697,15 @@ initialize_mcmc_first_block <- function(
                 stop("Provided only one of hosp or seir input file, not supported anymore")
             }
             warning("SEIR and Hosp input provided, but output not found. This is unstable for stochastic runs")
-            gempyor_inference_runner$one_simulation(sim_id2write=block - 1, load_ID=TRUE, sim_id2load=block - 1)
+            tryCatch({
+                gempyor_inference_runner$one_simulation(sim_id2write = block - 1, load_ID = TRUE, sim_id2load = block - 1)
+            }, error = function(e) {
+                print("GempyorSimulator failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
+                print("Here is all the debug information I could find:")
+                for(m in reticulate::py_last_error()) cat(m)
+                stop("GempyorSimulator failed to run... stopping")
+            })
+            #gempyor_inference_runner$one_simulation(sim_id2write=block - 1, load_ID=TRUE, sim_id2load=block - 1)
         }
     }
 
@@ -767,7 +719,7 @@ initialize_mcmc_first_block <- function(
 
     ## Refactor me later:
     global_likelihood_data <- likelihood_calculation_function(hosp_data)
-    arrow::write_parquet(global_likelihood_data, global_files[["llik_filename"]]) # save global likelihood data to file of the form llik/name/npi_scenario/outcome_scenario/run_id/global/intermediate/slot.(block-1).run_ID.llik.ext
+    arrow::write_parquet(global_likelihood_data, global_files[["llik_filename"]]) # save global likelihood data to file of the form llik/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1).run_ID.llik.ext
 
     #print("from inside initialize_mcmc_first_block: column names of likelihood dataframe")
     #print(colnames(global_likelihood_data))

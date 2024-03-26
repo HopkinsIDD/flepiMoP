@@ -3,7 +3,7 @@
 set -x
 
 # Expected environment variables from AWS Batch env
-# S3_MODEL_DATA_PATH location in S3 with the code, data, and dvc pipeline to run
+# S3_MODEL_PROJECT_PATH location in S3 with the code, data, and dvc pipeline to run
 # DVC_OUTPUTS the names of the directories with outputs to save in S3, separated by a space
 # SIMS_PER_JOB is the number of sims to run per job
 # JOB_NAME the name of the job
@@ -34,7 +34,7 @@ aws configure set default.s3.multipart_chunksize 8MB
 
 # Copy the complete model + data package from S3 and
 # install the local R packages
-aws s3 cp --quiet $S3_MODEL_DATA_PATH model_data.tar.gz
+aws s3 cp --quiet $S3_MODEL_PROJECT_PATH model_data.tar.gz
 mkdir model_data
 tar -xzf model_data.tar.gz -C model_data # chadi: removed v(erbose) option here as it floods the log with data we have anyway from the s3 bucket
 cd model_data
@@ -100,9 +100,22 @@ if [ -n "$LAST_JOB_OUTPUT" ]; then  # -n Checks if the length of a string is non
 		fi
 		for liketype in "global" "chimeric"
 		do
-			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$FLEPI_RUN_INDEX','$FLEPI_PREFIX/$FLEPI_RUN_INDEX/$liketype/intermediate/%09d.'% $FLEPI_SLOT_INDEX,$FLEPI_BLOCK_INDEX-1,'$filetype','$extension'))")
+			export OUT_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(
+																											run_id='$FLEPI_RUN_INDEX',
+																											prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
+																											inference_filepath_suffix='$liketype/intermediate',
+																											inference_filename_prefix=%09d.'% $FLEPI_SLOT_INDEX,
+																											index=$FLEPI_BLOCK_INDEX-1,
+																											ftype='$filetype',
+																											extension='$extension'))")
 			if [ $FLEPI_BLOCK_INDEX -eq 1 ]; then
-				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name('$RESUME_FLEPI_RUN_INDEX','$FLEPI_PREFIX/$RESUME_FLEPI_RUN_INDEX/$liketype/final/',$FLEPI_SLOT_INDEX,'$filetype','$extension'))")
+				export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(
+																											run_id='$RESUME_FLEPI_RUN_INDEX',
+																											prefix='$FLEPI_PREFIX/$RESUME_FLEPI_RUN_INDEX',
+																											inference_filepath_suffix='$liketype/final',
+																											index=$FLEPI_SLOT_INDEX,
+																											ftype='$filetype',
+																											extension='$extension'))")
 			else
 				export IN_FILENAME=$OUT_FILENAME
 			fi

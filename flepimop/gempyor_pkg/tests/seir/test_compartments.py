@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import filecmp
 
-from gempyor import compartments, seir, NPI, file_paths, setup
+from gempyor import compartments, seir, NPI, file_paths, model_info, subpopulation_structure
 
 from gempyor.utils import config
 
@@ -46,7 +46,7 @@ def test_check_transitions_parquet_writing_and_loading():
     lhs = compartments.Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
     temp_compartments_file = f"{DATA_DIR}/parsed_compartment_compartments.test.parquet"
     temp_transitions_file = f"{DATA_DIR}/parsed_compartment_transitions.test.parquet"
-    lhs.toFile(compartments_file=temp_compartments_file, transitions_file=temp_transitions_file)
+    lhs.toFile(compartments_file=temp_compartments_file, transitions_file=temp_transitions_file, write_parquet=True)
     rhs = compartments.Compartments(
         seir_config=config["seir"],
         compartments_file=temp_compartments_file,
@@ -60,33 +60,17 @@ def test_check_transitions_parquet_writing_and_loading():
     assert lhs == rhs
 
 
-def test_Setup_has_compartments_component():
+def test_ModelInfo_has_compartments_component():
+    os.chdir(os.path.dirname(__file__))
     config.clear()
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config.yml")
 
-    ss = setup.SpatialSetup(
-        setup_name="test_values",
-        geodata_file=f"{DATA_DIR}/geodata.csv",
-        mobility_file=f"{DATA_DIR}/mobility.txt",
-        popnodes_key="population",
-        nodenames_key="geoid",
-    )
-
-    s = setup.Setup(
-        setup_name="test_values",
-        spatial_setup=ss,
+    s = model_info.ModelInfo(
+        config=config,
         nslots=1,
-        npi_scenario="None",
-        config_version="v3",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seir_config=config["seir"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
-        interactive=True,
+        seir_modifiers_scenario="None",
         write_csv=False,
-        dt=0.25,
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments
@@ -95,20 +79,10 @@ def test_Setup_has_compartments_component():
     config.read(user=False)
     config.set_file(f"{DATA_DIR}/config_compartmental_model_full.yml")
 
-    s = setup.Setup(
-        setup_name="test_values",
-        spatial_setup=ss,
+    s = model_info.ModelInfo(
+        config=config,
         nslots=1,
-        npi_scenario="None",
-        config_version="v3",
-        npi_config_seir=config["interventions"]["settings"]["None"],
-        parameters_config=config["seir"]["parameters"],
-        seir_config=config["seir"],
-        ti=config["start_date"].as_date(),
-        tf=config["end_date"].as_date(),
-        interactive=True,
         write_csv=False,
-        dt=0.25,
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments

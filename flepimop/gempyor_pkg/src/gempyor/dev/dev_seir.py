@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 import filecmp
 import pandas as pd
 import matplotlib.pyplot as plt
-from . import compartments, seir, NPI, file_paths, setup
+from . import compartments, seir, NPI, file_paths, model_info
 
 from .utils import config
 
@@ -20,48 +20,40 @@ config.clear()
 config.read(user=False)
 config.set_file(f"{DATA_DIR}/config.yml")
 
-ss = setup.SpatialSetup(
-    setup_name="test_seir",
-    geodata_file=f"{DATA_DIR}/geodata.csv",
-    mobility_file=f"{DATA_DIR}/mobility.txt",
-    popnodes_key="population",
-    nodenames_key="geoid",
-)
-
 first_sim_index = 1
 run_id = "test_SeedOneNode"
 prefix = ""
-s = setup.Setup(
+modinf = model_info.ModelInfo(
     setup_name="test_seir",
-    spatial_setup=ss,
     nslots=1,
-    npi_scenario="None",
-    npi_config_seir=config["interventions"]["settings"]["None"],
-    parameters_config=config["seir"]["parameters"],
-    seeding_config=config["seeding"],
-    ti=config["start_date"].as_date(),
-    tf=config["end_date"].as_date(),
-    interactive=True,
+    seir_modifiers_scenario="None",
     write_csv=False,
     first_sim_index=first_sim_index,
     in_run_id=run_id,
     in_prefix=prefix,
     out_run_id=run_id,
     out_prefix=prefix,
-    dt=0.25,
 )
 
-seeding_data = s.seedingAndIC.draw_seeding(sim_id=100, setup=s)
-initial_conditions = s.seedingAndIC.draw_ic(sim_id=100, setup=s)
+seeding_data = modinf.seedingAndIC.draw_seeding(sim_id=100, setup=modinf)
+initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
 
-mobility_geoid_indices = s.mobility.indices
-mobility_data_indices = s.mobility.indptr
-mobility_data = s.mobility.data
+mobility_subpop_indices = modinf.mobility.indices
+mobility_data_indices = modinf.mobility.indptr
+mobility_data = modinf.mobility.data
 
-npi = NPI.NPIBase.execute(npi_config=s.npi_config_seir, global_config=config, geoids=s.spatset.nodenames)
+npi = NPI.NPIBase.execute(
+    npi_config=modinf.npi_config_seir,
+    modinf=modinf,
+    modifiers_library=modinf.seir_modifiers_library,
+    subpops=modinf.subpop_struct.subpop_names,
+    pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+    pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+    
+)
 
-params = s.parameters.parameters_quick_draw(s.n_days, s.nnodes)
-params = s.parameters.parameters_reduce(params, npi)
+params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+params = modinf.parameters.parameters_reduce(params, npi)
 
 (
     parsed_parameters,
@@ -69,28 +61,28 @@ params = s.parameters.parameters_reduce(params, npi)
     transition_array,
     proportion_array,
     proportion_info,
-) = s.compartments.get_transition_array(params, s.parameters.pnames)
+) = modinf.compartments.get_transition_array(params, modinf.parameters.pnames)
 
 
 states = seir.steps_SEIR_nb(
-    s.compartments.compartments.shape[0],
-    s.nnodes,
-    s.n_days,
+    modinf.compartments.compartments.shape[0],
+    modinf.nsubpops,
+    modinf.n_days,
     parsed_parameters,
-    s.dt,
+    modinf.dt,
     transition_array,
     proportion_info,
     proportion_array,
     initial_conditions,
     seeding_data,
     mobility_data,
-    mobility_geoid_indices,
+    mobility_subpop_indices,
     mobility_data_indices,
-    s.popnodes,
+    modinf.subpop_pop,
     True,
 )
-df = seir.states2Df(s, states)
-assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(s.tf), "20002"] > 1
+df = seir.states2Df(modinf, states)
+assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] > 1
 print(df)
 ts = df
 cp = "R"
@@ -104,4 +96,4 @@ out_df["date"] = out_df.first_sim_index
 pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
 pa.parquet.write_table(pa_df, "testlol.parquet")
 
-df2 = SEIR.seir.onerun_SEIR(100, s)
+df2 = SEIR.seir.onerun_SEIR(100, modinf)

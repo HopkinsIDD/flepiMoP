@@ -9,17 +9,15 @@
 # function terminated successfully
 
 
-import pathlib
-from . import seir, setup, file_paths
+from . import seir, model_info
 from . import outcomes
-from .utils import config, Timer, read_df, profile
+from .utils import config, Timer, read_df
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
-### Logger configuration
+# Logger configuration
 import logging
 import os
-import functools
 import multiprocessing as mp
 import pandas as pd
 import pyarrow.parquet as pq
@@ -38,25 +36,26 @@ handler.setFormatter(formatter)
 # logger.addHandler(handler)
 
 
-class InferenceSimulator:
+class GempyorSimulator:
     def __init__(
         self,
         config_path,
         run_id="test_run_id",
-        prefix="test_prefix",
+        prefix=None,
         first_sim_index=1,
-        npi_scenario="inference",
-        outcome_scenario="med",
+        seir_modifiers_scenario=None,
+        outcome_modifiers_scenario=None,
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
-        initialize=True,
+        inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
+        inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
     ):
-        self.npi_scenario = npi_scenario
-        self.outcome_scenario = outcome_scenario
+        self.seir_modifiers_scenario = seir_modifiers_scenario
+        self.outcome_modifiers_scenario = outcome_modifiers_scenario
 
         in_run_id = run_id
         if out_run_id is None:
@@ -69,44 +68,24 @@ class InferenceSimulator:
         config.clear()
         config.read(user=False)
         config.set_file(config_path)
-        spatial_config = config["spatial_setup"]
-        spatial_base_path = config["data_path"].get()
-        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+        print(config_path)
 
         np.random.seed(rng_seed)
 
-        interactive = False
         write_csv = False
         write_parquet = True
-        self.s = setup.Setup(
-            setup_name=config["name"].get() + "_" + str(npi_scenario),
-            spatial_setup=setup.SpatialSetup(
-                setup_name=config["setup_name"].get(),
-                geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-                mobility_file=spatial_base_path / spatial_config["mobility"].get()
-                if spatial_config["mobility"].exists()
-                else None,
-                popnodes_key=spatial_config["popnodes"].get(),
-                nodenames_key=spatial_config["nodenames"].get(),
-            ),
+        self.modinf = model_info.ModelInfo(
+            config=config,
             nslots=nslots,
-            npi_scenario=npi_scenario,
-            npi_config_seir=config["interventions"]["settings"][npi_scenario],
-            seeding_config=config["seeding"],
-            initial_conditions_config=config["initial_conditions"],
-            parameters_config=config["seir"]["parameters"],
-            seir_config=config["seir"],
-            outcomes_config=config["outcomes"] if config["outcomes"].exists() else None,
-            outcome_scenario=outcome_scenario,
-            ti=config["start_date"].as_date(),
-            tf=config["end_date"].as_date(),
-            interactive=interactive,
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            outcome_modifiers_scenario=outcome_modifiers_scenario,
             write_csv=write_csv,
             write_parquet=write_parquet,
-            dt=None,  # default to config value
             first_sim_index=first_sim_index,
             in_run_id=in_run_id,
             in_prefix=in_prefix,
+            inference_filename_prefix=inference_filename_prefix,
+            inference_filepath_suffix=inference_filepath_suffix,
             out_run_id=out_run_id,
             out_prefix=out_prefix,
             stoch_traj_flag=stoch_traj_flag,
@@ -114,25 +93,25 @@ class InferenceSimulator:
 
         print(
             f"""  gempyor >> Running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** simulation;\n"""
-            f"""  gempyor >> Setup {self.s.setup_name}; index: {self.s.first_sim_index}; run_id: {in_run_id},\n"""
-            f"""  gempyor >> prefix: {in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
+            f"""  gempyor >> ModelInfo {self.modinf.setup_name}; index: {self.modinf.first_sim_index}; run_id: {in_run_id},\n"""
+            f"""  gempyor >> prefix: {self.modinf.in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
 
-        self.already_built = False  # whether we have already build the costly object we just build once.
+        self.already_built = False  # whether we have already built the costly objects that need just one build
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
-        self.s.in_prefix = new_prefix
+        self.modinf.in_prefix = new_prefix
         if new_out_prefix is None:
-            self.s.out_prefix = new_prefix
+            self.modinf.out_prefix = new_prefix
         else:
-            self.s.out_prefix = new_out_prefix
+            self.modinf.out_prefix = new_out_prefix
 
     def update_run_id(self, new_run_id, new_out_run_id=None):
-        self.s.in_run_id = new_run_id
+        self.modinf.in_run_id = new_run_id
         if new_out_run_id is None:
-            self.s.out_run_id = new_run_id
+            self.modinf.out_run_id = new_run_id
         else:
-            self.s.out_run_id = new_out_run_id
+            self.modinf.out_run_id = new_out_run_id
 
     def one_simulation_legacy(self, sim_id2write: int, load_ID: bool = False, sim_id2load: int = None):
         sim_id2write = int(sim_id2write)
@@ -142,7 +121,7 @@ class InferenceSimulator:
             with Timer("onerun_SEIR"):
                 seir.onerun_SEIR(
                     sim_id2write=sim_id2write,
-                    s=self.s,
+                    modinf=self.modinf,
                     load_ID=load_ID,
                     sim_id2load=sim_id2load,
                     config=config,
@@ -151,21 +130,20 @@ class InferenceSimulator:
             with Timer("onerun_OUTCOMES"):
                 outcomes.onerun_delayframe_outcomes(
                     sim_id2write=sim_id2write,
-                    s=self.s,
+                    modinf=self.modinf,
                     load_ID=load_ID,
                     sim_id2load=sim_id2load,
                 )
         return 0
-    
+
     def build_structure(self):
         (
             self.unique_strings,
             self.transition_array,
             self.proportion_array,
             self.proportion_info,
-        ) = self.s.compartments.get_transition_array()
+        ) = self.modinf.compartments.get_transition_array()
         self.already_built = True
-    
 
     # @profile()
     def one_simulation(
@@ -181,23 +159,23 @@ class InferenceSimulator:
 
         with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
             if not self.already_built:
-                self.outcomes_parameters = outcomes.read_parameters_from_config(self.s)
+                self.outcomes_parameters = outcomes.read_parameters_from_config(self.modinf)
 
             npi_outcomes = None
             if parallel:
                 with Timer("//things"):
                     with ProcessPoolExecutor(max_workers=max(mp.cpu_count(), 3)) as executor:
-                        ret_seir = executor.submit(seir.build_npi_SEIR, self.s, load_ID, sim_id2load, config)
-                        if self.s.npi_config_outcomes:
+                        ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
+                        if self.modinf.npi_config_outcomes:
                             ret_outcomes = executor.submit(
-                                outcomes.build_npi_Outcomes,
-                                self.s,
+                                outcomes.build_outcome_modifiers,
+                                self.modinf,
                                 load_ID,
                                 sim_id2load,
                                 config,
                             )
                         if not self.already_built:
-                            ret_comparments = executor.submit(self.s.compartments.get_transition_array)
+                            ret_comparments = executor.submit(self.modinf.compartments.get_transition_array)
 
                 # print("expections:", ret_seir.exception(), ret_outcomes.exception(), ret_comparments.exception())
 
@@ -210,15 +188,17 @@ class InferenceSimulator:
                     ) = ret_comparments.result()
                     self.already_built = True
                 npi_seir = ret_seir.result()
-                if self.s.npi_config_outcomes:
+                if self.modinf.npi_config_outcomes:
                     npi_outcomes = ret_outcomes.result()
             else:
                 if not self.already_built:
                     self.build_structure()
-                npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
-                if self.s.npi_config_outcomes:
-                    npi_outcomes = outcomes.build_npi_Outcomes(
-                        s=self.s,
+                npi_seir = seir.build_npi_SEIR(
+                    modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+                )
+                if self.modinf.npi_config_outcomes:
+                    npi_outcomes = outcomes.build_outcome_modifiers(
+                        modinf=self.modinf,
                         load_ID=load_ID,
                         sim_id2load=sim_id2load,
                         config=config,
@@ -228,13 +208,13 @@ class InferenceSimulator:
             ### Run every time:
             with Timer("SEIR.parameters"):
                 # Draw or load parameters
-                
+
                 p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
                 # reduce them
-                parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+                parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
                 # Parse them
-                parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
+                parsed_parameters = self.modinf.compartments.parse_parameters(
+                    parameters, self.modinf.parameters.pnames, self.unique_strings
                 )
                 self.debug_p_draw = p_draw
                 self.debug_parameters = parameters
@@ -242,17 +222,22 @@ class InferenceSimulator:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.s.seedingAndIC.load_ic(sim_id2load, setup=self.s)
-                    seeding_data, seeding_amounts = self.s.seedingAndIC.load_seeding(sim_id2load, setup=self.s)
+                    initial_conditions = self.modinf.initial_conditions.load(sim_id2load, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.load(
+                        sim_id2load, setup=self.modinf
+                    )
                 else:
-                    initial_conditions = self.s.seedingAndIC.draw_ic(sim_id2write, setup=self.s)
-                    seeding_data, seeding_amounts = self.s.seedingAndIC.draw_seeding(sim_id2write, setup=self.s)
-                self.debug_seeding_date = seeding_data
+                    initial_conditions = self.modinf.initial_conditions.draw(sim_id2write, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.draw(
+                        sim_id2write, setup=self.modinf
+                    )
+                self.debug_seeding_data = seeding_data
                 self.debug_seeding_amounts = seeding_amounts
+                self.debug_initial_conditions = initial_conditions
 
             with Timer("SEIR.compute"):
                 states = seir.steps_SEIR(
-                    self.s,
+                    self.modinf,
                     parsed_parameters,
                     self.transition_array,
                     self.proportion_array,
@@ -264,19 +249,21 @@ class InferenceSimulator:
                 self.debug_states = states
 
             with Timer("SEIR.postprocess"):
-                if self.s.write_csv or self.s.write_parquet:
-                    out_df = seir.postprocess_and_write(sim_id2write, self.s, states, p_draw, npi_seir, seeding_data)
+                if self.modinf.write_csv or self.modinf.write_parquet:
+                    out_df = seir.postprocess_and_write(
+                        sim_id2write, self.modinf, states, p_draw, npi_seir, seeding_data
+                    )
                     self.debug_out_df = out_df
 
             loaded_values = None
             if load_ID:
-                loaded_values = self.s.read_simID(ftype="hpar", sim_id=sim_id2load)
+                loaded_values = self.modinf.read_simID(ftype="hpar", sim_id=sim_id2load)
                 self.debug_loaded_values = loaded_values
 
             # Compute outcomes
             with Timer("onerun_delayframe_outcomes.compute"):
                 outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
-                    s=self.s,
+                    modinf=self.modinf,
                     sim_id2write=sim_id2write,
                     parameters=self.outcomes_parameters,
                     loaded_values=loaded_values,
@@ -288,15 +275,15 @@ class InferenceSimulator:
             with Timer("onerun_delayframe_outcomes.postprocess"):
                 outcomes.postprocess_and_write(
                     sim_id=sim_id2write,
-                    s=self.s,
-                    outcomes=outcomes_df,
+                    modinf=self.modinf,
+                    outcomes_df=outcomes_df,
                     hpar=hpar_df,
                     npi=npi_outcomes,
                 )
         return 0
 
     def plot_transition_graph(self, output_file="transition_graph", source_filters=[], destination_filters=[]):
-        self.s.compartments.plot(
+        self.modinf.compartments.plot(
             output_file=output_file,
             source_filters=source_filters,
             destination_filters=destination_filters,
@@ -304,9 +291,9 @@ class InferenceSimulator:
 
     def get_outcome_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         npi_outcomes = None
-        if self.s.npi_config_outcomes:
-            npi_outcomes = outcomes.build_npi_Outcomes(
-                s=self.s,
+        if self.modinf.npi_config_outcomes:
+            npi_outcomes = outcomes.build_outcome_modifiers(
+                modinf=self.modinf,
                 load_ID=load_ID,
                 sim_id2load=sim_id2load,
                 config=config,
@@ -317,7 +304,7 @@ class InferenceSimulator:
 
     def get_seir_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         npi_seir = seir.build_npi_SEIR(
-            s=self.s,
+            modinf=self.modinf,
             load_ID=load_ID,
             sim_id2load=sim_id2load,
             config=config,
@@ -333,16 +320,18 @@ class InferenceSimulator:
         elif bypass_FN is not None:
             param_df = read_df(fname=bypass_FN)
         elif load_ID == True:
-            param_df = self.s.read_simID(ftype="spar", sim_id=sim_id2load)
+            param_df = self.modinf.read_simID(ftype="spar", sim_id=sim_id2load)
 
         if param_df is not None:
-            p_draw = self.s.parameters.parameters_load(
+            p_draw = self.modinf.parameters.parameters_load(
                 param_df=param_df,
-                n_days=self.s.n_days,
-                nnodes=self.s.nnodes,
+                n_days=self.modinf.n_days,
+                nsubpops=self.modinf.nsubpops,
             )
         else:
-            p_draw = self.s.parameters.parameters_quick_draw(n_days=self.s.n_days, nnodes=self.s.nnodes)
+            p_draw = self.modinf.parameters.parameters_quick_draw(
+                n_days=self.modinf.n_days, nsubpops=self.modinf.nsubpops
+            )
         return p_draw
 
     def get_seir_parametersDF(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
@@ -352,7 +341,7 @@ class InferenceSimulator:
             bypass_DF=bypass_DF,
             bypass_FN=bypass_FN,
         )
-        return self.s.parameters.getParameterDF(p_draw=p_draw)
+        return self.modinf.parameters.getParameterDF(p_draw=p_draw)
 
     def get_seir_parameter_reduced(
         self,
@@ -371,16 +360,16 @@ class InferenceSimulator:
                 bypass_FN=bypass_FN,
             )
 
-        parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+        parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
         full_df = pd.DataFrame()
-        for i, geoid in enumerate(self.s.spatset.nodenames):
+        for i, subpop in enumerate(self.modinf.subpop_struct.subpop_names):
             a = pd.DataFrame(
                 parameters[:, :, i].T,
-                columns=self.s.parameters.pnames,
-                index=pd.date_range(self.s.ti, self.s.tf, freq="D"),
+                columns=self.modinf.parameters.pnames,
+                index=pd.date_range(self.modinf.ti, self.modinf.tf, freq="D"),
             )
-            a["geoid"] = geoid
+            a["subpop"] = subpop
             full_df = pd.concat([full_df, a])
 
         # for R, duplicate names are not allowed in index:
@@ -389,53 +378,56 @@ class InferenceSimulator:
 
         return full_df
 
-    # TODO these function should support bypass    
-    def get_parsed_parameters_seir(self, load_ID=False,
+    # TODO these function should support bypass
+    def get_parsed_parameters_seir(
+        self,
+        load_ID=False,
         sim_id2load=None,
-        #bypass_DF=None,
-        #bypass_FN=None,
+        # bypass_DF=None,
+        # bypass_FN=None,
     ):
         if not self.already_built:
             self.build_structure()
-            
-        npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+
+        npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
-        parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+        parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
-        parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
-                )
+        parsed_parameters = self.modinf.compartments.parse_parameters(
+            parameters, self.modinf.parameters.pnames, self.unique_strings
+        )
         return parsed_parameters
-    
-    def get_reduced_parameters_seir(self, load_ID=False,
+
+    def get_reduced_parameters_seir(
+        self,
+        load_ID=False,
         sim_id2load=None,
-        #bypass_DF=None,
-        #bypass_FN=None,
+        # bypass_DF=None,
+        # bypass_FN=None,
     ):
-        npi_seir = seir.build_npi_SEIR(s=self.s, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
-        parameters = self.s.parameters.parameters_reduce(p_draw, npi_seir)
+        parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
 
-        parsed_parameters = self.s.compartments.parse_parameters(
-                    parameters, self.s.parameters.pnames, self.unique_strings
-                )
+        parsed_parameters = self.modinf.compartments.parse_parameters(
+            parameters, self.modinf.parameters.pnames, self.unique_strings
+        )
         return parsed_parameters
-        
 
 
 def paramred_parallel(run_spec, snpi_fn):
     config_filepath = run_spec["config"]
-    gempyor_simulator = InferenceSimulator(
+    gempyor_simulator = GempyorSimulator(
         config_path=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
-        npi_scenario="inference",  # NPIs scenario to use
-        outcome_scenario="med",  # Outcome scenario to use
+        seir_modifiers_scenario="inference",  # NPIs scenario to use
+        outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in spatial_setup$
+        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     snpi = pq.read_table(snpi_fn).to_pandas()
@@ -453,15 +445,15 @@ def paramred_parallel(run_spec, snpi_fn):
 
 def paramred_parallel_config(run_spec, dummy):
     config_filepath = run_spec["config"]
-    gempyor_simulator = InferenceSimulator(
+    gempyor_simulator = GempyorSimulator(
         config_path=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
-        npi_scenario="inference",  # NPIs scenario to use
-        outcome_scenario="med",  # Outcome scenario to use
+        seir_modifiers_scenario="inference",  # NPIs scenario to use
+        outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in spatial_setup$
+        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     npi_seir = gempyor_simulator.get_seir_npi()

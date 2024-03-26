@@ -50,11 +50,11 @@ b.drop(["10001", "20002"], axis=1, inplace=True)
 
 b = b[(b["date"] >= "2020-04-01") & (b["date"] <= "2020-05-15")]
 
-geoid = ["15005", "15007", "15009", "15001", "15003"]
+subpop = ["15005", "15007", "15009", "15001", "15003"]
 diffI = np.arange(5) * 2
 date_data = datetime.date(2020, 4, 15)
 for i in range(5):
-    b.loc[(b["mc_value_type"] == "incidence") & (b["date"] == str(date_data)), geoid[i]] = diffI[i]
+    b.loc[(b["mc_value_type"] == "incidence") & (b["date"] == str(date_data)), subpop[i]] = diffI[i]
 
 pa_df = pa.Table.from_pandas(b, preserve_index=False)
 pa.parquet.write_table(pa_df, "new_test_no_vacc.parquet")
@@ -75,7 +75,7 @@ for i in range(5):
         (b["mc_value_type"] == "incidence")
         & (b["date"] == str(date_data))
         & (b["mc_vaccination_stage"] == "first_dose"),
-        geoid[i],
+        subpop[i],
     ] = (
         diffI[i] * 3
     )
