@@ -7,7 +7,7 @@
 
 set -x
 
-cd $DATA_PATH
+cd $PROJECT_PATH
 
 FLEPI_SLOT_INDEX=${SLURM_ARRAY_TASK_ID}
 
