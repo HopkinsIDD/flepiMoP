@@ -43,7 +43,7 @@ class TestIC:
         sic = seeding_ic.InitialConditionsFactory(config=s.initial_conditions_config)
         assert sic.initial_conditions_config == s.initial_conditions_config
 
-        initial_conditions = sic.draw(sim_id=100, setup=s)
+        initial_conditions = sic.get_from_config(sim_id=100, setup=s)
         print(initial_conditions)
 
     def test_IC_IC_notImplemented_fail(self):
@@ -63,4 +63,4 @@ class TestIC:
             s.initial_conditions_config["method"] = "unknown"
             sic = seeding_ic.InitialConditionsFactory(config=s.initial_conditions_config)
 
-            sic.draw(sim_id=100, setup=s)
+            sic.get_from_config(sim_id=100, setup=s)

@@ -343,10 +343,10 @@ class SimulationComponent:
     def __init__(self, config: confuse.ConfigView):
         raise NotImplementedError("This method should be overridden in subclasses.")
 
-    def load(self, sim_id: int, setup) -> np.ndarray:
+    def get_from_file(self, sim_id: int, setup) -> np.ndarray:
         raise NotImplementedError("This method should be overridden in subclasses.")
 
-    def draw(self, sim_id: int, setup) -> np.ndarray:
+    def get_from_config(self, sim_id: int, setup) -> np.ndarray:
         raise NotImplementedError("This method should be overridden in subclasses.")
 
     def write_to_file(self, sim_id: int, setup):
@@ -357,7 +357,7 @@ class Seeding(SimulationComponent):
     def __init__(self, config: confuse.ConfigView):
         self.seeding_config = config
 
-    def draw(self, sim_id: int, setup) -> nb.typed.Dict:
+    def get_from_config(self, sim_id: int, setup) -> nb.typed.Dict:
         method = "NoSeeding"
         if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
@@ -418,17 +418,15 @@ class Seeding(SimulationComponent):
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
 
-
-    def load(self, sim_id: int, setup) -> nb.typed.Dict:
+    def get_from_file(self, sim_id: int, setup) -> nb.typed.Dict:
         """only difference with draw seeding is that the sim_id is now sim_id2load"""
-        return self.draw(sim_id=sim_id, setup=setup)
-
+        return self.get_from_config(sim_id=sim_id, setup=setup)
 
 class InitialConditions(SimulationComponent):
     def __init__(self, config: confuse.ConfigView):
         self.initial_conditions_config = config
 
-    def draw(self, sim_id: int, setup) -> np.ndarray:
+    def get_from_config(self, sim_id: int, setup) -> np.ndarray:
         method = "Default"
         if self.initial_conditions_config is not None and "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
@@ -608,8 +606,8 @@ class InitialConditions(SimulationComponent):
             )
         return y0
 
-    def load(self, sim_id: int, setup) -> np.ndarray:
-        return self.draw(sim_id=sim_id, setup=setup)
+    def get_from_file(self, sim_id: int, setup) -> np.ndarray:
+        return self.get_from_config(sim_id=sim_id, setup=setup)
     
 # TODO: rename config to initial_conditions_config as it shadows the global config
     
