@@ -39,5 +39,5 @@ class TestSeeding:
         sic = seeding_ic.SeedingFactory(config=s.seeding_config)
         s.seeding_config["method"] = "NoSeeding"
 
-        seeding = sic.draw(sim_id=100, setup=s)
+        seeding = sic.get_from_config(sim_id=100, setup=s)
         print(seeding)
