@@ -222,13 +222,13 @@ class GempyorSimulator:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.modinf.initial_conditions.load(sim_id2load, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.load(
+                    initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(
                         sim_id2load, setup=self.modinf
                     )
                 else:
-                    initial_conditions = self.modinf.initial_conditions.draw(sim_id2write, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.draw(
+                    initial_conditions = self.modinf.initial_conditions.get_from_config(sim_id2write, setup=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
                         sim_id2write, setup=self.modinf
                     )
                 self.debug_seeding_data = seeding_data

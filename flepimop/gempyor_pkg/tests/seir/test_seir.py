@@ -73,8 +73,8 @@ def test_constant_population_legacy_integration():
     )
     integration_method = "legacy"
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -138,8 +138,8 @@ def test_constant_population_rk4jit_integration_fail():
         )
         modinf.seir_config["integration"]["method"] = "rk4.jit"
 
-        seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-        initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+        seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+        initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
         npi = NPI.NPIBase.execute(
             npi_config=modinf.npi_config_seir,
@@ -204,8 +204,8 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -268,8 +268,8 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -354,8 +354,8 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -414,8 +414,8 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     modinf.mobility.data = modinf.mobility.data * 0
 
@@ -660,8 +660,8 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -748,8 +748,8 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.load(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.draw(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,

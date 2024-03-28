@@ -38,7 +38,7 @@ def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
         tqdm.contrib.concurrent.process_map(
             onerun_delayframe_outcomes,
             sim_id2writes,
-            modinf,
+            itertools.repeat(modinf),
             max_workers=n_jobs,
         )
 
@@ -88,7 +88,6 @@ def build_outcome_modifiers(
 
 
 def onerun_delayframe_outcomes(
-    *,
     sim_id2write: int,
     modinf: model_info.ModelInfo,
     load_ID: bool = False,

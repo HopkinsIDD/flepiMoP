@@ -59,6 +59,20 @@ def add_method(cls):
     return decorator
 
 
+def search_and_import_plugins_class(plugin_file_path: str, class_name: str, **kwargs):
+    # Look for all possible plugins and import them
+    # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
+    # unfortunatelly very complicated, this is cpython only ??
+    import sys, os
+    sys.path.append(os.path.dirname(plugin_file_path))
+    # the following works, but these above lines seems necessary to pickle // runs
+
+    from pydoc import importfile
+    module = importfile(plugin_file_path)
+    klass = getattr(module, class_name)
+    return klass(**kwargs)
+
+
 ### Profile configuration
 import cProfile
 import pstats
@@ -223,6 +237,32 @@ def as_random_distribution(self):
             self.as_evaled_expression(),
         )
 
+def list_filenames(folder: str = '.', filters:list = []) -> list:
+    """
+    return the list of all filename and path in the provided folders. 
+    If filters [list] is provided, then only the files that contains each of the 
+    substrings in filter will be returned. Example to get all hosp file:
+    ```
+        gempyor.utils.list_filenames(folder="model_output/", filters=["hosp"])
+    ```
+        and be sure we only get parquet:
+    ```
+        gempyor.utils.list_filenames(folder="model_output/", filters=["hosp" , ".parquet"])
+    ```
+    """
+    from pathlib import Path
+    fn_list = []
+    for f in Path(str(folder)).rglob(f'*'):
+        if f.is_file(): # not a folder
+            f = str(f)
+            if not filters:
+                fn_list.append(f)
+            else:
+                if all(c in f for c in filters):
+                    fn_list.append(str(f))
+                else:
+                    pass
+    return fn_list
 
 def aws_disk_diagnosis():
     import os
