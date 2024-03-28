@@ -1,6 +1,6 @@
 import os
 import pytest
-from gempyor import seeding_ic, model_info
+from gempyor import seeding, model_info, initial_conditions
 from gempyor.utils import config
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
@@ -21,7 +21,7 @@ class TestIC:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.InitialConditionsFactory(config=s.initial_conditions_config)
+        sic = initial_conditions.InitialConditionsFactory(config=s.initial_conditions_config)
         assert sic.initial_conditions_config == s.initial_conditions_config
 
     def test_IC_allow_missing_node_compartments_success(self):
@@ -40,7 +40,7 @@ class TestIC:
 
         s.initial_conditions_config["allow_missing_nodes"] = True
         s.initial_conditions_config["allow_missing_compartments"] = True
-        sic = seeding_ic.InitialConditionsFactory(config=s.initial_conditions_config)
+        sic = initial_conditions.InitialConditionsFactory(config=s.initial_conditions_config)
         assert sic.initial_conditions_config == s.initial_conditions_config
 
         initial_conditions = sic.get_from_config(sim_id=100, setup=s)
@@ -61,6 +61,6 @@ class TestIC:
                 write_csv=False,
             )
             s.initial_conditions_config["method"] = "unknown"
-            sic = seeding_ic.InitialConditionsFactory(config=s.initial_conditions_config)
+            sic = initial_conditions.InitialConditionsFactory(config=s.initial_conditions_config)
 
             sic.get_from_config(sim_id=100, setup=s)
