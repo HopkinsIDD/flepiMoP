@@ -626,19 +626,6 @@ initialize_mcmc_first_block <- function(
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
 
-                if (!file.exists(config$initial_conditions$initial_conditions_file)) {
-                    stop("ERROR: Initial conditions file specified but does not exist.")
-                }
-                if (grepl(".csv", initial_init_file)){
-                    initial_init <- readr::read_csv(initial_init_file)
-                    arrow::write_parquet(initial_init, global_files[["init_filename"]])
-                }else{
-                    err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
-                    if (err != 0) {
-                        stop("Could not copy initial conditions file")
-                    }
-                }
-
             } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
                 print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
                       and no copying to global or chimeric files is being done.")
@@ -647,21 +634,32 @@ initialize_mcmc_first_block <- function(
                     stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
                 }
                 initial_init_file <- global_files[[paste0(config$initial_conditions$initial_file_type, "_filename")]]
-
-                if (!file.exists(initial_init_file)) {
-                    stop("ERROR: Initial conditions file specified but does not exist.")
-                }
-                if (grepl(".csv", initial_init_file)){ 
-                    initial_init <- readr::read_csv(initial_init_file)
-                    arrow::write_parquet(initial_init, global_files[["init_filename"]])
-                }else{
-                    err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
-                    if (err != 0) {
-                        stop("Could not copy initial conditions file")
-                    }
-                }
-
             }
+
+
+            if (!file.exists(initial_init_file)) {
+                stop("ERROR: Initial conditions file specified but does not exist.")
+            }
+            if (grepl(".csv", initial_init_file)){
+                initial_init <- readr::read_csv(initial_init_file)
+            }else{
+                initial_init <- arrow::read_parquet(initial_init_file)
+            }
+
+            initial_init <- initial_init %>%
+                dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+                dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+
+            # err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
+            # if (err != 0) {
+            #     stop("Could not copy initial conditions file")
+            # }
+
+            if (nrow(initial_init) == 0) {
+                stop("ERROR: Initial conditions file specified but does not contain the start date.")
+            }
+
+            arrow::write_parquet(initial_init, global_files[["init_filename"]])
         }
     }
 
