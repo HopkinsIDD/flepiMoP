@@ -1,6 +1,7 @@
 import itertools
 import time, random
 from numba import jit
+import xarray as xr
 import numpy as np
 import pandas as pd
 import tqdm.contrib.concurrent
@@ -8,6 +9,7 @@ from .utils import config, Timer, read_df
 import pyarrow as pa
 import pandas as pd
 from . import NPI, model_info
+
 
 import logging
 
@@ -294,7 +296,7 @@ def read_seir_sim(modinf, sim_id):
     return seir_df
 
 
-def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None, bypass_seir=None):
+def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None, bypass_seir_df:pd.DataFrame=None, bypass_seir_xr: xr.Dataset=None):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
@@ -306,10 +308,12 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
         dates,
         "zeros",
     ).drop("zeros", axis=1)
-    if bypass_seir is None:
+    if bypass_seir_df is None and bypass_seir_xr is None:
         seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
+    elif bypass_seir_xr is not None:
+        seir_sim = bypass_seir_xr
     else:
-        seir_sim = bypass_seir
+        seir_sim = bypass_seir_df
 
     for new_comp in parameters:
         if "source" in parameters[new_comp]:
@@ -318,7 +322,12 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             # 2. compute duration if needed
             source_name = parameters[new_comp]["source"]
             if isinstance(source_name, dict):
-                source_array = get_filtered_incidI(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
+                if isinstance(seir_sim, pd.DataFrame):
+                    source_array = filter_seir_df(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
+                elif isinstance(seir_sim, xr.Dataset):
+                    source_array = filter_seir_xr(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
+                else:
+                    raise ValueError(f"Unknown type for seir simulation provided, got f{type(seir_sim)}")
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 if source_name in all_data:
@@ -478,7 +487,7 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
     return outcomes, hpar
 
 
-def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
+def filter_seir_df(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:
@@ -490,7 +499,7 @@ def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
     # diffI.drop(["mc_value_type"], inplace=True, axis=1)
     filters = filters[vtype]
 
-    incidI_arr = np.zeros((len(dates), len(subpops)), dtype=int)
+    incidI_arr = np.zeros((len(dates), len(subpops)))
     df = diffI
     for mc_type, mc_value in filters.items():
         if isinstance(mc_value, str):
@@ -503,6 +512,33 @@ def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
         incidI_arr = incidI_arr + new_df.to_numpy()
     return incidI_arr
 
+
+def filter_seir_xr(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
+    # Determine the variable type (prevalence or incidence)
+    if list(filters.keys()) == ["incidence"]:
+        vtype = "incidence"
+    elif list(filters.keys()) == ["prevalence"]:
+        vtype = "prevalence"
+    else:
+        raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
+    # Filter the data
+    filters = filters[vtype]
+
+    # Initialize the array to store filtered incidence values
+# Initialize the array to store filtered incidence values
+    incidI_arr = np.zeros((len(dates), len(subpops)))
+
+    diffI_filtered = diffI
+    for mc_type, mc_value in filters.items():
+        # Check if mc_value is a string or list of strings
+        if isinstance(mc_value, str):
+            mc_value = [mc_value]
+        # Filter data along the specified mc_type dimension
+        diffI_filtered = diffI_filtered.where(diffI_filtered[f"mc_{mc_type}"].isin(mc_value), drop=True)
+    # Sum along the compartment dimension
+    incidI_arr += diffI_filtered[vtype].sum(dim='compartment')
+
+    return incidI_arr.to_numpy()
 
 @jit(nopython=True)
 def shift(arr, num, fill_value=0):
