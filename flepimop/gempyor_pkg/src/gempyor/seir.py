@@ -300,7 +300,8 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.postprocess"):
         if modinf.write_csv or modinf.write_parquet:
-            out_df = postprocess_and_write(sim_id2write, modinf, states, p_draw, npi, seeding_data)
+            write_spar_snpi(sim_id2write, modinf, p_draw, npi)
+            out_df = write_seir(sim_id2write, modinf, states)
     return out_df
 
 
@@ -378,15 +379,15 @@ def states2Df(modinf, states):
 
     return out_df
 
-
-def postprocess_and_write(sim_id, modinf, states, p_draw, npi, seeding):
-    # aws_disk_diagnosis()
-
+def write_spar_snpi(sim_id, modinf, p_draw, npi):
     # NPIs
     if npi is not None:
         modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
     # Parameters
     modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
+
+def write_seir(sim_id, modinf, states):
+    # aws_disk_diagnosis()
     out_df = states2Df(modinf, states)
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
 
