@@ -149,8 +149,8 @@ class GempyorSimulator:
 
     def write_last_seir(self, sim_id2write=None):
         if sim_id2write is None:
-            sim_id2write = self.debug_sim_id2write
-        out_df = seir.write_seir(sim_id2write, self.modinf, self.debug_states)
+            sim_id2write = self.lastsim_sim_id2write
+        out_df = seir.write_seir(sim_id2write, self.modinf, self.lastsim_states)
         return out_df
 
 
@@ -163,12 +163,12 @@ class GempyorSimulator:
         parallel=False,
     ):
         sim_id2write = int(sim_id2write)
-        self.debug_sim_id2write = sim_id2write
-        self.debug_loadID = load_ID
-        self.debug_sim_id2load = sim_id2load
+        self.lastsim_sim_id2write = sim_id2write
+        self.lastsim_loadID = load_ID
+        self.lastsim_sim_id2load = sim_id2load
         if load_ID:
             sim_id2load = int(sim_id2load)
-            self.debug_sim_id2load = sim_id2load
+            self.lastsim_sim_id2load = sim_id2load
 
 
         with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
@@ -217,8 +217,8 @@ class GempyorSimulator:
                         sim_id2load=sim_id2load,
                         config=config,
                     )
-            self.debug_npi_seir = npi_seir
-            self.debug_npi_outcomes = npi_outcomes
+            self.lastsim_npi_seir = npi_seir
+            self.lastsim_npi_outcomes = npi_outcomes
             ### Run every time:
             with Timer("SEIR.parameters"):
                 # Draw or load parameters
@@ -230,9 +230,9 @@ class GempyorSimulator:
                 parsed_parameters = self.modinf.compartments.parse_parameters(
                     parameters, self.modinf.parameters.pnames, self.unique_strings
                 )
-                self.debug_p_draw = p_draw
-                self.debug_parameters = parameters
-                self.debug_parsed_parameters = parsed_parameters
+                self.lastsim_p_draw = p_draw
+                self.lastsim_parameters = parameters
+                self.lastsim_parsed_parameters = parsed_parameters
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
@@ -245,9 +245,9 @@ class GempyorSimulator:
                     seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
                         sim_id2write, setup=self.modinf
                     )
-                self.debug_seeding_data = seeding_data
-                self.debug_seeding_amounts = seeding_amounts
-                self.debug_initial_conditions = initial_conditions
+                self.lastsim_seeding_data = seeding_data
+                self.lastsim_seeding_amounts = seeding_amounts
+                self.lastsim_initial_conditions = initial_conditions
 
             with Timer("SEIR.compute"):
                 states = seir.steps_SEIR(
@@ -260,19 +260,19 @@ class GempyorSimulator:
                     seeding_data,
                     seeding_amounts,
                 )
-                self.debug_states = states
+                self.lastsim_states = states
 
             with Timer("SEIR.postprocess"):
                 if self.modinf.write_csv or self.modinf.write_parquet:
                     seir.write_spar_snpi(sim_id2write, self.modinf, p_draw, npi_seir)
                     if self.autowrite_seir:
                         out_df = seir.write_seir(sim_id2write, self.modinf, states)
-                        self.debug_out_df = out_df
+                        self.lastsim_out_df = out_df
 
             loaded_values = None
             if load_ID:
                 loaded_values = self.modinf.read_simID(ftype="hpar", sim_id=sim_id2load)
-                self.debug_loaded_values = loaded_values
+                self.lastsim_loaded_values = loaded_values
 
             # Compute outcomes
             with Timer("onerun_delayframe_outcomes.compute"):
@@ -283,8 +283,8 @@ class GempyorSimulator:
                     loaded_values=loaded_values,
                     npi=npi_outcomes,
                 )
-                self.debug_outcomes_df = outcomes_df
-                self.debug_hpar_df = hpar_df
+                self.lastsim_outcomes_df = outcomes_df
+                self.lastsim_hpar_df = hpar_df
 
             with Timer("onerun_delayframe_outcomes.postprocess"):
                 outcomes.postprocess_and_write(
