@@ -112,8 +112,8 @@ def test_constant_population_legacy_integration():
     for it in range(modinf.n_days):
         totalpop = 0
         for i in range(modinf.nsubpops):
-            totalpop += states[0].sum(axis=1)[it, i]
-            assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+            totalpop += states["prevalence"].sum(axis=1)[it, i]
+            assert states["prevalence"].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states["prevalence"].sum(axis=1)[it, i] + 1e-3
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -177,8 +177,8 @@ def test_constant_population_rk4jit_integration_fail():
         for it in range(modinf.n_days):
             totalpop = 0
             for i in range(modinf.nsubpops):
-                totalpop += states[0].sum(axis=1)[it, i]
-                assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+                totalpop += states["prevalence"].sum(axis=1)[it, i]
+                assert states["prevalence"].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states["prevalence"].sum(axis=1)[it, i] + 1e-3
             assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -241,8 +241,8 @@ def test_constant_population_rk4jit_integration():
     for it in range(modinf.n_days):
         totalpop = 0
         for i in range(modinf.nsubpops):
-            totalpop += states[0].sum(axis=1)[it, i]
-            assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+            totalpop += states["prevalence"].sum(axis=1)[it, i]
+            assert states["prevalence"].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states["prevalence"].sum(axis=1)[it, i] + 1e-3
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
