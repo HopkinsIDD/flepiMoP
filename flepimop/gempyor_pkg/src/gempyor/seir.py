@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
+import xarray as xr
 
 from . import NPI, model_info, steps_rk4
 from .utils import Timer, aws_disk_diagnosis, read_df
@@ -181,8 +182,30 @@ def steps_SEIR(
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
             raise ValueError(f"Unknow integration scheme, got {integration_method}")
-    return seir_sim
 
+    # We return an xarray instead of a ndarray now
+    compartment_coords = {}
+    compartment_df = modinf.compartments.get_compartments_explicitDF()
+    # Iterate over columns of the DataFrame and populate the dictionary
+    for column in compartment_df.columns:
+        compartment_coords[column] = ("compartment", compartment_df[column].tolist())
+
+    # comparment is a dimension with coordinate from each of the compartments
+    states = xr.Dataset(
+        data_vars=dict(
+            prevalence=(["date", "compartment", "subpop"], seir_sim[0]),
+            incidence=(["date", "compartment", "subpop"], seir_sim[1]),
+        ),
+        coords=dict(
+            date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
+            **compartment_coords,
+            subpop=modinf.subpop_struct.subpop_names
+        ),
+        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id) # TODO add more information
+    )    
+
+    
+    return states
 
 def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
     with Timer("SEIR.NPI"):
@@ -306,11 +329,7 @@ def states2Df(modinf, states):
     # Tidyup data for  R, to save it:
     #
     # Write output to .snpi.*, .spar.*, and .seir.* files
-
-    (
-        states_prev,
-        states_incid,
-    ) = states  # both are [ndays x ncompartments x nspatial_nodes ]
+    # states is  # both are [ndays x ncompartments x nspatial_nodes ] -> this is important here
 
     # add line of zero to diff, so we get the real cumulative.
     # states_diff = np.zeros((states_cumu.shape[0] + 1, *states_cumu.shape[1:]))
@@ -323,7 +342,7 @@ def states2Df(modinf, states):
     )
     # prevalence data, we use multi.index dataframe, sparring us the array manipulation we use to do
     prev_df = pd.DataFrame(
-        data=states_prev.reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
+        data=states["prevalence"].to_numpy().reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
         columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
@@ -341,7 +360,7 @@ def states2Df(modinf, states):
     )
 
     incid_df = pd.DataFrame(
-        data=states_incid.reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
+        data=states["incidence"].to_numpy().reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
         columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
