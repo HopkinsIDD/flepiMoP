@@ -3,65 +3,36 @@ import pandas as pd
 import numpy as np
 import confuse
 
-
-class InferenceParameter:
-    def __init__(self, ptype, pname, subpop, pdist, lb, ub):
-        self.ptype = ptype
-        self.pname = pname
-        self.subpop = subpop
-        self.pdist = pdist
-        self.lb = lb
-        self.ub = ub
-    # TODO: does not support the subpop groups here !!!!!!!
-    def print_summary(self):
-        print(f"{self.ptype}::{self.pname} in [{self.lb}, {self.ub}]"
-              f"   >> affected subpop: {self.subpop}"
-        )
-
 class InferenceParameters:
     def __init__(self):
         self.params = []
 
-    def add_param(self, ptype, pname, subpop, pdist, lb, ub):
-        param = InferenceParameter(ptype, pname, subpop, pdist, lb, ub)
-        self.params.append(param)
-
-
-    def 
-
-
+    def add_modifier(self, pname, ptype, parameter_config):
+        for sp in modinf.subpop_struct.subpop_names:
+            param = {
+                "ptype": ptype,
+                "pname": pname,
+                "subpop": sp,
+                "pdist": parameter_config["value"].as_random_distribution(),
+                "lb": ["value"]["a"].get(),
+                "ub": parameter_config["value"]["b"].get()
+            }
+            self.params.append(param)
+            # TODO: does not support the subpop groups here !!!!!!!
 
     def build_from_config(self, global_config, modinf):
-        for npi in global_config["seir_modifiers"]["modifiers"].get():
-            if global_config["seir_modifiers"]["modifiers"][npi]["perturbation"].exists():
-                c = global_config["seir_modifiers"]["modifiers"][npi]
-                for sp in modinf.subpop_struct.subpop_names:
-                    self.add_param(
-                        ptype="snpi",
-                        pname=npi,
-                        subpop=sp,
-                        pdist=c["value"].as_random_distribution(),
-                        lb=c["value"]["a"].get(),
-                        ub=c["value"]["b"].get()
-                    )
-
-        for npi in global_config["outcome_modifiers"]["modifiers"].get():
-            if global_config["outcome_modifiers"]["modifiers"][npi]["perturbation"].exists():
-                c = global_config["outcome_modifiers"]["modifiers"][npi]
-                for sp in modinf.subpop_struct.subpop_names:
-                    self.add_param(
-                        ptype="hnpi",
-                        pname=npi,
-                        subpop=sp,
-                        pdist=c["value"].as_random_distribution(),
-                        lb=c["value"]["a"].get(),
-                        ub=c["value"]["b"].get()
-                    )
+        for config_part in ["seir_modifiers", "outcome_modifiers"]:
+            if  global_config[config_part].exists():
+                for npi in global_config[config_part]["modifiers"].get():
+                    if global_config[config_part]["modifiers"][npi]["perturbation"].exists():
+                        self.add_modifier(pname=npi, ptype=config_part, parameter_config=global_config[config_part]["modifiers"][npi])
 
     def print_summary(self):
         print(f"There are {len(self.params)} parameters in the configuration.")
         for param in self.params:
-            param.print_summary()
+            print(f"{param['ptype']}::{param['pname']} in [{param['lb']}, {param['ub']}]"
+                f"   >> affected subpop: {param['subpop']}"
+            )
 
 # Create an instance of FittedParams and build it from the config
 fitted_params = InferenceParameters()
