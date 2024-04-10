@@ -147,8 +147,10 @@ class GempyorSimulator:
         ) = self.modinf.compartments.get_transition_array()
         self.already_built = True
 
-    def write_last_seir(self):
-        out_df = seir.write_seir(self.debug_sim_id2write, self.modinf, self.debug_states)
+    def write_last_seir(self, sim_id2write=None):
+        if sim_id2write is None:
+            sim_id2write = self.debug_sim_id2write
+        out_df = seir.write_seir(sim_id2write, self.modinf, self.debug_states)
         return out_df
 
 
