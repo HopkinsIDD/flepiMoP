@@ -53,6 +53,7 @@ class GempyorSimulator:
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
+        autowrite_seir = False
     ):
         self.seir_modifiers_scenario = seir_modifiers_scenario
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
@@ -98,6 +99,7 @@ class GempyorSimulator:
         )
 
         self.already_built = False  # whether we have already built the costly objects that need just one build
+        self.autowrite_seir = autowrite_seir
 
     def update_prefix(self, new_prefix, new_out_prefix=None):
         self.modinf.in_prefix = new_prefix
@@ -145,6 +147,11 @@ class GempyorSimulator:
         ) = self.modinf.compartments.get_transition_array()
         self.already_built = True
 
+    def write_last_seir(self):
+        out_df = seir.write_seir(self.debug_sim_id2write, self.modinf, self.debug_states)
+        return out_df
+
+
     # @profile()
     def one_simulation(
         self,
@@ -154,8 +161,13 @@ class GempyorSimulator:
         parallel=False,
     ):
         sim_id2write = int(sim_id2write)
+        self.debug_sim_id2write = sim_id2write
+        self.debug_loadID = load_ID
+        self.debug_sim_id2load = sim_id2load
         if load_ID:
             sim_id2load = int(sim_id2load)
+            self.debug_sim_id2load = sim_id2load
+
 
         with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
             if not self.already_built:
@@ -250,10 +262,10 @@ class GempyorSimulator:
 
             with Timer("SEIR.postprocess"):
                 if self.modinf.write_csv or self.modinf.write_parquet:
-                    out_df = seir.postprocess_and_write(
-                        sim_id2write, self.modinf, states, p_draw, npi_seir, seeding_data
-                    )
-                    self.debug_out_df = out_df
+                    seir.write_spar_snpi(sim_id2write, self.modinf, p_draw, npi_seir)
+                    if self.autowrite_seir:
+                        out_df = seir.write_seir(sim_id2write, self.modinf, states)
+                        self.debug_out_df = out_df
 
             loaded_values = None
             if load_ID:
