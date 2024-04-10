@@ -6,7 +6,6 @@ import confuse
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing
 ##
 
-
 class Statistic:
     def __init__(self, name, statistic_config: confuse.ConfigView):
         self.sim_var = statistic_config["sim_var"].as_str()
@@ -75,6 +74,8 @@ class LogLoss:
 
             gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1)
             model_df_s = model_df_s.drop(["subpop", "time"], axis=1).loc[first_date:last_date]
+
+            # TODO: add whole US!! option
 
             for key, stat in self.statistics.items():
                 logloss.loc[dict(statistics=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
