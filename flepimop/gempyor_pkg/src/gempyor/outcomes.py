@@ -254,7 +254,6 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
 
 
 def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
-    outcomes_df["time"] = outcomes_df["date"]
     modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
     modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
 

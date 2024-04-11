@@ -43,7 +43,7 @@ def test_outcome():
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.1.hosp.parquet").to_pandas()
-    hosp.set_index("time", drop=True, inplace=True)
+    hosp.set_index("date", drop=True, inplace=True)
     for i, place in enumerate(subpop):
         for dt in hosp.index:
             if dt.date() == date_data:
@@ -230,7 +230,7 @@ def test_outcomes_npi():
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
-    hosp.set_index("time", drop=True, inplace=True)
+    hosp.set_index("date", drop=True, inplace=True)
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(subpop):
         for dt in hosp.index:
@@ -402,7 +402,7 @@ def test_outcomes_npi_custom_pname():
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False, sim_id2load=1)
 
     hosp = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
-    hosp.set_index("time", drop=True, inplace=True)
+    hosp.set_index("date", drop=True, inplace=True)
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(subpop):
         for dt in hosp.index:
@@ -592,7 +592,7 @@ def test_outcomes_pcomp():
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False)
 
     hosp_f = pq.read_table(f"{config_path_prefix}model_output/hosp/000000001.111.hosp.parquet").to_pandas()
-    hosp_f.set_index("time", drop=True, inplace=True)
+    hosp_f.set_index("date", drop=True, inplace=True)
     # same as config.yaml (doubled, then NPI halve it)
     for k, p_comp in enumerate(["0dose", "1dose"]):
         hosp = hosp_f
