@@ -111,14 +111,15 @@ inference:
       data_var: incidCase
       resample:
         aggregator: sum
-        freq: W-SAT 
-      scale: sqrt
+        freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
+        skipna:
+      scale: sqrt   # Any np.[something] function (sqrt, log, )
       #aggregator: sum
       #period: "1 weeks" # "W-SAT"
       #remove_na: TRUE
       #add_one: TRUE
       likelihood: 
-        dist: pois
+        dist: poisson
     incidHosp:
       name: incidHosp
       aggregator: sum
