@@ -2,6 +2,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import confuse
+import scipy.stats
 
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing
 ##
@@ -28,18 +29,21 @@ class Statistic:
             if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
                 self.resample_skipna = resample_config["skipna"].get()
         
-        self.regularization_config = None
+        self.regularize = False
         if statistic_config["regularize"].exists():
-            self.regularization_config = statistic_config["regularization"].get()
+            raise ValueError("Regularization is not implemented")
+            regularization_config = statistic_config["regularization"].get()
 
         self.scale = False
         if statistic_config["scale"].exists():
             self.scale_func = getattr(np, statistic_config["scale"].get())
     
-        self.loss_function = statistic_config["likelihood"].get()
+        self.dist = statistic_config["likelihood"]["dist"].get()
+        # TODO here get the parameter in a dictionnary
+
 
     def __str__(self) -> str:
-        return f"{self.name}: {self.loss_function} between {self.sim_var} (sim) and {self.data_var} (data)."
+        return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
     
     def __repr__(self) -> str:
         return f"A Statistic(): {self.__str__()}"
@@ -55,19 +59,26 @@ class Statistic:
             return self.scale_func(data)
         else:
             return data
+        
+    def apply_transforms(self, data):
+        return self.apply_scale(self.apply_resampling(data))
 
     def compute_logloss(self, model_data, gt_data):
-        model_data = self.apply_scale(self.apply_resampling(model_data[self.sim_var]))
-        gt_data = self.apply_scale(self.apply_resampling(gt_data[self.data_var]))
+        model_data = self. apply_transforms(model_data[self.sim_var])
+        gt_data = self.apply_transforms(gt_data[self.data_var])
 
-        assert model_data.shape == gt_data.shape, f"{self.name} Statistic error: data and groundtruth do not have the same shape"
-
-        if self.loss_function == "rmse":
-            return -np.sqrt(np.mean((model_data - gt_data) ** 2))
-        elif self.loss_function == "poisson":
-
+        if not model_data.shape == gt_data.shape:
+            raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape")
+        
+        if self.dist == "pois":
+            ll = np.log(scipy.stats.poisson.pmf(round(gt_data), model_data))
+        elif self.dist == "norm":
+            ll = np.log(scipy.stats.norm.pdf(gt_data, loc=model_data, scale=param[0]))
+        elif self.dist == "nbinom":
+            ll = np.log(scipy.stats.nbinom.pmf(gt_data, n=param[0], p=model_data))
         else:
-            raise ValueError("Unsupported loss function")
+            raise ValueError("Invalid distribution specified, got {self.dist}")
+        return ll
 
 
 
