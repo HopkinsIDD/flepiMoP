@@ -36,6 +36,8 @@ handler.setFormatter(formatter)
 # logger.addHandler(handler)
 
 
+
+
 class GempyorSimulator:
     def __init__(
         self,
@@ -429,6 +431,83 @@ class GempyorSimulator:
             parameters, self.modinf.parameters.pnames, self.unique_strings
         )
         return parsed_parameters
+    
+
+
+# TODO: there is way to many of these functions
+def simulation_atomic(snpi_df_in, hnpi_df_in, modinf, p_draw, unique_strings, transition_array, proportion_array, proportion_info, initial_conditions, seeding_data, seeding_amounts,outcomes_parameters, save=False):
+    
+    # We need to reseed because subprocess inherit of the same random generator state.
+    np.random.seed(int.from_bytes(os.urandom(4), byteorder='little'))
+    random_id = np.random.randint(0,1e8)
+
+
+    npi_seir = seir.build_npi_SEIR(
+        modinf=modinf, load_ID=False, sim_id2load=None, config=config, 
+        bypass_DF=snpi_df_in
+    )
+
+    if modinf.npi_config_outcomes:
+        npi_outcomes = outcomes.build_outcome_modifiers(
+                    modinf=modinf,
+                    load_ID=False,
+                    sim_id2load=None,
+                    config=config,
+                    bypass_DF=hnpi_df_in
+                )
+
+    # reduce them
+    parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
+    # Parse them
+    parsed_parameters = modinf.compartments.parse_parameters(
+        parameters, modinf.parameters.pnames, unique_strings
+    )
+
+    # Convert the seeding data dictionnary to a numba dictionnary
+    seeding_data_nbdict = nb.typed.Dict.empty(
+        key_type=nb.types.unicode_type,
+        value_type=nb.types.int64[:])
+
+    for k,v in seeding_data.items():
+        seeding_data_nbdict[k] = np.array(v, dtype=np.int64)
+
+    # Compute the SEIR simulation
+    states = seir.steps_SEIR(
+        modinf,
+        parsed_parameters,
+        transition_array,
+        proportion_array,
+        proportion_info,
+        initial_conditions,
+        seeding_data_nbdict,
+        seeding_amounts,
+    )
+
+    # Compute outcomes
+    outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
+        modinf=modinf,
+        sim_id2write=0,
+        parameters=outcomes_parameters,
+        loaded_values=None,
+        npi=npi_outcomes,
+        bypass_seir_xr=states
+    )
+    outcomes_df, hpar, hnpi = outcomes.postprocess_and_write(
+        sim_id=0,
+        modinf=modinf,
+        outcomes_df=outcomes_df,
+        hpar=hpar_df,
+        npi=npi_outcomes,
+    )
+    outcomes_df["time"] = outcomes_df["date"] #which one should it be ?
+    
+    
+    if save:
+        modinf.write_simID(ftype="hosp", sim_id=random_id, df=outcomes_df)
+    # needs to be after write... because parquet write discard the index.
+    outcomes_df = outcomes_df.set_index("date")
+
+    return outcomes_df
 
 
 def paramred_parallel(run_spec, snpi_fn):
