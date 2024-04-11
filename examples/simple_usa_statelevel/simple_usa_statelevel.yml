@@ -98,3 +98,48 @@ outcomes:
         value: 0.2
       delay:
         value: 14
+
+
+inference:
+  iterations_per_slot: 100
+  do_inference: TRUE
+  gt_data_path: data/generated_gt_data.csv
+  statistics:
+    incidCase:
+      name: incidCase
+      sim_var: incidCase
+      data_var: incidCase
+      resample:
+        aggregator: sum
+        freq: W-SAT 
+      scale: sqrt
+      #aggregator: sum
+      #period: "1 weeks" # "W-SAT"
+      #remove_na: TRUE
+      #add_one: TRUE
+      likelihood: 
+        dist: pois
+    incidHosp:
+      name: incidHosp
+      aggregator: sum
+      period: "1 weeks" # "W-SAT"
+      sim_var: incidHosp
+      data_var: incidHosp
+      remove_na: TRUE
+      add_one: TRUE
+      likelihood: 
+        dist: pois
+    incidDeath:
+      name: incidDeath
+      aggregator: sum
+      period: "1 weeks"
+      sim_var: incidDeath
+      data_var: incidDeath
+      remove_na: TRUE
+      add_one: TRUE
+      likelihood: 
+        dist: pois
+      # likelihood: 
+      #   dist: norm_cov
+      #   param: 0.3
+
