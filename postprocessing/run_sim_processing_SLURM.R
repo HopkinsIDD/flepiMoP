@@ -13,7 +13,7 @@ options(readr.num_columns = 0)
 option_list = list(
   optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"),
   optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",covidcommon::run_id())),
-  optparse::make_option(c("-d", "--data-path"), action="store", dest = "data_path", default=Sys.getenv("DATA_PATH", Sys.getenv("DATA_PATH")), type='character', help="path to data repo"),
+  optparse::make_option(c("-d", "--data-path"), action="store", dest = "data_path", default=Sys.getenv("PROJECT_PATH", Sys.getenv("PROJECT_PATH")), type='character', help="path to data repo"),
   optparse::make_option(c("-r","--run-processing"), action="store", dest = "run_processing", default=Sys.getenv("PROCESS",FALSE), type='logical', help = "Process the run if true"),
   optparse::make_option(c("-P", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-F","--full-fit"), action="store", dest = "full_fit", default=Sys.getenv("FULL_FIT",FALSE), type='logical', help = "Process full fit"),
@@ -37,7 +37,7 @@ if(opt$config == ""){
 if(opt$data_path == ""){
   optparse::print_help(parser)
   stop(paste(
-    "Please specify a data path -d option or DATA_PATH environment variable."
+    "Please specify a data path -d option or PROJECT_PATH environment variable."
   ))
 }
 
@@ -164,7 +164,7 @@ if(tolower(smh_or_fch) == "fch"){
 }
 scenarios <- scenarios[scenario_num]
 
-geodata_file_path = file.path(config$data_path, config$spatial_setup$geodata)
+geodata_file_path = file.path(config$data_path, config$subpop_setup$geodata)
 
 print(disease)
 
@@ -382,7 +382,7 @@ tmp_out <- process_sims(scenario_num = scenario_num,
                         plot_samp = plot_samp,
                         gt_data = gt_data,
                         geodata_file = geodata_file_path,
-                        death_filter = config$outcomes$scenarios,
+                        death_filter = config$outcome_modifiers$scenarios,
                         summarize_peaks = (smh_or_fch == "smh"),
                         save_reps = save_reps)
 
@@ -461,11 +461,11 @@ if (!full_fit & smh_or_fch == "smh" & save_reps){
   
   file_samp <- lapply(file_names, arrow::read_parquet)
   file_samp <- data.table::rbindlist(file_samp) %>% as_tibble() %>%
-    left_join(geodata %>% select(location = USPS, geoid) %>% add_row(location="US", geoid="US")) %>%
+    left_join(geodata %>% select(location = USPS, subpop) %>% add_row(location="US", subpop="US")) %>%
     select(-location) %>%
     mutate(sample = as.integer(sample),
-           location = stringr::str_pad(substr(geoid, 1, 2), width=2, side="right", pad = "0")) %>%
-    select(-geoid) %>%
+           location = stringr::str_pad(substr(subpop, 1, 2), width=2, side="right", pad = "0")) %>%
+    select(-subpop) %>%
     arrange(scenario_id, target_end_date, target, location, age_group)
   
   file_samp_nums <- file_samp %>%

@@ -1,6 +1,7 @@
 name: unit-tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -30,7 +31,7 @@ jobs:
         run: |
           source /var/python/3.10/virtualenv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install flepimop/gempyor_pkg/
+          python -m pip install "flepimop/gempyor_pkg[test]"
         shell: bash
       - name: Install local R packages
         run: Rscript build/local_install.R

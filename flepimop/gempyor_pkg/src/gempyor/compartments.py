@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-
-from .utils import config, Timer
+import click
+from .utils import config, Timer, as_list
 from . import file_paths
 from functools import reduce
 import logging
@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 class Compartments:
     # Minimal object to be easily picklable for // runs
     def __init__(self, seir_config=None, compartments_config=None, compartments_file=None, transitions_file=None):
-
         self.times_set = 0
 
         ## Something like this is needed for check script:
@@ -65,7 +64,6 @@ class Compartments:
         if dimension is None:
             dimension = [None for i in index]
         tmp = [y for y in zip(index, range(len(index)), dimension)]
-
         tmp = zip(index, range(len(index)), dimension)
         tmp = [list_access_element(config_piece[x[1]], x[0], x[2], encapsulate_as_list) for x in tmp]
         return tmp
@@ -250,10 +248,15 @@ class Compartments:
 
         return rc
 
-    def toFile(self, compartments_file, transitions_file):
+    def toFile(
+        self, compartments_file="compartments.parquet", transitions_file="transitions.parquet", write_parquet=True
+    ):
         out_df = self.compartments.copy()
-        pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
-        pa.parquet.write_table(pa_df, compartments_file)
+        if write_parquet:
+            pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
+            pa.parquet.write_table(pa_df, compartments_file)
+        else:
+            out_df.to_csv(compartments_file, index=False)
 
         out_df = self.transitions.copy()
         out_df["source"] = self.format_source(out_df["source"])
@@ -261,9 +264,11 @@ class Compartments:
         out_df["rate"] = self.format_rate(out_df["rate"])
         out_df["proportional_to"] = self.format_proportional_to(out_df["proportional_to"])
         out_df["proportion_exponent"] = self.format_proportion_exponent(out_df["proportion_exponent"])
-        pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
-        pa.parquet.write_table(pa_df, transitions_file)
-
+        if write_parquet:
+            pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
+            pa.parquet.write_table(pa_df, transitions_file)
+        else:
+            out_df.to_csv(transitions_file, index=False)
         return
 
     def fromFile(self, compartments_file, transitions_file):
@@ -280,7 +285,7 @@ class Compartments:
 
         return
 
-    def get_comp_idx(self, comp_dict: dict) -> int:
+    def get_comp_idx(self, comp_dict: dict, error_info: str = "no information") -> int:
         """
         return the index of a compartiment given a filter. The filter has to isolate a compartiment,
         but it ignore columns that don't exist:
@@ -291,7 +296,7 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}"
+                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'."
             )
         return comp_idx[0]
 
@@ -304,7 +309,7 @@ class Compartments:
 
     def get_transition_array(self):
         with Timer("SEIR.compartments"):
-            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int")
+            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int64")
             for cit, colname in enumerate(("source", "destination")):
                 for it, elem in enumerate(self.transitions[colname]):
                     elem = reduce(lambda a, b: a + "_" + b, elem)
@@ -314,7 +319,7 @@ class Compartments:
                             rc = compartment
                     if rc == -1:
                         print(self.compartments)
-                        raise ValueError(f"Could find {colname} defined by {elem} in compartments")
+                        raise ValueError(f"Could not find {colname} defined by {elem} in compartments")
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -322,26 +327,27 @@ class Compartments:
                 for y in x:
                     candidate = reduce(lambda a, b: a + "*" + b, y)
                     candidate = candidate.replace(" ", "")
-                    candidate = candidate.replace("*1", "")
+                    # candidate = candidate.replace("*1", "")
                     if not candidate in unique_strings:
                         unique_strings.append(candidate)
 
             for x in self.transitions["rate"]:
                 candidate = reduce(lambda a, b: a + "*" + b, x)
                 candidate = candidate.replace(" ", "")
-                candidate = candidate.replace("*1", "")
+                # candidate = candidate.replace("*1", "")
                 if not candidate in unique_strings:
                     unique_strings.append(candidate)
 
-            assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
-            assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
+            # parenthesis are now supported
+            # assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
+            # assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
             assert reduce(lambda a, b: a and b, [(x.find("%") == -1) for x in unique_strings])
             assert reduce(lambda a, b: a and b, [(x.find(" ") == -1) for x in unique_strings])
 
             for it, elem in enumerate(self.transitions["rate"]):
                 candidate = reduce(lambda a, b: a + "*" + b, elem)
                 candidate = candidate.replace(" ", "")
-                candidate = candidate.replace("*1", "")
+                # candidate = candidate.replace("*1", "")
                 if not candidate in unique_strings:
                     raise ValueError("Something went wrong")
                 rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
@@ -353,7 +359,7 @@ class Compartments:
                 transition_array[4][it] = current_proportion_start + len(elem)
                 current_proportion_start += len(elem)
 
-            proportion_info = np.zeros((3, transition_array[4].max()), dtype="int")
+            proportion_info = np.zeros((3, transition_array[4].max()), dtype="int64")
             current_proportion_sum_start = 0
             current_proportion_sum_it = 0
             for it, elem in enumerate(self.transitions["proportional_to"]):
@@ -381,7 +387,7 @@ class Compartments:
                 for y in elem:
                     candidate = reduce(lambda a, b: a + "*" + b, y)
                     candidate = candidate.replace(" ", "")
-                    candidate = candidate.replace("*1", "")
+                    # candidate = candidate.replace("*1", "")
                     if not candidate in unique_strings:
                         raise ValueError("Something went wrong")
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
@@ -408,7 +414,7 @@ class Compartments:
                             if self.compartments["name"][compartment] == elem3:
                                 rc = compartment
                         if rc == -1:
-                            raise ValueError(f"Could find proportional_to {elem3} in compartments")
+                            raise ValueError(f"Could not find proportional_to {elem3} in compartments")
 
                         proportion_array[proportion_index] = rc
                         proportion_index += 1
@@ -445,8 +451,55 @@ class Compartments:
         )
 
     def parse_parameters(self, parameters, parameter_names, unique_strings):
-        parsed_parameters = self.parse_parameter_strings_to_numpy_arrays(parameters, parameter_names, unique_strings)
+        # parsed_parameters_old = self.parse_parameter_strings_to_numpy_arrays(parameters, parameter_names, unique_strings)
+        parsed_parameters = self.parse_parameter_strings_to_numpy_arrays_v2(parameters, parameter_names, unique_strings)
+        # for i in range(len(unique_strings)):
+        #    print(unique_strings[i], (parsed_parameters[i]==parsed_parameters_old[i]).all())
         return parsed_parameters
+
+    def parse_parameter_strings_to_numpy_arrays_v2(self, parameters, parameter_names, string_list):
+        # is using eval a better way ???
+        import sympy as sp
+
+        # Validate input lengths
+        if len(parameters) != len(parameter_names):
+            raise ValueError("Number of parameter values does not match the number of parameter names.")
+
+        # Define the symbols used in the formulas
+        symbolic_parameters_namespace = {name: sp.symbols(name) for name in parameter_names}
+
+        symbolic_parameters = [sp.symbols(name) for name in parameter_names]
+
+        parsed_formulas = []
+        for formula in string_list:
+            try:
+                # here it is very important to pass locals so that e.g if the  gamma parameter
+                # is defined, it is not converted into the gamma scipy function
+                f = sp.sympify(formula, locals=symbolic_parameters_namespace)
+                parsed_formulas.append(f)
+            except Exception as e:
+                print(f"Cannot parse formula: '{formula}' from parameters {parameter_names}")
+                raise (e)  # Print the error message for debugging
+
+        # the list order needs to be right.
+        parameter_values = {param: value for param, value in zip(symbolic_parameters, parameters)}
+        parameter_values_list = [parameter_values[param] for param in symbolic_parameters]
+
+        # Create a lambdify function for substitution
+        substitution_function = sp.lambdify(symbolic_parameters, parsed_formulas)
+
+        # Apply the lambdify function with parameter values as a list
+        substituted_formulas = substitution_function(*parameter_values_list)
+        for i in range(len(substituted_formulas)):
+            # sometime it's "1" or "1*1*1*..." which produce an int or float instead of an array
+            # in this case we find the next array and set it to that size,
+            # TODO: instead of searching for the next array, better to just use the parameter shape.
+            if not isinstance(substituted_formulas[i], np.ndarray):
+                for k in range(len(substituted_formulas)):
+                    if isinstance(substituted_formulas[k], np.ndarray):
+                        substituted_formulas[i] = substituted_formulas[i] * np.ones_like(substituted_formulas[k])
+
+        return np.array(substituted_formulas)
 
     def parse_parameter_strings_to_numpy_arrays(
         self,
@@ -462,6 +515,21 @@ class Compartments:
         },
         operators=["^", "*", "/", "+", "-"],
     ):
+        """This is called recursusively for each operator. It parse the string according to the first operators
+        parameters: array with the value of each parameter
+        parameter_names: list of string with all defined parameters under parameters (not unique parameters, really parameters)
+        string"""
+
+        if (
+            not operators
+        ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
+            raise ValueError(
+                f"""Could not parse string {string_list}. 
+    This usually mean that '{string_list[0]}' is a parameter name that is not defined
+    or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-.
+    The defined parameters are {parameter_names}."""
+            )
+
         split_strings = [x.split(operators[0]) for x in string_list]
         rc_size = [len(string_list)]
         for x in parameters.shape[1:]:
@@ -492,6 +560,7 @@ class Compartments:
                 parameter_name_index = [it for it, x in enumerate(parameter_names) if x == string[parameter_index]]
                 tmp_rc[parameter_index] = parameters[parameter_name_index]
             rc[sit] = reduce(operator_reduce_lambdas[operators[0]], tmp_rc)
+
         return rc
 
     def get_compartments_explicitDF(self):
@@ -577,13 +646,47 @@ def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
         return rc
 
 
-def as_list(thing):
-    if type(thing) == list:
-        return thing
-    return [thing]
-
-
 def list_recursive_convert_to_string(thing):
     if type(thing) == list:
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
+
+
+@click.group()
+def compartments():
+    pass
+
+
+# TODO: CLI arguments
+@compartments.command()
+def plot():
+    assert config["compartments"].exists()
+    assert config["seir"].exists()
+    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+
+    # TODO: this should be a command like build compartments.
+    (
+        unique_strings,
+        transition_array,
+        proportion_array,
+        proportion_info,
+    ) = comp.get_transition_array()
+
+    comp.plot(output_file="transition_graph", source_filters=[], destination_filters=[])
+
+    print("wrote file transition_graph")
+
+
+@compartments.command()
+def export():
+    assert config["compartments"].exists()
+    assert config["seir"].exists()
+    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+    (
+        unique_strings,
+        transition_array,
+        proportion_array,
+        proportion_info,
+    ) = comp.get_transition_array()
+    comp.toFile("compartments_file.csv", "transitions_file.csv")
+    print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")

@@ -348,17 +348,6 @@
       "Hash": "ac6cdb8552c61bd36b0e54d07cf2aab7",
       "Requirements": []
     },
-    "cdlTools": {
-      "Package": "cdlTools",
-      "Version": "0.15",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "330978ce333c8b2f29bfa7744cd29e22",
-      "Requirements": [
-        "httr",
-        "raster"
-      ]
-    },
     "cellranger": {
       "Package": "cellranger",
       "Version": "1.1.0",
@@ -432,12 +421,12 @@
       "Hash": "2ba81b120c1655ab696c935ef33ea716",
       "Requirements": []
     },
-    "config.writer": {
-      "Package": "config.writer",
+    "flepiconfig": {
+      "Package": "flepiconfig",
       "Version": "1.0.0",
       "Source": "Local",
       "RemoteType": "local",
-      "RemoteUrl": "~/pkgs/config.writer/",
+      "RemoteUrl": "~/pkgs/flepiconfig/",
       "Hash": "6926b00e7a264696bc5b5ec3147bdd6e",
       "Requirements": [
         "MMWRweek",
@@ -445,7 +434,6 @@
         "magrittr",
         "readr",
         "tidyverse",
-        "tigris",
         "yaml"
       ]
     },
@@ -945,10 +933,7 @@
         "foreach",
         "glue",
         "lubridate",
-        "raster",
-        "reshape2",
         "rlang",
-        "sf",
         "stringdist",
         "stringi",
         "stringr",
@@ -1520,16 +1505,6 @@
       "Hash": "2ebe8c2ec200da649738b0fc35a9b1a1",
       "Requirements": []
     },
-    "plyr": {
-      "Package": "plyr",
-      "Version": "1.8.8",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d744387aef9047b0b48be2933d78e862",
-      "Requirements": [
-        "Rcpp"
-      ]
-    },
     "png": {
       "Package": "png",
       "Version": "0.1-7",
@@ -1769,18 +1744,6 @@
         "withr"
       ]
     },
-    "reshape2": {
-      "Package": "reshape2",
-      "Version": "1.4.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "bb5996d0bd962d214a11140d77589917",
-      "Requirements": [
-        "Rcpp",
-        "plyr",
-        "stringr"
-      ]
-    },
     "reticulate": {
       "Package": "reticulate",
       "Version": "1.25",
@@ -1796,16 +1759,6 @@
         "png",
         "rappdirs",
         "withr"
-      ]
-    },
-    "rgdal": {
-      "Package": "rgdal",
-      "Version": "1.5-32",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "7e8f18c3a55c90a44ea05e0620c05a7e",
-      "Requirements": [
-        "sp"
       ]
     },
     "rlang": {
@@ -2195,25 +2148,6 @@
         "tibble",
         "tidyr",
         "xml2"
-      ]
-    },
-    "tigris": {
-      "Package": "tigris",
-      "Version": "1.6",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d049cc17ef0d4a82f8d2ffb4ba520a76",
-      "Requirements": [
-        "dplyr",
-        "httr",
-        "magrittr",
-        "maptools",
-        "rappdirs",
-        "rgdal",
-        "sf",
-        "sp",
-        "stringr",
-        "uuid"
       ]
     },
     "timechange": {

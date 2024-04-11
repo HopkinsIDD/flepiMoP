@@ -101,7 +101,7 @@ scenario_s3_buckets <- scenario_s3_buckets[scenario_num] # automatically pull fr
 override_pull_from_s3 <- override_pull_from_s3[scenario_num] # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
 
 
-geodata_file_path = file.path(config$data_path, config$spatial_setup$geodata)
+geodata_file_path = file.path(config$data_path, config$subpop_setup$geodata)
 
 
 
@@ -368,7 +368,7 @@ peak_ram_ <- peakRAM::peakRAM({
                                  plot_samp = plot_samp,
                                  gt_data = gt_data,
                                  geodata_file = geodata_file_path,
-                                 death_filter = config$outcomes$scenarios,
+                                 death_filter = config$outcome_modifiers$scenarios,
                                  summarize_peaks = (smh_or_fch == "smh"),
                                  save_reps = save_reps)
         tmp_out <- list(tmp_out, tmp_out_)
@@ -451,11 +451,11 @@ if (!full_fit & smh_or_fch == "smh" & save_reps){
 
     file_samp <- lapply(file_names, arrow::read_parquet)
     file_samp <- data.table::rbindlist(file_samp) %>% as_tibble() %>%
-        left_join(geodata %>% select(location = USPS, geoid) %>% add_row(location="US", geoid="US")) %>%
+        left_join(geodata %>% select(location = USPS, subpop) %>% add_row(location="US", subpop="US")) %>%
         select(-location) %>%
         mutate(sample = as.integer(sample),
-               location = stringr::str_pad(substr(geoid, 1, 2), width=2, side="right", pad = "0")) %>%
-        select(-geoid) %>%
+               location = stringr::str_pad(substr(subpop, 1, 2), width=2, side="right", pad = "0")) %>%
+        select(-subpop) %>%
         arrange(scenario_id, target_end_date, target, location, age_group)
 
     file_samp_nums <- file_samp %>%
