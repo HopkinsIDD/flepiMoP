@@ -588,8 +588,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # run
       if (config$inference$do_inference){
         sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
-          dplyr::filter(time >= min(obs$date),time <= max(obs$date))
-
+          dplyr::filter(date >= min(obs$date),date <= max(obs$date))
         lhs <- unique(sim_hosp[[obs_subpop]])
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]
