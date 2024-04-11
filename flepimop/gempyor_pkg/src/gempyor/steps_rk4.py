@@ -93,7 +93,6 @@ def rk4_integration(
                 # source compartment. That's why there is nothing with n_spatial node here.
                 # but (TODO) we should enforce that ?
                 if first_proportion:
-
                     only_one_proportion = (
                         transitions[transition_proportion_start_col][transition_index] + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
@@ -123,17 +122,17 @@ def rk4_integration(
                             * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
                         )
 
-                        visiting_compartment = mobility_row_indices[
+                        visiting_subpop = mobility_row_indices[
                             mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
                         ]
 
                         rate_change_compartment = proportion_change_compartment * (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_subpop] ** relevant_exponent[visiting_subpop]
                         )
-                        rate_change_compartment /= population[visiting_compartment]
+                        rate_change_compartment /= population[visiting_subpop]
                         rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
                             today
-                        ][visiting_compartment]
+                        ][visiting_subpop]
                         total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
 
             # compute the number of individual transitioning from source to destination from the total rate
@@ -146,6 +145,7 @@ def rk4_integration(
                     number_move = source_number * compound_adjusted_rate  ## to initialize typ
                     for spatial_node in range(nspatial_nodes):
                         number_move[spatial_node] = np.random.binomial(
+                            # number_move[spatial_node] = random.binomial(
                             source_number[spatial_node],
                             compound_adjusted_rate[spatial_node],
                         )
@@ -226,18 +226,18 @@ def rk4_integration(
                 seeding_data["day_start_idx"][min(today + int(np.ceil(dt)), len(seeding_data["day_start_idx"]) - 1)],
             ):
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
-                seeding_places = seeding_data["seeding_places"][seeding_instance_idx]
+                seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
                 seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
-                states_next[seeding_sources][seeding_places] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_places] = states_next[seeding_sources][seeding_places] * (
-                    states_next[seeding_sources][seeding_places] > 0
+                states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
+                    states_next[seeding_sources][seeding_subpops] > 0
                 )
-                states_next[seeding_destinations][seeding_places] += this_seeding_amounts
+                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
 
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_places] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
 
         x_ = np.zeros((2, ncompartments, nspatial_nodes))
         x_[0] = states_next
@@ -317,6 +317,6 @@ def rk4_integration(
         print(
             "load the name space with: \nwith open('integration_dump.pkl','rb') as fn_dump:\n    states, states_daily_incid, ncompartments, nspatial_nodes, ndays, parameters, dt, transitions, proportion_info,  transition_sum_compartments, initial_conditions, seeding_data, seeding_amounts, mobility_data, mobility_row_indices, mobility_data_indices, population,  stochastic_p,  method = pickle.load(fn_dump)"
         )
-        print("/!\ Invalid integration, will cause problems for downstream users /!\ ")
+        print("/!\\ Invalid integration, will cause problems for downstream users /!\\ ")
         # raise ValueError("Invalid Integration...")
     return states, states_daily_incid

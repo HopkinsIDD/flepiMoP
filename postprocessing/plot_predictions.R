@@ -23,11 +23,12 @@ proj_data <- data_comb
 
 
 # STATE DATA --------------------------------------------------------------
+utils::data(fips_us_county, package = "flepicommon")
 
 # State Data #
-state_cw <- cdlTools::census2010FIPS %>%
-  distinct(State, State.ANSI) %>%
-  dplyr::rename(USPS = State, location = State.ANSI) %>%
+state_cw <- fips_us_county %>% 
+  dplyr::distinct(state, state_code) %>%
+  dplyr::select(USPS = state, location = state_code) %>%
   dplyr::mutate(location = str_pad(location, 2, side = "left", pad = "0")) %>%
   distinct(location, USPS) %>%
   dplyr::mutate(location = as.character(location), USPS = as.character(USPS)) %>%
@@ -55,7 +56,8 @@ gt_data_2 <- gt_data_2 %>% mutate(cumH = 0) # incidH is only cumulative from sta
 gt_cl <- NULL
 if (any(outcomes_time_=="weekly")) {
   # Incident
-  gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, geoid, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
+  gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
+  # gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
                                       outcomes = outcomes_gt_[outcomes_time_gt_=="weekly"]) 
   
   # Cumulative
@@ -81,7 +83,7 @@ if (any(outcomes_time_=="weekly")) {
 }
 if (any(outcomes_time_=="daily")) {
   # Incident
-  gt_data_st_day <- get_daily_incid(gt_data %>% dplyr::select(time, geoid, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="daily"])) %>% mutate(sim_num = 0),
+  gt_data_st_day <- get_daily_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="daily"])) %>% mutate(sim_num = 0),
                                     outcomes = outcomes_gt_[outcomes_time_gt_=="daily"]) 
   
   # Cumulative
@@ -158,7 +160,8 @@ forecast_st_plt <- forecast_st %>%
   mutate(target_type = paste0(incid_cum, outcome))
 
 pltdat_truth <- dat_st_cl2 %>% 
-  filter(aggr_target) %>% rename(gt = value) %>%
+  # filter(aggr_target) %>% 
+  rename(gt = value) %>%
   mutate(target = gsub("incid", "inc", target)) %>%
   rename(target_type = target) %>%
   filter(USPS %in% unique(forecast_st_plt$USPS)) %>%

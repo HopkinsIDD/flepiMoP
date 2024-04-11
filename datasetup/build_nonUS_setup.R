@@ -8,12 +8,10 @@
 #
 # ```yaml
 # data_path: <path to directory>
-# spatial_setup:
+# subpop_setup:
 #   modeled_states: <list of country ISO3 codes> e.g. ZMB, BGD, CAN
 #   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
 #   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
-#   popnodes: <string> optional; default is 'pop'
-#
 #
 # ## Input Data
 #
@@ -21,8 +19,8 @@
 #
 # ## Output Data
 #
-# * {data_path}/{spatial_setup::mobility}
-# * {data_path}/{spatial_setup::geodata}
+# * {data_path}/{subpop_setup::mobility}
+# * {data_path}/{subpop_setup::geodata}
 #
 
 ## @cond
@@ -44,7 +42,7 @@ if (length(config) == 0) {
 }
 
 outdir <- config$data_path
-filterADMIN0 <- config$spatial_setup$modeled_states
+filterADMIN0 <- config$subpop_setup$modeled_states
 
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
@@ -107,7 +105,7 @@ if(opt$w){
 }
 
 # Save population geodata
-names(census_data) <- c("geoid","admin2","admin0","pop")
+names(census_data) <- c("subpop","admin2","admin0","pop")
 write.csv(file = file.path(outdir,'geodata.csv'), census_data,row.names=FALSE)
 
 print("Census Data Check (up to 6 rows)")

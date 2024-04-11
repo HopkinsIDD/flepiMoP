@@ -5,15 +5,11 @@ end_date: 2020-05-15
 data_path: data
 nslots: 1
 
-spatial_setup:
+subpop_setup:
   base_path: data
   geodata: geodata.csv
   mobility: mobility.csv
-  popnodes: population
-  nodenames: geoid
-  census_year: 2018
-  modeled_states:
-    - HI
+
 
 seeding:
   seeding_file_type: seed
@@ -46,12 +42,12 @@ seir:
         low: 2
         high: 3
     transition_rate0:
-      intervention_overlap_operation: "sum"
+      stacked_modifier_method: "sum"
       value:
         distribution: fixed
         value: 0
     transition_rate1:
-      intervention_overlap_operation: "sum"
+      stacked_modifier_method: "sum"
       value:
         distribution: fixed
         value: 0
@@ -63,7 +59,7 @@ seir:
           ["S", ["unvaccinated", "first_dose", "second_dose"]],
           [[["I1", "I2", "I3"]], ["unvaccinated", "first_dose", "second_dose"]],
       ]
-      proportion_exponent: [["1", "1"], ["alpha", "1"]] 
+      proportion_exponent: [["1", "1"], ["1", "1"]] 
     - source: [["E"], ["unvaccinated", "first_dose", "second_dose"]]
       destination: [["I1"], ["unvaccinated", "first_dose", "second_dose"]]
       rate: ["sigma", 1]
@@ -95,28 +91,28 @@ seir:
       proportional_to: [[["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]]
       proportion_exponent: [["1", "1"]]
   
-interventions:
+seir_modifiers:
   scenarios:
     - Scenario1
     - Scenario2
-  settings:
+  modifiers:
     None:
-      template: ReduceR0
+      method: SinglePeriodModifierR0
       value:
         distribution: fixed
         value: 0
     Place1:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: r0
       value:
         distribution: uniform
         low: .14
         high: .33
     Place2:
-      template: MultiTimeReduce
+      method: MultiPeriodModifier
       parameter: r0
       groups:
-        - affected_geoids: "all"
+        - subpop: "all"
           periods:
           - start_date: "2020-04-01"
             end_date: "2020-04-15"
@@ -127,7 +123,7 @@ interventions:
         low: .14
         high: .33
     Dose1:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "transition_rate0"
       period_start_date: 2020-04-10
       period_end_date: 2020-04-10
@@ -135,7 +131,7 @@ interventions:
         distribution: fixed
         value: 0.9
     Dose2:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "transition_rate1"
       period_start_date: 2020-04-11
       period_end_date: 2020-04-11
@@ -143,18 +139,18 @@ interventions:
         distribution: fixed
         value: 0.9
     vaccination:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Dose1
         - Dose2
     Scenario_vacc:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Place1
         - Place2
         - vaccination
     Scenario_novacc:
-      template: Stacked
-      scenarios:
+      method: StackedModifier
+      modifiers:
         - Place1
         - Place2
