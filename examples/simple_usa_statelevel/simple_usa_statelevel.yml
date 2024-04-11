@@ -119,7 +119,7 @@ inference:
       #remove_na: TRUE
       #add_one: TRUE
       likelihood: 
-        dist: poisson
+        dist: pois
     incidHosp:
       name: incidHosp
       sim_var: incidHosp
