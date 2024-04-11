@@ -117,7 +117,7 @@ class LogLoss:
             last_date = min(gt_s.index.max(), model_df_s.index.max())
 
             gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1)
-            model_df_s = model_df_s.drop(["subpop", "time"], axis=1).loc[first_date:last_date]
+            model_df_s = model_df_s.drop(["subpop"], axis=1).loc[first_date:last_date]
 
             # TODO: add whole US!! option
 
