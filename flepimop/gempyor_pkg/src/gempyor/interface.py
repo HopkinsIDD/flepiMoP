@@ -36,8 +36,6 @@ handler.setFormatter(formatter)
 # logger.addHandler(handler)
 
 
-
-
 class GempyorSimulator:
     def __init__(
         self,
