@@ -497,13 +497,11 @@ def simulation_atomic(snpi_df_in, hnpi_df_in, modinf, p_draw, unique_strings, tr
         hpar=hpar_df,
         npi=npi_outcomes,
     )
-    outcomes_df["time"] = outcomes_df["date"] #which one should it be ?
-    
     
     if save:
         modinf.write_simID(ftype="hosp", sim_id=random_id, df=outcomes_df)
     # needs to be after write... because parquet write discard the index.
-    outcomes_df = outcomes_df.set_index("date")
+    outcomes_df = outcomes_df.set_index("date") # after writing
 
     return outcomes_df
 
