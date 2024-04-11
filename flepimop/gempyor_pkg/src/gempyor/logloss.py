@@ -16,7 +16,7 @@ class Statistic:
         if statistic_config["resample"].exists():
             self.resample_config = statistic_config["resample"].get()
         
-         self.regularization_config = None
+        self.regularization_config = None
         if statistic_config["regularization"].exists():
             self.regularization_config = statistic_config["regularization"].get()
     
