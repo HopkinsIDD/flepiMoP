@@ -23,9 +23,10 @@ proj_data <- data_comb
 
 
 # STATE DATA --------------------------------------------------------------
+utils::data(fips_us_county, package = "flepicommon")
 
 # State Data #
-state_cw <- arrow::read_parquet("datasetup/usdata/fips_us_county.parquet") %>% 
+state_cw <- fips_us_county %>% 
   dplyr::distinct(state, state_code) %>%
   dplyr::select(USPS = state, location = state_code) %>%
   dplyr::mutate(location = str_pad(location, 2, side = "left", pad = "0")) %>%

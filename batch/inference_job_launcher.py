@@ -55,7 +55,7 @@ def user_confirmation(question="Continue?", default=False):
     "--data-path",
     "--data-path",
     "data_path",
-    envvar="DATA_PATH",
+    envvar="PROJECT_PATH",
     type=click.Path(exists=True),
     default=".",
     help="path to the data directory",
@@ -673,12 +673,12 @@ class BatchJobHandler(object):
         ## TODO: check how each of these variables are used downstream
         base_env_vars = [
             {"name": "BATCH_SYSTEM", "value": self.batch_system},
-            {"name": "S3_MODEL_DATA_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
+            {"name": "S3_MODEL_PROJECT_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
             {"name": "DVC_OUTPUTS", "value": " ".join(self.outputs)},
             {"name": "S3_RESULTS_PATH", "value": s3_results_path},
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
-            {"name": "DATA_PATH", "value": str(self.data_path)},
+            {"name": "PROJECT_PATH", "value": str(self.data_path)},
             {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
             {"name": "CONFIG_PATH", "value": config_file},
             {"name": "FLEPI_NUM_SLOTS", "value": str(self.num_jobs)},

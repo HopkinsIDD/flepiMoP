@@ -59,7 +59,7 @@ combine_and_format_sims <- function(outcome_vars = "incid",
     # pull out just the total outcomes of interest
     cols_aggr <- expand_grid(a="incid",b=outcomes_) %>% mutate(d=paste0(a,b)) %>% pull(d)
     cols_aggr <- cols_aggr[cols_aggr %in% colnames(res_subpop_all)]
-    cols_aggr <- "incidH_14to15"
+    
     if(!keep_all_compartments & !keep_variant_compartments & !keep_vacc_compartments){
         res_subpop_all <- res_subpop_all %>%
             # select(time, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_aggr))
@@ -591,14 +591,15 @@ reichify_cum_ests <- function(cum_ests, cum_var="cumH",
                               point_est=0.5, opt){
     
     outcome_short <- recode(cum_var, "cumI"="inf", "cumC"="case", "cumH"="hosp", "cumD"="death")
-    
+   
+    utils::data(state_fips_abbr, package = "flepicommon")
     cum_ests <- cum_ests %>%
         filter(quantile!="data") %>%
         filter(time>opt$forecast_date) %>%
         mutate(forecast_date=opt$forecast_date) %>%
         rename(target_end_date=time) %>%
         dplyr::select(-location) %>%
-        dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+        dplyr::left_join(state_fips_abbr) %>%  
         mutate(location = ifelse(USPS=="US", "US", location)) %>%
         mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
         rename(value=!!sym(cum_var)) %>%
@@ -668,11 +669,13 @@ get_weekly_incid <- function(res_state, outcomes){
 
 
 reichify_inc_ests <- function(weekly_inc_outcome, opt){
+    utils::data(state_fips_abbr, package = "flepicommon")
+  
     weekly_inc_outcome <- weekly_inc_outcome %>%
         pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
         mutate(forecast_date=opt$forecast_date) %>%
         rename(target_end_date=time) %>%
-        dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+        dplyr::left_join(state_fips_abbr) %>% 
         mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
         mutate(ahead=round(as.numeric(target_end_date - forecast_date)/7)) %>%
         mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -706,12 +709,12 @@ format_daily_outcomes <- function(daily_inc_outcome, point_est=0.5, opt){
         if (cum_outcomes){
             daily_inc_outcome <- daily_inc_outcome %>% mutate(outcome_name = gsub("cum", "incid", outcome_name))
         }
-        
+        utils::data(state_fips_abbr, package = "flepicommon")
         daily_inc_outcome <- daily_inc_outcome %>%
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date = opt$forecast_date) %>%
             rename(target_end_date = time) %>%
-            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+            dplyr::left_join(state_fips_abbr) %>% 
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead = round(as.numeric(target_end_date - forecast_date))) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -753,11 +756,12 @@ format_weekly_outcomes <- function(weekly_inc_outcome, point_est=0.5, opt){
             weekly_inc_outcome <- weekly_inc_outcome %>% mutate(outcome_name = gsub("cum", "incid", outcome_name))
         }
         
+        utils::data(state_fips_abbr, package = "flepicommon")
         weekly_inc_outcome <- weekly_inc_outcome %>%
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+            dplyr::left_join(state_fips_abbr) %>% 
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - forecast_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -810,11 +814,13 @@ get_weekly_incid2 <- function(res_state, point_est=0.5, outcome_var="incidI", op
     
     if(opt$reichify) {
         
+        utils::data(state_fips_abbr, package = "flepicommon")
+      
         weekly_inc_outcome <- weekly_inc_outcome %>%
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = !!sym(outcome_var)) %>%
             mutate(forecast_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+            dplyr::left_join(state_fips_abbr) %>%  
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - forecast_date)/7))%>%
             mutate(target=sprintf(paste0("%d wk ahead inc ", outcome_short), ahead)) %>%
@@ -1503,7 +1509,8 @@ process_sims <- function(
     # SAVE REPLICATES -----------------------------------------------
     
     if (save_reps) {
-        
+      
+        utils::data(state_fips_abbr, package = "flepicommon")
         weekly_reps <- weekly_incid_sims %>%
             mutate(time = lubridate::as_date(time)) %>%
             # filter(time >= lubridate::as_date(projection_date) & time <= lubridate::as_date(end_date)) %>%
@@ -1514,7 +1521,7 @@ process_sims <- function(
                    scenario_id = scenario_id, scenario_name=scenario_name) %>%
             mutate(model_projection_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+            dplyr::left_join(state_fips_abbr) %>%  
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -1561,6 +1568,7 @@ process_sims <- function(
             mutate(cum_peak_prob = cumsum(prob_peak)) %>%
             ungroup()
         
+        utils::data(state_fips_abbr, package = "flepicommon")
         peak_timing <- peak_timing %>%
             mutate(time = lubridate::as_date(time)) %>%
             filter(time >= lubridate::as_date(projection_date) & time <= lubridate::as_date(end_date)) %>%
@@ -1570,7 +1578,7 @@ process_sims <- function(
                    scenario_id = scenario_id, scenario_name=scenario_name) %>%
             mutate(model_projection_date=opt$forecast_date) %>%
             rename(target_end_date=time) %>%
-            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+            dplyr::left_join(state_fips_abbr) %>% 
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -1584,7 +1592,7 @@ process_sims <- function(
                    location = USPS, value=cum_peak_prob, age_group)
         
         # PEAK SIZE
-        
+        utils::data(state_fips_abbr, package = "flepicommon")
         peak_size <- weekly_incid_sims %>%
             filter(outcome_name=="incidH") %>%
             group_by(USPS, sim_num, outcome_name) %>%
@@ -1598,7 +1606,7 @@ process_sims <- function(
             unnest(x) %>%
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date=opt$forecast_date) %>%
-            dplyr::left_join(arrow::read_parquet("datasetup/usdata/state_fips_abbr.parquet")) %>%
+            dplyr::left_join(state_fips_abbr) %>%
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
             mutate(target = paste0("peak size ", target)) %>%
