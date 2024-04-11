@@ -12,54 +12,66 @@ class Statistic:
         self.data_var = statistic_config["data_var"].as_str()
         self.name = name
 
-        self.resample_config = None
+        self.resample = False
         if statistic_config["resample"].exists():
-            self.resample_config = statistic_config["resample"].get()
+            self.resample = True
+            resample_config = statistic_config["resample"]
+            self.resample_freq = ""
+            if resample_config["freq"].exists():
+                self.resample_freq = resample_config["freq"].get()
+            
+            self.resample_aggregator = ""
+            if resample_config["aggregator"].exists():
+                self.resample_aggregator = getattr(pd.Series, resample_config["aggregator"].get())
+            
+            self.resample_skipna = False # TODO
+            if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
+                self.resample_skipna = resample_config["skipna"].get()
         
         self.regularization_config = None
-        if statistic_config["regularization"].exists():
+        if statistic_config["regularize"].exists():
             self.regularization_config = statistic_config["regularization"].get()
+
+        self.scale = False
+        if statistic_config["scale"].exists():
+            self.scale_func = getattr(np, statistic_config["scale"].get())
     
-        self.loss_function = statistic_config["loss"].get()
+        self.loss_function = statistic_config["likelihood"].get()
 
     def __str__(self) -> str:
         return f"{self.name}: {self.loss_function} between {self.sim_var} (sim) and {self.data_var} (data)."
     
     def __repr__(self) -> str:
-        return f"A Statistic(): {self.__str()}"
+        return f"A Statistic(): {self.__str__()}"
 
-    def apply_resampling(self, data):
-        if self.resample_config:
-            freq = ""
-            freq = self.resample_config["freq"].get("freq", "W-SAT")
-            agg_func = getattr(pd.Series, self.resample_config.get("agg_func", "sum"))
-            skipna = self.resample_config.get("skipna", False)
-
-            data_resampled = data.resample(freq).agg(agg_func, skipna=skipna)
-            return data_resampled
+    def apply_resample(self, data):
+        if self.resample:
+            return data.resample(self.resample_freq).agg(self.resample_aggregator, skipna=self.resample_skipna)
+        else:
+            return data
+        
+    def apply_scale(self, data):
+        if self.scale:
+            return self.scale_func(data)
         else:
             return data
 
-    def compute_logloss(self, model_data, gt_data, skip_resampling=False):
-        if not skip_resampling:
-            model_data = self.apply_resampling(model_data)
-            gt_data = self.apply_resampling(gt_data)
+    def compute_logloss(self, model_data, gt_data):
+        model_data = self.apply_scale(self.apply_resampling(model_data[self.sim_var]))
+        gt_data = self.apply_scale(self.apply_resampling(gt_data[self.data_var]))
 
-        model_data = model_data[self.sim_var]
-        gt_data = gt_data[self.data_var]
-
-        assert model_data.shape == gt_data.shape
+        assert model_data.shape == gt_data.shape, f"{self.name} Statistic error: data and groundtruth do not have the same shape"
 
         if self.loss_function == "rmse":
             return -np.sqrt(np.mean((model_data - gt_data) ** 2))
         elif self.loss_function == "poisson":
-            epsilon = 1e-10  # to avoid log(0)
-            return -np.mean(model_data - gt_data * np.log(model_data + epsilon))
+
         else:
             raise ValueError("Unsupported loss function")
 
-# TODO: add an autatic test that show that the loss is biggest when gt == modeldata
 
+
+# TODO: add an autatic test that show that the loss is biggest when gt == modeldata
 class LogLoss:
     def __init__(self, inference_config: confuse.ConfigView, data_dir:str = "."):
         self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
