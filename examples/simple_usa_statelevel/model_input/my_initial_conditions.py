@@ -3,7 +3,7 @@ import numpy as np
 
 class InitialConditions(gempyor.seeding_ic.InitialConditions):
 
-    def draw(self, sim_id: int, setup) -> np.ndarray:
+    def get_from_config(self, sim_id: int, setup) -> np.ndarray:
         y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
         S_idx = setup.compartments.get_comp_idx({"infection_stage":"S"})
         I_idx = setup.compartments.get_comp_idx({"infection_stage":"I"})
@@ -13,5 +13,5 @@ class InitialConditions(gempyor.seeding_ic.InitialConditions):
 
         return y0
     
-    def load(self, sim_id: int, setup) -> np.ndarray:
+    def get_from_file(self, sim_id: int, setup) -> np.ndarray:
         return self.draw(sim_id=sim_id, setup=setup)
