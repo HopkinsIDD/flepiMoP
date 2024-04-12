@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import confuse
 import logging
-from simulation_component import SimulationComponent
+from .simulation_component import SimulationComponent
 from . import utils
 import numba as nb
 

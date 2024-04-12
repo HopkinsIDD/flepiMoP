@@ -5,7 +5,7 @@ import pandas as pd
 from numba.typed import Dict
 import confuse
 import logging
-from simulation_component import SimulationComponent
+from .simulation_component import SimulationComponent
 from . import utils
 from .utils import read_df
 
