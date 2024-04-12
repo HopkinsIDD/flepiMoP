@@ -1,3 +1,7 @@
+import confuse
+import numpy as np
+
+
 class SimulationComponent:
     def __init__(self, config: confuse.ConfigView):
         raise NotImplementedError("This method should be overridden in subclasses.")
