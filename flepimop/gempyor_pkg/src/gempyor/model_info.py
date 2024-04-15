@@ -77,8 +77,7 @@ class ModelInfo:
 
         # 3. What about subpopulations
         spatial_config = config["subpop_setup"]
-        spatial_base_path = config["data_path"].get()
-        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+        spatial_base_path = pathlib.Path(spatial_path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
