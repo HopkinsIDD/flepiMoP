@@ -213,7 +213,7 @@ def launch_job_inner(
     results_path = f"s3://{s3_output_bucket}/{job_name}"
     env_vars = [
         {"name": "CONFIG_PATH", "value": config_file},
-        {"name": "S3_MODEL_DATA_PATH", "value": model_data_path},
+        {"name": "S3_MODEL_PROJECT_PATH", "value": model_data_path},
         {"name": "DVC_TARGET", "value": dvc_target},
         {"name": "DVC_OUTPUTS", "value": " ".join(dvc_outputs)},
         {"name": "S3_RESULTS_PATH", "value": results_path},
