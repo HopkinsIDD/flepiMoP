@@ -132,9 +132,10 @@ class Seeding(SimulationComponent):
             amounts = np.random.poisson(seeding["amount"])
         elif method == "NegativeBinomialDistributed":
             raise ValueError("Seeding method 'NegativeBinomialDistributed' is not supported by flepiMoP anymore.")
-            amounts = np.random.negative_binomial(n=5, p=5 / (seeding["amount"] + 5))
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
+        else:
+            raise ValueError(f"Unknown seeding method: {method}")
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, setup=setup)
 
