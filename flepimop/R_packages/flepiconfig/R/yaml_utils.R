@@ -88,7 +88,7 @@ collapse_intervention<- function(dat){
         dplyr::group_by(dplyr::across(-period)) %>%
         dplyr::summarize(period = paste0(period, collapse="\n            "))
     
-    if (exists("mtr$spatial_groups") && (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups)))) {
+    if (exists("mtr$subpop_groups") && (!all(is.na(mtr$subpop_groups)) & !all(is.null(mtr$subpop_groups)))) {
         
         mtr <- mtr %>%
             dplyr::group_by(dplyr::across(-subpop)) %>%
