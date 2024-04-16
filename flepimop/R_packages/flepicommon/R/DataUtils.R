@@ -92,7 +92,7 @@ read_file_of_type <- function(extension,...){
     if(extension == 'csv'){
         return(function(x){suppressWarnings(readr::read_csv(x,,col_types = cols(
             .default = col_double(),
-            time=col_date(),
+            darw=col_date(),
             uid=col_character(),
             comp=col_character(),
             subpop=col_character()
@@ -101,8 +101,8 @@ read_file_of_type <- function(extension,...){
     if(extension == 'parquet'){
         return(function(x){
             tmp <- arrow::read_parquet(x)
-            if("POSIXct" %in% class(tmp$time)){
-                tmp$time <- lubridate::as_date(tz="GMT",tmp$time)
+            if("POSIXct" %in% class(tmp$date)){
+                tmp$date <- lubridate::as_date(tz="GMT",tmp$date)
             }
             tmp
         })

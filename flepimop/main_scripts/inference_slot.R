@@ -290,7 +290,7 @@ if (config$inference$do_inference){
   # function to calculate the likelihood when comparing simulation output (sim_hosp) to ground truth data
   likelihood_calculation_fun <- function(sim_hosp){
 
-    sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$time >= min(obs$date),sim_hosp$time <= max(obs$date))
+    sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$date >= min(obs$date),sim_hosp$date <= max(obs$date))
     lhs <- unique(sim_hosp[[obs_subpop]])
     rhs <- unique(names(data_stats))
     all_locations <- rhs[rhs %in% lhs]
@@ -588,7 +588,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # run
       if (config$inference$do_inference){
         sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
-          dplyr::filter(time >= min(obs$date),time <= max(obs$date))
+          dplyr::filter(date >= min(obs$date),date <= max(obs$date))
         lhs <- unique(sim_hosp[[obs_subpop]])
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]

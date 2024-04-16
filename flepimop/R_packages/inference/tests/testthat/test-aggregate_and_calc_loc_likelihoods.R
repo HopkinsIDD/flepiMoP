@@ -80,8 +80,7 @@ get_minimal_setup <- function () {
     sim_hosp <- obs %>%
         dplyr::rename(incidD = death_incid, incidC = confirmed_incid) %>%
         dplyr::mutate(incidD = incidD + rpois(length(incidD), incidD))%>%
-        dplyr::mutate(incidC = incidC + rpois(length(incidC), incidC))%>%
-        dplyr::rename(time=date)
+        dplyr::mutate(incidC = incidC + rpois(length(incidC), incidC))
 
     ##the observed node name.
     obs_subpop <- "subpop"
