@@ -120,6 +120,8 @@ inference:
       #add_one: TRUE
       likelihood: 
         dist: pois
+      regularize:
+        
     incidHosp:
       name: incidHosp
       sim_var: incidHosp
