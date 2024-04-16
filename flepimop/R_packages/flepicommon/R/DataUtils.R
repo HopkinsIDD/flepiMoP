@@ -92,7 +92,7 @@ read_file_of_type <- function(extension,...){
     if(extension == 'csv'){
         return(function(x){suppressWarnings(readr::read_csv(x,,col_types = cols(
             .default = col_double(),
-            darw=col_date(),
+            date=col_date(),
             uid=col_character(),
             comp=col_character(),
             subpop=col_character()
