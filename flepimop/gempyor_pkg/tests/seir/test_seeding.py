@@ -1,5 +1,5 @@
 import os
-from gempyor import seeding_ic, model_info
+from gempyor import seeding, model_info
 from gempyor.utils import config
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
@@ -20,7 +20,7 @@ class TestSeeding:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.SeedingFactory(config=s.seeding_config)
+        sic = seeding.SeedingFactory(config=s.seeding_config)
         assert sic.seeding_config == s.seeding_config
 
     def test_Seeding_draw_success(self):
@@ -36,8 +36,8 @@ class TestSeeding:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = seeding_ic.SeedingFactory(config=s.seeding_config)
+        sic = seeding.SeedingFactory(config=s.seeding_config)
         s.seeding_config["method"] = "NoSeeding"
 
-        seeding = sic.get_from_config(sim_id=100, setup=s)
-        print(seeding)
+        seeding_result = sic.get_from_config(sim_id=100, setup=s)
+        print(seeding_result)
