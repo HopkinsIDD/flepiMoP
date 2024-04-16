@@ -1,7 +1,6 @@
 name: USA
 setup_name: FCH
 smh_round: R12
-data_path: data
 start_date: 2020-01-01
 end_date: 2022-09-03
 end_date_groundtruth: 2022-03-05
