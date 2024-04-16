@@ -482,7 +482,7 @@ class InitialConditions(SimulationComponent):
                             else:
                                 raise ValueError(
                                     f"Initial Conditions: Could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). The data from the init file is {states_pl}. \n \
-                                                 Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
+                                                Use 'allow_missing_compartments' to default to 0 for compartments without initial conditions"
                                 )
                         if "rest" in str(ic_df_compartment_val).strip().lower():
                             rests.append([comp_idx, pl_idx])

@@ -7,8 +7,8 @@ from . import statistics
 
 
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing
-
 # TODO: add an autatic test that show that the loss is biggest when gt == modeldata
+
 class LogLoss:
     def __init__(self, inference_config: confuse.ConfigView, data_dir:str = "."):
         self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
