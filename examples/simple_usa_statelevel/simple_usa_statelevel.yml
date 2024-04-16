@@ -121,7 +121,11 @@ inference:
       likelihood: 
         dist: pois
       regularize:
-        
+        - name: forecast 
+          last_n: 10
+          mult: 2
+        - name: allsubpop
+          mult: 10
     incidHosp:
       name: incidHosp
       sim_var: incidHosp
