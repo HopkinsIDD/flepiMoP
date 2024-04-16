@@ -52,11 +52,11 @@ aggregate_and_calc_loc_likelihoods <- function(
             dplyr::filter(
                 modeled_outcome,
                 !!rlang::sym(obs_subpop) == location,
-                time %in% unique(obs$date[obs$subpop == location])
+                date %in% unique(obs$date[obs$subpop == location])
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
-                "time",
+                "date",
                 "sim_var",
                 stat_list = targets_config,
                 start_date = start_date,

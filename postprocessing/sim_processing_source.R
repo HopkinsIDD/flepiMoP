@@ -35,14 +35,14 @@ combine_and_format_sims <- function(outcome_vars = "incid",
     dirs <- dirs[str_detect(dirs, '/hosp')][1]
     res_subpop_all <- arrow::open_dataset(dirs,
                                           partitioning = c("lik_type", "is_final")) %>%
-        select(time, subpop, starts_with(outcome_vars)) %>%
-        # select(time, subpop, outcome_modifiers_scenario, starts_with(outcome_vars)) %>%
-        filter(time>=forecast_date & time<=end_date) %>%
+        select(date, subpop, starts_with(outcome_vars)) %>%
+        # select(date, subpop, outcome_modifiers_scenario, starts_with(outcome_vars)) %>%
+        filter(date>=forecast_date & date<=end_date) %>%
         collect() %>%
         # filter(stringr::str_detect(outcome_modifiers_scenario, death_filter)) %>%
-        mutate(time=as.Date(time)) %>%
-        # group_by(time, subpop, outcome_modifiers_scenario) %>%
-        group_by(time, subpop) %>%
+        mutate(date=as.Date(date)) %>%
+        # group_by(date, subpop, outcome_modifiers_scenario) %>%
+        group_by(date, subpop) %>%
         dplyr::mutate(sim_num = as.character(seq_along(subpop))) %>%
         ungroup()
     
