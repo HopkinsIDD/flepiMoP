@@ -50,7 +50,6 @@ class Statistic:
             self.scale_func = getattr(np, statistic_config["scale"].get())
     
         self.dist = statistic_config["likelihood"]["dist"].get()
-        # TODO here get the parameter in a dictionnary
 
     def _forecast_regularize(self, data):
         # scale the data so that the lastest X items are more important
@@ -63,6 +62,7 @@ class Statistic:
     def _allsubpop_regularize(self, data):
         """ add a regularization term that is the sum of all subpopulations
         """
+        pass # TODO
 
     def __str__(self) -> str:
         return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
@@ -93,7 +93,7 @@ class Statistic:
     def compute_logloss(self, model_data, gt_data):
         model_data = self. apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
-
+        # TODO: check the order of the arguments
         dist_map = {
             "pois": scipy.stats.poisson.pmf,
             "norm": lambda x, loc, scale: scipy.stats.norm.pdf(x, loc=loc, scale=self.params.get("scale", scale)), # wrong:  
