@@ -115,8 +115,8 @@ class ModelInfo:
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
             )
-            self.seeding = seeding.SeedingFactory(config = self.seeding_config)
-            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config)
+            self.seeding = seeding.SeedingFactory(config = self.seeding_config, path_prefix=spatial_path_prefix)
+            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config, path_prefix=spatial_path_prefix)
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(

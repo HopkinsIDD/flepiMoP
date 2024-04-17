@@ -59,16 +59,16 @@ def add_method(cls):
     return decorator
 
 
-def search_and_import_plugins_class(plugin_file_path: str, class_name: str, **kwargs):
+def search_and_import_plugins_class(plugin_file_path: str, path_prefix:str, class_name: str, **kwargs):
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
     # unfortunatelly very complicated, this is cpython only ??
     import sys, os
-    sys.path.append(os.path.dirname(plugin_file_path))
+    full_path = os.path.join(path_prefix, plugin_file_path)
+    sys.path.append(os.path.dirname(full_path))
     # the following works, but these above lines seems necessary to pickle // runs
-
     from pydoc import importfile
-    module = importfile(plugin_file_path)
+    module = importfile(full_path)
     klass = getattr(module, class_name)
     return klass(**kwargs)
 

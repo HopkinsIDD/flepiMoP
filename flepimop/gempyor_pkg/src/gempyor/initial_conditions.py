@@ -202,13 +202,14 @@ class InitialConditions(SimulationComponent):
 # TODO: rename config to initial_conditions_config as it shadows the global config
 
 
-def InitialConditionsFactory(config: confuse.ConfigView):
+def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = "."):
     if config is not None and "method" in config.keys():
             if config["method"].as_str() == "plugin":
                 klass = utils.search_and_import_plugins_class(
                     plugin_file_path=config["plugin_file_path"].as_str(), 
                     class_name="InitialConditions",
-                    config=config
+                    config=config,
+                    path_prefix=path_prefix
                     )
                 return klass
     return InitialConditions(config)

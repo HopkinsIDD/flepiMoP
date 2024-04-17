@@ -29,7 +29,7 @@ class Statistic:
                 reg_func = getattr(self, f"_{reg_name}_regularize") 
                 if reg_func is None:
                     raise ValueError(f"Unsupported regularization: {reg_name}")
-                self.regularizations.append((reg_func, reg_config))
+                self.regularizations.append((reg_func, reg_config.get()))
             
         self.resample = False
         if statistic_config["resample"].exists():
@@ -51,18 +51,18 @@ class Statistic:
     
         self.dist = statistic_config["likelihood"]["dist"].get()
 
-    def _forecast_regularize(self, data):
+    def _forecast_regularize(self, data, **kwargs):
         # scale the data so that the lastest X items are more important
-        last_n = self.regularization_config["last_n"].get()
-        mult = self.regularization_config["mult"].get()
+        last_n = kwargs.get("last_n", 4)
+        mult = kwargs.get("mult", 2)
         # multiply the last n items by mult
         reg_data = data * np.concatenate([np.ones(data.shape[0]-last_n), np.ones(last_n)*mult])
         return reg_data
     
-    def _allsubpop_regularize(self, data):
+    def _allsubpop_regularize(self, data, **kwargs):
         """ add a regularization term that is the sum of all subpopulations
         """
-        pass # TODO
+        return data ### TODO
 
     def __str__(self) -> str:
         return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
@@ -93,6 +93,7 @@ class Statistic:
     def compute_logloss(self, model_data, gt_data):
         model_data = self. apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
+
         # TODO: check the order of the arguments
         dist_map = {
             "pois": scipy.stats.poisson.pmf,

@@ -144,13 +144,14 @@ class Seeding(SimulationComponent):
         return self.get_from_config(sim_id=sim_id, setup=setup)
 
 
-def SeedingFactory(config: confuse.ConfigView):
+def SeedingFactory(config: confuse.ConfigView, path_prefix: str = "."):
     if config is not None and "method" in config.keys():
             if config["method"].as_str() == "plugin":
                 klass = utils.search_and_import_plugins_class(
                     plugin_file_path=config["plugin_file_path"].as_str(), 
                     class_name="Seeding",
-                    config=config
+                    config=config,
+                    path_prefix=path_prefix
                     )
                 return klass
     return Seeding(config)

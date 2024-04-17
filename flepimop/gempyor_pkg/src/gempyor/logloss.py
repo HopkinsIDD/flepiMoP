@@ -83,10 +83,14 @@ class LogLoss:
         modinf: model information
         TODO: support kwargs for emcee, and this looks very slow
         """
-        logloss = xr.DataArray(0, dims=["statistic", "subpop"],  
-                coords={
-                "statistic":self.statistics.key(),
-                "subpop":modinf.subpop_struct.subpop_names})
+        coords={
+                "statistic":list(self.statistics.keys()),
+                "subpop":modinf.subpop_struct.subpop_names}
+
+        logloss = xr.DataArray(
+            np.zeros( (len(coords["statistic"]), len(coords["subpop"]))), 
+            dims=["statistic", "subpop"],  
+            coords=coords)
 
         for subpop in modinf.subpop_struct.subpop_names:
             # essential to sort by index (date here)
@@ -103,9 +107,9 @@ class LogLoss:
             # TODO: add whole US!! option
 
             for key, stat in self.statistics.items():
-                logloss.loc[dict(statistics=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
+                logloss.loc[dict(statistic=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
 
-        return logloss
+        return logloss, logloss_granular, logloss_regularization
     
     def __str__(self) -> str:
         return f"LogLoss: {len(self.statistics)} statistics and {len(self.gt)} data points," \
