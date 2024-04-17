@@ -73,6 +73,7 @@ def _DataFrame2NumbaDict(df, amounts, setup) -> nb.typed.Dict:
 
     return seeding_dict, seeding_amounts
 
+
 class Seeding(SimulationComponent):
     def __init__(self, config: confuse.ConfigView):
         self.seeding_config = config
@@ -146,12 +147,12 @@ class Seeding(SimulationComponent):
 
 def SeedingFactory(config: confuse.ConfigView, path_prefix: str = "."):
     if config is not None and "method" in config.keys():
-            if config["method"].as_str() == "plugin":
-                klass = utils.search_and_import_plugins_class(
-                    plugin_file_path=config["plugin_file_path"].as_str(), 
-                    class_name="Seeding",
-                    config=config,
-                    path_prefix=path_prefix
-                    )
-                return klass
+        if config["method"].as_str() == "plugin":
+            klass = utils.search_and_import_plugins_class(
+                plugin_file_path=config["plugin_file_path"].as_str(),
+                class_name="Seeding",
+                config=config,
+                path_prefix=path_prefix,
+            )
+            return klass
     return Seeding(config)

@@ -43,9 +43,8 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
 
-
     ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
-    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type 
+    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type
     ## is 32 bits." so upstream user need to specifcally cast everything to int64
     ## Somehow only mobility data is caseted by this function, but perhaps we should handle it all here ?
     assert type(modinf.mobility) == scipy.sparse.csr_matrix
@@ -199,13 +198,13 @@ def steps_SEIR(
         coords=dict(
             date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
             **compartment_coords,
-            subpop=modinf.subpop_struct.subpop_names
+            subpop=modinf.subpop_struct.subpop_names,
         ),
-        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id) # TODO add more information
-    )    
+        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id),  # TODO add more information
+    )
 
-    
     return states
+
 
 def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
     with Timer("SEIR.NPI"):
@@ -379,12 +378,14 @@ def states2Df(modinf, states):
 
     return out_df
 
+
 def write_spar_snpi(sim_id, modinf, p_draw, npi):
     # NPIs
     if npi is not None:
         modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
     # Parameters
     modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
+
 
 def write_seir(sim_id, modinf, states):
     # aws_disk_diagnosis()

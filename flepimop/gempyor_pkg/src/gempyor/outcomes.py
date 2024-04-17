@@ -275,7 +275,6 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
     return outcomes_df, hpar, hnpi
 
 
-
 def dataframe_from_array(data, subpops, dates, comp_name):
     """
         Produce a dataframe in long form from a numpy matrix of
@@ -295,7 +294,16 @@ def read_seir_sim(modinf, sim_id):
     return seir_df
 
 
-def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None, bypass_seir_df:pd.DataFrame=None, bypass_seir_xr: xr.Dataset=None):
+def compute_all_multioutcomes(
+    *,
+    modinf,
+    sim_id2write,
+    parameters,
+    loaded_values=None,
+    npi=None,
+    bypass_seir_df: pd.DataFrame = None,
+    bypass_seir_xr: xr.Dataset = None,
+):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
@@ -322,9 +330,21 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             source_name = parameters[new_comp]["source"]
             if isinstance(source_name, dict):
                 if isinstance(seir_sim, pd.DataFrame):
-                    source_array = filter_seir_df(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
+                    source_array = filter_seir_df(
+                        diffI=seir_sim,
+                        dates=dates,
+                        subpops=modinf.subpop_struct.subpop_names,
+                        filters=source_name,
+                        outcome_name=new_comp,
+                    )
                 elif isinstance(seir_sim, xr.Dataset):
-                    source_array = filter_seir_xr(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
+                    source_array = filter_seir_xr(
+                        diffI=seir_sim,
+                        dates=dates,
+                        subpops=modinf.subpop_struct.subpop_names,
+                        filters=source_name,
+                        outcome_name=new_comp,
+                    )
                 else:
                     raise ValueError(f"Unknown type for seir simulation provided, got f{type(seir_sim)}")
                 # we don't keep source in this cases
@@ -332,7 +352,9 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
                 if source_name in all_data:
                     source_array = all_data[source_name]
                 else:
-                    raise ValueError(f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes.")
+                    raise ValueError(
+                        f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes."
+                    )
 
             if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
                 ## This may be unnecessary
@@ -492,7 +514,9 @@ def filter_seir_df(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
-        raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
+        raise ValueError(
+            f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'."
+        )
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
     # diffI.drop(["mc_value_type"], inplace=True, axis=1)
@@ -519,12 +543,14 @@ def filter_seir_xr(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
-        raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
+        raise ValueError(
+            f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'."
+        )
     # Filter the data
     filters = filters[vtype]
 
     # Initialize the array to store filtered incidence values
-# Initialize the array to store filtered incidence values
+    # Initialize the array to store filtered incidence values
     incidI_arr = np.zeros((len(dates), len(subpops)))
 
     diffI_filtered = diffI
@@ -535,9 +561,10 @@ def filter_seir_xr(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
         # Filter data along the specified mc_type dimension
         diffI_filtered = diffI_filtered.where(diffI_filtered[f"mc_{mc_type}"].isin(mc_value), drop=True)
     # Sum along the compartment dimension
-    incidI_arr += diffI_filtered[vtype].sum(dim='compartment')
+    incidI_arr += diffI_filtered[vtype].sum(dim="compartment")
 
     return incidI_arr.to_numpy()
+
 
 @jit(nopython=True)
 def shift(arr, num, fill_value=0):

@@ -4,19 +4,21 @@ import numpy as np
 import confuse
 import scipy.stats
 
+
 class Statistic:
     """
-        A statistic is a function that takes two time series and returns a scalar value.
-        It applies resample, scale, and regularization to the data before computing the statistic's log-loss.
-        Configuration:
-        - sim_var: the variable in the simulation data
-        - data_var: the variable in the ground truth data
-        - resample: resample the data before computing the statistic
-            - freq: the frequency to resample the data to
-            - aggregator: the aggregation function to use
-            - skipna: whether to skip NA values
-        - regularize: apply a regularization term to the data before computing the statistic
+    A statistic is a function that takes two time series and returns a scalar value.
+    It applies resample, scale, and regularization to the data before computing the statistic's log-loss.
+    Configuration:
+    - sim_var: the variable in the simulation data
+    - data_var: the variable in the ground truth data
+    - resample: resample the data before computing the statistic
+        - freq: the frequency to resample the data to
+        - aggregator: the aggregation function to use
+        - skipna: whether to skip NA values
+    - regularize: apply a regularization term to the data before computing the statistic
     """
+
     def __init__(self, name, statistic_config: confuse.ConfigView):
         self.sim_var = statistic_config["sim_var"].as_str()
         self.data_var = statistic_config["data_var"].as_str()
@@ -26,11 +28,11 @@ class Statistic:
         if statistic_config["regularize"].exists():
             for reg_config in statistic_config["regularize"]:  # Iterate over the list
                 reg_name = reg_config["name"].get()
-                reg_func = getattr(self, f"_{reg_name}_regularize") 
+                reg_func = getattr(self, f"_{reg_name}_regularize")
                 if reg_func is None:
                     raise ValueError(f"Unsupported regularization: {reg_name}")
                 self.regularizations.append((reg_func, reg_config.get()))
-            
+
         self.resample = False
         if statistic_config["resample"].exists():
             self.resample = True
@@ -41,14 +43,14 @@ class Statistic:
             self.resample_aggregator = ""
             if resample_config["aggregator"].exists():
                 self.resample_aggregator = getattr(pd.Series, resample_config["aggregator"].get())
-            self.resample_skipna = False # TODO
+            self.resample_skipna = False  # TODO
             if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
                 self.resample_skipna = resample_config["skipna"].get()
 
         self.scale = False
         if statistic_config["scale"].exists():
             self.scale_func = getattr(np, statistic_config["scale"].get())
-    
+
         self.dist = statistic_config["likelihood"]["dist"].get()
 
     def _forecast_regularize(self, data, **kwargs):
@@ -56,17 +58,16 @@ class Statistic:
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
         # multiply the last n items by mult
-        reg_data = data * np.concatenate([np.ones(data.shape[0]-last_n), np.ones(last_n)*mult])
+        reg_data = data * np.concatenate([np.ones(data.shape[0] - last_n), np.ones(last_n) * mult])
         return reg_data
-    
+
     def _allsubpop_regularize(self, data, **kwargs):
-        """ add a regularization term that is the sum of all subpopulations
-        """
-        return data ### TODO
+        """add a regularization term that is the sum of all subpopulations"""
+        return data  ### TODO
 
     def __str__(self) -> str:
         return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
-    
+
     def __repr__(self) -> str:
         return f"A Statistic(): {self.__str__()}"
 
@@ -75,13 +76,13 @@ class Statistic:
             return data.resample(self.resample_freq).agg(self.resample_aggregator, skipna=self.resample_skipna)
         else:
             return data
-        
+
     def apply_scale(self, data):
         if self.scale:
             return self.scale_func(data)
         else:
             return data
-        
+
     def apply_transforms(self, data):
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
         # Apply regularizations sequentially
@@ -89,18 +90,19 @@ class Statistic:
             data_scaled_resampled = reg_func(data_scaled_resampled, **reg_config)  # Pass config parameters
         return data_scaled_resampled
 
-
     def compute_logloss(self, model_data, gt_data):
-        model_data = self. apply_transforms(model_data[self.sim_var])
+        model_data = self.apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
 
         # TODO: check the order of the arguments
         dist_map = {
             "pois": scipy.stats.poisson.pmf,
-            "norm": lambda x, loc, scale: scipy.stats.norm.pdf(x, loc=loc, scale=self.params.get("scale", scale)), # wrong:  
+            "norm": lambda x, loc, scale: scipy.stats.norm.pdf(
+                x, loc=loc, scale=self.params.get("scale", scale)
+            ),  # wrong:
             "nbinom": lambda x, n, p: scipy.stats.nbinom.pmf(x, n=self.params.get("n"), p=model_data),
-            "rmse": lambda x, y: np.sqrt(np.mean((x-y)**2)),
-            "absolute_error": lambda x, y: np.mean(np.abs(x-y)),
+            "rmse": lambda x, y: np.sqrt(np.mean((x - y) ** 2)),
+            "absolute_error": lambda x, y: np.mean(np.abs(x - y)),
         }
         if self.dist not in dist_map:
             raise ValueError(f"Invalid distribution specified: {self.dist}")
@@ -110,5 +112,5 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape")
-        
+
         return np.log(likelihood)

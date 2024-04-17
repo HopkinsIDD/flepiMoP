@@ -113,7 +113,11 @@ def test_constant_population_legacy_integration():
         totalpop = 0
         for i in range(modinf.nsubpops):
             totalpop += states["prevalence"].sum(axis=1)[it, i]
-            assert states["prevalence"].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+            assert (
+                states["prevalence"].sum(axis=1)[it, i] - 1e-3
+                < origpop[i]
+                < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+            )
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -178,7 +182,11 @@ def test_constant_population_rk4jit_integration_fail():
             totalpop = 0
             for i in range(modinf.nsubpops):
                 totalpop += states["prevalence"].sum(axis=1)[it, i]
-                assert states["prevalence"].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+                assert (
+                    states["prevalence"].sum(axis=1)[it, i] - 1e-3
+                    < origpop[i]
+                    < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+                )
             assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -242,7 +250,11 @@ def test_constant_population_rk4jit_integration():
         totalpop = 0
         for i in range(modinf.nsubpops):
             totalpop += states["prevalence"].sum(axis=1)[it, i]
-            assert states["prevalence"].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+            assert (
+                states["prevalence"].sum(axis=1)[it, i] - 1e-3
+                < origpop[i]
+                < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+            )
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -670,7 +682,6 @@ def test_parallel_compartments_with_vacc():
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
         pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
-           
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
