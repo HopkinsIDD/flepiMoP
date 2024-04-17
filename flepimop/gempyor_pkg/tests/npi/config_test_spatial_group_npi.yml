@@ -13,7 +13,7 @@ compartments:
   age_strata: ["age0to17", "age18to64", "age65to100"]
 
 subpop_setup:
-  geodata: geodata_2019_statelevel.csv
+  geodata: data/geodata_2019_statelevel.csv
   mobility: mobility_2011-2015_statelevel.csv
   include_in_report: include_in_report
   state_level: TRUE
