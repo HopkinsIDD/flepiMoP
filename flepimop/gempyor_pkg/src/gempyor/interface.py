@@ -55,7 +55,7 @@ class GempyorSimulator:
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         spatial_path_prefix="",  # in case the data folder is on another directory
-        autowrite_seir = False
+        autowrite_seir=False,
     ):
         self.seir_modifiers_scenario = seir_modifiers_scenario
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
@@ -155,7 +155,6 @@ class GempyorSimulator:
         out_df = seir.write_seir(sim_id2write, self.modinf, self.lastsim_states)
         return out_df
 
-
     # @profile()
     def one_simulation(
         self,
@@ -171,7 +170,6 @@ class GempyorSimulator:
         if load_ID:
             sim_id2load = int(sim_id2load)
             self.lastsim_sim_id2load = sim_id2load
-
 
         with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
             if not self.already_built:
@@ -239,14 +237,10 @@ class GempyorSimulator:
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
                     initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(
-                        sim_id2load, setup=self.modinf
-                    )
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(sim_id2load, setup=self.modinf)
                 else:
                     initial_conditions = self.modinf.initial_conditions.get_from_config(sim_id2write, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
-                        sim_id2write, setup=self.modinf
-                    )
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(sim_id2write, setup=self.modinf)
                 self.lastsim_seeding_data = seeding_data
                 self.lastsim_seeding_amounts = seeding_amounts
                 self.lastsim_initial_conditions = initial_conditions
@@ -431,8 +425,6 @@ class GempyorSimulator:
             parameters, self.modinf.parameters.pnames, self.unique_strings
         )
         return parsed_parameters
-    
-
 
 
 def paramred_parallel(run_spec, snpi_fn):

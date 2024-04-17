@@ -9,10 +9,11 @@ from . import statistics
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing
 # TODO: add an autatic test that show that the loss is biggest when gt == modeldata
 
+
 class LogLoss:
-    def __init__(self, inference_config: confuse.ConfigView, data_dir:str = "."):
+    def __init__(self, inference_config: confuse.ConfigView, data_dir: str = "."):
         self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
-        self.gt["date"] = pd.to_datetime(self.gt['date'])
+        self.gt["date"] = pd.to_datetime(self.gt["date"])
         self.gt = self.gt.set_index("date")
         self.statistics = {}
         for key, value in inference_config["statistics"].items():
@@ -27,7 +28,7 @@ class LogLoss:
             subpop (str, optional): The subpopulation to plot. If None, plots all subpopulations.
             statistic (str, optional): The statistic to plot. If None, plots all statistics.
             subplot (bool, optional): If True, creates a subplot for each subpopulation/statistic combination.
-                Defaults to False (single plot with all lines). 
+                Defaults to False (single plot with all lines).
             filename (str, optional): If provided, saves the plot to the specified filename.
             **kwargs: Additional keyword arguments passed to the matplotlib plot function.
         """
@@ -35,7 +36,13 @@ class LogLoss:
 
         if ax is None:
             if subplot:
-                fig, axes = plt.subplots(len(self.gt["subpop"].unique()), len(self.gt.columns.drop("subpop")), figsize=(4*len(self.gt.columns.drop("subpop")), 3*len(self.gt["subpop"].unique())), dpi=250, sharex=True)
+                fig, axes = plt.subplots(
+                    len(self.gt["subpop"].unique()),
+                    len(self.gt.columns.drop("subpop")),
+                    figsize=(4 * len(self.gt.columns.drop("subpop")), 3 * len(self.gt["subpop"].unique())),
+                    dpi=250,
+                    sharex=True,
+                )
             else:
                 fig, ax = plt.subplots(figsize=(8, 6), dpi=250)
 
@@ -64,7 +71,7 @@ class LogLoss:
                     data_to_plot.plot(ax=ax, **kwargs, label=f"{subpop} - {stat}")
             if len(statistics) > 1:
                 ax.legend()
-        
+
         if filename:
             if subplot:
                 fig.tight_layout()  # Adjust layout for saving if using subplots
@@ -75,7 +82,6 @@ class LogLoss:
         else:
             return ax  # Optionally return the axis
 
-
     def compute_logloss(self, model_df, modinf):
         """
         Compute logloss for all statistics
@@ -83,14 +89,11 @@ class LogLoss:
         modinf: model information
         TODO: support kwargs for emcee, and this looks very slow
         """
-        coords={
-                "statistic":list(self.statistics.keys()),
-                "subpop":modinf.subpop_struct.subpop_names}
+        coords = {"statistic": list(self.statistics.keys()), "subpop": modinf.subpop_struct.subpop_names}
 
         logloss = xr.DataArray(
-            np.zeros( (len(coords["statistic"]), len(coords["subpop"]))), 
-            dims=["statistic", "subpop"],  
-            coords=coords)
+            np.zeros((len(coords["statistic"]), len(coords["subpop"]))), dims=["statistic", "subpop"], coords=coords
+        )
 
         for subpop in modinf.subpop_struct.subpop_names:
             # essential to sort by index (date here)
@@ -110,9 +113,9 @@ class LogLoss:
                 logloss.loc[dict(statistic=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
 
         return logloss, logloss_granular, logloss_regularization
-    
+
     def __str__(self) -> str:
-        return f"LogLoss: {len(self.statistics)} statistics and {len(self.gt)} data points," \
-               f"number of NA for each statistic: \n{self.gt.drop('subpop', axis=1).isna().sum()}"
-
-
+        return (
+            f"LogLoss: {len(self.statistics)} statistics and {len(self.gt)} data points,"
+            f"number of NA for each statistic: \n{self.gt.drop('subpop', axis=1).isna().sum()}"
+        )

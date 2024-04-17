@@ -43,7 +43,6 @@ class TestIC:
         sic = initial_conditions.InitialConditionsFactory(config=s.initial_conditions_config)
         sic.get_from_config(sim_id=100, setup=s)
 
-
     def test_IC_IC_notImplemented_fail(self):
         with pytest.raises(NotImplementedError, match=r".*unknown.*initial.*conditions.*"):
             config.clear()

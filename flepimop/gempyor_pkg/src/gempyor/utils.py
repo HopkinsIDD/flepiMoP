@@ -59,15 +59,17 @@ def add_method(cls):
     return decorator
 
 
-def search_and_import_plugins_class(plugin_file_path: str, path_prefix:str, class_name: str, **kwargs):
+def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs):
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
     # unfortunatelly very complicated, this is cpython only ??
     import sys, os
+
     full_path = os.path.join(path_prefix, plugin_file_path)
     sys.path.append(os.path.dirname(full_path))
     # the following works, but these above lines seems necessary to pickle // runs
     from pydoc import importfile
+
     module = importfile(full_path)
     klass = getattr(module, class_name)
     return klass(**kwargs)
@@ -237,10 +239,11 @@ def as_random_distribution(self):
             self.as_evaled_expression(),
         )
 
-def list_filenames(folder: str = '.', filters:list = []) -> list:
+
+def list_filenames(folder: str = ".", filters: list = []) -> list:
     """
-    return the list of all filename and path in the provided folders. 
-    If filters [list] is provided, then only the files that contains each of the 
+    return the list of all filename and path in the provided folders.
+    If filters [list] is provided, then only the files that contains each of the
     substrings in filter will be returned. Example to get all hosp file:
     ```
         gempyor.utils.list_filenames(folder="model_output/", filters=["hosp"])
@@ -251,9 +254,10 @@ def list_filenames(folder: str = '.', filters:list = []) -> list:
     ```
     """
     from pathlib import Path
+
     fn_list = []
-    for f in Path(str(folder)).rglob(f'*'):
-        if f.is_file(): # not a folder
+    for f in Path(str(folder)).rglob(f"*"):
+        if f.is_file():  # not a folder
             f = str(f)
             if not filters:
                 fn_list.append(f)
@@ -263,6 +267,7 @@ def list_filenames(folder: str = '.', filters:list = []) -> list:
                 else:
                     pass
     return fn_list
+
 
 def aws_disk_diagnosis():
     import os

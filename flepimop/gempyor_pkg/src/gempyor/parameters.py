@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 # TODO: it should work like
 # import xarray as xr
-# xr.DataArray(p_draw, dims=["parameter", "date", "subpop"],  
-#                 coords={"parameter":modinf.parameters.pnames, 
-#                 "date":pd.date_range(modinf.ti, modinf.tf, freq="D"), 
+# xr.DataArray(p_draw, dims=["parameter", "date", "subpop"],
+#                 coords={"parameter":modinf.parameters.pnames,
+#                 "date":pd.date_range(modinf.ti, modinf.tf, freq="D"),
 #                 "subpop":modinf.subpop_struct.subpop_names}).sel(parameter="gamma_0").plot()
 
 
@@ -36,9 +36,7 @@ class Parameters:
 
         self.pdata = {}
         self.pnames2pindex = {}
-        self.stacked_modifier_method = {"sum": [],
-                                        "product": [],
-                                        "reduction_product":[]}
+        self.stacked_modifier_method = {"sum": [], "product": [], "reduction_product": []}
 
         self.pnames = self.pconfig.keys()
         self.npar = len(self.pnames)
@@ -60,7 +58,7 @@ class Parameters:
                 fn_name = self.pconfig[pn]["timeseries"].get()
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
-                if len(df.columns) == 1: # if only one ts, assume it applies to all subpops
+                if len(df.columns) == 1:  # if only one ts, assume it applies to all subpops
                     df = pd.DataFrame(
                         pd.concat([df] * len(subpop_names), axis=1).values, index=df.index, columns=subpop_names
                     )

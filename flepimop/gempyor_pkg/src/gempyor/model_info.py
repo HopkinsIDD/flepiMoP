@@ -54,9 +54,11 @@ class ModelInfo:
 
         # Auto-detect old config
         if config["interventions"].exists():
-            raise ValueError("""This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
+            raise ValueError(
+                """This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
                              Please use flepiMoP Version 1.1 (Commit SHA: 0c30c23937dd496d33c2b9fa7c6edb198ad80dac) to run this config. \
-                             (use git checkout v1.1 inside the flepiMoP directory)""")
+                             (use git checkout v1.1 inside the flepiMoP directory)"""
+            )
 
         # 1. Create a setup name that contains every scenario.
         if setup_name is None:
@@ -115,8 +117,10 @@ class ModelInfo:
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
             )
-            self.seeding = seeding.SeedingFactory(config = self.seeding_config, path_prefix=spatial_path_prefix)
-            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config, path_prefix=spatial_path_prefix)
+            self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=spatial_path_prefix)
+            self.initial_conditions = initial_conditions.InitialConditionsFactory(
+                config=self.initial_conditions_config, path_prefix=spatial_path_prefix
+            )
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
