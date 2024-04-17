@@ -8,8 +8,16 @@ from numpy import ndarray
 import logging
 from . import model_info, NPI, utils
 import datetime
+import xarray as xr
 
 logger = logging.getLogger(__name__)
+
+# TODO: it should work like
+# import xarray as xr
+# xr.DataArray(p_draw, dims=["parameter", "date", "subpop"],  
+#                 coords={"parameter":modinf.parameters.pnames, 
+#                 "date":pd.date_range(modinf.ti, modinf.tf, freq="D"), 
+#                 "subpop":modinf.subpop_struct.subpop_names}).sel(parameter="gamma_0").plot()
 
 
 class Parameters:
