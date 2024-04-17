@@ -53,14 +53,14 @@ class LogLoss:
             # One subplot for each subpop/statistic combination
             for i, subpop in enumerate(subpops):
                 for j, stat in enumerate(statistics):
-                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat]
+                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat].sort_index()
                     axes[i, j].plot(data_to_plot, **kwargs)
                     axes[i, j].set_title(f"{subpop} - {stat}")
         else:
             # All lines in a single plot
             for subpop in subpops:
                 for stat in statistics:
-                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat]
+                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat].sort_index()
                     data_to_plot.plot(ax=ax, **kwargs, label=f"{subpop} - {stat}")
             if len(statistics) > 1:
                 ax.legend()
@@ -106,5 +106,9 @@ class LogLoss:
                 logloss.loc[dict(statistics=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
 
         return logloss
+    
+    def __str__(self) -> str:
+        return f"LogLoss: {len(self.statistics)} statistics and {len(self.gt)} data points," \
+               f"number of NA for each statistic: \n{self.gt.drop('subpop', axis=1).isna().sum()}"
 
 
