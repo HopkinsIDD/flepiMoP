@@ -5,54 +5,58 @@ end_date: 2020-05-15
 data_path: data
 nslots: 1
 
-spatial_setup:
+subpop_setup:
   geodata: geodata.csv
-  mobility: mobility.csv
-  popnodes: population
-  nodenames: geoid
-  census_year: 2018
-  modeled_states:
-    - HI
+
 
 outcomes:
   method: delayframe
   param_from_file: False
-  scenarios:
-    - high_death_rate
-  settings:
-    high_death_rate:
-      incidH:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .1
-        delay:
-          value:
-            distribution: fixed
-            value: 7
-        duration:
-          value:
-            distribution: fixed
-            value: 7
-          name: hosp_curr
-      incidD:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .01
-        delay:
-          value:
-            distribution: fixed
-            value: 2
-      incidICU:
-        source: incidH
-        probability:
-          value:
-            distribution: fixed
-            value: .4
-        delay:
-          value:
-            distribution: fixed
-            value: 0
+  outcomes:
+    incidI:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidH:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .1
+      delay:
+        value:
+          distribution: fixed
+          value: 7
+      duration:
+        value:
+          distribution: fixed
+          value: 7
+        name: hosp_curr
+    incidD:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .01
+      delay:
+        value:
+          distribution: fixed
+          value: 2
+    incidICU:
+      source: incidH
+      probability:
+        value:
+          distribution: fixed
+          value: .4
+      delay:
+        value:
+          distribution: fixed
+          value: 0

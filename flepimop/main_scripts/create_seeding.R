@@ -13,9 +13,9 @@
 # end_date: <date>
 # data_path: <path to directory>
 
-# spatial_setup:
+# subpop_setup:
 #   geodata: <path to file>
-#   nodenames: <string>
+#   subpop: <string>
 #
 # seeding:
 #   lambda_file: <path to file>
@@ -24,7 +24,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{spatial_setup::geodata}</b> is a csv with column {spatial_setup::nodenames} that denotes the geoids
+# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
@@ -42,8 +42,10 @@ library(readr)
 library(tidyr)
 library(purrr)
 
+
 option_list <- list(
     optparse::make_option(c("-c", "--config"), action = "store", default = Sys.getenv("CONFIG_PATH"), type = "character", help = "path to the config file"),
+    optparse::make_option(c("-s", "--seed_variants"), action="store", default = Sys.getenv("SEED_VARIANTS"), type='logical',help="Whether to add variants/subtypes to outcomes in seeding."),
     optparse::make_option(c("-k", "--keep_all_seeding"), action="store",default=TRUE,type='logical',help="Whether to filter away seeding prior to the start date of the simulation.")
 )
 
@@ -56,16 +58,19 @@ if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-if (is.null(config$spatial_setup$us_model)) {
-    config$spatial_setup$us_model <- FALSE
-    if ("modeled_states" %in% names(config$spatial_setup)) {
-        config$spatial_setup$us_model <- TRUE
+if (is.null(config$subpop_setup$us_model)) {
+    config$subpop_setup$us_model <- FALSE
+    if ("modeled_states" %in% names(config$subpop_setup)) {
+        config$subpop_setup$us_model <- TRUE
     }
 }
 
-is_US_run <- config$spatial_setup$us_model
+is_US_run <- config$subpop_setup$us_model
 seed_variants <- "variant_filename" %in% names(config$seeding)
 
+if (!is.na(opt$seed_variants)){
+    seed_variants <- opt$seed_variants
+}
 
 
 ## backwards compatibility with configs that don't have inference$gt_source
@@ -106,7 +111,7 @@ print(paste("Successfully loaded data from ", data_path, "for seeding."))
 
 if (is_US_run) {
     cases_deaths <- cases_deaths %>%
-        mutate(FIPS = stringr::str_pad(FIPS, width = 5, side = "right", pad = "0"))
+        mutate(subpop = stringr::str_pad(subpop, width = 5, side = "right", pad = "0"))
 }
 
 print(paste("Successfully pulled", gt_source, "data for seeding."))
@@ -125,42 +130,73 @@ if (seed_variants) {
     colnames(variant_data)[colnames(variant_data) == "Update"] ="date"
     colnames(cases_deaths)[colnames(cases_deaths) == "Update"] ="date"
 
-    if (!is.null(config$seeding$seeding_outcome)){
-        if (config$seeding$seeding_outcome=="incidH"){
+    if (any(grepl(paste(unique(variant_data$variant), collapse = "|"), colnames(cases_deaths)))){
+
+        if (!is.null(config$seeding$seeding_outcome)){
+            if (config$seeding$seeding_outcome=="incidH"){
+                cases_deaths <- cases_deaths %>%
+                    dplyr::select(date, subpop, paste0("incidH_", names(config$seeding$seeding_compartments)))
+                colnames(cases_deaths) <- gsub("incidH_", "", colnames(cases_deaths))
+                cases_deaths <- cases_deaths %>%
+                    dplyr::mutate(dplyr::across(tidyselect::any_of(unique(names(config$seeding$seeding_compartments))), ~ tidyr::replace_na(.x, 0)))
+            } else {
+                stop(paste(
+                    "Currently only incidH is implemented for config$seeding$seeding_outcome."
+                ))
+            }
+        } else {
             cases_deaths <- cases_deaths %>%
-                dplyr::select(date, FIPS, source, incidH) %>%
+                dplyr::select(date, subpop, paste0("incidC_", names(config$seeding$seeding_compartments)))
+            colnames(cases_deaths) <- gsub("incidC_", "", colnames(cases_deaths))
+            cases_deaths <- cases_deaths %>%
+                dplyr::mutate(dplyr::across(tidyselect::any_of(unique(names(config$seeding$seeding_compartments))), ~ tidyr::replace_na(.x, 0)))
+        }
+
+    } else {
+
+        if (!is.null(config$seeding$seeding_outcome)){
+            if (config$seeding$seeding_outcome=="incidH"){
+                cases_deaths <- cases_deaths %>%
+                    dplyr::select(date, subpop, incidH) %>%
+                    dplyr::left_join(variant_data) %>%
+                    dplyr::mutate(incidI = incidH * prop) %>%
+                    dplyr::select(-prop, -incidH) %>%
+                    tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
+                    dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
+            } else {
+                stop(paste(
+                    "Currently only incidH is implemented for config$seeding$seeding_outcome."
+                ))
+            }
+        } else {
+            cases_deaths <- cases_deaths %>%
+                dplyr::select(date, subpop, incidC) %>%
                 dplyr::left_join(variant_data) %>%
-                dplyr::mutate(incidI = incidH * prop) %>%
-                dplyr::select(-prop, -incidH) %>%
+                dplyr::mutate(incidI = incidC * prop) %>%
+                dplyr::select(-prop, -incidC) %>%
                 tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
                 dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
-        } else {
-            stop(paste(
-                "Currently only incidH is implemented for config$seeding$seeding_outcome."
-            ))
         }
-    } else {
-        cases_deaths <- cases_deaths %>%
-            dplyr::select(date, FIPS, source, incidC) %>%
-            dplyr::left_join(variant_data) %>%
-            dplyr::mutate(incidI = incidC * prop) %>%
-            dplyr::select(-prop, -incidC) %>%
-            tidyr::pivot_wider(names_from = variant, values_from = incidI) %>%
-            dplyr::mutate(dplyr::across(tidyselect::any_of(unique(variant_data$variant)), ~ tidyr::replace_na(.x, 0)))
     }
+} else {
+
+    # rename date columns in data for joining
+    colnames(cases_deaths)[colnames(cases_deaths) == "Update"] ="date"
+    colnames(cases_deaths) <- gsub("incidH_", "", colnames(cases_deaths))
+
 }
 
 ## Check some data attributes:
 ## This is a hack:
-if ("geoid" %in% names(cases_deaths)) {
-    cases_deaths$FIPS <- cases_deaths$geoid
+if ("FIPS" %in% names(cases_deaths)) {
+    cases_deaths$subpop <- cases_deaths$FIPS
     warning("Changing FIPS name in seeding. This is a hack")
 }
-if ("date" %in% names(cases_deaths)) {
-    cases_deaths$Update <- cases_deaths$date
+if ("Update" %in% names(cases_deaths)) {
+    cases_deaths$date <- cases_deaths$Update
     warning("Changing Update name in seeding. This is a hack")
 }
-obs_nodename <- config$spatial_setup$nodenames
+obs_subpop <- config$subpop_setup$subpop
 required_column_names <- NULL
 
 check_required_names <- function(df, cols, msg) {
@@ -176,7 +212,7 @@ check_required_names <- function(df, cols, msg) {
 if ("compartments" %in% names(config)) {
 
     if (all(names(config$seeding$seeding_compartments) %in% names(cases_deaths))) {
-        required_column_names <- c("FIPS", "Update", names(config$seeding$seeding_compartments))
+        required_column_names <- c("subpop", "date", names(config$seeding$seeding_compartments))
         check_required_names(
             cases_deaths,
             required_column_names,
@@ -187,6 +223,7 @@ if ("compartments" %in% names(config)) {
         )
         incident_cases <- cases_deaths[, required_column_names] %>%
             tidyr::pivot_longer(!!names(config$seeding$seeding_compartments), names_to = "seeding_group") %>%
+            filter(!is.na(value)) %>%
             dplyr::mutate(
                 source_column = sapply(
                     config$seeding$seeding_compartments[seeding_group],
@@ -203,7 +240,7 @@ if ("compartments" %in% names(config)) {
             ) %>%
             tidyr::separate(source_column, paste("source", names(config$compartments), sep = "_")) %>%
             tidyr::separate(destination_column, paste("destination", names(config$compartments), sep = "_"))
-        required_column_names <- c("FIPS", "Update", "value", paste("source", names(config$compartments), sep = "_"), paste("destination", names(config$compartments), sep = "_"))
+        required_column_names <- c("subpop", "date", "value", paste("source", names(config$compartments), sep = "_"), paste("destination", names(config$compartments), sep = "_"))
         incident_cases <- incident_cases[, required_column_names]
 
         # if (!is.null(config$smh_round)) {
@@ -232,7 +269,7 @@ if ("compartments" %in% names(config)) {
         stop("Please add a seeding_compartments section to the config")
     }
 } else {
-    required_column_names <- c("FIPS", "Update", "incidI")
+    required_column_names <- c("subpop", "date", "incidI")
     check_required_names(
         cases_deaths,
         required_column_names,
@@ -245,7 +282,7 @@ if ("compartments" %in% names(config)) {
         tidyr::pivot_longer(cols = "incidI", names_to = "source_infection_stage", values_to = "value")
     incident_cases$destination_infection_stage <- "E"
     incident_cases$source_infection_stage <- "S"
-    required_column_names <- c("FIPS", "Update", "value", "source_infection_stage", "destination_infection_stage")
+    required_column_names <- c("subpop", "date", "value", "source_infection_stage", "destination_infection_stage")
 
     if ("parallel_structure" %in% names(config[["seir"]][["parameters"]])) {
         parallel_compartments <- config[["seir"]][["parameters"]][["parallel_structure"]][["compartments"]]
@@ -265,22 +302,22 @@ all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
 geodata <- flepicommon::load_geodata_file(
-    file.path(config$data_path, config$spatial_setup$geodata),
+    file.path(config$data_path, config$subpop_setup$geodata),
     5,
     "0",
     TRUE
 )
 
-all_geoids <- geodata[[config$spatial_setup$nodenames]]
+all_subpop <- geodata[["subpop"]]
 
 
 
 incident_cases <- incident_cases %>%
-    dplyr::filter(FIPS %in% all_geoids) %>%
+    dplyr::filter(subpop %in% all_subpop) %>%
     dplyr::select(!!!required_column_names)
 incident_cases <- incident_cases %>% filter(value>0)
 
-incident_cases[["Update"]] <- as.Date(incident_cases$Update)
+incident_cases[["date"]] <- as.Date(incident_cases$date)
 
 if (is.null(config[["seeding"]][["seeding_inflation_ratio"]])) {
     config[["seeding"]][["seeding_inflation_ratio"]] <- 10
@@ -289,16 +326,16 @@ if (is.null(config[["seeding"]][["seeding_delay"]])) {
     config[["seeding"]][["seeding_delay"]] <- 5
 }
 
-grouping_columns <- required_column_names[!required_column_names %in% c("Update", "value")]
+grouping_columns <- required_column_names[!required_column_names %in% c("date", "value")]
 incident_cases <- incident_cases %>%
     dplyr::group_by(!!!rlang::syms(grouping_columns)) %>%
     dplyr::group_modify(function(.x, .y) {
         .x %>%
-            dplyr::arrange(Update) %>%
+            dplyr::arrange(date) %>%
             dplyr::filter(value > 0) %>%
             .[seq_len(min(nrow(.x), 5)), ] %>%
             dplyr::mutate(
-                Update = Update - lubridate::days(config[["seeding"]][["seeding_delay"]]),
+                date = date - lubridate::days(config[["seeding"]][["seeding_delay"]]),
                 value = config[["seeding"]][["seeding_inflation_ratio"]] * value + .05
             ) %>%
             return
@@ -306,7 +343,7 @@ incident_cases <- incident_cases %>%
     dplyr::ungroup() %>%
     dplyr::select(!!!rlang::syms(required_column_names))
 
-names(incident_cases)[1:3] <- c("place", "date", "amount")
+names(incident_cases)[1:3] <- c("subpop", "date", "amount")
 
 incident_cases <- incident_cases %>%
     dplyr::filter(!is.na(amount) | !is.na(date))
@@ -331,12 +368,12 @@ if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seed
         seeding_pop$no_perturb <- TRUE
     }
     seeding_pop <- seeding_pop %>%
-        dplyr::filter(place %in% all_geoids) %>%
+        dplyr::filter(subpop %in% all_subpop) %>%
         dplyr::select(!!!colnames(incident_cases))
 
     incident_cases <- incident_cases %>%
         dplyr::bind_rows(seeding_pop) %>%
-        dplyr::arrange(place, date)
+        dplyr::arrange(subpop, date)
 }
 
 
@@ -345,7 +382,7 @@ if ("compartments" %in% names(config) & "pop_seed_file" %in% names(config[["seed
 if (max(incident_cases$date) < lubridate::as_date(config$start_date)){
 
     incident_cases <- incident_cases %>%
-        group_by(place) %>%
+        group_by(subpop) %>%
         filter(date == min(date)) %>%
         distinct() %>%
         ungroup() %>%
@@ -383,3 +420,4 @@ print(paste("Saved seeding to", config$seeding$lambda_file))
 head(incident_cases)
 
 ## @endcond
+

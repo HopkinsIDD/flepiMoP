@@ -32,6 +32,7 @@ def user_confirmation(question="Continue?", default=False):
 @click.command()
 @click.option("--aws", "batch_system", flag_value="aws", default=True)
 @click.option("--slurm", "batch_system", flag_value="slurm")
+@click.option("--local", "batch_system", flag_value="local")
 @click.option(
     "-c",
     "--config",
@@ -54,7 +55,7 @@ def user_confirmation(question="Continue?", default=False):
     "--data-path",
     "--data-path",
     "data_path",
-    envvar="DATA_PATH",
+    envvar="PROJECT_PATH",
     type=click.Path(exists=True),
     default=".",
     help="path to the data directory",
@@ -240,8 +241,34 @@ def user_confirmation(question="Continue?", default=False):
     "slack_channel",
     envvar="SLACK_CHANNEL",
     default="cspproduction",
-    type=click.Choice(['cspproduction', 'debug', 'noslack']),
+    type=click.Choice(["cspproduction", "debug", "noslack"]),
     help="Slack channel, either 'csp-production' or 'debug', or 'noslack' to disable slack",
+)
+@click.option(
+    "--continuation/--no-continuation",
+    "--continuation/--no-continuation",
+    "continuation",
+    envvar="FLEPI_CONTINUATION",
+    type=bool,
+    default=False,
+    help="Flag determining whether to use the resumed run /seir/files (or the provided /init/ial files bucket) as initial conditions for the next run",
+)
+@click.option(
+    "--continuation-location",
+    "--continuation-location",
+    "continuation_location",
+    type=str,
+    default=None,
+    envvar="CONTINUATION_LOCATION",
+    help="The location (folder or an S3 bucket) from which to pull the /init/ files (if not set, uses the resume location seir files)",
+)
+@click.option(
+    "--continuation-run-id",
+    "--continuation-run-id",
+    "continuation_run_id",
+    type=str,
+    default=None,
+    help="The run_id of the run we are continuing from",
 )
 def launch_batch(
     batch_system,
@@ -269,8 +296,10 @@ def launch_batch(
     reset_chimerics,
     s3_upload,
     slack_channel,
+    continuation,
+    continuation_location,
+    continuation_run_id,
 ):
-
     config = None
     with open(config_file) as f:
         config = yaml.full_load(f)
@@ -301,35 +330,37 @@ def launch_batch(
         print(f"WARNING: no inference section found in {config_file}!")
 
     if "s3://" in str(restart_from_location):  # ugly hack: str because it might be None
-        import boto3
-
-        s3 = boto3.resource("s3")
-        bucket = s3.Bucket(s3_bucket)
-        prefix = restart_from_location.split("/")[3] + "/model_output/"
-        all_files = list(bucket.objects.filter(Prefix=prefix))
-        all_files = [f.key for f in all_files]
-        if restart_from_run_id is None:
-            print("WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎...")
-            restart_from_run_id = all_files[0].split("/")[6]
-
-            if user_confirmation(question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True):
-                print(f"great, continuing with run_id {restart_from_run_id}...")
-            else:
-                raise ValueError(f"Abording, please specify --restart_from_run_id manually.")
-
-        final_llik = [f for f in all_files if ("llik" in f) and ("final" in f)]
-
-        if len(final_llik) != num_jobs:
-            print(
-                f"WARNING: number of good slots in resume_location: ({len(final_llik)}) does not match number of jobs ({num_jobs})."
-            )
-            if (num_jobs - len(final_llik)) > 50:
-                user_confirmation(question=f"Difference > 50. Should we continue ?")
+        restart_from_run_id = aws_countfiles_autodetect_runid(
+            s3_bucket=s3_bucket,
+            restart_from_location=restart_from_location,
+            restart_from_run_id=restart_from_run_id,
+            num_jobs=num_jobs,
+            strict=False,
+        )
     else:
         if restart_from_run_id is None and restart_from_location is not None:
             raise Exception(
                 "No auto-detection of run_id from local folder, please specify --restart_from_run_id (or fixme)"
             )
+    if "s3://" in str(continuation_location):
+        continuation_run_id = aws_countfiles_autodetect_runid(
+            s3_bucket=s3_bucket,
+            restart_from_location=continuation_location,
+            restart_from_run_id=continuation_run_id,
+            num_jobs=num_jobs,
+            strict=True,
+        )
+    else:
+        if continuation_run_id is None and continuation_location is not None:
+            raise Exception(
+                "No auto-detection of run_id from local folder, please specify --continuation_run_id (or fixme)"
+            )
+    if continuation and continuation_location is None:
+        continuation_location = restart_from_location
+        continuation_run_id = restart_from_run_id
+        print(
+            "Continuation enabled but no continuation location provided. Assuming that continuation location is the same as resume location"
+        )
 
     handler = BatchJobHandler(
         batch_system,
@@ -356,12 +387,22 @@ def launch_batch(
         reset_chimerics,
         s3_upload,
         slack_channel,
+        continuation,
+        continuation_location,
+        continuation_run_id,
     )
 
-    npi_scenarios = config["interventions"]["scenarios"]
-    outcome_scenarios = config["outcomes"]["scenarios"]
+    seir_modifiers_scenarios = None
+    outcome_modifiers_scenarios = None
+    # here the config is a dict
+    if "seir_modifiers" in config:
+        if "scenarios" in config["seir_modifiers"]:
+            seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"]
+    if "outcome_modifiers" in config:
+        if "scenarios" in config["outcome_modifiers"]:
+            outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"]
 
-    handler.launch(job_name, config_file, npi_scenarios, outcome_scenarios)
+    handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 
     # Set job_name as environmental variable so it can be pulled for pushing to git
     os.environ["job_name"] = job_name
@@ -390,16 +431,16 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
-            geoid_fname = pathlib.Path(data_path, config["data_path"]) / config["spatial_setup"]["geodata"]
-            with open(geoid_fname) as geoid_fp:
-                num_geoids = sum(1 for line in geoid_fp)
+            geodata_fname = pathlib.Path(data_path, config["data_path"]) / config["subpop_setup"]["geodata"]
+            with open(geodata_fname) as geodata_fp:
+                num_subpops = sum(1 for line in geodata_fp)
 
             if batch_system == "aws":
-                # formula based on a simple regression of geoids (based on known good performant params)
-                sims_per_job = max(60 - math.sqrt(num_geoids), 10)
+                # formula based on a simple regression of subpops (based on known good performant params)
+                sims_per_job = max(60 - math.sqrt(num_subpops), 10)
                 sims_per_job = 5 * int(math.ceil(sims_per_job / 5))  # multiple of 5
                 num_blocks = int(math.ceil(iterations_per_slot / sims_per_job))
-            elif batch_system == "slurm":
+            elif batch_system == "slurm" or batch_system == "local":
                 # now launch full sims:
                 sims_per_job = iterations_per_slot
                 num_blocks = 1
@@ -408,7 +449,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
 
             print(
                 f"Setting sims per job to {sims_per_job} "
-                f"[estimated based on {num_geoids} geoids and {iterations_per_slot} iterations_per_slot in config]"
+                f"[estimated based on {num_subpops} subpop(s) and {iterations_per_slot} iterations_per_slot in config]"
             )
             print(f"Setting number of blocks to {num_blocks} [via math]")
 
@@ -432,6 +473,41 @@ def get_aws_job_queues(job_queue_prefix):
             queues_with_jobs[queue_name] = len(job_list_resp["jobSummaryList"])
     # Return the least-loaded queues first
     return sorted(queues_with_jobs, key=queues_with_jobs.get)
+
+
+def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_from_run_id, num_jobs, strict=False):
+    import boto3
+
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(s3_bucket)
+    prefix = restart_from_location.split("/")[3] + "/model_output/"
+    all_files = list(bucket.objects.filter(Prefix=prefix))
+    all_files = [f.key for f in all_files]
+    if restart_from_run_id is None:
+        print("WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎...")
+        restart_from_run_id = all_files[0].split("/")[3]
+        if user_confirmation(question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True):
+            print(f"great, continuing with run_id {restart_from_run_id}...")
+        else:
+            raise ValueError(f"Abording, please specify --restart_from_run_id manually.")
+
+    final_llik = [f for f in all_files if ("llik" in f) and ("final" in f)]
+    if len(final_llik) == 0:  # hacky: there might be a bucket with no llik files, e.g if init.
+        final_llik = [f for f in all_files if ("init" in f) and ("final" in f)]
+
+    if len(final_llik) != num_jobs:
+        if strict:
+            raise ValueError(
+                f"number of good slots in resume_location: ({len(final_llik)}) does not match number of jobs ({num_jobs})."
+            )
+        else:
+            print(
+                f"WARNING: number of good slots in resume_location: ({len(final_llik)}) does not match number of jobs ({num_jobs})."
+            )
+            if (num_jobs - len(final_llik)) > 50:
+                user_confirmation(question=f"Difference > 50. Should we continue ?")
+
+    return restart_from_run_id
 
 
 class BatchJobHandler(object):
@@ -461,6 +537,9 @@ class BatchJobHandler(object):
         reset_chimerics,
         s3_upload,
         slack_channel,
+        continuation,
+        continuation_location,
+        continuation_run_id,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -486,6 +565,9 @@ class BatchJobHandler(object):
         self.reset_chimerics = reset_chimerics
         self.s3_upload = s3_upload
         self.slack_channel = slack_channel
+        self.continuation = continuation
+        self.continuation_location = continuation_location
+        self.continuation_run_id = continuation_run_id
 
     def build_job_metadata(self, job_name):
         """
@@ -571,7 +653,7 @@ class BatchJobHandler(object):
         if remove_source:
             os.remove(source)
 
-    def launch(self, job_name, config_file, npi_scenarios, outcome_scenarios):
+    def launch(self, job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios):
         s3_results_path = f"s3://{self.s3_bucket}/{job_name}"
 
         if self.batch_system == "slurm":
@@ -591,12 +673,12 @@ class BatchJobHandler(object):
         ## TODO: check how each of these variables are used downstream
         base_env_vars = [
             {"name": "BATCH_SYSTEM", "value": self.batch_system},
-            {"name": "S3_MODEL_DATA_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
+            {"name": "S3_MODEL_PROJECT_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
             {"name": "DVC_OUTPUTS", "value": " ".join(self.outputs)},
             {"name": "S3_RESULTS_PATH", "value": s3_results_path},
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
-            {"name": "DATA_PATH", "value": str(self.data_path)},
+            {"name": "PROJECT_PATH", "value": str(self.data_path)},
             {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
             {"name": "CONFIG_PATH", "value": config_file},
             {"name": "FLEPI_NUM_SLOTS", "value": str(self.num_jobs)},
@@ -622,13 +704,15 @@ class BatchJobHandler(object):
         with open(config_file) as f:
             config = yaml.full_load(f)
 
-        for ctr, (s, d) in enumerate(itertools.product(npi_scenarios, outcome_scenarios)):
+        for ctr, (s, d) in enumerate(itertools.product(seir_modifiers_scenarios, outcome_modifiers_scenarios)):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()
-            cur_env_vars.append({"name": "FLEPI_NPI_SCENARIOS", "value": s})
+            cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
             cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
-            cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+            cur_env_vars.append(
+                {"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"}
+            )  # TODO: get it from gempyor and makes it contains run_id also in scripts
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
@@ -642,6 +726,17 @@ class BatchJobHandler(object):
                 cur_env_vars.append({"name": "RESUME_RUN", "value": f"TRUE"})
             else:
                 cur_env_vars.append({"name": "RESUME_RUN", "value": f"FALSE"})
+
+            if self.continuation:
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION", "value": f"TRUE"})
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION_RUN_ID", "value": f"{self.continuation_run_id}"})
+                cur_env_vars.append({"name": "FLEPI_CONTINUATION_LOCATION", "value": f"{self.continuation_location}"})
+                cur_env_vars.append(
+                    {
+                        "name": "FLEPI_CONTINUATION_FTYPE",
+                        "value": f"{config['initial_conditions']['initial_file_type']}",
+                    }
+                )
 
             # First job:
             if self.batch_system == "aws":
@@ -696,7 +791,7 @@ class BatchJobHandler(object):
                 #    f"--job-name={cur_job_name}",
                 #    f"{os.path.dirname(os.path.realpath(__file__))}/inference_job.run",
                 # ]
-                command = f"sbatch {export_str} --array=1-{self.num_jobs} --mem={self.memory}M --time={time_limit} --job-name={cur_job_name} {os.path.dirname(os.path.realpath(__file__))}/SLURM_inference_job.run"
+                command = f"sbatch {export_str} --array=1-{self.num_jobs} --mem={self.memory}M --time={time_limit} --job-name={cur_job_name} --output=log_inference_{self.run_id}_{cur_job_name}_%a.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_inference_job.run"
 
                 print("slurm command to be run >>>>>>>> ")
                 print(command)
@@ -714,7 +809,7 @@ class BatchJobHandler(object):
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
-                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={12000}M --time={60} --job-name=post-{cur_job_name} {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
+                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={12000}M --time={60} --job-name=post-{cur_job_name} --output=log_postprod_{self.run_id}_{cur_job_name}.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
@@ -729,14 +824,22 @@ class BatchJobHandler(object):
                 postprod_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING POST-PROCESSING JOB. Slurm job id is {postprod_job_id}")
 
+            elif self.batch_system == "local":
+                cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}"})
+                print(f"--- env var to set ---")
+                for envar in cur_env_vars:  # set env vars as enviroment variables
+                    os.environ[envar["name"]] = envar["value"]
+                    print(f"""export {envar["name"]}="{envar["value"]}" """)
+                print(f"--- end env var to set ---")
+
             # On aws: create all other jobs + the copy job. slurm script is only one block and copies itself at the end.
             if self.batch_system == "aws":
                 block_idx = 1
                 while block_idx < self.num_blocks:
                     cur_env_vars = base_env_vars.copy()
-                    cur_env_vars.append({"name": "FLEPI_NPI_SCENARIOS", "value": s})
+                    cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
                     cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
-                    cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}/{s}/{d}"})
+                    cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"})
                     cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"})
                     cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
                     cur_env_vars.append({"name": "OLD_FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
@@ -807,6 +910,8 @@ class BatchJobHandler(object):
             print(f" >> Final output will be: {fs_results_path}/model_output/")
             if self.s3_upload:
                 print(f" >> Final output will be uploaded to {s3_results_path}/model_output/")
+        if self.continuation:
+            print(f" >> Continuing from run id is {self.continuation_run_id} located in {self.continuation_location}")
         print(f" >> Run id is {self.run_id}")
         print(f" >> config is {config_file.split('/')[-1]}")
         flepimop_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")

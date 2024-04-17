@@ -16,7 +16,7 @@ class NPIBase(abc.ABC):
     def getReduction(self, param, default=None):
         pass
 
-    # Returns dataframe with columns: <geoids>, time, parameter, name. Index is sequential.
+    # Returns dataframe with columns: <subpops>, time, parameter, name. Index is sequential.
     @abc.abstractmethod
     def getReductionToWrite(self):
         pass
@@ -27,17 +27,28 @@ class NPIBase(abc.ABC):
     def execute(
         *,
         npi_config,
-        global_config,
-        geoids,
+        modinf,
+        modifiers_library,
+        subpops,
         loaded_df=None,
         pnames_overlap_operation_sum=[],
+        pnames_overlap_operation_reductionprod=[],
     ):
-        template = npi_config["template"].as_str()
-        npi_class = NPIBase.__plugins__[template]
+        """
+        npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI
+        modinf: the ModelInfor class, to inform ti and tf
+        modifiers_library: a config bit that contains the other modifiers that could be called by this Modifier. Note
+            that the confuse library's config resolution mechanism makes slicing the configuration object expensive;
+            instead give the preloaded settings from .get()
+        """
+        method = npi_config["method"].as_str()
+        npi_class = NPIBase.__plugins__[method]
         return npi_class(
             npi_config=npi_config,
-            global_config=global_config,
-            geoids=geoids,
+            modinf=modinf,
+            modifiers_library=modifiers_library,
+            subpops=subpops,
             loaded_df=loaded_df,
             pnames_overlap_operation_sum=pnames_overlap_operation_sum,
+            pnames_overlap_operation_reductionprod=pnames_overlap_operation_reductionprod,
         )

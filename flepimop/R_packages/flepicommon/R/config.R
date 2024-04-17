@@ -6,6 +6,8 @@ config <- NA
 ##'
 ##'Overrides the $ operator for S3 'config' objects to ensure that named args exist.
 ##'
+##' @param x 
+##' @param name 
 '$.config' <- function(x, name) {
   if (name %in% names(x)) {
     return(x[[name]])
@@ -124,6 +126,36 @@ as_density_distribution <- function(obj) {
     return(purrr::partial(function(x,y){x==y}, x = as_evaled_expression(obj$value)))
   } else {
       stop("unknown distribution")
+  }
+}
+
+
+
+
+#' Check that the value is within the bounds of the distribution
+#'
+#' @param value 
+#' @param obj 
+#'
+#' @return a boolean indicating whether the value is within the bounds of the distribution
+#' @export
+#'
+check_within_bounds <- function(value, obj) {
+  # Using & so it's vectorized for a vector of value with a single distribution
+  if (obj$distribution == "uniform") {
+    return(value >= as_evaled_expression(obj$low) & value <= as_evaled_expression(obj$high))
+  } else if (obj$distribution == "poisson") {
+    return(value >= 0 & is.integer(value))
+  } else if (obj$distribution == "binomial") {
+    return(value >= 0 & is.integer(value) & value <= as_evaled_expression(obj$size))
+  } else if (obj$distribution == "lognormal") {
+    return(value > 0)
+  } else if (obj$distribution == "truncnorm") {
+    return(value >= as_evaled_expression(obj$a) & value <= as_evaled_expression(obj$b))
+  } else if (obj$distribution == "fixed") {
+    return(value == as_evaled_expression(obj$value))
+  } else {
+    stop("unknown distribution")
   }
 }
 

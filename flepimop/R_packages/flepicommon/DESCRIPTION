@@ -17,9 +17,7 @@ Imports:
     stringr,
     data.table,
     rlang,
-    cdlTools,
     ggraph,
-    plyr,
     doParallel,
     foreach,
     jsonlite,
@@ -40,4 +38,4 @@ Suggests:
     testthat (>= 2.1.0),
     vctrs
 RoxygenNote: 7.2.3
-
+LazyData: true

@@ -5,131 +5,126 @@ end_date: 2020-05-15
 data_path: data
 nslots: 1
 
-spatial_setup:
+subpop_setup:
   geodata: geodata.csv
-  mobility: mobility.csv
-  popnodes: population
-  nodenames: geoid
-  census_year: 2018
-  modeled_states:
-    - HI
 
-interventions:
+
+outcomes:
+  method: delayframe
+  param_from_file: False
+  outcomes:
+    incidI:
+      source:
+        incidence:
+          infection_stage: "I1"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidH:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .2
+      delay:
+        value:
+          distribution: fixed
+          value: 14
+      duration:
+        value:
+          distribution: fixed
+          value: 14
+        name: hosp_curr
+    incidD:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .02
+      delay:
+        value:
+          distribution: fixed
+          value: 4
+    incidICU:
+      source: incidH
+      probability:
+        value:
+          distribution: fixed
+          value: .8
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+
+outcome_modifiers:
   scenarios:
-    - None
-  settings:
-    None:
-      template: ReduceR0
-      value:
-        distribution: fixed
-        value: 0
+    - Some
+  modifiers:
+    Some:
+      method: StackedModifier
+      modifiers: ["times2H", "ICUprobability", "times2D"]
     Hduration:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "incidH::duration"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
         distribution: fixed
         value: .5
     Hdelay:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "incidH::delay"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
         distribution: fixed
         value: .5
     Hprobability:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "incidH::probability"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
         distribution: fixed
         value: 0.5
     Ddelay:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "incidD::delay"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
         distribution: fixed
         value: .5
     Dprobability:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "incidD::probability"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
         distribution: fixed
         value: .5
     ICUprobability:
-      template: Reduce
+      method: SinglePeriodModifier
       parameter: "incidICU::probability"
-      affected_geoids: "all"
+      subpop: "all"
       period_start_date: 2020-04-01
       period_end_date: 2020-05-15
       value:
         distribution: fixed
         value: .5
     times2D:
-      template: Stacked
-      scenarios: ["Ddelay", "Dprobability"]
+      method: StackedModifier
+      modifiers: ["Ddelay", "Dprobability"]
     times2H:
-      template: Stacked
-      scenarios: ["Hdelay", "Hprobability", "Hduration"]
-
-
-
-outcomes:
-  method: delayframe
-  param_from_file: False
-  scenarios:
-    - high_death_rate
-  settings:
-    high_death_rate:
-      incidH:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .2
-        delay:
-          value:
-            distribution: fixed
-            value: 14
-        duration:
-          value:
-            distribution: fixed
-            value: 14
-          name: hosp_curr
-      incidD:
-        source: incidI
-        probability:
-          value:
-            distribution: fixed
-            value: .02
-        delay:
-          value:
-            distribution: fixed
-            value: 4
-      incidICU:
-        source: incidH
-        probability:
-          value:
-            distribution: fixed
-            value: .8
-        delay:
-          value:
-            distribution: fixed
-            value: 0
-  interventions:
-    settings:
-      high_death_rate:
-        template: Stacked
-        scenarios: ["times2H", "ICUprobability", "times2D"]
+      method: StackedModifier
+      modifiers: ["Hdelay", "Hprobability", "Hduration"]

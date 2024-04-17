@@ -12,7 +12,7 @@ flepimop/gempyor_pkg/docs/full_graph*
 flepimop/gempyor_pkg/docs/readable_graph*
 Outcomes/test/model_output
 model_output/
-
+.idea/
 # History files
 .Rhistory
 .Rapp.history
@@ -65,3 +65,9 @@ Outcomes.egg-info/
 
 # R package manuals
 man/
+flepimop/gempyor_pkg/.coverage
+flepimop/gempyor_pkg/.coverage.kojis-mbp-8.sph.ad.jhsph.edu.6137.959542
+flepimop/gempyor_pkg/get_value.prof
+flepimop/gempyor_pkg/tests/seir/.coverage
+flepimop/gempyor_pkg/tests/seir/.coverage.kojis-mbp-8.sph.ad.jhsph.edu.90615.974746
+flepimop/gempyor_pkg/.coverage

@@ -51,7 +51,7 @@ get_rawcoviddata_state_data <- function(fix_negatives = TRUE){
 
     return(state_dat)
 }
-
+## IS THIS STILL NEEDED??
 
 
 
@@ -67,8 +67,8 @@ clean_gt_forplots <- function(gt_data){
         filter(source != "US")
 
     gt_long <- gt_data %>%
-        pivot_longer(cols = -c(date, source, FIPS), names_to = "target", values_to = "incid") %>%
-        group_by(source, FIPS, date, target)%>%
+        pivot_longer(cols = -c(date, source, subpop), names_to = "target", values_to = "incid") %>%
+        group_by(source, subpop, date, target)%>%
         summarise(incid = sum(incid)) %>%
         ungroup() %>%
         filter(grepl("incid", target, ignore.case = TRUE))
@@ -76,7 +76,7 @@ clean_gt_forplots <- function(gt_data){
     gt_long_tmp <- gt_long %>%
         as_tibble() %>%
         mutate(incid = fix_NAs(incid)) %>%
-        group_by(source, FIPS, target) %>%
+        group_by(source, subpop, target) %>%
         arrange(date) %>%
         mutate(incid=cumsum(incid))%>%
         ungroup() %>%
@@ -102,10 +102,10 @@ clean_gt_forplots <- function(gt_data){
     gt_long <- gt_long %>%
         rename(time=date, USPS=source)
     gt_long <- gt_long %>%
-        rename(geoid=FIPS, outcome_name = target, outcome = incid)
+        rename(outcome_name = target, outcome = incid)
 
     gt_data <- gt_data %>%
-        rename(geoid=FIPS, time=date, USPS=source)
+        rename(time=date, USPS=source)
 
     return(gt_data)
 }
