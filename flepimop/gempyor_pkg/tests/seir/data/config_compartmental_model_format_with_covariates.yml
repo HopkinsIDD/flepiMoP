@@ -2,7 +2,6 @@ name: minimal
 setup_name: minimal
 start_date: 2020-02-01
 end_date: 2020-02-15
-data_path: data
 nslots: 15
 
 subpop_setup:
