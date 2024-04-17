@@ -1,7 +1,7 @@
-import gempyor.seeding_ic
+import gempyor.initial_conditions
 import numpy as np
 
-class InitialConditions(gempyor.seeding_ic.InitialConditions):
+class InitialConditions(gempyor.initial_conditions.InitialConditions):
 
     def get_from_config(self, sim_id: int, setup) -> np.ndarray:
         y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
