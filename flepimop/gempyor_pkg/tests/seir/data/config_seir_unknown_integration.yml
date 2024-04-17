@@ -6,7 +6,7 @@
 
 
 #spatial_setup:
-#  geodata: geodata.csv
+#  geodata: data/geodata.csv
 #  mobility: mobility.txt
 #  popnodes: population
 #  nodenames: geoid
