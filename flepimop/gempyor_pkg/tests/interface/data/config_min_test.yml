@@ -6,7 +6,7 @@ nslots: 1
 
 
 spatial_setup:
-  geodata: geodata.csv
+  geodata: data/geodata.csv
   mobility: mobility.csv
   popnodes: population
   nodenames: geoid
