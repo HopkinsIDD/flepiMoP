@@ -1335,9 +1335,12 @@ print_outcomes <- function (resume_modifier = NULL,
   incidC_pert <- ""
   pert_repeat <- prod(compartment_tract_length[-1], na.rm = TRUE)
   
-  variant_strata = compartment_tract_list$variant_strata
-  vaccine_strata = compartment_tract_list$vaccine_strata
-  age_strata = compartment_tract_list$age_strata
+  variant_strata = `$`(compartment_tract_list, 'variant')
+  vaccine_strata = `$`(compartment_tract_list, 'vacc')
+  age_strata = `$`(compartment_tract_list, 'age')
+#   variant_strata = compartment_tract_list$variant_strata
+#   vaccine_strata = compartment_tract_list$vaccine_strata
+#   age_strata = compartment_tract_list$age_strata
   
   for (i in 1:pert_repeat) {
     if (incidC_perturbation) {
