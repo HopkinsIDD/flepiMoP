@@ -2,7 +2,6 @@ name: minimal
 setup_name: minimal
 start_date: 2020-03-15
 end_date: 2020-05-31
-data_path: data
 nslots: 15
 
 
