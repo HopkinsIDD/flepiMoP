@@ -6,7 +6,7 @@ nslots: 15
 
 subpop_setup:
   geodata: data/geodata.csv
-  mobility: mobility.txt
+  mobility: data/mobility.txt
 
 compartments:
   infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
