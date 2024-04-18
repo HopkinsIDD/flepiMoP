@@ -7,7 +7,7 @@ nslots: 1
 
 spatial_setup:
   geodata: data/geodata.csv
-  mobility: mobility.csv
+  mobility: data/mobility.csv
   popnodes_key: population
   subpop_names_key: subpop
 
