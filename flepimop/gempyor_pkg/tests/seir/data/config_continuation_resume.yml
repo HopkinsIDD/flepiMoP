@@ -7,7 +7,7 @@ nslots: 15
 subpop_setup:
   base_path: data
   geodata: data/geodata.csv
-  mobility: mobility.txt
+  mobility: data/mobility.txt
 
 
 initial_conditions:
