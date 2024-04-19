@@ -129,7 +129,7 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         if modinf.outcomes_config["param_from_file"].exists():
             if modinf.outcomes_config["param_from_file"].get():
                 # Load the actual csv file
-                branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
+                branching_file = modinf.path_prefix / modinf.outcomes_config["param_subpop_file"].as_str()
                 branching_data = pa.parquet.read_table(branching_file).to_pandas()
                 if "relative_probability" not in list(branching_data["quantity"]):
                     raise ValueError(
