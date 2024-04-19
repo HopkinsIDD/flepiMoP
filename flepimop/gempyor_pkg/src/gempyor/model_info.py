@@ -269,7 +269,7 @@ class ModelInfo:
         return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
-        fname = self.path_prefix / self.get_filename(
+        fname = self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=input,
@@ -286,7 +286,7 @@ class ModelInfo:
         input: bool = False,
         extension_override: str = "",
     ):
-        fname = self.path_prefix / self.get_filename(
+        fname = self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=input,
