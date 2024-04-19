@@ -239,8 +239,12 @@ class GempyorSimulator:
                     initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, modinf=self.modinf)
                     seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(sim_id2load, modinf=self.modinf)
                 else:
-                    initial_conditions = self.modinf.initial_conditions.get_from_config(sim_id2write, modinf=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(sim_id2write, modinf=self.modinf)
+                    initial_conditions = self.modinf.initial_conditions.get_from_config(
+                        sim_id2write, modinf=self.modinf
+                    )
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
+                        sim_id2write, modinf=self.modinf
+                    )
                 self.lastsim_seeding_data = seeding_data
                 self.lastsim_seeding_amounts = seeding_amounts
                 self.lastsim_initial_conditions = initial_conditions

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 ## TODO: ideally here path_prefix should not be used and all files loaded from modinf
 
+
 def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     if not df["date"].is_monotonic_increasing:
         raise ValueError("_DataFrame2NumbaDict got an unsorted dataframe, exposing itself to non-sense")
@@ -99,7 +100,8 @@ class Seeding(SimulationComponent):
                 raise ValueError(f"Repeated subpop-date in rows {dupes.tolist()} of seeding::lambda_file.")
         elif method == "FolderDraw":
             seeding = pd.read_csv(
-                self.path_prefix / modinf.get_input_filename(
+                self.path_prefix
+                / modinf.get_input_filename(
                     ftype=modinf.seeding_config["seeding_file_type"].get(),
                     sim_id=sim_id,
                     extension_override="csv",

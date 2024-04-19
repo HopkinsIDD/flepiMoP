@@ -117,7 +117,7 @@ class ModelInfo:
                 ti=self.ti,
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
-                path_prefix = self.path_prefix,
+                path_prefix=self.path_prefix,
             )
             self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=self.path_prefix)
             self.initial_conditions = initial_conditions.InitialConditionsFactory(
