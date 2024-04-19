@@ -14,6 +14,8 @@ import xarray as xr
 import numba as nb
 import copy
 
+# TODO: should be able to draw e.g from an initial condition folder buuut keep the draw as a blob
+# so it is saved by emcee, so I can build a posterio
 
 def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False):
     if not inferpar.check_in_bound(proposal=proposal):

@@ -62,6 +62,7 @@ class Statistic:
             self.params = {}
 
         self.zero_to_one = False
+        # TODO: this should be set_zeros_to and only do it for the probabilily
         if statistic_config["zero_to_one"].exists():
             self.zero_to_one = statistic_config["zero_to_one"].get()
 
@@ -109,6 +110,9 @@ class Statistic:
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=self.params.get("scale", scale)
             ),  # wrong:
+            "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
+                x, loc=loc, scale=scale*loc.where(loc > 5, 5)
+                ), # TODO: check, that it's really the loc
             "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
             "rmse": lambda x, y: np.log(np.sqrt(np.mean((x - y) ** 2))),
             "absolute_error": lambda x, y: np.log(np.mean(np.abs(x - y))),
