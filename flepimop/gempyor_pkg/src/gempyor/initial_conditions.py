@@ -48,8 +48,8 @@ class InitialConditions(SimulationComponent):
             if method == "SetInitialConditionsFolderDraw":
                 ic_df = modinf.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
             else:
-                ic_df = self.path_prefix / read_df(
-                    self.initial_conditions_config["initial_conditions_file"].get(),
+                ic_df = read_df(
+                    self.path_prefix / self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
             y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
@@ -105,8 +105,7 @@ class InitialConditions(SimulationComponent):
             if method == "InitialConditionsFolderDraw":
                 ic_df = modinf.read_simID(ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id)
             elif method == "FromFile":
-                ic_df = self.path_prefix / read_df(
-                    self.initial_conditions_config["initial_conditions_file"].get(),
+                ic_df = read_df(self.path_prefix / self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
             # annoying conversion because sometime the parquet columns get attributed a timezone...
