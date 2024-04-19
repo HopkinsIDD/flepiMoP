@@ -65,7 +65,6 @@ class Statistic:
         # scale the data so that the lastest X items are more important
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
-        print("forecast", last_n, mult)
 
         last_n_llik = self.llik(model_data.isel(date=slice(-last_n, None)), gt_data.isel(date=slice(-last_n, None)))
 

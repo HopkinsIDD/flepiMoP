@@ -12,6 +12,29 @@ import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
 import numba as nb
+import copy
+
+
+def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False):
+    if not inferpar.check_in_bound(proposal=proposal):
+        print("OUT OF BOUND!!")
+        return -np.inf
+    
+    snpi_df_mod, hnpi_df_mod = inferpar.inject_proposal(proposal=proposal, snpi_df = static_sim_arguments["snpi_df_ref"], hnpi_df = static_sim_arguments["hnpi_df_ref"])
+    
+    ss = copy.deepcopy(static_sim_arguments)
+    ss["snpi_df_in"] = snpi_df_mod
+    ss["hnpi_df_in"] = hnpi_df_mod
+    del ss["snpi_df_ref"]
+    del ss["hnpi_df_ref"]
+
+    
+    outcomes_df = simulation_atomic(**ss, modinf=modinf, save=save)
+
+    ll_total, logloss, regularizations = loss.compute_logloss(model_df=outcomes_df, modinf=modinf)
+    print(f"llik is {ll_total}")
+
+    return ll_total
 
 
 # TODO: there is way to many of these functions, merge with the R interface.py implementation to avoid code duplication
