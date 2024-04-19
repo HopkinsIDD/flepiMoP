@@ -11,13 +11,15 @@ from . import statistics
 
 
 class LogLoss:
-    def __init__(self, inference_config: confuse.ConfigView, data_dir: str = "."):
+    def __init__(self, inference_config: confuse.ConfigView, modinf, data_dir: str = "."):
         self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
         self.gt["date"] = pd.to_datetime(self.gt["date"])
         self.gt = self.gt.set_index("date")
         self.statistics = {}
+
         for key, value in inference_config["statistics"].items():
             self.statistics[key] = statistics.Statistic(key, value)
+
 
     def plot_gt(self, ax=None, subpop=None, statistic=None, subplot=False, filename=None, **kwargs):
         """Plots ground truth data.
@@ -95,6 +97,7 @@ class LogLoss:
             np.zeros((len(coords["statistic"]), len(coords["subpop"]))), dims=["statistic", "subpop"], coords=coords
         )
 
+        # TODO : this is slow and can be array-ized by subpop_
         for subpop in modinf.subpop_struct.subpop_names:
             # essential to sort by index (date here)
             gt_s = self.gt[self.gt["subpop"] == subpop].sort_index()
@@ -106,8 +109,6 @@ class LogLoss:
 
             gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1)
             model_df_s = model_df_s.drop(["subpop"], axis=1).loc[first_date:last_date]
-
-            # TODO: add whole US!! option
 
             for key, stat in self.statistics.items():
                 logloss.loc[dict(statistic=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
