@@ -9,6 +9,7 @@ import logging
 from . import model_info, NPI, utils
 import datetime
 import xarray as xr
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class Parameters:
         ti: datetime.date,
         tf: datetime.date,
         subpop_names: list,
+        path_prefix: str = ".",
     ):
         self.pconfig = parameter_config
         self.pnames = []
@@ -55,7 +57,7 @@ class Parameters:
 
             # Parameter given as a file
             elif self.pconfig[pn]["timeseries"].exists():
-                fn_name = self.pconfig[pn]["timeseries"].get()
+                fn_name = os.path.join(path_prefix, self.pconfig[pn]["timeseries"].get())
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
                 if len(df.columns) == 1:  # if only one ts, assume it applies to all subpops
