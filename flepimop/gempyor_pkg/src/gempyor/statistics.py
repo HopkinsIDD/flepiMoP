@@ -61,6 +61,10 @@ class Statistic:
         else:
             self.params = {}
 
+        self.zero_to_one = False
+        if statistic_config["zero_to_one"].exists():
+            self.zero_to_one = statistic_config["zero_to_one"].get()
+
     def _forecast_regularize(self, model_data, gt_data, **kwargs):
         # scale the data so that the lastest X items are more important
         last_n = kwargs.get("last_n", 4)
@@ -114,6 +118,11 @@ class Statistic:
         if self.dist in ["pois", "nbinom"]:
             model_data = model_data.astype(int)
             gt_data = gt_data.astype(int)
+        
+        if self.zero_to_one:
+            # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
+            model_data=model_data.where(model_data != 0, 1)
+            gt_data=gt_data.where(gt_data != 0, 1)
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
