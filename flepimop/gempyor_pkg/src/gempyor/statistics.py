@@ -52,18 +52,24 @@ class Statistic:
             self.scale_func = getattr(np, statistic_config["scale"].get())
 
         self.dist = statistic_config["likelihood"]["dist"].get()
+        if statistic_config["likelihood"]["params"].exists():
+            self.params = statistic_config["likelihood"]["params"].get()
+        else:
+            self.params = {}
 
-    def _forecast_regularize(self, data, **kwargs):
+    def _forecast_regularize(self, model_data, gt_data, **kwargs):
         # scale the data so that the lastest X items are more important
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
         # multiply the last n items by mult
-        reg_data = data * np.concatenate([np.ones(data.shape[0] - last_n), np.ones(last_n) * mult])
-        return reg_data
+        model_data = model_data * np.concatenate([np.ones(model_data.shape[0] - last_n), np.ones(last_n) * mult])
+        gt_data = gt_data * np.concatenate([np.ones(gt_data.shape[0] - last_n), np.ones(last_n) * mult])
+        return self.llik(model_data, gt_data)
 
-    def _allsubpop_regularize(self, data, **kwargs):
+    def _allsubpop_regularize(self, model_data, gt_data, **kwargs):
         """add a regularization term that is the sum of all subpopulations"""
-        return data  ### TODO
+        mult = kwargs.get("mult", 1)
+        # TODOODODODOOODO
 
     def __str__(self) -> str:
         return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
@@ -85,16 +91,9 @@ class Statistic:
 
     def apply_transforms(self, data):
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
-        # Apply regularizations sequentially
-        for reg_func, reg_config in self.regularizations:
-            data_scaled_resampled = reg_func(data_scaled_resampled, **reg_config)  # Pass config parameters
         return data_scaled_resampled
-
-    def compute_logloss(self, model_data, gt_data):
-        model_data = self.apply_transforms(model_data[self.sim_var])
-        gt_data = self.apply_transforms(gt_data[self.data_var])
-
-        # TODO: check the order of the arguments
+    
+    def llik(self, model_data, gt_data):
         dist_map = {
             "pois": scipy.stats.poisson.pmf,
             "norm": lambda x, loc, scale: scipy.stats.norm.pdf(
@@ -110,7 +109,20 @@ class Statistic:
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
 
+        # TODO: check the order of the arguments
+
+        return np.log(likelihood)
+
+
+    def compute_logloss(self, model_data, gt_data):
+        model_data = self.apply_transforms(model_data[self.sim_var])
+        gt_data = self.apply_transforms(gt_data[self.data_var])
+        
         if not model_data.shape == gt_data.shape:
             raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape")
 
-        return np.log(likelihood)
+        regularization = 0
+        for reg_func, reg_config in self.regularizations:
+            regularization = reg_func(model_data=model_data, gt_data=gt_data, **reg_config)  # Pass config parameters
+
+        return self.llik(model_data, gt_data), regularization
