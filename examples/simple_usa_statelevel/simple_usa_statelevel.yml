@@ -136,14 +136,15 @@ inference:
       #period: "1 weeks" # "W-SAT"
       #remove_na: TRUE
       #add_one: TRUE
+      zero_to_one: True
       likelihood: 
         dist: pois
       regularize:
         - name: forecast 
-          last_n: 10
+          last_n: 2
           mult: 2
         - name: allsubpop
-          mult: 10
+          mult: 2
     incidHosp:
       name: incidHosp
       sim_var: incidHosp
@@ -152,6 +153,7 @@ inference:
         aggregator: sum
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: False
+      zero_to_one: True
       likelihood: 
         dist: pois
     incidDeath:
@@ -162,6 +164,7 @@ inference:
         aggregator: sum
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: True
+      zero_to_one: True
       likelihood: 
         dist: pois
       # likelihood: 
