@@ -103,6 +103,14 @@ class InferenceParameters:
                 f"   >> affected subpop: {self.subpops[p_idx]}"
             )
 
+    def __str__(self) -> str:
+        from collections import Counter
+        this_str = f"InferenceParameters: with {self.get_dim()} parameters: \n"
+        for key, value in Counter(self.ptypes).items():
+            this_str += f"    {key}: {value} parameters\n"
+        
+        return this_str
+
     def get_dim(self):
         return len(self.pnames)
 
@@ -152,7 +160,7 @@ class InferenceParameters:
         """
         return np.array((proposal > self.ubs))
 
-    def inject_proposal(self, proposal, hnpi_df=None, snpi_df=None):
+    def inject_proposal(self, proposal, snpi_df=None, hnpi_df=None,):
         """
         Injects the proposal into model inputs, at the right place.
 
@@ -167,14 +175,16 @@ class InferenceParameters:
         snpi_df_mod = snpi_df.copy(deep=True)
         hnpi_df_mod = hnpi_df.copy(deep=True)
 
+        # Ideally this should lie in each submodules, e.g NPI.inject, parameter.inject
+
         for p_idx in range(self.get_dim()):
-            if self.ptypes[p_idx] == "snpi":
+            if self.ptypes[p_idx] == "seir_modifiers":
                 snpi_df_mod.loc[
                     (snpi_df_mod["modifier_name"] == self.pnames[p_idx])
                     & (snpi_df_mod["subpop"] == self.subpops[p_idx]),
                     "value",
                 ] = proposal[p_idx]
-            elif self.ptypes[p_idx] == "hnpi":
+            elif self.ptypes[p_idx] == "outcome_modifiers":
                 hnpi_df_mod.loc[
                     (hnpi_df_mod["modifier_name"] == self.pnames[p_idx])
                     & (hnpi_df_mod["subpop"] == self.subpops[p_idx]),

@@ -53,17 +53,36 @@ seir_modifiers:
       period_start_date: 2023-11-01
       period_end_date: 2024-02-01
       subpop: "all"
-      value: 
-        distribution: uniform
-        low: 1
-        high: 1.4
+      value:
+        distribution: truncnorm
+        mean: 1.3
+        sd: 0.4
+        a: 0.2
+        b: 3
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
     Ro_sunny:
       method: SinglePeriodModifier
       parameter: Ro
       period_start_date: 2024-02-01
       period_end_date: 2024-04-01
       subpop: "all"
-      value: 1.3
+      value:
+        distribution: truncnorm
+        mean: 1.3
+        sd: 0.4
+        a: 0.1
+        b: 10
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -1
+        b: 1
     Ro_all:
       method: StackedModifier
       modifiers: ["Ro_season","Ro_sunny"]
