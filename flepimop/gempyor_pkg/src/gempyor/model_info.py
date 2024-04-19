@@ -30,7 +30,7 @@ class ModelInfo:
         nslots=1,
         seir_modifiers_scenario=None,
         outcome_modifiers_scenario=None,
-        spatial_path_prefix="",
+        path_prefix="",
         write_csv=False,
         write_parquet=False,
         first_sim_index=1,
@@ -81,12 +81,12 @@ class ModelInfo:
         spatial_config = config["subpop_setup"]
         if config["data_path"].exists():
             raise ValueError("The config has a data_path section. This is no longer supported.")
-        spatial_base_path = pathlib.Path(spatial_path_prefix)
+        self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get()
+            geodata_file=self.path_prefix / spatial_config["geodata"].get(),
+            mobility_file=self.path_prefix / spatial_config["mobility"].get()
             if spatial_config["mobility"].exists()
             else None,
             subpop_pop_key="population",
@@ -117,11 +117,11 @@ class ModelInfo:
                 ti=self.ti,
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
-                path_prefix = spatial_path_prefix,
+                path_prefix = self.path_prefix,
             )
-            self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=spatial_path_prefix)
+            self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=self.path_prefix)
             self.initial_conditions = initial_conditions.InitialConditionsFactory(
-                config=self.initial_conditions_config, path_prefix=spatial_path_prefix
+                config=self.initial_conditions_config, path_prefix=self.path_prefix
             )
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
@@ -224,7 +224,7 @@ class ModelInfo:
                 self.extension = "csv"
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
-        return self.get_filename(
+        return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=True,
@@ -232,7 +232,7 @@ class ModelInfo:
         )
 
     def get_output_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
-        return self.get_filename(
+        return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=False,
@@ -254,7 +254,7 @@ class ModelInfo:
             run_id = self.out_run_id
             prefix = self.out_prefix
 
-        fn = file_paths.create_file_name(
+        fn = self.path_prefix / file_paths.create_file_name(
             run_id=run_id,
             prefix=prefix,
             index=sim_id + self.first_sim_index - 1,
@@ -269,7 +269,7 @@ class ModelInfo:
         return self.setup_name
 
     def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
-        fname = self.get_filename(
+        fname = self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=input,
@@ -286,7 +286,7 @@ class ModelInfo:
         input: bool = False,
         extension_override: str = "",
     ):
-        fname = self.get_filename(
+        fname = self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=input,

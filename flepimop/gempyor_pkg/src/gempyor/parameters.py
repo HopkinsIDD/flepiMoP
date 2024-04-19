@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 #                 "subpop":modinf.subpop_struct.subpop_names}).sel(parameter="gamma_0").plot()
 
 
+## TODO: ideally here path_prefix should not be used and all files loaded from modinf
+
 class Parameters:
     # Minimal object to be easily picklable for // runs
     def __init__(

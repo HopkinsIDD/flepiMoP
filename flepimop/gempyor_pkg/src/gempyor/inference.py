@@ -119,8 +119,8 @@ def get_static_arguments(modinf):
 
     p_draw = modinf.parameters.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
 
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=0, setup=modinf)
-    seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id=0, setup=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=0, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id=0, modinf=modinf)
 
     # reduce them
     parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)

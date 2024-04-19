@@ -8,23 +8,27 @@ import logging
 from .simulation_component import SimulationComponent
 from . import utils
 from .utils import read_df
+import os
 
 logger = logging.getLogger(__name__)
 
+## TODO: ideally here path_prefix should not be used and all files loaded from modinf
+
 
 class InitialConditions(SimulationComponent):
-    def __init__(self, config: confuse.ConfigView):
+    def __init__(self, config: confuse.ConfigView, path_prefix: str = ".",):
         self.initial_conditions_config = config
+        self.path_prefix = path_prefix
 
-    def get_from_config(self, sim_id: int, setup) -> np.ndarray:
+    def get_from_config(self, sim_id: int, modinf) -> np.ndarray:
         method = "Default"
         if self.initial_conditions_config is not None and "method" in self.initial_conditions_config.keys():
             method = self.initial_conditions_config["method"].as_str()
 
         if method == "Default":
             ## JK : This could be specified in the config
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
-            y0[0, :] = setup.subpop_pop
+            y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
+            y0[0, :] = modinf.subpop_pop
             return y0  # we finish here: no rest and not proportionallity applies
 
         allow_missing_subpops = False
@@ -42,21 +46,21 @@ class InitialConditions(SimulationComponent):
         if method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
             #  TODO Think about     - Does not support the new way of doing compartment indexing
             if method == "SetInitialConditionsFolderDraw":
-                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+                ic_df = modinf.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
             else:
-                ic_df = read_df(
+                ic_df = self.path_prefix / read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
-            for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):  #
+            y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
+            for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):  #
                 if pl in list(ic_df["subpop"]):
                     states_pl = ic_df[ic_df["subpop"] == pl]
-                    for comp_idx, comp_name in setup.compartments.compartments["name"].items():
+                    for comp_idx, comp_name in modinf.compartments.compartments["name"].items():
                         if "mc_name" in states_pl.columns:
                             ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
                         else:
-                            filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
+                            filters = modinf.compartments.compartments.iloc[comp_idx].drop("name")
                             ic_df_compartment_val = states_pl.copy()
                             for mc_name, mc_value in filters.items():
                                 ic_df_compartment_val = ic_df_compartment_val[
@@ -84,24 +88,24 @@ class InitialConditions(SimulationComponent):
                             y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
                 elif allow_missing_subpops:
                     logger.critical(
-                        f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartment ({setup.compartments.compartments['name'].iloc[0]})"
+                        f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartment ({modinf.compartments.compartments['name'].iloc[0]})"
                     )
                     if "proportional" in self.initial_conditions_config.keys():
                         if self.initial_conditions_config["proportional"].get():
                             y0[0, pl_idx] = 1.0
                         else:
-                            y0[0, pl_idx] = setup.subpop_pop[pl_idx]
+                            y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
                     else:
-                        y0[0, pl_idx] = setup.subpop_pop[pl_idx]
+                        y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
                 else:
                     raise ValueError(
                         f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_subpops=TRUE to bypass this error"
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
-                ic_df = setup.read_simID(ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id)
+                ic_df = modinf.read_simID(ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id)
             elif method == "FromFile":
-                ic_df = read_df(
+                ic_df = self.path_prefix / read_df(
                     self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
@@ -110,18 +114,18 @@ class InitialConditions(SimulationComponent):
             ic_df["date"] = ic_df["date"].dt.date
             ic_df["date"] = ic_df["date"].astype(str)
 
-            ic_df = ic_df[(ic_df["date"] == str(setup.ti)) & (ic_df["mc_value_type"] == "prevalence")]
+            ic_df = ic_df[(ic_df["date"] == str(modinf.ti)) & (ic_df["mc_value_type"] == "prevalence")]
             if ic_df.empty:
                 raise ValueError(
                     f"There is no entry for initial time ti in the provided initial_conditions::states_file."
                 )
-            y0 = np.zeros((setup.compartments.compartments.shape[0], setup.nsubpops))
+            y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
 
-            for comp_idx, comp_name in setup.compartments.compartments["name"].items():
+            for comp_idx, comp_name in modinf.compartments.compartments["name"].items():
                 # rely on all the mc's instead of mc_name to avoid errors due to e.g order.
                 # before: only
                 # ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
-                filters = setup.compartments.compartments.iloc[comp_idx].drop("name")
+                filters = modinf.compartments.compartments.iloc[comp_idx].drop("name")
                 ic_df_compartment = ic_df.copy()
                 for mc_name, mc_value in filters.items():
                     ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value]
@@ -143,17 +147,17 @@ class InitialConditions(SimulationComponent):
                         f"WARNING: init file mc_name {ic_df_compartment['mc_name'].iloc[0]} does not match compartment mc_name {comp_name}"
                     )
 
-                for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
+                for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):
                     if pl in ic_df.columns:
                         y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
                     elif allow_missing_subpops:
                         logger.critical(
-                            f"No initial conditions for for subpop {pl}, assuming everyone (n={setup.subpop_pop[pl_idx]}) in the first metacompartments ({setup.compartments.compartments['name'].iloc[0]})"
+                            f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartments ({modinf.compartments.compartments['name'].iloc[0]})"
                         )
                         if "proportion" in self.initial_conditions_config.keys():
                             if self.initial_conditions_config["proportion"].get():
                                 y0[0, pl_idx] = 1.0
-                        y0[0, pl_idx] = setup.subpop_pop[pl_idx]
+                        y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
                     else:
                         raise ValueError(
                             f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_subpops=TRUE to bypass this error"
@@ -164,7 +168,7 @@ class InitialConditions(SimulationComponent):
         # rest
         if rests:  # not empty
             for comp_idx, pl_idx in rests:
-                total = setup.subpop_pop[pl_idx]
+                total = modinf.subpop_pop[pl_idx]
                 if "proportional" in self.initial_conditions_config.keys():
                     if self.initial_conditions_config["proportional"].get():
                         total = 1.0
@@ -172,13 +176,13 @@ class InitialConditions(SimulationComponent):
 
         if "proportional" in self.initial_conditions_config.keys():
             if self.initial_conditions_config["proportional"].get():
-                y0 = y0 * setup.subpop_pop
+                y0 = y0 * modinf.subpop_pop
 
         # check that the inputed values sums to the subpop population:
         error = False
-        for pl_idx, pl in enumerate(setup.subpop_struct.subpop_names):
+        for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):
             n_y0 = y0[:, pl_idx].sum()
-            n_pop = setup.subpop_pop[pl_idx]
+            n_pop = modinf.subpop_pop[pl_idx]
             if abs(n_y0 - n_pop) > 1:
                 error = True
                 print(
@@ -198,8 +202,8 @@ class InitialConditions(SimulationComponent):
             )
         return y0
 
-    def get_from_file(self, sim_id: int, setup) -> np.ndarray:
-        return self.get_from_config(sim_id=sim_id, setup=setup)
+    def get_from_file(self, sim_id: int, modinf) -> np.ndarray:
+        return self.get_from_config(sim_id=sim_id, modinf=modinf)
 
 
 # TODO: rename config to initial_conditions_config as it shadows the global config
@@ -215,4 +219,4 @@ def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = ".")
                 path_prefix=path_prefix,
             )
             return klass
-    return InitialConditions(config)
+    return InitialConditions(config, path_prefix=path_prefix)
