@@ -15,6 +15,10 @@ class LogLoss:
         self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
         self.gt["date"] = pd.to_datetime(self.gt["date"])
         self.gt = self.gt.set_index("date")
+
+        # made the controversial choice of storing the gt as an xarray dataset instead of a dictionary
+        # of dataframes
+        self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
         self.statistics = {}
 
         for key, value in inference_config["statistics"].items():

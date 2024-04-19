@@ -260,11 +260,11 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, setup=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, modinf=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, modinf=modinf)
         else:
-            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, setup=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, modinf=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, modinf=modinf)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters

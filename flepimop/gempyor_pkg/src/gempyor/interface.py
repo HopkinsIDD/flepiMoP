@@ -54,7 +54,7 @@ class GempyorSimulator:
         inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
-        spatial_path_prefix="",  # in case the data folder is on another directory
+        path_prefix="",  # in case the data folder is on another directory
         autowrite_seir=False,
     ):
         self.seir_modifiers_scenario = seir_modifiers_scenario
@@ -236,11 +236,11 @@ class GempyorSimulator:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(sim_id2load, setup=self.modinf)
+                    initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, modinf=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(sim_id2load, modinf=self.modinf)
                 else:
-                    initial_conditions = self.modinf.initial_conditions.get_from_config(sim_id2write, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(sim_id2write, setup=self.modinf)
+                    initial_conditions = self.modinf.initial_conditions.get_from_config(sim_id2write, modinf=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(sim_id2write, modinf=self.modinf)
                 self.lastsim_seeding_data = seeding_data
                 self.lastsim_seeding_amounts = seeding_amounts
                 self.lastsim_initial_conditions = initial_conditions
@@ -437,7 +437,7 @@ def paramred_parallel(run_spec, snpi_fn):
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
+        path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     snpi = pq.read_table(snpi_fn).to_pandas()
@@ -463,7 +463,7 @@ def paramred_parallel_config(run_spec, dummy):
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
+        path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     npi_seir = gempyor_simulator.get_seir_npi()
