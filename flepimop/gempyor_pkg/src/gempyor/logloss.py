@@ -25,25 +25,24 @@ class LogLoss:
         # then some NA were created if some dates where present in some gt but no other.
         # FIXME THIS IS FUNDAMENTALLY WRONG, especially as groundtruth resample by statistic !!!!
 
-        self.gt = pd.read_csv(os.path.join(data_dir,inference_config['gt_data_path'].get()))
+        self.gt = pd.read_csv(os.path.join(data_dir, inference_config["gt_data_path"].get()))
         self.gt["date"] = pd.to_datetime(self.gt["date"])
         self.gt = self.gt.set_index("date")
 
         # made the controversial choice of storing the gt as an xarray dataset instead of a dictionary
         # of dataframes
-        self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
+        self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date", "subpop"]))
         # Very important: subsample the subpop in the population, in the right order, and sort by the date index.
-        self.gt_xr = self.gt_xr.sortby("date").reindex({"subpop":modinf.subpop_struct.subpop_names})
-        
+        self.gt_xr = self.gt_xr.sortby("date").reindex({"subpop": modinf.subpop_struct.subpop_names})
+
         # This will force at 0, if skipna is False, data of some variable that don't exist if iother exist
         # and damn python datetime types are ugly...
         self.first_date = max(pd.to_datetime(self.gt_xr.date[0].values).date(), modinf.ti)
         self.last_date = min(pd.to_datetime(self.gt_xr.date[-1].values).date(), modinf.tf)
-        
+
         self.statistics = {}
         for key, value in inference_config["statistics"].items():
             self.statistics[key] = statistics.Statistic(key, value)
-
 
     def plot_gt(self, ax=None, subpop=None, statistic=None, subplot=False, filename=None, **kwargs):
         """Plots ground truth data.
@@ -123,11 +122,17 @@ class LogLoss:
 
         regularizations = 0
 
-        model_xr = xr.Dataset.from_dataframe(model_df.reset_index().set_index(["date","subpop"])).sortby("date").reindex({"subpop":modinf.subpop_struct.subpop_names})
+        model_xr = (
+            xr.Dataset.from_dataframe(model_df.reset_index().set_index(["date", "subpop"]))
+            .sortby("date")
+            .reindex({"subpop": modinf.subpop_struct.subpop_names})
+        )
 
         for key, stat in self.statistics.items():
-            ll, reg = stat.compute_logloss(model_xr.sel(date=slice(self.first_date, self.last_date)), 
-                                           self.gt_xr.sel(date=slice(self.first_date, self.last_date)))
+            ll, reg = stat.compute_logloss(
+                model_xr.sel(date=slice(self.first_date, self.last_date)),
+                self.gt_xr.sel(date=slice(self.first_date, self.last_date)),
+            )
             logloss.loc[dict(statistic=key)] = ll
             regularizations += reg
 

@@ -20,7 +20,7 @@ class Statistic:
 
     # SkipNA is False by default, which results in NA values broadcasting when resampling (e.g a NA withing a sum makes the whole sum a NA)
     # if True, then NA are replaced with 0 (for sum), 1 for product, ...
-    # In doubt, plot stat.plot_transformed() to see the effect of the resampling  
+    # In doubt, plot stat.plot_transformed() to see the effect of the resampling
     """
 
     def __init__(self, name, statistic_config: confuse.ConfigView):
@@ -69,13 +69,13 @@ class Statistic:
 
         last_n_llik = self.llik(model_data.isel(date=slice(-last_n, None)), gt_data.isel(date=slice(-last_n, None)))
 
-        return mult*last_n_llik.sum().sum().values
+        return mult * last_n_llik.sum().sum().values
 
     def _allsubpop_regularize(self, model_data, gt_data, **kwargs):
         """add a regularization term that is the sum of all subpopulations"""
         mult = kwargs.get("mult", 1)
         llik_total = self.llik(model_data.sum("subpop"), gt_data.sum("subpop"))
-        return mult*llik_total.sum().sum().values
+        return mult * llik_total.sum().sum().values
 
     def __str__(self) -> str:
         return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
@@ -99,7 +99,7 @@ class Statistic:
     def apply_transforms(self, data):
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
         return data_scaled_resampled
-    
+
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
         dist_map = {
             "pois": scipy.stats.poisson.logpmf,
@@ -112,7 +112,7 @@ class Statistic:
         }
         if self.dist not in dist_map:
             raise ValueError(f"Invalid distribution specified: {self.dist}")
-        if self.dist in ["pois", "nbinom"]: 
+        if self.dist in ["pois", "nbinom"]:
             model_data = model_data.astype(int)
             gt_data = gt_data.astype(int)
 
@@ -124,13 +124,14 @@ class Statistic:
         # TODO: check the order of the arguments
         return likelihood
 
-
     def compute_logloss(self, model_data, gt_data):
         model_data = self.apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
-        
+
         if not model_data.shape == gt_data.shape:
-            raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape: model_data.shape={model_data.shape} != gt_data.shape={gt_data.shape}")
+            raise ValueError(
+                f"{self.name} Statistic error: data and groundtruth do not have the same shape: model_data.shape={model_data.shape} != gt_data.shape={gt_data.shape}"
+            )
 
         regularization = 0
         for reg_func, reg_config in self.regularizations:

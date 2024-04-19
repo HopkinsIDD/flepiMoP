@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class InitialConditions(SimulationComponent):
-    def __init__(self, config: confuse.ConfigView, path_prefix: str = ".",):
+    def __init__(
+        self,
+        config: confuse.ConfigView,
+        path_prefix: str = ".",
+    ):
         self.initial_conditions_config = config
         self.path_prefix = path_prefix
 
@@ -103,9 +107,12 @@ class InitialConditions(SimulationComponent):
                     )
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
-                ic_df = modinf.read_simID(ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id)
+                ic_df = modinf.read_simID(
+                    ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id
+                )
             elif method == "FromFile":
-                ic_df = read_df(self.path_prefix / self.initial_conditions_config["initial_conditions_file"].get(),
+                ic_df = read_df(
+                    self.path_prefix / self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
             # annoying conversion because sometime the parquet columns get attributed a timezone...
