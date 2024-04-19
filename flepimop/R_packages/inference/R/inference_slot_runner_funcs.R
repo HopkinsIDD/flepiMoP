@@ -640,23 +640,25 @@ initialize_mcmc_first_block <- function(
             if (!file.exists(initial_init_file)) {
                 stop("ERROR: Initial conditions file specified but does not exist.")
             }
+            
             if (grepl(".csv", initial_init_file)){
                 initial_init <- readr::read_csv(initial_init_file)
             }else{
                 initial_init <- arrow::read_parquet(initial_init_file)
             }
-
-            initial_init <- initial_init %>%
-                dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
-                dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
-
-            # err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
-            # if (err != 0) {
-            #     stop("Could not copy initial conditions file")
-            # }
-
-            if (nrow(initial_init) == 0) {
-                stop("ERROR: Initial conditions file specified but does not contain the start date.")
+            
+            # if the initial conditions file contains a 'date' column, filter for config$start_date
+            
+            if("date" %in% colnames(initial_init)){
+                
+                initial_init <- initial_init %>%
+                    dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+                    dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+                
+                if (nrow(initial_init) == 0) {
+                    stop("ERROR: Initial conditions file specified but does not contain the start date.")
+                }  
+                
             }
 
             arrow::write_parquet(initial_init, global_files[["init_filename"]])

@@ -34,7 +34,12 @@ option_list = list(
   optparse::make_option(c("-r", "--rpath"), action="store", default=Sys.getenv("RSCRIPT_PATH","Rscript"), type = 'character', help = "path to R executable"),
   optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
   optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("RUN_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
-  optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", TRUE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs')
+  optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", TRUE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
+  optparse::make_option(c("-S","--save_seir"), action = "store", default = Sys.getenv("SAVE_SEIR", FALSE), type = 'logical', help = 'Should the SEIR output files be saved for each iteration'),
+  optparse::make_option(c("-H","--save_hosp"), action = "store", default = Sys.getenv("SAVE_HOSP", TRUE), type = 'logical', help = 'Should the HOSP output files be saved for each iteration'),
+  optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
+  optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
+  optparse::make_option(c("-g", "--subpop_len"), action="store", default=Sys.getenv("SUBPOP_LENGTH", 5), type='integer', help = "number of digits in subpop")
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -114,7 +119,7 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
     if (nchar(opt$ground_truth_start) > 0) {
       ground_truth_start_text <- c("--ground_truth_start", opt$ground_truth_start)
     }
-    if (nchar(opt$ground_truth_start) > 0) {
+    if (nchar(opt$ground_truth_end) > 0) {
       ground_truth_end_text <- c("--ground_truth_end", opt$ground_truth_end)
     }
     
@@ -139,6 +144,8 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
         "-R", opt[["is-resume"]],
         "-I", opt[["is-interactive"]],
         "-L", opt$reset_chimeric_on_accept,
+        "-S", opt$save_seir,
+        "-H", opt$save_hosp,
         #paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""), # works on Mac only, not windows
         #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
         sep = " ")
