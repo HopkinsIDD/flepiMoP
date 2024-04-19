@@ -17,6 +17,10 @@ class Statistic:
         - aggregator: the aggregation function to use
         - skipna: whether to skip NA values
     - regularize: apply a regularization term to the data before computing the statistic
+
+    # SkipNA is False by default, which results in NA values broadcasting when resampling (e.g a NA withing a sum makes the whole sum a NA)
+    # if True, then NA are replaced with 0 (for sum), 1 for product, ...
+    # In doubt, plot stat.plot_transformed() to see the effect of the resampling  
     """
 
     def __init__(self, name, statistic_config: confuse.ConfigView):
@@ -39,10 +43,10 @@ class Statistic:
             resample_config = statistic_config["resample"]
             self.resample_freq = ""
             if resample_config["freq"].exists():
-                self.resample_freq = resample_config["freq"].get()
+                self.resample_freq = resample_config["freq"].as_str()
             self.resample_aggregator = ""
             if resample_config["aggregator"].exists():
-                self.resample_aggregator = getattr(pd.Series, resample_config["aggregator"].get())
+                self.resample_aggregator_name = resample_config["aggregator"].get()
             self.resample_skipna = False  # TODO
             if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
                 self.resample_skipna = resample_config["skipna"].get()
@@ -61,15 +65,17 @@ class Statistic:
         # scale the data so that the lastest X items are more important
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
-        # multiply the last n items by mult
-        model_data = model_data * np.concatenate([np.ones(model_data.shape[0] - last_n), np.ones(last_n) * mult])
-        gt_data = gt_data * np.concatenate([np.ones(gt_data.shape[0] - last_n), np.ones(last_n) * mult])
-        return self.llik(model_data, gt_data)
+        print("forecast", last_n, mult)
+
+        last_n_llik = self.llik(model_data.isel(date=slice(-last_n, None)), gt_data.isel(date=slice(-last_n, None)))
+
+        return mult*last_n_llik.sum().sum().values
 
     def _allsubpop_regularize(self, model_data, gt_data, **kwargs):
         """add a regularization term that is the sum of all subpopulations"""
         mult = kwargs.get("mult", 1)
-        # TODOODODODOOODO
+        llik_total = self.llik(model_data.sum("subpop"), gt_data.sum("subpop"))
+        return mult*llik_total.sum().sum().values
 
     def __str__(self) -> str:
         return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
@@ -79,7 +85,8 @@ class Statistic:
 
     def apply_resample(self, data):
         if self.resample:
-            return data.resample(self.resample_freq).agg(self.resample_aggregator, skipna=self.resample_skipna)
+            aggregator_method = getattr(data.resample(date=self.resample_freq), self.resample_aggregator_name)
+            return aggregator_method(skipna=self.resample_skipna)
         else:
             return data
 
@@ -93,25 +100,29 @@ class Statistic:
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
         return data_scaled_resampled
     
-    def llik(self, model_data, gt_data):
+    def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
         dist_map = {
-            "pois": scipy.stats.poisson.pmf,
-            "norm": lambda x, loc, scale: scipy.stats.norm.pdf(
+            "pois": scipy.stats.poisson.logpmf,
+            "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=self.params.get("scale", scale)
             ),  # wrong:
-            "nbinom": lambda x, n, p: scipy.stats.nbinom.pmf(x, n=self.params.get("n"), p=model_data),
-            "rmse": lambda x, y: np.sqrt(np.mean((x - y) ** 2)),
-            "absolute_error": lambda x, y: np.mean(np.abs(x - y)),
+            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
+            "rmse": lambda x, y: np.log(np.sqrt(np.mean((x - y) ** 2))),
+            "absolute_error": lambda x, y: np.log(np.mean(np.abs(x - y))),
         }
         if self.dist not in dist_map:
             raise ValueError(f"Invalid distribution specified: {self.dist}")
+        if self.dist in ["pois", "nbinom"]: 
+            model_data = model_data.astype(int)
+            gt_data = gt_data.astype(int)
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
 
-        # TODO: check the order of the arguments
+        likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
-        return np.log(likelihood)
+        # TODO: check the order of the arguments
+        return likelihood
 
 
     def compute_logloss(self, model_data, gt_data):
@@ -119,10 +130,10 @@ class Statistic:
         gt_data = self.apply_transforms(gt_data[self.data_var])
         
         if not model_data.shape == gt_data.shape:
-            raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape")
+            raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape: model_data.shape={model_data.shape} != gt_data.shape={gt_data.shape}")
 
         regularization = 0
         for reg_func, reg_config in self.regularizations:
-            regularization = reg_func(model_data=model_data, gt_data=gt_data, **reg_config)  # Pass config parameters
+            regularization += reg_func(model_data=model_data, gt_data=gt_data, **reg_config)  # Pass config parameters
 
-        return self.llik(model_data, gt_data), regularization
+        return self.llik(model_data, gt_data).sum("date"), regularization

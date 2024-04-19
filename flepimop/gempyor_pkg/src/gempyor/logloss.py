@@ -4,23 +4,43 @@ import numpy as np
 import confuse
 import scipy.stats
 from . import statistics
+import os
 
 
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing
 # TODO: add an autatic test that show that the loss is biggest when gt == modeldata
 
 
+# A lot of things can go wrong here, in the previous approach where GT was cast to xarray as
+#  self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
+# then some NA were created if some dates where present in some gt but no other.
+
+
 class LogLoss:
     def __init__(self, inference_config: confuse.ConfigView, modinf, data_dir: str = "."):
-        self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
+        # TODO: bad format for gt because each date must have a value for each column, but if it doesn't and you add NA
+        # then this NA has a meaning that depends on skip NA, which is annoying.
+        # A lot of things can go wrong here, in the previous approach where GT was cast to xarray as
+        #  self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
+        # then some NA were created if some dates where present in some gt but no other.
+        # FIXME THIS IS FUNDAMENTALLY WRONG, especially as groundtruth resample by statistic !!!!
+
+        self.gt = pd.read_csv(os.path.join(data_dir,inference_config['gt_data_path'].get()))
         self.gt["date"] = pd.to_datetime(self.gt["date"])
         self.gt = self.gt.set_index("date")
 
         # made the controversial choice of storing the gt as an xarray dataset instead of a dictionary
         # of dataframes
         self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
+        # Very important: subsample the subpop in the population, in the right order, and sort by the date index.
+        self.gt_xr = self.gt_xr.sortby("date").reindex({"subpop":modinf.subpop_struct.subpop_names})
+        
+        # This will force at 0, if skipna is False, data of some variable that don't exist if iother exist
+        # and damn python datetime types are ugly...
+        self.first_date = max(pd.to_datetime(self.gt_xr.date[0].values).date(), modinf.ti)
+        self.last_date = min(pd.to_datetime(self.gt_xr.date[-1].values).date(), modinf.tf)
+        
         self.statistics = {}
-
         for key, value in inference_config["statistics"].items():
             self.statistics[key] = statistics.Statistic(key, value)
 
@@ -101,23 +121,19 @@ class LogLoss:
             np.zeros((len(coords["statistic"]), len(coords["subpop"]))), dims=["statistic", "subpop"], coords=coords
         )
 
-        # TODO : this is slow and can be array-ized by subpop_
-        for subpop in modinf.subpop_struct.subpop_names:
-            # essential to sort by index (date here)
-            gt_s = self.gt[self.gt["subpop"] == subpop].sort_index()
-            model_df_s = model_df[model_df["subpop"] == subpop].sort_index()
+        regularizations = 0
 
-            # Places where data and model overlap
-            first_date = max(gt_s.index.min(), model_df_s.index.min())
-            last_date = min(gt_s.index.max(), model_df_s.index.max())
+        model_xr = xr.Dataset.from_dataframe(model_df.reset_index().set_index(["date","subpop"])).sortby("date").reindex({"subpop":modinf.subpop_struct.subpop_names})
 
-            gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1)
-            model_df_s = model_df_s.drop(["subpop"], axis=1).loc[first_date:last_date]
+        for key, stat in self.statistics.items():
+            ll, reg = stat.compute_logloss(model_xr.sel(date=slice(self.first_date, self.last_date)), 
+                                           self.gt_xr.sel(date=slice(self.first_date, self.last_date)))
+            logloss.loc[dict(statistic=key)] = ll
+            regularizations += reg
 
-            for key, stat in self.statistics.items():
-                logloss.loc[dict(statistic=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
+        ll_total = logloss.sum().sum().values + regularizations
 
-        return logloss, logloss_granular, logloss_regularization
+        return ll_total, logloss, regularizations
 
     def __str__(self) -> str:
         return (
