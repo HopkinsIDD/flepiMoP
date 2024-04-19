@@ -84,7 +84,6 @@ aggregate_and_calc_loc_likelihoods <- function(
         ## We use a data frame for debugging, only ll is used
         likelihood_data[[location]] <- dplyr::tibble(
             ll = this_location_log_likelihood,
-            filename = hosp_file,
             subpop = location,
             accept = 0, # acceptance decision (0/1) . Will be updated later when accept/reject decisions made
             accept_avg = 0, # running average acceptance decision
