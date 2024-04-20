@@ -373,6 +373,10 @@ if(!opt$save_hosp){
   warning("To save space, intermediate HOSP files will not be saved for every iteration of the MCMC inference procedure. To save these files, set option save_hosp TRUE.")
 }
 
+if(opt$memory_profiling){
+  print(paste("Inference will run memory profiling every",opt$memory_profiling_iters,"iterations"))
+}
+
 
 for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
@@ -881,6 +885,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       if (opt$memory_profiling){
 
         if (this_index %% opt$memory_profiling_iters == 0 | this_index == 1){
+          print('doing memory profiling')
           tot_objs_ <- as.numeric(object.size(x=lapply(ls(all.names = TRUE), get)) * 9.31e-10)
           tot_mem_ <- sum(gc()[,2]) / 1000
           curr_obj_sizes <- data.frame('object' = ls()) %>%

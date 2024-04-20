@@ -146,6 +146,9 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
         "-L", opt$reset_chimeric_on_accept,
         "-S", opt$save_seir,
         "-H", opt$save_hosp,
+        "-M", opt$memory_profiling,
+        "-P", opt$memory_profiling_iters,
+        "-g", opt$subpop_len,
         #paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""), # works on Mac only, not windows
         #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
         sep = " ")

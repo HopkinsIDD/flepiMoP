@@ -588,8 +588,8 @@ initialize_mcmc_first_block <- function(
             }
 
             # load and add to original seeding
-            seed_new <-  readr::read_csv(global_files[["seed_filename"]])
-            added_seeding <- readr::read_csv(config$seeding$added_seeding$added_lambda_file)
+            seed_new <-  readr::read_csv(global_files[["seed_filename"]],show_col_types = FALSE)
+            added_seeding <- readr::read_csv(config$seeding$added_seeding$added_lambda_file,show_col_types = FALSE)
 
             if (!is.null(config$seeding$added_seeding$fix_original_seeding) &&
                 config$seeding$added_seeding$fix_original_seeding){
@@ -641,7 +641,7 @@ initialize_mcmc_first_block <- function(
             }
             
             if (grepl(".csv", initial_init_file)){
-                initial_init <- readr::read_csv(initial_init_file)
+                initial_init <- readr::read_csv(initial_init_file,show_col_types = FALSE)
             }else{
                 initial_init <- arrow::read_parquet(initial_init_file)
             }
