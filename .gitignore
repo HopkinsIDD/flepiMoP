@@ -17,6 +17,9 @@ model_output/
 .Rhistory
 .Rapp.history
 
+*.pdf
+*.h5
+
 # Session Data files
 .RData
 
