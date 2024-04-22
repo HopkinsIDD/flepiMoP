@@ -136,7 +136,7 @@ def steps_SEIR(
     integration_method = fnct_args["integration_method"]
     fnct_args.pop("integration_method")
 
-    logging.info(f"Integrating with method {integration_method}")
+    logging.debug(f"Integrating with method {integration_method}")
 
     if integration_method == "legacy":
         seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
@@ -146,7 +146,7 @@ def steps_SEIR(
                 f"with method {integration_method}, only deterministic "
                 f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
             )
-        seir_sim = steps_rk4.rk4_integration(**fnct_args)
+        seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
         from .dev import steps as steps_experimental
 
