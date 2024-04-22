@@ -17,9 +17,10 @@ import copy
 # TODO: should be able to draw e.g from an initial condition folder buuut keep the draw as a blob
 # so it is saved by emcee, so I can build a posterio
 
-def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False):
+def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False, silent = True):
     if not inferpar.check_in_bound(proposal=proposal):
-        print("OUT OF BOUND!!")
+        if not silent:
+            print("OUT OF BOUND!!")
         return -np.inf
     
     snpi_df_mod, hnpi_df_mod = inferpar.inject_proposal(proposal=proposal, snpi_df = static_sim_arguments["snpi_df_ref"], hnpi_df = static_sim_arguments["hnpi_df_ref"])
@@ -34,7 +35,7 @@ def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=F
     outcomes_df = simulation_atomic(**ss, modinf=modinf, save=save)
 
     ll_total, logloss, regularizations = loss.compute_logloss(model_df=outcomes_df, modinf=modinf)
-    print(f"llik is {ll_total}")
+    if not silent: print(f"llik is {ll_total}")
 
     return ll_total
 
