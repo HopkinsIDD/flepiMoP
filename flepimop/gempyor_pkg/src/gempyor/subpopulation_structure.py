@@ -8,9 +8,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+subpop_pop_key="population"
+subpop_names_key="subpop"
+
 
 class SubpopulationStructure:
-    def __init__(self, *, setup_name, geodata_file, mobility_file, subpop_pop_key, subpop_names_key):
+    def __init__(self, *, setup_name, subpop_config, path_prefix):
+        """ Important attributes:
+        - self.setup_name: Name of the setup
+        - self.data: DataFrame with subpopulations and populations
+        - self.nsubpops: Number of subpopulations
+        - self.subpop_pop: Population of each subpopulation
+        - self.subpop_names: Names of each subpopulation
+        - self.mobility: Mobility matrix
+        """
+
+        geodata_file=path_prefix / subpop_config["geodata"].get()
+
         self.setup_name = setup_name
         self.data = pd.read_csv(
             geodata_file, converters={subpop_names_key: lambda x: str(x).strip()}, skipinitialspace=True
@@ -35,7 +49,8 @@ class SubpopulationStructure:
         if len(self.subpop_names) != len(set(self.subpop_names)):
             raise ValueError(f"There are duplicate subpop_names in geodata.")
 
-        if mobility_file is not None:
+        if subpop_config["mobility"].exists():
+            mobility_file= path_prefix / subpop_config["mobility"].get()
             mobility_file = pathlib.Path(mobility_file)
             if mobility_file.suffix == ".txt":
                 print("Mobility files as matrices are not recommended. Please switch soon to long form csv files.")
@@ -101,3 +116,22 @@ class SubpopulationStructure:
         else:
             logging.critical("No mobility matrix specified -- assuming no one moves")
             self.mobility = scipy.sparse.csr_matrix(np.zeros((self.nsubpops, self.nsubpops)), dtype=int)
+
+        if subpop_config["selected"].exists():
+            selected = subpop_config["selected"].get()
+            if not isinstance(selected, list):
+                selected = [selected]
+            # find the indices of the selected subpopulations
+            selected_subpop_indices = [self.subpop_names.index(s) for s in selected]
+            # filter all the lists
+            self.data = self.data.iloc[selected_subpop_indices]
+            self.subpop_pop = self.subpop_pop[selected_subpop_indices]
+            self.subpop_names = selected
+            self.nsubpops = len(self.data)
+            # TODO: this needs to be tested
+            self.mobility = self.mobility[selected_subpop_indices][:, selected_subpop_indices]
+
+
+
+
+        
