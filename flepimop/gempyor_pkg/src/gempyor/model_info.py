@@ -78,19 +78,15 @@ class ModelInfo:
         self.n_days = (self.tf - self.ti).days + 1  # because we include ti and tf
 
         # 3. What about subpopulations
-        spatial_config = config["subpop_setup"]
+        subpop_config = config["subpop_setup"]
         if config["data_path"].exists():
             raise ValueError("The config has a data_path section. This is no longer supported.")
         self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
-            geodata_file=self.path_prefix / spatial_config["geodata"].get(),
-            mobility_file=self.path_prefix / spatial_config["mobility"].get()
-            if spatial_config["mobility"].exists()
-            else None,
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
+            subpop_config=subpop_config,
+            path_prefix=self.path_prefix,
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
