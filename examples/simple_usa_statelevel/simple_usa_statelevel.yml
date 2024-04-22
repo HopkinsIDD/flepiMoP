@@ -7,6 +7,8 @@ nslots: 2
 subpop_setup:
   geodata: model_input/data/geodata_2019_statelevel.csv
   mobility: model_input/data/mobility_2011-2015_statelevel.csv
+  #selected: ["42000","36000","12000","48000","06000"]
+  selected: ["06000"]
 
 initial_conditions:
   method: plugin
@@ -56,7 +58,7 @@ seir_modifiers:
       value:
         distribution: truncnorm
         mean: 1.3
-        sd: 0.4
+        sd: 1
         a: 0.2
         b: 3
       perturbation:
@@ -74,7 +76,7 @@ seir_modifiers:
       value:
         distribution: truncnorm
         mean: 1.3
-        sd: 0.4
+        sd: 3
         a: 0.1
         b: 10
       perturbation:
@@ -137,14 +139,16 @@ inference:
       #remove_na: TRUE
       #add_one: TRUE
       zero_to_one: True
-      likelihood: 
-        dist: pois
-      regularize:
-        - name: forecast 
-          last_n: 2
-          mult: 2
-        - name: allsubpop
-          mult: 2
+      likelihood:
+        dist: norm_cov
+        params:
+          scale: 0.3
+      #regularize:
+      #  - name: forecast 
+      #    last_n: 2
+      #    mult: 2
+      #  - name: allsubpop
+      #    mult: 2
     incidHosp:
       name: incidHosp
       sim_var: incidHosp
@@ -154,8 +158,10 @@ inference:
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: False
       zero_to_one: True
-      likelihood: 
-        dist: pois
+      likelihood:
+        dist: norm_cov
+        params:
+          scale: 0.3
     incidDeath:
       name: incidDeath
       sim_var: incidDeath
@@ -165,8 +171,10 @@ inference:
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: True
       zero_to_one: True
-      likelihood: 
-        dist: pois
+      likelihood:
+        dist: norm_cov
+        params:
+          scale: 0.3
       # likelihood: 
       #   dist: norm_cov
       #   param: 0.3
