@@ -1,6 +1,6 @@
 import pandas as pd
 import datetime, os, logging, pathlib
-from . import seeding_ic, subpopulation_structure, parameters, compartments, file_paths
+from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
 from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
@@ -115,8 +115,8 @@ class ModelInfo:
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
             )
-            self.seeding = seeding_ic.SeedingFactory(config = self.seeding_config)
-            self.initial_conditions = seeding_ic.InitialConditionsFactory(config = self.initial_conditions_config)
+            self.seeding = seeding.SeedingFactory(config = self.seeding_config)
+            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config)
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(

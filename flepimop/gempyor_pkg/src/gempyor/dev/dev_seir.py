@@ -35,8 +35,8 @@ modinf = model_info.ModelInfo(
     out_prefix=prefix,
 )
 
-seeding_data = modinf.seedingAndIC.draw_seeding(sim_id=100, setup=modinf)
-initial_conditions = modinf.seedingAndIC.draw_ic(sim_id=100, setup=modinf)
+seeding_data = modinf.seeding.get_from_config(sim_id=100, setup=modinf)
+initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
 
 mobility_subpop_indices = modinf.mobility.indices
 mobility_data_indices = modinf.mobility.indptr

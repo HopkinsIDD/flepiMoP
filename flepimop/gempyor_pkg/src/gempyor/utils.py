@@ -1,3 +1,4 @@
+import os
 import datetime
 import functools
 import numbers
@@ -9,6 +10,7 @@ import pyarrow as pa
 import scipy.stats
 import sympy.parsing.sympy_parser
 import logging
+from gempyor import file_paths
 
 logger = logging.getLogger(__name__)
 
@@ -287,3 +289,22 @@ def aws_disk_diagnosis():
     print("------------")
     print(f"lsblk: {bash('lsblk')}")
     print("END AWS DIAGNOSIS ================================")
+
+def create_resume_out_filename(filetype: str, liketype: str) -> str:
+    run_id = os.environ.get("FLEPI_RUN_INDEX")
+    prefix = f"{os.environ.get("FLEPI_PREFIX")}/{os.environ.get("FLEPI_RUN_INDEX")}"
+    inference_filepath_suffix = f"{liketype}/intermidate"
+    FLEPI_SLOT_INDEX = int(os.environ.get("FLEPI_SLOT_INDEX"))
+    inference_filename_prefix='%09d.' % FLEPI_SLOT_INDEX
+    index='{:09d}.{:09d}'.format(1, int(os.environ.get("FLEPI_BLOCK_INDEX")-1))
+    extension = "parquet"
+    if filetype == "seed":
+        extension = "csv"
+    return file_paths.create_file_name(run_id=run_id, 
+                                       prefix=prefix, 
+                                       inference_filename_prefix=inference_filename_prefix,
+                                       inference_filepath_suffix=inference_filepath_suffix,
+                                       index=index,
+                                       extension=extension)
+    
+    
