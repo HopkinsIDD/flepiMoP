@@ -90,3 +90,17 @@ def test_get_truncated_normal_success():
 
 def test_get_log_normal_success():
     utils.get_log_normal(meanlog=0, sdlog=1)
+
+def test_create_resume_out_filename():
+    os.environ["FLEPI_RUN_INDEX"] = "123"
+    os.environ["FLEPI_PREFIX"] = "prefix"
+    os.environ["FLEPI_SLOT_INDEX"] = "2"
+    os.environ["FLEPI_BLOCK_INDEX"] = "2"
+
+    expected_filename = "prefix/123/000000002./intermidate/000000001.000000001.parquet"
+    assert utils.create_resume_out_filename("spar", "like") == expected_filename
+
+    expected_filename = "prefix/123/000000002./intermidate/000000001.000000001.csv"
+    assert utils.create_resume_out_filename("seed", "like") == expected_filename
+
+    os.environ.clear()
