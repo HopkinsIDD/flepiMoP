@@ -139,7 +139,6 @@ state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop
 suppressMessages(
   geodata <- flepicommon::load_geodata_file(
     paste(
-      config$data_path,
       config$subpop_setup$geodata, sep = "/"
     ),
     subpop_len = ifelse(config$name == "USA", opt$subpop_len, 0),
@@ -152,10 +151,6 @@ obs_subpop <- "subpop"
 
 ##Define data directory and create if it does not exist
 gt_data_path <- config$inference$gt_data_path
-data_dir <- dirname(config$data_path)
-if (!dir.exists(data_dir)){
-  suppressWarnings(dir.create(data_dir, recursive = TRUE))
-}
 
 ## backwards compatibility with configs that don't have inference$gt_source parameter will use the previous default data source (USA Facts)
 if (is.null(config$inference$gt_source)){

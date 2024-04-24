@@ -51,13 +51,10 @@ if (length(config) == 0) {
   stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-outdir <- config$data_path
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
 state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 # commute_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","commute_data.gz.parquet"))
 # census_data <- arrow::read_parquet(file.path(opt$p,"datasetup", "usdata","united-states-commutes","census_tracts_2010.gz.parquet"))
 
@@ -156,8 +153,8 @@ if (length(config$subpop_setup$geodata) > 0) {
 # manually remove PR
 census_data <- census_data %>% filter(USPS != "PR")
 
-write.csv(file = file.path(outdir, geodata_file), census_data, row.names=FALSE)
-print(paste("Wrote geodata file:", file.path(outdir, geodata_file)))
+write.csv(file = file.path(geodata_file), census_data, row.names=FALSE)
+print(paste("Wrote geodata file:", file.path(geodata_file)))
 
 
 
@@ -209,7 +206,7 @@ if(state_level & !file.exists(paste0(config$data_path, "/", config$subpop_setup$
       print(census_data$subpop)
       stop("There was a problem generating the mobility matrix")
     }
-    write.table(file = file.path(outdir, mobility_file), as.matrix(rc[,-1]), row.names=FALSE, col.names = FALSE, sep = " ")
+    write.table(file = file.path(mobility_file), as.matrix(rc[,-1]), row.names=FALSE, col.names = FALSE, sep = " ")
 
     } else if(endsWith(mobility_file, '.csv')) {
 
@@ -217,13 +214,13 @@ if(state_level & !file.exists(paste0(config$data_path, "/", config$subpop_setup$
       names(rc) <- c("ori","dest","amount")
 
       rc <- rc[rc$ori != rc$dest,]
-      write.csv(file = file.path(outdir, mobility_file), rc, row.names=FALSE)
+      write.csv(file = file.path(mobility_file), rc, row.names=FALSE)
 
     } else {
       stop("Only .txt and .csv extensions supported for mobility matrix. Please check config's subpop_setup::mobility.")
     }
 
-    print(paste("Wrote mobility file:", file.path(outdir, mobility_file)))
+    print(paste("Wrote mobility file:", file.path(mobility_file)))
 }
 
 

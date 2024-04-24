@@ -41,16 +41,14 @@ if (length(config) == 0) {
   stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-outdir <- config$data_path
 filterADMIN0 <- config$subpop_setup$modeled_states
 
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Read in needed data
-commute_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$mobility)) %>%
+commute_data <- readr::read_csv(file.path("geodata", opt$mobility)) %>%
   mutate(OGEOID = as.character(OGEOID),
          DGEOID = as.character(DGEOID))
-census_data <- readr::read_csv(file.path(config$data_path, "geodata", opt$population)) %>%
+census_data <- readr::read_csv(file.path("geodata", opt$population)) %>%
   mutate(GEOID = as.character(GEOID))
 
 # Filter if needed
@@ -97,22 +95,22 @@ if(opt$w){
   if(!isTRUE(all(rc$OGEOID == census_data$GEOID))){
     stop("There was a problem generating the mobility matrix")
   }
-  write.table(file = file.path(outdir,'mobility.txt'), as.matrix(rc[,-1]), row.names=FALSE, col.names = FALSE, sep = " ")
+  write.table(file = file.path('mobility.txt'), as.matrix(rc[,-1]), row.names=FALSE, col.names = FALSE, sep = " ")
 } else {
   names(rc) <- c("ori","dest","amount")
   rc <- rc[rc$ori != rc$dest,]
-  write.csv(file = file.path(outdir,'mobility.csv'), rc, row.names=FALSE)
+  write.csv(file = file.path('mobility.csv'), rc, row.names=FALSE)
 }
 
 # Save population geodata
 names(census_data) <- c("subpop","admin2","admin0","pop")
-write.csv(file = file.path(outdir,'geodata.csv'), census_data,row.names=FALSE)
+write.csv(file = file.path('geodata.csv'), census_data,row.names=FALSE)
 
 print("Census Data Check (up to 6 rows)")
 print(head(census_data))
 print("Commute Data Check (up to 6 rows)")
 print(head(commute_data))
 
-print(paste0("mobility.csv/.txt and geodata.csv saved to: ", outdir))
+#print(paste0("mobility.csv/.txt and geodata.csv saved to: ", outdir))
 
 
