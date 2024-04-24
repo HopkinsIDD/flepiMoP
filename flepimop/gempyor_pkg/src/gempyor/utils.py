@@ -9,6 +9,8 @@ import pandas as pd
 import pyarrow as pa
 import scipy.stats
 import sympy.parsing.sympy_parser
+import subprocess
+import shutil
 import logging
 from gempyor import file_paths
 
@@ -322,4 +324,45 @@ def create_resume_input_filename(filetype: str, liketype: str) -> str:
                                        index=index,
                                        ftype=filetype,
                                        extension=extension)
-         
+
+
+def copy_file_based_on_last_job_output():
+    last_job_output = os.environ.get("LAST_JOB_OUTPUT")
+    resume_discard_seeding = os.environ.get("RESUME_DISCARD_SEEDING")
+    parquet_types = ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
+    if resume_discard_seeding == "true":
+        parquet_types.remove("seed")
+    liketypes = ["global", "chimeric"]
+    file_name_map = dict()
+    
+    for filetype in parquet_types:
+        for liketype in liketypes:
+            input_file_name = create_resume_input_filename(filetype=filetype, liketype=liketype)
+            output_file_name = create_resume_out_filename(filetype=filetype, liketype=liketype)
+            file_name_map[input_file_name] = output_file_name
+            
+    if last_job_output.find("s3://") >= 0:
+        for in_filename in file_name_map:
+            command = ['aws', 's3', 'cp', '--quiet', last_job_output+"/"+in_filename, file_name_map[in_filename]]
+            try:
+                result = subprocess.run(command, check=True, stdout = subprocess.PIPE,
+                                        stderr = subprocess.PIPE)
+                print("Output:", result.stdout.decode())
+            except subprocess.CalledProcessError as e:
+                print("Error: ", e.stderr.decode())
+    else:
+        first_output_filename = next(iter(file_name_map.values()))
+        output_dir = os.path.dirname(first_output_filename)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        for in_filename in file_name_map:
+            shutil.copy(os.path.join(last_job_output, in_filename), file_name_map[in_filename])
+
+    
+    for in_filename in file_name_map:
+        output_file_name = file_name_map[in_filename]
+        parquet_type = [ptype for ptype in parquet_types if ptype in output_file_name]
+        if os.path.exists(output_file_name):
+            print(f"Copy successful for file of type {parquet_type} {in_filename}->{output_file_name}")
+        else:
+            print(f"Could not copy file of type {parquet_type} {in_filename}->{output_file_name}")
