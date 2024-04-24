@@ -1,5 +1,4 @@
 import pytest
-import datetime
 import os
 import pandas as pd
 
@@ -10,8 +9,6 @@ import time
 from gempyor import utils
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
-# os.chdir(os.path.dirname(__file__))
-
 tmp_path = "/tmp"
 
 
@@ -91,16 +88,36 @@ def test_get_truncated_normal_success():
 def test_get_log_normal_success():
     utils.get_log_normal(meanlog=0, sdlog=1)
 
-def test_create_resume_out_filename():
-    os.environ["FLEPI_RUN_INDEX"] = "123"
-    os.environ["FLEPI_PREFIX"] = "prefix"
-    os.environ["FLEPI_SLOT_INDEX"] = "2"
-    os.environ["FLEPI_BLOCK_INDEX"] = "2"
 
-    expected_filename = "prefix/123/000000002./intermidate/000000001.000000001.parquet"
-    assert utils.create_resume_out_filename("spar", "like") == expected_filename
+@pytest.fixture
+def env_vars(monkeypatch):
+    # Setting environment variables for the test
+    monkeypatch.setenv("RESUME_RUN_INDEX", "321")
+    monkeypatch.setenv("FLEPI_PREFIX", "output")
+    monkeypatch.setenv("FLEPI_SLOT_INDEX", "2")
+    monkeypatch.setenv("FLEPI_BLOCK_INDEX", "2")
+    monkeypatch.setenv("FLEPI_RUN_INDEX", "123")
 
-    expected_filename = "prefix/123/000000002./intermidate/000000001.000000001.csv"
-    assert utils.create_resume_out_filename("seed", "like") == expected_filename
 
-    os.environ.clear()
+def test_create_resume_out_filename(env_vars):
+    result = utils.create_resume_out_filename("spar", "global")
+    expected_filename = """model_output/output/123/spar/global/intermidate
+                        /000000002.000000001.000000001.123.spar.parquet"""
+    assert result == expected_filename
+    
+    result2 = utils.create_resume_out_filename("seed", "chimeric")
+    expected_filename2 = """model_output/output/123/seed/chimeric/intermidate
+                        /000000002.000000001.000000001.123.seed.csv'"""
+    assert result2 == expected_filename2
+
+
+def test_create_resume_input_filename(env_vars):
+
+    result = utils.create_resume_input_filename("spar", "global")
+    expect_filename = 'model_output/output/321/spar/global/final/000000002.321.spar.parquet' 
+
+    assert result == expect_filename
+    
+    result2 = utils.create_resume_input_filename("seed", "chimeric")
+    expect_filename2 = 'model_output/output/321/seed/chimeric/final/000000002.321.seed.csv'
+    assert result2 == expect_filename2
