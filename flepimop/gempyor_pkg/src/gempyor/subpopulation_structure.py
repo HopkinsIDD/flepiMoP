@@ -8,13 +8,13 @@ import logging, pathlib
 
 logger = logging.getLogger(__name__)
 
-subpop_pop_key="population"
-subpop_names_key="subpop"
+subpop_pop_key = "population"
+subpop_names_key = "subpop"
 
 
 class SubpopulationStructure:
     def __init__(self, *, setup_name, subpop_config, path_prefix=pathlib.Path(".")):
-        """ Important attributes:
+        """Important attributes:
         - self.setup_name: Name of the setup
         - self.data: DataFrame with subpopulations and populations
         - self.nsubpops: Number of subpopulations
@@ -23,7 +23,7 @@ class SubpopulationStructure:
         - self.mobility: Mobility matrix
         """
 
-        geodata_file=path_prefix / subpop_config["geodata"].get()
+        geodata_file = path_prefix / subpop_config["geodata"].get()
 
         self.setup_name = setup_name
         self.data = pd.read_csv(
@@ -50,7 +50,7 @@ class SubpopulationStructure:
             raise ValueError(f"There are duplicate subpop_names in geodata.")
 
         if subpop_config["mobility"].exists():
-            mobility_file= path_prefix / subpop_config["mobility"].get()
+            mobility_file = path_prefix / subpop_config["mobility"].get()
             mobility_file = pathlib.Path(mobility_file)
             if mobility_file.suffix == ".txt":
                 print("Mobility files as matrices are not recommended. Please switch soon to long form csv files.")
@@ -130,8 +130,3 @@ class SubpopulationStructure:
             self.nsubpops = len(self.data)
             # TODO: this needs to be tested
             self.mobility = self.mobility[selected_subpop_indices][:, selected_subpop_indices]
-
-
-
-
-        

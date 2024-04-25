@@ -17,25 +17,28 @@ import copy
 # TODO: should be able to draw e.g from an initial condition folder buuut keep the draw as a blob
 # so it is saved by emcee, so I can build a posterio
 
-def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False, silent = True):
+
+def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False, silent=True):
     if not inferpar.check_in_bound(proposal=proposal):
         if not silent:
             print("OUT OF BOUND!!")
         return -np.inf
-    
-    snpi_df_mod, hnpi_df_mod = inferpar.inject_proposal(proposal=proposal, snpi_df = static_sim_arguments["snpi_df_ref"], hnpi_df = static_sim_arguments["hnpi_df_ref"])
-    
+
+    snpi_df_mod, hnpi_df_mod = inferpar.inject_proposal(
+        proposal=proposal, snpi_df=static_sim_arguments["snpi_df_ref"], hnpi_df=static_sim_arguments["hnpi_df_ref"]
+    )
+
     ss = copy.deepcopy(static_sim_arguments)
     ss["snpi_df_in"] = snpi_df_mod
     ss["hnpi_df_in"] = hnpi_df_mod
     del ss["snpi_df_ref"]
     del ss["hnpi_df_ref"]
 
-    
     outcomes_df = simulation_atomic(**ss, modinf=modinf, save=save)
 
     ll_total, logloss, regularizations = loss.compute_logloss(model_df=outcomes_df, modinf=modinf)
-    if not silent: print(f"llik is {ll_total}")
+    if not silent:
+        print(f"llik is {ll_total}")
 
     return ll_total
 
@@ -55,7 +58,7 @@ def simulation_atomic(
     seeding_data,
     seeding_amounts,
     outcomes_parameters,
-    save=False
+    save=False,
 ):
     # We need to reseed because subprocess inherit of the same random generator state.
     np.random.seed(int.from_bytes(os.urandom(4), byteorder="little"))
@@ -176,7 +179,7 @@ def get_static_arguments(modinf):
         coords = dict(
             date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
             **compartment_coords,
-            subpop=modinf.subpop_struct.subpop_names
+            subpop=modinf.subpop_struct.subpop_names,
         )
 
         zeros = np.zeros((len(coords["date"]), len(coords["mc_name"][1]), len(coords["subpop"])))

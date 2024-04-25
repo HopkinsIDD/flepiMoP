@@ -106,10 +106,10 @@ class Parameters:
             else:
                 self.pdata[pn]["stacked_modifier_method"] = "product"
                 logging.debug(f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs")
-            
+
             if self.pconfig[pn]["rolling_mean_windows"].exists():
                 self.pdata[pn]["rolling_mean_windows"] = self.pconfig[pn]["rolling_mean_windows"].get()
-            
+
             self.stacked_modifier_method[self.pdata[pn]["stacked_modifier_method"]].append(pn.lower())
 
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
@@ -196,7 +196,7 @@ class Parameters:
         """
         p_reduced = copy.deepcopy(p_draw)
         if npi is not None:
-            for idx, pn in enumerate(self.pnames):  
+            for idx, pn in enumerate(self.pnames):
                 p_reduced[idx] = NPI.reduce_parameter(
                     parameter=p_draw[idx],
                     modification=npi.getReduction(pn.lower()),
@@ -204,6 +204,8 @@ class Parameters:
                 )
                 # apply rolling mean if specified
                 if "rolling_mean_windows" in self.pdata[pn]:
-                    p_reduced[idx] = utils.rolling_mean_pad(data = p_reduced[idx], window=self.pdata[pn]["rolling_mean_windows"])
+                    p_reduced[idx] = utils.rolling_mean_pad(
+                        data=p_reduced[idx], window=self.pdata[pn]["rolling_mean_windows"]
+                    )
 
         return p_reduced

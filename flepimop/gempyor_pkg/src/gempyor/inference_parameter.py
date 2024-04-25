@@ -105,10 +105,11 @@ class InferenceParameters:
 
     def __str__(self) -> str:
         from collections import Counter
+
         this_str = f"InferenceParameters: with {self.get_dim()} parameters: \n"
         for key, value in Counter(self.ptypes).items():
             this_str += f"    {key}: {value} parameters\n"
-        
+
         return this_str
 
     def get_dim(self):
@@ -160,7 +161,12 @@ class InferenceParameters:
         """
         return np.array((proposal > self.ubs))
 
-    def inject_proposal(self, proposal, snpi_df=None, hnpi_df=None,):
+    def inject_proposal(
+        self,
+        proposal,
+        snpi_df=None,
+        hnpi_df=None,
+    ):
         """
         Injects the proposal into model inputs, at the right place.
 

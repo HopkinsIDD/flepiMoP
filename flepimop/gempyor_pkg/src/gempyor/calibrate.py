@@ -15,6 +15,7 @@ from gempyor.utils import config, as_list, profile
 # disable  operations using the MKL linear algebra.
 os.environ["OMP_NUM_THREADS"] = "1"
 
+
 @click.command()
 @click.option(
     "-c",

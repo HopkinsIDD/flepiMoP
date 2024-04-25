@@ -273,20 +273,19 @@ def list_filenames(folder: str = ".", filters: list = []) -> list:
 
 
 def rolling_mean_pad(data, window):
-  """
-  Calculates rolling mean with centered window and pads the edges.
+    """
+    Calculates rolling mean with centered window and pads the edges.
 
-  Args:
-      data: A NumPy array.
-      window: The window size for the rolling mean.
+    Args:
+        data: A NumPy array.
+        window: The window size for the rolling mean.
 
-  Returns:
-      A NumPy array with the padded rolling mean.
-  """
-  padding_size = (window - 1) // 2
-  padded_data = np.pad(data, padding_size, mode='edge')
-  return np.convolve(padded_data, np.ones(window) / window, mode='valid')
-
+    Returns:
+        A NumPy array with the padded rolling mean.
+    """
+    padding_size = (window - 1) // 2
+    padded_data = np.pad(data, padding_size, mode="edge")
+    return np.convolve(padded_data, np.ones(window) / window, mode="valid")
 
 
 def print_disk_diagnosis():
