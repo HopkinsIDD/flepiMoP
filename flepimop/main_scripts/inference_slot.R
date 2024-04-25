@@ -141,7 +141,6 @@ state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop
 suppressMessages(
   geodata <- flepicommon::load_geodata_file(
     paste(
-      config$data_path,
       config$subpop_setup$geodata, sep = "/"
     ),
     subpop_len = ifelse(config$name == "USA", opt$subpop_len, 0),
@@ -154,10 +153,6 @@ obs_subpop <- "subpop"
 
 ##Define data directory and create if it does not exist
 gt_data_path <- config$inference$gt_data_path
-data_dir <- dirname(config$data_path)
-if (!dir.exists(data_dir)){
-  suppressWarnings(dir.create(data_dir, recursive = TRUE))
-}
 
 ## backwards compatibility with configs that don't have inference$gt_source parameter will use the previous default data source (USA Facts)
 if (is.null(config$inference$gt_source)){
@@ -682,6 +677,14 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           print("by default because it's the first iteration of a block 1")
         } else {
           gempyor_inference_runner$write_last_seir(sim_id2write=this_index)
+        }
+        
+        # delete previously accepted files if using a space saving option
+        if(!opt$save_seir){
+          file.remove(last_accepted_global_files[['seir_filename']]) # remove proposed SEIR file
+        }
+        if(!opt$save_hosp){
+          file.remove(last_accepted_global_files[['hosp_filename']]) # remove proposed HOSP file
         }
         
         # delete previously accepted files if using a space saving option
