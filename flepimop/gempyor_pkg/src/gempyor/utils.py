@@ -277,16 +277,26 @@ def rolling_mean_pad(data, window):
     Calculates rolling mean with centered window and pads the edges.
 
     Args:
-        data: A NumPy array.
+        data: A NumPy array !!! shape must be (n_days, nsubpops).
         window: The window size for the rolling mean.
 
     Returns:
-        A NumPy array with the padded rolling mean.
+        A NumPy array with the padded rolling mean (n_days, nsubpops).
     """
     padding_size = (window - 1) // 2
-    padded_data = np.pad(data, padding_size, mode="edge")
-    return np.convolve(padded_data, np.ones(window) / window, mode="valid")
+    padded_data = np.pad(data, ((padding_size, padding_size), (0, 0)), mode="edge")
 
+    # Allocate space for the result
+    result = np.zeros_like(data)
+
+    # Perform convolution along the days axis (axis 0) using a loop
+    for i in range(data.shape[0]):
+        # Extract the current day's data from the padded array
+        window_data = padded_data[i:i + window, :]
+        # Calculate the rolling mean for this day's data
+        result[i, :] = np.mean(window_data, axis=0)
+
+    return result
 
 def print_disk_diagnosis():
     import os

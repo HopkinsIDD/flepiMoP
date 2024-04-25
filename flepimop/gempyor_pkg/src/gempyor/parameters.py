@@ -203,7 +203,6 @@ class Parameters:
                     method=self.pdata[pn]["stacked_modifier_method"],
                 )
                 p_reduced[idx] = npi_val
-                # apply rolling mean if specified
                 if "rolling_mean_windows" in self.pdata[pn]:
                     p_reduced[idx] = utils.rolling_mean_pad(
                         data=npi_val, window=self.pdata[pn]["rolling_mean_windows"]
