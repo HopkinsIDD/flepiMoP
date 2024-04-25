@@ -80,6 +80,8 @@ us_data <- us_data %>%
     filter(date >= lubridate::as_date(config$start_date) & date <= lubridate::as_date(end_date_)) %>%
     filter(!is.na(source))
 
+if(!dir.exists(dirname(config$inference$gt_data_path))){
+  dir.create(dirname(config$inference$gt_data_path))}
 write_csv(us_data, config$inference$gt_data_path)
 
 
