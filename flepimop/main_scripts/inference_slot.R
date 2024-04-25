@@ -48,6 +48,8 @@ option_list = list(
   optparse::make_option(c("-R", "--is-resume"), action="store", default=Sys.getenv("RESUME_RUN",FALSE), type = 'logical', help = "Is this run a resume"),
   optparse::make_option(c("-I", "--is-interactive"), action="store", default=Sys.getenv("RUN_INTERACTIVE",Sys.getenv("INTERACTIVE_RUN", FALSE)), type = 'logical', help = "Is this run an interactive run"),
   optparse::make_option(c("-L", "--reset_chimeric_on_accept"), action = "store", default = Sys.getenv("FLEPI_RESET_CHIMERICS", TRUE), type = 'logical', help = 'Should the chimeric parameters get reset to global parameters when a global acceptance occurs'),
+  optparse::make_option(c("-S","--save_seir"), action = "store", default = Sys.getenv("SAVE_SEIR", FALSE), type = 'logical', help = 'Should the SEIR output files be saved for each iteration'),
+  optparse::make_option(c("-H","--save_hosp"), action = "store", default = Sys.getenv("SAVE_HOSP", TRUE), type = 'logical', help = 'Should the HOSP output files be saved for each iteration'),
   optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
   optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
   optparse::make_option(c("-g", "--subpop_len"), action="store", default=Sys.getenv("SUBPOP_LENGTH", 5), type='integer', help = "number of digits in subpop")
@@ -358,6 +360,19 @@ if (!opt$reset_chimeric_on_accept) {
   warning("We recommend setting reset_chimeric_on_accept TRUE, since reseting chimeric chains on global acceptances more closely matches normal MCMC behaviour")
 }
 
+if(!opt$save_seir){
+  warning("To save space, intermediate SEIR files will not be saved for every iteration of the MCMC inference procedure. To save these files, set option save_seir TRUE.")
+}
+
+if(!opt$save_hosp){
+  warning("To save space, intermediate HOSP files will not be saved for every iteration of the MCMC inference procedure. To save these files, set option save_hosp TRUE.")
+}
+
+if(opt$memory_profiling){
+  print(paste("Inference will run memory profiling every",opt$memory_profiling_iters,"iterations"))
+}
+
+
 for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
   if (!is.null(config$seir_modifiers)){
@@ -452,6 +467,13 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
     # So far no acceptances have occurred
     last_accepted_index <- 0
+    
+    # get filenames of last accepted files (copy these files when rejections occur)
+    last_accepted_global_files <- inference::create_filename_list(run_id=opt$run_id,
+                                                                  prefix=setup_prefix,
+                                                                  filepath_suffix=global_intermediate_filepath_suffix,
+                                                                  filename_prefix=slotblock_filename_prefix,
+                                                                  index=last_accepted_index)
 
     # Load files with the output of initialize_mcmc_first_block
 
@@ -655,9 +677,24 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         if ((opt$this_block == 1) && (last_accepted_index == 0)) {
           print("by default because it's the first iteration of a block 1")
         }
+        
+        # delete previously accepted files if using a space saving option
+        if(!opt$save_seir){
+          file.remove(last_accepted_global_files[['seir_filename']]) # remove proposed SEIR file
+        }
+        if(!opt$save_hosp){
+          file.remove(last_accepted_global_files[['hosp_filename']]) # remove proposed HOSP file
+        }
 
         # Update the index of the most recent globally accepted parameters
         last_accepted_index <- this_index
+        
+        # update filenames of last accepted files
+        last_accepted_global_files <- inference::create_filename_list(run_id=opt$run_id,
+                                                                      prefix=setup_prefix,
+                                                                      filepath_suffix=global_intermediate_filepath_suffix,
+                                                                      filename_prefix=slotblock_filename_prefix,
+                                                                      index=last_accepted_index)
 
         if (opt$reset_chimeric_on_accept) {
           reset_chimeric_files <- TRUE # triggers globally accepted parameters to push back to chimeric
@@ -681,18 +718,23 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
         # File saving: If global reject occurs, remove "proposed" parameters from global files and instead replacing with the last accepted values
 
-        # get filenames of last accepted files
-        old_global_files <- inference::create_filename_list(run_id=opt$run_id,
-                                                            prefix=setup_prefix,
-                                                            filepath_suffix=global_intermediate_filepath_suffix,
-                                                            filename_prefix=slotblock_filename_prefix,
-                                                            index=last_accepted_index)
-
         # Update current global likelihood to last accepted one, and record some acceptance statistics
 
         # Replace current global files with last accepted values
+        
+        # If save_seir = FALSE, don't copy intermediate SEIR files because they aren't being saved
+        # If save_hosp = FALSE, don't copy intermediate HOSP files because they aren't being saved
         for (type in names(this_global_files)) {
-          file.copy(old_global_files[[type]],this_global_files[[type]], overwrite = TRUE)
+          if((!opt$save_seir & type!='seir_filename') & (!opt$save_hosp & type!='hosp_filename')){
+          # copy if (save_seir = FALSE OR type is not SEIR) AND (save_hosp = FALSE OR type is not HOSP) 
+          file.copy(last_accepted_global_files[[type]],this_global_files[[type]], overwrite = TRUE)
+          }
+        }
+        if(!opt$save_seir){
+          file.remove(this_global_files[['seir_filename']]) # remove proposed SEIR file
+        }
+        if(!opt$save_hosp){
+          file.remove(this_global_files[['hosp_filename']]) # remove proposed HOSP file
         }
 
         #acceptance probability for this iteration
@@ -803,7 +845,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       arrow::write_parquet(new_hnpi,this_chimeric_files[['hnpi_filename']])
       arrow::write_parquet(chimeric_current_likelihood_data, this_chimeric_files[['llik_filename']])
 
-      print(paste("Current accepted index is ",last_accepted_index))
+      print(paste("Last accepted index is ",last_accepted_index))
 
 
       # set initial values to start next iteration
@@ -838,6 +880,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       if (opt$memory_profiling){
 
         if (this_index %% opt$memory_profiling_iters == 0 | this_index == 1){
+          print('doing memory profiling')
           tot_objs_ <- as.numeric(object.size(x=lapply(ls(all.names = TRUE), get)) * 9.31e-10)
           tot_mem_ <- sum(gc()[,2]) / 1000
           curr_obj_sizes <- data.frame('object' = ls()) %>%
@@ -869,13 +912,17 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         gc()
       }
 
+      # Ending this MCMC iteration
+      
     }
 
-    # Ending this MCMC iteration
+    # Ending this MCMC chain (aka "slot")
 
     # Create "final" files after MCMC chain is completed
     #   Will fail if unsuccessful
+    
     # moves the most recently globally accepted parameter values from global/intermediate file to global/final
+    # all file types
     print("Copying latest global files to final")
     cpy_res_global <- inference::perform_MCMC_step_copies_global(current_index = last_accepted_index,
                                                                  slot = opt$this_slot,
@@ -885,7 +932,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                                  slotblock_filename_prefix = slotblock_filename_prefix,
                                                                  slot_filename_prefix = slot_filename_prefix)
     if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
+    
     # moves the most recent chimeric parameter values from chimeric/intermediate file to chimeric/final
+    # all file types except seir and hosp
     print("Copying latest chimeric files to final")
     cpy_res_chimeric <- inference::perform_MCMC_step_copies_chimeric(current_index = this_index,
                                                                      slot = opt$this_slot,
@@ -896,20 +945,26 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                                      slot_filename_prefix = slot_filename_prefix)
     if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
 
-    #####Write currently accepted files to disk
-    #NOTE: Don't understand why we write these files that don't have an iteration index
+    warning("Chimeric hosp and seir files not yet supported, just using the most recently globally accepted file of each type")
+
+        #NOTE: Don't understand why we write these files that don't have an iteration index. Not sure what used for
     #files of the form ../chimeric/intermediate/{slot}.{block}.{run_id}.{variable}.parquet
     output_chimeric_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix,  filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix=slot_filename_prefix, index=opt$this_block)
-    #files of the form .../global/intermediate/{slot}.{block}.{run_id}.{variable}.parquet
-    output_global_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix,filepath_suffix=global_intermediate_filepath_suffix,filename_prefix=slot_filename_prefix,  index=opt$this_block)
 
-    warning("Chimeric hosp and seir files not yet supported, just using the most recently generated file of each type")
     #files of the form .../global/intermediate/{slot}.{block}.{iteration}.{run_id}.{variable}.parquet
-    this_index_global_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=this_index)
+    this_index_global_files <- inference::create_filename_list(run_id=opt$run_id,prefix=setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=last_accepted_index)
 
     # copy files from most recent global to end of block chimeric??
     file.copy(this_index_global_files[['hosp_filename']],output_chimeric_files[['hosp_filename']])
     file.copy(this_index_global_files[['seir_filename']],output_chimeric_files[['seir_filename']])
+    
+    # if using space-saving options, delete the last accepted global intermediate giles
+    if(!opt$save_seir){
+      file.remove(last_accepted_global_files[['seir_filename']]) # remove proposed SEIR file
+    }
+    if(!opt$save_hosp){
+      file.remove(last_accepted_global_files[['hosp_filename']]) # remove proposed HOSP file
+    }
 
     endTimeCount=difftime(Sys.time(), startTimeCount, units = "secs")
     print(paste("Time to run all MCMC iterations of slot ",opt$this_slot," is ",formatC(endTimeCount,digits=2,format="f")," seconds"))
