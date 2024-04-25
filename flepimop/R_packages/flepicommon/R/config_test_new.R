@@ -122,7 +122,7 @@ validation_list$subpop_setup$geodata <- function(value, full_config,config_name)
     print("No geodata path mentioned in the configuration file")
     return(FALSE)
   }else{
-    path=paste(full_config$data_path,'/',value,sep='')
+    path=paste(full_config$subpop_setup$geodata,'/',value,sep='')
     if (!file.exists(path)) {
       print(paste("The mentioned geodata file :", value, "could not be found."))
       return(FALSE)
@@ -136,7 +136,7 @@ validation_list$subpop_setup$mobility <- function(value, full_config,config_name
     print("No mobility path mentioned in the configuration file")
     return(FALSE)
   }else{
-    path=paste(full_config$data_path,'/',value,sep='')
+    path=paste(full_config$subpop_setup$mobility,'/',value,sep='')
     if (!file.exists(path)) {
       print(paste("The mentioned mobility file :", value, "could not be found."))
       return(FALSE)

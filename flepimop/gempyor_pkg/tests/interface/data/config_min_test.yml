@@ -2,13 +2,12 @@ name: minimal for interface
 setup_name: minimal4interface
 start_date: 2020-01-31
 end_date: 2020-05-31
-data_path: data
 nslots: 1
 
 
 spatial_setup:
-  geodata: geodata.csv
-  mobility: mobility.csv
+  geodata: data/geodata.csv
+  mobility: data/mobility.csv
   popnodes: population
   nodenames: geoid
 

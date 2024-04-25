@@ -31,14 +31,11 @@ if (length(config) == 0) {
     stop("no configuration found -- please set CONFIG_PATH environment variable or use the -c command flag")
 }
 
-outdir <- config$data_path
 filterUSPS <- config$subpop_setup$modeled_states
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
 state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 
 
@@ -59,7 +56,7 @@ source("https://raw.githubusercontent.com/cdcepi/Flusight-forecast-data/master/d
 
 # Pull daily hospitalizations for model run
 us_data <- load_flu_hosp_data(temporal_resolution = 'daily', na.rm = TRUE)
-locs <- read_csv(file.path(config$data_path, config$subpop_setup$geodata))
+locs <- read_csv(file.path(config$subpop_setup$geodata))
 
 # fix string pad issue on left side
 us_data <- us_data %>%
@@ -100,7 +97,7 @@ adjust_for_variant <- !is.null(variant_props_file)
 # if (adjust_for_variant){
 #
 #     # Variant Data (need to automate this data pull still)
-#     #variant_data <- read_csv(file.path(config$data_path, "variant/WHO_NREVSS_Clinical_Labs.csv"), skip = 1)
+#     #variant_data <- read_csv(file.path("variant/WHO_NREVSS_Clinical_Labs.csv"), skip = 1)
 #     variant_data <- cdcfluview::who_nrevss(region="state", years = 2022)$clinical_labs
 #
 #     # location data
