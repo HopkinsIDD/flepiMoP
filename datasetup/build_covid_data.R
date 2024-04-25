@@ -389,7 +389,8 @@ us_data <- us_data %>%
     # mutate(across(starts_with("incid"), ~ replace_na(.x, 0))) %>%
     mutate(across(starts_with("incid"), ~ as.numeric(.x)))
 
-
+if(!dir.exists(dirname(config$inference$gt_data_path))){
+  dir.create(dirname(config$inference$gt_data_path))}
 # Save
 write_csv(us_data, config$inference$gt_data_path)
 
