@@ -7,7 +7,7 @@ import tqdm.contrib.concurrent
 import xarray as xr
 
 from . import NPI, model_info, steps_rk4
-from .utils import Timer, aws_disk_diagnosis, read_df
+from .utils import Timer, print_disk_diagnosis, read_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -388,7 +388,7 @@ def write_spar_snpi(sim_id, modinf, p_draw, npi):
 
 
 def write_seir(sim_id, modinf, states):
-    # aws_disk_diagnosis()
+    # print_disk_diagnosis()
     out_df = states2Df(modinf, states)
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
 
