@@ -197,15 +197,16 @@ class Parameters:
         p_reduced = copy.deepcopy(p_draw)
         if npi is not None:
             for idx, pn in enumerate(self.pnames):
-                p_reduced[idx] = NPI.reduce_parameter(
+                npi_val = NPI.reduce_parameter(
                     parameter=p_draw[idx],
                     modification=npi.getReduction(pn.lower()),
                     method=self.pdata[pn]["stacked_modifier_method"],
                 )
+                p_reduced[idx] = npi_val
                 # apply rolling mean if specified
                 if "rolling_mean_windows" in self.pdata[pn]:
                     p_reduced[idx] = utils.rolling_mean_pad(
-                        data=p_reduced[idx], window=self.pdata[pn]["rolling_mean_windows"]
+                        data=npi_val, window=self.pdata[pn]["rolling_mean_windows"]
                     )
 
         return p_reduced
