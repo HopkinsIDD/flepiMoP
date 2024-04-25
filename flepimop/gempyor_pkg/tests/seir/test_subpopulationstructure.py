@@ -26,7 +26,7 @@ def test_subpopulation_structure_mobility():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
@@ -60,13 +60,12 @@ def test_subpopulation_structure_mobility_txt():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
     subpop_struct = subpopulation_structure.SubpopulationStructure(
-        setup_name=TEST_SETUP_NAME,
-        subpop_config=config["subpop_setup"]
+        setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
     )
     mobility_data = scipy.sparse.csr_matrix(np.loadtxt(mobility_file), dtype=int)
     # mobility_data = mobility_data.pivot(index="ori", columns="dest", values="amount")
@@ -91,7 +90,7 @@ def test_subpopulation_structure_subpop_population_zero_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
@@ -100,7 +99,6 @@ def test_subpopulation_structure_subpop_population_zero_fail():
             setup_name=TEST_SETUP_NAME,
             subpop_config=config["subpop_setup"],
         )
-
 
 
 def test_subpopulation_structure_dulpicate_subpop_names_fail():
@@ -113,15 +111,14 @@ def test_subpopulation_structure_dulpicate_subpop_names_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
-    
+
     with pytest.raises(ValueError, match=r"There are duplicate subpop_names.*"):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_shape_fail():
@@ -134,16 +131,14 @@ def test_subpopulation_structure_mobility_shape_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
-    
+
     with pytest.raises(ValueError, match=r"mobility data must have dimensions of length of geodata.*"):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
-
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_fluxes_same_ori_and_dest_fail():
@@ -156,15 +151,15 @@ def test_subpopulation_structure_mobility_fluxes_same_ori_and_dest_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
-   
+
     with pytest.raises(ValueError, match=r"Mobility fluxes with same origin and destination.*"):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
+
 
 def test_subpopulation_structure_mobility_npz_shape_fail():
     config.clear()
@@ -176,16 +171,14 @@ def test_subpopulation_structure_mobility_npz_shape_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
-    
+
     with pytest.raises(ValueError, match=r"mobility data must have dimensions of length of geodata.*"):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
-
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_no_extension_fail():
@@ -198,16 +191,14 @@ def test_subpopulation_structure_mobility_no_extension_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
     with pytest.raises(ValueError, match=r"Mobility data must either be a.*"):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
-
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
@@ -220,17 +211,16 @@ def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
-    
+
     with pytest.raises(
         ValueError, match=r"The following entries in the mobility data exceed the source subpop populations.*"
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
@@ -243,7 +233,7 @@ def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
     """
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
@@ -251,10 +241,8 @@ def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
         ValueError, match=r"The following entries in the mobility data exceed the source subpop populations.*"
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
-
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_no_mobility_matrix_specified():
@@ -265,14 +253,13 @@ def test_subpopulation_structure_mobility_no_mobility_matrix_specified():
     config.clear()
     config.read(user=False)
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
-        temp_file.write(subpop_config_str.encode('utf-8'))  # Write the content
+        temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
         subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=TEST_SETUP_NAME,
-            subpop_config=config["subpop_setup"]
-    )
+            setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
+        )
 
     # target = np.array([[0, 0], [0, 0]]) # 2x2, just in this case
     assert np.array_equal(subpop_struct.mobility.toarray(), np.zeros((2, 2)))

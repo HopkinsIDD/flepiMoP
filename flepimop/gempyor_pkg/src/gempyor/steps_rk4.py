@@ -38,7 +38,7 @@ def rk4_integration(
     population,  # 15
     stochastic_p,  # 16
     method="rk4",
-    silent = False
+    silent=False
 ):
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))

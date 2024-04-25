@@ -111,8 +111,8 @@ class Statistic:
                 x, loc=loc, scale=self.params.get("scale", scale)
             ),  # wrong:
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=scale*loc.where(loc > 5, 5)
-                ), # TODO: check, that it's really the loc
+                x, loc=loc, scale=scale * loc.where(loc > 5, 5)
+            ),  # TODO: check, that it's really the loc
             "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
             "rmse": lambda x, y: -np.log(np.nansum(np.sqrt((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
@@ -122,11 +122,11 @@ class Statistic:
         if self.dist in ["pois", "nbinom"]:
             model_data = model_data.astype(int)
             gt_data = gt_data.astype(int)
-        
+
         if self.zero_to_one:
             # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
-            model_data=model_data.where(model_data != 0, 1)
-            gt_data=gt_data.where(gt_data != 0, 1)
+            model_data = model_data.where(model_data != 0, 1)
+            gt_data = gt_data.where(gt_data != 0, 1)
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
