@@ -8,7 +8,7 @@ subpop_setup:
   geodata: model_input/data/geodata_2019_statelevel.csv
   mobility: model_input/data/mobility_2011-2015_statelevel.csv
   #selected: ["42000","36000","12000","48000","06000"]
-  selected: ["06000"]
+  #selected: ["06000"]
 
 initial_conditions:
   method: plugin
@@ -133,16 +133,14 @@ inference:
         aggregator: sum
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: True
-      scale: sqrt   # Any np.[something] function (sqrt, log, )
+      #scale: sqrt   # Any np.[something] function (sqrt, log, )
       #aggregator: sum
       #period: "1 weeks" # "W-SAT"
       #remove_na: TRUE
       #add_one: TRUE
       zero_to_one: True
-      likelihood:
-        dist: norm_cov
-        params:
-          scale: 0.3
+      likelihood: 
+        dist: pois
       #regularize:
       #  - name: forecast 
       #    last_n: 2
@@ -158,10 +156,8 @@ inference:
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: False
       zero_to_one: True
-      likelihood:
-        dist: norm_cov
-        params:
-          scale: 0.3
+      likelihood: 
+        dist: pois
     incidDeath:
       name: incidDeath
       sim_var: incidDeath
@@ -171,11 +167,9 @@ inference:
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: True
       zero_to_one: True
-      likelihood:
-        dist: norm_cov
-        params:
-          scale: 0.3
-      # likelihood: 
+      likelihood: 
+        dist: pois
+      # likelihood:
       #   dist: norm_cov
-      #   param: 0.3
-
+      #   params:
+      #     scale: 0.3
