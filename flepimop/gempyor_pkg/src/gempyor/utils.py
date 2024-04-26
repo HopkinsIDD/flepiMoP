@@ -41,8 +41,14 @@ def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
         print(f"{command_name} failed failed with returncode {sr.returncode}")
         print(f"{command_name}:  {command}")
         print("{command_name} command failed with stdout and stderr:")
-        print("{command_name} stdout: ", stdout)
-        print("{command_name} stderr: ", stderr)
+
+        print("{command_name} stdout >>>>>>")
+        print(stdout.decode())
+        print("{command_name} stdout <<<<<<")
+
+        print("{command_name} stderr >>>>>>")
+        print(stderr.decode())
+        print("{command_name} stderr <<<<<<")
         if fail_on_fail:
             raise Exception(f"{command_name} command failed")
 

@@ -92,6 +92,7 @@ class GempyorSimulator:
             out_run_id=out_run_id,
             out_prefix=out_prefix,
             stoch_traj_flag=stoch_traj_flag,
+            config_path=config_path
         )
 
         print(
