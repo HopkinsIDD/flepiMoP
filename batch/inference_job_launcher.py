@@ -12,6 +12,7 @@ import tarfile
 from datetime import datetime, timezone, date
 import yaml
 from gempyor import file_paths
+import gempyor.utils
 
 
 def user_confirmation(question="Continue?", default=False):
@@ -798,16 +799,10 @@ class BatchJobHandler(object):
                 print("slurm command to be run >>>>>>>> ")
                 print(command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
-                import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
 
-                sr = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (stdout, stderr) = sr.communicate()
-                if sr.returncode != 0:
-                    print(f"sbatch command failed with returncode {sr.returncode}")
-                    print("sbatch command failed with stdout and stderr:")
-                    print("stdout: ", stdout)
-                    print("stderr: ", stderr)
-                    raise Exception("sbatch command failed")
+                returncode, stdout, stderr = gempyor.utils.command_safe_run(
+                    command, command_name="sbatch", fail_on_fail=True
+                )
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
@@ -815,14 +810,9 @@ class BatchJobHandler(object):
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
-                sr = subprocess.Popen(shlex.split(postprod_command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (stdout, stderr) = sr.communicate()
-                if sr.returncode != 0:
-                    print(f"sbatch command failed with returncode {sr.returncode}")
-                    print("sbatch command failed with stdout and stderr:")
-                    print("stdout: ", stdout)
-                    print("stderr: ", stderr)
-                    raise Exception("sbatch command failed")
+                returncode, stdout, stderr = gempyor.utils.command_safe_run(
+                    postprod_command, command_name="sbatch postprod", fail_on_fail=True
+                )
                 postprod_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING POST-PROCESSING JOB. Slurm job id is {postprod_job_id}")
 

@@ -31,6 +31,24 @@ def write_df(fname: str, df: pd.DataFrame, extension: str = ""):
         raise NotImplementedError(f"Invalid extension {extension}. Must be 'csv' or 'parquet'")
 
 
+def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
+    import subprocess
+    import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
+
+    sr = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = sr.communicate()
+    if sr.returncode != 0:
+        print(f"{command_name} failed failed with returncode {sr.returncode}")
+        print(f"{command_name}:  {command}")
+        print("{command_name} command failed with stdout and stderr:")
+        print("{command_name} stdout: ", stdout)
+        print("{command_name} stderr: ", stderr)
+        if fail_on_fail:
+            raise Exception(f"{command_name} command failed")
+
+    return sr.returncode, stdout, stderr
+
+
 def read_df(fname: str, extension: str = "") -> pd.DataFrame:
     """Load a dataframe from a file, agnostic to whether it is a parquet or a csv. The extension
     can be provided as an argument or it is infered"""
