@@ -60,7 +60,7 @@ print(opt$select_outputs)
 config <- flepicommon::load_config(opt$config)
 
 # Pull in subpop data
-geodata <- setDT(read.csv(file.path(config$data_path, config$subpop_setup$geodata))) %>%
+geodata <- setDT(read.csv(file.path(config$subpop_setup$geodata))) %>%
   .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")]
 
 subpops <- unique(geodata$subpop)

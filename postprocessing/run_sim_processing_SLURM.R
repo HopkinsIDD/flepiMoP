@@ -164,7 +164,7 @@ if(tolower(smh_or_fch) == "fch"){
 }
 scenarios <- scenarios[scenario_num]
 
-geodata_file_path = file.path(config$data_path, config$subpop_setup$geodata)
+geodata_file_path = file.path(config$subpop_setup$geodata)
 
 print(disease)
 
