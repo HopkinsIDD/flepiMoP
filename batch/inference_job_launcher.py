@@ -432,7 +432,7 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
-            if config["data_path"].exists():
+            if "data_path" in config:
                 raise ValueError("The config has a data_path section. This is no longer supported.")
             geodata_fname = pathlib.Path(data_path) / config["subpop_setup"]["geodata"]
             with open(geodata_fname) as geodata_fp:
