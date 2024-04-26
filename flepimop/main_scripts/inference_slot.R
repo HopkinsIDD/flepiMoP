@@ -677,7 +677,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         if ((opt$this_block == 1) && (last_accepted_index == 0)) {
           print("by default because it's the first iteration of a block 1")
         } else {
-          gempyor_inference_runner$write_last_seir(sim_id2write=this_index)
+          # gempyor_inference_runner$write_last_seir(sim_id2write=this_index)
         }
         
         # delete previously accepted files if using a space saving option
