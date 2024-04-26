@@ -103,6 +103,8 @@ if(opt$w){
 }
 
 # Save population geodata
+if(!dir.exists(dirname(config$subpop_setup$geodata))){
+  dir.create(dirname(config$subpop_setup$geodata))}
 names(census_data) <- c("subpop","admin2","admin0","pop")
 write.csv(file = file.path('geodata.csv'), census_data,row.names=FALSE)
 
