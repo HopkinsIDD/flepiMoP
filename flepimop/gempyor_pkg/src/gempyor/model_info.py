@@ -220,7 +220,7 @@ class ModelInfo:
             elif self.write_csv:
                 self.extension = "csv"
 
-        self.config_path = config_path # useful for plugins
+        self.config_path = config_path  # useful for plugins
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.path_prefix / self.get_filename(

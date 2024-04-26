@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 ## TODO: ideally here path_prefix should not be used and all files loaded from modinf
 
+
 def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = "."):
     if config is not None and "method" in config.keys():
         if config["method"].as_str() == "plugin":
@@ -25,6 +26,7 @@ def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = ".")
             )
             return klass
     return InitialConditions(config, path_prefix=path_prefix)
+
 
 class InitialConditions(SimulationComponent):
     def __init__(
@@ -274,5 +276,3 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
                     f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_subpops=TRUE to bypass this error"
                 )
         return y0
-
-
