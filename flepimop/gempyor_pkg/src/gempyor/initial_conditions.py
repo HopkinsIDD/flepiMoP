@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 
 ## TODO: ideally here path_prefix should not be used and all files loaded from modinf
 
+def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = "."):
+    if config is not None and "method" in config.keys():
+        if config["method"].as_str() == "plugin":
+            klass = utils.search_and_import_plugins_class(
+                plugin_file_path=config["plugin_file_path"].as_str(),
+                class_name="InitialConditions",
+                config=config,
+                path_prefix=path_prefix,
+            )
+            return klass
+    return InitialConditions(config, path_prefix=path_prefix)
 
 class InitialConditions(SimulationComponent):
     def __init__(
@@ -265,14 +276,3 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
         return y0
 
 
-def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = "."):
-    if config is not None and "method" in config.keys():
-        if config["method"].as_str() == "plugin":
-            klass = utils.search_and_import_plugins_class(
-                plugin_file_path=config["plugin_file_path"].as_str(),
-                class_name="InitialConditions",
-                config=config,
-                path_prefix=path_prefix,
-            )
-            return klass
-    return InitialConditions(config, path_prefix=path_prefix)

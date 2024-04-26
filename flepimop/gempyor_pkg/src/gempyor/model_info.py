@@ -42,6 +42,7 @@ class ModelInfo:
         inference_filename_prefix="",
         inference_filepath_suffix="",
         setup_name=None,  # override config setup_name
+        config_path="",
     ):
         self.nslots = nslots
         self.write_csv = write_csv
@@ -218,6 +219,8 @@ class ModelInfo:
                 self.extension = "parquet"
             elif self.write_csv:
                 self.extension = "csv"
+
+        self.config_path = config_path # useful for plugins
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.path_prefix / self.get_filename(
