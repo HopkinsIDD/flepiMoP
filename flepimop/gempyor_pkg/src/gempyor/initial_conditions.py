@@ -275,4 +275,4 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
                 raise ValueError(
                     f"subpop {pl} does not exist in initial_conditions::states_file. You can set allow_missing_subpops=TRUE to bypass this error"
                 )
-        return y0
+    return y0
