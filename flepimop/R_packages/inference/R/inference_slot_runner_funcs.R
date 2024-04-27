@@ -625,7 +625,7 @@ initialize_mcmc_first_block <- function(
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
 
-            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
+            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw", "plugin")) {
                 print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
                       and no copying to global or chimeric files is being done.")
 
