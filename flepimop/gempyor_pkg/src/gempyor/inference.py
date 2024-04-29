@@ -309,7 +309,8 @@ def plot_chains(inferpar, sampler_output, sampled_slots=None, save_to=None):
     if save_to is not None:
         plt.savefig(save_to)
 
-def plot_fit():
+def plot_fit(modinf, loss):
+    subpop_names = modinf.subpop_struct.subpop_names
     fig, axes = plt.subplots(len(subpop_names),len(loss.statistics), figsize=(3*len(loss.statistics), 3*len(subpop_names)), sharex=True)
     for j, subpop in enumerate(modinf.subpop_struct.subpop_names):
             gt_s = loss.gt[loss.gt["subpop"]==subpop].sort_index()

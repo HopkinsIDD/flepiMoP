@@ -8,9 +8,7 @@ import numpy as np
 import os, shutil, copy
 import emcee
 import multiprocessing
-
 # from .profile import profile_options
-
 
 # disable  operations using the MKL linear algebra.
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -20,7 +18,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 @click.option(
     "-c",
     "--config",
-    "config_file",
+    "config_filepath",
     envvar="CONFIG_PATH",
     type=click.Path(exists=True),
     required=True,
@@ -132,7 +130,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 # @profile_options
 # @profile()
 def calibrate(
-    config_file,
+    config_filepath,
     project_path,
     seir_modifiers_scenarios,
     outcome_modifiers_scenarios,
@@ -148,7 +146,7 @@ def calibrate(
 ):
     config.clear()
     config.read(user=False)
-    config.set_file(project_path+config_file)
+    config.set_file(project_path+config_filepath)
 
     # Compute the list of scenarios to run. Since multiple = True, it's always a list.
     if not seir_modifiers_scenarios:
@@ -165,7 +163,7 @@ def calibrate(
 
     outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
     seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
-    if len(seir_modifiers_scenario != 1) or len(outcome_modifiers_scenarios != 1):
+    if len(seir_modifiers_scenarios) != 1 or len(outcome_modifiers_scenarios) != 1
         raise ValueError(f"Only support configurations files with one scenario, got" \
                          f"seir: {seir_modifiers_scenarios}" \
                          f"outcomes: {outcome_modifiers_scenarios}")
@@ -201,20 +199,17 @@ def calibrate(
             inference_filename_prefix="emcee",
             inference_filepath_suffix="",
             stoch_traj_flag=False,
-            config_path=config_file,
+            config_path=con,
         )
 
         print(
             f"""
-    >> Running from config {config_file}
+    >> Running from config {config_filepath}
     >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
     >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
     >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
     """
         )
-
-    nsubpop = len(modinf.subpop_struct.subpop_names)
-    subpop_names = modinf.subpop_struct.subpop_names
 
     inferpar = inference_parameter.InferenceParameters(global_config=config, modinf=modinf)
     p0 = inferpar.draw_initial(n_draw=nwalkers)

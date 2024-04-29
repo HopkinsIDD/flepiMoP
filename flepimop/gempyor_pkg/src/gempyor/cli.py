@@ -7,16 +7,16 @@ from gempyor.utils import config
 @click.option(
     "-c",
     "--config",
-    "config_file",
+    "config_filepath",
     envvar=["CONFIG_PATH"],
     type=click.Path(exists=True),
     help="configuration file for this simulation",
 )
-def cli(config_file):
-    print(config_file)
+def cli(config_filepath):
+    print(config_filepath)
     config.clear()
     config.read(user=False)
-    config.set_file(config_file)
+    config.set_file(config_filepath)
 
 
 cli.add_command(compartments)
