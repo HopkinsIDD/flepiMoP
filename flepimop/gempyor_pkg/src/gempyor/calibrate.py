@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
-
-import multiprocessing
-import time, os, itertools
-
 import click
-
-from gempyor import seir, outcomes, model_info, file_paths
-from gempyor.utils import config, as_list, profile
+from gempyor import model_info, file_paths, config, inference_parameter
+import gempyor.inference
+from gempyor.utils import config, as_list
+import gempyor
+import numpy as np
+import os, shutil, copy
+import emcee
+import multiprocessing
 
 # from .profile import profile_options
 
@@ -21,10 +21,20 @@ os.environ["OMP_NUM_THREADS"] = "1"
     "-c",
     "--config",
     "config_file",
-    envvar=["CONFIG_PATH", "CONFIG_PATH"],
+    envvar="CONFIG_PATH",
     type=click.Path(exists=True),
     required=True,
     help="configuration file for this simulation",
+)
+@click.option(
+    "-p",
+    "--project_path",
+    "project_path",
+    envvar="PROJECT_PATH",
+    type=click.Path(exists=True),
+    default=".",
+    required=True,
+    help="path to the flepiMoP directory",
 )
 @click.option(
     "-s",
@@ -49,22 +59,34 @@ os.environ["OMP_NUM_THREADS"] = "1"
 @click.option(
     "-n",
     "--nslots",
+    "--nwalkers",
+    "nwalkers"
     envvar="FLEPI_NUM_SLOTS",
     type=click.IntRange(min=1),
-    help="override the # of simulation runs in the config file",
+    help="override the # of walkers simulation runs in the config file",
 )
 @click.option(
-    "-i",
-    "--first_sim_index",
-    envvar="FIRST_SIM_INDEX",
+    "--niterations",
+    "ninter"
     type=click.IntRange(min=1),
-    default=1,
-    show_default=True,
-    help="The index of the first simulation",
+    help="override the # of samples to produce simulation runs in the config file",
+)
+@click.option(
+    "--nsamples",
+    "nsamples"
+    type=click.IntRange(min=1),
+    help="override the # of samples to produce simulation runs in the config file",
+)
+@click.option(
+    "--nthin",
+    "nthin"
+    type=click.IntRange(min=5),
+    help="override the # of samples to thin",
 )
 @click.option(
     "-j",
     "--jobs",
+    "ncpu"
     envvar="FLEPI_NJOBS",
     type=click.IntRange(min=1),
     default=multiprocessing.cpu_count(),
@@ -72,38 +94,18 @@ os.environ["OMP_NUM_THREADS"] = "1"
     help="the parallelization factor",
 )
 @click.option(
-    "--stochastic/--non-stochastic",
-    "--stochastic/--non-stochastic",
-    "stoch_traj_flag",
-    envvar="FLEPI_STOCHASTIC_RUN",
-    type=bool,
-    default=False,
-    help="Flag determining whether to run stochastic simulations or not",
-)
-@click.option(
-    "--in-id",
-    "--in-id",
-    "in_run_id",
+    "--id",
+    "--id",
+    "run_id",
     envvar="FLEPI_RUN_INDEX",
     type=str,
     default=file_paths.run_id(),
-    show_default=True,
-    help="Unique identifier for the run",
-)  # Default does not make sense here
-@click.option(
-    "--out-id",
-    "--out-id",
-    "out_run_id",
-    envvar="FLEPI_RUN_INDEX",
-    type=str,
-    default=None,
-    show_default=True,
-    help="Unique identifier for the run",
+    help="Unique identifier for this run",
 )
 @click.option(
-    "--in-prefix",
-    "--in-prefix",
-    "in_prefix",
+    "-prefix",
+    "--prefix",
+    "prefix",
     envvar="FLEPI_PREFIX",
     type=str,
     default=None,
@@ -111,36 +113,42 @@ os.environ["OMP_NUM_THREADS"] = "1"
     help="unique identifier for the run",
 )
 @click.option(
-    "--write-csv/--no-write-csv",
+    "--resume/--no-resume",
+    "resume",
+    envvar="FLEPI_RESUME",
+    type=bool,
     default=False,
-    show_default=True,
-    help="write CSV output at end of simulation",
+    help="Flag determining whether to resume or not the current calibration.",
 )
 @click.option(
-    "--write-parquet/--no-write-parquet",
-    default=True,
-    show_default=True,
-    help="write parquet file output at end of simulation",
+    "-r",
+    "--resume_location",
+    "--resume_location",
+    type=str,
+    default=None,
+    envvar="RESUME_LOCATION",
+    help="The location (folder or an S3 bucket) to use as the initial to the first block of the current run",
 )
 # @profile_options
 # @profile()
-def simulate(
+def calibrate(
     config_file,
-    in_run_id,
-    out_run_id,
+    project_path,
     seir_modifiers_scenarios,
     outcome_modifiers_scenarios,
-    in_prefix,
-    nslots,
-    jobs,
-    write_csv,
-    write_parquet,
-    first_sim_index,
-    stoch_traj_flag,
+    nwalkers,
+    niter,
+    nsamples,
+    nthin,
+    ncpu,
+    run_id,
+    prefix,
+    resume,
+    resume_location
 ):
     config.clear()
     config.read(user=False)
-    config.set_file(config_file)
+    config.set_file(project_path+config_file)
 
     # Compute the list of scenarios to run. Since multiple = True, it's always a list.
     if not seir_modifiers_scenarios:
@@ -157,35 +165,42 @@ def simulate(
 
     outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
     seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
-    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
+    if len(seir_modifiers_scenario != 1) or len(outcome_modifiers_scenarios != 1):
+        raise ValueError(f"Only support configurations files with one scenario, got" \
+                         f"seir: {seir_modifiers_scenarios}" \
+                         f"outcomes: {outcome_modifiers_scenarios}")
 
     scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
-    print("Combination of modifiers scenarios to be run: ")
-    print(scenarios_combinations)
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
         print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcome_modifiers_scenario}")
 
-    if not nslots:
-        nslots = config["nslots"].as_number()
-    print(f"Simulations to be run: {nslots}")
+    if not nwalkers:
+        nwalkers = config["nslots"].as_number()  # TODO
+    print(f"Number of walkers be run: {nwalkers}")
 
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-        start = time.monotonic()
         print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
+        if prefix is None:
+            prefix = config["name"].get() + "/" + run_id + "/"
+        
+        write_csv = False
+        write_parquet = True
 
         modinf = model_info.ModelInfo(
             config=config,
-            nslots=nslots,
+            nslots=1,
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
             write_csv=write_csv,
             write_parquet=write_parquet,
-            first_sim_index=first_sim_index,
-            in_run_id=in_run_id,
-            # in_prefix=config["name"].get() + "/",
-            out_run_id=out_run_id,
-            # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
-            stoch_traj_flag=stoch_traj_flag,
+            first_sim_index=0,
+            in_run_id=run_id,
+            in_prefix=prefix,
+            out_run_id=run_id,
+            out_prefix=prefix,
+            inference_filename_prefix="emcee",
+            inference_filepath_suffix="",
+            stoch_traj_flag=False,
             config_path=config_file,
         )
 
@@ -195,20 +210,76 @@ def simulate(
     >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
     >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
     >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-    >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories
     """
         )
-        # (there should be a run function)
-        if config["seir"].exists():
-            seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
-        if config["outcomes"].exists():
-            outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs)
-        print(
-            f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
-        )
+
+    nsubpop = len(modinf.subpop_struct.subpop_names)
+    subpop_names = modinf.subpop_struct.subpop_names
+
+    inferpar = inference_parameter.InferenceParameters(global_config=config, modinf=modinf)
+    p0 = inferpar.draw_initial(n_draw=nwalkers)
+    for i in range(nwalkers):
+        assert inferpar.check_in_bound(proposal=p0[i]), "The initial parameter draw is not within the bounds, check the perturbation distributions"
+
+    loss = logloss.LogLoss(inference_config=config["inference"], data_dir=project_dir, modinf=modinf)
+
+    static_sim_arguments = gempyor.inference.get_static_arguments(modinf=modinf)
+
+    test_run = True
+    if test_run:
+        ss = copy.deepcopy(static_sim_arguments)
+        ss["snpi_df_in"] = ss["snpi_df_ref"]
+        ss["hnpi_df_in"] = ss["hnpi_df_ref"]
+        # delete the ref
+        del ss["snpi_df_ref"]
+        del ss["hnpi_df_ref"]
+
+        hosp = gempyor.inference.simulation_atomic(**ss, modinf=modinf)
+
+        ll_total, logloss, regularizations = loss.compute_logloss(model_df=hosp, modinf=modinf)
+        print(f"test run successful 🎉, with logloss={ll_total:.1f} including {regularizations:.1f} for regularization ({regularizations/ll_total*100:.1f}%) ")
+
+    filename = f"{run_id}_backend.h5"
+    backend = emcee.backends.HDFBackend(filename)
+    # TODO here for resume
+
+    if resume:
+        p0 = None
+    else:
+        backend.reset(nwalkers, inferpar.get_dim())
+        p0=p0
+
+    moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
+    with multiprocessing.Pool(ncpu) as pool:
+        sampler = emcee.EnsembleSampler(nwalkers, 
+                                        inferpar.get_dim(), 
+                                        gempyor.inference.emcee_logprob,
+                                        args=[modinf, inferpar, loss, static_sim_arguments], 
+                                        pool=pool,
+                                        backend=backend, moves=moves)
+        state = sampler.run_mcmc(p0, niter, progress=True, skip_initial_state_check=True)
+
+    print(f"Done, mean acceptance fraction: {np.mean(sampler.acceptance_fraction):.3f}")
+    
+    sampled_slots = gempyor.inference.find_walkers_to_sample()
+
+    # plotting the chain
+    sampler = emcee.backends.HDFBackend(filename, read_only=True)
+    gempyor.inference.plot_chains(inferpar=inferpar, sampler_output=sampler, sampled_slots=sampled_slots, save_to=f"{run_id}_chains.pdf")
+    print("EMCEE Run done, doing sampling")
+
+    position_arguments = [modinf, inferpar, loss, static_sim_arguments, True]
+    shutil.rmtree("model_output/")
+    with Pool(ncpu) as pool:
+        results = pool.starmap(gempyor.inference.emcee_logprob, [(sample, *position_arguments) for sample in exported_samples])
+    results = []
+    for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id,"hosp.parquet"]):
+            df = gempyor.read_df(fn)
+            df = df.set_index("date")
+            results.append(df)
 
 
 if __name__ == "__main__":
-    simulate()
+    calibrate()
 
 ## @endcond
