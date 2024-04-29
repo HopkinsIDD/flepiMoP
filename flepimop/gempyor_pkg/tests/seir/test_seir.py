@@ -574,7 +574,7 @@ def test_inference_resume():
     stoch_traj_flag = True
 
     spatial_config = config["subpop_setup"]
-    if config["data_path"].exists():
+    if "data_path" in config:
         raise ValueError("The config has a data_path section. This is no longer supported.")
     # spatial_base_path = pathlib.Path(config["data_path"].get())
     modinf = model_info.ModelInfo(
