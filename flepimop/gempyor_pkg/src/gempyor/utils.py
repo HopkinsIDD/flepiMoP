@@ -334,19 +334,19 @@ def copy_file_based_on_last_job_output():
         parquet_types.remove("seed")
     liketypes = ["global", "chimeric"]
     file_name_map = dict()
-    
+
     for filetype in parquet_types:
         for liketype in liketypes:
             input_file_name = create_resume_input_filename(filetype=filetype, liketype=liketype)
             output_file_name = create_resume_out_filename(filetype=filetype, liketype=liketype)
             file_name_map[input_file_name] = output_file_name
-            
+        
     if last_job_output.find("s3://") >= 0:
         for in_filename in file_name_map:
             command = ['aws', 's3', 'cp', '--quiet', last_job_output+"/"+in_filename, file_name_map[in_filename]]
             try:
-                result = subprocess.run(command, check=True, stdout = subprocess.PIPE,
-                                        stderr = subprocess.PIPE)
+                result = subprocess.run(command, check=True, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
                 print("Output:", result.stdout.decode())
             except subprocess.CalledProcessError as e:
                 print("Error: ", e.stderr.decode())
@@ -358,7 +358,6 @@ def copy_file_based_on_last_job_output():
         for in_filename in file_name_map:
             shutil.copy(os.path.join(last_job_output, in_filename), file_name_map[in_filename])
 
-    
     for in_filename in file_name_map:
         output_file_name = file_name_map[in_filename]
         parquet_type = [ptype for ptype in parquet_types if ptype in output_file_name]
