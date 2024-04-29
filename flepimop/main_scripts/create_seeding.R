@@ -302,7 +302,7 @@ all_times <- lubridate::ymd(config$start_date) +
     seq_len(lubridate::ymd(config$end_date) - lubridate::ymd(config$start_date))
 
 geodata <- flepicommon::load_geodata_file(
-    file.path(config$data_path, config$subpop_setup$geodata),
+    file.path(config$subpop_setup$geodata),
     5,
     "0",
     TRUE

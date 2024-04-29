@@ -7,7 +7,7 @@ import tqdm.contrib.concurrent
 import xarray as xr
 
 from . import NPI, model_info, steps_rk4
-from .utils import Timer, aws_disk_diagnosis, read_df
+from .utils import Timer, print_disk_diagnosis, read_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,9 +43,8 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
 
-
     ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
-    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type 
+    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type
     ## is 32 bits." so upstream user need to specifcally cast everything to int64
     ## Somehow only mobility data is caseted by this function, but perhaps we should handle it all here ?
     assert type(modinf.mobility) == scipy.sparse.csr_matrix
@@ -137,7 +136,7 @@ def steps_SEIR(
     integration_method = fnct_args["integration_method"]
     fnct_args.pop("integration_method")
 
-    logging.info(f"Integrating with method {integration_method}")
+    logging.debug(f"Integrating with method {integration_method}")
 
     if integration_method == "legacy":
         seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
@@ -147,7 +146,7 @@ def steps_SEIR(
                 f"with method {integration_method}, only deterministic "
                 f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
             )
-        seir_sim = steps_rk4.rk4_integration(**fnct_args)
+        seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
         from .dev import steps as steps_experimental
 
@@ -199,13 +198,13 @@ def steps_SEIR(
         coords=dict(
             date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
             **compartment_coords,
-            subpop=modinf.subpop_struct.subpop_names
+            subpop=modinf.subpop_struct.subpop_names,
         ),
-        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id) # TODO add more information
-    )    
+        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id),  # TODO add more information
+    )
 
-    
     return states
+
 
 def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
     with Timer("SEIR.NPI"):
@@ -261,11 +260,11 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, setup=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, modinf=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, modinf=modinf)
         else:
-            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, setup=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, modinf=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, modinf=modinf)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
@@ -379,6 +378,7 @@ def states2Df(modinf, states):
 
     return out_df
 
+
 def write_spar_snpi(sim_id, modinf, p_draw, npi):
     # NPIs
     if npi is not None:
@@ -386,8 +386,9 @@ def write_spar_snpi(sim_id, modinf, p_draw, npi):
     # Parameters
     modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
 
+
 def write_seir(sim_id, modinf, states):
-    # aws_disk_diagnosis()
+    # print_disk_diagnosis()
     out_df = states2Df(modinf, states)
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
 

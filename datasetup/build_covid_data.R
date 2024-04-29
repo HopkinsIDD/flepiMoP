@@ -30,17 +30,14 @@ if (exists("config$inference$gt_source")) {
     opt$gt_data_source <- config$inference$gt_source
 }
 
-outdir <- config$data_path
 # filterUSPS <- config$subpop_setup$modeled_states
 filterUSPS <- c("WY","VT","DC","AK","ND","SD","DE","MT","RI","ME","NH","HI","ID","WV","NE","NM",
                 "KS","NV","MS","AR","UT","IA","CT","OK","OR","KY","LA","AL","SC","MN","CO","WI",
                 "MD","MO","IN","TN","MA","AZ","WA","VA","NJ","MI","NC","GA","OH","IL","PA","NY","FL","TX","CA")
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Aggregation to state level if in config
 state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop_setup$state_level, TRUE, FALSE)
 
-dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # source data functions
 source(file.path(opt$path, "datasetup/data_setup_source.R"))
@@ -221,7 +218,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 
     max(fluview_data$Update)
 
-    census_data <- read_csv(file = file.path(config$data_path, config$subpop_setup$geodata))
+    census_data <- read_csv(file = file.path(config$subpop_setup$geodata))
     fluview_data <- fluview_data %>%
         dplyr::inner_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
         dplyr::select(Update, source, FIPS, incidD)
@@ -286,7 +283,7 @@ if (any(grepl("fluview", opt$gt_data_source))){
 #
 #     max(fluview_data$Update)
 #
-#     census_data <- read_csv(file = file.path(config$data_path, config$subpop_setup$geodata))
+#     census_data <- read_csv(file = file.path(config$subpop_setup$geodata))
 #     fluview_data <- fluview_data %>%
 #         left_join(census_data %>% dplyr::select(source = USPS, FIPS = subpop)) %>%
 #         dplyr::select(Update, source, FIPS, incidD)
@@ -392,7 +389,8 @@ us_data <- us_data %>%
     # mutate(across(starts_with("incid"), ~ replace_na(.x, 0))) %>%
     mutate(across(starts_with("incid"), ~ as.numeric(.x)))
 
-
+if(!dir.exists(dirname(config$inference$gt_data_path))){
+  dir.create(dirname(config$inference$gt_data_path))}
 # Save
 write_csv(us_data, config$inference$gt_data_path)
 

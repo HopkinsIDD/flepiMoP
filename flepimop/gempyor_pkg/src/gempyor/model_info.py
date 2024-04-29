@@ -30,7 +30,7 @@ class ModelInfo:
         nslots=1,
         seir_modifiers_scenario=None,
         outcome_modifiers_scenario=None,
-        spatial_path_prefix="",
+        path_prefix="",
         write_csv=False,
         write_parquet=False,
         first_sim_index=1,
@@ -42,6 +42,7 @@ class ModelInfo:
         inference_filename_prefix="",
         inference_filepath_suffix="",
         setup_name=None,  # override config setup_name
+        config_path="",
     ):
         self.nslots = nslots
         self.write_csv = write_csv
@@ -54,9 +55,11 @@ class ModelInfo:
 
         # Auto-detect old config
         if config["interventions"].exists():
-            raise ValueError("""This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
+            raise ValueError(
+                """This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
                              Please use flepiMoP Version 1.1 (Commit SHA: 0c30c23937dd496d33c2b9fa7c6edb198ad80dac) to run this config. \
-                             (use git checkout v1.1 inside the flepiMoP directory)""")
+                             (use git checkout v1.1 inside the flepiMoP directory)"""
+            )
 
         # 1. Create a setup name that contains every scenario.
         if setup_name is None:
@@ -76,18 +79,15 @@ class ModelInfo:
         self.n_days = (self.tf - self.ti).days + 1  # because we include ti and tf
 
         # 3. What about subpopulations
-        spatial_config = config["subpop_setup"]
-        spatial_base_path = config["data_path"].get()
-        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+        subpop_config = config["subpop_setup"]
+        if "data_path" in config:
+            raise ValueError("The config has a data_path section. This is no longer supported.")
+        self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get()
-            if spatial_config["mobility"].exists()
-            else None,
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
+            subpop_config=subpop_config,
+            path_prefix=self.path_prefix,
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
@@ -114,9 +114,12 @@ class ModelInfo:
                 ti=self.ti,
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
+                path_prefix=self.path_prefix,
             )
-            self.seeding = seeding.SeedingFactory(config = self.seeding_config)
-            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config)
+            self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=self.path_prefix)
+            self.initial_conditions = initial_conditions.InitialConditionsFactory(
+                config=self.initial_conditions_config, path_prefix=self.path_prefix
+            )
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
@@ -217,8 +220,10 @@ class ModelInfo:
             elif self.write_csv:
                 self.extension = "csv"
 
+        self.config_path = config_path  # useful for plugins
+
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
-        return self.get_filename(
+        return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=True,
@@ -226,7 +231,7 @@ class ModelInfo:
         )
 
     def get_output_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
-        return self.get_filename(
+        return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=False,
@@ -248,7 +253,7 @@ class ModelInfo:
             run_id = self.out_run_id
             prefix = self.out_prefix
 
-        fn = file_paths.create_file_name(
+        fn = self.path_prefix / file_paths.create_file_name(
             run_id=run_id,
             prefix=prefix,
             index=sim_id + self.first_sim_index - 1,

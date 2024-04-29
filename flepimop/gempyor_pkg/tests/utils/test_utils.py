@@ -65,8 +65,8 @@ def test_Timer_with_statement_success():
         time.sleep(1)
 
 
-def test_aws_disk_diagnosis_success():
-    utils.aws_disk_diagnosis()
+def test_print_disk_diagnosis_success():
+    utils.print_disk_diagnosis()
 
 
 def test_profile_success():

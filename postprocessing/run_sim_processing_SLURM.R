@@ -13,7 +13,7 @@ options(readr.num_columns = 0)
 option_list = list(
   optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"),
   optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",covidcommon::run_id())),
-  optparse::make_option(c("-d", "--data-path"), action="store", dest = "data_path", default=Sys.getenv("DATA_PATH", Sys.getenv("DATA_PATH")), type='character', help="path to data repo"),
+  optparse::make_option(c("-d", "--data-path"), action="store", dest = "data_path", default=Sys.getenv("PROJECT_PATH", Sys.getenv("PROJECT_PATH")), type='character', help="path to data repo"),
   optparse::make_option(c("-r","--run-processing"), action="store", dest = "run_processing", default=Sys.getenv("PROCESS",FALSE), type='logical', help = "Process the run if true"),
   optparse::make_option(c("-P", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH"))),
   optparse::make_option(c("-F","--full-fit"), action="store", dest = "full_fit", default=Sys.getenv("FULL_FIT",FALSE), type='logical', help = "Process full fit"),
@@ -37,7 +37,7 @@ if(opt$config == ""){
 if(opt$data_path == ""){
   optparse::print_help(parser)
   stop(paste(
-    "Please specify a data path -d option or DATA_PATH environment variable."
+    "Please specify a data path -d option or PROJECT_PATH environment variable."
   ))
 }
 
@@ -164,7 +164,7 @@ if(tolower(smh_or_fch) == "fch"){
 }
 scenarios <- scenarios[scenario_num]
 
-geodata_file_path = file.path(config$data_path, config$subpop_setup$geodata)
+geodata_file_path = file.path(config$subpop_setup$geodata)
 
 print(disease)
 

@@ -12,6 +12,10 @@ from gempyor.utils import config, as_list, profile
 # from .profile import profile_options
 
 
+# disable  operations using the MKL linear algebra.
+os.environ["OMP_NUM_THREADS"] = "1"
+
+
 @click.command()
 @click.option(
     "-c",
@@ -182,6 +186,7 @@ def simulate(
             out_run_id=out_run_id,
             # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
             stoch_traj_flag=stoch_traj_flag,
+            config_path=config_file,
         )
 
         print(
