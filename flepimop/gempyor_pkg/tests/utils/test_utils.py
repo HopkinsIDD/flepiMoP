@@ -5,7 +5,8 @@ import pandas as pd
 # import dask.dataframe as dd
 import pyarrow as pa
 import time
-
+from typing import List
+from unittest.mock import patch
 from gempyor import utils
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
@@ -101,13 +102,11 @@ def env_vars(monkeypatch):
 
 def test_create_resume_out_filename(env_vars):
     result = utils.create_resume_out_filename("spar", "global")
-    expected_filename = """model_output/output/123/spar/global/intermidate
-                        /000000002.000000001.000000001.123.spar.parquet"""
+    expected_filename = "model_output/output/123/spar/global/intermidate/000000002.000000001.000000001.123.spar.parquet"
     assert result == expected_filename
     
     result2 = utils.create_resume_out_filename("seed", "chimeric")
-    expected_filename2 = """model_output/output/123/seed/chimeric/intermidate
-                        /000000002.000000001.000000001.123.seed.csv'"""
+    expected_filename2 = "model_output/output/123/seed/chimeric/intermidate/000000002.000000001.000000001.123.seed.csv"
     assert result2 == expected_filename2
 
 
@@ -121,3 +120,21 @@ def test_create_resume_input_filename(env_vars):
     result2 = utils.create_resume_input_filename("seed", "chimeric")
     expect_filename2 = 'model_output/output/321/seed/chimeric/final/000000002.321.seed.csv'
     assert result2 == expect_filename2
+
+
+@patch.dict(os.environ, {"RESUME_DISCARD_SEEDING": "true", "FLEPI_BLOCK_INDEX": "1"})
+def test_get_parquet_types_resume_discard_seeding_true_flepi_block_index_1():
+    expected_types = ["spar", "snpi", "hpar", "hnpi", "init"]
+    assert utils.get_parquet_types() == expected_types
+
+
+@patch.dict(os.environ, {"RESUME_DISCARD_SEEDING": "false", "FLEPI_BLOCK_INDEX": "1"})
+def test_get_parquet_types_resume_discard_seeding_false_flepi_block_index_1():
+    expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
+    assert utils.get_parquet_types() == expected_types
+
+
+@patch.dict(os.environ, {"FLEPI_BLOCK_INDEX": "2"})
+def test_get_parquet_types_flepi_block_index_2():
+    expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
+    assert utils.get_parquet_types() == expected_types

@@ -13,6 +13,7 @@ import subprocess
 import shutil
 import logging
 from gempyor import file_paths
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -385,12 +386,31 @@ def create_resume_input_filename(filetype: str, liketype: str) -> str:
                                        extension=extension)
 
 
-def copy_file_based_on_last_job_output():
-    last_job_output = os.environ.get("LAST_JOB_OUTPUT")
+def get_parquet_types()-> List[str]:
     resume_discard_seeding = os.environ.get("RESUME_DISCARD_SEEDING")
-    parquet_types = ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
-    if resume_discard_seeding == "true":
-        parquet_types.remove("seed")
+    flepi_block_index = os.environ.get("FLEPI_BLOCK_INDEX")
+    if flepi_block_index == "1":
+        if resume_discard_seeding == "true":
+            return ["spar", "snpi", "hpar", "hnpi", "init"]
+        else:
+            return ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
+    else:
+        return ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
+    
+
+def copy_file_based_on_last_job_output() -> bool:
+    """
+    Copies files based on the last job output.
+
+    This function copies files from the last job output directory to the corresponding output directory
+    based on the file types and like types. The file names are determined using the `create_resume_input_filename`
+    and `create_resume_out_filename` functions.
+
+    Returns:
+        bool: True if all files are successfully copied, False otherwise.
+    """
+    last_job_output = os.environ.get("LAST_JOB_OUTPUT")
+    parquet_types = get_parquet_types()
     liketypes = ["global", "chimeric"]
     file_name_map = dict()
 
@@ -424,3 +444,6 @@ def copy_file_based_on_last_job_output():
             print(f"Copy successful for file of type {parquet_type} {in_filename}->{output_file_name}")
         else:
             print(f"Could not copy file of type {parquet_type} {in_filename}->{output_file_name}")
+            return False
+        
+    return True
