@@ -12,6 +12,7 @@ import tarfile
 from datetime import datetime, timezone, date
 import yaml
 from gempyor import file_paths
+import gempyor.utils
 
 
 def user_confirmation(question="Continue?", default=False):
@@ -55,7 +56,7 @@ def user_confirmation(question="Continue?", default=False):
     "--data-path",
     "--data-path",
     "data_path",
-    envvar="DATA_PATH",
+    envvar="PROJECT_PATH",
     type=click.Path(exists=True),
     default=".",
     help="path to the data directory",
@@ -431,7 +432,9 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
             print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
             print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
         else:
-            geodata_fname = pathlib.Path(data_path, config["data_path"]) / config["subpop_setup"]["geodata"]
+            if "data_path" in config:
+                raise ValueError("The config has a data_path section. This is no longer supported.")
+            geodata_fname = pathlib.Path(data_path) / config["subpop_setup"]["geodata"]
             with open(geodata_fname) as geodata_fp:
                 num_subpops = sum(1 for line in geodata_fp)
 
@@ -673,12 +676,12 @@ class BatchJobHandler(object):
         ## TODO: check how each of these variables are used downstream
         base_env_vars = [
             {"name": "BATCH_SYSTEM", "value": self.batch_system},
-            {"name": "S3_MODEL_DATA_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
+            {"name": "S3_MODEL_PROJECT_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
             {"name": "DVC_OUTPUTS", "value": " ".join(self.outputs)},
             {"name": "S3_RESULTS_PATH", "value": s3_results_path},
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
-            {"name": "DATA_PATH", "value": str(self.data_path)},
+            {"name": "PROJECT_PATH", "value": str(self.data_path)},
             {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
             {"name": "CONFIG_PATH", "value": config_file},
             {"name": "FLEPI_NUM_SLOTS", "value": str(self.num_jobs)},
@@ -796,16 +799,10 @@ class BatchJobHandler(object):
                 print("slurm command to be run >>>>>>>> ")
                 print(command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
-                import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
 
-                sr = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (stdout, stderr) = sr.communicate()
-                if sr.returncode != 0:
-                    print(f"sbatch command failed with returncode {sr.returncode}")
-                    print("sbatch command failed with stdout and stderr:")
-                    print("stdout: ", stdout)
-                    print("stderr: ", stderr)
-                    raise Exception("sbatch command failed")
+                returncode, stdout, stderr = gempyor.utils.command_safe_run(
+                    command, command_name="sbatch", fail_on_fail=True
+                )
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
@@ -813,14 +810,9 @@ class BatchJobHandler(object):
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
-                sr = subprocess.Popen(shlex.split(postprod_command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (stdout, stderr) = sr.communicate()
-                if sr.returncode != 0:
-                    print(f"sbatch command failed with returncode {sr.returncode}")
-                    print("sbatch command failed with stdout and stderr:")
-                    print("stdout: ", stdout)
-                    print("stderr: ", stderr)
-                    raise Exception("sbatch command failed")
+                returncode, stdout, stderr = gempyor.utils.command_safe_run(
+                    postprod_command, command_name="sbatch postprod", fail_on_fail=True
+                )
                 postprod_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING POST-PROCESSING JOB. Slurm job id is {postprod_job_id}")
 

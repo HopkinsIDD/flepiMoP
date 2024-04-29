@@ -64,7 +64,7 @@ class StackedModifier(NPIBase):
                 subpops=subpops,
                 loaded_df=loaded_df,
                 pnames_overlap_operation_sum=pnames_overlap_operation_sum,
-                pnames_overlap_operation_reductionprod=pnames_overlap_operation_reductionprod
+                pnames_overlap_operation_reductionprod=pnames_overlap_operation_reductionprod,
             )
 
             new_params = sub_npi.param_name  # either a list (if stacked) or a string
@@ -79,7 +79,6 @@ class StackedModifier(NPIBase):
                         self.reductions[new_p] = 1
 
             for param in self.param_name:
-                
                 # Get reduction return a neutral value for this overlap operation if no parameeter exists
                 reduction = sub_npi.getReduction(param)
                 if param in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",param):
@@ -123,7 +122,7 @@ class StackedModifier(NPIBase):
         #         raise ValueError(
         #             f"The intervention in config: {self.name} has reduction of {param} with value {self.reductions.get(param).max().max()} which is greater than 100% reduced."
         #         )
-            
+
     def get_default(self, param):
         if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
             return 0.0

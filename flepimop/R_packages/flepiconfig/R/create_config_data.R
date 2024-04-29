@@ -30,7 +30,7 @@ set_npi_params <- function(npi_name = "waning_npi",
                            param_name = "epsilon",
                            npi_category = "universal_npi",
                            affected_subpops = "all",
-                           spatial_groups = NULL,
+                           subpop_groups = NULL,
                            sim_start_date=as.Date("2020-01-01"),
                            sim_end_date=Sys.Date()+60,
                            modifier_method = "SinglePeriodModifier",
@@ -41,8 +41,8 @@ set_npi_params <- function(npi_name = "waning_npi",
                            p_mean = 0, p_sd = 0.05, p_a = -1, p_b = 1 ){
     
     # check that universal npi was implemented correctly
-    if (npi_category == "universal_npi" & is.null(spatial_groups)){
-        spatial_groups <- "all"
+    if (npi_category == "universal_npi" & is.null(subpop_groups)){
+        subpop_groups <- "all"
     }
     
     sim_start_date <- as.Date(sim_start_date)
@@ -50,7 +50,7 @@ set_npi_params <- function(npi_name = "waning_npi",
     
     local_var <- dplyr::tibble(USPS = "",
                                subpop = affected_subpops,
-                               spatial_groups = spatial_groups,
+                               subpop_groups = subpop_groups,
                                name = npi_name,
                                type = "transmission",
                                category = npi_category,
@@ -71,7 +71,7 @@ set_npi_params <- function(npi_name = "waning_npi",
                                pert_b = p_b) %>%
         dplyr::mutate(pert_dist = ifelse(inference, as.character(pert_dist), NA_character_),
                       dplyr::across(pert_mean:pert_b, ~ifelse(inference, as.numeric(.x), NA_real_))) %>%
-        dplyr::select(USPS, subpop, spatial_groups, start_date, end_date, name, modifier_method, type, category, parameter, baseline_scenario, 
+        dplyr::select(USPS, subpop, subpop_groups, start_date, end_date, name, modifier_method, type, category, parameter, baseline_scenario, 
                       tidyselect::starts_with("value_"), tidyselect::starts_with("pert_"))
     
     return(local_var)
@@ -1146,7 +1146,7 @@ daily_mean_reduction <- function(dat,
         ) %>%
         dplyr::select(USPS, subpop, start_date, end_date, mean)
     
-    timeline <- tidyr::crossing(time = seq(from=min(dat$start_date), to=max(dat$end_date), by = 1),
+    timeline <- tidyr::crossing(date = seq(from=min(dat$start_date), to=max(dat$end_date), by = 1),
                                 subpop = unique(dat$subpop))
     
     if(any(stringr::str_detect(dat$subpop, '", "'))){
@@ -1175,12 +1175,12 @@ daily_mean_reduction <- function(dat,
         dplyr::select(subpop, start_date, end_date, mean) %>%
         dplyr::bind_rows(dat %>% dplyr::filter(subpop!="all") %>% dplyr::ungroup() %>% dplyr::select(-USPS)) %>%
         dplyr::left_join(timeline) %>%
-        dplyr::filter(time >= start_date & time <= end_date) %>%
-        dplyr::group_by(subpop, time) %>%
+        dplyr::filter(date >= start_date & date <= end_date) %>%
+        dplyr::group_by(subpop, date) %>%
         dplyr::summarize(mean = prod(1-mean))
     
     if(plot){
-        dat<- ggplot2::ggplot(data= dat, ggplot2::aes(x=time, y=mean))+
+        dat<- ggplot2::ggplot(data= dat, ggplot2::aes(x=date, y=mean))+
             ggplot2::geom_line()+
             ggplot2::facet_wrap(~subpop)+
             ggplot2::theme_bw()+

@@ -84,7 +84,6 @@ aggregate_and_calc_loc_likelihoods <- function(
         ## We use a data frame for debugging, only ll is used
         likelihood_data[[location]] <- dplyr::tibble(
             ll = this_location_log_likelihood,
-            filename = hosp_file,
             subpop = location,
             accept = 0, # acceptance decision (0/1) . Will be updated later when accept/reject decisions made
             accept_avg = 0, # running average acceptance decision
@@ -589,8 +588,8 @@ initialize_mcmc_first_block <- function(
             }
 
             # load and add to original seeding
-            seed_new <-  readr::read_csv(global_files[["seed_filename"]])
-            added_seeding <- readr::read_csv(config$seeding$added_seeding$added_lambda_file)
+            seed_new <-  readr::read_csv(global_files[["seed_filename"]],show_col_types = FALSE)
+            added_seeding <- readr::read_csv(config$seeding$added_seeding$added_lambda_file,show_col_types = FALSE)
 
             if (!is.null(config$seeding$added_seeding$fix_original_seeding) &&
                 config$seeding$added_seeding$fix_original_seeding){
@@ -614,8 +613,6 @@ initialize_mcmc_first_block <- function(
     }
 
 
-
-
     ## initial conditions (init)
 
     if (!is.null(config$initial_conditions)){
@@ -628,44 +625,42 @@ initialize_mcmc_first_block <- function(
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
 
-                if (!file.exists(config$initial_conditions$initial_conditions_file)) {
-                    stop("ERROR: Initial conditions file specified but does not exist.")
-                }
-                if (grepl(".csv", initial_init_file)){
-                    initial_init <- readr::read_csv(initial_init_file)
-                    config$initial_conditions$initial_conditions_file <- gsub(".csv", ".parquet", config$initial_conditions$initial_conditions_file)
-                    arrow::write_parquet(initial_init, config$initial_conditions$initial_conditions_file)
-                }
-
-                err <- !(file.copy(config$initial_conditions$initial_conditions_file, global_files[["init_filename"]]))
-                if (err != 0) {
-                    stop("Could not copy initial conditions file")
-                }
-            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
+            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw", "plugin")) {
                 print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
                       and no copying to global or chimeric files is being done.")
-
 
                 if (is.null(config$initial_conditions$initial_file_type)) {
                     stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
                 }
                 initial_init_file <- global_files[[paste0(config$initial_conditions$initial_file_type, "_filename")]]
-
-                if (!file.exists(initial_init_file)) {
-                    stop("ERROR: Initial conditions file specified but does not exist.")
-                }
-                if (grepl(".csv", initial_init_file)){
-                    initial_init <- readr::read_csv(initial_init_file)
-                    initial_init_file <- gsub(".csv", ".parquet", initial_init_file)
-                    arrow::write_parquet(initial_init, initial_init_file)
-                }
-
-                err <- !(file.copy(initial_init_file, global_files[["init_filename"]]))
-                if (err != 0) {
-                    stop("Could not copy initial conditions file")
-                }
-
             }
+
+
+            if (!file.exists(initial_init_file)) {
+                stop("ERROR: Initial conditions file specified but does not exist.")
+            }
+            
+            if (grepl(".csv", initial_init_file)){
+                initial_init <- readr::read_csv(initial_init_file,show_col_types = FALSE)
+            }else{
+                initial_init <- arrow::read_parquet(initial_init_file)
+            }
+            
+            # if the initial conditions file contains a 'date' column, filter for config$start_date
+            
+            if("date" %in% colnames(initial_init)){
+                
+                initial_init <- initial_init %>%
+                    dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+                    dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+                
+                if (nrow(initial_init) == 0) {
+                    stop("ERROR: Initial conditions file specified but does not contain the start date.")
+                }  
+                
+            }
+
+            arrow::write_parquet(initial_init, global_files[["init_filename"]])
         }
     }
 

@@ -21,6 +21,8 @@ import os
 import multiprocessing as mp
 import pandas as pd
 import pyarrow.parquet as pq
+import xarray as xr
+import numba as nb
 
 
 logging.basicConfig(level=os.environ.get("FLEPI_LOGLEVEL", "INFO").upper())
@@ -52,8 +54,8 @@ class GempyorSimulator:
         inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
-        spatial_path_prefix="",  # in case the data folder is on another directory
-        autowrite_seir = False
+        path_prefix="",  # in case the data folder is on another directory
+        autowrite_seir=False,
     ):
         self.seir_modifiers_scenario = seir_modifiers_scenario
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
@@ -90,6 +92,7 @@ class GempyorSimulator:
             out_run_id=out_run_id,
             out_prefix=out_prefix,
             stoch_traj_flag=stoch_traj_flag,
+            config_path=config_path,
         )
 
         print(
@@ -153,7 +156,6 @@ class GempyorSimulator:
         out_df = seir.write_seir(sim_id2write, self.modinf, self.lastsim_states)
         return out_df
 
-
     # @profile()
     def one_simulation(
         self,
@@ -169,7 +171,6 @@ class GempyorSimulator:
         if load_ID:
             sim_id2load = int(sim_id2load)
             self.lastsim_sim_id2load = sim_id2load
-
 
         with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
             if not self.already_built:
@@ -236,14 +237,14 @@ class GempyorSimulator:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, setup=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(
-                        sim_id2load, setup=self.modinf
-                    )
+                    initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, modinf=self.modinf)
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(sim_id2load, modinf=self.modinf)
                 else:
-                    initial_conditions = self.modinf.initial_conditions.get_from_config(sim_id2write, setup=self.modinf)
+                    initial_conditions = self.modinf.initial_conditions.get_from_config(
+                        sim_id2write, modinf=self.modinf
+                    )
                     seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
-                        sim_id2write, setup=self.modinf
+                        sim_id2write, modinf=self.modinf
                     )
                 self.lastsim_seeding_data = seeding_data
                 self.lastsim_seeding_amounts = seeding_amounts
@@ -429,81 +430,6 @@ class GempyorSimulator:
             parameters, self.modinf.parameters.pnames, self.unique_strings
         )
         return parsed_parameters
-    
-
-
-# TODO: there is way to many of these functions
-def simulation_atomic(snpi_df_in, hnpi_df_in, modinf, p_draw, unique_strings, transition_array, proportion_array, proportion_info, initial_conditions, seeding_data, seeding_amounts,outcomes_parameters, save=False):
-    
-    # We need to reseed because subprocess inherit of the same random generator state.
-    np.random.seed(int.from_bytes(os.urandom(4), byteorder='little'))
-    random_id = np.random.randint(0,1e8)
-
-
-    npi_seir = seir.build_npi_SEIR(
-        modinf=modinf, load_ID=False, sim_id2load=None, config=config, 
-        bypass_DF=snpi_df_in
-    )
-
-    if modinf.npi_config_outcomes:
-        npi_outcomes = outcomes.build_outcome_modifiers(
-                    modinf=modinf,
-                    load_ID=False,
-                    sim_id2load=None,
-                    config=config,
-                    bypass_DF=hnpi_df_in
-                )
-
-    # reduce them
-    parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
-    # Parse them
-    parsed_parameters = modinf.compartments.parse_parameters(
-        parameters, modinf.parameters.pnames, unique_strings
-    )
-
-    # Convert the seeding data dictionnary to a numba dictionnary
-    seeding_data_nbdict = nb.typed.Dict.empty(
-        key_type=nb.types.unicode_type,
-        value_type=nb.types.int64[:])
-
-    for k,v in seeding_data.items():
-        seeding_data_nbdict[k] = np.array(v, dtype=np.int64)
-
-    # Compute the SEIR simulation
-    states = seir.steps_SEIR(
-        modinf,
-        parsed_parameters,
-        transition_array,
-        proportion_array,
-        proportion_info,
-        initial_conditions,
-        seeding_data_nbdict,
-        seeding_amounts,
-    )
-
-    # Compute outcomes
-    outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
-        modinf=modinf,
-        sim_id2write=0,
-        parameters=outcomes_parameters,
-        loaded_values=None,
-        npi=npi_outcomes,
-        bypass_seir_xr=states
-    )
-    outcomes_df, hpar, hnpi = outcomes.postprocess_and_write(
-        sim_id=0,
-        modinf=modinf,
-        outcomes_df=outcomes_df,
-        hpar=hpar_df,
-        npi=npi_outcomes,
-    )
-    
-    if save:
-        modinf.write_simID(ftype="hosp", sim_id=random_id, df=outcomes_df)
-    # needs to be after write... because parquet write discard the index.
-    outcomes_df = outcomes_df.set_index("date") # after writing
-
-    return outcomes_df
 
 
 def paramred_parallel(run_spec, snpi_fn):
@@ -516,7 +442,7 @@ def paramred_parallel(run_spec, snpi_fn):
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
+        path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     snpi = pq.read_table(snpi_fn).to_pandas()
@@ -542,7 +468,7 @@ def paramred_parallel_config(run_spec, dummy):
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        spatial_path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
+        path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     npi_seir = gempyor_simulator.get_seir_npi()

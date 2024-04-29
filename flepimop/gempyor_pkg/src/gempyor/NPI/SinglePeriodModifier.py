@@ -37,8 +37,11 @@ class SinglePeriodModifier(NPIBase):
         self.param_name = npi_config["parameter"].as_str().lower().replace(" ", "")
 
         default_value = 1.0
-        if self.param_name in self.pnames_overlap_operation_sum or self.param_name in self.pnames_overlap_operation_reductionprod:
-            default_value=0.0
+        if (
+            self.param_name in self.pnames_overlap_operation_sum
+            or self.param_name in self.pnames_overlap_operation_reductionprod
+        ):
+            default_value = 0.0
 
         self.npi = pd.DataFrame(
             default_value,
@@ -106,7 +109,6 @@ class SinglePeriodModifier(NPIBase):
         #      )
 
     def __createFromConfig(self, npi_config):
-
         # Optional config field "subpop"
         # If values of "subpop" is "all" or unspecified, run on all subpops.
         # Otherwise, run only on subpops specified.
@@ -187,7 +189,7 @@ class SinglePeriodModifier(NPIBase):
             return 0.0
         else:
             return 1.0
-        
+
     def getReduction(self, param):
         "Return the reduction for this param, `default` if no reduction defined"
         if param == self.param_name:

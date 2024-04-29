@@ -80,8 +80,7 @@ get_minimal_setup <- function () {
     sim_hosp <- obs %>%
         dplyr::rename(incidD = death_incid, incidC = confirmed_incid) %>%
         dplyr::mutate(incidD = incidD + rpois(length(incidD), incidD))%>%
-        dplyr::mutate(incidC = incidC + rpois(length(incidC), incidC))%>%
-        dplyr::rename(time=date)
+        dplyr::mutate(incidC = incidC + rpois(length(incidC), incidC))
 
     ##the observed node name.
     obs_subpop <- "subpop"
@@ -195,7 +194,7 @@ test_that("aggregate_and_calc_loc_likelihoods returns a likelihood per location 
 
 
     expect_that(nrow(tmp), equals(length(stuff$all_locations)))
-    expect_that(sort(colnames(tmp)), equals(sort(c("ll","accept","accept_prob","accept_avg","filename",stuff$obs_subpop))))
+    expect_that(sort(colnames(tmp)), equals(sort(c("ll","accept","accept_prob","accept_avg",stuff$obs_subpop))))
 
 })
 

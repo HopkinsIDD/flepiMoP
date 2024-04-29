@@ -3,7 +3,7 @@
 set -x
 
 # Expected environment variables from AWS Batch env
-# S3_MODEL_DATA_PATH location in S3 with the code, data, and dvc pipeline to run
+# S3_MODEL_PROJECT_PATH location in S3 with the code, data, and dvc pipeline to run
 # DVC_OUTPUTS the names of the directories with outputs to save in S3, separated by a space
 # SIMS_PER_JOB is the number of sims to run per job
 # JOB_NAME the name of the job
@@ -34,7 +34,7 @@ aws configure set default.s3.multipart_chunksize 8MB
 
 # Copy the complete model + data package from S3 and
 # install the local R packages
-aws s3 cp --quiet $S3_MODEL_DATA_PATH model_data.tar.gz
+aws s3 cp --quiet $S3_MODEL_PROJECT_PATH model_data.tar.gz
 mkdir model_data
 tar -xzf model_data.tar.gz -C model_data # chadi: removed v(erbose) option here as it floods the log with data we have anyway from the s3 bucket
 cd model_data

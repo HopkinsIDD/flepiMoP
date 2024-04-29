@@ -39,5 +39,5 @@ class TestSeeding:
         sic = seeding.SeedingFactory(config=s.seeding_config)
         s.seeding_config["method"] = "NoSeeding"
 
-        seeding_result = sic.get_from_config(sim_id=100, setup=s)
+        seeding_result = sic.get_from_config(sim_id=100, modinf=s)
         print(seeding_result)

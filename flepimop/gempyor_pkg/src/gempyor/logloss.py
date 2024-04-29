@@ -3,121 +3,113 @@ import pandas as pd
 import numpy as np
 import confuse
 import scipy.stats
+from . import statistics
+import os
+
 
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing
-##
-
-class Statistic:
-    def __init__(self, name, statistic_config: confuse.ConfigView):
-        self.sim_var = statistic_config["sim_var"].as_str()
-        self.data_var = statistic_config["data_var"].as_str()
-        self.name = name
-
-        self.resample = False
-        if statistic_config["resample"].exists():
-            self.resample = True
-            resample_config = statistic_config["resample"]
-            self.resample_freq = ""
-            if resample_config["freq"].exists():
-                self.resample_freq = resample_config["freq"].get()
-            
-            self.resample_aggregator = ""
-            if resample_config["aggregator"].exists():
-                self.resample_aggregator = getattr(pd.Series, resample_config["aggregator"].get())
-            
-            self.resample_skipna = False # TODO
-            if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
-                self.resample_skipna = resample_config["skipna"].get()
-        
-        self.regularize = False
-        if statistic_config["regularize"].exists():
-            raise ValueError("Regularization is not implemented")
-            regularization_config = statistic_config["regularization"].get()
-
-        self.scale = False
-        if statistic_config["scale"].exists():
-            self.scale_func = getattr(np, statistic_config["scale"].get())
-    
-        self.dist = statistic_config["likelihood"]["dist"].get()
-        # TODO here get the parameter in a dictionnary
-
-
-    def __str__(self) -> str:
-        return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
-    
-    def __repr__(self) -> str:
-        return f"A Statistic(): {self.__str__()}"
-
-    def apply_resample(self, data):
-        if self.resample:
-            return data.resample(self.resample_freq).agg(self.resample_aggregator, skipna=self.resample_skipna)
-        else:
-            return data
-        
-    def apply_scale(self, data):
-        if self.scale:
-            return self.scale_func(data)
-        else:
-            return data
-        
-    def apply_transforms(self, data):
-        return self.apply_scale(self.apply_resampling(data))
-
-    def compute_logloss(self, model_data, gt_data, param, add_one = False):
-        model_data = self. apply_transforms(model_data[self.sim_var])
-        gt_data = self.apply_transforms(gt_data[self.data_var])
-
-        if not model_data.shape == gt_data.shape:
-            raise ValueError(f"{self.name} Statistic error: data and groundtruth do not have the same shape")
-        
-        if add_one: # TO DO
-            # do not evaluate likelihood if both simulated and observed value are zero. Assign likelihood = 1
-            eval_ = np.logical_not(model_data+gt_data == 0)
-            # if simulated value is 0, but data is non zero, change sim to 1 and evaluate likelihood
-            model_data[np.logical_and(model_data == 0, eval_)] = 1
-        else:
-            eval_ = np.ones(len(gt_data), dtype=bool)
-        
-        ll = np.zeros(len(gt_data))
-
-        if self.dist == "pois":
-            ll[eval_] = np.log(scipy.stats.poisson.pmf(np.round(gt_data[eval_]), model_data[eval_]))
-        elif self.dist == "norm":
-            ll[eval_] = np.log(scipy.stats.norm.pdf(gt_data[eval_], loc=model_data[eval_], scale=param[0]))
-        elif self.dist == "norm_cov": 
-            ll[eval_] = np.log(scipy.stats.norm.pdf(gt_data[eval_], loc=model_data[eval_], scale=np.maximum(model_data[eval_],5)*param[0]))
-        elif self.dist == "nbinom": # param 0 is dispersion parameter k
-            ll[eval_] = np.log(scipy.stats.nbinom.pmf(gt_data[eval_], n=param[0], p=model_data[eval_]))
-        elif self.dist == "sqrtnorm": 
-            ll[eval_] = np.log(scipy.stats.norm.pdf(np.sqrt(gt_data[eval_]), loc=np.sqrt(model_data[eval_]), scale=param[0]))
-        elif self.dist == "sqrtnorm_cov": 
-            ll[eval_] = np.log(scipy.stats.norm.pdf(np.sqrt(gt_data[eval_]), loc=np.sqrt(model_data[eval_]), scale=np.sqrt(np.maximum(model_data[eval_],5))*param[0]))
-        elif self.dist == "sqrtnorm_scale_sim": # param 0 is cov, param 1 is multipler
-            ll[eval_] = np.log(scipy.stats.norm.pdf(np.sqrt(gt_data[eval_]), loc=np.sqrt([eval_]*param[1]), scale=np.sqrt(np.maximum(model_data[eval_],5)*param[1])*param[0]))
-        elif self.dist == "lognorm": 
-            # lognormal where the mode (MLE) is the simulated value
-            gt_data[np.logical_and(gt_data == 0, eval_)] = 1 # if observed value is 0 but simulated is 1, change data to 1 and evaluate likelihood.
-            # can't have zeros for lognormal, would give loglikelihood of negative infinity
-            # rc[eval] <- dlnorm(obs[eval], meanlog = log(sim[eval]) + param[[1]]^2, sdlog = param[[1]], log = T) # mean is adjusted so that sim is the mode
-            ll[eval_] = np.log(scipy.stats.lognorm.pdf(gt_data[eval_], loc=model_data[eval_] + param[0]**2, scale=param[0]))
-        else:
-            raise ValueError("Invalid distribution specified, got {self.dist}")
-        return ll
-
-
-
 # TODO: add an autatic test that show that the loss is biggest when gt == modeldata
+
+
+# A lot of things can go wrong here, in the previous approach where GT was cast to xarray as
+#  self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
+# then some NA were created if some dates where present in some gt but no other.
+
+
 class LogLoss:
-    def __init__(self, inference_config: confuse.ConfigView, data_dir:str = "."):
-        self.gt = pd.read_csv(f"{data_dir}/{inference_config['gt_data_path'].get()}")
-        self.gt["date"] = pd.to_datetime(self.gt['date'])
+    def __init__(self, inference_config: confuse.ConfigView, modinf, data_dir: str = "."):
+        # TODO: bad format for gt because each date must have a value for each column, but if it doesn't and you add NA
+        # then this NA has a meaning that depends on skip NA, which is annoying.
+        # A lot of things can go wrong here, in the previous approach where GT was cast to xarray as
+        #  self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date","subpop"]))
+        # then some NA were created if some dates where present in some gt but no other.
+        # FIXME THIS IS FUNDAMENTALLY WRONG, especially as groundtruth resample by statistic !!!!
+
+        self.gt = pd.read_csv(
+            os.path.join(data_dir, inference_config["gt_data_path"].get()),
+            converters={"subpop": lambda x: str(x)},
+            skipinitialspace=True,
+        )  # TODO: use read_df
+        self.gt["date"] = pd.to_datetime(self.gt["date"])
         self.gt = self.gt.set_index("date")
+
+        # made the controversial choice of storing the gt as an xarray dataset instead of a dictionary
+        # of dataframes
+        self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date", "subpop"]))
+        # Very important: subsample the subpop in the population, in the right order, and sort by the date index.
+        self.gt_xr = self.gt_xr.sortby("date").reindex({"subpop": modinf.subpop_struct.subpop_names})
+
+        # This will force at 0, if skipna is False, data of some variable that don't exist if iother exist
+        # and damn python datetime types are ugly...
+        self.first_date = max(pd.to_datetime(self.gt_xr.date[0].values).date(), modinf.ti)
+        self.last_date = min(pd.to_datetime(self.gt_xr.date[-1].values).date(), modinf.tf)
+
         self.statistics = {}
         for key, value in inference_config["statistics"].items():
-            self.statistics[key] = Statistic(key, value)
+            self.statistics[key] = statistics.Statistic(key, value)
 
-    def plot_gt(self, ax):
-        ax.plot(self.gt)
+    def plot_gt(self, ax=None, subpop=None, statistic=None, subplot=False, filename=None, **kwargs):
+        """Plots ground truth data.
+
+        Args:
+            ax (matplotlib.axes.Axes, optional): An existing axis to plot on.
+                If None, a new figure and axis will be created.
+            subpop (str, optional): The subpopulation to plot. If None, plots all subpopulations.
+            statistic (str, optional): The statistic to plot. If None, plots all statistics.
+            subplot (bool, optional): If True, creates a subplot for each subpopulation/statistic combination.
+                Defaults to False (single plot with all lines).
+            filename (str, optional): If provided, saves the plot to the specified filename.
+            **kwargs: Additional keyword arguments passed to the matplotlib plot function.
+        """
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            if subplot:
+                fig, axes = plt.subplots(
+                    len(self.gt["subpop"].unique()),
+                    len(self.gt.columns.drop("subpop")),
+                    figsize=(4 * len(self.gt.columns.drop("subpop")), 3 * len(self.gt["subpop"].unique())),
+                    dpi=250,
+                    sharex=True,
+                )
+            else:
+                fig, ax = plt.subplots(figsize=(8, 6), dpi=250)
+
+        if subpop is None:
+            subpops = self.gt["subpop"].unique()
+        else:
+            subpops = [subpop]
+
+        if statistic is None:
+            statistics = self.gt.columns.drop("subpop")  # Assuming other columns are statistics
+        else:
+            statistics = [statistic]
+
+        if subplot:
+            # One subplot for each subpop/statistic combination
+            for i, subpop in enumerate(subpops):
+                for j, stat in enumerate(statistics):
+                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat].sort_index()
+                    axes[i, j].plot(data_to_plot, **kwargs)
+                    axes[i, j].set_title(f"{subpop} - {stat}")
+        else:
+            # All lines in a single plot
+            for subpop in subpops:
+                for stat in statistics:
+                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat].sort_index()
+                    data_to_plot.plot(ax=ax, **kwargs, label=f"{subpop} - {stat}")
+            if len(statistics) > 1:
+                ax.legend()
+
+        if filename:
+            if subplot:
+                fig.tight_layout()  # Adjust layout for saving if using subplots
+            plt.savefig(filename, **kwargs)  # Save the figure
+
+        if subplot:
+            return fig, axes  # Return figure and subplots for potential further customization
+        else:
+            return ax  # Optionally return the axis
 
     def compute_logloss(self, model_df, modinf):
         """
@@ -126,28 +118,34 @@ class LogLoss:
         modinf: model information
         TODO: support kwargs for emcee, and this looks very slow
         """
-        logloss = xr.DataArray(0, dims=["statistic", "subpop"],  
-                coords={
-                "statistic":self.statistics.key(),
-                "subpop":modinf.subpop_struct.subpop_names})
+        coords = {"statistic": list(self.statistics.keys()), "subpop": modinf.subpop_struct.subpop_names}
 
-        for subpop in modinf.subpop_struct.subpop_names:
-            # essential to sort by index (date here)
-            gt_s = self.gt[self.gt["subpop"] == subpop].sort_index()
-            model_df_s = model_df[model_df["subpop"] == subpop].sort_index()
+        logloss = xr.DataArray(
+            np.zeros((len(coords["statistic"]), len(coords["subpop"]))), dims=["statistic", "subpop"], coords=coords
+        )
 
-            # Places where data and model overlap
-            first_date = max(gt_s.index.min(), model_df_s.index.min())
-            last_date = min(gt_s.index.max(), model_df_s.index.max())
+        regularizations = 0
 
-            gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1)
-            model_df_s = model_df_s.drop(["subpop"], axis=1).loc[first_date:last_date]
+        model_xr = (
+            xr.Dataset.from_dataframe(model_df.reset_index().set_index(["date", "subpop"]))
+            .sortby("date")
+            .reindex({"subpop": modinf.subpop_struct.subpop_names})
+        )
 
-            # TODO: add whole US!! option
+        for key, stat in self.statistics.items():
+            ll, reg = stat.compute_logloss(
+                model_xr.sel(date=slice(self.first_date, self.last_date)),
+                self.gt_xr.sel(date=slice(self.first_date, self.last_date)),
+            )
+            logloss.loc[dict(statistic=key)] = ll
+            regularizations += reg
 
-            for key, stat in self.statistics.items():
-                logloss.loc[dict(statistics=key, subpop=subpop)] += stat.compute_logloss(model_df, gt_s)
+        ll_total = logloss.sum().sum().values + regularizations
 
-        return logloss
+        return ll_total, logloss, regularizations
 
-
+    def __str__(self) -> str:
+        return (
+            f"LogLoss: {len(self.statistics)} statistics and {len(self.gt)} data points,"
+            f"number of NA for each statistic: \n{self.gt.drop('subpop', axis=1).isna().sum()}"
+        )
