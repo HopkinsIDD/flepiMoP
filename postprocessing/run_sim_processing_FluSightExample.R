@@ -101,7 +101,7 @@ scenario_s3_buckets <- scenario_s3_buckets[scenario_num] # automatically pull fr
 override_pull_from_s3 <- override_pull_from_s3[scenario_num] # !!!! VERY IMPORTANT - LEAVE FALSE UNLESS YOU ARE REWRITING THE CURRENT S3 DATA !!!!
 
 
-geodata_file_path = file.path(config$data_path, config$subpop_setup$geodata)
+geodata_file_path = file.path(config$subpop_setup$geodata)
 
 
 # SUBMISSION & PROCESSING SPECIFICS ----------------------------------------------------

@@ -1,6 +1,6 @@
 import pandas as pd
 import datetime, os, logging, pathlib
-from . import seeding_ic, subpopulation_structure, parameters, compartments, file_paths
+from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
 from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
@@ -77,8 +77,9 @@ class ModelInfo:
 
         # 3. What about subpopulations
         spatial_config = config["subpop_setup"]
-        spatial_base_path = config["data_path"].get()
-        spatial_base_path = pathlib.Path(spatial_path_prefix + spatial_base_path)
+        if config["data_path"].exists():
+            raise ValueError("The config has a data_path section. This is no longer supported.")
+        spatial_base_path = pathlib.Path(spatial_path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
@@ -115,8 +116,8 @@ class ModelInfo:
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
             )
-            self.seeding = seeding_ic.SeedingFactory(config = self.seeding_config)
-            self.initial_conditions = seeding_ic.InitialConditionsFactory(config = self.initial_conditions_config)
+            self.seeding = seeding.SeedingFactory(config = self.seeding_config)
+            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config)
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
