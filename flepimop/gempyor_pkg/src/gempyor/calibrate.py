@@ -199,7 +199,7 @@ def calibrate(
             inference_filename_prefix="emcee",
             inference_filepath_suffix="",
             stoch_traj_flag=False,
-            config_path=con,
+            config_path=config_filepath,
         )
 
         print(
@@ -216,7 +216,7 @@ def calibrate(
     for i in range(nwalkers):
         assert inferpar.check_in_bound(proposal=p0[i]), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
-    loss = logloss.LogLoss(inference_config=config["inference"], data_dir=project_dir, modinf=modinf)
+    loss = logloss.LogLoss(inference_config=config["inference"], data_dir=project_path, modinf=modinf)
 
     static_sim_arguments = gempyor.inference.get_static_arguments(modinf=modinf)
 
