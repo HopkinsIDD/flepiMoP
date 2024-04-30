@@ -15,9 +15,30 @@ import numba as nb
 import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
+import confuse
 
 # TODO: should be able to draw e.g from an initial condition folder buuut keep the draw as a blob
 # so it is saved by emcee, so I can build a posterio
+
+class Inference():
+    def __init__(self, inference_config: confuse.ConfigView, modinf) -> None:
+        inferpar = inference_parameter.InferenceParameters(global_config=config, modinf=modinf)
+
+        
+
+    def test_run(self, modinf):
+        ss = copy.deepcopy(self.static_sim_arguments)
+        ss["snpi_df_in"] = ss["snpi_df_ref"]
+        ss["hnpi_df_in"] = ss["hnpi_df_ref"]
+        # delete the ref
+        del ss["snpi_df_ref"]
+        del ss["hnpi_df_ref"]
+
+        hosp = simulation_atomic(**ss, modinf=modinf)
+
+        ll_total, logloss, regularizations = loss.compute_logloss(model_df=hosp, modinf=modinf)
+        print(f"test run successful 🎉, with logloss={ll_total:.1f} including {regularizations:.1f} for regularization ({regularizations/ll_total*100:.1f}%) ")
+
 
 
 def emcee_logprob(proposal, modinf, inferpar, loss, static_sim_arguments, save=False, silent=True):
@@ -239,6 +260,7 @@ def get_static_arguments(modinf):
 def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
     # Find the good walkers
     if nsamples < nwalker:
+        pass
         # easy case: sample the best llik (could also do random)
     
     last_llik = sampler_output.get_log_prob()[-1,:]

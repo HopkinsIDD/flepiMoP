@@ -41,7 +41,7 @@ handler.setFormatter(formatter)
 class GempyorSimulator:
     def __init__(
         self,
-        config_path,
+        config_filepath,
         run_id="test_run_id",
         prefix=None,
         first_sim_index=1,
@@ -70,8 +70,8 @@ class GempyorSimulator:
         # Config prep
         config.clear()
         config.read(user=False)
-        config.set_file(config_path)
-        print(config_path)
+        config.set_file(config_filepath)
+        print(config_filepath)
 
         np.random.seed(rng_seed)
 
@@ -92,7 +92,7 @@ class GempyorSimulator:
             out_run_id=out_run_id,
             out_prefix=out_prefix,
             stoch_traj_flag=stoch_traj_flag,
-            config_path=config_path,
+            config_filepath=config_filepath,
         )
 
         print(
@@ -435,7 +435,7 @@ class GempyorSimulator:
 def paramred_parallel(run_spec, snpi_fn):
     config_filepath = run_spec["config"]
     gempyor_simulator = GempyorSimulator(
-        config_path=config_filepath,
+        config_filepath=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,
@@ -461,7 +461,7 @@ def paramred_parallel(run_spec, snpi_fn):
 def paramred_parallel_config(run_spec, dummy):
     config_filepath = run_spec["config"]
     gempyor_simulator = GempyorSimulator(
-        config_path=config_filepath,
+        config_filepath=config_filepath,
         run_id="test_run_id",
         prefix="test_prefix/",
         first_sim_index=1,

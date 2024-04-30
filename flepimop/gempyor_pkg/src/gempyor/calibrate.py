@@ -199,7 +199,7 @@ def calibrate(
             inference_filename_prefix="emcee",
             inference_filepath_suffix="",
             stoch_traj_flag=False,
-            config_path=config_filepath,
+            config_filepath=config_filepath,
         )
 
         print(

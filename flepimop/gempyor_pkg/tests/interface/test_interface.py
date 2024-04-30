@@ -24,8 +24,8 @@ class TestGempyorSimulator:
         os.chdir(os.path.dirname(__file__))
         # the minimum model test, choices are: npi_scenario="None"
         #     config.set_file(f"{DATA_DIR}/config_min_test.yml")
-        #     i = interface.GempyorSimulator(config_path=f"{DATA_DIR}/config.yml", npi_scenario="None")
-        i = interface.GempyorSimulator(config_path=f"{DATA_DIR}/config_test.yml", seir_modifiers_scenario="None")
+        #     i = interface.GempyorSimulator(config_filepath=f"{DATA_DIR}/config.yml", npi_scenario="None")
+        i = interface.GempyorSimulator(config_filepath=f"{DATA_DIR}/config_test.yml", seir_modifiers_scenario="None")
         """ run_id="test_run_id" = in_run_id,
             prefix="test_prefix" = in_prefix = out_prefix,
             out_run_id = in_run_id,

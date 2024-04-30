@@ -18,7 +18,7 @@ import pyarrow.parquet as pq
 import pyarrow as pa
 from gempyor import file_paths, model_info, outcomes
 
-config_path_prefix = ""  #'tests/outcomes/'
+config_filepath_prefix = ""  #'tests/outcomes/'
 
 ### To generate files for this test, see notebook Test Outcomes  playbook.ipynb in COVID19_Maryland
 
@@ -32,7 +32,7 @@ os.chdir(os.path.dirname(__file__))
 def test_outcome_scenario():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
     inference_simulator = gempyor.GempyorSimulator(
-        config_path=f"{config_path_prefix}config.yml",
+        config_filepath=f"{config_filepath_prefix}config.yml",
         run_id=1,
         prefix="",
         first_sim_index=1,
