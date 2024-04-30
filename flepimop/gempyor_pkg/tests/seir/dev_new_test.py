@@ -25,7 +25,7 @@ os.chdir(os.path.dirname(__file__))
 #    config.read(user=False)
 #    config.set_file(f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml")
 #    inference_simulator = gempyor.GempyorSimulator(
-#        config_path=f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml",
+#        config_filepath=f"{DATA_DIR}/config_compartmental_model_format_with_covariates.yml",
 #        run_id=1,
 #        prefix="",
 #        first_sim_index=1,
