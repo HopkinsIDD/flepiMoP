@@ -77,7 +77,7 @@ class ModelInfo:
 
         # 3. What about subpopulations
         spatial_config = config["subpop_setup"]
-        if "data_path" in config:
+        if config["data_path"].exists():
             raise ValueError("The config has a data_path section. This is no longer supported.")
         spatial_base_path = pathlib.Path(spatial_path_prefix)
 
