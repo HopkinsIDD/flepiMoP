@@ -176,19 +176,17 @@ def generate_pdf(
         for run_name, run_info in all_runs.items():
             run_id = run_info.run_id
             config_filepath = run_info.config_filepath
-            run_info.gempyor_simulator = gempyor.GempyorSimulator(
+            run_info.gempyor_inference = gempyor.GempyorInference(
                 config_filepath=config_filepath,
                 run_id=run_id,
                 # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
                 first_sim_index=1,
-                seir_modifiers_scenario="inference",  # NPIs scenario to use
-                outcome_modifiers_scenario="med",  # Outcome scenario to use
                 stoch_traj_flag=False,
                 path_prefix="./",  # prefix where to find the folder indicated in subpop_setup$
             )
             run_info.folder_path = f"{fs_results_path}/model_output"
 
-        node_names = run_info.gempyor_simulator.modinf.subpop_struct.subpop_names
+        node_names = run_info.gempyor_inference.modinf.subpop_struct.subpop_names
 
         # In[5]:
 

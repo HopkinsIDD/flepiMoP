@@ -26,13 +26,11 @@ os.chdir(os.path.dirname(__file__))
 def test_full_npis_read_write():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
-        outcome_modifiers_scenario="outcome_interventions",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -59,13 +57,11 @@ def test_full_npis_read_write():
 
     random.seed(10)
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
-        outcome_modifiers_scenario="outcome_interventions",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -85,13 +81,11 @@ def test_full_npis_read_write():
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=106,
         prefix="",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
-        outcome_modifiers_scenario="outcome_interventions",
         stoch_traj_flag=False,
         out_run_id=107,
     )
@@ -112,12 +106,11 @@ def test_full_npis_read_write():
 
 
 def test_spatial_groups():
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -191,12 +184,11 @@ def test_spatial_groups():
 
 
 def test_spatial_groups():
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -212,12 +204,11 @@ def test_spatial_groups():
     out_snpi = pa.Table.from_pandas(snpi_read, preserve_index=False)
     pa.parquet.write_table(out_snpi, file_paths.create_file_name(106, "", 1, "snpi", "parquet"))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
         run_id=106,
         prefix="",
         first_sim_index=1,
-        seir_modifiers_scenario="inference",
         stoch_traj_flag=False,
         out_run_id=107,
     )

@@ -31,7 +31,7 @@ os.chdir(os.path.dirname(__file__))
 
 def test_outcome_scenario():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config.yml",
         run_id=1,
         prefix="",

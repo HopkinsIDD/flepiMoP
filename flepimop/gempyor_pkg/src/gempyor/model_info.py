@@ -106,6 +106,7 @@ class ModelInfo:
         self.mobility = self.subpop_struct.mobility
 
         # 4. the SEIR structure
+        self.seir_config = None
         if config["seir"].exists():
             self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
@@ -160,8 +161,8 @@ class ModelInfo:
             logging.critical("Running ModelInfo without SEIR")
 
         # 5. Outcomes
-        if config["outcomes"].exists():
-            self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        if self.outcomes_config is not None:
             self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
@@ -233,23 +234,6 @@ class ModelInfo:
                 self.extension = "csv"
 
         self.config_filepath = config_filepath  # useful for plugins
-
-        ## Inference Stuff
-        self.do_inference = False
-        if config["inference"].exists():
-            from . import inference_parameter, logloss
-
-            if config["inference"]["method"].get("default") == "emcee":
-                self.do_inference = True
-                self.inferpar = inference_parameter.InferenceParameters(
-                    global_config=config, subpop_names=self.subpop_struct.subpop_names
-                )
-                self.logloss = logloss.LogLoss(
-                    inference_config=config["inference"],
-                    path_prefix=path_prefix,
-                    subpop_struct=self.subpop_struct,
-                    time_setup=self.time_setup,
-                )
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.path_prefix / self.get_filename(

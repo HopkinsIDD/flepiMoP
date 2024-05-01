@@ -1,4 +1,4 @@
-## All functions are in minimal interface.
+## All functions are in minimal inference.
 
-from .interface import *
+from .inference import *
 from .utils import *
