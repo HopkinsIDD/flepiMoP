@@ -362,9 +362,23 @@ class GempyorInference:
                 )
                 self.static_sim_arguments = get_static_arguments(self.modinf)
 
-    def get_logloss(self, proposal, save=False, silent=True):
+                print("Running Gempyor Inference")
+                print(self.logloss)
+                print(self.inferpar)
+
+        
+        self.silent = True
+        self.save = False
+
+    def set_silent(self, silent):
+        self.silent = silent
+
+    def set_save(self, save):
+        self.save = save
+
+    def get_logloss(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):
-            if not silent:
+            if not self.silent:
                 print("OUT OF BOUND!!")
             return -np.inf
 
@@ -380,18 +394,18 @@ class GempyorInference:
         del ss["snpi_df_ref"]
         del ss["hnpi_df_ref"]
 
-        outcomes_df = simulation_atomic(**ss, modinf=self.modinf, save=save)
+        outcomes_df = simulation_atomic(**ss, modinf=self.modinf, save=self.save)
 
         ll_total, logloss, regularizations = self.logloss.compute_logloss(
             model_df=outcomes_df, subpop_names=self.modinf.subpop_struct.subpop_names
         )
-        if not silent:
+        if not self.silent:
             print(f"llik is {ll_total}")
 
         return ll_total, logloss, regularizations
 
-    def get_logloss_as_single_number(self, proposal, save=False, silent=True):
-        ll_total, _, _ = self.get_logloss(proposal, save=save, silent=silent)
+    def get_logloss_as_single_number(self, proposal):
+        ll_total, _, _ = self.get_logloss(proposal)
         return ll_total
 
     def perform_test_run(self):
