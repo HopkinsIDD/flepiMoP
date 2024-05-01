@@ -114,6 +114,16 @@ class InferenceParameters:
 
     def get_dim(self):
         return len(self.pnames)
+    
+    def get_parameters_for_subpop(self, subpop: str) -> list:
+        """ Returns the index parameters for a given subpopulation
+        """
+        parameters = []
+        for i, sp in enumerate(self.subpops):
+            if sp == subpop:
+                parameters.append(i)
+        return parameters
+
 
     def __len__(self):
         """

@@ -1,3 +1,34 @@
+import gempyor
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from pathlib import Path
+import copy
+
+# import seaborn as sns
+import matplotlib._color_data as mcd
+import pyarrow.parquet as pq
+import click
+import subprocess
+import dask.dataframe as dd
+import matplotlib.dates as mdates
+import matplotlib.cbook as cbook
+from matplotlib.backends.backend_pdf import PdfPages
+from gempyor.utils import config, as_list
+import os
+import multiprocessing as mp
+import pandas as pd
+import pyarrow.parquet as pq
+import xarray as xr
+from gempyor import config, model_info, outcomes, seir, inference_parameter, logloss, inference
+from gempyor.inference import GempyorInference
+import tqdm
+import os
+from multiprocessing import cpu_count
+import seaborn as sns
+
+
 def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
     # Find the good walkers
     if nsamples < nwalker:
@@ -19,74 +50,61 @@ def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
         ]  # parentesis around i//(sampled_slots.sum() are very important
 
 
-def plot_chains(inferpar, sampler_output, sampled_slots=None, save_to=None):
-    fig, axes = plt.subplots(inferpar.get_dim() + 1, 2, figsize=(15, (inferpar.get_dim() + 1) * 2))
+def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
+    # we plot first from the start, then the last 3/4
+    
+    samples = sampler_output.get_chain()
+    niters = samples.shape[0]
+    nwalkers = samples.shape[1]
+    first_thresh = 0
+    second_thresh = 3 * niters // 4
+
+    if sampled_slots is None:
+        sampled_slots = np.array([True] * nwalkers)
 
     labels = list(zip(inferpar.pnames, inferpar.subpops))
-    samples = sampler_output.get_chain()
-    p_gt = np.load("parameter_ground_truth.npy")
-    if sampled_slots is None:
-        sampled_slots = [True] * inferpar.get_dim()
-
-    import seaborn as sns
-
-    def plot_chain(frompt, axes):
-        ax = axes[0]
-
+    
+    def plot_single_chain(frompt, ax, chain, label):
+        x_plt = np.arange(frompt, niters)
         ax.plot(
-            np.arange(frompt, frompt + sampler_output.get_log_prob()[frompt:].shape[0]),
-            sampler_output.get_log_prob()[frompt:, sampled_slots],
+            x_plt,
+            chain[frompt:, sampled_slots],
             "navy",
-            alpha=0.2,
+            alpha=0.4,
             lw=1,
             label="good walkers",
         )
         ax.plot(
-            np.arange(frompt, frompt + sampler_output.get_log_prob()[frompt:].shape[0]),
-            sampler_output.get_log_prob()[frompt:, ~sampled_slots],
+            x_plt,
+            chain[frompt:, ~sampled_slots],
             "tomato",
             alpha=0.4,
             lw=1,
             label="bad walkers",
         )
-        ax.set_title("llik")
-        # ax.legend()
+        ax.set_title(label)
+        # ax.yaxis.set_label_coords(-0.1, 0.5)
         sns.despine(ax=ax, trim=False)
-        ax.set_xlim(frompt, frompt + sampler_output.get_log_prob()[frompt:].shape[0])
+    print("generating chain plot")
+    with PdfPages(f'{save_to}') as pdf:
+        d = pdf.infodict()
+        d["Title"] = "FlepiMoP Inference Chains"
+        d["Author"] = "FlepiMoP Inference"
+        fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+        plot_single_chain(first_thresh, axes[0], sampler_output.get_log_prob(), label="llik")
+        plot_single_chain(second_thresh, axes[1], sampler_output.get_log_prob(), label="llik")
+        fig.tight_layout()
+        pdf.savefig(fig)
 
-        # ax.set_xlim(0, len(samples))
-
-        for i in range(inferpar.get_dim()):
-            ax = axes[i + 1]
-            x_plt = np.arange(frompt, frompt + sampler_output.get_log_prob()[frompt:].shape[0])
-            ax.plot(
-                x_plt,
-                samples[frompt:, sampled_slots, i],
-                "navy",
-                alpha=0.2,
-                lw=1,
-            )
-            ax.plot(
-                x_plt,
-                samples[frompt:, ~sampled_slots, i],
-                "tomato",
-                alpha=0.4,
-                lw=1,
-            )
-            ax.plot(x_plt, np.repeat(p_gt[i], len(x_plt)), "black", alpha=1, lw=2, ls="-.")
-            # ax.set_xlim(0, len(samples))
-            ax.set_title(labels[i])
-            # ax.yaxis.set_label_coords(-0.1, 0.5)
-            sns.despine(ax=ax, trim=False)
-            ax.set_xlim(frompt, frompt + samples[frompt:].shape[0])
-
-        axes[-1].set_xlabel("step number")
-
-    plot_chain(0, axes[:, 0])
-    plot_chain(3 * samples.shape[0] // 4, axes[:, 1])
-    fig.tight_layout()
-    if save_to is not None:
-        plt.savefig(save_to)
+        for sp in tqdm.tqdm(set(inferpar.subpops)): # find unique supopulation
+            these_pars = inferpar.get_parameters_for_subpop(sp)
+            fig, axes = plt.subplots(max(len(these_pars),2), 2, figsize=(8, (len(these_pars) + 1) * 2))
+            for idx, par_id in enumerate(these_pars):
+                print(">>> ", idx, par_id)
+                plot_single_chain(first_thresh, axes[idx, 0], samples[:,:,par_id], labels[par_id])
+                plot_single_chain(second_thresh, axes[idx, 1], samples[:,:,par_id], labels[par_id])
+            fig.tight_layout()
+            pdf.savefig(fig)
 
 
 def plot_fit(modinf, loss):
