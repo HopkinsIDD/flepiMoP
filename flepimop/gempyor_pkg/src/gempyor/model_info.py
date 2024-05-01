@@ -1,9 +1,19 @@
 import pandas as pd
-import datetime, os, logging, pathlib
+import datetime, os, logging, pathlib, confuse
 from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
 from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
+
+
+class TimeSetup:
+    def __init__(self, config: confuse.ConfigView):
+        self.ti = config["start_date"].as_date()
+        self.tf = config["end_date"].as_date()
+        if self.tf <= self.ti:
+            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+        self.n_days = (self.tf - self.ti).days + 1
+        self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
 
 
 class ModelInfo:
@@ -72,11 +82,13 @@ class ModelInfo:
             self.setup_name = setup_name
 
         # 2. What about time:
-        self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
-        self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
-        if self.tf <= self.ti:
-            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
-        self.n_days = (self.tf - self.ti).days + 1  # because we include ti and tf
+        # Maybe group time_setup and subpop_struct into one argument for classes
+        # make the import object first level attributes
+        self.time_setup = TimeSetup(config)
+        self.ti = self.time_setup.ti
+        self.tf = self.time_setup.tf
+        self.n_days = self.time_setup.n_days
+        self.dates = self.time_setup.dates
 
         # 3. What about subpopulations
         subpop_config = config["subpop_setup"]
@@ -222,11 +234,22 @@ class ModelInfo:
 
         self.config_filepath = config_filepath  # useful for plugins
 
-
         ## Inference Stuff
+        self.do_inference = False
         if config["inference"].exists():
+            from . import inference_parameter, logloss
+
             if config["inference"]["method"].get("default") == "emcee":
-                pass
+                self.do_inference = True
+                self.inferpar = inference_parameter.InferenceParameters(
+                    global_config=config, subpop_names=self.subpop_struct.subpop_names
+                )
+                self.logloss = logloss.LogLoss(
+                    inference_config=config["inference"],
+                    path_prefix=path_prefix,
+                    subpop_struct=self.subpop_struct,
+                    time_setup=self.time_setup,
+                )
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.path_prefix / self.get_filename(
