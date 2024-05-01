@@ -366,7 +366,6 @@ class GempyorInference:
                 print(self.logloss)
                 print(self.inferpar)
 
-        
         self.silent = True
         self.save = False
 
@@ -375,7 +374,6 @@ class GempyorInference:
 
     def set_save(self, save):
         self.save = save
-
 
     def get_logloss(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):

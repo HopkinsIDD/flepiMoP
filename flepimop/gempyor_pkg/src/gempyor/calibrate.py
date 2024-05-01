@@ -125,19 +125,19 @@ def calibrate(
     resume_location,
 ):
     gempyor_inference = GempyorInference(
-            config_filepath=config_filepath,
-            run_id=run_id,
-            prefix=None,
-            first_sim_index=1,
-            stoch_traj_flag=False,
-            rng_seed=None,
-            nslots=1,
-            inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
-            inference_filepath_suffix="",  # usually for the slot_id
-            out_run_id=None,  # if out_run_id is different from in_run_id, fill this
-            out_prefix=None,  # if out_prefix is different from in_prefix, fill this
-            path_prefix=project_path,  # in case the data folder is on another directory
-            autowrite_seir=False,
+        config_filepath=config_filepath,
+        run_id=run_id,
+        prefix=None,
+        first_sim_index=1,
+        stoch_traj_flag=False,
+        rng_seed=None,
+        nslots=1,
+        inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
+        inference_filepath_suffix="",  # usually for the slot_id
+        out_run_id=None,  # if out_run_id is different from in_run_id, fill this
+        out_prefix=None,  # if out_prefix is different from in_prefix, fill this
+        path_prefix=project_path,  # in case the data folder is on another directory
+        autowrite_seir=False,
     )
 
     if not nwalkers:
@@ -155,7 +155,7 @@ def calibrate(
             return
     else:
         print(f"writing to {filename}")
-    
+
     # TODO here for resume
     if resume or resume_location is not None:
         print("Doing a resume, this only work with the same number of slot and parameters right now")
@@ -182,8 +182,8 @@ def calibrate(
     with multiprocessing.Pool(ncpu) as pool:
         sampler = emcee.EnsembleSampler(
             nwalkers,
-            gempyor_inference.inferpar.get_dim(), 
-            gempyor_inference.get_logloss_as_single_number, 
+            gempyor_inference.inferpar.get_dim(),
+            gempyor_inference.get_logloss_as_single_number,
             pool=pool,
             backend=backend,
             moves=moves,
@@ -195,23 +195,22 @@ def calibrate(
     # plotting the chain
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
     gempyor.postprocess_inference.plot_chains(
-            inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=None, save_to=f"{run_id}_chains.pdf"
-        )
+        inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=None, save_to=f"{run_id}_chains.pdf"
+    )
     print("EMCEE Run done, doing sampling")
 
     shutil.rmtree("model_output/", ignore_errors=True)
     shutil.rmtree(project_path + "model_output/", ignore_errors=True)
 
     max_indices = np.argsort(sampler.get_log_prob()[-1, :])[-nsamples:]
-    samples = sampler.get_chain()[-1, max_indices,:]  # the last iteration, for selected slots
+    samples = sampler.get_chain()[-1, max_indices, :]  # the last iteration, for selected slots
     gempyor_inference.set_save(True)
     with multiprocessing.Pool(ncpu) as pool:
         results = pool.starmap(
-            gempyor_inference.get_logloss_as_single_number, 
-            [(samples[i,:],) for i in range(len(max_indices))]
+            gempyor_inference.get_logloss_as_single_number, [(samples[i, :],) for i in range(len(max_indices))]
         )
-    #results = []
-    #for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id, "hosp.parquet"]):
+    # results = []
+    # for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id, "hosp.parquet"]):
     #    df = gempyor.read_df(fn)
     #    df = df.set_index("date")
     #    results.append(df)
