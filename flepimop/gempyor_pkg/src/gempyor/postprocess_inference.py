@@ -100,7 +100,6 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
             these_pars = inferpar.get_parameters_for_subpop(sp)
             fig, axes = plt.subplots(max(len(these_pars),2), 2, figsize=(8, (len(these_pars) + 1) * 2))
             for idx, par_id in enumerate(these_pars):
-                print(">>> ", idx, par_id)
                 plot_single_chain(first_thresh, axes[idx, 0], samples[:,:,par_id], labels[par_id])
                 plot_single_chain(second_thresh, axes[idx, 1], samples[:,:,par_id], labels[par_id])
             fig.tight_layout()
