@@ -158,7 +158,9 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     default=30,
     help="Maximum number of files to load for in depth plot and individual sim plot",
 )
-def generate_pdf(config_filepath, run_id, job_name, fs_results_path, slack_token, slack_channel, max_files, max_files_deep):
+def generate_pdf(
+    config_filepath, run_id, job_name, fs_results_path, slack_token, slack_channel, max_files, max_files_deep
+):
     print("Generating plots")
     print(f">> config {config_filepath} for run_id {run_id}")
     print(f">> job name {job_name}, path {fs_results_path}")

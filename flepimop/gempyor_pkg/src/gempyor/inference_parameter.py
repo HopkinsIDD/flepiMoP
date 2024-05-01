@@ -12,17 +12,17 @@ class InferenceParameters:
 
     Parameters:
         global_config (confuse.ConfigView): The global configuration.
-        modinf: An object containing subpopulation structure information.
+        subpop_names (list): The subpopulation names, in the right order
     """
 
-    def __init__(self, global_config, modinf):
+    def __init__(self, global_config, subpop_names):
         self.ptypes = []
         self.pnames = []
         self.subpops = []
         self.pdists = []
         self.ubs = []
         self.lbs = []
-        self.build_from_config(global_config, modinf)
+        self.build_from_config(global_config, subpop_names)
 
     def add_modifier(self, pname, ptype, parameter_config, subpops):
         """
@@ -83,7 +83,7 @@ class InferenceParameters:
         self.ubs.append(ub)
         self.lbs.append(lb)
 
-    def build_from_config(self, global_config, modinf):
+    def build_from_config(self, global_config, subpop_names):
         for config_part in ["seir_modifiers", "outcome_modifiers"]:
             if global_config[config_part].exists():
                 for npi in global_config[config_part]["modifiers"].get():
@@ -92,7 +92,7 @@ class InferenceParameters:
                             pname=npi,
                             ptype=config_part,
                             parameter_config=global_config[config_part]["modifiers"][npi],
-                            subpops=modinf.subpop_struct.subpop_names,
+                            subpops=subpop_names,
                         )
 
     def print_summary(self):

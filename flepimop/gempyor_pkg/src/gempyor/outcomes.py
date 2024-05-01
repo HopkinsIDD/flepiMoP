@@ -253,9 +253,10 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
     return parameters
 
 
-def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
-    modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
-    modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
+def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi, write=True):
+    if write:
+        modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
+        modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
 
     if npi is None:
         hnpi = pd.DataFrame(
@@ -270,7 +271,8 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
         )
     else:
         hnpi = npi.getReductionDF()
-    modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
+    if write:
+        modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
 
     return outcomes_df, hpar, hnpi
 
