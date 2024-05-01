@@ -52,7 +52,7 @@ def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
 
 def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
     # we plot first from the start, then the last 3/4
-    
+
     samples = sampler_output.get_chain()
     niters = samples.shape[0]
     nwalkers = samples.shape[1]
@@ -63,7 +63,7 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
         sampled_slots = np.array([True] * nwalkers)
 
     labels = list(zip(inferpar.pnames, inferpar.subpops))
-    
+
     def plot_single_chain(frompt, ax, chain, label):
         x_plt = np.arange(frompt, niters)
         ax.plot(
@@ -85,8 +85,9 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
         ax.set_title(label)
         # ax.yaxis.set_label_coords(-0.1, 0.5)
         sns.despine(ax=ax, trim=False)
+
     print("generating chain plot")
-    with PdfPages(f'{save_to}') as pdf:
+    with PdfPages(f"{save_to}") as pdf:
         d = pdf.infodict()
         d["Title"] = "FlepiMoP Inference Chains"
         d["Author"] = "FlepiMoP Inference"
@@ -96,12 +97,12 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
         fig.tight_layout()
         pdf.savefig(fig)
 
-        for sp in tqdm.tqdm(set(inferpar.subpops)): # find unique supopulation
+        for sp in tqdm.tqdm(set(inferpar.subpops)):  # find unique supopulation
             these_pars = inferpar.get_parameters_for_subpop(sp)
-            fig, axes = plt.subplots(max(len(these_pars),2), 2, figsize=(8, (len(these_pars) + 1) * 2))
+            fig, axes = plt.subplots(max(len(these_pars), 2), 2, figsize=(8, (len(these_pars) + 1) * 2))
             for idx, par_id in enumerate(these_pars):
-                plot_single_chain(first_thresh, axes[idx, 0], samples[:,:,par_id], labels[par_id])
-                plot_single_chain(second_thresh, axes[idx, 1], samples[:,:,par_id], labels[par_id])
+                plot_single_chain(first_thresh, axes[idx, 0], samples[:, :, par_id], labels[par_id])
+                plot_single_chain(second_thresh, axes[idx, 1], samples[:, :, par_id], labels[par_id])
             fig.tight_layout()
             pdf.savefig(fig)
 
