@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import click
 from gempyor import model_info, file_paths, config, inference_parameter
-import gempyor.inference
+from gempyor.inference import GempyorInference
 from gempyor.utils import config, as_list
 import gempyor
 import numpy as np
 import os, shutil, copy
 import emcee
 import multiprocessing
+import gempyor.postprocess_inference
 
 # from .profile import profile_options
 
@@ -145,119 +146,65 @@ def calibrate(
     resume,
     resume_location,
 ):
-    config.clear()
-    config.read(user=False)
-    config.set_file(project_path + config_filepath)
-
-    # Compute the list of scenarios to run. Since multiple = True, it's always a list.
-    if not seir_modifiers_scenarios:
-        seir_modifiers_scenarios = None
-        if config["seir_modifiers"].exists():
-            if config["seir_modifiers"]["scenarios"].exists():
-                seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
-        # Model Info handles the case of the default scneario
-    if not outcome_modifiers_scenarios:
-        outcome_modifiers_scenarios = None
-        if config["outcomes"].exists() and config["outcome_modifiers"].exists():
-            if config["outcome_modifiers"]["scenarios"].exists():
-                outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
-
-    outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
-    seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
-    if len(seir_modifiers_scenarios) != 1 or len(outcome_modifiers_scenarios) != 1:
-        raise ValueError(
-            f"Only support configurations files with one scenario, got"
-            f"seir: {seir_modifiers_scenarios}"
-            f"outcomes: {outcome_modifiers_scenarios}"
-        )
-
-    scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
-    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-        print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcome_modifiers_scenario}")
+    gempyor_inference = GempyorInference(
+            config_filepath=config_filepath,
+            run_id=run_id,
+            prefix=None,
+            first_sim_index=1,
+            stoch_traj_flag=False,
+            rng_seed=None,
+            nslots=1,
+            inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
+            inference_filepath_suffix="",  # usually for the slot_id
+            out_run_id=None,  # if out_run_id is different from in_run_id, fill this
+            out_prefix=None,  # if out_prefix is different from in_prefix, fill this
+            path_prefix=project_path,  # in case the data folder is on another directory
+            autowrite_seir=False,
+    )
 
     if not nwalkers:
         nwalkers = config["nslots"].as_number()  # TODO
     print(f"Number of walkers be run: {nwalkers}")
 
-    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-        print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
-        if prefix is None:
-            prefix = config["name"].get() + "/" + run_id + "/"
-
-        write_csv = False
-        write_parquet = True
-
-        modinf = model_info.ModelInfo(
-            config=config,
-            nslots=1,
-            seir_modifiers_scenario=seir_modifiers_scenario,
-            outcome_modifiers_scenario=outcome_modifiers_scenario,
-            write_csv=write_csv,
-            write_parquet=write_parquet,
-            first_sim_index=0,
-            in_run_id=run_id,
-            in_prefix=prefix,
-            out_run_id=run_id,
-            out_prefix=prefix,
-            inference_filename_prefix="emcee",
-            inference_filepath_suffix="",
-            stoch_traj_flag=False,
-            config_filepath=config_filepath,
-        )
-
-        print(
-            f"""
-    >> Running from config {config_filepath}
-    >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
-    >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
-    >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-    """
-        )
-
-    inferpar = inference_parameter.InferenceParameters(global_config=config, modinf=modinf)
-    p0 = inferpar.draw_initial(n_draw=nwalkers)
-    for i in range(nwalkers):
-        assert inferpar.check_in_bound(
-            proposal=p0[i]
-        ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
-
-    loss = logloss.LogLoss(inference_config=config["inference"], data_dir=project_path, modinf=modinf)
-
-    static_sim_arguments = gempyor.inference.get_static_arguments(modinf=modinf)
-
     test_run = True
     if test_run:
-        ss = copy.deepcopy(static_sim_arguments)
-        ss["snpi_df_in"] = ss["snpi_df_ref"]
-        ss["hnpi_df_in"] = ss["hnpi_df_ref"]
-        # delete the ref
-        del ss["snpi_df_ref"]
-        del ss["hnpi_df_ref"]
-
-        hosp = gempyor.inference.simulation_atomic(**ss, modinf=modinf)
-
-        ll_total, logloss, regularizations = loss.compute_logloss(model_df=hosp, modinf=modinf)
-        print(
-            f"test run successful 🎉, with logloss={ll_total:.1f} including {regularizations:.1f} for regularization ({regularizations/ll_total*100:.1f}%) "
-        )
+        gempyor_inference.perform_test_run()
 
     filename = f"{run_id}_backend.h5"
-    backend = emcee.backends.HDFBackend(filename)
-    # TODO here for resume
-
-    if resume:
-        p0 = None
+    if os.path.exists(filename):
+        if not resume:
+            print(f"File {filename} already exists, remove it or use --resume")
+            return
     else:
-        backend.reset(nwalkers, inferpar.get_dim())
-        p0 = p0
+        print(f"writing to {filename}")
+    
+    # TODO here for resume
+    if resume or resume_location is not None:
+        print("Doing a resume, this only work with the same number of slot and parameters right now")
+        p0 = None
+        if resume_location is not None:
+            backend = emcee.backends.HDFBackend(resume_location)
+        else:
+            if not os.path.exists(filename):
+                print(f"File {filename} does not exist, cannot resume")
+                return
+            backend = emcee.backends.HDFBackend(filename)
+
+    else:
+        backend = emcee.backends.HDFBackend(filename)
+        backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
+        p0 = gempyor_inference.inferpar.draw_initial(n_draw=nwalkers)
+        for i in range(nwalkers):
+            assert gempyor_inference.inferpar.check_in_bound(
+                proposal=p0[i]
+            ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
     moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
     with multiprocessing.Pool(ncpu) as pool:
         sampler = emcee.EnsembleSampler(
             nwalkers,
-            inferpar.get_dim(),
+            gempyor_inference.inferpar.get_dim(),
             gempyor.inference.emcee_logprob,
-            args=[modinf, inferpar, loss, static_sim_arguments],
             pool=pool,
             backend=backend,
             moves=moves,
@@ -266,18 +213,15 @@ def calibrate(
 
     print(f"Done, mean acceptance fraction: {np.mean(sampler.acceptance_fraction):.3f}")
 
-    sampled_slots = gempyor.inference.find_walkers_to_sample()
-
     # plotting the chain
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
     gempyor.inference.plot_chains(
-        inferpar=inferpar, sampler_output=sampler, sampled_slots=sampled_slots, save_to=f"{run_id}_chains.pdf"
+        inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=np.ones(), save_to=f"{run_id}_chains.pdf"
     )
     print("EMCEE Run done, doing sampling")
 
-    position_arguments = [modinf, inferpar, loss, static_sim_arguments, True]
     shutil.rmtree("model_output/")
-    with Pool(ncpu) as pool:
+    with multiprocessing.Pool(ncpu) as pool:
         results = pool.starmap(
             gempyor.inference.emcee_logprob, [(sample, *position_arguments) for sample in exported_samples]
         )
