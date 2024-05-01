@@ -32,7 +32,7 @@ os.chdir(os.path.dirname(__file__))
 
 def test_outcome():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config.yml",
         run_id=1,
         prefix="",
@@ -128,7 +128,7 @@ def test_outcome():
 
 def test_outcome_modifiers_scenario_with_load():
     os.chdir(os.path.dirname(__file__))
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_load.yml",
         run_id=2,
         prefix="",
@@ -163,7 +163,7 @@ def test_outcomes_read_write_hpar():
     config.clear()
     config.read(user=False)
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_load.yml",
         run_id=2,
         prefix="",
@@ -222,12 +222,11 @@ def test_multishift_notstochdelays():
 def test_outcomes_npi():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -322,12 +321,11 @@ def test_outcomes_npi():
 def test_outcomes_read_write_hnpi():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -349,12 +347,11 @@ def test_outcomes_read_write_hnpi():
 def test_outcomes_read_write_hnpi2():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -373,12 +370,11 @@ def test_outcomes_read_write_hnpi2():
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi.yml",
         run_id=106,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=107,
     )
@@ -398,12 +394,11 @@ def test_outcomes_read_write_hnpi2():
 def test_outcomes_npi_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi_custom_pnames.yml",
         run_id=1,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=105,
     )
@@ -498,12 +493,11 @@ def test_outcomes_npi_custom_pname():
 def test_outcomes_read_write_hnpi_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi_custom_pnames.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -534,12 +528,11 @@ def test_outcomes_read_write_hnpi2_custom_pname():
 
     random.seed(10)
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi_custom_pnames.yml",
         run_id=105,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=106,
     )
@@ -551,12 +544,11 @@ def test_outcomes_read_write_hnpi2_custom_pname():
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_npi_custom_pnames.yml",
         run_id=106,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=107,
     )
@@ -578,12 +570,11 @@ def test_outcomes_pcomp():
     os.chdir(os.path.dirname(__file__))
     prefix = ""
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_mc_selection.yml",
         run_id=110,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=111,
     )
@@ -727,12 +718,11 @@ def test_outcomes_pcomp():
 def test_outcomes_pcomp_read_write():
     os.chdir(os.path.dirname(__file__))
 
-    inference_simulator = gempyor.GempyorSimulator(
+    inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_mc_selection.yml",
         run_id=111,
         prefix="",
         first_sim_index=1,
-        outcome_modifiers_scenario="Some",
         stoch_traj_flag=False,
         out_run_id=112,
     )

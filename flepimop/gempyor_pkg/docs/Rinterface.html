@@ -245,9 +245,9 @@ gempyor &lt;- reticulate::import(&quot;gempyor&quot;)</code></pre>
 </div>
 <div id="building-a-simulator" class="section level3">
 <h3>Building a simulator</h3>
-<p>We create an <code>GempyorSimulator</code> object by providing the path of config file. It may take a while to run all of that. First build the object. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: <code>config_FCH_R12_optSev_lowIE_blk5_Mar6.yml</code> on March 6, 2022.</p>
+<p>We create an <code>GempyorInference</code> object by providing the path of config file. It may take a while to run all of that. First build the object. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: <code>config_FCH_R12_optSev_lowIE_blk5_Mar6.yml</code> on March 6, 2022.</p>
 <pre class="r"><code>config_filepath = &#39;../tests/npi/config_npi.yml&#39;
-gempyor_simulator &lt;- gempyor$GempyorSimulator(
+gempyor_inference &lt;- gempyor$GempyorInference(
                           config_path=config_filepath,
                           run_id=&quot;test_run_id&quot;,
                           prefix=&quot;test_prefix/&quot;,
@@ -274,7 +274,7 @@ gempyor_simulator &lt;- gempyor$GempyorSimulator(
 </div>
 <div id="exploration-methods" class="section level2">
 <h2>Exploration methods</h2>
-<p>The <code>gempyor_simulator</code> object uncover some methods to run simulations, and some additional functions for investigation of debug purpose. The latter is described in this section.</p>
+<p>The <code>gempyor_inference</code> object uncover some methods to run simulations, and some additional functions for investigation of debug purpose. The latter is described in this section.</p>
 <p>Each function either takes:</p>
 <ul>
 <li><code>()</code> no arguments: in which case the parameters or NPIs are drawn from the config. Each call to these functions will return a different sample from the config distributions (our prior for inference runs).</li>
@@ -286,10 +286,10 @@ gempyor_simulator &lt;- gempyor$GempyorSimulator(
 <h3>Parameters</h3>
 <p>It is possible to draw the parameters of the disease dynamics. The following line draw from config (hence each call will return a different draw from the prior), but the syntax would be the same with load_ID, bypass_FN, bypass_DF, where a spar file would be loaded.</p>
 <pre class="r"><code># this variation returns a dataframe.
-params_draw_df = gempyor_simulator$get_seir_parametersDF()   # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_spar_df&gt;) or (bypass_FN=&lt;some_spar_filename&gt;)
+params_draw_df = gempyor_inference$get_seir_parametersDF()   # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_spar_df&gt;) or (bypass_FN=&lt;some_spar_filename&gt;)
 
 ## This return an array, which is useful together with a NPI to get the reduce parameter (cf. later in the tutorial)
-params_draw_arr = gempyor_simulator$get_seir_parameters()    # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_spar_df&gt;) or (bypass_FN=&lt;some_spar_filename&gt;)
+params_draw_arr = gempyor_inference$get_seir_parameters()    # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_spar_df&gt;) or (bypass_FN=&lt;some_spar_filename&gt;)
 
 # Let&#39;s check the dataframe:
 params_draw_df</code></pre>
@@ -303,8 +303,8 @@ params_draw_df</code></pre>
 <div id="npis" class="section level2">
 <h2>NPIs</h2>
 <p>NPIs, or modifiers for parameters, are objects. As with parameters, they can be built from snpi or hnpi files. Here we build them from config (hence every call will generate another draw).</p>
-<pre class="r"><code>npi_seir = gempyor_simulator$get_seir_npi()                  # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_snpi_df&gt;) or (bypass_FN=&lt;some_snpi_filename&gt;)
-npi_outcome = gempyor_simulator$get_outcome_npi()            # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_hnpi_df&gt;) or (bypass_FN=&lt;some_hnpi_filename&gt;)</code></pre>
+<pre class="r"><code>npi_seir = gempyor_inference$get_seir_npi()                  # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_snpi_df&gt;) or (bypass_FN=&lt;some_snpi_filename&gt;)
+npi_outcome = gempyor_inference$get_outcome_npi()            # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_hnpi_df&gt;) or (bypass_FN=&lt;some_hnpi_filename&gt;)</code></pre>
 <p>Once a NPI is built, we can get the reduction for each sub-npi. This is the dataframe that gets written as hnpi or (in this example) snpi.</p>
 <pre class="r"><code>npi_seir$getReductionDF()</code></pre>
 <div data-pagedtable="false">
@@ -344,10 +344,10 @@ reduc %&gt;% ggplot(aes(x=date, y=reduction)) + geom_path() + facet_wrap(~ subpo
 <h3>SEIR Parameters, but reduced</h3>
 <p>We can also plot the pameters after reduction with the npi. We just have to provided the npi object. The reduction contains all parameter. Here we build it and plot R0 in time (not that the trends are inverted from the getReduction above ^)</p>
 <pre class="r"><code># This will draw new parameters from config and applies the already defined NPI. If load_ID, bypass_DF or bypass_FN
-param_reduc = gempyor_simulator$get_seir_parameter_reduced(npi_seir=npi_seir) # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_spar_df&gt;) or (bypass_FN=&lt;some_spar_filename&gt;)
+param_reduc = gempyor_inference$get_seir_parameter_reduced(npi_seir=npi_seir) # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=&lt;some_spar_df&gt;) or (bypass_FN=&lt;some_spar_filename&gt;)
 
-# We can also provide an array as returned by gempyor_simulator$get_seir_parameters()
-param_reduc_from = gempyor_simulator$get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
+# We can also provide an array as returned by gempyor_inference$get_seir_parameters()
+param_reduc_from = gempyor_inference$get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
 param_reduc &lt;- param_reduc %&gt;% pivot_longer(cols = param_reduc %&gt;% select(-date, -subpop) %&gt;% colnames(), names_to = &#39;parameter&#39;)
 
 param_reduc %&gt;% filter(parameter==&#39;r0&#39;) %&gt;% ggplot(aes(x=date, y=value)) + geom_line() + facet_wrap(~subpop)</code></pre>
@@ -359,8 +359,8 @@ param_reduc %&gt;% filter(parameter==&#39;r0&#39;) %&gt;% ggplot(aes(x=date, y=v
 <div id="get-compartment-graph-image" class="section level3">
 <h3>Get compartment graph image</h3>
 <p>We can plot the compartment transition graph with this config. There is a possibility to apply filters in order to have tractable graph. The graph is plotted as a separate pdf file.</p>
-<pre class="r"><code>gempyor_simulator$plot_transition_graph(output_file=&quot;full_graph&quot;)
-gempyor_simulator$plot_transition_graph(output_file=&quot;readable_graph&quot;,
+<pre class="r"><code>gempyor_inference$plot_transition_graph(output_file=&quot;full_graph&quot;)
+gempyor_inference$plot_transition_graph(output_file=&quot;readable_graph&quot;,
                                         source_filters= list(list(&quot;age0to17&quot;), list(&quot;OMICRON&quot;, &quot;WILD&quot;)),
                                         destination_filters= list(list(&quot;OMICRON&quot;, &quot;WILD&quot;)))</code></pre>
 <p>here if source_filters is [[“age0to17”], [“OMICRON”, “WILD”]], it means filter (keep) all transitions that have as source: age0to17 AND (OMICRON OR WILD).</p>
@@ -378,21 +378,21 @@ gempyor_simulator$plot_transition_graph(output_file=&quot;readable_graph&quot;,
 <h2>Simulate</h2>
 <p>The code in this section is very much like what is present in inference_slot.R for the inference runs: it runs the full gempyor (parameters, npi, simulation, outcomes). These functions take as input a <code>seed</code> file with sim_id <code>sim_id2write</code>, and outputs files hpar, spar, snpi, hnpi, seir, hosp with sim_id <code>sim_id2write</code>. In case the flag load_ID is set as true, the function will also load from file the seeding, parameters and the NPIs (seed, hnpi, snpi, hpar, spar) from the simulation with sim_id <code>sim_id2load</code>.</p>
 <p>Here we simulate once from config, then a second time using the same values as generated by the first run:</p>
-<pre class="r"><code>gempyor_simulator$one_simulation(sim_id2write=0)                                  # simulate from config</code></pre>
+<pre class="r"><code>gempyor_inference$one_simulation(sim_id2write=0)                                  # simulate from config</code></pre>
 <pre><code>## [1] 0</code></pre>
-<pre class="r"><code>gempyor_simulator$one_simulation(sim_id2write=1, load_ID=TRUE, sim_id2load=0)     # simulate from files</code></pre>
+<pre class="r"><code>gempyor_inference$one_simulation(sim_id2write=1, load_ID=TRUE, sim_id2load=0)     # simulate from files</code></pre>
 <pre><code>## [1] 0</code></pre>
 <div id="little-redudant-example" class="section level3">
 <h3>Little redudant example:</h3>
 <p>These two are equivalent: one uses the COVID Scenario Pipeline filename scheme, while the other provides the filename directly.</p>
-<pre class="r"><code>npi_outcome = gempyor_simulator$get_outcome_npi(load_ID=TRUE, sim_id2load=1)
-npi_outcome = gempyor_simulator$get_outcome_npi(bypass_FN = &#39;model_output/hnpi/test_prefix/000000001.test_run_id.hnpi.parquet&#39;)</code></pre>
+<pre class="r"><code>npi_outcome = gempyor_inference$get_outcome_npi(load_ID=TRUE, sim_id2load=1)
+npi_outcome = gempyor_inference$get_outcome_npi(bypass_FN = &#39;model_output/hnpi/test_prefix/000000001.test_run_id.hnpi.parquet&#39;)</code></pre>
 </div>
 </div>
 <div id="also" class="section level2">
 <h2>Also…</h2>
 <p>Additional methods are provided, one of which updates the prefix, which is done by e.g inference_slot.R to indicate the slot</p>
-<pre class="r"><code>gempyor_simulator$update_prefix(new_prefix=&quot;my new prefix&quot;)</code></pre>
+<pre class="r"><code>gempyor_inference$update_prefix(new_prefix=&quot;my new prefix&quot;)</code></pre>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
