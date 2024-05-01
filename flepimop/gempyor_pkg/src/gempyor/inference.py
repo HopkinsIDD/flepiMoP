@@ -381,7 +381,7 @@ class GempyorInference:
         if not self.inferpar.check_in_bound(proposal=proposal):
             if not self.silent:
                 print("OUT OF BOUND!!")
-            return -np.inf
+            return -np.inf, -np.inf, -np.inf
 
         snpi_df_mod, hnpi_df_mod = self.inferpar.inject_proposal(
             proposal=proposal,
@@ -406,7 +406,7 @@ class GempyorInference:
         return ll_total, logloss, regularizations
 
     def get_logloss_as_single_number(self, proposal):
-        ll_total, _, _ = self.get_logloss(proposal)
+        ll_total, logloss, regularizations = self.get_logloss(proposal)
         return ll_total
 
     def perform_test_run(self):

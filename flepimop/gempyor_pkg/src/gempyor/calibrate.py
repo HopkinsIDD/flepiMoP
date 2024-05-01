@@ -22,7 +22,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
     "--config",
     "config_filepath",
     envvar="CONFIG_PATH",
-    type=click.Path(exists=True),
+    type=click.Path(),
     required=True,
     help="configuration file for this simulation",
 )
@@ -37,26 +37,6 @@ os.environ["OMP_NUM_THREADS"] = "1"
     help="path to the flepiMoP directory",
 )
 @click.option(
-    "-s",
-    "--seir_modifiers_scenario",
-    "seir_modifiers_scenarios",
-    envvar="FLEPI_SEIR_SCENARIO",
-    type=str,
-    default=[],
-    multiple=True,
-    help="override the NPI scenario(s) run for this simulation [supports multiple NPI scenarios: `-s Wuhan -s None`]",
-)
-@click.option(
-    "-d",
-    "--outcome_modifiers_scenario",
-    "outcome_modifiers_scenarios",
-    envvar="FLEPI_OUTCOME_SCENARIO",
-    type=str,
-    default=[],
-    multiple=True,
-    help="Scenario of outcomes to run",
-)
-@click.option(
     "-n",
     "--nslots",
     "--nwalkers",
@@ -67,7 +47,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 )
 @click.option(
     "--niterations",
-    "ninter",
+    "niter",
     type=click.IntRange(min=1),
     help="override the # of samples to produce simulation runs in the config file",
 )
@@ -134,8 +114,6 @@ os.environ["OMP_NUM_THREADS"] = "1"
 def calibrate(
     config_filepath,
     project_path,
-    seir_modifiers_scenarios,
-    outcome_modifiers_scenarios,
     nwalkers,
     niter,
     nsamples,
@@ -200,11 +178,12 @@ def calibrate(
             ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
     moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
+    gempyor_inference.set_silent(False)
     with multiprocessing.Pool(ncpu) as pool:
         sampler = emcee.EnsembleSampler(
             nwalkers,
-            gempyor_inference.inferpar.get_dim(),
-            gempyor.inference.emcee_logprob,
+            gempyor_inference.inferpar.get_dim(), 
+            gempyor_inference.get_logloss_as_single_number, 
             pool=pool,
             backend=backend,
             moves=moves,
@@ -215,21 +194,27 @@ def calibrate(
 
     # plotting the chain
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
-    gempyor.inference.plot_chains(
-        inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=np.ones(), save_to=f"{run_id}_chains.pdf"
-    )
+    gempyor.postprocess_inference.plot_chains(
+            inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=None, save_to=f"{run_id}_chains.pdf"
+        )
     print("EMCEE Run done, doing sampling")
 
-    shutil.rmtree("model_output/")
+    shutil.rmtree("model_output/", ignore_errors=True)
+    shutil.rmtree(project_path + "model_output/", ignore_errors=True)
+
+    max_indices = np.argsort(sampler.get_log_prob()[-1, :])[-nsamples:]
+    samples = sampler.get_chain()[-1, max_indices,:]  # the last iteration, for selected slots
+    gempyor_inference.set_save(True)
     with multiprocessing.Pool(ncpu) as pool:
         results = pool.starmap(
-            gempyor.inference.emcee_logprob, [(sample, *position_arguments) for sample in exported_samples]
+            gempyor_inference.get_logloss_as_single_number, 
+            [(samples[i,:],) for i in range(len(max_indices))]
         )
-    results = []
-    for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id, "hosp.parquet"]):
-        df = gempyor.read_df(fn)
-        df = df.set_index("date")
-        results.append(df)
+    #results = []
+    #for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id, "hosp.parquet"]):
+    #    df = gempyor.read_df(fn)
+    #    df = df.set_index("date")
+    #    results.append(df)
 
 
 if __name__ == "__main__":

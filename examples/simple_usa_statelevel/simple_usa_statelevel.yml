@@ -121,6 +121,7 @@ outcomes:
 
 
 inference:
+  method: emcee
   iterations_per_slot: 100
   do_inference: TRUE
   gt_data_path: model_input/data/generated_gt_data.csv

@@ -304,6 +304,9 @@ class ModelInfo:
             input=input,
             extension_override=extension_override,
         )
+        # create the directory if it does exists:
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+
         # print(f"Writing {fname}")
         write_df(
             fname=fname,
