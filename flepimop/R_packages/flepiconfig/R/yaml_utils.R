@@ -356,6 +356,7 @@ print_value1 <- function(value_type, value_dist, value_mean,
                          value_sd, value_a, value_b,
                          intervention_type = NULL,
                          intervention_operation = NULL,
+                         rolling_window = NULL,
                          param_name = "value", indent_space = 6) {
     
     space <- rep(" ", indent_space) %>% paste0(collapse = "")
@@ -409,6 +410,10 @@ print_value1 <- function(value_type, value_dist, value_mean,
         if (is.na(value_dist)) {
             print_val = ""
         }
+      if(!is.null(rolling_window)){
+        print_val <- paste0(print_val, 
+                            space, "rolling_mean_windows: ",rolling_window, "\n")
+      }
     }
     return(print_val)
 }
@@ -1035,6 +1040,7 @@ print_seir <- function(integration_method = "rk4",
                                     value_sd = params[[i]]$sd,
                                     value_a = params[[i]]$a,
                                     value_b = params[[i]]$b,
+                                    rolling_window = params[[i]]$rolling_window,
                                     intervention_type = params[[i]]$intervention_type,
                                     intervention_operation = params[[i]]$intervention_operation))
     }
