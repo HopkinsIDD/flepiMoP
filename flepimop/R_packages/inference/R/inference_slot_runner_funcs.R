@@ -683,7 +683,7 @@ initialize_mcmc_first_block <- function(
             }, error = function(e) {
                 print("GempyorInference failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
-                for(m in reticulate::py_last_error()) cat(m)
+                for(m in reticulate::py_last_error()) print(m)
                 stop("GempyorInference failed to run... stopping")
             })
             #gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
@@ -701,7 +701,7 @@ initialize_mcmc_first_block <- function(
             }, error = function(e) {
                 print("GempyorInference failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
-                for(m in reticulate::py_last_error()) cat(m)
+                for(m in reticulate::py_last_error()) print(m)
                 stop("GempyorInference failed to run... stopping")
             })
             #gempyor_inference_runner$one_simulation(sim_id2write=block - 1, load_ID=TRUE, sim_id2load=block - 1)
