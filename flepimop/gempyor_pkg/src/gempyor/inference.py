@@ -275,6 +275,40 @@ def autodetect_scenarios(config):
 
     return seir_modifiers_scenarios[0], outcome_modifiers_scenarios[0]
 
+# rewrite the get log loss functions as single functions, not in a class. This is not faster
+# def get_logloss(proposal, inferpar, logloss, static_sim_arguments, modinf, silent=True, save=False):
+#     if not inferpar.check_in_bound(proposal=proposal):
+#         if not silent:
+#             print("OUT OF BOUND!!")
+#         return -np.inf, -np.inf, -np.inf
+# 
+#     snpi_df_mod, hnpi_df_mod = inferpar.inject_proposal(
+#         proposal=proposal,
+#         snpi_df=static_sim_arguments["snpi_df_ref"],
+#         hnpi_df=static_sim_arguments["hnpi_df_ref"],
+#     )
+# 
+#     ss = copy.deepcopy(static_sim_arguments)
+#     ss["snpi_df_in"] = snpi_df_mod
+#     ss["hnpi_df_in"] = hnpi_df_mod
+#     del ss["snpi_df_ref"]
+#     del ss["hnpi_df_ref"]
+# 
+#     outcomes_df = simulation_atomic(**ss, modinf=modinf, save=save)
+# 
+#     ll_total, logloss, regularizations = logloss.compute_logloss(
+#         model_df=outcomes_df, subpop_names=modinf.subpop_struct.subpop_names
+#     )
+#     if not silent:
+#         print(f"llik is {ll_total}")
+# 
+#     return ll_total, logloss, regularizations
+# 
+# def get_logloss_as_single_number(proposal, inferpar, logloss, static_sim_arguments, modinf, silent=True, save=False):
+#     ll_total, logloss, regularizations = get_logloss(proposal, inferpar, logloss, static_sim_arguments, modinf, silent, save)
+#     return ll_total
+
+
 
 class GempyorInference:
     def __init__(
@@ -374,6 +408,10 @@ class GempyorInference:
 
     def set_save(self, save):
         self.save = save
+
+    def get_all_sim_arguments(self):
+        # inferpar, logloss, static_sim_arguments, modinf, proposal, silent, save
+        return [self.inferpar, self.logloss, self.static_sim_arguments, self.modinf, self.silent, self.save]
 
     def get_logloss(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):

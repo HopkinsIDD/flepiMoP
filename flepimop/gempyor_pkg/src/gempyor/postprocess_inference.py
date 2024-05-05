@@ -50,12 +50,23 @@ def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
         ]  # parentesis around i//(sampled_slots.sum() are very important
 
 
-def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
+
+
+def plot_chains(inferpar, chains, llik, save_to, sampled_slots=None, param_gt=None, llik_gt=None):
+    """
+    Plot the chains of the inference
+    :param inferpar: the inference parameter object
+    :param chains: the chains from the inference, shape (niter, nwalkers, nparam)
+    :param llik: the log likelihood of the chains, shape (niter, nwalkers)
+    :param save_to: the path to save the pdf
+    :param sampled_slots: the slots to sample, if None, all are sampled
+    :param param_gt: the ground truth parameters, shape (nparam)
+    :param llik_gt: the ground truth log likelihood, shape (1)
+    """
     # we plot first from the start, then the last 3/4
 
-    samples = sampler_output.get_chain()
-    niters = samples.shape[0]
-    nwalkers = samples.shape[1]
+    niters = chains.shape[0]
+    nwalkers = chains.shape[1]
     first_thresh = 0
     second_thresh = 3 * niters // 4
 
@@ -64,7 +75,7 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
 
     labels = list(zip(inferpar.pnames, inferpar.subpops))
 
-    def plot_single_chain(frompt, ax, chain, label):
+    def plot_single_chain(frompt, ax, chain, label, gt=None):
         x_plt = np.arange(frompt, niters)
         ax.plot(
             x_plt,
@@ -82,6 +93,8 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
             lw=1,
             label="bad walkers",
         )
+        if gt is not None:
+            ax.plot(x_plt, np.repeat(gt, len(x_plt)), "black", alpha=1, lw=2, ls="-.")
         ax.set_title(label)
         # ax.yaxis.set_label_coords(-0.1, 0.5)
         sns.despine(ax=ax, trim=False)
@@ -91,21 +104,22 @@ def plot_chains(inferpar, sampler_output, save_to, sampled_slots=None):
         d = pdf.infodict()
         d["Title"] = "FlepiMoP Inference Chains"
         d["Author"] = "FlepiMoP Inference"
-        fig, axes = plt.subplots(1, 2, figsize=(8, 3))
-        plot_single_chain(first_thresh, axes[0], sampler_output.get_log_prob(), label="llik")
-        plot_single_chain(second_thresh, axes[1], sampler_output.get_log_prob(), label="llik")
+        fig, axes = plt.subplots(1, 2, figsize=(6, 3))
+        plot_single_chain(first_thresh, axes[0], llik, label="llik", gt=llik_gt)
+        plot_single_chain(second_thresh, axes[1], llik, label="llik", gt=llik_gt)
         fig.tight_layout()
         pdf.savefig(fig)
+        plt.close(fig)
 
         for sp in tqdm.tqdm(set(inferpar.subpops)):  # find unique supopulation
             these_pars = inferpar.get_parameters_for_subpop(sp)
-            fig, axes = plt.subplots(max(len(these_pars), 2), 2, figsize=(8, (len(these_pars) + 1) * 2))
+            fig, axes = plt.subplots(max(len(these_pars), 2), 2, figsize=(6, (len(these_pars) + 1) * 2))
             for idx, par_id in enumerate(these_pars):
-                plot_single_chain(first_thresh, axes[idx, 0], samples[:, :, par_id], labels[par_id])
-                plot_single_chain(second_thresh, axes[idx, 1], samples[:, :, par_id], labels[par_id])
+                plot_single_chain(first_thresh, axes[idx, 0], chains[:, :, par_id], labels[par_id], gt=param_gt[par_id] if param_gt is not None else None)
+                plot_single_chain(second_thresh, axes[idx, 1], chains[:, :, par_id], labels[par_id], gt=param_gt[par_id] if param_gt is not None else None)
             fig.tight_layout()
             pdf.savefig(fig)
-
+            plt.close(fig)
 
 def plot_fit(modinf, loss):
     subpop_names = modinf.subpop_struct.subpop_names
