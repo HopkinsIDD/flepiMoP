@@ -48,7 +48,7 @@ We create an `GempyorInference` object by providing the path of config file. The
 ```{r}
 config_filepath = '../tests/npi/config_npi.yml'
 gempyor_inference <- gempyor$GempyorInference(
-                          config_path=config_filepath,
+                          config_filepath=config_filepath,
                           run_id="test_run_id",
                           prefix="test_prefix/",
                           first_sim_index=1,

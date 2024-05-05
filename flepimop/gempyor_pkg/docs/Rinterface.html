@@ -248,7 +248,7 @@ gempyor &lt;- reticulate::import(&quot;gempyor&quot;)</code></pre>
 <p>We create an <code>GempyorInference</code> object by providing the path of config file. It may take a while to run all of that. First build the object. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: <code>config_FCH_R12_optSev_lowIE_blk5_Mar6.yml</code> on March 6, 2022.</p>
 <pre class="r"><code>config_filepath = &#39;../tests/npi/config_npi.yml&#39;
 gempyor_inference &lt;- gempyor$GempyorInference(
-                          config_path=config_filepath,
+                          config_filepath=config_filepath,
                           run_id=&quot;test_run_id&quot;,
                           prefix=&quot;test_prefix/&quot;,
                           first_sim_index=1,
