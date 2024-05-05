@@ -7,7 +7,7 @@ nslots: 2
 subpop_setup:
   geodata: model_input/data/geodata_2019_statelevel.csv
   mobility: model_input/data/mobility_2011-2015_statelevel.csv
-  #selected: ["42000","36000","12000","48000","06000"]
+  #selected: ["06000","36000"]# ,"12000","48000","06000"
   #selected: ["06000"]
 
 initial_conditions:
@@ -141,7 +141,9 @@ inference:
       #add_one: TRUE
       zero_to_one: True
       likelihood: 
-        dist: pois
+        dist: norm
+        params:
+          scale: 5
       #regularize:
       #  - name: forecast 
       #    last_n: 2
@@ -157,8 +159,10 @@ inference:
         freq: W-SAT # a pandas resampling string, this is weekly on Saturday, see pandas doc
         skipna: False
       zero_to_one: True
-      likelihood: 
-        dist: pois
+      likelihood:
+        dist: norm
+        params:
+          scale: 5
     incidDeath:
       name: incidDeath
       sim_var: incidDeath
@@ -169,7 +173,12 @@ inference:
         skipna: True
       zero_to_one: True
       likelihood: 
-        dist: pois
+        dist: norm
+        params:
+          scale: 5
+      #  dist: norm
+      #  params:
+      #    scale: 5
       # likelihood:
       #   dist: norm_cov
       #   params:
