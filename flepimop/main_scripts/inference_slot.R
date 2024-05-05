@@ -426,7 +426,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     }, error = function(e) {
       print("GempyorInference failed to run (call on l. 405 of inference_slot.R).")
       print("Here is all the debug information I could find:")
-      for(m in reticulate::py_last_error()) cat(m)
+      for(m in reticulate::py_last_error()) print(m)
       stop("GempyorInference failed to run... stopping")
     })
     setup_prefix <- gempyor_inference_runner$modinf$get_setup_name() # file name piece of the form [config$name]_[seir_modifier_scenario]_[outcome_modifier_scenario]
@@ -597,7 +597,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       }, error = function(e) {
         print("GempyorInference failed to run (call on l. 575 of inference_slot.R).")
         print("Here is all the debug information I could find:")
-        for(m in reticulate::py_last_error()) cat(m)
+        for(m in reticulate::py_last_error()) print(m)
         stop("GempyorInference failed to run... stopping")
       })
 
