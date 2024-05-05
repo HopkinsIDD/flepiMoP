@@ -415,7 +415,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     ## python configuration: build simulator model specified in config
     tryCatch({
       gempyor_inference_runner <- gempyor$GempyorInference(
-        config_path=opt$config,
+        config_filepath=opt$config,
         stoch_traj_flag=opt$stoch_traj_flag,
         run_id=opt$run_id,
         prefix=reticulate::py_none(), # we let gempyor create setup prefix
