@@ -662,6 +662,26 @@ initialize_mcmc_first_block <- function(
 
             arrow::write_parquet(initial_init, global_files[["init_filename"]])
         }
+
+        # if the initial conditions file contains a 'date' column, filter for config$start_date
+        if (grepl(".csv", global_files[["init_filename"]])){
+            initial_init <- readr::read_csv(global_files[["init_filename"]],show_col_types = FALSE)
+        }else{
+            initial_init <- arrow::read_parquet(global_files[["init_filename"]])
+        }
+
+        if("date" %in% colnames(initial_init)){
+                
+            initial_init <- initial_init %>%
+                dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+                dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+            
+            if (nrow(initial_init) == 0) {
+                stop("ERROR: Initial conditions file specified but does not contain the start date.")
+            }  
+                
+        }
+        arrow::write_parquet(initial_init, global_files[["init_filename"]])
     }
 
 
