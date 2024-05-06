@@ -257,8 +257,8 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi, write=True):
     if write:
         # ADDED CODE
         outcomes_df = outcomes_df.set_index("date")
-        reg = .9
-        mult=2
+        reg = .8
+        mult=3
         print("reg is", reg)
         for sp in outcomes_df["subpop"].unique():
             max_fit = outcomes_df[outcomes_df["subpop"]==sp]["incidC"][:"2024-04-08"].max()*reg     # HERE MULTIPLIED BY A REG factor: .9
