@@ -414,10 +414,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
     ## python configuration: build simulator model specified in config
     tryCatch({
-      gempyor_inference_runner <- gempyor$GempyorSimulator(
-        config_path=opt$config,
-        seir_modifiers_scenario=seir_modifiers_scenario,
-        outcome_modifiers_scenario=outcome_modifiers_scenario,
+      gempyor_inference_runner <- gempyor$GempyorInference(
+        config_filepath=opt$config,
         stoch_traj_flag=opt$stoch_traj_flag,
         run_id=opt$run_id,
         prefix=reticulate::py_none(), # we let gempyor create setup prefix
@@ -426,10 +424,10 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         autowrite_seir = TRUE
       )
     }, error = function(e) {
-      print("GempyorSimulator failed to run (call on l. 405 of inference_slot.R).")
+      print("GempyorInference failed to run (call on l. 405 of inference_slot.R).")
       print("Here is all the debug information I could find:")
-      for(m in reticulate::py_last_error()) cat(m)
-      stop("GempyorSimulator failed to run... stopping")
+      for(m in reticulate::py_last_error()) print(m)
+      stop("GempyorInference failed to run... stopping")
     })
     setup_prefix <- gempyor_inference_runner$modinf$get_setup_name() # file name piece of the form [config$name]_[seir_modifier_scenario]_[outcome_modifier_scenario]
     print("gempyor_inference_runner created successfully.")
@@ -597,10 +595,10 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           load_ID=TRUE,
           sim_id2load=this_index)
       }, error = function(e) {
-        print("GempyorSimulator failed to run (call on l. 575 of inference_slot.R).")
+        print("GempyorInference failed to run (call on l. 575 of inference_slot.R).")
         print("Here is all the debug information I could find:")
-        for(m in reticulate::py_last_error()) cat(m)
-        stop("GempyorSimulator failed to run... stopping")
+        for(m in reticulate::py_last_error()) print(m)
+        stop("GempyorInference failed to run... stopping")
       })
 
       # run

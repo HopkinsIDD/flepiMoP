@@ -37,7 +37,7 @@ def user_confirmation(question="Continue?", default=False):
 @click.option(
     "-c",
     "--config",
-    "config_file",
+    "config_filepath",
     envvar="CONFIG_PATH",
     type=click.Path(exists=True),
     required=True,
@@ -273,7 +273,7 @@ def user_confirmation(question="Continue?", default=False):
 )
 def launch_batch(
     batch_system,
-    config_file,
+    config_filepath,
     flepi_path,
     data_path,
     run_id,
@@ -302,7 +302,7 @@ def launch_batch(
     continuation_run_id,
 ):
     config = None
-    with open(config_file) as f:
+    with open(config_filepath) as f:
         config = yaml.full_load(f)
 
     # A unique name for this job run, based on the config name and current time
@@ -328,7 +328,7 @@ def launch_batch(
             )
             return 1
     else:
-        print(f"WARNING: no inference section found in {config_file}!")
+        print(f"WARNING: no inference section found in {config_filepath}!")
 
     if "s3://" in str(restart_from_location):  # ugly hack: str because it might be None
         restart_from_run_id = aws_countfiles_autodetect_runid(
@@ -403,7 +403,7 @@ def launch_batch(
         if "scenarios" in config["outcome_modifiers"]:
             outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"]
 
-    handler.launch(job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios)
+    handler.launch(job_name, config_filepath, seir_modifiers_scenarios, outcome_modifiers_scenarios)
 
     # Set job_name as environmental variable so it can be pulled for pushing to git
     os.environ["job_name"] = job_name
@@ -656,7 +656,7 @@ class BatchJobHandler(object):
         if remove_source:
             os.remove(source)
 
-    def launch(self, job_name, config_file, seir_modifiers_scenarios, outcome_modifiers_scenarios):
+    def launch(self, job_name, config_filepath, seir_modifiers_scenarios, outcome_modifiers_scenarios):
         s3_results_path = f"s3://{self.s3_bucket}/{job_name}"
 
         if self.batch_system == "slurm":
@@ -683,7 +683,7 @@ class BatchJobHandler(object):
             {"name": "S3_UPLOAD", "value": str(self.s3_upload).lower()},
             {"name": "PROJECT_PATH", "value": str(self.data_path)},
             {"name": "FLEPI_PATH", "value": str(self.flepi_path)},
-            {"name": "CONFIG_PATH", "value": config_file},
+            {"name": "CONFIG_PATH", "value": config_filepath},
             {"name": "FLEPI_NUM_SLOTS", "value": str(self.num_jobs)},
             {
                 "name": "FLEPI_MAX_STACK_SIZE",
@@ -704,7 +704,7 @@ class BatchJobHandler(object):
             {"name": "FLEPI_MEM_PROF_ITERS", "value": str(os.getenv("FLEPI_MEM_PROF_ITERS", default="50"))},
             {"name": "SLACK_CHANNEL", "value": str(self.slack_channel)},
         ]
-        with open(config_file) as f:
+        with open(config_filepath) as f:
             config = yaml.full_load(f)
 
         for ctr, (s, d) in enumerate(itertools.product(seir_modifiers_scenarios, outcome_modifiers_scenarios)):
@@ -905,7 +905,7 @@ class BatchJobHandler(object):
         if self.continuation:
             print(f" >> Continuing from run id is {self.continuation_run_id} located in {self.continuation_location}")
         print(f" >> Run id is {self.run_id}")
-        print(f" >> config is {config_file.split('/')[-1]}")
+        print(f" >> config is {config_filepath.split('/')[-1]}")
         flepimop_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
         data_branch = subprocess.getoutput(f"cd {self.data_path}; git rev-parse --abbrev-ref HEAD")
         data_hash = subprocess.getoutput(f"cd {self.data_path}; git rev-parse HEAD")

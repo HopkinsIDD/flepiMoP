@@ -20,9 +20,9 @@ channelids = {"cspproduction": "C011YTUBJ7R", "debug": "C04MAQWLEAW"}
 
 
 class RunInfo:
-    def __init__(self, run_id, config_path=None, folder_path=None):
+    def __init__(self, run_id, config_filepath=None, folder_path=None):
         self.run_id = run_id
-        self.config_path = config_path
+        self.config_filepath = config_filepath
         self.folder_path = folder_path
 
 
@@ -93,7 +93,7 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
 @click.option(
     "-c",
     "--config",
-    "config_path",
+    "config_filepath",
     envvar="CONFIG_PATH",
     type=click.Path(exists=True),
     required=True,
@@ -158,39 +158,39 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     default=30,
     help="Maximum number of files to load for in depth plot and individual sim plot",
 )
-def generate_pdf(config_path, run_id, job_name, fs_results_path, slack_token, slack_channel, max_files, max_files_deep):
+def generate_pdf(
+    config_filepath, run_id, job_name, fs_results_path, slack_token, slack_channel, max_files, max_files_deep
+):
     print("Generating plots")
-    print(f">> config {config_path} for run_id {run_id}")
+    print(f">> config {config_filepath} for run_id {run_id}")
     print(f">> job name {job_name}, path {fs_results_path}")
     print(f">> max files (normal, deeep): {max_files}, {max_files_deep}")
 
     try:
         all_runs = {
-            run_id: RunInfo(run_id, config_path),
+            run_id: RunInfo(run_id, config_filepath),
         }
 
         # In[4]:
 
         for run_name, run_info in all_runs.items():
             run_id = run_info.run_id
-            config_filepath = run_info.config_path
-            run_info.gempyor_simulator = gempyor.GempyorSimulator(
-                config_path=config_filepath,
+            config_filepath = run_info.config_filepath
+            run_info.gempyor_inference = gempyor.GempyorInference(
+                config_filepath=config_filepath,
                 run_id=run_id,
                 # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
                 first_sim_index=1,
-                seir_modifiers_scenario="inference",  # NPIs scenario to use
-                outcome_modifiers_scenario="med",  # Outcome scenario to use
                 stoch_traj_flag=False,
                 path_prefix="./",  # prefix where to find the folder indicated in subpop_setup$
             )
             run_info.folder_path = f"{fs_results_path}/model_output"
 
-        node_names = run_info.gempyor_simulator.modinf.subpop_struct.subpop_names
+        node_names = run_info.gempyor_inference.modinf.subpop_struct.subpop_names
 
         # In[5]:
 
-        # gempyor.config.set_file(run_info.config_path)
+        # gempyor.config.set_file(run_info.config_filepath)
         # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
         # gt
         # statistics = {}
