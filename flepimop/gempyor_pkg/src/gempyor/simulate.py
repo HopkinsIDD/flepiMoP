@@ -171,7 +171,7 @@ from gempyor.utils import config, as_list, profile
 @click.option(
     "-c",
     "--config",
-    "config_file",
+    "config_filepath",
     envvar=["CONFIG_PATH", "CONFIG_PATH"],
     type=click.Path(exists=True),
     required=True,
@@ -276,7 +276,7 @@ from gempyor.utils import config, as_list, profile
 # @profile_options
 # @profile()
 def simulate(
-    config_file,
+    config_filepath,
     in_run_id,
     out_run_id,
     seir_modifiers_scenarios,
@@ -291,7 +291,7 @@ def simulate(
 ):
     config.clear()
     config.read(user=False)
-    config.set_file(config_file)
+    config.set_file(config_filepath)
     print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
 
     # Compute the list of scenarios to run. Since multiple = True, it's always a list.
@@ -338,12 +338,12 @@ def simulate(
             out_run_id=out_run_id,
             # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
             stoch_traj_flag=stoch_traj_flag,
-            config_path=config_file,
+            config_filepath=config_filepath,
         )
 
         print(
             f"""
-    >> Running from config {config_file}
+    >> Running from config {config_filepath}
     >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
     >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
     >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}

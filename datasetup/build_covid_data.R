@@ -382,6 +382,12 @@ us_data <- us_data %>%
 
 
 
+
+# ~ Manually fix weird MAINE point -------------------------------------------------------------
+
+# if source == ME , dates are between 2023-09-26 and 2023-09-30, set incidH to NA
+us_data <- us_data %>% mutate(incidH = ifelse(source == "ME" & date >= "2023-09-26" & date <= "2023-09-30", NA, incidH))
+
 # ~ Fix non-numeric -------------------------------------------------------------
 #  -- leave NAs so its not assuming an NA is a 0 and fitting to it
 

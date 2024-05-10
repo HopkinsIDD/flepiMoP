@@ -253,9 +253,25 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
     return parameters
 
 
-def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
-    modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
-    modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
+def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi, write=True):
+    if write:
+        # ADDED CODE
+        outcomes_df = outcomes_df.set_index("date")
+        reg = .8
+        mult=3
+        print("reg is", reg)
+        for sp in outcomes_df["subpop"].unique():
+            max_fit = outcomes_df[outcomes_df["subpop"]==sp]["incidC"][:"2024-04-08"].max()*reg     # HERE MULTIPLIED BY A REG factor: .9
+            max_summer = outcomes_df[outcomes_df["subpop"]==sp]["incidC"]["2024-04-08":"2024-09-30"].max()  
+            if max_summer > max_fit:
+                print(f"changing {sp} because max_summer max_summer={max_summer:.1f} > reg*max_fit={max_fit:.1f}, diff {max_fit/max_summer*100:.1f}%")
+                print(f">>> MULT BY {max_summer/max_fit*mult:2f}")
+                outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]] = outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]]*max_summer/max_fit*mult
+
+        outcomes_df = outcomes_df.reset_index()
+        # END ADDED CODE; DELETE THIS PATCH
+        modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
+        modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
 
     if npi is None:
         hnpi = pd.DataFrame(
@@ -270,7 +286,8 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi):
         )
     else:
         hnpi = npi.getReductionDF()
-    modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
+    if write:
+        modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
 
     return outcomes_df, hpar, hnpi
 

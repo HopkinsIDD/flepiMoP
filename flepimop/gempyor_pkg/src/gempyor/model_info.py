@@ -1,9 +1,19 @@
 import pandas as pd
-import datetime, os, logging, pathlib
+import datetime, os, logging, pathlib, confuse
 from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
 from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
+
+
+class TimeSetup:
+    def __init__(self, config: confuse.ConfigView):
+        self.ti = config["start_date"].as_date()
+        self.tf = config["end_date"].as_date()
+        if self.tf <= self.ti:
+            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+        self.n_days = (self.tf - self.ti).days + 1
+        self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
 
 
 class ModelInfo:
@@ -42,7 +52,7 @@ class ModelInfo:
         inference_filename_prefix="",
         inference_filepath_suffix="",
         setup_name=None,  # override config setup_name
-        config_path="",
+        config_filepath="",
     ):
         self.nslots = nslots
         self.write_csv = write_csv
@@ -72,11 +82,13 @@ class ModelInfo:
             self.setup_name = setup_name
 
         # 2. What about time:
-        self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
-        self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
-        if self.tf <= self.ti:
-            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
-        self.n_days = (self.tf - self.ti).days + 1  # because we include ti and tf
+        # Maybe group time_setup and subpop_struct into one argument for classes
+        # make the import object first level attributes
+        self.time_setup = TimeSetup(config)
+        self.ti = self.time_setup.ti
+        self.tf = self.time_setup.tf
+        self.n_days = self.time_setup.n_days
+        self.dates = self.time_setup.dates
 
         # 3. What about subpopulations
         subpop_config = config["subpop_setup"]
@@ -94,6 +106,7 @@ class ModelInfo:
         self.mobility = self.subpop_struct.mobility
 
         # 4. the SEIR structure
+        self.seir_config = None
         if config["seir"].exists():
             self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
@@ -148,8 +161,8 @@ class ModelInfo:
             logging.critical("Running ModelInfo without SEIR")
 
         # 5. Outcomes
-        if config["outcomes"].exists():
-            self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        if self.outcomes_config is not None:
             self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
@@ -220,7 +233,7 @@ class ModelInfo:
             elif self.write_csv:
                 self.extension = "csv"
 
-        self.config_path = config_path  # useful for plugins
+        self.config_filepath = config_filepath  # useful for plugins
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.path_prefix / self.get_filename(
@@ -291,6 +304,9 @@ class ModelInfo:
             input=input,
             extension_override=extension_override,
         )
+        # create the directory if it does exists:
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+
         # print(f"Writing {fname}")
         write_df(
             fname=fname,
