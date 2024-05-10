@@ -5,7 +5,6 @@ import pandas as pd
 # import dask.dataframe as dd
 import pyarrow as pa
 import time
-from typing import List
 from unittest.mock import patch
 from gempyor import utils
 
@@ -98,6 +97,7 @@ def env_vars(monkeypatch):
     monkeypatch.setenv("FLEPI_SLOT_INDEX", "2")
     monkeypatch.setenv("FLEPI_BLOCK_INDEX", "2")
     monkeypatch.setenv("FLEPI_RUN_INDEX", "123")
+    monkeypatch.setenv("LAST_JOB_OUTPUT", "s3://bucket")
 
 
 def test_create_resume_out_filename(env_vars):
@@ -138,3 +138,9 @@ def test_get_parquet_types_resume_discard_seeding_false_flepi_block_index_1():
 def test_get_parquet_types_flepi_block_index_2():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
     assert utils.get_parquet_types() == expected_types
+
+
+def test_create_resume_file_names_map(env_vars):
+    name_map = utils.create_resume_file_names_map()
+    for k in name_map:
+        assert k.find("s3://bucket") >= 0
