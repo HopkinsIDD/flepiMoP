@@ -125,19 +125,19 @@ def test_create_resume_input_filename(env_vars):
 @patch.dict(os.environ, {"RESUME_DISCARD_SEEDING": "true", "FLEPI_BLOCK_INDEX": "1"})
 def test_get_parquet_types_resume_discard_seeding_true_flepi_block_index_1():
     expected_types = ["spar", "snpi", "hpar", "hnpi", "init"]
-    assert utils.get_parquet_types() == expected_types
+    assert utils.get_parquet_types_for_resume() == expected_types
 
 
 @patch.dict(os.environ, {"RESUME_DISCARD_SEEDING": "false", "FLEPI_BLOCK_INDEX": "1"})
 def test_get_parquet_types_resume_discard_seeding_false_flepi_block_index_1():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
-    assert utils.get_parquet_types() == expected_types
+    assert utils.get_parquet_types_for_resume() == expected_types
 
 
 @patch.dict(os.environ, {"FLEPI_BLOCK_INDEX": "2"})
 def test_get_parquet_types_flepi_block_index_2():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
-    assert utils.get_parquet_types() == expected_types
+    assert utils.get_parquet_types_for_resume() == expected_types
 
 
 def test_create_resume_file_names_map(env_vars):
