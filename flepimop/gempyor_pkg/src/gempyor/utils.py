@@ -359,20 +359,24 @@ def create_resume_out_filename(filetype: str, liketype: str) -> str:
     run_id = os.environ.get("FLEPI_RUN_INDEX")
     prefix = f"{os.environ.get('FLEPI_PREFIX')}/{os.environ.get('FLEPI_RUN_INDEX')}"
     inference_filepath_suffix = f"{liketype}/intermidate"
-    FLEPI_SLOT_INDEX = int(os.environ.get("FLEPI_SLOT_INDEX"))
-    inference_filename_prefix='%09d.' % FLEPI_SLOT_INDEX
-    index='{:09d}.{:09d}'.format(1, int(os.environ.get("FLEPI_BLOCK_INDEX"))-1)
+    # FLEPI_SLOT_INDEX = int(os.environ.get("FLEPI_SLOT_INDEX"))
+    # inference_filename_prefix='%09d.' % FLEPI_SLOT_INDEX
+    inference_filename_prefix = "{:09d}.".format(int(os.environ.get("FLEPI_SLOT_INDEX")))
+    index = "{:09d}.{:09d}".format(1, int(os.environ.get("FLEPI_BLOCK_INDEX")) - 1)
     extension = "parquet"
     if filetype == "seed":
         extension = "csv"
-    return file_paths.create_file_name(run_id=run_id, 
-                                       prefix=prefix, 
-                                       inference_filename_prefix=inference_filename_prefix,
-                                       inference_filepath_suffix=inference_filepath_suffix,
-                                       index=index,
-                                       ftype=filetype,
-                                       extension=extension)
-    
+    return file_paths.create_file_name(
+        run_id=run_id,
+        prefix=prefix,
+        inference_filename_prefix=inference_filename_prefix,
+        inference_filepath_suffix=inference_filepath_suffix,
+        index=index,
+        ftype=filetype,
+        extension=extension,
+    )
+
+
 def create_resume_input_filename(filetype: str, liketype: str) -> str:
     run_id = os.environ.get("RESUME_RUN_INDEX")
     prefix = f"{os.environ.get('FLEPI_PREFIX')}/{os.environ.get('RESUME_RUN_INDEX')}"
@@ -381,18 +385,20 @@ def create_resume_input_filename(filetype: str, liketype: str) -> str:
     extension = "parquet"
     if filetype == "seed":
         extension = "csv"
-    return file_paths.create_file_name(run_id=run_id, 
-                                       prefix=prefix,
-                                       inference_filepath_suffix=inference_filepath_suffix,
-                                       index=index,
-                                       ftype=filetype,
-                                       extension=extension)
+    return file_paths.create_file_name(
+        run_id=run_id,
+        prefix=prefix,
+        inference_filepath_suffix=inference_filepath_suffix,
+        index=index,
+        ftype=filetype,
+        extension=extension,
+    )
 
 
 def get_parquet_types_for_resume() -> List[str]:
     """
-    Retrieves a list of parquet file types that are relevant for resuming a process based on 
-    specific environment variable settings. This function dynamically determines the list 
+    Retrieves a list of parquet file types that are relevant for resuming a process based on
+    specific environment variable settings. This function dynamically determines the list
     based on the current operational context given by the environment.
 
     The function checks two environment variables:
@@ -408,7 +414,7 @@ def get_parquet_types_for_resume() -> List[str]:
             return ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
     else:
         return ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
-    
+
 
 def create_resume_file_names_map() -> Dict[str, str]:
     """
@@ -418,21 +424,21 @@ def create_resume_file_names_map() -> Dict[str, str]:
 
     The mappings depend on:
     - Parquet file types appropriate for resuming a process, as determined by the environment.
-    - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the 
+    - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the
       file naming convention.
-    - The operational block index ('FLEPI_BLOCK_INDEX'), which can alter the input file names for 
+    - The operational block index ('FLEPI_BLOCK_INDEX'), which can alter the input file names for
       block index '1'.
     - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set to an S3 path,
       adjusts the keys in the mapping to be prefixed with this path.
 
     Returns:
-        Dict[str, str]: A dictionary where keys are input file paths and values are corresponding 
-                        output file paths. The paths may be modified by the 'LAST_JOB_OUTPUT' if it 
+        Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
+                        output file paths. The paths may be modified by the 'LAST_JOB_OUTPUT' if it
                         is set and points to an S3 location.
 
     Raises:
-        No explicit exceptions are raised within the function, but it relies heavily on external 
-        functions and environment variables which if improperly configured could lead to unexpected 
+        No explicit exceptions are raised within the function, but it relies heavily on external
+        functions and environment variables which if improperly configured could lead to unexpected
         behavior.
     """
     parquet_types = get_parquet_types_for_resume()
@@ -445,7 +451,7 @@ def create_resume_file_names_map() -> Dict[str, str]:
             if os.environ.get("FLEPI_BLOCK_INDEX") == "1":
                 input_file_name = create_resume_input_filename(filetype=filetype, liketype=liketype)
             resume_file_name_mapping[input_file_name] = output_file_name
-    
+
     last_job_output = os.environ.get("LAST_JOB_OUTPUT")
     if last_job_output.find("s3://") >= 0:
         old_keys = list(resume_file_name_mapping.keys())
@@ -458,24 +464,24 @@ def create_resume_file_names_map() -> Dict[str, str]:
 
 def download_file_from_s3(name_map: Dict[str, str]) -> None:
     """
-    Downloads files from AWS S3 based on a mapping of S3 URIs to local file paths. The function 
-    checks if the directory for the first output file exists and creates it if necessary. It 
-    then iterates over each S3 URI in the provided mapping, downloads the file to the corresponding 
+    Downloads files from AWS S3 based on a mapping of S3 URIs to local file paths. The function
+    checks if the directory for the first output file exists and creates it if necessary. It
+    then iterates over each S3 URI in the provided mapping, downloads the file to the corresponding
     local path, and handles errors if the S3 URI format is incorrect or if the download fails.
 
     Parameters:
-        name_map (Dict[str, str]): A dictionary where keys are S3 URIs (strings) and values 
-                                   are the local file paths (strings) where the files should 
+        name_map (Dict[str, str]): A dictionary where keys are S3 URIs (strings) and values
+                                   are the local file paths (strings) where the files should
                                    be saved.
 
     Returns:
-        None: This function does not return a value; its primary effect is the side effect of 
+        None: This function does not return a value; its primary effect is the side effect of
               downloading files and potentially creating directories.
 
     Raises:
         ValueError: If an S3 URI does not start with 's3://', indicating an invalid format.
         ClientError: If an error occurs during the download from S3, such as a permissions issue,
-                     a missing file, or network-related errors. These are caught and logged but not 
+                     a missing file, or network-related errors. These are caught and logged but not
                      re-raised, to allow the function to attempt subsequent downloads.
 
     Examples:
@@ -493,7 +499,7 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
         >>> download_file_from_s3(name_map)
         # This will raise a ValueError indicating the invalid S3 URI format.
     """
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     first_output_filename = next(iter(name_map.values()))
     output_dir = os.path.dirname(first_output_filename)
     if not os.path.exists(output_dir):
@@ -501,12 +507,12 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
 
     for s3_uri in name_map:
         try:
-            if s3_uri.startswith('s3://'):
-                bucket = s3_uri.split('/')[2]
-                object = s3_uri[len(bucket)+6:]
+            if s3_uri.startswith("s3://"):
+                bucket = s3_uri.split("/")[2]
+                object = s3_uri[len(bucket) + 6 :]
                 s3.download_file(bucket, object, name_map[s3_uri])
             else:
-                raise ValueError(f'Invalid S3 URI format {s3_uri}')
+                raise ValueError(f"Invalid S3 URI format {s3_uri}")
         except ClientError as e:
             print(f"An error occurred: {e}")
             print("Could not download file from s3")
