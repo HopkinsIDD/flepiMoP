@@ -359,8 +359,6 @@ def create_resume_out_filename(filetype: str, liketype: str) -> str:
     run_id = os.environ.get("FLEPI_RUN_INDEX")
     prefix = f"{os.environ.get('FLEPI_PREFIX')}/{os.environ.get('FLEPI_RUN_INDEX')}"
     inference_filepath_suffix = f"{liketype}/intermidate"
-    # FLEPI_SLOT_INDEX = int(os.environ.get("FLEPI_SLOT_INDEX"))
-    # inference_filename_prefix='%09d.' % FLEPI_SLOT_INDEX
     inference_filename_prefix = "{:09d}.".format(int(os.environ.get("FLEPI_SLOT_INDEX")))
     index = "{:09d}.{:09d}".format(1, int(os.environ.get("FLEPI_BLOCK_INDEX")) - 1)
     extension = "parquet"
