@@ -741,8 +741,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         this_accept_prob <- exp(min(c(0, proposed_likelihood_total - global_current_likelihood_total)))
 
         #NOTE: Don't technically need the next 2 lines, as the values saved to memory are last accepted values, but confusing to track these variable names if we skip this
-        global_current_likelihood_data <- flepicommon::read_parquet_with_check(this_global_files[['llik_filename']])
-        global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
+        #global_current_likelihood_data <- flepicommon::read_parquet_with_check(this_global_files[['llik_filename']])
+        #global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
 
         global_current_likelihood_data$accept <- 0 # global acceptance decision (0/1), same for each geoID
         global_current_likelihood_data$accept_prob <- this_accept_prob
