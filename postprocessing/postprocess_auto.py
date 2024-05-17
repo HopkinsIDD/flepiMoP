@@ -291,8 +291,9 @@ def generate_pdf(
     except:
         pass
 
-
-    llik_filenames = get_all_filenames("llik", fs_results_path, finals_only=True, intermediates_only=False)
+    import gempyor.utils
+    llik_filenames = gempyor.utils.list_filenames(folder="model_output/", filters=["final", "llik" , ".parquet"])
+    #get_all_filenames("llik", fs_results_path, finals_only=True, intermediates_only=False)
     # In[7]:
     resultST = []
     for filename in llik_filenames:
