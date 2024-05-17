@@ -291,7 +291,39 @@ def generate_pdf(
     except:
         pass
 
-    # In[9]:
+
+    llik_filenames = get_all_filenames("llik", fs_results_path, finals_only=True, intermediates_only=False)
+    # In[7]:
+    resultST = []
+    for filename in llik_filenames:
+        slot = int(filename.split("/")[-1].split(".")[0])
+        df_raw = pq.read_table(filename).to_pandas()
+        df_raw["slot"] = slot
+        df_raw["filename"] = filename  # so it contains the /final/ filename
+        resultST.append(df_raw)
+
+    full_df = pd.concat(resultST).set_index(["slot"])
+    sorted_llik = full_df.groupby(["slot"]).sum().sort_values("ll", ascending=False)
+    fig, axes = plt.subplots(1, 1, figsize=(5, 10))
+    # ax = axes.flat[0]
+    ax = axes
+    ax.plot(sorted_llik["ll"].reset_index(drop=True), marker=".")
+    ax.set_xlabel("slot (sorted by llik)")
+    ax.set_ylabel("llik")
+    ax.set_title("llik by slot")
+    # vertical line at cutoff
+    # log scale in axes two:
+    # ax = axes.flat[1]
+    # ax.plot(sorted_llik["ll"].reset_index(drop=True))
+    # ax.set_xlabel("slot")
+    # ax.set_ylabel("llik")
+    # ax.set_title("llik by slot (log scale)")
+    # ax.set_yscale("log")
+    ## vertical line at cutoff
+    # ax.axvline(x=best_n, color="red", linestyle="--")
+    ax.grid()
+    plt.show()
+    plt.savefig("pplot/llik_by_slot.png")
 
     file_list = []
     # f or f in Path(str(".")).rglob(f"./pplot/*"): # this took all the files also very deep into subdirectories
