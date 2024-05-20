@@ -476,7 +476,7 @@ calibrate_outcome <- function(outcome_calibrations = NULL,
 
   calib_dates <- sort((lubridate::as_date(projection_date)-n_calib_days_end) - c(1, n_calib_days_start))
   outcome_calib_base <- gsub("incid|cum", "", outcome_calib)
-
+  
   # get gt to calibrate to
   if (weekly_outcome){
     gt_calib <- get_weekly_incid(gt_data %>% dplyr::select(date, subpop, USPS, !!sym(outcome_calib)) %>% mutate(sim_num = 0),
@@ -508,9 +508,10 @@ calibrate_outcome <- function(outcome_calibrations = NULL,
       mutate(inc_calib = value_gt / value) %>%
       group_by(USPS, location, outcome_name) %>%
       summarize(inc_calib = median(inc_calib, na.rm=TRUE)) %>%
-      as_tibble() %>%
-      dplyr::select(USPS, location, outcome_name, inc_calib)
 
+      as_tibble() %>% 
+      dplyr::select(USPS, location, outcome_name, inc_calib)
+    
     if (all(!is.na(calib_locs) & calib_locs!="all")){
       inc_calibrator$inc_calib[which(!(inc_calibrator$USPS %in% calib_locs))] <- 1
     }
@@ -1036,8 +1037,6 @@ process_sims <- function(
         save_reps = FALSE,
         n_samples_save = 300) {
 
-
-
     # SETUP -------------------------------------------------------------------
     # print(scenarios_all)
     print(scenarios_all[scenario_num])
@@ -1150,7 +1149,6 @@ process_sims <- function(
         stop("res_state not created.")
     }
 
-
     # # ~ Individual Sims & Likelihoods -----------------------------------------
     #
     # if (likelihood_prune) {
@@ -1253,17 +1251,6 @@ process_sims <- function(
     #
     # plot_samp = ifelse(smh_or_fch=="smh", plot_samp, FALSE)
     # if (plot_samp) {
-    #
-    #   gt_data_wUS <- gt_data %>%
-    #     bind_rows(gt_data %>%
-    #                 group_by())
-    #
-    #   plot_sims <- function(state_ = "MD", res_state_long=res_state_long, gt_data = gt_data_wUS, samp_=NULL){
-    #
-    #     if (is.null(samp_)){
-    #       samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
-    #     }
-    #
     #     print(
     #       cowplot::plot_grid(
     #         ggplot() +
@@ -1288,23 +1275,6 @@ process_sims <- function(
     #           ggplot(aes(x=date, y=value, color=sim_num)) +
     #           geom_line() + ggtitle(paste0(state_, " - incidI")),
     #         align="hv", axis = "lr", nrow=3))
-    #
-    #   }
-    #
-    #   states_ <- sort(unique(res_state_long$USPS))
-    #   pdf(file= paste0(opt$outdir, paste0("SampleSims_",opt$scenario,".pdf")))
-    #   samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
-    #   sapply(states_, plot_sims, res_state_long=res_state_long, gt_data = gt_data, samp_=samp_)
-    #   dev.off()
-    #
-    #   # samp_ <- sample(unique(res_state_long$sim_num), 10, replace=FALSE)
-    #   # plot_sims(state_ = "US", res_state_long=res_state_long, gt_data = gt_data, samp_)
-    #   plot_sims(state_ = "CA", res_state_long=res_state_long, gt_data = gt_data, samp_)
-    #   # plot_sims(state_ = "MD", res_state_long=res_state_long, gt_data = gt_data, samp_)
-    # }
-
-
-
     # GET SIM OUTCOMES -------------------------------------------------------------------
 
     use_obs_data_forcum <- ifelse(any(outcomes_cumfromgt),TRUE, FALSE)
@@ -1339,7 +1309,7 @@ process_sims <- function(
         if (length(outcomes_calib_weekly)>0 & n_calib_days_start>0){
             weekly_incid_sims_calibrations <- calibrate_outcome(outcome_calibrations = outcome_calibrations,
                                                                 outcome_calib = paste0("incid", outcomes_calib_weekly),
-                                                                calib_locs = calib_locs,
+                                                                calib_locs = calib_locs, 
                                                                 weekly_outcome = TRUE,
                                                                 n_calib_days_start = n_calib_days_start,
                                                                 n_calib_days_end = n_calib_days_end,
@@ -1408,7 +1378,7 @@ process_sims <- function(
     # ~ Daily Outcomes -----------------------------------------------------------
 
     if (any(outcomes_time_=="daily")) {
-
+        
         # Incident
         daily_incid_sims <- get_daily_incid(res_state, outcomes = outcomes_[outcomes_time_=="daily"])
         daily_incid_sims_formatted <- format_daily_outcomes(daily_incid_sims, point_est=0.5, opt)
