@@ -39,7 +39,7 @@ state_cw <- fips_us_county %>%
 # GROUND TRUTH ------------------------------------------------------------
 
 gt_data <- gt_data %>% 
-  mutate(time = lubridate::as_date(time)) %>% mutate(date = time)
+  mutate(date = lubridate::as_date(date)) %>%
 colnames(gt_data) <- gsub("incidI", "incidC", colnames(gt_data))
 gt_outcomes <- outcomes_[outcomes_ != "I" & sapply(X = paste0("incid", outcomes_), FUN = function(x=X, y) any(grepl(pattern = x, x = y)), y = colnames(gt_data)) ]
 outcomes_gt_ <- outcomes_[outcomes_ %in% gt_outcomes]
@@ -56,8 +56,8 @@ gt_data_2 <- gt_data_2 %>% mutate(cumH = 0) # incidH is only cumulative from sta
 gt_cl <- NULL
 if (any(outcomes_time_=="weekly")) {
   # Incident
-  gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
-  # gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
+  gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(date, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
+  # gt_data_st_week <- get_weekly_incid(gt_data %>% dplyr::select(date, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="weekly"])) %>% mutate(sim_num = 0),
                                       outcomes = outcomes_gt_[outcomes_time_gt_=="weekly"]) 
   
   # Cumulative
@@ -83,7 +83,7 @@ if (any(outcomes_time_=="weekly")) {
 }
 if (any(outcomes_time_=="daily")) {
   # Incident
-  gt_data_st_day <- get_daily_incid(gt_data %>% dplyr::select(time, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="daily"])) %>% mutate(sim_num = 0),
+  gt_data_st_day <- get_daily_incid(gt_data %>% dplyr::select(date, subpop, USPS, paste0("incid", outcomes_gt_[outcomes_time_gt_=="daily"])) %>% mutate(sim_num = 0),
                                     outcomes = outcomes_gt_[outcomes_time_gt_=="daily"]) 
   
   # Cumulative
@@ -109,7 +109,7 @@ if (any(outcomes_time_=="daily")) {
 
 
 # Remove incomplete weeks from ground truth #
-gt_cl <- gt_cl %>% rename(date = time)
+gt_cl <- gt_cl
 # if(!((max(gt_cl$date)-lubridate::days(7)) %in% unique(gt_cl$date))){
 #   dat_st_cl <- dat_st_cl %>% filter(date != max(date))
 # }

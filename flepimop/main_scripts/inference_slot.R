@@ -287,7 +287,7 @@ if (config$inference$do_inference){
   # function to calculate the likelihood when comparing simulation output (sim_hosp) to ground truth data
   likelihood_calculation_fun <- function(sim_hosp){
 
-    sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$time >= min(obs$date),sim_hosp$time <= max(obs$date))
+    sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$date >= min(obs$date),sim_hosp$date <= max(obs$date))
     lhs <- unique(sim_hosp[[obs_subpop]])
     rhs <- unique(names(data_stats))
     all_locations <- rhs[rhs %in% lhs]
@@ -414,21 +414,20 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
     ## python configuration: build simulator model specified in config
     tryCatch({
-      gempyor_inference_runner <- gempyor$GempyorSimulator(
-        config_path=opt$config,
-        seir_modifiers_scenario=seir_modifiers_scenario,
-        outcome_modifiers_scenario=outcome_modifiers_scenario,
+      gempyor_inference_runner <- gempyor$GempyorInference(
+        config_filepath=opt$config,
         stoch_traj_flag=opt$stoch_traj_flag,
         run_id=opt$run_id,
         prefix=reticulate::py_none(), # we let gempyor create setup prefix
         inference_filepath_suffix=global_intermediate_filepath_suffix,
-        inference_filename_prefix=slotblock_filename_prefix
+        inference_filename_prefix=slotblock_filename_prefix,
+        autowrite_seir = TRUE
       )
     }, error = function(e) {
-      print("GempyorSimulator failed to run (call on l. 405 of inference_slot.R).")
+      print("GempyorInference failed to run (call on l. 405 of inference_slot.R).")
       print("Here is all the debug information I could find:")
-      for(m in reticulate::py_last_error()) cat(m)
-      stop("GempyorSimulator failed to run... stopping")
+      for(m in reticulate::py_last_error()) print(m)
+      stop("GempyorInference failed to run... stopping")
     })
     setup_prefix <- gempyor_inference_runner$modinf$get_setup_name() # file name piece of the form [config$name]_[seir_modifier_scenario]_[outcome_modifier_scenario]
     print("gempyor_inference_runner created successfully.")
@@ -596,17 +595,16 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           load_ID=TRUE,
           sim_id2load=this_index)
       }, error = function(e) {
-        print("GempyorSimulator failed to run (call on l. 575 of inference_slot.R).")
+        print("GempyorInference failed to run (call on l. 575 of inference_slot.R).")
         print("Here is all the debug information I could find:")
-        for(m in reticulate::py_last_error()) cat(m)
-        stop("GempyorSimulator failed to run... stopping")
+        for(m in reticulate::py_last_error()) print(m)
+        stop("GempyorInference failed to run... stopping")
       })
 
       # run
       if (config$inference$do_inference){
         sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
-          dplyr::filter(time >= min(obs$date),time <= max(obs$date))
-
+          dplyr::filter(date >= min(obs$date),date <= max(obs$date))
         lhs <- unique(sim_hosp[[obs_subpop]])
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]
@@ -676,6 +674,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
         if ((opt$this_block == 1) && (last_accepted_index == 0)) {
           print("by default because it's the first iteration of a block 1")
+        } else {
+          # gempyor_inference_runner$write_last_seir(sim_id2write=this_index)
         }
         
         # delete previously accepted files if using a space saving option
@@ -741,8 +741,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         this_accept_prob <- exp(min(c(0, proposed_likelihood_total - global_current_likelihood_total)))
 
         #NOTE: Don't technically need the next 2 lines, as the values saved to memory are last accepted values, but confusing to track these variable names if we skip this
-        global_current_likelihood_data <- flepicommon::read_parquet_with_check(this_global_files[['llik_filename']])
-        global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
+        #global_current_likelihood_data <- flepicommon::read_parquet_with_check(this_global_files[['llik_filename']])
+        #global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
 
         global_current_likelihood_data$accept <- 0 # global acceptance decision (0/1), same for each geoID
         global_current_likelihood_data$accept_prob <- this_accept_prob

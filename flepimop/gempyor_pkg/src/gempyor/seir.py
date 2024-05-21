@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
+import xarray as xr
 
 from . import NPI, model_info, steps_rk4
-from .utils import Timer, aws_disk_diagnosis, read_df
+from .utils import Timer, print_disk_diagnosis, read_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,9 +43,8 @@ def build_step_source_arg(
         dt = 2.0
         logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
 
-
     ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
-    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type 
+    ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type
     ## is 32 bits." so upstream user need to specifcally cast everything to int64
     ## Somehow only mobility data is caseted by this function, but perhaps we should handle it all here ?
     assert type(modinf.mobility) == scipy.sparse.csr_matrix
@@ -136,7 +136,7 @@ def steps_SEIR(
     integration_method = fnct_args["integration_method"]
     fnct_args.pop("integration_method")
 
-    logging.info(f"Integrating with method {integration_method}")
+    logging.debug(f"Integrating with method {integration_method}")
 
     if integration_method == "legacy":
         seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
@@ -146,7 +146,7 @@ def steps_SEIR(
                 f"with method {integration_method}, only deterministic "
                 f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
             )
-        seir_sim = steps_rk4.rk4_integration(**fnct_args)
+        seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
         from .dev import steps as steps_experimental
 
@@ -181,7 +181,29 @@ def steps_SEIR(
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
             raise ValueError(f"Unknow integration scheme, got {integration_method}")
-    return seir_sim
+
+    # We return an xarray instead of a ndarray now
+    compartment_coords = {}
+    compartment_df = modinf.compartments.get_compartments_explicitDF()
+    # Iterate over columns of the DataFrame and populate the dictionary
+    for column in compartment_df.columns:
+        compartment_coords[column] = ("compartment", compartment_df[column].tolist())
+
+    # comparment is a dimension with coordinate from each of the compartments
+    states = xr.Dataset(
+        data_vars=dict(
+            prevalence=(["date", "compartment", "subpop"], seir_sim[0]),
+            incidence=(["date", "compartment", "subpop"], seir_sim[1]),
+        ),
+        coords=dict(
+            date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
+            **compartment_coords,
+            subpop=modinf.subpop_struct.subpop_names,
+        ),
+        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id),  # TODO add more information
+    )
+
+    return states
 
 
 def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
@@ -238,11 +260,11 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, setup=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, modinf=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, modinf=modinf)
         else:
-            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, setup=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, setup=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, modinf=modinf)
+            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, modinf=modinf)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
@@ -277,7 +299,8 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.postprocess"):
         if modinf.write_csv or modinf.write_parquet:
-            out_df = postprocess_and_write(sim_id2write, modinf, states, p_draw, npi, seeding_data)
+            write_spar_snpi(sim_id2write, modinf, p_draw, npi)
+            out_df = write_seir(sim_id2write, modinf, states)
     return out_df
 
 
@@ -306,11 +329,7 @@ def states2Df(modinf, states):
     # Tidyup data for  R, to save it:
     #
     # Write output to .snpi.*, .spar.*, and .seir.* files
-
-    (
-        states_prev,
-        states_incid,
-    ) = states  # both are [ndays x ncompartments x nspatial_nodes ]
+    # states is  # both are [ndays x ncompartments x nspatial_nodes ] -> this is important here
 
     # add line of zero to diff, so we get the real cumulative.
     # states_diff = np.zeros((states_cumu.shape[0] + 1, *states_cumu.shape[1:]))
@@ -323,7 +342,7 @@ def states2Df(modinf, states):
     )
     # prevalence data, we use multi.index dataframe, sparring us the array manipulation we use to do
     prev_df = pd.DataFrame(
-        data=states_prev.reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
+        data=states["prevalence"].to_numpy().reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
         columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
@@ -341,7 +360,7 @@ def states2Df(modinf, states):
     )
 
     incid_df = pd.DataFrame(
-        data=states_incid.reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
+        data=states["incidence"].to_numpy().reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
         columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
@@ -360,14 +379,16 @@ def states2Df(modinf, states):
     return out_df
 
 
-def postprocess_and_write(sim_id, modinf, states, p_draw, npi, seeding):
-    # aws_disk_diagnosis()
-
+def write_spar_snpi(sim_id, modinf, p_draw, npi):
     # NPIs
     if npi is not None:
         modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
     # Parameters
     modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
+
+
+def write_seir(sim_id, modinf, states):
+    # print_disk_diagnosis()
     out_df = states2Df(modinf, states)
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
 

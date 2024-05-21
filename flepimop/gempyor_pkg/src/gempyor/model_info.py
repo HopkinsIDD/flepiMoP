@@ -1,9 +1,19 @@
 import pandas as pd
-import datetime, os, logging, pathlib
+import datetime, os, logging, pathlib, confuse
 from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
 from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
+
+
+class TimeSetup:
+    def __init__(self, config: confuse.ConfigView):
+        self.ti = config["start_date"].as_date()
+        self.tf = config["end_date"].as_date()
+        if self.tf <= self.ti:
+            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+        self.n_days = (self.tf - self.ti).days + 1
+        self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
 
 
 class ModelInfo:
@@ -30,7 +40,7 @@ class ModelInfo:
         nslots=1,
         seir_modifiers_scenario=None,
         outcome_modifiers_scenario=None,
-        spatial_path_prefix="",
+        path_prefix="",
         write_csv=False,
         write_parquet=False,
         first_sim_index=1,
@@ -42,6 +52,7 @@ class ModelInfo:
         inference_filename_prefix="",
         inference_filepath_suffix="",
         setup_name=None,  # override config setup_name
+        config_filepath="",
     ):
         self.nslots = nslots
         self.write_csv = write_csv
@@ -54,9 +65,11 @@ class ModelInfo:
 
         # Auto-detect old config
         if config["interventions"].exists():
-            raise ValueError("""This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
+            raise ValueError(
+                """This config has an intervention section, and has been written for a previous version of flepiMoP/COVIDScenarioPipeline \
                              Please use flepiMoP Version 1.1 (Commit SHA: 0c30c23937dd496d33c2b9fa7c6edb198ad80dac) to run this config. \
-                             (use git checkout v1.1 inside the flepiMoP directory)""")
+                             (use git checkout v1.1 inside the flepiMoP directory)"""
+            )
 
         # 1. Create a setup name that contains every scenario.
         if setup_name is None:
@@ -69,32 +82,31 @@ class ModelInfo:
             self.setup_name = setup_name
 
         # 2. What about time:
-        self.ti = config["start_date"].as_date()  ## we start at 00:00 on ti
-        self.tf = config["end_date"].as_date()  ## we end on 23:59 on tf
-        if self.tf <= self.ti:
-            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
-        self.n_days = (self.tf - self.ti).days + 1  # because we include ti and tf
+        # Maybe group time_setup and subpop_struct into one argument for classes
+        # make the import object first level attributes
+        self.time_setup = TimeSetup(config)
+        self.ti = self.time_setup.ti
+        self.tf = self.time_setup.tf
+        self.n_days = self.time_setup.n_days
+        self.dates = self.time_setup.dates
 
         # 3. What about subpopulations
-        spatial_config = config["subpop_setup"]
-        if config["data_path"].exists():
+        subpop_config = config["subpop_setup"]
+        if "data_path" in config:
             raise ValueError("The config has a data_path section. This is no longer supported.")
-        spatial_base_path = pathlib.Path(spatial_path_prefix)
+        self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=config["setup_name"].get(),
-            geodata_file=spatial_base_path / spatial_config["geodata"].get(),
-            mobility_file=spatial_base_path / spatial_config["mobility"].get()
-            if spatial_config["mobility"].exists()
-            else None,
-            subpop_pop_key="population",
-            subpop_names_key="subpop",
+            subpop_config=subpop_config,
+            path_prefix=self.path_prefix,
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
         self.mobility = self.subpop_struct.mobility
 
         # 4. the SEIR structure
+        self.seir_config = None
         if config["seir"].exists():
             self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
@@ -115,9 +127,12 @@ class ModelInfo:
                 ti=self.ti,
                 tf=self.tf,
                 subpop_names=self.subpop_struct.subpop_names,
+                path_prefix=self.path_prefix,
             )
-            self.seeding = seeding.SeedingFactory(config = self.seeding_config)
-            self.initial_conditions = initial_conditions.InitialConditionsFactory(config = self.initial_conditions_config)
+            self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=self.path_prefix)
+            self.initial_conditions = initial_conditions.InitialConditionsFactory(
+                config=self.initial_conditions_config, path_prefix=self.path_prefix
+            )
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
@@ -146,8 +161,8 @@ class ModelInfo:
             logging.critical("Running ModelInfo without SEIR")
 
         # 5. Outcomes
-        if config["outcomes"].exists():
-            self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        if self.outcomes_config is not None:
             self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
@@ -218,8 +233,10 @@ class ModelInfo:
             elif self.write_csv:
                 self.extension = "csv"
 
+        self.config_filepath = config_filepath  # useful for plugins
+
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
-        return self.get_filename(
+        return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=True,
@@ -227,7 +244,7 @@ class ModelInfo:
         )
 
     def get_output_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
-        return self.get_filename(
+        return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
             input=False,
@@ -249,7 +266,7 @@ class ModelInfo:
             run_id = self.out_run_id
             prefix = self.out_prefix
 
-        fn = file_paths.create_file_name(
+        fn = self.path_prefix / file_paths.create_file_name(
             run_id=run_id,
             prefix=prefix,
             index=sim_id + self.first_sim_index - 1,
@@ -287,6 +304,9 @@ class ModelInfo:
             input=input,
             extension_override=extension_override,
         )
+        # create the directory if it does exists:
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+
         # print(f"Writing {fname}")
         write_df(
             fname=fname,
