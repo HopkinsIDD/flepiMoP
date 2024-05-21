@@ -143,7 +143,8 @@ def copy_path(src, dst):
 
 file_types = [
     "llik",
-    "seed",
+    #"seed",
+    "init",
     "snpi",
     "hnpi",
     "spar",
