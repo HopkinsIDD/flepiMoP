@@ -110,8 +110,8 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
                                                                                                         extension='$extension'))")
     # in filename is always a seir file
     export IN_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_CONTINUATION_RUN_ID',
-                                                                                                        prefix='$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID'
-                                                                                                        inference_filepath_suffix='/global/final',
+                                                                                                        prefix='$FLEPI_PREFIX/$FLEPI_CONTINUATION_RUN_ID',
+                                                                                                        inference_filepath_suffix='global/final',
                                                                                                         index=$FLEPI_SLOT_INDEX,
                                                                                                         ftype='seir',
                                                                                                         extension='$extension'))")
@@ -128,6 +128,7 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     else
         echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $INIT_FILENAME)"
     fi
+    #Rscript R/scripts/init_R18_resume_highrisk.R --config $CONFIG_PATH --init_filename_raw $INIT_FILENAME --init_filename_post $INIT_FILENAME
     #Rscript $FLEPI_PATH/flepimop/main_scripts/seir_init_immuneladder.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
     #Rscript $FLEPI_PATH/preprocessing/seir_init_immuneladder_r17phase3_preOm.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
 fi

@@ -1146,7 +1146,7 @@ daily_mean_reduction <- function(dat,
         ) %>%
         dplyr::select(USPS, subpop, start_date, end_date, mean)
     
-    timeline <- tidyr::crossing(time = seq(from=min(dat$start_date), to=max(dat$end_date), by = 1),
+    timeline <- tidyr::crossing(date = seq(from=min(dat$start_date), to=max(dat$end_date), by = 1),
                                 subpop = unique(dat$subpop))
     
     if(any(stringr::str_detect(dat$subpop, '", "'))){
@@ -1175,12 +1175,12 @@ daily_mean_reduction <- function(dat,
         dplyr::select(subpop, start_date, end_date, mean) %>%
         dplyr::bind_rows(dat %>% dplyr::filter(subpop!="all") %>% dplyr::ungroup() %>% dplyr::select(-USPS)) %>%
         dplyr::left_join(timeline) %>%
-        dplyr::filter(time >= start_date & time <= end_date) %>%
-        dplyr::group_by(subpop, time) %>%
+        dplyr::filter(date >= start_date & date <= end_date) %>%
+        dplyr::group_by(subpop, date) %>%
         dplyr::summarize(mean = prod(1-mean))
     
     if(plot){
-        dat<- ggplot2::ggplot(data= dat, ggplot2::aes(x=time, y=mean))+
+        dat<- ggplot2::ggplot(data= dat, ggplot2::aes(x=date, y=mean))+
             ggplot2::geom_line()+
             ggplot2::facet_wrap(~subpop)+
             ggplot2::theme_bw()+

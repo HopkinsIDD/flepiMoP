@@ -1,6 +1,7 @@
 import itertools
 import time, random
 from numba import jit
+import xarray as xr
 import numpy as np
 import pandas as pd
 import tqdm.contrib.concurrent
@@ -8,6 +9,7 @@ from .utils import config, Timer, read_df
 import pyarrow as pa
 import pandas as pd
 from . import NPI, model_info
+
 
 import logging
 
@@ -127,7 +129,7 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         if modinf.outcomes_config["param_from_file"].exists():
             if modinf.outcomes_config["param_from_file"].get():
                 # Load the actual csv file
-                branching_file = modinf.outcomes_config["param_subpop_file"].as_str()
+                branching_file = modinf.path_prefix / modinf.outcomes_config["param_subpop_file"].as_str()
                 branching_data = pa.parquet.read_table(branching_file).to_pandas()
                 if "relative_probability" not in list(branching_data["quantity"]):
                     raise ValueError(
@@ -254,19 +256,19 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
 def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi, write=True):
     if write:
         # ADDED CODE
-        #outcomes_df = outcomes_df.set_index("date")
-        #reg = .8
-        #mult=3
-        #print("reg is", reg)
-        #for sp in outcomes_df["subpop"].unique():
-        #    max_fit = outcomes_df[outcomes_df["subpop"]==sp]["incidC"][:"2024-04-08"].max()*reg     # HERE MULTIPLIED BY A REG factor: .9
-        #    max_summer = outcomes_df[outcomes_df["subpop"]==sp]["incidC"]["2024-04-08":"2024-09-30"].max()  
-        #    if max_summer > max_fit:
-        #        print(f"changing {sp} because max_summer max_summer={max_summer:.1f} > reg*max_fit={max_fit:.1f}, diff {max_fit/max_summer*100:.1f}%")
-        #        print(f">>> MULT BY {max_summer/max_fit*mult:2f}")
-        #        outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]] = outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]]*max_summer/max_fit*mult
+        outcomes_df = outcomes_df.set_index("date")
+        reg = .8
+        mult=3
+        print("reg is", reg)
+        for sp in outcomes_df["subpop"].unique():
+            max_fit = outcomes_df[outcomes_df["subpop"]==sp]["incidC"][:"2024-04-08"].max()*reg     # HERE MULTIPLIED BY A REG factor: .9
+            max_summer = outcomes_df[outcomes_df["subpop"]==sp]["incidC"]["2024-04-08":"2024-09-30"].max()  
+            if max_summer > max_fit:
+                print(f"changing {sp} because max_summer max_summer={max_summer:.1f} > reg*max_fit={max_fit:.1f}, diff {max_fit/max_summer*100:.1f}%")
+                print(f">>> MULT BY {max_summer/max_fit*mult:2f}")
+                outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]] = outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]]*max_summer/max_fit*mult
 
-        #outcomes_df = outcomes_df.reset_index()
+        outcomes_df = outcomes_df.reset_index()
         # END ADDED CODE; DELETE THIS PATCH
         modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
         modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
@@ -284,10 +286,10 @@ def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi, write=True):
         )
     else:
         hnpi = npi.getReductionDF()
-    modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
+    if write:
+        modinf.write_simID(ftype="hnpi", sim_id=sim_id, df=hnpi)
 
     return outcomes_df, hpar, hnpi
-
 
 
 def dataframe_from_array(data, subpops, dates, comp_name):
@@ -309,7 +311,16 @@ def read_seir_sim(modinf, sim_id):
     return seir_df
 
 
-def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values=None, npi=None, bypass_seir=None):
+def compute_all_multioutcomes(
+    *,
+    modinf,
+    sim_id2write,
+    parameters,
+    loaded_values=None,
+    npi=None,
+    bypass_seir_df: pd.DataFrame = None,
+    bypass_seir_xr: xr.Dataset = None,
+):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
     hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
     all_data = {}
@@ -321,10 +332,12 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
         dates,
         "zeros",
     ).drop("zeros", axis=1)
-    if bypass_seir is None:
+    if bypass_seir_df is None and bypass_seir_xr is None:
         seir_sim = read_seir_sim(modinf, sim_id=sim_id2write)
+    elif bypass_seir_xr is not None:
+        seir_sim = bypass_seir_xr
     else:
-        seir_sim = bypass_seir
+        seir_sim = bypass_seir_df
 
     for new_comp in parameters:
         if "source" in parameters[new_comp]:
@@ -333,13 +346,32 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
             # 2. compute duration if needed
             source_name = parameters[new_comp]["source"]
             if isinstance(source_name, dict):
-                source_array = get_filtered_incidI(diffI=seir_sim, dates=dates, subpops=modinf.subpop_struct.subpop_names, filters=source_name, outcome_name=new_comp)
+                if isinstance(seir_sim, pd.DataFrame):
+                    source_array = filter_seir_df(
+                        diffI=seir_sim,
+                        dates=dates,
+                        subpops=modinf.subpop_struct.subpop_names,
+                        filters=source_name,
+                        outcome_name=new_comp,
+                    )
+                elif isinstance(seir_sim, xr.Dataset):
+                    source_array = filter_seir_xr(
+                        diffI=seir_sim,
+                        dates=dates,
+                        subpops=modinf.subpop_struct.subpop_names,
+                        filters=source_name,
+                        outcome_name=new_comp,
+                    )
+                else:
+                    raise ValueError(f"Unknown type for seir simulation provided, got f{type(seir_sim)}")
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 if source_name in all_data:
                     source_array = all_data[source_name]
                 else:
-                    raise ValueError(f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes.")
+                    raise ValueError(
+                        f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes."
+                    )
 
             if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
                 ## This may be unnecessary
@@ -493,19 +525,21 @@ def compute_all_multioutcomes(*, modinf, sim_id2write, parameters, loaded_values
     return outcomes, hpar
 
 
-def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
+def filter_seir_df(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
     if list(filters.keys()) == ["incidence"]:
         vtype = "incidence"
     elif list(filters.keys()) == ["prevalence"]:
         vtype = "prevalence"
     else:
-        raise ValueError(f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'.")
+        raise ValueError(
+            f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'."
+        )
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
     # diffI.drop(["mc_value_type"], inplace=True, axis=1)
     filters = filters[vtype]
 
-    incidI_arr = np.zeros((len(dates), len(subpops)), dtype=int)
+    incidI_arr = np.zeros((len(dates), len(subpops)))
     df = diffI
     for mc_type, mc_value in filters.items():
         if isinstance(mc_value, str):
@@ -517,6 +551,36 @@ def get_filtered_incidI(diffI, dates, subpops, filters, outcome_name):
         # new_df = new_df.drop("date", axis=1)
         incidI_arr = incidI_arr + new_df.to_numpy()
     return incidI_arr
+
+
+def filter_seir_xr(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
+    # Determine the variable type (prevalence or incidence)
+    if list(filters.keys()) == ["incidence"]:
+        vtype = "incidence"
+    elif list(filters.keys()) == ["prevalence"]:
+        vtype = "prevalence"
+    else:
+        raise ValueError(
+            f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'."
+        )
+    # Filter the data
+    filters = filters[vtype]
+
+    # Initialize the array to store filtered incidence values
+    # Initialize the array to store filtered incidence values
+    incidI_arr = np.zeros((len(dates), len(subpops)))
+
+    diffI_filtered = diffI
+    for mc_type, mc_value in filters.items():
+        # Check if mc_value is a string or list of strings
+        if isinstance(mc_value, str):
+            mc_value = [mc_value]
+        # Filter data along the specified mc_type dimension
+        diffI_filtered = diffI_filtered.where(diffI_filtered[f"mc_{mc_type}"].isin(mc_value), drop=True)
+    # Sum along the compartment dimension
+    incidI_arr += diffI_filtered[vtype].sum(dim="compartment")
+
+    return incidI_arr.to_numpy()
 
 
 @jit(nopython=True)
