@@ -28,8 +28,8 @@ class SubpopSetupConfig(BaseModel):
 
 class InitialConditionsConfig(BaseModel):
     method: Annotated[str, AfterValidator(partial(allowed_values, values=['Default', 'SetInitialConditions', 'SetInitialConditionsFolderDraw', 'InitialConditionsFolderDraw', 'FromFile', 'plugin']))] = 'Default'
-    initial_file_type: Optional[str]
-    initial_conditions_file: Annotated[str, AfterValidator(partial(allowed_values, values=['Default', 'SetInitialConditions', 'SetInitialConditionsFolderDraw', 'InitialConditionsFolderDraw', 'FromFile']))] = None
+    initial_file_type: Optional[str] = None
+    initial_conditions_file: Optional[str] = None
     proportional: Optional[bool] = None
     allow_missing_subpops: Optional[bool] = None
     allow_missing_compartments: Optional[bool] = None
@@ -42,9 +42,9 @@ class InitialConditionsConfig(BaseModel):
         initial_conditions_file = values.get('initial_conditions_file')
         initial_file_type = values.get('initial_file_type')        
         if method in {'FromFile', 'SetInitialConditions'} and not initial_conditions_file:
-            raise ValueError('An initial_conditions_file is required when method is FromFile')
+            raise ValueError(f'Error in InitialConditions: An initial_conditions_file is required when method is {method}')
         if method in {'InitialConditionsFolderDraw','SetInitialConditionsFolderDraw'} and not initial_file_type:
-            raise ValueError('initial_file_type is required when method is InitialConditionsFolderDraw')
+            raise ValueError(f'Error in InitialConditions: initial_file_type is required when method is {method}')
         return values
     
     @model_validator(mode='before')
@@ -52,20 +52,37 @@ class InitialConditionsConfig(BaseModel):
         method = values.get('method')
         plugin_file_path = values.get('plugin_file_path')   
         if method == 'plugin' and not plugin_file_path:
-            raise ValueError('a plugin file path is required when method is plugin')
+            raise ValueError('Error in InitialConditions: a plugin file path is required when method is plugin')
         return values
 
 
 class SeedingConfig(BaseModel):
-    method: Annotated[str, AfterValidator(partial(allowed_values, values=['NoSeeding', 'NegativeBinomialDistributed', 'PoissonDistributed', 'FolderDraw', 'FromFile', 'plugin']))] = 'NoSeeding'
+    method: Annotated[str, AfterValidator(partial(allowed_values, values=['NoSeeding', 'PoissonDistributed', 'FolderDraw', 'FromFile', 'plugin']))] = 'NoSeeding' # note: removed NegativeBinomialDistributed because no longer supported
+    lambda_file: Optional[str] = None
+    seeding_file_type: Optional[str] = None
+    seeding_file: Optional[str] = None
     plugin_file_path: Optional[str] = None
 
+    @model_validator(mode='before')
+    def validate_seedingfile(cls, values):
+        method = values.get('method')
+        lambda_file = values.get('lambda_file')
+        seeding_file_type = values.get('seeding_file_type')        
+        seeding_file = values.get('seeding_file')        
+        if method == 'PoissonDistributed' and not lambda_file:
+            raise ValueError(f'Error in Seeding: A lambda_file is required when method is {method}')
+        if method == 'FolderDraw' and not seeding_file_type:
+            raise ValueError('Error in Seeding: A seeding_file_type is required when method is FolderDraw')
+        if method == 'FromFile' and not seeding_file:
+            raise ValueError('Error in Seeding: A seeding_file is required when method is FromFile')
+        return values
+    
     @model_validator(mode='before')
     def plugin_filecheck(cls, values):
         method = values.get('method')
         plugin_file_path = values.get('plugin_file_path')   
         if method == 'plugin' and not plugin_file_path:
-            raise ValueError('a plugin file path is required when method is plugin')
+            raise ValueError('Error in Seeding: a plugin file path is required when method is plugin')
         return values
     
 class IntegrationConfig(BaseModel):
@@ -74,12 +91,11 @@ class IntegrationConfig(BaseModel):
 
 class ValueConfig(BaseModel):
     distribution: str = 'fixed'
-    value: Optional[float] = None
+    value: Optional[float] = None # NEED TO ADD ABILITY TO PARSE PARAMETERS
     mean: Optional[float] = None
     sd: Optional[float] = None
     a: Optional[float] = None
     b: Optional[float] = None
-    # NEED TO ADD ABILITY TO PARSE PARAMETERS
 
     @model_validator(mode='before')
     def check_distr(cls, values):
@@ -91,13 +107,17 @@ class ValueConfig(BaseModel):
         b = values.get('b')
         if distr != 'fixed':
             if not mean and not sd:
-                raise ValueError('mean and sd must be provided for non-fixed distributions')
+                raise ValueError('Error in value: mean and sd must be provided for non-fixed distributions')
             if distr == 'truncnorm' and not a and not b:
-                raise ValueError('a and b must be provided for truncated normal distributions')
+                raise ValueError('Error in value: a and b must be provided for truncated normal distributions')
+        if distr == 'fixed' and not value:
+            raise ValueError('Error in value: value must be provided for fixed distributions')
         return values
 
 class BaseParameterConfig(BaseModel):
     value: Optional[ValueConfig] = None
+    modifier_parameter: Optional[str] = None
+    name: Optional[str] = None # this is only for outcomes, to build outcome_prevalence_name (how to restrict this?)
 
 class SeirParameterConfig(BaseParameterConfig):
     value: Optional[ValueConfig] = None
@@ -107,10 +127,10 @@ class SeirParameterConfig(BaseParameterConfig):
 
     @model_validator(mode='before')
     def which_value(cls, values):
-        value = values.get('value')
-        timeseries = values.get('timeseries')
+        value = values.get('value') is not None
+        timeseries = values.get('timeseries') is not None
         if value and timeseries:
-            raise ValueError('your parameter is both a timeseries and a value, please choose one')
+            raise ValueError('Error in seir::parameters: your parameter is both a timeseries and a value, please choose one')
         return values
     
     
@@ -118,12 +138,13 @@ class TransitionConfig(BaseModel):
     # !! sometimes these are lists of lists and sometimes they are lists... how to deal with this?
     source: List[List[str]]
     destination: List[List[str]]
+    rate: List[List[str]]
     proportion_exponent: List[List[str]]
     proportional_to: List[str]
 
 class SeirConfig(BaseModel):
     integration: IntegrationConfig # is this Optional?
-    parameters: Dict[str, SeirParameterConfig]
+    parameters: Dict[str, SeirParameterConfig] # there was a previous issue that gempyor doesn't work if there are no parameters (eg if just numbers are used in the transitions) - do we want to get around this?
     transitions: List[TransitionConfig]
 
 class SinglePeriodModifierConfig(BaseModel):
@@ -142,15 +163,13 @@ class MultiPeriodDatesConfig(BaseModel):
     
 class MultiPeriodGroupsConfig(BaseModel):
     subpop: List[str]
+    subpop_groups: Optional[str] = None
     periods: List[MultiPeriodDatesConfig]
 
 class MultiPeriodModifierConfig(BaseModel):
     method: Literal["MultiPeriodModifier"]
     parameter: str
     groups: List[MultiPeriodGroupsConfig]
-    period_start_date: date
-    period_end_date: date
-    subpop: str
     value: ValueConfig
     perturbation: Optional[ValueConfig] = None
 
@@ -162,7 +181,7 @@ class ModifiersConfig(BaseModel):
     scenarios: List[str]
     modifiers: Dict[str, Any]
     
-    @validator("modifiers")
+    @field_validator("modifiers")
     def validate_data_dict(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         errors = []
         for key, entry in value.items():
@@ -170,29 +189,37 @@ class ModifiersConfig(BaseModel):
             if method not in {"SinglePeriodModifier", "MultiPeriodModifier", "StackedModifier"}:
                 errors.append(f"Invalid modifier method: {method}")
         if errors:
-            raise ValueError("Errors in dictionary entries:\n" + "\n".join(errors))
+            raise ValueError("Errors in modifiers:\n" + "\n".join(errors))
         return value
 
 
-class SourceConfig(BaseModel): # i think this can be incidence or prevalence, or any other source name? (this one is maybe a bit complicated to validate...)
-    incidence: Dict[str, str]
-    # TO FIX
+class SourceConfig(BaseModel): # set up only for incidence or prevalence. Can this be any name? i don't think so atm
+    incidence: Dict[str, str] = None
+    prevalence: Dict[str, str] = None 
+    # note: these dictionaries have to have compartment names... more complicated to set this up
 
-    def get_source_names(self):
-        source_names = []
-        for key in self.incidence:
-            source_names.append(key)
-        return source_names  # Access keys using a loop
+    @model_validator(mode='before')
+    def which_source(cls, values):
+        incidence = values.get('incidence')
+        prevalence = values.get('prevalence')
+        if incidence and prevalence:
+            raise ValueError('Error in outcomes::source. Can only be incidence or prevalence, not both.')
+        return values
+
+    # @model_validator(mode='before') # DOES NOT WORK
     # def get_source_names(self):
-    #     return self.incidence.keys()
+    #     source_names = []
+    #     type = self.incidence or self.prevalence
+    #     for key in type:
+    #         source_names.append(key)
+    #     return source_names  # Access keys using a loop
 
 class DelayFrameConfig(BaseModel):
     source: Optional[SourceConfig] = None
     probability: Optional[BaseParameterConfig] = None
     delay: Optional[BaseParameterConfig] = None
     duration: Optional[BaseParameterConfig] = None
-    name: Optional[str] = None
-    sum: Optional[List[str]] = None
+    sum: Optional[List[str]] = None # only for sums of other outcomes
 
     # @validator("sum")
     # def validate_sum_elements(cls, value: Optional[List[str]]) -> Optional[List[str]]:
@@ -204,7 +231,7 @@ class DelayFrameConfig(BaseModel):
     #     if invalid_elements:
     #         raise ValueError(f"Invalid elements in 'sum': {', '.join(invalid_elements)} not found in source names")
     #     return value
-    # NOTE: ^^ this doesn't work yet because it needs to somehow be a level above? to access all OTHER source names
+    # note: ^^ this doesn't work yet because it needs to somehow be a level above? to access all OTHER source names
 
     @model_validator(mode='before')
     def check_outcome_type(cls, values):
@@ -216,44 +243,54 @@ class DelayFrameConfig(BaseModel):
         elif not sum_present and not source_present:
             raise ValueError(f"Error in outcome: Neither 'sum' nor 'source' is present. Choose one.")
         return values
-    
 
 class OutcomesConfig(BaseModel):
     method: Literal["delayframe"] # Is this required? I don't see it anywhere in the gempyor code
+    param_from_file: Optional[bool] = None
+    param_subpop_file: Optional[str] = None
     outcomes: Dict[str, DelayFrameConfig]
+    
+    @model_validator(mode='before')
+    def check_paramfromfile_type(cls, values):
+        param_from_file = values.get('param_from_file') is not None
+        param_subpop_file = values.get('param_subpop_file') is not None
+
+        if param_from_file and not param_subpop_file:
+            raise ValueError(f"Error in outcome: 'param_subpop_file' is required when 'param_from_file' is True")
+        return values
 
 class ResampleConfig(BaseModel):
-    aggregator: str
-    freq: str
-    skipna: bool = False
+    aggregator: Optional[str] = None
+    freq: Optional[str] = None
+    skipna: Optional[bool] = False
 
 class LikelihoodParams(BaseModel):
     scale: float
     # are there other options here?
 
+class LikelihoodReg(BaseModel):
+    name: str 
+
 class LikelihoodConfig(BaseModel):
-    dist: str
+    dist: Annotated[str, AfterValidator(partial(allowed_values, values=['pois', 'norm', 'norm_cov', 'nbinom', 'rmse', 'absolute_error']))] = None
     params: Optional[LikelihoodParams] = None
 
 class StatisticsConfig(BaseModel):
     name: str
     sim_var: str
     data_var: str
-    aggregator: Optional[str] = None
-    period: Optional[str] = None
-    remove_na: Optional[bool] = None
-    add_one: Optional[bool] = None
-    # resample: Optional[ResampleConfig] = None
-    # zero_to_one: Optional[bool] = False # is this the same as add_one? remove_na?
+    regularize: Optional[LikelihoodReg] = None
+    resample: Optional[ResampleConfig] = None
+    scale: Optional[float] = None # is scale here or at likelihood level?
+    zero_to_one: Optional[bool] = False # is this the same as add_one? remove_na?
     likelihood: LikelihoodConfig
 
 class InferenceConfig(BaseModel):
-    method: Optional[str] = None # for now - i can only see emcee as an option here, otherwise ignored in classical - need to add these options
+    method: Annotated[str, AfterValidator(partial(allowed_values, values=['emcee', 'default', 'classical']))] = 'default' # for now - i can only see emcee as an option here, otherwise ignored in classical - need to add these options
     iterations_per_slot: Optional[int] # i think this is optional because it is also set in command line??
     do_inference: bool 
     gt_data_path: str
     statistics: Dict[str, StatisticsConfig]
-    # Need to determine here what is needed in classical vs other applications
 
 class CheckConfig(BaseModel):
     name: str
@@ -264,6 +301,7 @@ class CheckConfig(BaseModel):
     start_date_groundtruth: Optional[date] = None
     end_date_groundtruth: Optional[date] = None
     nslots: Optional[int] = 1
+
     subpop_setup: SubpopSetupConfig
     compartments: Dict[str, List[str]]
     initial_conditions: Optional[InitialConditionsConfig] = None
@@ -303,4 +341,3 @@ class CheckConfig(BaseModel):
         if not init or seed:
             raise ValueError('either initial_conditions or seeding must be provided')
         return values
-    
