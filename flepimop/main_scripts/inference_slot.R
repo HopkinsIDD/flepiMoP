@@ -56,8 +56,6 @@ option_list = list(
   optparse::make_option(c("-a", "--incl_aggr_likelihood"), action = "store", default = Sys.getenv("INCL_AGGR_LIKELIHOOD", TRUE), type = 'logical', help = 'Should the likelihood be calculated with the aggregate estiamtes.')
 )
 
-
-
 parser=optparse::OptionParser(option_list=option_list)
 opt = optparse::parse_args(parser)
 
@@ -93,12 +91,10 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-
 if (!is.null(config$inference$incl_aggr_likelihood)){
     print("Using config option for `incl_aggr_likelihood`.")
     opt$incl_aggr_likelihood <- config$inference$incl_aggr_likelihood
 }
-
 
 ## Check for errors in config ---------------------------------------------------------------------
 
@@ -642,7 +638,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
               dplyr::mutate(!!obs_nodename := "Total")
               )
           }
-
+          
         lhs <- unique(sim_hosp[[obs_subpop]])
         rhs <- unique(names(data_stats))
         all_locations <- rhs[rhs %in% lhs]

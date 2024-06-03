@@ -19,7 +19,8 @@ NULL
 load_geodata_file <- function(filename,
                               geoid_len = 0,
                               geoid_pad = "0",
-                              state_name = TRUE) {
+                              state_name = TRUE,
+                              flepi_path = "flepiMoP") {
 
     if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
     geodata <- readr::read_csv(filename) %>%
