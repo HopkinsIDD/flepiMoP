@@ -268,8 +268,7 @@ geodata <- flepicommon::load_geodata_file(
     file.path(config$subpop_setup$geodata),
     5,
     "0",
-    TRUE,
-    flepi_path = opt$flepi_path
+    TRUE
 )
 
 all_subpop <- geodata[[config$subpop_setup$subpop]]
