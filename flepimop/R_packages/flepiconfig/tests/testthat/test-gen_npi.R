@@ -10,7 +10,7 @@ generate_processed <- function(geodata_path,
                                outcomes_path
                                ){
     temp_name <- tempfile()
-    geodata <- load_geodata_file(filename = geodata_path, flepi_path = "../flepiMoP")
+    geodata <- load_geodata_file(filename = geodata_path)
 
     npi_dat <- process_npi_shub(intervention_path = intervention_path,
                                 geodata)
