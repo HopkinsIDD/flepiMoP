@@ -28,22 +28,57 @@ class Compartments:
             raise ValueError("Compartments object not set, no config or file provided")
         return
 
+
+
+    def constructFromConfig(self, seir_config, compartment_config):
+        """ 
+        This method is called by the constructor if the compartments are not loaded from a file.
+        It will parse the compartments and transitions from the configuration files.
+        It will populate self.compartments and self.transitions.
+        """
+        self.compartments = self.parse_compartments(seir_config, compartment_config)
+        self.transitions = self.parse_transitions(seir_config, False)
+
     def __eq__(self, other):
         return (self.transitions == other.transitions).all().all() and (
             self.compartments == other.compartments
         ).all().all()
 
     def parse_compartments(self, seir_config, compartment_config):
-        compartment_frame = None
+        """ Parse the compartments from the configuration file:
+        seir_config: the configuration file for the SEIR model
+        compartment_config: the configuration file for the compartments
+        Example: if config says:
+        ```
+        compartments:
+            infection_stage: ["S", "E", "I", "R"]
+            vaccination_stage: ["vaccinated", "unvaccinated"]
+        ```
+        compartment_df is:
+        ```
+            infection_stage vaccination_stage         name
+        0               S        vaccinated    S_vaccinated
+        1               S      unvaccinated  S_unvaccinated
+        2               E        vaccinated    E_vaccinated
+        3               E      unvaccinated  E_unvaccinated
+        4               I        vaccinated    I_vaccinated
+        5               I      unvaccinated  I_unvaccinated
+        6               R        vaccinated    R_vaccinated
+        7               R      unvaccinated  R_unvaccinated
+        ```
+        TODO: add tests
+        """
+
+        compartment_df = None
         for compartment_name, compartment_value in compartment_config.get().items():
             tmp = pd.DataFrame({"key": 1, compartment_name: compartment_value})
-            if compartment_frame is None:
-                compartment_frame = tmp
+            if compartment_df is None:
+                compartment_df = tmp
             else:
-                compartment_frame = pd.merge(compartment_frame, tmp, on="key")
-        compartment_frame = compartment_frame.drop(["key"], axis=1)
-        compartment_frame["name"] = compartment_frame.apply(lambda x: reduce(lambda a, b: a + "_" + b, x), axis=1)
-        self.compartments = compartment_frame
+                compartment_df = pd.merge(compartment_df, tmp, on="key")
+        compartment_df = compartment_df.drop(["key"], axis=1)
+        compartment_df["name"] = compartment_df.apply(lambda x: reduce(lambda a, b: a + "_" + b, x), axis=1)
+        return compartment_df
 
     def parse_transitions(self, seir_config, fake_config=False):
         rc = reduce(
@@ -71,6 +106,8 @@ class Compartments:
     def expand_transition_elements(self, single_transition_config, problem_dimension):
         proportion_size = get_list_dimension(single_transition_config["proportional_to"])
         new_transition_config = single_transition_config.copy()
+
+        # replace "source" by the actual source from the config
         for p_idx in range(proportion_size):
             if new_transition_config["proportional_to"][p_idx] == "source":
                 new_transition_config["proportional_to"][p_idx] = new_transition_config["source"]
@@ -84,7 +121,7 @@ class Compartments:
         new_transition_config["proportional_to"] = np.zeros(problem_dimension, dtype=object)
         new_transition_config["proportion_exponent"] = np.zeros(problem_dimension, dtype=object)
 
-        it = np.nditer(temp_array, flags=["multi_index"])
+        it = np.nditer(temp_array, flags=["multi_index"]) # it is an iterator that will go through all the indexes of the array
         for x in it:
             new_transition_config["source"][it.multi_index] = list_recursive_convert_to_string(
                 self.access_original_config_by_multi_index(single_transition_config["source"], it.multi_index)
@@ -216,35 +253,40 @@ class Compartments:
         return rc
 
     def parse_single_transition(self, seir_config, single_transition_config, fake_config=False):
-        ## This method relies on having run parse_compartments
-        if not fake_config:
-            single_transition_config = single_transition_config.get()
-        self.check_transition_element(single_transition_config["source"])
-        self.check_transition_element(single_transition_config["destination"])
-        source_dimension = [get_list_dimension(x) for x in single_transition_config["source"]]
-        destination_dimension = [get_list_dimension(x) for x in single_transition_config["destination"]]
-        problem_dimension = reduce(lambda x, y: max(x, y), (source_dimension, destination_dimension))
-        self.check_transition_elements(single_transition_config, problem_dimension)
-        transitions = self.expand_transition_elements(single_transition_config, problem_dimension)
+        try:
+            ## This method relies on having run parse_compartments
+            if not fake_config:
+                single_transition_config = single_transition_config.get()
+            self.check_transition_element(single_transition_config["source"])
+            self.check_transition_element(single_transition_config["destination"])
+            source_dimension = [get_list_dimension(x) for x in single_transition_config["source"]]
+            destination_dimension = [get_list_dimension(x) for x in single_transition_config["destination"]]
+            problem_dimension = reduce(lambda x, y: max(x, y), (source_dimension, destination_dimension))
+            self.check_transition_elements(single_transition_config, problem_dimension)
+            transitions = self.expand_transition_elements(single_transition_config, problem_dimension)
 
-        tmp_array = np.zeros(problem_dimension)
-        it = np.nditer(tmp_array, flags=["multi_index"])
-        rc = reduce(
-            lambda a, b: pd.concat([a, b]),
-            [
-                pd.DataFrame(
-                    {
-                        "source": [transitions["source"][it.multi_index]],
-                        "destination": [transitions["destination"][it.multi_index]],
-                        "rate": [transitions["rate"][it.multi_index]],
-                        "proportional_to": [transitions["proportional_to"][it.multi_index]],
-                        "proportion_exponent": [transitions["proportion_exponent"][it.multi_index]],
-                    },
-                    index=[0],
-                )
-                for x in it
-            ],
-        )
+            tmp_array = np.zeros(problem_dimension)
+            it = np.nditer(tmp_array, flags=["multi_index"])
+            rc = reduce(
+                lambda a, b: pd.concat([a, b]),
+                [
+                    pd.DataFrame(
+                        {
+                            "source": [transitions["source"][it.multi_index]],
+                            "destination": [transitions["destination"][it.multi_index]],
+                            "rate": [transitions["rate"][it.multi_index]],
+                            "proportional_to": [transitions["proportional_to"][it.multi_index]],
+                            "proportion_exponent": [transitions["proportion_exponent"][it.multi_index]],
+                        },
+                        index=[0],
+                    )
+                    for x in it
+                ],
+            )
+        except Exception as e:
+            print(f"Error in parse_single_transition: {e} for this transition: {single_transition_config}")
+            print(f"source_dimension: {source_dimension}, destination_dimension: {destination_dimension}, problem_dimension: {problem_dimension}")
+            raise e
 
         return rc
 
@@ -303,9 +345,6 @@ class Compartments:
     def get_ncomp(self) -> int:
         return len(self.compartments)
 
-    def constructFromConfig(self, seir_config, compartment_config):
-        self.parse_compartments(seir_config, compartment_config)
-        self.transitions = self.parse_transitions(seir_config, False)
 
     def get_transition_array(self):
         with Timer("SEIR.compartments"):
