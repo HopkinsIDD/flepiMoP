@@ -38,6 +38,7 @@ def rk4_integration(
     population,  # 15
     stochastic_p,  # 16
     method="rk4",
+    silent=False
 ):
     states = np.zeros((ndays, ncompartments, nspatial_nodes))
     states_daily_incid = np.zeros((ndays, ncompartments, nspatial_nodes))
@@ -213,7 +214,7 @@ def rk4_integration(
     yesterday = -1
     times = np.arange(0, (ndays - 1) + 1e-7, dt)
 
-    for time_index, time in tqdm.tqdm(enumerate(times)):  # , total=len(times)
+    for time_index, time in tqdm.tqdm(enumerate(times), disable=silent):  # , total=len(times)
         today = int(np.floor(time))
         is_a_new_day = today != yesterday
         yesterday = today

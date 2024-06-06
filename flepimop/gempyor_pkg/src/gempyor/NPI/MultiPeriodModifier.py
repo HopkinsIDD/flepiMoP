@@ -36,10 +36,13 @@ class MultiPeriodModifier(NPIBase):
 
         self.param_name = npi_config["parameter"].as_str().lower()
 
-        # Value when the NPI is not active. 
+        # Value when the NPI is not active.
         default_value = 1.0
-        if self.param_name in self.pnames_overlap_operation_sum or self.param_name in self.pnames_overlap_operation_reductionprod:
-            default_value=0.0
+        if (
+            self.param_name in self.pnames_overlap_operation_sum
+            or self.param_name in self.pnames_overlap_operation_reductionprod
+        ):
+            default_value = 0.0
 
         self.npi = pd.DataFrame(
             default_value,
@@ -57,8 +60,6 @@ class MultiPeriodModifier(NPIBase):
             },
             index=self.subpops,
         )
-
-        
 
         if (loaded_df is not None) and self.name in loaded_df["modifier_name"].values:
             self.__createFromDf(loaded_df, npi_config)
@@ -120,7 +121,7 @@ class MultiPeriodModifier(NPIBase):
         ###     raise ValueError(f"Invalid parameter name: {self.param_name}. Must be one of {REDUCE_PARAMS}")
 
         # Validate
-        #if (self.npi == 0).all(axis=None):
+        # if (self.npi == 0).all(axis=None):
         #    print(f"Warning: The intervention in config: {self.name} does nothing.")
 
         # if (self.npi > 1).any(axis=None):
@@ -259,7 +260,7 @@ class MultiPeriodModifier(NPIBase):
         if len(affected_subpops) != len(affected_subpops_grp):
             raise ValueError(f"In NPI {self.name}, some subpops belong to several groups. This is unsupported.")
         return affected_subpops
-    
+
     def get_default(self, param):
         if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
             return 0.0
