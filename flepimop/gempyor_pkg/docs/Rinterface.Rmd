@@ -44,18 +44,18 @@ gempyor <- reticulate::import("gempyor")
 
 ### Building a simulator
 
-We create an `GempyorSimulator` object by providing the path of config file. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: `config_FCH_R12_optSev_lowIE_blk5_Mar6.yml` on March 6, 2022.
+We create an `GempyorInference` object by providing the path of config file. The config used here, from the npi continuous integration tests, is derived from our recent forcast hub config: `config_FCH_R12_optSev_lowIE_blk5_Mar6.yml` on March 6, 2022.
 ```{r}
 config_filepath = '../tests/npi/config_npi.yml'
-gempyor_simulator <- gempyor$GempyorSimulator(
-                          config_path=config_filepath,
+gempyor_inference <- gempyor$GempyorInference(
+                          config_filepath=config_filepath,
                           run_id="test_run_id",
                           prefix="test_prefix/",
                           first_sim_index=1,
                           seir_modifiers_scenario="inference",   # NPIs scenario to use
                           outcome_modifiers_scenario="med",        # Outcome scenario to use
                           stoch_traj_flag=FALSE,      
-                          spatial_path_prefix = '../tests/npi/' # prefix where to find the folder indicated in subpop_setup
+                          path_prefix = '../tests/npi/' # prefix where to find the folder indicated in subpop_setup
 )
 ```
 Here we specified that the data folder specified in the config lies in the `test/npi/` folder, not in the current directory. The only mandatory arguments is the `config_path`. The default values of the other arguments are
@@ -70,11 +70,11 @@ Here we specified that the data folder specified in the config lies in the `test
   nslots=1,
   out_run_id=None,  # if out_run_id should be different from in_run_id, put it here
   out_prefix=None,  # if out_prefix should be different from in_prefix, put it here
-  spatial_path_prefix="",  # in case the data folder is on another directory
+  path_prefix="",  # in case the data folder is on another directory
 ```
 
 ## Exploration methods
-The `gempyor_simulator` object uncovers some methods to run simulations,and some additional functions for investigating a config or an inference run, but also for debugging purposes. The latter is described in this section.
+The `gempyor_inference` object uncovers some methods to run simulations,and some additional functions for investigating a config or an inference run, but also for debugging purposes. The latter is described in this section.
 
 Each function either takes:
 
@@ -87,10 +87,10 @@ Each function either takes:
 It is possible to draw the parameters of the disease dynamics. The following line draws from config (hence each call will return a different draw from the prior), but the syntax would be the same with load_ID, bypass_FN, bypass_DF, where a spar file would be loaded.
 ```{r}
 # this variation returns a dataframe. 
-params_draw_df = gempyor_simulator$get_seir_parametersDF()   # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
+params_draw_df = gempyor_inference$get_seir_parametersDF()   # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
 
 ## This return an array, which is useful together with a NPI to get the reduce parameter (cf. later in the tutorial)
-params_draw_arr = gempyor_simulator$get_seir_parameters()    # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
+params_draw_arr = gempyor_inference$get_seir_parameters()    # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
 
 # Let's check the dataframe:
 params_draw_df
@@ -100,8 +100,8 @@ params_draw_df
 NPIs, or modifiers for parameters, are objects. As with parameters, they can be built from snpi or hnpi files. Here we build them from config (hence every call will generate another draw).
 
 ```{r}
-npi_seir = gempyor_simulator$get_seir_npi()                  # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_snpi_df>) or (bypass_FN=<some_snpi_filename>)
-npi_outcome = gempyor_simulator$get_outcome_npi()            # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_hnpi_df>) or (bypass_FN=<some_hnpi_filename>)
+npi_seir = gempyor_inference$get_seir_npi()                  # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_snpi_df>) or (bypass_FN=<some_snpi_filename>)
+npi_outcome = gempyor_inference$get_outcome_npi()            # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_hnpi_df>) or (bypass_FN=<some_hnpi_filename>)
 ```
 
 Once a NPI is built, we can get the reduction for each sub-npi. This is the dataframe that gets written as hnpi or (in this example) snpi.
@@ -144,10 +144,10 @@ reduc %>% ggplot(aes(x=date, y=reduction)) + geom_path() + facet_wrap(~ subpop)
 We can also plot the pameters after reduction with the npi. We just have to provided the npi object. The reduction contains all parameter. Here we build it and plot R0 in time (not that the trends are inverted from the getReduction above ^)
 ```{r,  fig.show=TRUE}
 # This will draw new parameters from config and applies the already defined NPI. If load_ID, bypass_DF or bypass_FN 
-param_reduc = gempyor_simulator$get_seir_parameter_reduced(npi_seir=npi_seir) # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
+param_reduc = gempyor_inference$get_seir_parameter_reduced(npi_seir=npi_seir) # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
 
-# We can also provide an array as returned by gempyor_simulator$get_seir_parameters() 
-param_reduc_from = gempyor_simulator$get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
+# We can also provide an array as returned by gempyor_inference$get_seir_parameters() 
+param_reduc_from = gempyor_inference$get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
 param_reduc <- param_reduc %>% pivot_longer(cols = param_reduc %>% select(-date, -subpop) %>% colnames(), names_to = 'parameter')
 
 param_reduc %>% filter(parameter=='r0') %>% ggplot(aes(x=date, y=value)) + geom_line() + facet_wrap(~subpop)
@@ -162,8 +162,8 @@ param_reduc %>% filter(parameter=='nu1age18to64') %>% ggplot(aes(x=date, y=value
 ### Get compartment graph image
 We can plot the compartment transition graph with this config. There is a possibility to apply filters in order to have a tractable graph. The graph is plotted as a separate pdf file.
 ```{r}
-gempyor_simulator$plot_transition_graph(output_file="full_graph")
-gempyor_simulator$plot_transition_graph(output_file="readable_graph", 
+gempyor_inference$plot_transition_graph(output_file="full_graph")
+gempyor_inference$plot_transition_graph(output_file="readable_graph", 
                                         source_filters= list(list("age0to17"), list("OMICRON", "WILD")), 
                                         destination_filters= list(list("OMICRON", "WILD")))
 
@@ -181,8 +181,8 @@ These functions take as input a `seed` file with sim_id `sim_id2write`, and outp
 Here we simulate once from config, then a second time using the same values as generated by the first run:
 
 ```{r}
-gempyor_simulator$one_simulation(sim_id2write=0)                                  # simulate from config
-gempyor_simulator$one_simulation(sim_id2write=1, load_ID=TRUE, sim_id2load=0)     # simulate from files
+gempyor_inference$one_simulation(sim_id2write=0)                                  # simulate from config
+gempyor_inference$one_simulation(sim_id2write=1, load_ID=TRUE, sim_id2load=0)     # simulate from files
 ```
 
 
@@ -190,8 +190,8 @@ gempyor_simulator$one_simulation(sim_id2write=1, load_ID=TRUE, sim_id2load=0)   
 
 These two are equivalent: one uses the COVID Scenario Pipeline filename scheme, while the other provides the filename directly.
 ```{r,  fig.show=TRUE}
-npi_outcome = gempyor_simulator$get_outcome_npi(load_ID=TRUE, sim_id2load=1)
-npi_outcome = gempyor_simulator$get_outcome_npi(bypass_FN = 'model_output/hnpi/test_prefix/000000001.test_run_id.hnpi.parquet')
+npi_outcome = gempyor_inference$get_outcome_npi(load_ID=TRUE, sim_id2load=1)
+npi_outcome = gempyor_inference$get_outcome_npi(bypass_FN = 'model_output/hnpi/test_prefix/000000001.test_run_id.hnpi.parquet')
 
 ```
 
@@ -199,7 +199,7 @@ npi_outcome = gempyor_simulator$get_outcome_npi(bypass_FN = 'model_output/hnpi/t
 ## Also...
 Additional methods are provided, one of which updates the prefix, which is done by e.g inference_slot.R to indicate the slot
 ```{r}
-gempyor_simulator$update_prefix(new_prefix="my new prefix")
+gempyor_inference$update_prefix(new_prefix="my new prefix")
 ```
 
 ## Installation
