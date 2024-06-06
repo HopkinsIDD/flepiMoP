@@ -70,7 +70,6 @@ state_level <- ifelse(!is.null(config$subpop_setup$state_level) && config$subpop
 # tidycensus::census_api_key(key = census_key)
 
 
-
 filterUSPS <- c("WY","VT","DC","AK","ND","SD","DE","MT","RI","ME","NH","HI","ID","WV","NE","NM",
                 "KS","NV","MS","AR","UT","IA","CT","OK","OR","KY","LA","AL","SC","MN","CO","WI",
                 "MD","MO","IN","TN","MA","AZ","WA","VA","NJ","MI","NC","GA","OH","IL","PA","NY","FL","TX","CA")
