@@ -91,7 +91,6 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
-
 if (!is.null(config$inference$incl_aggr_likelihood)){
     print("Using config option for `incl_aggr_likelihood`.")
     opt$incl_aggr_likelihood <- config$inference$incl_aggr_likelihood
@@ -274,6 +273,7 @@ if (config$inference$do_inference){
     dplyr::filter(subpop %in% subpops_, date >= gt_start_date, date <= gt_end_date) %>%
     dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) %>%
     dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
+
 
   # add aggregate groundtruth to the obs data for the likelihood calc
   if (opt$incl_aggr_likelihood){
