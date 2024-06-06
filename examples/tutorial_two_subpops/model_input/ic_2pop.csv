@@ -1,3 +1,4 @@
 subpop,mc_name,amount
 large_province,E,5
 large_province,S,8995
+small_province,S,1000
