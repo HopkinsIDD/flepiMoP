@@ -88,7 +88,7 @@ collapse_intervention<- function(dat){
         dplyr::group_by(dplyr::across(-period)) %>%
         dplyr::summarize(period = paste0(period, collapse="\n            "))
     
-    if (exists("mtr$spatial_groups") && (!all(is.na(mtr$spatial_groups)) & !all(is.null(mtr$spatial_groups)))) {
+    if (exists("mtr$subpop_groups") && (!all(is.na(mtr$subpop_groups)) & !all(is.null(mtr$subpop_groups)))) {
         
         mtr <- mtr %>%
             dplyr::group_by(dplyr::across(-subpop)) %>%
@@ -1335,9 +1335,17 @@ print_outcomes <- function (resume_modifier = NULL,
   incidC_pert <- ""
   pert_repeat <- prod(compartment_tract_length[-1], na.rm = TRUE)
   
-  variant_strata = compartment_tract_list$variant_strata
-  vaccine_strata = compartment_tract_list$vaccine_strata
-  age_strata = compartment_tract_list$age_strata
+  variant_strata = `$`(compartment_tract_list, 'variant')
+  vaccine_strata = `$`(compartment_tract_list, 'vacc')
+  age_strata = `$`(compartment_tract_list, 'age')
+  strata_names <- names(compartment_tract_list)
+  inf_strata_name <- strata_names[grepl('inf', strata_names)]
+  variant_strata_name <- strata_names[grepl('var', strata_names)]
+  vacc_strata_name <- strata_names[grepl('vacc', strata_names)]
+  age_strata_name <- strata_names[grepl('age_', strata_names)]
+#   variant_strata = compartment_tract_list$variant_strata
+#   vaccine_strata = compartment_tract_list$vaccine_strata
+#   age_strata = compartment_tract_list$age_strata
   
   for (i in 1:pert_repeat) {
     if (incidC_perturbation) {
@@ -1405,10 +1413,10 @@ print_outcomes <- function (resume_modifier = NULL,
         incidH <- paste0(incidH,
                          "    incidH_", outcomes_base_data$variant_strata[i],
                          ":\n", "      source:\n", "        incidence:\n",
-                         "          infection_stage: \"I1\"\n",
-                         "          vaccination_strata: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
-                         "          variant_strata: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
-                         "          age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                         "          ", inf_strata_name, ": \"I1\"\n",
+                         "          ", vacc_strata_name, ": \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                         "          ", variant_strata_name, ": \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                         "          ", age_strata_name, ": \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                          "      probability:\n",
                          if ("incidH" %in% intervention_params) paste0("        modifier_parameter: \"", incidItoHparam, "\"\n"),
                          print_value(value_dist = incidH_prob_dist,
@@ -1437,10 +1445,10 @@ print_outcomes <- function (resume_modifier = NULL,
         incidD <- paste0(incidD,
                          "    incidD_", outcomes_base_data$variant_strata[i],
                          ":\n", "      source:\n", "        incidence:\n",
-                         "          infection_stage: \"I1\"\n",
-                         "          vaccination_strata: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
-                         "          variant_strata: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
-                         "          age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                         "          ", inf_strata_name, ": \"I1\"\n",
+                         "          ", vacc_strata_name, ": \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                         "          ", variant_strata_name, ": \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                         "          ", age_strata_name, ": \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                          "      probability:\n",
                          if ("incidD" %in% intervention_params) paste0("        modifier_parameter: \"", incidItoDparam, "\"\n"),
                          print_value(value_dist = incidD_prob_dist,
@@ -1470,10 +1478,10 @@ print_outcomes <- function (resume_modifier = NULL,
                          "    incidC_", outcomes_base_data$variant_strata[i], ":\n",
                          "      source:\n",
                          "        incidence:\n",
-                         "          infection_stage: \"I1\"\n",
-                         "          vaccination_strata: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
-                         "          variant_strata: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
-                         "          age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                         "          ", inf_strata_name, ": \"I1\"\n",
+                         "          ", vacc_strata_name, ": \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                         "          ", variant_strata_name, ": \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                         "          ", age_strata_name, ": \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                          "      probability:\n",
                          if ("incidC" %in% intervention_params) paste0("        modifier_parameter: \"", incidItoCparam, "\"\n"),
                          print_value(value_dist = incidC_prob_dist,
@@ -1492,10 +1500,10 @@ print_outcomes <- function (resume_modifier = NULL,
                        "    incidI_", outcomes_base_data$variant_strata[i], ":\n",
                        "      source:\n",
                        "        incidence:\n",
-                       "          infection_stage: \"I1\"\n",
-                       "          vaccination_strata: \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
-                       "          variant_strata: \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
-                       "          age_strata: \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
+                       "          ", inf_strata_name, ": \"I1\"\n",
+                       "          ", vacc_strata_name, ": \"", paste0(outcomes_base_data$vacc[i], collapse = "\", \""), "\"\n",
+                       "          ", variant_strata_name, ": \"", paste0(outcomes_base_data$variant[i], collapse = "\", \""), "\"\n",
+                       "          ", age_strata_name, ": \"", paste0(outcomes_base_data$age_strata[i]), "\"\n",
                        "      probability:\n",
                        if("incidI" %in% intervention_params) paste0('          modifier_parameter: "incidI_total"\n'),
                        print_value(value_dist = "fixed",
