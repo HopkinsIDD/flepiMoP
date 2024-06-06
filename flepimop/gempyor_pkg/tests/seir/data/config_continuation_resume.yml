@@ -1,0 +1,116 @@
+name: minimal
+setup_name: minimal
+start_date: 2020-03-15
+end_date: 2020-05-31
+nslots: 15
+
+subpop_setup:
+  base_path: data
+  geodata: data/geodata.csv
+  mobility: data/mobility.txt
+
+
+initial_conditions:
+  method: InitialConditionsFolderDraw
+  #seeding_file_type: seed
+  #folder_path: importation/minimal/
+  initial_file_type: "seir"
+
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage: ["unvaccinated"]
+
+seir:
+  integration:
+    method: legacy
+    dt: 0.2
+  parameters:
+    alpha:
+      value:
+        distribution: fixed
+        value: .5
+    sigma:
+      value:
+        distribution: fixed
+        value: 1 / 5.2
+    gamma:
+      value:
+        distribution: uniform
+        low: 1 / 6
+        high: 1 / 2.6
+    R0s:
+      value:
+        distribution: uniform
+        low: 2
+        high: 3
+  transitions:
+    - source: ["S", "unvaccinated"]
+      destination: ["E", "unvaccinated"]
+      rate: ["R0s * gamma", 1]
+      proportional_to: [
+          ["S", "unvaccinated"],
+          [[["I1", "I2", "I3"]], "unvaccinated"],
+      ]
+      proportion_exponent: [["1", "1"], ["alpha", "1"]] 
+    - source: [["E"], ["unvaccinated"]]
+      destination: [["I1"], ["unvaccinated"]]
+      rate: ["sigma", 1]
+      proportional_to: [[["E"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I1"], ["unvaccinated"]]
+      destination: [["I2"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I1"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I2"], ["unvaccinated"]]
+      destination: [["I3"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I2"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I3"], ["unvaccinated"]]
+      destination: [["R"], ["unvaccinated"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I3"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+
+seir_modifiers:
+  scenarios:
+    - None
+    - Scenario1
+    - Scenario2
+  modifiers:
+    None:
+      method: SinglePeriodModifier
+      parameter: r0
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-16
+      value:
+        distribution: fixed
+        value: 0
+    Wuhan:
+      method: SinglePeriodModifier
+      parameter: r0
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-16
+      value:
+        distribution: uniform
+        low: .14
+        high: .33
+    KansasCity:
+      method: SinglePeriodModifierR0
+      parameter: r0
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-16
+      value:
+        distribution: uniform
+        low: .04
+        high: .23
+    Scenario1:
+      method: StackedModifier
+      modifiers:
+        - Wuhan
+        - None
+    Scenario2:
+      method: StackedModifier
+      modifiers:
+        - Wuhan

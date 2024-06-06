@@ -1,0 +1,61 @@
+name: test_inference
+setup_name: test1
+start_date: 2020-04-01
+end_date: 2020-05-15
+nslots: 1
+
+subpop_setup:
+  geodata: data/geodata.csv
+
+
+outcomes:
+  method: delayframe
+  param_from_file: False
+  outcomes:
+    incidI:
+      source:
+        incidence:
+          infection_stage: ["I1"]
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidH:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .1
+      delay:
+        value:
+          distribution: fixed
+          value: 7
+      duration:
+        value:
+          distribution: fixed
+          value: 7
+        name: hosp_curr
+    incidD:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .01
+      delay:
+        value:
+          distribution: fixed
+          value: 2
+    incidICU:
+      source: incidH
+      probability:
+        value:
+          distribution: fixed
+          value: .4
+      delay:
+        value:
+          distribution: fixed
+          value: 0

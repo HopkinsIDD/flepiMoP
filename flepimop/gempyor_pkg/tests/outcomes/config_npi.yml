@@ -1,0 +1,129 @@
+name: test_inference
+setup_name: test1
+start_date: 2020-04-01
+end_date: 2020-05-15
+nslots: 1
+
+subpop_setup:
+  geodata: data/geodata.csv
+
+
+outcomes:
+  method: delayframe
+  param_from_file: False
+  outcomes:
+    incidI:
+      source:
+        incidence:
+          infection_stage: "I1"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidH:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .2
+      delay:
+        value:
+          distribution: fixed
+          value: 14
+      duration:
+        value:
+          distribution: fixed
+          value: 14
+        name: hosp_curr
+    incidD:
+      source: incidI
+      probability:
+        value:
+          distribution: fixed
+          value: .02
+      delay:
+        value:
+          distribution: fixed
+          value: 4
+    incidICU:
+      source: incidH
+      probability:
+        value:
+          distribution: fixed
+          value: .8
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+
+outcome_modifiers:
+  scenarios:
+    - Some
+  modifiers:
+    Some:
+      method: StackedModifier
+      modifiers: ["times2H", "ICUprobability", "times2D"]
+    Hduration:
+      method: SinglePeriodModifier
+      parameter: "incidH::duration"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    Hdelay:
+      method: SinglePeriodModifier
+      parameter: "incidH::delay"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    Hprobability:
+      method: SinglePeriodModifier
+      parameter: "incidH::probability"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: 0.5
+    Ddelay:
+      method: SinglePeriodModifier
+      parameter: "incidD::delay"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    Dprobability:
+      method: SinglePeriodModifier
+      parameter: "incidD::probability"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    ICUprobability:
+      method: SinglePeriodModifier
+      parameter: "incidICU::probability"
+      subpop: "all"
+      period_start_date: 2020-04-01
+      period_end_date: 2020-05-15
+      value:
+        distribution: fixed
+        value: .5
+    times2D:
+      method: StackedModifier
+      modifiers: ["Ddelay", "Dprobability"]
+    times2H:
+      method: StackedModifier
+      modifiers: ["Hdelay", "Hprobability", "Hduration"]

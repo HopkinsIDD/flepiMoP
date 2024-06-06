@@ -1,0 +1,155 @@
+name: test_inference
+setup_name: test1
+start_date: 2020-04-01
+end_date: 2020-05-15
+nslots: 1
+
+subpop_setup:
+  base_path: data
+  geodata: data/geodata.csv
+  mobility: data/mobility.csv
+
+
+seeding:
+  seeding_file_type: seed
+  method: FolderDraw
+  folder_path: importation/test1/
+  lambda_file: data/test1/seeding.csv
+  perturbation_sd: 3
+
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"]
+  vaccination_stage: ["unvaccinated", "first_dose", "second_dose"]
+
+seir:
+  integration:
+    method: legacy
+    dt: 1/6
+  parameters:
+    sigma:
+      value:
+        distribution: fixed
+        value: 1 / 5.2
+    gamma:
+      value:
+        distribution: uniform
+        low: 1 / 6
+        high: 1 / 2.6
+    R0s:
+      value:
+        distribution: uniform
+        low: 2
+        high: 3
+    transition_rate0:
+      stacked_modifier_method: "sum"
+      value:
+        distribution: fixed
+        value: 0
+    transition_rate1:
+      stacked_modifier_method: "sum"
+      value:
+        distribution: fixed
+        value: 0
+  transitions:
+    - source: ["S", ["unvaccinated", "first_dose", "second_dose"]]
+      destination: ["E", ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["R0s * gamma", 1]
+      proportional_to: [  # This config is quite bad: no susceptibilty reduction
+          ["S", ["unvaccinated", "first_dose", "second_dose"]],
+          [[["I1", "I2", "I3"]], ["unvaccinated", "first_dose", "second_dose"]],
+      ]
+      proportion_exponent: [["1", "1"], ["1", "1"]] 
+    - source: [["E"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["I1"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["sigma", 1]
+      proportional_to: [[["E"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I1"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["I2"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I1"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I2"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["I3"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I2"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["I3"], ["unvaccinated", "first_dose", "second_dose"]]
+      destination: [["R"], ["unvaccinated", "first_dose", "second_dose"]]
+      rate: ["3 * gamma", 1]
+      proportional_to: [[["I3"], ["unvaccinated", "first_dose", "second_dose"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["S", "E", "I1", "I2", "I3", "R"], ["unvaccinated"]]
+      destination: [["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]
+      rate: ["transition_rate0", 1]
+      proportional_to: [[["S", "E", "I1", "I2", "I3", "R"], ["unvaccinated"]]]
+      proportion_exponent: [["1", "1"]]
+    - source: [["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]
+      destination: [["S", "E", "I1", "I2", "I3", "R"], ["second_dose"]]
+      rate: ["transition_rate1", 1]
+      proportional_to: [[["S", "E", "I1", "I2", "I3", "R"], ["first_dose"]]]
+      proportion_exponent: [["1", "1"]]
+  
+seir_modifiers:
+  scenarios:
+    - Scenario1
+    - Scenario2
+  modifiers:
+    None:
+      method: SinglePeriodModifierR0
+      value:
+        distribution: fixed
+        value: 0
+    Place1:
+      method: SinglePeriodModifier
+      parameter: r0
+      value:
+        distribution: uniform
+        low: .14
+        high: .33
+    Place2:
+      method: MultiPeriodModifier
+      parameter: r0
+      groups:
+        - subpop: "all"
+          periods:
+          - start_date: "2020-04-01"
+            end_date: "2020-04-15"
+          - start_date: "2020-05-01"
+            end_date: "2020-05-15"
+      value:
+        distribution: uniform
+        low: .14
+        high: .33
+    Dose1:
+      method: SinglePeriodModifier
+      parameter: "transition_rate0"
+      period_start_date: 2020-04-10
+      period_end_date: 2020-04-10
+      value:
+        distribution: fixed
+        value: 0.9
+    Dose2:
+      method: SinglePeriodModifier
+      parameter: "transition_rate1"
+      period_start_date: 2020-04-11
+      period_end_date: 2020-04-11
+      value:
+        distribution: fixed
+        value: 0.9
+    vaccination:
+      method: StackedModifier
+      modifiers:
+        - Dose1
+        - Dose2
+    Scenario_vacc:
+      method: StackedModifier
+      modifiers:
+        - Place1
+        - Place2
+        - vaccination
+    Scenario_novacc:
+      method: StackedModifier
+      modifiers:
+        - Place1
+        - Place2
