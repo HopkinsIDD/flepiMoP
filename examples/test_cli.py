@@ -17,7 +17,7 @@ def test_config_sample_2pop():
   assert 'completed in' in result.output
 
 
-def test_config_sample_2pop():
+def test_sample_2pop_interventions_test():
   os.chdir(os.path.dirname(__file__) + "/tutorial_two_subpops")
   runner = CliRunner()
   result = runner.invoke(simulate, ['-c', 'config_sample_2pop_interventions_test.yml'])
