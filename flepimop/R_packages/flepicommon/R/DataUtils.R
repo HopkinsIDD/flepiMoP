@@ -426,64 +426,6 @@ aggregate_counties_to_state <- function(df, state_fips){
 }
 
 
-##'
-##' Pull case and death count data from USAFacts
-##'
-##' Pulls the USAFacts cumulative case count and death data. Calculates incident counts.
-##' USAFacts does not include data for all the territories (aka island areas). These data are pulled from NYTimes.
-##'
-##' Returned data preview:
-##' tibble [352,466 × 7] (S3: grouped_df/tbl_df/tbl/data.frame)
-##'  $ FIPS       : chr [1:352466] "00001" "00001" "00001" "00001" ...
-##'  $ source     : chr [1:352466] "NY" "NY" "NY" "NY" ...
-##'  $ Update     : Date[1:352466], format: "2020-01-22" "2020-01-23" ...
-##'  $ Confirmed  : num [1:352466] 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ Deaths     : num [1:352466] 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ incidI     : num [1:352466] 0 0 0 0 0 0 0 0 0 0 ...
-##'  $ incidDeath : num [1:352466] 0 0 0 0 0 0 0 0 0 0 ...
-##'
-##' @param case_data_filename Filename where case data are stored
-##' @param death_data_filename Filename where death data are stored
-##' @param incl_unassigned Includes data unassigned to counties (default is FALSE)
-##' @return the case and deaths data frame
-##'
-##'
-##' @export
-##'
-get_USAFacts_data <- function(case_data_filename = "data/case_data/USAFacts_case_data.csv",
-                              death_data_filename = "data/case_data/USAFacts_death_data.csv",
-                              incl_unassigned = FALSE){
-
-  USAFACTS_CASE_DATA_URL <- "https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv"
-  USAFACTS_DEATH_DATA_URL <- "https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_deaths_usafacts.csv"
-  usafacts_case <- download_USAFacts_data(case_data_filename, USAFACTS_CASE_DATA_URL, "Confirmed", incl_unassigned)
-  usafacts_death <- download_USAFacts_data(death_data_filename, USAFACTS_DEATH_DATA_URL, "Deaths", incl_unassigned)
-
-  usafacts_data <- dplyr::full_join(usafacts_case, usafacts_death)
-  usafacts_data <- dplyr::select(usafacts_data, Update, source, FIPS, Confirmed, Deaths)
-  usafacts_data <- rbind(usafacts_data, get_islandareas_data()) # Append island areas
-  usafacts_data <- dplyr::arrange(usafacts_data, source, FIPS, Update)
-
-  # Create columns incidI and incidDeath
-  usafacts_data <- dplyr::group_modify(
-    dplyr::group_by(
-      usafacts_data,
-      FIPS
-    ),
-    function(.x,.y){
-      .x$incidI = c(.x$Confirmed[1],diff(.x$Confirmed))
-      .x$incidDeath = c(.x$Deaths[1],diff(.x$Deaths,))
-      return(.x)
-    }
-  )
-
-  # Fix incidence counts that go negative and NA values or missing dates
-  usafacts_data <- fix_negative_counts(usafacts_data, "Confirmed", "incidI")
-  usafacts_data <- fix_negative_counts(usafacts_data, "Deaths", "incidDeath")
-
-  return(usafacts_data)
-}
-
 
 
 ##'

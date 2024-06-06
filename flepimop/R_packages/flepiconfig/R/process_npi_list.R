@@ -16,6 +16,36 @@ NULL
 
 
 
+load_geodata_file <- function(filename,
+                              geoid_len = 0,
+                              geoid_pad = "0",
+                              state_name = TRUE) {
+
+    if(!file.exists(filename)){stop(paste(filename,"does not exist in",getwd()))}
+    geodata <- readr::read_csv(filename) %>%
+        dplyr::mutate(geoid = as.character(geoid))
+
+    if (!("geoid" %in% names(geodata))) {
+        stop(paste(filename, "does not have a column named geoid"))
+    }
+
+    if (geoid_len > 0) {
+        geodata$geoid <- stringr::str_pad(geodata$geoid, geoid_len, pad = geoid_pad)
+    }
+
+    if(state_name) {
+        utils::data(fips_us_county, package = "flepicommon") # arrow::read_parquet("datasetup/usdata/fips_us_county.parquet")
+        geodata <- fips_us_county %>%
+            dplyr::distinct(state, state_name) %>%
+            dplyr::rename(USPS = state) %>%
+            dplyr::rename(state = state_name) %>%
+            dplyr::mutate(state = dplyr::recode(state, "U.S. Virgin Islands" = "Virgin Islands")) %>%
+            dplyr::right_join(geodata)
+    }
+
+    return(geodata)
+}
+
 ##' find_truncnorm_mean_parameter
 ##'
 ##' Convenience function that estimates the mean value for a truncnorm distribution given a, b, and sd that will have the expected value of the input mean.
