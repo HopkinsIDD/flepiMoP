@@ -712,6 +712,8 @@ def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=Fal
     except Exception as e:
         print(f"Error {e}:")
         print(f">>> in list_access_element_safe for {thing} at index {idx}")
+        print(">>> This is often, but not always because the object above is a list (there are brackets around it).")
+        print(">>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it.")
         print(f"dimension: {dimension}")
         raise e
 
