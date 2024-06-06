@@ -26,3 +26,24 @@ def test_sample_2pop_interventions_test():
   print(result.exception) # useful for debug
   assert result.exit_code == 0
   assert 'completed in' in result.output
+
+
+def test_simple_usa_statelevel():
+  os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
+  runner = CliRunner()
+  result = runner.invoke(simulate, ['-c', 'simple_usa_statelevel.yml', '-n', '1'])
+  print(result.output) # useful for debug
+  print(result.exit_code) # useful for debug
+  print(result.exception) # useful for debug
+  assert result.exit_code == 0
+  assert 'completed in' in result.output
+
+def test_simple_usa_statelevel():
+  os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
+  runner = CliRunner()
+  result = runner.invoke(simulate, ['-c', 'simple_usa_statelevel.yml', '-n', '1'])
+  print(result.output) # useful for debug
+  print(result.exit_code) # useful for debug
+  print(result.exception) # useful for debug
+  assert result.exit_code == 0
+  assert 'completed in' in result.output

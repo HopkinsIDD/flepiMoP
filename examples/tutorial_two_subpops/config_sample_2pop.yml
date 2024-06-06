@@ -11,7 +11,6 @@ subpop_setup:
 initial_conditions:
   method: SetInitialConditions
   initial_conditions_file: model_input/ic_2pop.csv
-  allow_missing_subpops: TRUE
   allow_missing_compartments: TRUE
 
 compartments:
