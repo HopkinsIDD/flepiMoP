@@ -1,0 +1,3 @@
+ori,dest, amount
+large_province, small_province, 100
+small_province, large_province, 20
