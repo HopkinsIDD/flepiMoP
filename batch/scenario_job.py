@@ -15,7 +15,7 @@ import yaml
 @click.option(
     "-c",
     "--config",
-    "config_file",
+    "config_filepath",
     envvar="CONFIG_PATH",
     type=click.Path(exists=True),
     required=True,
@@ -109,7 +109,7 @@ import yaml
     help="The amount of RAM in megabytes needed per CPU running simulations",
 )
 def launch_batch(
-    config_file,
+    config_filepath,
     num_jobs,
     slots_per_job,
     dvc_target,
@@ -122,14 +122,14 @@ def launch_batch(
     memory,
 ):
     config = None
-    with open(config_file) as f:
+    with open(config_filepath) as f:
         config = yaml.full_load(f)
 
     # A unique name for this job run, based on the config name and current time
     job_name = f"{config['name']}-{int(time.time())}"
 
     # Update and save the config file with the number of sims to run
-    print(f"Updating {config_file} to run {slots_per_job} slots...")
+    print(f"Updating {config_filepath} to run {slots_per_job} slots...")
     config["nslots"] = slots_per_job
 
     if parallelize_scenarios:
@@ -137,11 +137,11 @@ def launch_batch(
         for s in seir_modifiers_scenarios:
             seir_modifiers_scenario_job_name = f"{job_name}_{s}"
             config["interventions"]["scenarios"] = [s]
-            with open(config_file, "w") as f:
+            with open(config_filepath, "w") as f:
                 yaml.dump(config, f, sort_keys=False)
             launch_job_inner(
                 seir_modifiers_scenario_job_name,
-                config_file,
+                config_filepath,
                 num_jobs,
                 slots_per_job,
                 dvc_target,
@@ -153,14 +153,14 @@ def launch_batch(
                 memory,
             )
         config["interventions"]["scenarios"] = seir_modifiers_scenarios
-        with open(config_file, "w") as f:
+        with open(config_filepath, "w") as f:
             yaml.dump(config, f, sort_keys=False)
     else:
-        with open(config_file, "w") as f:
+        with open(config_filepath, "w") as f:
             yaml.dump(config, f, sort_keys=False)
         launch_job_inner(
             job_name,
-            config_file,
+            config_filepath,
             num_jobs,
             slots_per_job,
             dvc_target,
@@ -179,7 +179,7 @@ def launch_batch(
 
 def launch_job_inner(
     job_name,
-    config_file,
+    config_filepath,
     num_jobs,
     slots_per_job,
     dvc_target,
@@ -212,7 +212,7 @@ def launch_job_inner(
     model_data_path = f"s3://{s3_input_bucket}/{tarfile_name}"
     results_path = f"s3://{s3_output_bucket}/{job_name}"
     env_vars = [
-        {"name": "CONFIG_PATH", "value": config_file},
+        {"name": "CONFIG_PATH", "value": config_filepath},
         {"name": "S3_MODEL_PROJECT_PATH", "value": model_data_path},
         {"name": "DVC_TARGET", "value": dvc_target},
         {"name": "DVC_OUTPUTS", "value": " ".join(dvc_outputs)},

@@ -8,8 +8,20 @@ from numpy import ndarray
 import logging
 from . import model_info, NPI, utils
 import datetime
+import xarray as xr
+import os
 
 logger = logging.getLogger(__name__)
+
+# TODO: it should work like
+# import xarray as xr
+# xr.DataArray(p_draw, dims=["parameter", "date", "subpop"],
+#                 coords={"parameter":modinf.parameters.pnames,
+#                 "date":pd.date_range(modinf.ti, modinf.tf, freq="D"),
+#                 "subpop":modinf.subpop_struct.subpop_names}).sel(parameter="gamma_0").plot()
+
+
+## TODO: ideally here path_prefix should not be used and all files loaded from modinf
 
 
 class Parameters:
@@ -21,6 +33,7 @@ class Parameters:
         ti: datetime.date,
         tf: datetime.date,
         subpop_names: list,
+        path_prefix: str = ".",
     ):
         self.pconfig = parameter_config
         self.pnames = []
@@ -28,9 +41,7 @@ class Parameters:
 
         self.pdata = {}
         self.pnames2pindex = {}
-        self.stacked_modifier_method = {"sum": [],
-                                        "product": [],
-                                        "reduction_product":[]}
+        self.stacked_modifier_method = {"sum": [], "product": [], "reduction_product": []}
 
         self.pnames = self.pconfig.keys()
         self.npar = len(self.pnames)
@@ -49,10 +60,10 @@ class Parameters:
 
             # Parameter given as a file
             elif self.pconfig[pn]["timeseries"].exists():
-                fn_name = self.pconfig[pn]["timeseries"].get()
+                fn_name = os.path.join(path_prefix, self.pconfig[pn]["timeseries"].get())
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
-                if len(df.columns) == 1: # if only one ts, assume it applies to all subpops
+                if len(df.columns) == 1:  # if only one ts, assume it applies to all subpops
                     df = pd.DataFrame(
                         pd.concat([df] * len(subpop_names), axis=1).values, index=df.index, columns=subpop_names
                     )
@@ -95,6 +106,10 @@ class Parameters:
             else:
                 self.pdata[pn]["stacked_modifier_method"] = "product"
                 logging.debug(f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs")
+
+            if self.pconfig[pn]["rolling_mean_windows"].exists():
+                self.pdata[pn]["rolling_mean_windows"] = self.pconfig[pn]["rolling_mean_windows"].get()
+
             self.stacked_modifier_method[self.pdata[pn]["stacked_modifier_method"]].append(pn.lower())
 
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
@@ -182,10 +197,13 @@ class Parameters:
         p_reduced = copy.deepcopy(p_draw)
         if npi is not None:
             for idx, pn in enumerate(self.pnames):
-                p_reduced[idx] = NPI.reduce_parameter(
+                npi_val = NPI.reduce_parameter(
                     parameter=p_draw[idx],
                     modification=npi.getReduction(pn.lower()),
                     method=self.pdata[pn]["stacked_modifier_method"],
                 )
+                p_reduced[idx] = npi_val
+                if "rolling_mean_windows" in self.pdata[pn]:
+                    p_reduced[idx] = utils.rolling_mean_pad(data=npi_val, window=self.pdata[pn]["rolling_mean_windows"])
 
         return p_reduced

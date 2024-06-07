@@ -17,7 +17,7 @@ cum_death_forecast <- function (sim_data,
   require(dplyr)
   
   rc <- sim_data %>%
-    filter(time>start_date)%>%
+    filter(date>start_date)%>%
     inner_join(cum_dat)%>%
     group_by(sim_num, !!sym(loc_column))%>%
     mutate(cum_deaths_corr = cumsum(incidD)+cumDeaths)%>%
@@ -39,7 +39,7 @@ cum_death_forecast <- function (sim_data,
 ##' @param weights if not NA, the weights for the mean
 ##' @param loc_col the name of the  location column
 ##' 
-##' @return a forecast with columns time (end day), quantile steps_ahead and deaths
+##' @return a forecast with columns date (end day), quantile steps_ahead and deaths
 ##' 
 ##' @export
 create_cum_death_forecast <- function(sim_data, 
@@ -51,15 +51,15 @@ create_cum_death_forecast <- function(sim_data,
                                       loc_column="USPS") {
   
   ##Sanity checks
-  if(forecast_date>max(obs_data$time)+1) {stop("forecast date must be within one day after the range of observed times")}
-  if(forecast_date+1<min(sim_data$time)) {stop("no simulation support for first forecast date")}
+  if(forecast_date>max(obs_data$date)+1) {stop("forecast date must be within one day after the range of observed times")}
+  if(forecast_date+1<min(sim_data$date)) {stop("no simulation support for first forecast date")}
   
-  if(max(obs_data$time)==forecast_date){
+  if(max(obs_data$date)==forecast_date){
     ## USA Facts Data updates mid-day so forecasts run after noon will have a forecast date that overlaps with the obs_data
     ##convert data to a cumdeath forecast.
     print(glue::glue("Accumulate deaths through {forecast_date}, typically for USA Facts aggregation after noon."))
     start_deaths <- obs_data%>%
-      filter(time==forecast_date)%>%
+      filter(date==forecast_date)%>%
       select(!!sym(loc_column),cumDeaths)
     
     forecast_sims <- cum_death_forecast(sim_data,
@@ -70,7 +70,7 @@ create_cum_death_forecast <- function(sim_data,
     ## CSSE data updates at midnight so forecasts will not typically have a forecast date one day after the end of the obs_data       
     print(glue::glue("Accumulate deaths through {forecast_date-1}, typically for CSSE aggregation."))
     start_deaths <- obs_data%>%
-      filter(time==forecast_date-1)%>%
+      filter(date==forecast_date-1)%>%
       select(!!sym(loc_column),cumDeaths)
     
     forecast_sims <- cum_death_forecast(sim_data,
@@ -88,7 +88,7 @@ create_cum_death_forecast <- function(sim_data,
   }
   
   rc <- forecast_sims%>%
-    group_by(time, !!sym(loc_column))%>% 
+    group_by(date, !!sym(loc_column))%>% 
     summarize(x=list(enframe(c(quantile(cum_deaths_corr, probs=c(0.01, 0.025,
                                                                  seq(0.05, 0.95, by = 0.05), 0.975, 0.99)),
                                mean=mean(cum_deaths_corr)),
@@ -99,11 +99,11 @@ create_cum_death_forecast <- function(sim_data,
   ##Append on the the other deaths.
   rc<-dplyr::bind_rows(rc,
                        obs_data%>%
-                         select(time, !!sym(loc_column), cumDeaths)%>%
+                         select(date, !!sym(loc_column), cumDeaths)%>%
                          mutate(quantile="data"))
   
   rc<- rc%>%
-    mutate(steps_ahead=as.numeric(time-forecast_date))
+    mutate(steps_ahead=as.numeric(date-forecast_date))
   
   return(rc)
   

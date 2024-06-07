@@ -64,8 +64,6 @@ combine_and_format_sims <- function(outcome_vars = "incid",
         res_subpop_all <- res_subpop_all %>%
             # select(date, subpop, outcome_modifiers_scenario, sim_num, all_of(cols_aggr))
             select(date, subpop, sim_num, all_of(cols_aggr))
-
-
     } else if (keep_variant_compartments){
         # pull out just the variant outcomes
         cols_vars <- expand_grid(a="incid",b=outcomes_, c=paste0("_", variants_)) %>% mutate(d=paste0(a,b,c)) %>% pull(d)
@@ -685,7 +683,7 @@ format_daily_outcomes <- function(daily_inc_outcome, point_est=0.5, opt){
             pivot_wider(names_from = quantile, names_prefix = "quant_", values_from = outcome) %>%
             mutate(forecast_date = opt$forecast_date) %>%
             rename(target_end_date = date) %>%
-            dplyr::left_join(state_fips_abbr) %>%
+            dplyr::left_join(state_fips_abbr) %>% 
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead = round(as.numeric(target_end_date - forecast_date))) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%
@@ -857,7 +855,6 @@ get_cum_sims <- function(sim_data, obs_data, forecast_date, aggregation = "day",
         if (forecast_date > (max(obs_data$date) + 1)) {
             stop("forecast date must be within one day after the range of observed dates")
         }
-
         # if (max(obs_data$date) == forecast_date) {
         #     print(glue::glue("Accumulate cases through {forecast_date}, typically for USA Facts aggregation after noon."))
         #     start_cases <- obs_data %>% filter(date == forecast_date) %>% select(!!sym(loc_column),outcome, value)
@@ -944,7 +941,6 @@ create_cum_ests_forecast <- function(sim_data, obs_data, forecast_date, aggregat
     } else {
         stop("unknown aggregatoin period")
     }
-
     rc <- forecast_sims %>% group_by(date, !!sym(loc_column)) %>%
         summarize(x = list(enframe(c(quantile(cum_cases_corr,
                                               probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05),
@@ -1015,7 +1011,7 @@ process_sims <- function(
         testing = FALSE,
         quick_run = FALSE,
         outcomes_ = c("I","C","H","D"),
-        outcomes_time_ = c("weekly","weekly","weekly","weekly"),
+        outcomes_date_ = c("weekly","weekly","weekly","weekly"),
         outcomes_cum_ = c(TRUE, TRUE, TRUE, TRUE),
         outcomes_cumfromgt = c(FALSE, FALSE, TRUE, FALSE),
         outcomes_calibrate = c(FALSE, FALSE, TRUE, FALSE),
@@ -1289,11 +1285,11 @@ process_sims <- function(
     #   select(USPS, subpop, date, paste0("incid", outcomes_gt_), paste0("cum", outcomes_[outcomes_cum_gt_]))
 
     # ~ Weekly Outcomes -----------------------------------------------------------
-
-    if (any(outcomes_time_=="weekly")) {
-
+    
+    if (any(outcomes_date_=="weekly")) {
+        
         # Incident
-        weekly_incid_sims <- get_weekly_incid(res_state, outcomes = outcomes_[outcomes_time_=="weekly"])
+        weekly_incid_sims <- get_weekly_incid(res_state, outcomes = outcomes_[outcomes_date_=="weekly"])
         weekly_incid_sims_formatted <- format_weekly_outcomes(weekly_incid_sims, point_est=0.5, opt)
 
         if(exists("weekly_incid_sims_formatted")){
@@ -1347,7 +1343,7 @@ process_sims <- function(
 
 
         # Cumulative
-        weekly_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_time_=="weekly"]
+        weekly_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_date_=="weekly"]
         if (length(weekly_cum_outcomes_)>0) {
             weekly_cum_sims <- get_cum_sims(sim_data = weekly_incid_sims %>%
                                                 mutate(agestrat="age0to130") %>%
@@ -1377,10 +1373,10 @@ process_sims <- function(
 
     # ~ Daily Outcomes -----------------------------------------------------------
 
-    if (any(outcomes_time_=="daily")) {
+    if (any(outcomes_date_=="daily")) {
         
         # Incident
-        daily_incid_sims <- get_daily_incid(res_state, outcomes = outcomes_[outcomes_time_=="daily"])
+        daily_incid_sims <- get_daily_incid(res_state, outcomes = outcomes_[outcomes_date_=="daily"])
         daily_incid_sims_formatted <- format_daily_outcomes(daily_incid_sims, point_est=0.5, opt)
 
         if(exists("daily_incid_sims_formatted")){
@@ -1391,7 +1387,7 @@ process_sims <- function(
         }
 
         # Calibrate
-        outcomes_calib_daily <- outcomes_[outcomes_calibrate & outcomes_time_=="daily"]
+        outcomes_calib_daily <- outcomes_[outcomes_calibrate & outcomes_date_=="daily"]
         if (length(outcomes_calib_daily)>0 & n_calib_days>0){
             daily_incid_sims_calibrations <- calibrate_outcome(outcome_calibrations = outcome_calibrations,
                                                                outcome_calib = paste0("incid", outcomes_calib_daily),
@@ -1427,7 +1423,7 @@ process_sims <- function(
         }
 
         # Cumulative
-        daily_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_time_=="daily"]
+        daily_cum_outcomes_ <- outcomes_[outcomes_cum_ & outcomes_date_=="daily"]
         if (length(daily_cum_outcomes_)>0){
             daily_cum_sims <- get_cum_sims(sim_data = daily_incid_sims  %>%
                                                mutate(agestrat="age0to130") %>%
@@ -1536,7 +1532,7 @@ process_sims <- function(
                    scenario_id = scenario_id, scenario_name=scenario_name) %>%
             mutate(model_projection_date=opt$forecast_date) %>%
             rename(target_end_date=date) %>%
-            dplyr::left_join(state_fips_abbr) %>%
+            dplyr::left_join(state_fips_abbr) %>% 
             mutate(location=stringr::str_pad(location, width=2, side="left", pad="0")) %>%
             mutate(ahead=round(as.numeric(target_end_date - model_projection_date)/7)) %>%
             mutate(target = recode(outcome_name, "incidI"="inf", "incidC"="case", "incidH"="hosp", "incidD"="death")) %>%

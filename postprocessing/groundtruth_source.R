@@ -100,12 +100,12 @@ clean_gt_forplots <- function(gt_data){
         pivot_wider(names_from = target, values_from = incid)
 
     gt_long <- gt_long %>%
-        rename(time=date, USPS=source)
+        rename(USPS=source)
     gt_long <- gt_long %>%
         rename(outcome_name = target, outcome = incid)
 
     gt_data <- gt_data %>%
-        rename(time=date, USPS=source)
+        rename(USPS=source)
 
     return(gt_data)
 }
