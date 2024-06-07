@@ -356,6 +356,7 @@ print_value1 <- function(value_type, value_dist, value_mean,
                          value_sd, value_a, value_b,
                          intervention_type = NULL,
                          intervention_operation = NULL,
+                         rolling_window = NULL,
                          param_name = "value", indent_space = 6) {
     
     space <- rep(" ", indent_space) %>% paste0(collapse = "")
@@ -409,6 +410,10 @@ print_value1 <- function(value_type, value_dist, value_mean,
         if (is.na(value_dist)) {
             print_val = ""
         }
+      if(!is.null(rolling_window)){
+        print_val <- paste0(print_val, 
+                            space, "rolling_mean_windows: ",rolling_window, "\n")
+      }
     }
     return(print_val)
 }
@@ -556,7 +561,7 @@ print_header <- function (
         setup_name = "SMH",
         disease = "covid19",
         smh_round = NA,
-        data_path = "data",
+        # data_path = "data",
         model_output_dirname = "model_output",
         sim_start_date,
         sim_end_date,
@@ -570,7 +575,7 @@ print_header <- function (
                "disease: ", disease, "\n",
                ifelse(!is.na(smh_round),
                       paste0("smh_round: ", smh_round, "\n"), ""),
-               "data_path: ", data_path, "\n",
+               # "data_path: ", data_path, "\n",
                "model_output_dirname: ", model_output_dirname, "\n",
                "start_date: ", sim_start_date, "\n",
                "end_date: ", sim_end_date, "\n",
@@ -1035,6 +1040,7 @@ print_seir <- function(integration_method = "rk4",
                                     value_sd = params[[i]]$sd,
                                     value_a = params[[i]]$a,
                                     value_b = params[[i]]$b,
+                                    rolling_window = params[[i]]$rolling_window,
                                     intervention_type = params[[i]]$intervention_type,
                                     intervention_operation = params[[i]]$intervention_operation))
     }

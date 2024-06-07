@@ -74,9 +74,7 @@ seir:
 
 seir_modifiers:
   scenarios:
-    - None
     - Scenario1
-    - Scenario2
   modifiers:
     None:
       method: SinglePeriodModifier
@@ -117,25 +115,3 @@ seir_modifiers:
       method: StackedModifier
       modifiers:
         - Wuhan
-
-outcomes:
-  outcome_modifiers:
-    scenarios:
-    - delayframe
-  modifiers:
-    incidC:
-      source:
-        incidence:
-          infection_stage: "I"
-      probability: 
-        value: 0.5
-      delay: 
-        value: 2
-    incidH:
-      source:
-        incidence:
-          infection_stage: "I"
-      probability: 
-        value: 0.01
-      delay: 
-        value: 21

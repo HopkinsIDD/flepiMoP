@@ -300,9 +300,9 @@ calc_prior_likadj  <- function(params,
 ##'
 compute_cumulative_counts <- function(sim_hosp) {
     res <- sim_hosp %>%
-        gather(var, value, -time, -subpop) %>%
+        gather(var, value, -date, -subpop) %>%
         group_by(subpop, var) %>%
-        arrange(time) %>%
+        arrange(date) %>%
         mutate(cumul = cumsum(value)) %>%
         ungroup() %>%
         pivot_wider(names_from = "var", values_from = c("value", "cumul")) %>%
@@ -324,7 +324,7 @@ compute_cumulative_counts <- function(sim_hosp) {
 ##'
 compute_totals <- function(sim_hosp) {
     sim_hosp %>%
-        group_by(time) %>%
+        group_by(date) %>%
         summarise_if(is.numeric, sum, na.rm = TRUE) %>%
         mutate(subpop = "all") %>%
         select(all_of(colnames(sim_hosp))) %>%

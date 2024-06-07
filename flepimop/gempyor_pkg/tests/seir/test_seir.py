@@ -73,8 +73,8 @@ def test_constant_population_legacy_integration():
     )
     integration_method = "legacy"
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -112,8 +112,12 @@ def test_constant_population_legacy_integration():
     for it in range(modinf.n_days):
         totalpop = 0
         for i in range(modinf.nsubpops):
-            totalpop += states[0].sum(axis=1)[it, i]
-            assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+            totalpop += states["prevalence"].sum(axis=1)[it, i]
+            assert (
+                states["prevalence"].sum(axis=1)[it, i] - 1e-3
+                < origpop[i]
+                < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+            )
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -138,8 +142,8 @@ def test_constant_population_rk4jit_integration_fail():
         )
         modinf.seir_config["integration"]["method"] = "rk4.jit"
 
-        seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-        initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+        seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+        initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
         npi = NPI.NPIBase.execute(
             npi_config=modinf.npi_config_seir,
@@ -177,8 +181,12 @@ def test_constant_population_rk4jit_integration_fail():
         for it in range(modinf.n_days):
             totalpop = 0
             for i in range(modinf.nsubpops):
-                totalpop += states[0].sum(axis=1)[it, i]
-                assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+                totalpop += states["prevalence"].sum(axis=1)[it, i]
+                assert (
+                    states["prevalence"].sum(axis=1)[it, i] - 1e-3
+                    < origpop[i]
+                    < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+                )
             assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -204,8 +212,8 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -241,8 +249,12 @@ def test_constant_population_rk4jit_integration():
     for it in range(modinf.n_days):
         totalpop = 0
         for i in range(modinf.nsubpops):
-            totalpop += states[0].sum(axis=1)[it, i]
-            assert states[0].sum(axis=1)[it, i] - 1e-3 < origpop[i] < states[0].sum(axis=1)[it, i] + 1e-3
+            totalpop += states["prevalence"].sum(axis=1)[it, i]
+            assert (
+                states["prevalence"].sum(axis=1)[it, i] - 1e-3
+                < origpop[i]
+                < states["prevalence"].sum(axis=1)[it, i] + 1e-3
+            )
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
@@ -268,8 +280,8 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -354,8 +366,8 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -414,8 +426,8 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     modinf.mobility.data = modinf.mobility.data * 0
 
@@ -574,7 +586,7 @@ def test_inference_resume():
     stoch_traj_flag = True
 
     spatial_config = config["subpop_setup"]
-    if config["data_path"].exists():
+    if "data_path" in config:
         raise ValueError("The config has a data_path section. This is no longer supported.")
     # spatial_base_path = pathlib.Path(config["data_path"].get())
     modinf = model_info.ModelInfo(
@@ -662,8 +674,8 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -672,7 +684,6 @@ def test_parallel_compartments_with_vacc():
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
         pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
-           
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -750,8 +761,8 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, setup=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, setup=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
