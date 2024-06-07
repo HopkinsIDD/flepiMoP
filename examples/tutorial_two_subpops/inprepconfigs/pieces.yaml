@@ -1,0 +1,18 @@
+
+
+
+    # recovery from infection
+    - source: [["I"],["A","B"]]
+      destination: [["R"],["A","B"]]
+      rate: [["gamma"],["1","1"]] 
+      proportional_to: ["source"]
+      proportion_exponent: ["1"]  
+
+    
+
+    # infections of individuals previously infected with variant B with variant A
+    - source: [["R"],["A"]]
+      destination: [["E"],["B"]]
+      rate: [["Ro * gamma"],["fB * eB"]]
+      proportional_to: ["source"]
+      proportional_exponent: ["1"]

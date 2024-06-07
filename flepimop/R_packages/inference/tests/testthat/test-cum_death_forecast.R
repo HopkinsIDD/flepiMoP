@@ -3,7 +3,7 @@ context("cu_death_forecast")
 
 test_that("cum_death_forecast gives correct results, for one loc 100 and on 0", {
   sim_data <- dplyr::tibble(incidD=rpois(200, 10),
-                           time=rep(as.Date("2020-01-01")+1:100,2),
+                           date=rep(as.Date("2020-01-01")+1:100,2),
                            sim_num=1,
                            USPS=rep(c("NY","WA"), each=100))
   
@@ -28,7 +28,7 @@ test_that("cum_death_forecast gives correct results, for one loc 100 and on 0", 
 
 test_that("Giving a date results in an appropriate forecast only for the future", {
   sim_data <- dplyr::tibble(incidD=rpois(200, 10),
-                            time=rep(as.Date("2020-01-01")+0:99,2),
+                            date=rep(as.Date("2020-01-01")+0:99,2),
                             sim_num=1,
                             USPS=rep(c("NY","WA"), each=100))
   
@@ -43,11 +43,11 @@ test_that("Giving a date results in an appropriate forecast only for the future"
                            "USPS")
   
 
-  expect_that(min(rc$time), equals(as.Date("2020-01-16")))
+  expect_that(min(rc$date), equals(as.Date("2020-01-16")))
   expect_that(nrow(rc),equals(2*85))
   expect_that(max(rc$cum_deaths_corr[rc$USPS=="NY"]),
-             equals(sum(sim_data$incidD[sim_data$time>"2020-01-15" & sim_data$USPS=="NY"])))
+             equals(sum(sim_data$incidD[sim_data$date>"2020-01-15" & sim_data$USPS=="NY"])))
   expect_that(max(rc$cum_deaths_corr[rc$USPS=="WA"]),
-              equals(sum(sim_data$incidD[sim_data$time>"2020-01-15" & sim_data$USPS=="WA"])+100))
+              equals(sum(sim_data$incidD[sim_data$date>"2020-01-15" & sim_data$USPS=="WA"])+100))
   
 })
