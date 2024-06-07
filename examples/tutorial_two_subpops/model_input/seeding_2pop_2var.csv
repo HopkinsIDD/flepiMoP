@@ -1,0 +1,2 @@
+subpop, date, amount, source_infection_stage, source_strain, destination_infection_stage, destination_strain
+large_province, 2020-05-01, 1, I, A, I, B
