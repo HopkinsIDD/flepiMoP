@@ -14,18 +14,17 @@ Within the `model_output` directory in the project's directory, the files will b
 
 <pre><code><strong>flepimop_sample
 </strong>├── model_output
-│   ├── seir
-│   │   └── sample_2pop
-│   │       └── None
-│   │           └── 2023.05.24.02/12/48.
-│   │               └── 000000001.2023.05.24.02/12/48..seir.csv
+│   ├── {setup_name}_{seir_modifier_scenario}_{outcome_modifier_scenario}
+│   │   └── run_id
+│   │       └── seir
+│   │           └── 000000001.run_id.seir.parquet
 │   ├── spar
 │   ├── snpi
 </code></pre>
 
-The name of each individual file contains (in order) the .... Describe filing naming conventions
+The name of each individual file contains (in order) the slot, run\_id and file type. The first index indicates the slot (chain, in MCMC language). If multiple iterations or blocks are run, the filename will look like `000000001.000000001.000000001.run_id.seir.parquet` indicating slot.block.iteration.&#x20;
 
-Each file is a data table that is by default saved as a [parquet file](https://parquet.apache.org/) (a compressed representation that can be opened and manipulated with minimal memory) but can alternatively be saved as a csv file. See options for specifying output type in [Other Configuration Options.](model-implementation/other-configuration-options.md)
+Each file is a data table that is by default saved as a [parquet file](https://parquet.apache.org/) (a compressed representation that can be opened and manipulated with minimal memory) but can alternatively be saved as a `csv` file. See options for specifying output type in [Other Configuration Options.](model-implementation/other-configuration-options.md)
 
 The example files outputs we show were generated with the following configuration file
 
@@ -67,13 +66,13 @@ The `value` column gives the numerical values of the parameters defined in the c
 
 ## SNPI (infection model parameter intervention values)
 
-Files in the `snpi` folder contain the time-dependent modifications to the transmission model parameter values (defined in `seir_modifiers` section of the config) for each subpopulation. They contain the interventions that apply to a given subpopulation and the dates within which they apply, and the value of the reduction to the given parameter.
+Files in the `snpi` folder contain the time-dependent modifications to the transmission model parameter values (defined in `seir_modifiers` section of the config) for each subpopulation. They contain the modifiers that apply to a given subpopulation and the dates within which they apply, and the value of the reduction to the given parameter.
 
 The meanings of the columns are:
 
 `subpop` – The subpopulation to which this intervention parameter applies.
 
-`npi_name` – The name of the intervention parameter.
+`modifier_name` – The name of the intervention parameter.
 
 `start_date` – The start date of this intervention, as defined in the configuration file.
 
@@ -81,7 +80,7 @@ The meanings of the columns are:
 
 `parameter` – The parameter to which the intervention applies, as defined in the configuration file.
 
-`reduction` – The size of the reduction to the parameter either from the config, or fit by inference if that is run.
+`value` – The size of the modifier to the parameter either from the config, or fit by inference if that is run.
 
 ## HPAR (observation model parameter values)
 
@@ -97,6 +96,18 @@ The meanings of the columns are:
 
 `value` – The values in this column are the parameter values of the quantity that apply to the given subpopulation and outcome.
 
+## HOSP (observation model output)
+
+Files in the `hosp` folder contain the output of the infection model over time. They contain the value of every outcome variable for each day of the simulation for every subpopulation.
+
+Columns are:
+
+`date` – The calendar date in the simulation, in YYYY-MM-DD format.
+
+`subpop` – Values in this column are the names of the nodes as defined in the `geodata` file given by the user.
+
+`outcome_variable_1, outcome_variable_2, ...` - one column for each different outcome variable as defined in the config, containing the value of the number of individuals in the described compartment in that subpopulation at the given date.&#x20;
+
 ## HNPI (observation model parameter intervention values)
 
 Files in the `hnpi` folder contain any parameter modifier values that apply to the outcomes model, defined in the `outcome_modifiers` section of the config. They contain the values of the outcome parameter modifiers, and the dates to which they apply in a given subpopulation.
@@ -105,7 +116,7 @@ The meanings of the columns are:
 
 `subpop` – The values of this column are the names of the nodes from the `geodata` file.
 
-`npi_name` – The names/labels of the modifier parameters, defined by the user in the config file, which applies to the given node and time period.
+`modifier_name` – The names/labels of the modifier parameters, defined by the user in the config file, which applies to the given node and time period.
 
 `start_date` – The start date of this intervention, as defined in the configuration file.
 
@@ -113,7 +124,7 @@ The meanings of the columns are:
 
 `parameter` – The outcome parameter to which the intervention applies.
 
-`reduction` – The values in this column are the reduction values of the intervention parameters, which apply to the given parameter in a given subpopulation. Note that these are strictly reductions; thus a negative value corresponds to an increase in the parameter, while a positive value corresponds to a decrease in the parameter.
+`value` – The values in this column are the modifier values of the intervention parameters, which apply to the given parameter in a given subpopulation. Note that these are strictly reductions; thus a negative value corresponds to an increase in the parameter, while a positive value corresponds to a decrease in the parameter.
 
 ## SEED (model seeding values)
 
