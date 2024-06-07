@@ -1,6 +1,6 @@
 ##'
 ##' Function that does a rapid testing of the inference procedures on a single
-##' time series.
+##' date series.
 ##'
 ##' @param seeding the initial seeding
 ##' @param config the config file with inference info.
@@ -44,8 +44,8 @@ single_loc_inference_test <- function(to_fit,
     # Data to fit
     obs <- to_fit
     
-    # Times based on config
-    sim_times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
+    # dates based on config
+    sim_dates <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     
     # Get unique geonames
     geonames <- unique(obs[[obs_subpop]])
@@ -83,7 +83,7 @@ single_loc_inference_test <- function(to_fit,
         
         seeding_init <- seeding
         for (i in 1:nrow(seeding_init)) {
-            seeding_init$date[i] <- sample(sim_times[1:20], 1)
+            seeding_init$date[i] <- sample(sim_dates[1:20], 1)
             # TODO change amount based on data
             seeding_init$amount[i] <- rpois(1, 10)
         }
@@ -102,7 +102,7 @@ single_loc_inference_test <- function(to_fit,
             write_csv(npi_file, append = file.exists(npi_file))
         
         # Simulate initial hospitalizatoins
-        initial_sim_hosp <- simulate_single_epi(times = sim_times, 
+        initial_sim_hosp <- simulate_single_epi(dates = sim_dates, 
                                                 seeding = initial_seeding,
                                                 R0 = R0, 
                                                 S0 = S0, 
@@ -110,13 +110,13 @@ single_loc_inference_test <- function(to_fit,
                                                 sigma = sigma,
                                                 beta_mults = 1-initial_npis$value) %>% 
             single_hosp_run(config) %>% 
-            dplyr::filter(time %in% obs$date)
+            dplyr::filter(date %in% obs$date)
         
         write_csv(initial_sim_hosp, glue::glue("{epi_dir}sim_slot_{s}_index_0.csv"))
         
         initial_sim_stats <- getStats(
             initial_sim_hosp,
-            "time",
+            "date",
             "sim_var",
             end_date = max(obs$date),
             config$inference$statistics
@@ -156,7 +156,7 @@ single_loc_inference_test <- function(to_fit,
             current_npis <- perturb_expand_npis(initial_npis, config$interventions$settings)
             
             # Simulate  hospitalizatoins
-            sim_hosp <- simulate_single_epi(times = sim_times,
+            sim_hosp <- simulate_single_epi(dates = sim_dates,
                                             seeding = current_seeding,
                                             R0 = R0,
                                             S0 = S0,
@@ -164,11 +164,11 @@ single_loc_inference_test <- function(to_fit,
                                             sigma = sigma,
                                             beta_mults = 1-current_npis$reduction) %>% 
                 single_hosp_run(config) %>% 
-                dplyr::filter(time %in% obs$date)
+                dplyr::filter(date %in% obs$date)
             
             sim_stats <- getStats(
                 sim_hosp,
-                "time",
+                "date",
                 "sim_var",
                 end_date = max(obs$date),
                 config$inference$statistics
@@ -239,7 +239,7 @@ single_loc_inference_test <- function(to_fit,
 
 ##'
 ##' Function that does a rapid testing of the inference procedures on a single
-##' time series.
+##' date series.
 ##'
 ##' @param seeding the initial seeding
 ##' @param config the config file with inference info.
@@ -287,8 +287,8 @@ multi_loc_inference_test <- function(to_fit,
     # Data to fit
     obs <- to_fit
     
-    # Times based on config
-    sim_times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
+    # dates based on config
+    sim_dates <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     
     # Get unique geonames
     geonames <- unique(obs[[obs_subpop]])
@@ -332,7 +332,7 @@ multi_loc_inference_test <- function(to_fit,
         
         seeding_init <- seedings
         for (i in 1:nrow(seeding_init)) {
-            seeding_init$date[i] <- sample(sim_times[1:20], 1)
+            seeding_init$date[i] <- sample(sim_dates[1:20], 1)
             # TODO change amount based on data
             seeding_init$amount[i] <- rpois(1, 10)
         }
@@ -354,7 +354,7 @@ multi_loc_inference_test <- function(to_fit,
             pivot_wider(values_from = "value", names_from = "subpop", id_cols = "date")
         
         # Simulate epi
-        initial_sim_hosp <- simulate_multi_epi(times = sim_times,
+        initial_sim_hosp <- simulate_multi_epi(dates = sim_dates,
                                                seedings = initial_seeding,
                                                R0 = R0,
                                                S0s = S0s,
@@ -364,7 +364,7 @@ multi_loc_inference_test <- function(to_fit,
                                                mob = mob,
                                                beta_mults = 1-as.matrix(npi_mat[,-1])) %>% 
             multi_hosp_run(N, config) %>% 
-            dplyr::filter(time %in% obs$date)
+            dplyr::filter(date %in% obs$date)
         
         write_csv(initial_sim_hosp, glue::glue("{epi_dir}sim_slot_{s}_index_0_multi.csv"))
         
@@ -372,10 +372,10 @@ multi_loc_inference_test <- function(to_fit,
         for(location in all_locations) {
             
             local_sim_hosp <- dplyr::filter(initial_sim_hosp, !!rlang::sym(obs_subpop) == location) %>%
-                dplyr::filter(time %in% unique(obs$date[obs$subpop == location]))
+                dplyr::filter(date %in% unique(obs$date[obs$subpop == location]))
             initial_sim_stats <- inference::getStats(
                 local_sim_hosp,
-                "time",
+                "date",
                 "sim_var",
                 #end_date = max(obs$date[obs[[obs_subpop]] == location]),
                 stat_list = config$inference$statistics
@@ -427,7 +427,7 @@ multi_loc_inference_test <- function(to_fit,
                 pivot_wider(values_from = "reduction", names_from = "subpop", id_cols = "date")
             
             # Simulate  hospitalizatoins
-            sim_hosp <- simulate_multi_epi(times = sim_times,
+            sim_hosp <- simulate_multi_epi(dates = sim_dates,
                                            seedings = current_seeding,
                                            R0 = R0,
                                            S0s = S0s,
@@ -437,16 +437,16 @@ multi_loc_inference_test <- function(to_fit,
                                            mob = mob,
                                            beta_mults = 1-as.matrix(npi_mat[,-1])) %>% 
                 multi_hosp_run(N, config) %>% 
-                dplyr::filter(time %in% obs$date)
+                dplyr::filter(date %in% obs$date)
             
             current_likelihood_data <- list()
             
             for(location in all_locations) {
                 local_sim_hosp <- dplyr::filter(sim_hosp, !!rlang::sym(obs_subpop) == location) %>%
-                    dplyr::filter(time %in% unique(obs$date[obs$subpop == location]))
+                    dplyr::filter(date %in% unique(obs$date[obs$subpop == location]))
                 sim_stats <- inference::getStats(
                     local_sim_hosp,
-                    "time",
+                    "date",
                     "sim_var",
                     #end_date = max(obs$date[obs[[obs_subpop]] == location]),
                     stat_list = config$inference$statistics
@@ -533,11 +533,11 @@ multi_loc_inference_test <- function(to_fit,
 ##'
 ##' TODO: Modify to just call python code
 ##'
-##' @param times the times to run the epidemic on
+##' @param dates the dates to run the epidemic on
 ##' @param seeding the seeding to use
 ##' @param R0 the reproductive number
 ##' @param S0 the initial number susceptible
-##' @param gamma the time between compartments
+##' @param gamma the date between compartments
 ##' @param sigma the incubation period/latent period
 ##' @param beta_mults multipliers to capture the impact of interventions
 ##' @param alpha defaults to 1
@@ -545,13 +545,13 @@ multi_loc_inference_test <- function(to_fit,
 ##' @return the epimic states
 ##'
 ##' @export
-simulate_single_epi <- function(times,
+simulate_single_epi <- function(dates,
                                 seeding,
                                 S0,
                                 R0,
                                 gamma,
                                 sigma,
-                                beta_mults = rep(1, length(times)),
+                                beta_mults = rep(1, length(dates)),
                                 alpha = 1) {
     
     require(tidyverse)
@@ -560,7 +560,7 @@ simulate_single_epi <- function(times,
     beta <- R0 * gamma/3
     
     ##set up return matrix
-    epi <- matrix(0, nrow=length(times), ncol=7)
+    epi <- matrix(0, nrow=length(dates), ncol=7)
     colnames(epi) <- c("S","E","I1","I2","I3","R","incidI")
     
     
@@ -577,12 +577,12 @@ simulate_single_epi <- function(times,
     epi[1,S] <- S0
     
     ##get the indices where seeding occurs
-    seed_times <- which(times%in%seeding$date)
+    seed_dates <- which(dates%in%seeding$date)
     
-    for (i in 1:(length(times)-1)) {
+    for (i in 1:(length(dates)-1)) {
         ##Seed if possible
-        if(i%in% seed_times) {
-            tmp <- seeding$amount[which(i==seed_times)]
+        if(i%in% seed_dates) {
+            tmp <- seeding$amount[which(i==seed_dates)]
             epi[i,S] <- epi[i,S] - tmp
             epi[i,E] <- epi[i,E] + tmp
         }
@@ -607,8 +607,8 @@ simulate_single_epi <- function(times,
     }
     
     epi <- as.data.frame(epi) %>%
-        mutate(time=times)%>%
-        pivot_longer(-time,values_to="N", names_to="comp")
+        mutate(date=dates)%>%
+        pivot_longer(-date,values_to="N", names_to="comp")
     
     return(epi)
 }
@@ -620,22 +620,22 @@ simulate_single_epi <- function(times,
 ##'
 ##' TODO: Modify to just call python code
 ##'
-##' @param times the times to run the epidemic on
+##' @param dates the dates to run the epidemic on
 ##' @param seedings the seeding to use
 ##' @param R0s the reproductive number
 ##' @param S0s the initial number susceptibles
-##' @param gamma the time between compartments
+##' @param gamma the date between compartments
 ##' @param sigma the incubation period/latent period
 ##' @param N the number of nodes
 ##' @param mob mobility matrix N x N
-##' @param pa proportion of time away
+##' @param pa proportion of date away
 ##' @param beta_mults multipliers to capture the impact of interventions
 ##' @param alpha defaults to 1
 ##'
 ##' @return the epimic states
 ##'
 ##' @export
-simulate_multi_epi <- function(times,
+simulate_multi_epi <- function(dates,
                                seedings,
                                S0s,
                                R0,
@@ -644,12 +644,12 @@ simulate_multi_epi <- function(times,
                                N,
                                mob,
                                pa = .5,
-                               beta_mults = matrix(rep(1, N*length(times)), ncol = N),
+                               beta_mults = matrix(rep(1, N*length(dates)), ncol = N),
                                alpha = 1) {
     
     require(tidyverse)
     
-    # proportion time away
+    # proportion date away
     paoverh <- pa/S0s
     oneminusp <- 1-paoverh*rowSums(mob)
     
@@ -657,7 +657,7 @@ simulate_multi_epi <- function(times,
     beta <- R0 * gamma/3
     
     ##set up return matrix
-    epi <- array(0, dim = c(length(times), 7, N))
+    epi <- array(0, dim = c(length(dates), 7, N))
     colnames(epi) <- c("S","E","I1","I2","I3","R","incidI")
     
     ##column indices for convenience
@@ -673,17 +673,17 @@ simulate_multi_epi <- function(times,
     epi[1,S,] <- S0s
     
     ##get the indices where seeding occurs
-    seed_times <- which(times%in%seedings$date)
+    seed_dates <- which(dates%in%seedings$date)
     
-    for (i in 1:(length(times)-1)) {
+    for (i in 1:(length(dates)-1)) {
         
         betaIh <- matrix(beta*beta_mults[i,]*(colSums(epi[i,I1:I3,])^alpha)/S0s, ncol = 1)
         mobbetaIh <- mob %*% betaIh
         
         for (j in 1:N) {
             ##Seed if possible
-            if(i%in% seed_times) {
-                ind <- which(i==seed_times)
+            if(i%in% seed_dates) {
+                ind <- which(i==seed_dates)
                 if (ind == j) {
                     tmp <- seedings$amount[ind]
                     epi[i,S,j] <- epi[i,S,j] - tmp
@@ -714,8 +714,8 @@ simulate_multi_epi <- function(times,
     
     epi <- lapply(1:N, function(x) as.data.frame(epi[,,x]) %>% mutate(subpop = x)) %>%
         bind_rows() %>% 
-        mutate(time=rep(times, N)) %>%
-        pivot_longer(cols = c(-time, -subpop), values_to="N", names_to="comp")
+        mutate(date=rep(dates, N)) %>%
+        pivot_longer(cols = c(-date, -subpop), values_to="N", names_to="comp")
     
     return(epi)
 }
@@ -736,9 +736,9 @@ single_hosp_run <- function(epi, config) {
     p_death <- config$hospitalization$parameters$p_death
     p_death_rate <- config$hospitalization$parameters$p_death_rate
     p_hosp <- p_death/p_death_rate
-    time_hosp_pars <- as_evaled_expression(config$hospitalization$parameters$time_hosp)
-    time_disch_pars <- as_evaled_expression(config$hospitalization$parameters$time_disch)
-    time_hosp_death_pars <- as_evaled_expression(config$hospitalization$parameters$time_hosp_death)
+    date_hosp_pars <- as_evaled_expression(config$hospitalization$parameters$date_hosp)
+    date_disch_pars <- as_evaled_expression(config$hospitalization$parameters$date_disch)
+    date_hosp_death_pars <- as_evaled_expression(config$hospitalization$parameters$date_hosp_death)
     dat_ <- dplyr::filter(epi, comp == "incidI") %>% 
         select(-comp) %>% 
         rename(incidI = N) %>%
@@ -749,9 +749,9 @@ single_hosp_run <- function(epi, config) {
         dat_ <- select(dat_, -subpop)
     }
     
-    dat_H <- hosp_create_delay_frame('incidI',p_hosp,dat_,time_hosp_pars,"H")
-    data_D <- hosp_create_delay_frame('incidH',p_death_rate,dat_H,time_hosp_death_pars,"D")
-    R_delay_ <- round(exp(time_disch_pars[1]))
+    dat_H <- hosp_create_delay_frame('incidI',p_hosp,dat_,date_hosp_pars,"H")
+    data_D <- hosp_create_delay_frame('incidH',p_death_rate,dat_H,date_hosp_death_pars,"D")
+    R_delay_ <- round(exp(date_disch_pars[1]))
     res <- Reduce(function(x, y, ...) merge(x, y, all = TRUE, ...),
                   list(dat_, dat_H, data_D)) %>%
         tidyr::replace_na(
@@ -759,7 +759,7 @@ single_hosp_run <- function(epi, config) {
                  incidH = 0,
                  incidD = 0,
                  hosp_curr = 0)) %>%
-        dplyr::mutate(date_inds = as.integer(time - min(time) + 1)) %>%
+        dplyr::mutate(date_inds = as.integer(date - min(date) + 1)) %>%
         dplyr::arrange(date_inds) %>%
         split(.$uid) %>%
         purrr::map_dfr(function(.x){
@@ -781,14 +781,14 @@ single_hosp_run <- function(epi, config) {
 multi_hosp_run <- function(epi, N, config) {
     map_df(1:N, 
            ~ single_hosp_run(dplyr::filter(epi, subpop == .), config)) %>%
-        dplyr::filter(time >= config$start_date,
-               time <= config$end_date)
+        dplyr::filter(date >= config$start_date,
+               date <= config$end_date)
 }
 
 ##'
 ##' Create NPIs dataframe for a single location for input to SEIR code
 ##'
-##' @param times vector of times to use
+##' @param dates vector of dates to use
 ##' @param config configuration file
 ##'
 ##' @return a dataframe with npi reduction values by date
@@ -797,8 +797,8 @@ multi_hosp_run <- function(epi, N, config) {
 ##' @export
 npis_dataframe <- function(config, random = F, subpop = 1, offset = 0, intervention_multi = 1) {
     
-    times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
-    npis <- tibble(date = times, value = 0, modifier_name = "local_variation", subpop = subpop)
+    dates <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
+    npis <- tibble(date = dates, value = 0, modifier_name = "local_variation", subpop = subpop)
     interventions <- config$interventions$settings
     date_changes <- map_chr(interventions[1:2], 
                             ~ifelse(is.null(.$period_start_date),
@@ -809,17 +809,17 @@ npis_dataframe <- function(config, random = F, subpop = 1, offset = 0, intervent
     
     # Apply interventions
     for (d in 1:length(date_changes)) {
-        npis$value[times >= date_changes[d]] <- interventions[[d]]$value$mean * intervention_multi
-        npis$modifier_name[times >= date_changes[d]] <- names(interventions)[d]
+        npis$value[dates >= date_changes[d]] <- interventions[[d]]$value$mean * intervention_multi
+        npis$modifier_name[dates >= date_changes[d]] <- names(interventions)[d]
     }
     
     if(random) {
         # Randomly assign interventions
         for (d in 1:length(date_changes)) {
             if (names(interventions)[d] == "local_variation") {
-                npis$value[times >= date_changes[d]] <- runif(1, -.5, .5)
+                npis$value[dates >= date_changes[d]] <- runif(1, -.5, .5)
             } else {
-                npis$value[times >= date_changes[d]] <- runif(1, 0, 1)
+                npis$value[dates >= date_changes[d]] <- runif(1, 0, 1)
             }
         }
     }
@@ -840,14 +840,14 @@ npis_dataframe <- function(config, random = F, subpop = 1, offset = 0, intervent
 synthetic_data <- function(S0, seeding, config) {
     
     # Simulate single epidemic 
-    times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
+    dates <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     npis <- npis_dataframe(config)
     R0 <- flepicommon::as_evaled_expression(config$seir$parameters$R0s$value)
     gamma <- flepicommon::as_evaled_expression(config$seir$parameters$gamma$value)
     sigma <- flepicommon::as_evaled_expression(config$seir$parameters$sigma)
     
     # Simulate epi
-    epi <- simulate_single_epi(times = times,
+    epi <- simulate_single_epi(dates = dates,
                                seeding = seeding,
                                R0 = R0,
                                S0 = S0,
@@ -858,7 +858,7 @@ synthetic_data <- function(S0, seeding, config) {
     # - - - -
     # Setup fake data
     fake_data <- single_hosp_run(epi, config) %>%
-        rename(date = time) %>% 
+        rename(date = date) %>% 
         dplyr::filter(date >= config$start_date,
                date <= config$end_date)
     
@@ -882,7 +882,7 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
     N <- length(S0s)  # number of nodes
     
     # Simulate single epidemic 
-    times <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
+    dates <- seq.Date(as.Date(config$start_date), as.Date(config$end_date), by = "1 days")
     npis <- pmap(list(x = 1:N, y = offsets, z = interventions_multi),
                  function(x,y,z) 
                      npis_dataframe(config, 
@@ -899,7 +899,7 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
         pivot_wider(values_from = "value", names_from = "subpop", id_cols = "date")
     
     # Simulate epi
-    epi <- simulate_multi_epi(times = times,
+    epi <- simulate_multi_epi(dates = dates,
                               seedings = seedings,
                               R0 = R0,
                               S0s = S0s,
@@ -913,7 +913,7 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
     # Setup fake data
     fake_data <- map_df(1:N, 
                         ~ single_hosp_run(dplyr::filter(epi, subpop == .), config)) %>%
-        rename(date = time) %>% 
+        rename(date = date) %>% 
         dplyr::filter(date >= config$start_date,
                date <= config$end_date)
     
@@ -921,7 +921,7 @@ synthetic_data_multi <- function(S0s, seedings, mob, config, offsets, interventi
 }
 
 ##'
-##' Expands the perturb npi into a dataframe with time
+##' Expands the perturb npi into a dataframe with date
 ##'
 ##' @param npis the npis in "long" version (one value by npi, date and place)
 ##' @param intervention_settings intervention_settings from the config file

@@ -52,11 +52,11 @@ aggregate_and_calc_loc_likelihoods <- function(
             dplyr::filter(
                 modeled_outcome,
                 !!rlang::sym(obs_subpop) == location,
-                time %in% unique(obs$date[obs$subpop == location])
+                date %in% unique(obs$date[obs$subpop == location])
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
-                "time",
+                "date",
                 "sim_var",
                 stat_list = targets_config,
                 start_date = start_date,
@@ -625,7 +625,7 @@ initialize_mcmc_first_block <- function(
                 }
                 initial_init_file <- config$initial_conditions$initial_conditions_file
 
-            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
+            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw", "plugin")) {
                 print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
                       and no copying to global or chimeric files is being done.")
 
@@ -662,6 +662,26 @@ initialize_mcmc_first_block <- function(
 
             arrow::write_parquet(initial_init, global_files[["init_filename"]])
         }
+
+        # if the initial conditions file contains a 'date' column, filter for config$start_date
+        if (grepl(".csv", global_files[["init_filename"]])){
+            initial_init <- readr::read_csv(global_files[["init_filename"]],show_col_types = FALSE)
+        }else{
+            initial_init <- arrow::read_parquet(global_files[["init_filename"]])
+        }
+
+        if("date" %in% colnames(initial_init)){
+                
+            initial_init <- initial_init %>%
+                dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+                dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+            
+            if (nrow(initial_init) == 0) {
+                stop("ERROR: Initial conditions file specified but does not contain the start date.")
+            }  
+                
+        }
+        arrow::write_parquet(initial_init, global_files[["init_filename"]])
     }
 
 
@@ -672,7 +692,7 @@ initialize_mcmc_first_block <- function(
     # These functions save variables to files of the form variable/name/seir_modifiers_scenario/outcome_modifiers_scenario/run_id/global/intermediate/slot.(block-1),runID.variable.ext
     if (any(checked_par_files %in% global_file_names)) {
         if (!all(checked_par_files %in% global_file_names)) {
-            stop("Provided some GempyorSimulator input, but not all")
+            stop("Provided some GempyorInference input, but not all")
         }
         if (any(checked_sim_files %in% global_file_names)) {
             if (!all(checked_sim_files %in% global_file_names)) {
@@ -681,14 +701,14 @@ initialize_mcmc_first_block <- function(
             tryCatch({
                 gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
+                print("GempyorInference failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
-                for(m in reticulate::py_last_error()) cat(m)
-                stop("GempyorSimulator failed to run... stopping")
+                for(m in reticulate::py_last_error()) print(m)
+                stop("GempyorInference failed to run... stopping")
             })
             #gempyor_inference_runner$one_simulation(sim_id2write = block - 1)
         } else {
-            stop("Provided some GempyorSimulator output(seir, hosp), but not GempyorSimulator input")
+            stop("Provided some GempyorInference output(seir, hosp), but not GempyorInference input")
         }
     } else {
         if (any(checked_sim_files %in% global_file_names)) {
@@ -699,10 +719,10 @@ initialize_mcmc_first_block <- function(
             tryCatch({
                 gempyor_inference_runner$one_simulation(sim_id2write = block - 1, load_ID = TRUE, sim_id2load = block - 1)
             }, error = function(e) {
-                print("GempyorSimulator failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
+                print("GempyorInference failed to run (call on l. 687 of inference_slot_runner_funcs.R).")
                 print("Here is all the debug information I could find:")
-                for(m in reticulate::py_last_error()) cat(m)
-                stop("GempyorSimulator failed to run... stopping")
+                for(m in reticulate::py_last_error()) print(m)
+                stop("GempyorInference failed to run... stopping")
             })
             #gempyor_inference_runner$one_simulation(sim_id2write=block - 1, load_ID=TRUE, sim_id2load=block - 1)
         }

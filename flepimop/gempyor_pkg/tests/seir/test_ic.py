@@ -41,8 +41,7 @@ class TestIC:
         s.initial_conditions_config["allow_missing_nodes"] = True
         s.initial_conditions_config["allow_missing_compartments"] = True
         sic = initial_conditions.InitialConditionsFactory(config=s.initial_conditions_config)
-        sic.get_from_config(sim_id=100, setup=s)
-
+        sic.get_from_config(sim_id=100, modinf=s)
 
     def test_IC_IC_notImplemented_fail(self):
         with pytest.raises(NotImplementedError, match=r".*unknown.*initial.*conditions.*"):
@@ -61,4 +60,4 @@ class TestIC:
             s.initial_conditions_config["method"] = "unknown"
             sic = initial_conditions.InitialConditionsFactory(config=s.initial_conditions_config)
 
-            sic.get_from_config(sim_id=100, setup=s)
+            sic.get_from_config(sim_id=100, modinf=s)
