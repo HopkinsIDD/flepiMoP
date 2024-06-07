@@ -55,7 +55,7 @@
 
 ## 🗜️ Development
 
-* [Python guidelines for developers](development/python-guidelines-for-developers.md)
+* [Guidelines for contributors](development/python-guidelines-for-developers.md)
 
 ## Deprecated pages
 

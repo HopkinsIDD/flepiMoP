@@ -1,10 +1,37 @@
-# Python guidelines for developers
+# Guidelines for contributors
 
-The "heart" of the pipeline, gempyor, is written in python taking advantage of just-in-time compilation (via numba) and existing optimized librairies (numpy, pandas). If you would like to help us build gempyor, here are some useful information
+All are welcome to contribute to flepiMoP! The easiest way is to open an issue on GitHub if you encounter a bug or if you have an issue with the framework. We would be very happy to help you out.
 
-### Tests and build dependencies
+If you want to contribute code, fork the [flepiMoP repository](https://github.com/HopkinsIDD/flepiMoP), modify it, and submit your Pull Request (PR). In order to be merged, a pull request need:
 
-First, you'll need to install the gempyor package with build dependencies:
+* the approval of two reviewers AND
+* the continuous integration (CI) tests passing.
+
+### Contributing to the Python code
+
+The "heart" of the pipeline, gempyor, is written in Python taking advantage of just-in-time compilation (via `numba`) and existing optimized libraries (`numpy`, `pandas`). If you would like to help us build gempyor, here is some useful information.
+
+#### Frameworks
+
+We make extensive use of the following packages:
+
+* [click](https://click.palletsprojects.com/en/) for managing the command-line arguments
+* [confuse](https://confuse.readthedocs.io/en/latest/usage.html) for accessing the configuration file
+* numba to just-in-time compile the core model
+* sympy to parse the model equations
+* pyarrow as parquet is our main data storage format
+* [xarray](https://docs.xarray.dev/en/stable/), which provides labels in the form of dimensions, coordinates and attributes on top of raw NumPy multidimensional arrays, for performance and convenience.&#x20;
+* emcee for inference, as an option
+* graphviz to export transition graph between compartments
+* pandas, numpy, scipy, seaborn, matplotlib and tqdm like many Python projects
+
+{% hint style="info" %}
+One of the current focus is to switch internal data types from dataframes and numpy array to xarrays!
+{% endhint %}
+
+#### Tests and build dependencies
+
+To run the tests suite locally, you'll need to install the gempyor package with build dependencies:
 
 ```bash
 pip install "flepimop/gempyor_pkg[test]"
@@ -14,7 +41,7 @@ which installs the `pytest` and `mock` packages in addition to all other gempyor
 
 If you are running from a conda environment and installing with \`--no-deps\`, then you should make sure that these two packages are installed.
 
-Now you can try to run the gempyor test suite by running, from the `gempyor_pkg` folder:
+Now you can try to run the gempyor test suite by running, from the `flepimop/gempyor_pkg` folder:
 
 ```bash
 pytest
@@ -22,7 +49,7 @@ pytest
 
 If that works, then you are ready to develop gempyor. Feel free to open your first pull request.
 
-If you want more output on tests, e.g capturing standart output (print), you can use:
+If you want more output on tests, e.g capturing standard output (print), you can use:
 
 ```bash
 pytest -vvvv
@@ -40,7 +67,7 @@ Before committing, make sure you **format your code** using black (see below) an
 
 ### Formatting
 
-We try to remain close to python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull-requests. It provides a consistent style, which is useful when diffing. We use a custom length of 120 characters as the baseline is short for scientific code. Here is the line to use to format your code:
+We try to remain close to Python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull requests. It provides a consistent style, which is useful when diffing. We use a custom length of 120 characters as the baseline is short for scientific code. Here is the line to use to format your code:
 
 ```bash
 black --line-length 120 . --exclude renv*
@@ -50,10 +77,22 @@ black --line-length 120 . --exclude renv*
 Please use type-hints as much as possible, as we are trying to move towards static checks.
 {% endhint %}
 
-### Structure of the main classes
+#### Structure of the main classes
 
-The main classes, such as `Parameter`, `NPI`, `SeedingAndInitialConditions`,`Compartments` should tend to the same struture:
+The code is structured so that each of the main classes **owns** a config segment, and only this class should parse and build the related object. To access this information, other classes first need to build the object.
 
+{% hint style="warning" %}
+Below, this page is still underconstruction
+{% endhint %}
+
+The main classes are:
+
+* `Coordinates:` this is a light class that stores all the coordinates needed by every other class (e.g the time serie
+* `Parameter`
+* `Compartments`
+* `Modifers`
+* `Seeding`,
+* `InitialConditions`
 * a `writeDF`
 * function to plot
 * (TODO: detail pipeline internal API)
