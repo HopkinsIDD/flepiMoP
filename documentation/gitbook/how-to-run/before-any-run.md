@@ -65,7 +65,7 @@ Put your model configuration file(s) directly in this repository.
 
 #### Create a folder for model inputs
 
-This folder (which can have any name, but for simplicity can just be called **model\_input**) should contain your files specifying the [population structure, population mixing](../gempyor/model-implementation/specifying-population-structure.md), [seeding/initial conditions](../gempyor/model-implementation/specifying-initial-conditions-and-seeding.md), and optional input such as time-series parameters. &#x20;
+This folder (which can have any name, but for simplicity can just be called **model\_input**) should contain your files specifying the [population structure, population mixing](../gempyor/model-implementation/specifying-population-structure.md), [seeding/initial conditions](../gempyor/model-implementation/specifying-initial-conditions.md), and optional input such as time-series parameters. &#x20;
 
 {% hint style="success" %}
 Now you area ready to run the code using your desired method (see below)!
