@@ -39,7 +39,7 @@ To get access to the flepiMoP model code - stored as a [repository on Github.com
 
 ### 📂 Create a project repository from `flepimop_sample`&#x20;
 
-In order to create a sample project repository from the [flepimop\_sample](https://github.com/HopkinsIDD/flepimop\_sample) repository follow these steps:
+In order to create a sample project repository from the [flepimop\_sample](https://github.com/HopkinsIDD/flepimop\_sample) repository you can follow these steps:
 
 1. **Fork the sample project repository,**  [flepimop\_sample](https://github.com/HopkinsIDD/flepimop\_sample), to your desired Github account and give it a repository name. Instructions for forking a repository are available [here](https://docs.github.com/en/get-started/quickstart/fork-a-repo). Copy the URL of your forked version of the repository.&#x20;
 2. **Clone the sample project repository locally**.&#x20;
