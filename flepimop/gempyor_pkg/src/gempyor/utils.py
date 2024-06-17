@@ -355,17 +355,21 @@ def print_disk_diagnosis():
     print("END AWS DIAGNOSIS ================================")
 
 
-def create_resume_out_filename(filetype: str, liketype: str) -> str:
-    run_id = os.environ.get("FLEPI_RUN_INDEX")
-    prefix = f"{os.environ.get('FLEPI_PREFIX')}/{os.environ.get('FLEPI_RUN_INDEX')}"
-    inference_filepath_suffix = f"{liketype}/intermidate"
-    inference_filename_prefix = "{:09d}.".format(int(os.environ.get("FLEPI_SLOT_INDEX")))
-    index = "{:09d}.{:09d}".format(1, int(os.environ.get("FLEPI_BLOCK_INDEX")) - 1)
+def create_resume_out_filename(flepi_run_index: str, 
+                               flepi_prefix: str, 
+                               flepi_slot_index: str, 
+                               flepi_block_index: str, 
+                               filetype: str, 
+                               liketype: str) -> str:
+    prefix = f"{flepi_prefix}/{flepi_run_index}"
+    inference_filepath_suffix = f"{liketype}/intermediate"
+    inference_filename_prefix = "{:09d}.".format(int(flepi_slot_index))
+    index = "{:09d}.{:09d}".format(1, int(flepi_block_index) - 1)
     extension = "parquet"
     if filetype == "seed":
         extension = "csv"
     return file_paths.create_file_name(
-        run_id=run_id,
+        run_id=flepi_run_index,
         prefix=prefix,
         inference_filename_prefix=inference_filename_prefix,
         inference_filepath_suffix=inference_filepath_suffix,
@@ -375,16 +379,15 @@ def create_resume_out_filename(filetype: str, liketype: str) -> str:
     )
 
 
-def create_resume_input_filename(filetype: str, liketype: str) -> str:
-    run_id = os.environ.get("RESUME_RUN_INDEX")
-    prefix = f"{os.environ.get('FLEPI_PREFIX')}/{os.environ.get('RESUME_RUN_INDEX')}"
+def create_resume_input_filename(resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str) -> str:
+    prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
-    index = os.environ.get("FLEPI_SLOT_INDEX")
+    index = flepi_slot_index
     extension = "parquet"
     if filetype == "seed":
         extension = "csv"
     return file_paths.create_file_name(
-        run_id=run_id,
+        run_id=resume_run_index,
         prefix=prefix,
         inference_filepath_suffix=inference_filepath_suffix,
         index=index,
@@ -393,18 +396,16 @@ def create_resume_input_filename(filetype: str, liketype: str) -> str:
     )
 
 
-def get_parquet_types_for_resume() -> List[str]:
+def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str) -> List[str]:
     """
     Retrieves a list of parquet file types that are relevant for resuming a process based on
     specific environment variable settings. This function dynamically determines the list
     based on the current operational context given by the environment.
 
     The function checks two environment variables:
-    - `RESUME_DISCARD_SEEDING`: Determines whether seeding-related file types should be included.
-    - `FLEPI_BLOCK_INDEX`: Determines a specific operational mode or block of the process.
+    - `resume_discard_seeding`: Determines whether seeding-related file types should be included.
+    - `flepi_block_index`: Determines a specific operational mode or block of the process.
     """
-    resume_discard_seeding = os.environ.get("RESUME_DISCARD_SEEDING")
-    flepi_block_index = os.environ.get("FLEPI_BLOCK_INDEX")
     if flepi_block_index == "1":
         if resume_discard_seeding == "true":
             return ["spar", "snpi", "hpar", "hnpi", "init"]
@@ -414,7 +415,14 @@ def get_parquet_types_for_resume() -> List[str]:
         return ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
 
 
-def create_resume_file_names_map() -> Dict[str, str]:
+def create_resume_file_names_map(resume_discard_seeding,
+                                 flepi_block_index,
+                                 resume_run_index,
+                                 flepi_prefix,
+                                 flepi_slot_index,
+                                 flepi_run_index,
+                                 last_job_output
+                                 ) -> Dict[str, str]:
     """
     Generates a mapping of input file names to output file names for a resume process based on
     parquet file types and environmental conditions. The function adjusts the file name mappings
@@ -439,18 +447,26 @@ def create_resume_file_names_map() -> Dict[str, str]:
         functions and environment variables which if improperly configured could lead to unexpected
         behavior.
     """
-    parquet_types = get_parquet_types_for_resume()
+    file_types = get_filetype_for_resume(resume_discard_seeding=resume_discard_seeding, 
+                                                 flepi_block_index=flepi_block_index)
     resume_file_name_mapping = dict()
     liketypes = ["global", "chimeric"]
-    for filetype in parquet_types:
+    for filetype in file_types:
         for liketype in liketypes:
-            output_file_name = create_resume_out_filename(filetype=filetype, liketype=liketype)
+            output_file_name = create_resume_out_filename(flepi_run_index=flepi_run_index,
+                                                          flepi_prefix=flepi_prefix,
+                                                          flepi_slot_index=flepi_slot_index,
+                                                          flepi_block_index=flepi_block_index,
+                                                          filetype=filetype,
+                                                          liketype=liketype)
             input_file_name = output_file_name
             if os.environ.get("FLEPI_BLOCK_INDEX") == "1":
-                input_file_name = create_resume_input_filename(filetype=filetype, liketype=liketype)
+                input_file_name = create_resume_input_filename(resume_run_index=resume_run_index,
+                                                               flepi_prefix=flepi_prefix,
+                                                               flepi_slot_index=flepi_slot_index,
+                                                               filetype=filetype,
+                                                               liketype=liketype)
             resume_file_name_mapping[input_file_name] = output_file_name
-
-    last_job_output = os.environ.get("LAST_JOB_OUTPUT")
     if last_job_output.find("s3://") >= 0:
         old_keys = list(resume_file_name_mapping.keys())
         for k in old_keys:
@@ -514,3 +530,23 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
         except ClientError as e:
             print(f"An error occurred: {e}")
             print("Could not download file from s3")
+
+def move_file_at_local(name_map: Dict[str, str]) -> None:
+    """
+    Moves files locally according to a given mapping.
+
+    This function takes a dictionary where the keys are source file paths and 
+    the values are destination file paths. It ensures that the destination 
+    directories exist and then copies the files from the source paths to the 
+    destination paths.
+
+    Parameters:
+    name_map (Dict[str, str]): A dictionary mapping source file paths to 
+                               destination file paths.
+
+    Returns:
+    None
+    """
+    for src, dst in name_map.items():
+        os.path.makedirs(os.path.dirname(dst), exist_ok = True)
+        shutil.copy(src, dst)
