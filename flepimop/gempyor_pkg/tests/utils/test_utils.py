@@ -101,46 +101,66 @@ def env_vars(monkeypatch):
 
 
 def test_create_resume_out_filename(env_vars):
-    result = utils.create_resume_out_filename("spar", "global")
-    expected_filename = "model_output/output/123/spar/global/intermidate/000000002.000000001.000000001.123.spar.parquet"
+    result = utils.create_resume_out_filename(flepi_run_index="123",
+                                              flepi_prefix="output",
+                                              flepi_slot_index="2",
+                                              flepi_block_index="2",
+                                              filetype = "spar", 
+                                              liketype = "global")
+    expected_filename = "model_output/output/123/spar/global/intermediate/000000002.000000001.000000001.123.spar.parquet"
     assert result == expected_filename
     
-    result2 = utils.create_resume_out_filename("seed", "chimeric")
-    expected_filename2 = "model_output/output/123/seed/chimeric/intermidate/000000002.000000001.000000001.123.seed.csv"
+    result2 = utils.create_resume_out_filename(flepi_run_index="123",
+                                              flepi_prefix="output",
+                                              flepi_slot_index="2",
+                                              flepi_block_index="2",
+                                              filetype = "seed", 
+                                              liketype = "chimeric")
+    expected_filename2 = "model_output/output/123/seed/chimeric/intermediate/000000002.000000001.000000001.123.seed.csv"
     assert result2 == expected_filename2
 
 
 def test_create_resume_input_filename(env_vars):
 
-    result = utils.create_resume_input_filename("spar", "global")
+    result = utils.create_resume_input_filename(flepi_slot_index="2",
+                                                resume_run_index="321",
+                                                flepi_prefix="output",
+                                                filetype="spar", 
+                                                liketype="global")
     expect_filename = 'model_output/output/321/spar/global/final/000000002.321.spar.parquet' 
 
     assert result == expect_filename
     
-    result2 = utils.create_resume_input_filename("seed", "chimeric")
+    result2 = utils.create_resume_input_filename(flepi_slot_index="2", 
+                                                 resume_run_index="321",
+                                                 flepi_prefix="output",
+                                                 filetype="seed", liketype="chimeric")
     expect_filename2 = 'model_output/output/321/seed/chimeric/final/000000002.321.seed.csv'
     assert result2 == expect_filename2
 
 
-@patch.dict(os.environ, {"RESUME_DISCARD_SEEDING": "true", "FLEPI_BLOCK_INDEX": "1"})
-def test_get_parquet_types_resume_discard_seeding_true_flepi_block_index_1():
+def test_get_filetype_resume_discard_seeding_true_flepi_block_index_1():
     expected_types = ["spar", "snpi", "hpar", "hnpi", "init"]
-    assert utils.get_parquet_types_for_resume() == expected_types
+    assert utils.get_filetype_for_resume(resume_discard_seeding="true", flepi_block_index="1") == expected_types
 
 
-@patch.dict(os.environ, {"RESUME_DISCARD_SEEDING": "false", "FLEPI_BLOCK_INDEX": "1"})
-def test_get_parquet_types_resume_discard_seeding_false_flepi_block_index_1():
+def test_get_filetype_resume_discard_seeding_false_flepi_block_index_1():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
-    assert utils.get_parquet_types_for_resume() == expected_types
+    assert utils.get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1") == expected_types
 
 
-@patch.dict(os.environ, {"FLEPI_BLOCK_INDEX": "2"})
-def test_get_parquet_types_flepi_block_index_2():
+def test_get_filetype_flepi_block_index_2():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
-    assert utils.get_parquet_types_for_resume() == expected_types
+    assert utils.get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="2") == expected_types
 
 
-def test_create_resume_file_names_map(env_vars):
-    name_map = utils.create_resume_file_names_map()
+def test_create_resume_file_names_map():
+    name_map = utils.create_resume_file_names_map(resume_discard_seeding="false",
+                                 flepi_block_index="2",
+                                 resume_run_index="321",
+                                 flepi_prefix="output",
+                                 flepi_slot_index="2",
+                                 flepi_run_index="123",
+                                 last_job_output="s3://bucket")
     for k in name_map:
         assert k.find("s3://bucket") >= 0
