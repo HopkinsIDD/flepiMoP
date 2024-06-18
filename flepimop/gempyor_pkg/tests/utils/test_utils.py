@@ -10,11 +10,7 @@ tmp_path = "/tmp"
 
 
 @pytest.mark.parametrize(
-    ("fname", "extension"),
-    [
-        ("mobility", "csv"),
-        ("usa-geoid-params-output", "parquet"),
-    ],
+    ("fname", "extension"), [("mobility", "csv"), ("usa-geoid-params-output", "parquet"),],
 )
 def test_read_df_and_write_success(fname, extension):
     os.chdir(tmp_path)
@@ -87,41 +83,44 @@ def test_get_log_normal_success():
 
 
 def test_create_resume_out_filename(env_vars):
-    result = utils.create_resume_out_filename(flepi_run_index="123",
-                                              flepi_prefix="output",
-                                              flepi_slot_index="2",
-                                              flepi_block_index="2",
-                                              filetype = "spar", 
-                                              liketype = "global")
-    expected_filename = "model_output/output/123/spar/global/intermediate/000000002.000000001.000000001.123.spar.parquet"
+    result = utils.create_resume_out_filename(
+        flepi_run_index="123",
+        flepi_prefix="output",
+        flepi_slot_index="2",
+        flepi_block_index="2",
+        filetype="spar",
+        liketype="global",
+    )
+    expected_filename = (
+        "model_output/output/123/spar/global/intermediate/000000002.000000001.000000001.123.spar.parquet"
+    )
     assert result == expected_filename
-    
-    result2 = utils.create_resume_out_filename(flepi_run_index="123",
-                                              flepi_prefix="output",
-                                              flepi_slot_index="2",
-                                              flepi_block_index="2",
-                                              filetype = "seed", 
-                                              liketype = "chimeric")
+
+    result2 = utils.create_resume_out_filename(
+        flepi_run_index="123",
+        flepi_prefix="output",
+        flepi_slot_index="2",
+        flepi_block_index="2",
+        filetype="seed",
+        liketype="chimeric",
+    )
     expected_filename2 = "model_output/output/123/seed/chimeric/intermediate/000000002.000000001.000000001.123.seed.csv"
     assert result2 == expected_filename2
 
 
 def test_create_resume_input_filename(env_vars):
 
-    result = utils.create_resume_input_filename(flepi_slot_index="2",
-                                                resume_run_index="321",
-                                                flepi_prefix="output",
-                                                filetype="spar", 
-                                                liketype="global")
-    expect_filename = 'model_output/output/321/spar/global/final/000000002.321.spar.parquet' 
+    result = utils.create_resume_input_filename(
+        flepi_slot_index="2", resume_run_index="321", flepi_prefix="output", filetype="spar", liketype="global"
+    )
+    expect_filename = "model_output/output/321/spar/global/final/000000002.321.spar.parquet"
 
     assert result == expect_filename
-    
-    result2 = utils.create_resume_input_filename(flepi_slot_index="2", 
-                                                 resume_run_index="321",
-                                                 flepi_prefix="output",
-                                                 filetype="seed", liketype="chimeric")
-    expect_filename2 = 'model_output/output/321/seed/chimeric/final/000000002.321.seed.csv'
+
+    result2 = utils.create_resume_input_filename(
+        flepi_slot_index="2", resume_run_index="321", flepi_prefix="output", filetype="seed", liketype="chimeric"
+    )
+    expect_filename2 = "model_output/output/321/seed/chimeric/final/000000002.321.seed.csv"
     assert result2 == expect_filename2
 
 
@@ -141,12 +140,14 @@ def test_get_filetype_flepi_block_index_2():
 
 
 def test_create_resume_file_names_map():
-    name_map = utils.create_resume_file_names_map(resume_discard_seeding="false",
-                                 flepi_block_index="2",
-                                 resume_run_index="321",
-                                 flepi_prefix="output",
-                                 flepi_slot_index="2",
-                                 flepi_run_index="123",
-                                 last_job_output="s3://bucket")
+    name_map = utils.create_resume_file_names_map(
+        resume_discard_seeding="false",
+        flepi_block_index="2",
+        resume_run_index="321",
+        flepi_prefix="output",
+        flepi_slot_index="2",
+        flepi_run_index="123",
+        last_job_output="s3://bucket",
+    )
     for k in name_map:
         assert k.find("s3://bucket") >= 0

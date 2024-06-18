@@ -227,15 +227,11 @@ def as_random_distribution(self):
         dist = self["distribution"].get()
         if dist == "fixed":
             return functools.partial(
-                np.random.uniform,
-                self["value"].as_evaled_expression(),
-                self["value"].as_evaled_expression(),
+                np.random.uniform, self["value"].as_evaled_expression(), self["value"].as_evaled_expression(),
             )
         elif dist == "uniform":
             return functools.partial(
-                np.random.uniform,
-                self["low"].as_evaled_expression(),
-                self["high"].as_evaled_expression(),
+                np.random.uniform, self["low"].as_evaled_expression(), self["high"].as_evaled_expression(),
             )
         elif dist == "poisson":
             return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
@@ -260,18 +256,13 @@ def as_random_distribution(self):
             ).rvs
         elif dist == "lognorm":
             return get_log_normal(
-                meanlog=self["meanlog"].as_evaled_expression(),
-                sdlog=self["sdlog"].as_evaled_expression(),
+                meanlog=self["meanlog"].as_evaled_expression(), sdlog=self["sdlog"].as_evaled_expression(),
             ).rvs
         else:
             raise NotImplementedError(f"unknown distribution [got: {dist}]")
     else:
         # we allow a fixed value specified directly:
-        return functools.partial(
-            np.random.uniform,
-            self.as_evaled_expression(),
-            self.as_evaled_expression(),
-        )
+        return functools.partial(np.random.uniform, self.as_evaled_expression(), self.as_evaled_expression(),)
 
 
 def list_filenames(folder: str = ".", filters: list = []) -> list:
@@ -355,12 +346,9 @@ def print_disk_diagnosis():
     print("END AWS DIAGNOSIS ================================")
 
 
-def create_resume_out_filename(flepi_run_index: str, 
-                               flepi_prefix: str, 
-                               flepi_slot_index: str, 
-                               flepi_block_index: str, 
-                               filetype: str, 
-                               liketype: str) -> str:
+def create_resume_out_filename(
+    flepi_run_index: str, flepi_prefix: str, flepi_slot_index: str, flepi_block_index: str, filetype: str, liketype: str
+) -> str:
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
     inference_filename_prefix = "{:09d}.".format(int(flepi_slot_index))
@@ -379,7 +367,9 @@ def create_resume_out_filename(flepi_run_index: str,
     )
 
 
-def create_resume_input_filename(resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str) -> str:
+def create_resume_input_filename(
+    resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str
+) -> str:
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
     index = flepi_slot_index
@@ -415,14 +405,15 @@ def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str)
         return ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
 
 
-def create_resume_file_names_map(resume_discard_seeding,
-                                 flepi_block_index,
-                                 resume_run_index,
-                                 flepi_prefix,
-                                 flepi_slot_index,
-                                 flepi_run_index,
-                                 last_job_output
-                                 ) -> Dict[str, str]:
+def create_resume_file_names_map(
+    resume_discard_seeding,
+    flepi_block_index,
+    resume_run_index,
+    flepi_prefix,
+    flepi_slot_index,
+    flepi_run_index,
+    last_job_output,
+) -> Dict[str, str]:
     """
     Generates a mapping of input file names to output file names for a resume process based on
     parquet file types and environmental conditions. The function adjusts the file name mappings
@@ -447,25 +438,30 @@ def create_resume_file_names_map(resume_discard_seeding,
         functions and environment variables which if improperly configured could lead to unexpected
         behavior.
     """
-    file_types = get_filetype_for_resume(resume_discard_seeding=resume_discard_seeding, 
-                                                 flepi_block_index=flepi_block_index)
+    file_types = get_filetype_for_resume(
+        resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
+    )
     resume_file_name_mapping = dict()
     liketypes = ["global", "chimeric"]
     for filetype in file_types:
         for liketype in liketypes:
-            output_file_name = create_resume_out_filename(flepi_run_index=flepi_run_index,
-                                                          flepi_prefix=flepi_prefix,
-                                                          flepi_slot_index=flepi_slot_index,
-                                                          flepi_block_index=flepi_block_index,
-                                                          filetype=filetype,
-                                                          liketype=liketype)
+            output_file_name = create_resume_out_filename(
+                flepi_run_index=flepi_run_index,
+                flepi_prefix=flepi_prefix,
+                flepi_slot_index=flepi_slot_index,
+                flepi_block_index=flepi_block_index,
+                filetype=filetype,
+                liketype=liketype,
+            )
             input_file_name = output_file_name
             if os.environ.get("FLEPI_BLOCK_INDEX") == "1":
-                input_file_name = create_resume_input_filename(resume_run_index=resume_run_index,
-                                                               flepi_prefix=flepi_prefix,
-                                                               flepi_slot_index=flepi_slot_index,
-                                                               filetype=filetype,
-                                                               liketype=liketype)
+                input_file_name = create_resume_input_filename(
+                    resume_run_index=resume_run_index,
+                    flepi_prefix=flepi_prefix,
+                    flepi_slot_index=flepi_slot_index,
+                    filetype=filetype,
+                    liketype=liketype,
+                )
             resume_file_name_mapping[input_file_name] = output_file_name
     if last_job_output.find("s3://") >= 0:
         old_keys = list(resume_file_name_mapping.keys())
@@ -531,6 +527,7 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
             print(f"An error occurred: {e}")
             print("Could not download file from s3")
 
+
 def move_file_at_local(name_map: Dict[str, str]) -> None:
     """
     Moves files locally according to a given mapping.
@@ -548,5 +545,5 @@ def move_file_at_local(name_map: Dict[str, str]) -> None:
     None
     """
     for src, dst in name_map.items():
-        os.path.makedirs(os.path.dirname(dst), exist_ok = True)
+        os.path.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy(src, dst)
