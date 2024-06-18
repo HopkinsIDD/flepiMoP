@@ -644,6 +644,7 @@ class GempyorInference:
                         parameters=self.outcomes_parameters,
                         loaded_values=loaded_values,
                         npi=npi_outcomes,
+                        bypass_seir_xr=states
                     )
                     self.lastsim_outcomes_df = outcomes_df
                     self.lastsim_hpar_df = hpar_df
