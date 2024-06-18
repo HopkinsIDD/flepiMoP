@@ -1,11 +1,8 @@
 import pytest
 import os
 import pandas as pd
-
-# import dask.dataframe as dd
 import pyarrow as pa
 import time
-from unittest.mock import patch
 from gempyor import utils
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
@@ -87,17 +84,6 @@ def test_get_truncated_normal_success():
 
 def test_get_log_normal_success():
     utils.get_log_normal(meanlog=0, sdlog=1)
-
-
-@pytest.fixture
-def env_vars(monkeypatch):
-    # Setting environment variables for the test
-    monkeypatch.setenv("RESUME_RUN_INDEX", "321")
-    monkeypatch.setenv("FLEPI_PREFIX", "output")
-    monkeypatch.setenv("FLEPI_SLOT_INDEX", "2")
-    monkeypatch.setenv("FLEPI_BLOCK_INDEX", "2")
-    monkeypatch.setenv("FLEPI_RUN_INDEX", "123")
-    monkeypatch.setenv("LAST_JOB_OUTPUT", "s3://bucket")
 
 
 def test_create_resume_out_filename(env_vars):
