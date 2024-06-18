@@ -13,13 +13,13 @@ center_line_var <- ifelse(point_est==0.5, "point", "point-mean")
 proj_data <- data_comb
 
 
-#### Which valid locations are missing from our submission? 
+#### Which valid locations are missing from our submission?
 
 # locs <- read_csv("https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master/data-locations/locations.csv")
 # mismatched <- unique(proj_data$location)[which(!(unique(proj_data$location) %in% locs$location))]
 # missing_from_fc <- unique(locs$location)[which(!(locs$location %in% unique(proj_data$location)))]
-# 
-# locs %>% filter(location %in% missing_from_fc) 
+#
+# locs %>% filter(location %in% missing_from_fc)
 
 
 # STATE DATA --------------------------------------------------------------
@@ -67,16 +67,16 @@ if (any(outcomes_time_=="weekly")) {
                                          mutate(agestrat="age0to130") %>%
                                          rename(outcome = outcome_name, value = outcome) %>%
                                          filter(outcome %in% paste0("incid", weekly_cum_outcomes_)),
-                                       obs_data = gt_data_2, 
+                                       obs_data = gt_data_2,
                                        gt_cum_vars = paste0("cum", outcomes_gt_[outcomes_cumfromgt_gt_]), # variables to get cum from GT
                                        forecast_date = lubridate::as_date(forecast_date),
                                        aggregation="week",
-                                       loc_column = "USPS", 
+                                       loc_column = "USPS",
                                        use_obs_data = use_obs_data_forcum) %>%
       rename(outcome_name = outcome, outcome = value) %>%
       select(-agestrat)
-    
-    gt_data_st_week <- gt_data_st_week %>% 
+
+    gt_data_st_week <- gt_data_st_week %>%
       bind_rows(gt_data_st_weekcum)
   }
   gt_cl <- gt_cl %>% bind_rows(gt_data_st_week %>% mutate(time_aggr = "weekly"))
@@ -93,11 +93,11 @@ if (any(outcomes_time_=="daily")) {
                                         mutate(agestrat="age0to130") %>%
                                         rename(outcome = outcome_name, value = outcome) %>%
                                         filter(outcome %in% paste0("incid", daily_cum_outcomes_)),
-                                      obs_data = gt_data_2, 
+                                      obs_data = gt_data_2,
                                       gt_cum_vars = paste0("cum", outcomes_gt_[outcomes_cumfromgt_gt_]), # variables to get cum from GT
                                       forecast_date = lubridate::as_date(forecast_date),
                                       aggregation="day",
-                                      loc_column = "USPS", 
+                                      loc_column = "USPS",
                                       use_obs_data = use_obs_data_forcum) %>%
       rename(outcome_name = outcome, outcome = value) %>%
       select(-agestrat)
@@ -117,12 +117,12 @@ gt_cl <- gt_cl
 #   inc_dat_st_vars <- inc_dat_st_vars %>% filter(date != max(date))
 # }
 
-dat_st_cl2 <- gt_cl %>% 
+dat_st_cl2 <- gt_cl %>%
   select(date, USPS, target = outcome_name, time_aggr, value = outcome) %>%
   mutate(incid_cum = ifelse(grepl("inc", target), "inc", "cum")) %>%
   mutate(aggr_target = !grepl('_', target)) %>%
   mutate(outcome = substr(gsub("cum|incid", "", target), 1,1)) %>%
-  mutate(pre_gt_end = date<=validation_date) 
+  mutate(pre_gt_end = date<=validation_date)
 
 
 
@@ -134,7 +134,7 @@ dat_st_cl2 <- gt_cl %>%
 
 forecast_st <- proj_data %>%
   filter(nchar(location)==2 & (quantile %in% sort(unique(c(quant_values, 0.5))) | is.na(quantile))) %>%
-  left_join(state_cw, by = c("location")) 
+  left_join(state_cw, by = c("location"))
 
 # filter out incid or cum
 if (!plot_incid) {  forecast_st <- forecast_st %>% filter(!grepl(" inc ", target)) }
@@ -150,12 +150,12 @@ if(any(outcomes_cum_)){
 forecast_st <- forecast_st %>% filter(grepl(paste0(c(paste0("inc ", outcomes_name), cum_outcomes_name), collapse = "|"), target))
 
 # create cat variables
-forecast_st_plt <- forecast_st %>% 
+forecast_st_plt <- forecast_st %>%
   mutate(incid_cum = ifelse(grepl("inc ", target), "inc", "cum")) %>%
   mutate(outcome = stringr::word(target, 5)) %>%
   mutate(outcome = recode(outcome, "inf"="I", "case"="C", "hosp"="H", "death"="D")) %>%
-  dplyr::mutate(quantile_cln = ifelse(!is.na(quantile), paste0("q", paste0(as.character(quantile*100), "%")), 
-                                      ifelse(type=="point-mean", paste0("mean"), 
+  dplyr::mutate(quantile_cln = ifelse(!is.na(quantile), paste0("q", paste0(as.character(quantile*100), "%")),
+                                      ifelse(type=="point-mean", paste0("mean"),
                                              ifelse(type=="point", paste0("median"), NA)))) %>%
   mutate(target_type = paste0(incid_cum, outcome))
 
@@ -173,12 +173,12 @@ if(center_line == "mean"){
   forecast_st_plt <- forecast_st_plt %>% mutate(quantile_cln = gsub("q50%", "ctr", quantile_cln))
 }
 
-forecast_st_plt <- forecast_st_plt %>% 
+forecast_st_plt <- forecast_st_plt %>%
   select(scenario_name, scenario_id, target = target_type, incid_cum, outcome, date = target_end_date, USPS, quantile_cln, value) %>%
   pivot_wider(names_from = quantile_cln, values_from = value) %>%
   mutate(type = "projection") %>%
-  full_join(pltdat_truth %>% 
-              mutate(type = "gt", scenario_name = ifelse(pre_gt_end, "gt-pre-projection", "gt-post-projection")) %>% 
+  full_join(pltdat_truth %>%
+              mutate(type = "gt", scenario_name = ifelse(pre_gt_end, "gt-pre-projection", "gt-post-projection")) %>%
               select(date, USPS, target = target_type, incid_cum, type, scenario_name, ctr=gt)) %>%
   filter(date >= trunc_date & date <= sim_end_date)
 
@@ -201,15 +201,15 @@ stplot_fname_nosqrt <- paste0(stplot_fname, ".pdf")
 
 pdf(stplot_fname_nosqrt, width=7, height=11)
 for(usps in unique(forecast_st_plt$USPS)){
-  
+
   print(paste0("Plotting: ", usps))
   cols_tmp <- cols[names(cols) %in% unique(forecast_st_plt$scenario_name)]
-  
+
   target_labs <- paste0(str_to_title(outcomes_time_[match(gsub("inc","",unique(forecast_st_plt$target)),outcomes_)]), " incident ", gsub("inc","",unique(forecast_st_plt$target)))
   names(target_labs) <- unique(forecast_st_plt$target)
-  
-  inc_st_plt <- forecast_st_plt %>% 
-    filter(USPS == usps) %>% 
+
+  inc_st_plt <- forecast_st_plt %>%
+    filter(USPS == usps) %>%
     filter(incid_cum=="inc") %>%
     mutate(scenario_name = factor(scenario_name)) %>%
     ggplot(aes(x = date)) +
@@ -232,15 +232,15 @@ for(usps in unique(forecast_st_plt$USPS)){
     theme(legend.position = "bottom", legend.text = element_text(size=10),
           axis.text.x = element_text(size=6, angle = 45))
   plot(inc_st_plt)
-  
-  
+
+
   if (plot_cum) {
-    
+
     target_labs <- paste0(str_to_title(outcomes_time_[match(gsub("cum","",unique(forecast_st_plt$target)),outcomes_)]), " cumulative ", gsub("cum","",unique(forecast_st_plt$target)))
     names(target_labs) <- unique(forecast_st_plt$target)
-    
-    cum_st_plt <- forecast_st_plt %>% 
-      filter(USPS == usps) %>% 
+
+    cum_st_plt <- forecast_st_plt %>%
+      filter(USPS == usps) %>%
       filter(incid_cum=="cum") %>%
       mutate(scenario_name = factor(scenario_name)) %>%
       ggplot(aes(x = date)) +
@@ -261,7 +261,7 @@ for(usps in unique(forecast_st_plt$USPS)){
                  labeller = as_labeller(target_labs)) +
       theme(legend.position = "bottom", legend.text = element_text(size=10),
             axis.text.x = element_text(size=6, angle = 45))
-    
+
     plot(cum_st_plt)
   }
 }
@@ -273,15 +273,15 @@ scale_y_funct <- scale_y_sqrt
 
 pdf(stplot_fname_sqrt, width=7, height=11)
 for(usps in unique(forecast_st_plt$USPS)){
-  
+
   print(paste0("Plotting: ", usps))
   cols_tmp <- cols[names(cols) %in% unique(forecast_st_plt$scenario_name)]
-  
+
   target_labs <- paste0(str_to_title(outcomes_time_[match(gsub("inc","",unique(forecast_st_plt$target)),outcomes_)]), " incident ", gsub("inc","",unique(forecast_st_plt$target)))
   names(target_labs) <- unique(forecast_st_plt$target)
-  
-  inc_st_plt <- forecast_st_plt %>% 
-    filter(USPS == usps) %>% 
+
+  inc_st_plt <- forecast_st_plt %>%
+    filter(USPS == usps) %>%
     filter(incid_cum=="inc") %>%
     mutate(scenario_name = factor(scenario_name)) %>%
     ggplot(aes(x = date)) +
@@ -303,14 +303,14 @@ for(usps in unique(forecast_st_plt$USPS)){
     theme(legend.position = "bottom", legend.text = element_text(size=10),
           axis.text.x = element_text(size=6, angle = 45))
   plot(inc_st_plt)
-  
+
   if (plot_cum) {
-    
+
     target_labs <- paste0(str_to_title(outcomes_time_[match(gsub("cum","",unique(forecast_st_plt$target)),outcomes_)]), " cumulative ", gsub("cum","",unique(forecast_st_plt$target)))
     names(target_labs) <- unique(forecast_st_plt$target)
-    
-    cum_st_plt <- forecast_st_plt %>% 
-      filter(USPS == usps) %>% 
+
+    cum_st_plt <- forecast_st_plt %>%
+      filter(USPS == usps) %>%
       filter(incid_cum=="cum") %>%
       mutate(scenario_name = factor(scenario_name)) %>%
       ggplot(aes(x = date)) +
@@ -331,7 +331,7 @@ for(usps in unique(forecast_st_plt$USPS)){
                  labeller = as_labeller(target_labs)) +
       theme(legend.position = "bottom", legend.text = element_text(size=10),
             axis.text.x = element_text(size=6, angle = 45))
-    
+
     plot(cum_st_plt)
   }
 }
