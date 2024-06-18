@@ -82,7 +82,7 @@ def test_get_log_normal_success():
     utils.get_log_normal(meanlog=0, sdlog=1)
 
 
-def test_create_resume_out_filename(env_vars):
+def test_create_resume_out_filename():
     result = utils.create_resume_out_filename(
         flepi_run_index="123",
         flepi_prefix="output",
@@ -108,7 +108,7 @@ def test_create_resume_out_filename(env_vars):
     assert result2 == expected_filename2
 
 
-def test_create_resume_input_filename(env_vars):
+def test_create_resume_input_filename():
 
     result = utils.create_resume_input_filename(
         flepi_slot_index="2", resume_run_index="321", flepi_prefix="output", filetype="spar", liketype="global"
