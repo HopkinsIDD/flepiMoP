@@ -47,7 +47,7 @@ seir:
 
 seir_modifiers:
   scenarios:
-    - Ro_all
+    - inference
   modifiers:
     Ro_mod: # assume same for all subpopulations
       method: SinglePeriodModifier
@@ -86,7 +86,7 @@ seir_modifiers:
         sd: 0.025
         a: -0.1
         b: 0.1
-    Ro_all:
+    inference:
       method: StackedModifier
       modifiers: ["Ro_mod","Ro_lockdown"]
 
@@ -122,10 +122,10 @@ outcomes:
 
 outcome_modifiers:
   scenarios:
-    - test_limits
+    - all
   modifiers:
     # assume that due to limitations in testing, initially the case detection probability was lower
-    test_limits:
+    all:
       method: SinglePeriodModifier
       parameter: incidCase
       subpop: "all"
