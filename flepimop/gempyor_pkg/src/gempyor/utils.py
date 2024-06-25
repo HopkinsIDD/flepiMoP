@@ -12,10 +12,8 @@ import sympy.parsing.sympy_parser
 import subprocess
 import shutil
 import logging
-import boto3
 from gempyor import file_paths
 from typing import List, Dict
-from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -509,12 +507,19 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
         >>> download_file_from_s3(name_map)
         # This will raise a ValueError indicating the invalid S3 URI format.
     """
+    try:
+        import boto3
+        from botocore.exceptions import ClientError
+    except:
+        raise ModuleNotFoundError((
+            "No module named 'boto3', which is required for "
+            "gempyor.utils.download_file_from_s3. Please install the aws target."
+        ))
     s3 = boto3.client("s3")
     first_output_filename = next(iter(name_map.values()))
     output_dir = os.path.dirname(first_output_filename)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     for s3_uri in name_map:
         try:
             if s3_uri.startswith("s3://"):
