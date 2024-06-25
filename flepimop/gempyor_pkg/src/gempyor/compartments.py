@@ -781,5 +781,5 @@ def export():
         proportion_array,
         proportion_info,
     ) = comp.get_transition_array()
-    comp.toFile("compartments_file.csv", "transitions_file.csv")
+    comp.toFile("compartments_file.csv", "transitions_file.csv", write_parquet=False)
     print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")
