@@ -101,6 +101,12 @@ To [run an inference run](quick-start-guide.md#inference-run) and to explore you
 </strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph"))
 </strong></code></pre>
 
+{% hint style="info" %}
+_**On Linux**_
+
+The R packages "`sf"` and "`ggraph"` require you to have `libgdal-dev` and `libopenblas-dev` installed on your local linux machine.&#x20;
+{% endhint %}
+
 This step does not need to be repeated unless you use a new computer or delete and reinstall R.&#x20;
 
 Now return to your system terminal. To install _flepiMop_-internal R packages, run the following from command line:
