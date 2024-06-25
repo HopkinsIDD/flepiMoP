@@ -1,14 +1,14 @@
 parse_compartment_names <- function(seir_config) {
-  compartment_frame <- tidyr::expand_grid(!!!seir_config$compartments)
+  compartment_df <- tidyr::expand_grid(!!!seir_config$compartments)
   compartment_names <- character(0)
-  for (component in compartment_frame) {
+  for (component in compartment_df) {
     if (any(grepl("_", component, fixed = TRUE))) {
       stop(paste("_", "is a reserved character, and cannot appear in compartment component names"))
     }
     compartment_names <- paste(compartment_names, component, sep = "_")
   }
   compartment_names <- stringr::str_sub(compartment_names, 2)
-  return(compartment_frame)
+  return(compartment_df)
 }
 
 assert <- function(bool, msg) {
