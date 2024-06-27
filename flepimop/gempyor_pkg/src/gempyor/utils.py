@@ -510,7 +510,7 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
     try:
         import boto3
         from botocore.exceptions import ClientError
-    except:
+    except ModuleNotFoundError:
         raise ModuleNotFoundError((
             "No module named 'boto3', which is required for "
             "gempyor.utils.download_file_from_s3. Please install the aws target."
