@@ -53,7 +53,7 @@ def test_Rscript_inference_main():
   # test the same as above using an R script, instead of CliRunner use a command line
   os.chdir(os.path.dirname(__file__) + "/tutorial_two_subpops")
 
-  returncode, stdout, stderr = command_safe_run("Rscript --FLEPI_PATH ../../flepimop/main_scripts/inference_main.R -c config_sample_2pop_inference.yml -n 1",
+  returncode, stdout, stderr = command_safe_run("--FLEPI_PATH ../../ Rscript ../../flepimop/main_scripts/inference_main.R -c config_sample_2pop_inference.yml -n 1",
                                                 command_name="testing Rscript",
                                                 fail_on_fail=False)
   assert returncode == 0
