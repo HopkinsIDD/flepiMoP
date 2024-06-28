@@ -307,7 +307,7 @@ def compute_all_multioutcomes(
     bypass_seir_xr: xr.Dataset = None,
 ):
     """Compute delay frame based on temporally varying input. We load the seir sim corresponding to sim_id to write"""
-    hpar = pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
+    hpar_list = []
     all_data = {}
     dates = pd.date_range(modinf.ti, modinf.tf, freq="D")
 
@@ -381,29 +381,24 @@ def compute_all_multioutcomes(
             probabilities = np.repeat(probabilities[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
             delays = np.repeat(delays[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
             delays = np.round(delays).astype(int)
-            # write hpar before NPI
-            hpar = pd.concat(
-                [
-                    hpar,
-                    pd.DataFrame.from_dict(
-                        {
-                            "subpop": modinf.subpop_struct.subpop_names,
-                            "quantity": ["probability"] * len(modinf.subpop_struct.subpop_names),
-                            "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
-                            "value": probabilities[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
-                        }
+            # Write hpar before NPI
+            subpop_names_len = len(modinf.subpop_struct.subpop_names)
+            hpar = pd.DataFrame(
+                {
+                    "subpop": 2 * modinf.subpop_struct.subpop_names,
+                    "quantity": (subpop_names_len * ["probability"])
+                        + (subpop_names_len * ["delay"]),
+                    "outcome": 2 * subpop_names_len * [new_comp],
+                    "value": np.concatenate(
+                        (
+                            probabilities[0] * np.ones(subpop_names_len),
+                            delays[0] * np.ones(subpop_names_len),
+                        )
                     ),
-                    pd.DataFrame.from_dict(
-                        {
-                            "subpop": modinf.subpop_struct.subpop_names,
-                            "quantity": ["delay"] * len(modinf.subpop_struct.subpop_names),
-                            "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
-                            "value": delays[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
-                        }
-                    ),
-                ],
-                axis=0,
-            )
+                }
+            ).set_index(pd.Index(2 * list(range(0, subpop_names_len))))
+            hpar_list.append(hpar)
+            # Now tackle NPI
             if npi is not None:
                 delays = NPI.reduce_parameter(
                     parameter=delays,
@@ -444,22 +439,15 @@ def compute_all_multioutcomes(
                     )  # one draw per subpop
                 durations = np.repeat(durations[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
                 durations = np.round(durations).astype(int)
-
-                hpar = pd.concat(
-                    [
-                        hpar,
-                        pd.DataFrame.from_dict(
-                            {
-                                "subpop": modinf.subpop_struct.subpop_names,
-                                "quantity": ["duration"] * len(modinf.subpop_struct.subpop_names),
-                                "outcome": [new_comp] * len(modinf.subpop_struct.subpop_names),
-                                "value": durations[0] * np.ones(len(modinf.subpop_struct.subpop_names)),
-                            }
-                        ),
-                    ],
-                    axis=0,
+                hpar = pd.DataFrame(
+                    data={
+                        "subpop": modinf.subpop_struct.subpop_names,
+                        "quantity": subpop_names_len * ["duration"],
+                        "outcome": subpop_names_len * [new_comp],
+                        "value": durations[0] * np.ones(subpop_names_len),
+                    }
                 )
-
+                hpar_list.append(hpar)
                 if npi is not None:
                     # import matplotlib.pyplot as plt
                     # plt.imshow(durations)
@@ -506,7 +494,12 @@ def compute_all_multioutcomes(
             all_data[new_comp] = sum_outcome
             df_p = dataframe_from_array(sum_outcome, modinf.subpop_struct.subpop_names, dates, new_comp)
             outcomes = pd.merge(outcomes, df_p)
-
+    # Concat our hpar dataframes
+    hpar = (
+        pd.concat(hpar_list)
+        if hpar_list
+        else pd.DataFrame(columns=["subpop", "quantity", "outcome", "value"])
+    )
     return outcomes, hpar
 
 
