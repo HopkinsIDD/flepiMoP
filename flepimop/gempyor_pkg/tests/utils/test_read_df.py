@@ -5,6 +5,7 @@ from typing import Callable, Any
 
 import pytest
 import pandas as pd
+from pandas.api.types import is_object_dtype, is_numeric_dtype
 
 from gempyor.utils import read_df
 
@@ -23,9 +24,16 @@ class TestReadDf:
         }
     )
 
+    subpop_df: pd.DataFrame = pd.DataFrame(
+        {
+            "subpop": [1, 2, 3, 4],
+            "value": [5, 6, 7, 8],
+        }
+    )
+
     def test_raises_not_implemented_error(self) -> None:
         """
-        Tests that write_df raises a NotImplementedError for unsupported file
+        Tests that read_df raises a NotImplementedError for unsupported file
         extensions.
         """
         with pytest.raises(
@@ -101,6 +109,38 @@ class TestReadDf:
             suffix=".parquet",
             path_writer=lambda p, df: df.to_parquet(p, engine="pyarrow", index=False),
         )
+
+    def test_subpop_is_cast_as_str(self) -> None:
+        """
+        Tests that read_df returns an object dtype for the column 'subpop' when reading
+        a csv file, but not when reading a parquet file.
+        """
+        # First confirm the dtypes of our test DataFrame
+        assert is_numeric_dtype(self.subpop_df["subpop"])
+        assert is_numeric_dtype(self.subpop_df["value"])
+        # Test that the subpop column is converted to a string for a csv file
+        with NamedTemporaryFile(suffix=".csv") as temp_file:
+            temp_path = Path(temp_file.name)
+            assert temp_path.stat().st_size == 0
+            assert self.subpop_df.to_csv(temp_path, index=False) is None
+            assert temp_path.stat().st_size > 0
+            test_df = read_df(fname=temp_path)
+            assert isinstance(test_df, pd.DataFrame)
+            assert is_object_dtype(test_df["subpop"])
+            assert is_numeric_dtype(test_df["value"])
+        # Test that the subpop column remains unaltered for a parquet file
+        with NamedTemporaryFile(suffix=".parquet") as temp_file:
+            temp_path = Path(temp_file.name)
+            assert temp_path.stat().st_size == 0
+            assert (
+                self.subpop_df.to_parquet(temp_path, engine="pyarrow", index=False)
+                is None
+            )
+            assert temp_path.stat().st_size > 0
+            test_df = read_df(fname=temp_path)
+            assert isinstance(test_df, pd.DataFrame)
+            assert is_numeric_dtype(test_df["subpop"])
+            assert is_numeric_dtype(test_df["value"])
 
     def _test_read_df(
         self,
