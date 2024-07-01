@@ -1,22 +1,25 @@
-import os
 import datetime
 import functools
+import logging
 import numbers
+import os
+from pathlib import Path
+import shutil
+import subprocess
 import time
+from typing import List, Dict, Literal
+
+import boto3
+from botocore.exceptions import ClientError
 import confuse
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import scipy.stats
 import sympy.parsing.sympy_parser
-import subprocess
-import shutil
-import logging
-import boto3
+
 from gempyor import file_paths
-from typing import List, Dict, Literal
-from botocore.exceptions import ClientError
-from pathlib import Path
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,25 +27,25 @@ config = confuse.Configuration("flepiMoP", read=False)
 
 
 def write_df(
-    fname: str | bytes | os.PathLike, 
-    df: pd.DataFrame, 
+    fname: str | bytes | os.PathLike,
+    df: pd.DataFrame,
     extension: Literal[None, "", "csv", "parquet"] = "",
 ) -> None:
     """Writes a pandas DataFrame without its index to a file.
-    
+
     Writes a pandas DataFrame to either a CSV or Parquet file without its index and can
-    infer which format to use based on the extension given in `fname` or based on 
+    infer which format to use based on the extension given in `fname` or based on
     explicit `extension`.
-    
+
     Args:
         fname: The name of the file to write to.
         df: A pandas DataFrame whose contents to write, but without its index.
         extension: A user specified extension to use for the file if not contained in
             `fname` already.
-    
+
     Returns:
         None
-        
+
     Raises:
         NotImplementedError: The given output extension is not supported yet.
     """
@@ -60,24 +63,24 @@ def write_df(
 
 
 def read_df(
-    fname: str | bytes | os.PathLike, 
+    fname: str | bytes | os.PathLike,
     extension: Literal[None, "", "csv", "parquet"] = "",
 ) -> pd.DataFrame:
     """Reads a pandas DataFrame from either a CSV or Parquet file.
-    
-    Reads a pandas DataFrame to either a CSV or Parquet file and can infer which format 
+
+    Reads a pandas DataFrame to either a CSV or Parquet file and can infer which format
     to use based on the extension given in `fname` or based on explicit `extension`. If
     the file being read is a csv with a column called 'subpop' then that column will be
     cast as a string.
-    
+
     Args:
         fname: The name of the file to read from.
         extension: A user specified extension to use for the file if not contained in
             `fname` already.
-    
+
     Returns:
         A pandas DataFrame parsed from the file given.
-        
+
     Raises:
         NotImplementedError: The given output extension is not supported yet.
     """
