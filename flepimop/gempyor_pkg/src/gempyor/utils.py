@@ -16,26 +16,47 @@ import boto3
 from gempyor import file_paths
 from typing import List, Dict
 from botocore.exceptions import ClientError
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 config = confuse.Configuration("flepiMoP", read=False)
 
 
-def write_df(fname: str, df: pd.DataFrame, extension: str = ""):
-    """write without index, so assume the index has been put a column"""
-    # cast to str to use .split in case fname is a PosixPath
-    fname = str(fname)
-    if extension:  # Empty strings are falsy in python
-        fname = f"{fname}.{extension}"
-    extension = fname.split(".")[-1]
-    if extension == "csv":
-        df.to_csv(fname, index=False)
-    elif extension == "parquet":
-        df = pa.Table.from_pandas(df, preserve_index=False)
-        pa.parquet.write_table(df, fname)
-    else:
-        raise NotImplementedError(f"Invalid extension {extension}. Must be 'csv' or 'parquet'")
+def write_df(
+    fname: str | bytes | os.PathLike, 
+    df: pd.DataFrame, 
+    extension: str = "",
+) -> None:
+    """Writes a pandas DataFrame without its index to a file.
+    
+    Writes a pandas DataFrame to either a CSV or Parquet file without its index and can
+    infer which format to use based on the extension given in `fname` or based on 
+    explicit `extension`.
+    
+    Args:
+        fname: The name of the file to write to.
+        df: A pandas DataFrame whose contents to write, but without its index.
+        extension: A user specified extension to use for the file if not contained in
+            `fname` already.
+    
+    Returns:
+        None
+        
+    Raises:
+        NotImplementedError: The given output extension is not supported yet.
+    """
+    # Decipher the path given
+    fname = fname.decode() if isinstance(fname, bytes) else fname
+    path = Path(f"{fname}.{extension}") if extension else Path(fname)
+    # Write df to either a csv or parquet or raise if an invalid extension
+    if path.suffix == ".csv":
+        return df.to_csv(path, index=False)
+    elif path.suffix == ".parquet":
+        return df.to_parquet(path, index=False, engine="pyarrow")
+    raise NotImplementedError(
+        f"Invalid extension {extension}. Must be 'csv' or 'parquet'"
+    )
 
 
 def read_df(fname: str, extension: str = "") -> pd.DataFrame:
