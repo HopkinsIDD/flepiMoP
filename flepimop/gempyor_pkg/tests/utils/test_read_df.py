@@ -1,7 +1,7 @@
 import os
 from tempfile import NamedTemporaryFile
 from pathlib import Path
-from typing import Callable, Any
+from typing import Callable, Any, Literal
 
 import pytest
 import pandas as pd
@@ -55,6 +55,8 @@ class TestReadDf:
         [
             (lambda x: str(x), ""),
             (lambda x: x, ""),
+            (lambda x: str(x), None),
+            (lambda x: x, None),
             (lambda x: f"{x.parent}/{x.stem}", "csv"),
             (lambda x: Path(f"{x.parent}/{x.stem}"), "csv"),
         ],
@@ -62,7 +64,7 @@ class TestReadDf:
     def test_read_csv_dataframe(
         self,
         fname_transformer: Callable[[os.PathLike], Any],
-        extension: str,
+        extension: Literal[None, "", "csv", "parquet"],
     ) -> None:
         """
         Tests reading a DataFrame from a CSV file.
@@ -85,6 +87,8 @@ class TestReadDf:
         [
             (lambda x: str(x), ""),
             (lambda x: x, ""),
+            (lambda x: str(x), None),
+            (lambda x: x, None),
             (lambda x: f"{x.parent}/{x.stem}", "parquet"),
             (lambda x: Path(f"{x.parent}/{x.stem}"), "parquet"),
         ],
@@ -92,7 +96,7 @@ class TestReadDf:
     def test_read_parquet_dataframe(
         self,
         fname_transformer: Callable[[os.PathLike], Any],
-        extension: str,
+        extension: Literal[None, "", "csv", "parquet"],
     ) -> None:
         """
         Tests reading a DataFrame from a Parquet file.
@@ -145,7 +149,7 @@ class TestReadDf:
     def _test_read_df(
         self,
         fname_transformer: Callable[[os.PathLike], Any],
-        extension: str,
+        extension: Literal[None, "", "csv", "parquet"],
         suffix: str | None,
         path_writer: Callable[[os.PathLike, pd.DataFrame], None],
     ) -> None:

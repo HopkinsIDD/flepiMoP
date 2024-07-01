@@ -14,7 +14,7 @@ import shutil
 import logging
 import boto3
 from gempyor import file_paths
-from typing import List, Dict
+from typing import List, Dict, Literal
 from botocore.exceptions import ClientError
 from pathlib import Path
 
@@ -26,7 +26,7 @@ config = confuse.Configuration("flepiMoP", read=False)
 def write_df(
     fname: str | bytes | os.PathLike, 
     df: pd.DataFrame, 
-    extension: str = "",
+    extension: Literal[None, "", "csv", "parquet"] = "",
 ) -> None:
     """Writes a pandas DataFrame without its index to a file.
     
@@ -59,7 +59,10 @@ def write_df(
     )
 
 
-def read_df(fname: str | bytes | os.PathLike, extension: str = "") -> pd.DataFrame:
+def read_df(
+    fname: str | bytes | os.PathLike, 
+    extension: Literal[None, "", "csv", "parquet"] = "",
+) -> pd.DataFrame:
     """Reads a pandas DataFrame from either a CSV or Parquet file.
     
     Reads a pandas DataFrame to either a CSV or Parquet file and can infer which format 

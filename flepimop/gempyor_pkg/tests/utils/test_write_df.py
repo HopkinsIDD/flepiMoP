@@ -1,7 +1,7 @@
 import os
 from tempfile import NamedTemporaryFile
 from pathlib import Path
-from typing import Callable, Any
+from typing import Callable, Any, Literal
 
 import pytest
 import pandas as pd
@@ -40,6 +40,8 @@ class TestWriteDf:
         [
             (lambda x: str(x), ""),
             (lambda x: x, ""),
+            (lambda x: str(x), None),
+            (lambda x: x, None),
             (lambda x: f"{x.parent}/{x.stem}", "csv"),
             (lambda x: Path(f"{x.parent}/{x.stem}"), "csv"),
         ],
@@ -47,7 +49,7 @@ class TestWriteDf:
     def test_write_csv_dataframe(
         self,
         fname_transformer: Callable[[os.PathLike], Any],
-        extension: str,
+        extension: Literal[None, "", "csv", "parquet"],
     ) -> None:
         """
         Tests writing a DataFrame to a CSV file.
@@ -71,6 +73,8 @@ class TestWriteDf:
         [
             (lambda x: str(x), ""),
             (lambda x: x, ""),
+            (lambda x: str(x), None),
+            (lambda x: x, None),
             (lambda x: f"{x.parent}/{x.stem}", "parquet"),
             (lambda x: Path(f"{x.parent}/{x.stem}"), "parquet"),
         ],
@@ -78,7 +82,7 @@ class TestWriteDf:
     def test_write_parquet_dataframe(
         self,
         fname_transformer: Callable[[os.PathLike], Any],
-        extension: str,
+        extension: Literal[None, "", "csv", "parquet"],
     ) -> None:
         """
         Tests writing a DataFrame to a Parquet file.
@@ -101,7 +105,7 @@ class TestWriteDf:
         self,
         fname_transformer: Callable[[os.PathLike], Any],
         df: pd.DataFrame,
-        extension: str,
+        extension: Literal[None, "", "csv", "parquet"],
         suffix: str | None,
         path_reader: Callable[[os.PathLike], pd.DataFrame],
     ) -> None:
