@@ -38,6 +38,23 @@ def write_df(fname: str, df: pd.DataFrame, extension: str = ""):
         raise NotImplementedError(f"Invalid extension {extension}. Must be 'csv' or 'parquet'")
 
 
+def read_df(fname: str, extension: str = "") -> pd.DataFrame:
+    """Load a dataframe from a file, agnostic to whether it is a parquet or a csv. The extension
+    can be provided as an argument or it is infered"""
+    fname = str(fname)
+    if extension:  # Empty strings are falsy in python
+        fname = f"{fname}.{extension}"
+    extension = fname.split(".")[-1]
+    if extension == "csv":
+        # The converter prevents e.g leading geoid (0600) to be converted as int; and works when the column is absent
+        df = pd.read_csv(fname, converters={"subpop": lambda x: str(x)}, skipinitialspace=True)
+    elif extension == "parquet":
+        df = pa.parquet.read_table(fname).to_pandas()
+    else:
+        raise NotImplementedError(f"Invalid extension {extension}. Must be 'csv' or 'parquet'")
+    return df
+
+
 def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
     import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
@@ -60,23 +77,6 @@ def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
             raise Exception(f"{command_name} command failed")
 
     return sr.returncode, stdout, stderr
-
-
-def read_df(fname: str, extension: str = "") -> pd.DataFrame:
-    """Load a dataframe from a file, agnostic to whether it is a parquet or a csv. The extension
-    can be provided as an argument or it is infered"""
-    fname = str(fname)
-    if extension:  # Empty strings are falsy in python
-        fname = f"{fname}.{extension}"
-    extension = fname.split(".")[-1]
-    if extension == "csv":
-        # The converter prevents e.g leading geoid (0600) to be converted as int; and works when the column is absent
-        df = pd.read_csv(fname, converters={"subpop": lambda x: str(x)}, skipinitialspace=True)
-    elif extension == "parquet":
-        df = pa.parquet.read_table(fname).to_pandas()
-    else:
-        raise NotImplementedError(f"Invalid extension {extension}. Must be 'csv' or 'parquet'")
-    return df
 
 
 def add_method(cls):
