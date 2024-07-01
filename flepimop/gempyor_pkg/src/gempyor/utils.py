@@ -59,21 +59,38 @@ def write_df(
     )
 
 
-def read_df(fname: str, extension: str = "") -> pd.DataFrame:
-    """Load a dataframe from a file, agnostic to whether it is a parquet or a csv. The extension
-    can be provided as an argument or it is infered"""
-    fname = str(fname)
-    if extension:  # Empty strings are falsy in python
-        fname = f"{fname}.{extension}"
-    extension = fname.split(".")[-1]
-    if extension == "csv":
-        # The converter prevents e.g leading geoid (0600) to be converted as int; and works when the column is absent
-        df = pd.read_csv(fname, converters={"subpop": lambda x: str(x)}, skipinitialspace=True)
-    elif extension == "parquet":
-        df = pa.parquet.read_table(fname).to_pandas()
-    else:
-        raise NotImplementedError(f"Invalid extension {extension}. Must be 'csv' or 'parquet'")
-    return df
+def read_df(fname: str | bytes | os.PathLike, extension: str = "") -> pd.DataFrame:
+    """Reads a pandas DataFrame from either a CSV or Parquet file.
+    
+    Reads a pandas DataFrame to either a CSV or Parquet file and can infer which format 
+    to use based on the extension given in `fname` or based on explicit `extension`. If
+    the file being read is a csv with a column called 'subpop' then that column will be
+    cast as a string.
+    
+    Args:
+        fname: The name of the file to read from.
+        extension: A user specified extension to use for the file if not contained in
+            `fname` already.
+    
+    Returns:
+        A pandas DataFrame parsed from the file given.
+        
+    Raises:
+        NotImplementedError: The given output extension is not supported yet.
+    """
+    # Decipher the path given
+    fname = fname.decode() if isinstance(fname, bytes) else fname
+    path = Path(f"{fname}.{extension}") if extension else Path(fname)
+    # Read df from either a csv or parquet or raise if an invalid extension
+    if path.suffix == ".csv":
+        return pd.read_csv(
+            path, converters={"subpop": lambda x: str(x)}, skipinitialspace=True
+        )
+    elif path.suffix == ".parquet":
+        return pd.read_parquet(path, engine="pyarrow")
+    raise NotImplementedError(
+        f"Invalid extension {extension}. Must be 'csv' or 'parquet'"
+    )
 
 
 def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
