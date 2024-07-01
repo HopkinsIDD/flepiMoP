@@ -58,7 +58,7 @@ def write_df(
     elif path.suffix == ".parquet":
         return df.to_parquet(path, index=False, engine="pyarrow")
     raise NotImplementedError(
-        f"Invalid extension {extension}. Must be 'csv' or 'parquet'"
+        f"Invalid extension {path.suffix[1:]}. Must be 'csv' or 'parquet'."
     )
 
 
@@ -95,7 +95,7 @@ def read_df(
     elif path.suffix == ".parquet":
         return pd.read_parquet(path, engine="pyarrow")
     raise NotImplementedError(
-        f"Invalid extension {extension}. Must be 'csv' or 'parquet'"
+        f"Invalid extension {path.suffix[1:]}. Must be 'csv' or 'parquet'."
     )
 
 

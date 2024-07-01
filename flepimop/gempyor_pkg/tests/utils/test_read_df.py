@@ -38,13 +38,13 @@ class TestReadDf:
         """
         with pytest.raises(
             expected_exception=NotImplementedError,
-            match="Invalid extension txt. Must be 'csv' or 'parquet'",
+            match="Invalid extension txt. Must be 'csv' or 'parquet'.",
         ) as _:
             with NamedTemporaryFile(suffix=".txt") as temp_file:
                 read_df(fname=temp_file.name)
         with pytest.raises(
             expected_exception=NotImplementedError,
-            match="Invalid extension txt. Must be 'csv' or 'parquet'",
+            match="Invalid extension txt. Must be 'csv' or 'parquet'.",
         ) as _:
             with NamedTemporaryFile(suffix=".txt") as temp_file:
                 fname = temp_file.name[:-4]
