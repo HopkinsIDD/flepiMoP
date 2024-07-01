@@ -41,7 +41,7 @@ class TestReadDf:
             with NamedTemporaryFile(suffix=".txt") as temp_file:
                 fname = temp_file.name[:-4]
                 read_df(fname=fname, extension="txt")
-                
+
     @pytest.mark.parametrize(
         "fname_transformer,extension",
         [
@@ -69,9 +69,9 @@ class TestReadDf:
             fname_transformer=fname_transformer,
             extension=extension,
             suffix=".csv",
-            path_writer=lambda p, df: df.to_csv(p, index=False)
+            path_writer=lambda p, df: df.to_csv(p, index=False),
         )
-    
+
     @pytest.mark.parametrize(
         "fname_transformer,extension",
         [
@@ -99,9 +99,9 @@ class TestReadDf:
             fname_transformer=fname_transformer,
             extension=extension,
             suffix=".parquet",
-            path_writer=lambda p, df: df.to_parquet(p, engine='pyarrow', index=False),
+            path_writer=lambda p, df: df.to_parquet(p, engine="pyarrow", index=False),
         )
-                
+
     def _test_read_df(
         self,
         fname_transformer: Callable[[os.PathLike], Any],

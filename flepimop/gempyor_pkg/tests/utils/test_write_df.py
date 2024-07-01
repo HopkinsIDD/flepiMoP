@@ -94,7 +94,7 @@ class TestWriteDf:
             df=self.sample_df,
             extension=extension,
             suffix=".parquet",
-            path_reader=lambda x: pd.read_parquet(x),
+            path_reader=lambda x: pd.read_parquet(x, engine="pyarrow"),
         )
 
     def _test_write_df(
