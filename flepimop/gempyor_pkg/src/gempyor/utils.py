@@ -252,10 +252,31 @@ def as_evaled_expression(self):
         raise ValueError(f"expected numeric or string expression [got: {value}]")
 
 
-def get_truncated_normal(*, mean=0, sd=1, a=0, b=10):
-    "Returns the truncated normal distribution"
+def get_truncated_normal(
+    mean: float | int = 0,
+    sd: float | int = 1,
+    a: float | int = 0,
+    b: float | int = 10,
+) -> scipy.stats._distn_infrastructure.rv_frozen:
+    """Returns a truncated normal distribution.
 
-    return scipy.stats.truncnorm((a - mean) / sd, (b - mean) / sd, loc=mean, scale=sd)
+    This function constructs a truncated normal distribution with the specified
+    mean, standard deviation, and bounds. The truncated normal distribution is
+    a normal distribution bounded within the interval [a, b].
+
+    Args:
+        mean: The mean of the truncated normal distribution. Defaults to 0.
+        sd: The standard deviation of the truncated normal distribution. Defaults to 1.
+        a: The lower bound of the truncated normal distribution. Defaults to 0.
+        b: The upper bound of the truncated normal distribution. Defaults to 10.
+
+    Returns:
+        rv_frozen: A frozen instance of the truncated normal distribution with the
+        specified parameters.
+    """
+    lower = (a - mean) / sd
+    upper = (b - mean) / sd
+    return scipy.stats.truncnorm(lower, upper, loc=mean, scale=sd)
 
 
 def get_log_normal(meanlog, sdlog):
