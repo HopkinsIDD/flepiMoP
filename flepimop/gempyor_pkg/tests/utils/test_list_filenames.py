@@ -4,6 +4,7 @@ These tests cover scenarios for finding files in both flat and nested directorie
 """
 
 from collections.abc import Generator
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -64,11 +65,18 @@ class TestListFilenames:
     @pytest.mark.parametrize(
         "filters,expected_basenames",
         [
+            ("", ["hosp.csv", "hosp.parquet", "spar.csv", "spar.parquet"]),
             ([], ["hosp.csv", "hosp.parquet", "spar.csv", "spar.parquet"]),
+            ("hosp", ["hosp.csv", "hosp.parquet"]),
             (["hosp"], ["hosp.csv", "hosp.parquet"]),
+            ("spar", ["spar.csv", "spar.parquet"]),
             (["spar"], ["spar.csv", "spar.parquet"]),
+            (".parquet", ["hosp.parquet", "spar.parquet"]),
             ([".parquet"], ["hosp.parquet", "spar.parquet"]),
+            (".csv", ["hosp.csv", "spar.csv"]),
             ([".csv"], ["hosp.csv", "spar.csv"]),
+            (".tsv", []),
+            ([".tsv"], []),
             (["hosp", ".csv"], ["hosp.csv"]),
             (["spar", ".parquet"], ["spar.parquet"]),
             (["hosp", "spar"], []),
@@ -77,7 +85,7 @@ class TestListFilenames:
     )
     def test_finds_files_in_flat_directory(
         self,
-        filters: list[str],
+        filters: str | list[str],
         expected_basenames: list[str],
     ) -> None:
         """Test `list_filenames` in a flat directory.
@@ -91,10 +99,31 @@ class TestListFilenames:
             filters=filters,
             expected_basenames=expected_basenames,
         )
+        self._test_list_filenames(
+            folder=self.flat_temp_dir.name.encode(),
+            filters=filters,
+            expected_basenames=expected_basenames,
+        )
+        self._test_list_filenames(
+            folder=Path(self.flat_temp_dir.name),
+            filters=filters,
+            expected_basenames=expected_basenames,
+        )
 
     @pytest.mark.parametrize(
         "filters,expected_basenames",
         [
+            (
+                "",
+                [
+                    "hpar/chimeric/001.parquet",
+                    "hpar/chimeric/002.parquet",
+                    "hpar/global/001.parquet",
+                    "hpar/global/002.parquet",
+                    "seed/001.csv",
+                    "seed/002.csv",
+                ],
+            ),
             (
                 [],
                 [
@@ -107,6 +136,15 @@ class TestListFilenames:
                 ],
             ),
             (
+                "hpar",
+                [
+                    "hpar/chimeric/001.parquet",
+                    "hpar/chimeric/002.parquet",
+                    "hpar/global/001.parquet",
+                    "hpar/global/002.parquet",
+                ],
+            ),
+            (
                 ["hpar"],
                 [
                     "hpar/chimeric/001.parquet",
@@ -115,8 +153,18 @@ class TestListFilenames:
                     "hpar/global/002.parquet",
                 ],
             ),
+            ("seed", ["seed/001.csv", "seed/002.csv"]),
             (["seed"], ["seed/001.csv", "seed/002.csv"]),
+            ("global", ["hpar/global/001.parquet", "hpar/global/002.parquet"]),
             (["global"], ["hpar/global/001.parquet", "hpar/global/002.parquet"]),
+            (
+                "001",
+                [
+                    "hpar/chimeric/001.parquet",
+                    "hpar/global/001.parquet",
+                    "seed/001.csv",
+                ],
+            ),
             (
                 ["001"],
                 [
@@ -127,12 +175,14 @@ class TestListFilenames:
             ),
             (["hpar", "001"], ["hpar/chimeric/001.parquet", "hpar/global/001.parquet"]),
             (["seed", "002"], ["seed/002.csv"]),
+            (["hpar", "001", "global"], ["hpar/global/001.parquet"]),
+            (".tsv", []),
             ([".tsv"], []),
         ],
     )
     def test_find_files_in_nested_directory(
         self,
-        filters: list[str],
+        filters: str | list[str],
         expected_basenames: list[str],
     ) -> None:
         """Test `list_filenames` in a nested directory.
@@ -146,11 +196,21 @@ class TestListFilenames:
             filters=filters,
             expected_basenames=expected_basenames,
         )
+        self._test_list_filenames(
+            folder=self.nested_temp_dir.name.encode(),
+            filters=filters,
+            expected_basenames=expected_basenames,
+        )
+        self._test_list_filenames(
+            folder=Path(self.nested_temp_dir.name),
+            filters=filters,
+            expected_basenames=expected_basenames,
+        )
 
     def _test_list_filenames(
         self,
-        folder: str,
-        filters: list[str],
+        folder: str | bytes | os.PathLike,
+        filters: str | list[str],
         expected_basenames: list[str],
     ) -> None:
         """Helper method to test `list_filenames`.
@@ -162,5 +222,6 @@ class TestListFilenames:
         """
         files = list_filenames(folder=folder, filters=filters)
         assert len(files) == len(expected_basenames)
+        folder = folder.decode() if isinstance(folder, bytes) else str(folder)
         basenames = [f.removeprefix(f"{folder}/") for f in files]
         assert sorted(basenames) == sorted(expected_basenames)
