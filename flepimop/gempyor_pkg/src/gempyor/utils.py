@@ -309,33 +309,48 @@ def as_random_distribution(self):
         return functools.partial(np.random.uniform, self.as_evaled_expression(), self.as_evaled_expression(),)
 
 
-def list_filenames(folder: str = ".", filters: list = []) -> list:
-    """
-    return the list of all filename and path in the provided folders.
-    If filters [list] is provided, then only the files that contains each of the
-    substrings in filter will be returned. Example to get all hosp file:
-    ```
-        gempyor.utils.list_filenames(folder="model_output/", filters=["hosp"])
-    ```
-        and be sure we only get parquet:
-    ```
-        gempyor.utils.list_filenames(folder="model_output/", filters=["hosp" , ".parquet"])
-    ```
-    """
-    from pathlib import Path
+def list_filenames(folder: str = ".", filters: str | list[str] = []) -> list[str]:
+    """Return the list of all filenames and paths in the provided folder.
 
-    fn_list = []
-    for f in Path(str(folder)).rglob(f"*"):
-        if f.is_file():  # not a folder
-            f = str(f)
-            if not filters:
-                fn_list.append(f)
-            else:
-                if all(c in f for c in filters):
-                    fn_list.append(str(f))
-                else:
-                    pass
-    return fn_list
+    This function lists all files in the specified folder and its subdirectories.
+    If filters are provided, only the files containing each of the substrings
+    in the filters will be returned.
+
+    Example:
+        To get all files containing "hosp":
+        ```
+        gempyor.utils.list_filenames(
+            folder="model_output/",
+            filters=["hosp"],
+        )
+        ```
+
+        To get only "hosp" files with a ".parquet" extension:
+        ```
+        gempyor.utils.list_filenames(
+            folder="model_output/",
+            filters=["hosp", ".parquet"],
+        )
+        ```
+
+    Args:
+        folder: The directory to search for files. Defaults to the current directory.
+        filters: A string or a list of strings to filter filenames. Only files
+            containing all the provided substrings will be returned. Defaults to an
+            empty list.
+
+    Returns:
+        A list of strings representing the paths to the files that match the filters.
+    """
+    filters = list(filters) if not isinstance(filters, list) else filters
+    filters = filters if len(filters) else [""]
+    folder = Path(folder)
+    files = [
+        str(file)
+        for file in folder.rglob("*")
+        if file.is_file() and all(f in str(file) for f in filters)
+    ]
+    return files
 
 
 def rolling_mean_pad(data, window):
