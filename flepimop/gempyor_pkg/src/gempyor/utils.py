@@ -279,8 +279,23 @@ def get_truncated_normal(
     return scipy.stats.truncnorm(lower, upper, loc=mean, scale=sd)
 
 
-def get_log_normal(meanlog, sdlog):
-    "Returns the log normal distribution"
+def get_log_normal(
+    meanlog: float | int,
+    sdlog: float | int,
+) -> scipy.stats._distn_infrastructure.rv_frozen:
+    """Returns a log normal distribution.
+
+    This function constructs a log normal distribution with the specified
+    log mean and log standard deviation.
+
+    Args:
+        meanlog: The log of the mean of the log normal distribution.
+        sdlog: The log of the standard deviation of the log normal distribution.
+
+    Returns:
+        rv_frozen: A frozen instance of the log normal distribution with the
+        specified parameters.
+    """
     return scipy.stats.lognorm(s=sdlog, scale=np.exp(meanlog), loc=0)
 
 
