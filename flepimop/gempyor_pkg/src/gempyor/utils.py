@@ -309,7 +309,10 @@ def as_random_distribution(self):
         return functools.partial(np.random.uniform, self.as_evaled_expression(), self.as_evaled_expression(),)
 
 
-def list_filenames(folder: str = ".", filters: str | list[str] = []) -> list[str]:
+def list_filenames(
+    folder: str | bytes | os.PathLike = ".", 
+    filters: str | list[str] = [],
+) -> list[str]:
     """Return the list of all filenames and paths in the provided folder.
 
     This function lists all files in the specified folder and its subdirectories.
@@ -342,9 +345,9 @@ def list_filenames(folder: str = ".", filters: str | list[str] = []) -> list[str
     Returns:
         A list of strings representing the paths to the files that match the filters.
     """
-    filters = list(filters) if not isinstance(filters, list) else filters
+    filters = [filters] if not isinstance(filters, list) else filters
     filters = filters if len(filters) else [""]
-    folder = Path(folder)
+    folder = Path(folder.decode() if isinstance(folder, bytes) else folder)
     files = [
         str(file)
         for file in folder.rglob("*")
