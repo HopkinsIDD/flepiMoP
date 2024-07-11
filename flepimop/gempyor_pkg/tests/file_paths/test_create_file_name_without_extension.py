@@ -1,21 +1,12 @@
-from collections.abc import Generator
-import os
+# from collections.abc import Generator
+# import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
+# from tempfile import TemporaryDirectory
 
 import pytest
 
 from gempyor.file_paths import create_file_name_without_extension
-
-
-@pytest.fixture
-def change_directory_to_temp_directory() -> Generator[None, None, None]:
-    current_dir = os.getcwd()
-    temp_dir = TemporaryDirectory()
-    os.chdir(temp_dir.name)
-    yield
-    os.chdir(current_dir)
-    temp_dir.cleanup()
+from gempyor.testing import *
 
 
 class TestCreateFileNameWithoutExtension:
