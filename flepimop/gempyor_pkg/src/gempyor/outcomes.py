@@ -396,7 +396,7 @@ def compute_all_multioutcomes(
                         )
                     ),
                 }
-            ).set_index(pd.Index(2 * list(range(0, subpop_names_len))))
+            )
             hpar_list.append(hpar)
             # Now tackle NPI
             if npi is not None:
