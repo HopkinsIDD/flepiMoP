@@ -91,6 +91,7 @@ if (opt$config == ""){
 }
 config = flepicommon::load_config(opt$config)
 
+opt$total_ll_multiplier <- 1
 if (!is.null(config$inference$incl_aggr_likelihood)){
     print("Using config option for `incl_aggr_likelihood`.")
     opt$incl_aggr_likelihood <- config$inference$incl_aggr_likelihood
@@ -450,7 +451,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         autowrite_seir = TRUE
       )
     }, error = function(e) {
-      print("GempyorInference failed to run (call on l. 405 of inference_slot.R).")
+      print("GempyorInference failed to run (call on l. 443 of inference_slot.R).")
       print("Here is all the debug information I could find:")
       for(m in reticulate::py_last_error()) print(m)
       stop("GempyorInference failed to run... stopping")
@@ -637,8 +638,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             sim_hosp <- sim_hosp %>%
                 dplyr::bind_rows(
                     sim_hosp %>%
-                        dplyr::select(-tidyselect::all_of(obs_subpop), -tidyselect::starts_with("date")) %>%
-                        dplyr::group_by(time) %>%
+                        dplyr::select(-tidyselect::all_of(obs_subpop)) %>%
+                        dplyr::group_by(date) %>%
                         dplyr::summarise(dplyr::across(tidyselect::everything(), sum)) %>% # no likelihood is calculated for time periods with missing data for any subpop
                         dplyr::mutate(!!obs_subpop := "Total")
                 )
