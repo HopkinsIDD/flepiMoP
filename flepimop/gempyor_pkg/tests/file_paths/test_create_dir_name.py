@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 
 from gempyor.file_paths import create_dir_name
-from gempyor.testing import *
 
 
 class TestCreateDirName:
@@ -26,10 +25,10 @@ class TestCreateDirName:
     )
     def test_create_file_name(
         self,
-        run_id: str, 
-        prefix: str, 
-        ftype: str, 
-        inference_filepath_suffix: str, 
+        run_id: str,
+        prefix: str,
+        ftype: str,
+        inference_filepath_suffix: str,
         inference_filename_prefix: str,
     ) -> None:
         # Setup
@@ -48,7 +47,7 @@ class TestCreateDirName:
                 inference_filepath_suffix,
             )
         )
-        
+
         # Assertions
         assert isinstance(path, str)
         assert not os.path.exists(path)
