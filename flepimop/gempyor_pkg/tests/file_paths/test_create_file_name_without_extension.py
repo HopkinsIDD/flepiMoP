@@ -1,7 +1,4 @@
-# from collections.abc import Generator
-# import os
 from pathlib import Path
-# from tempfile import TemporaryDirectory
 
 import pytest
 
