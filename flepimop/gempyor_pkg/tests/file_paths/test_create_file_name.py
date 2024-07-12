@@ -29,6 +29,14 @@ class TestCreateFileName:
             ("abc", "def", "ghi", "jkl", "csv", "mno", "pqr", True),
             ("abc", "def", 123, "jkl", "parquet", "mno", "pqr", False),
             ("abc", "def", 123, "jkl", "parquet", "mno", "pqr", True),
+            ("20240101_000000", "test0001", "0", "seed", "csv", "", "", True),
+            ("20240101_000000", "test0002", "0", "seed", "parquet", "", "", True),
+            ("20240101_000000", "test0003", "0", "seed", "csv", "", "", False),
+            ("20240101_000000", "test0004", "0", "seed", "parquet", "", "", False),
+            ("20240101_000000", "test0001", "1", "seed", "csv", "", "", True),
+            ("20240101_000000", "test0002", "1", "seed", "parquet", "", "", True),
+            ("20240101_000000", "test0003", "1", "seed", "csv", "", "", False),
+            ("20240101_000000", "test0004", "1", "seed", "parquet", "", "", False),
         ],
     )
     def test_create_file_name(
