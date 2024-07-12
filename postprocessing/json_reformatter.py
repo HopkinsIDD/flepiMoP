@@ -902,7 +902,6 @@ def main() -> None:
     parser.add_argument(
         "--severity-name",
         action="store",
-        nargs=1,
         type=str,
         default="low",
         choices=["low", "med", "high"],
