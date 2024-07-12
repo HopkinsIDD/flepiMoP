@@ -27,6 +27,14 @@ class TestCreateFileNameWithoutExtension:
             ("abc", "def", "ghi", "jkl", "mno", "pqr", True),
             ("abc", "def", 123, "jkl", "mno", "pqr", False),
             ("abc", "def", 123, "jkl", "mno", "pqr", True),
+            ("20240101_000000", "test0001", "0", "seed", "", "", True),
+            ("20240101_000000", "test0002", "0", "seed", "", "", True),
+            ("20240101_000000", "test0003", "0", "seed", "", "", False),
+            ("20240101_000000", "test0004", "0", "seed", "", "", False),
+            ("20240101_000000", "test0001", "1", "seed", "", "", True),
+            ("20240101_000000", "test0002", "1", "seed", "", "", True),
+            ("20240101_000000", "test0003", "1", "seed", "", "", False),
+            ("20240101_000000", "test0004", "1", "seed", "", "", False),
         ],
     )
     def test_create_file_name(

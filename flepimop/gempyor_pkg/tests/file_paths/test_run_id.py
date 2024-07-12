@@ -30,7 +30,12 @@ class TestRunId:
 
     @pytest.mark.parametrize(
         "timestamp",
-        [(None), (datetime.now()), (datetime(2024, 1, 1, tzinfo=timezone.utc))],
+        [
+            None,
+            datetime.now(),
+            datetime(2024, 1, 1, tzinfo=timezone.utc),
+            datetime(2023, 8, 9, 16, 0, 0),
+        ],
     )
     def test_get_run_id_user_provided_timestamp(
         self, timestamp: None | datetime
