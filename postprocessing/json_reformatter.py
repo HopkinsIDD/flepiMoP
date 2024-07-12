@@ -897,7 +897,7 @@ def write_valid_geoids_json(
     return str(output_path)
 
 
-if __name__ == "__main__":
+def main() -> None:
     # Parse given arguments
     parser = argparse.ArgumentParser(
         prog="flepiMoP Parquet To JSON",
@@ -1065,3 +1065,7 @@ if __name__ == "__main__":
         verbose_message(
             msg="Finished transforming flepiMoP output for use in the dashboard",
         )
+
+
+if __name__ == "__main__":
+    main()
