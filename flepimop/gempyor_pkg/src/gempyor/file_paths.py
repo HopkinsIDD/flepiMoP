@@ -41,6 +41,20 @@ def create_file_name(
 
     Returns:
         The full file name with extension.
+
+    Examples:
+        >>> from gempyor.file_paths import create_file_name
+        >>> create_file_name(
+        ...     "20240101_000000",
+        ...     "abc",
+        ...     1,
+        ...     "hosp",
+        ...     "parquet",
+        ...     "global",
+        ...     "jkl",
+        ...     create_directory=False,
+        ... )
+        PosixPath('model_output/abc/hosp/global/jkl000000001.20240101_000000.hosp.parquet')
     """
     if create_directory:
         os.makedirs(
@@ -93,6 +107,19 @@ def create_file_name_without_extension(
 
     Returns:
         The file name without extension as a Path object.
+
+    Examples:
+        >>> from gempyor.file_paths import create_file_name_without_extension
+        >>> create_file_name_without_extension(
+        ...     "20240101_000000",
+        ...     "abc",
+        ...     1,
+        ...     "hosp",
+        ...     "global",
+        ...     "jkl",
+        ...     create_directory=False,
+        ... )
+        PosixPath('model_output/abc/hosp/global/jkl000000001.20240101_000000.hosp')
     """
     if create_directory:
         os.makedirs(
@@ -127,12 +154,14 @@ def run_id(timestamp: None | datetime = None) -> str:
         The generated run ID.
 
     Examples:
-        >>> from datetime import datetime
+        >>> from datetime import datetime, timezone
         >>> from gempyor.file_paths import run_id
         >>> run_id()
         '20240711_160059'
-        >>> run_id(datetime(2024, 1, 1))
+        >>> run_id(timestamp=datetime(2024, 1, 1))
         '20240101_000000'
+        >>> run_id(timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc))
+        '20240101_000000UTC'
     """
     if not timestamp:
         timestamp = datetime.now()
