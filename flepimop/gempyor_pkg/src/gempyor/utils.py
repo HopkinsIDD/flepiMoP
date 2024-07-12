@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import pyarrow as pa
+import scipy.ndimage
 import scipy.stats
 import sympy.parsing.sympy_parser
 
@@ -430,20 +431,19 @@ def rolling_mean_pad(
             [20.2, 21.2, 22.2, 23.2],
             [22.6, 23.6, 24.6, 25.6]])
     """
-    padding_size = (window - 1) // 2
-    padded_data = np.pad(data, ((padding_size, padding_size), (0, 0)), mode="edge")
-
-    # Allocate space for the result
-    result = np.zeros_like(data)
-
-    # Perform convolution along the days axis (axis 0) using a loop
-    for i in range(data.shape[0]):
-        # Extract the current day's data from the padded array
-        window_data = padded_data[i : i + window, :]
-        # Calculate the rolling mean for this day's data
-        result[i, :] = np.mean(window_data, axis=0)
-
-    return result
+    weights = (1. / window) * np.ones(window)
+    output = scipy.ndimage.convolve1d(data, weights, axis=0, mode="nearest")
+    if window % 2 == 0:
+        rows, cols = data.shape
+        i = rows - 1
+        output[i, :] = 0.
+        window -= 1
+        weight = 1. / window
+        for l in range(-((window - 1) // 2), 1 + (window // 2)):
+            i_star = min(max(i + l, 0), i)
+            for j in range(cols):
+                output[i, j] += weight * data[i_star, j]
+    return output
 
 
 def print_disk_diagnosis():
