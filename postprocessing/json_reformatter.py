@@ -1,10 +1,10 @@
 from typing import Literal
 
-from os.path import basename, getsize, dirname
-import time
-import json
-from pathlib import Path
 import argparse
+import json
+from os.path import basename, getsize, dirname
+from pathlib import Path
+import time
 
 import numpy as np
 import numpy.typing as npt
@@ -537,7 +537,7 @@ def write_outcomes_json(
     output_directory: str,
     indicator_array: npt.NDArray[object],
     verbose: int,
-) -> str:
+) -> Path:
     """
     Write outcomes from a hosp DataFrame to a JSON file in the specified directory.
 
@@ -579,7 +579,7 @@ def write_outcomes_json(
             msg=f"Finished writing {file_size} bytes to {output_path.name}",
             start_time=start_time,
         )
-    return str(output_path)
+    return output_path
 
 
 def write_geo_jsons(
@@ -592,7 +592,7 @@ def write_geo_jsons(
     scenario_name: str,
     severity_name: str,
     verbose: int,
-) -> list[str]:
+) -> list[Path]:
     """
     Write geographical JSON files from hosp and spar data.
 
@@ -659,7 +659,7 @@ def write_geo_jsons(
                 )
         file_size = json_dump_efficient(obj=data, file_path=output_path)
         total_file_size += file_size
-        written_files.append(str(output_path))
+        written_files.append(output_path)
         if verbose >= 2:
             verbose_message(
                 msg=f"Finished writing {file_size} bytes to {output_path.name}",
@@ -681,7 +681,7 @@ def write_actuals_jsons(
     seed_df: pd.DataFrame,
     indicator_array: npt.NDArray[object],
     verbose: int,
-) -> list[str]:
+) -> list[Path]:
     """
     Write actuals JSON files from seed data.
 
@@ -721,7 +721,7 @@ def write_actuals_jsons(
             data[indicator] = indicator_df[["date", "value"]].to_dict("records")
         file_size = json_dump_efficient(obj=data, file_path=output_path)
         total_file_size += file_size
-        written_files.append(str(output_path))
+        written_files.append(output_path)
         if verbose >= 2:
             verbose_message(
                 msg=f"Finished writing {file_size} bytes to {output_path.name}",
@@ -745,7 +745,7 @@ def write_stats_for_map_json(
     indicator_array: npt.NDArray[object],
     scenario_name: str,
     verbose: int,
-) -> str:
+) -> Path:
     """
     Write statistics for the map visual to a JSON file in the specified output
     directory.
@@ -796,14 +796,14 @@ def write_stats_for_map_json(
             msg=f"Finished writing {file_size} bytes to {output_path.name}.",
             start_time=start_time,
         )
-    return str(output_path)
+    return output_path
 
 
 def write_valid_geoids_json(
     output_directory: str,
     summary_df: pd.DataFrame,
     verbose: int,
-) -> str:
+) -> Path:
     """
     Write unique, valid geoids to a JSON file.
 
@@ -827,7 +827,7 @@ def write_valid_geoids_json(
         ...     'geoid': ['123000', '456000', '789000', '123456']
         ... })
         >>> write_valid_geoids_json('output', summary_df, verbose=0)
-        'output/validGeoids.json'
+        PosixPath('output/validGeoids.json')
     """
     output_path = Path(output_directory, "validGeoids.json")
     if verbose >= 1:
@@ -845,7 +845,7 @@ def write_valid_geoids_json(
             msg=f"Finished writing {file_size} bytes to {output_path.name}.",
             start_time=start_time,
         )
-    return str(output_path)
+    return output_path
 
 
 def main() -> None:
