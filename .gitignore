@@ -36,7 +36,7 @@ model_output/
 /*.Rcheck/
 
 # RStudio files
-.Rproj.user/
+.Rproj.user
 flepiMoP.Rproj
 *.Rproj
 
@@ -64,7 +64,8 @@ packrat/lib*/
 dist/
 SEIR.egg-info/
 Outcomes.egg-info/
-.Rproj.user
+venv/
+.venv/
 
 # R package manuals
 man/
@@ -74,3 +75,6 @@ flepimop/gempyor_pkg/get_value.prof
 flepimop/gempyor_pkg/tests/seir/.coverage
 flepimop/gempyor_pkg/tests/seir/.coverage.kojis-mbp-8.sph.ad.jhsph.edu.90615.974746
 flepimop/gempyor_pkg/.coverage
+
+# Environment variables
+.env
