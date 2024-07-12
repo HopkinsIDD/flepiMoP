@@ -338,7 +338,7 @@ class GempyorInference:
         if run_id is None:
             run_id = file_paths.run_id()
         if prefix is None:
-            prefix = config["name"].get() + "_inference_all" + "/" + run_id + "/"
+            prefix = config["name"].get() + f"_{self.seir_modifiers_scenario}_{self.outcome_modifiers_scenario}" + "/" + run_id + "/"
         in_run_id = run_id
         if out_run_id is None:
             out_run_id = in_run_id
