@@ -330,7 +330,8 @@ class GempyorInference:
         # Config prep
         config.clear()
         config.read(user=False)
-        config.set_file(path_prefix + config_filepath)
+
+        config.set_file(os.path.join(path_prefix, config_filepath))
 
         self.seir_modifiers_scenario, self.outcome_modifiers_scenario = autodetect_scenarios(config)
 
