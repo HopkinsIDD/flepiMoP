@@ -17,23 +17,21 @@ def get_scenario_name(output_directory: str, scenario_name: str | None) -> str:
     Determines the scenario name from the input directory if it is not explicitly
     provided.
 
-    Parameters
-    ----------
-    output_directory : str
-        The directory path from which the scenario name can be derived.
-    scenario_name : str or None
-        The explicit scenario name, if provided. If None, the scenario name is derived
-        from the input directory's base name.
+    Args:
+        output_directory: The directory path from which the scenario name can be
+            derived.
+        scenario_name: The explicit scenario name, if provided. If None, the scenario
+            name is derived from the input directory's base name.
 
-    Returns
-    -------
-    str
-        The determined scenario name.
+    Returns:
+        If `scenario_name` is provided, it is returned as is. Otherwise, the function
+        returns the base name of the `input_directory`.
 
-    Notes
-    -----
-    If `scenario_name` is provided, it is returned as is. Otherwise, the function
-    returns the base name of the `input_directory`.
+    Examples:
+        >>> get_scenario_name("/path/to/example_scenario", None)
+        'example_scenario'
+        >>> get_scenario_name("/path/to/example_scenario", "custom_scenario_name")
+        'custom_scenario_name'
     """
     if scenario_name:
         return scenario_name
@@ -47,23 +45,24 @@ def verbose_message(msg: str, start_time: None | float = None) -> None:
     """
     Prints a verbose message with a timestamp and optional elapsed time.
 
-    Parameters
-    ----------
-    msg : str
-        The message to be printed.
-    start_time : None or float, optional
-        The start time to calculate the elapsed time. If None, the elapsed time will not
-        be included in the message. The default is `None`.
-
-    Returns
-    -------
-    None
-        This function does not return any value.
-
-    Notes
-    -----
     If the message does not end with a period, one will be added. The elapsed time is
     included if `start_time` is provided.
+
+    Args:
+        msg: The message to be printed.
+        start_time: The start time to calculate the elapsed time. If None, the elapsed
+            time will not be included in the message. The default is `None`.
+
+    Returns:
+        None
+
+    Examples:
+        >>> import time
+        >>> verbose_message("Something happened")
+        [2024-07-12 11:36:16] Something happened.
+        >>> start_time = time.time()
+        >>> verbose_message("Something else happened", start_time=start_time)
+        [2024-07-12 11:37:06] Something else happened. 0.97 seconds elapsed.
     """
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     formatted_msg = f"[{timestamp}] {msg}"
@@ -79,21 +78,30 @@ def read_sim_parquet_file(parquet_file: Path) -> tuple[int, pd.DataFrame]:
     """
     Reads a Parquet file and extracts the simulation ID and data.
 
-    Parameters
-    ----------
-    parquet_file : Path
-        The path to the Parquet file to be read.
+    The simulation ID is assumed to be the integer part of the file name before the
+    first dot.
 
-    Returns
-    -------
-    tuple of (int, pd.DataFrame)
+    Args:
+        parquet_file: The path to the Parquet file to be read.
+
+    Returns:
         A tuple containing the simulation ID (extracted from the file name) and a pandas
         DataFrame with the data from the Parquet file.
 
-    Notes
-    -----
-    The simulation ID is assumed to be the integer part of the file name before the
-    first dot.
+    Examples:
+        >>> from pathlib import Path
+        >>> path = Path("000000001.data.seed.parquet")
+        >>> sim_id, df = read_sim_parquet_file(path)
+        >>> sim_id
+        1
+        >>> df.head()
+        >>> df.head()
+           place        date      amount  ... no_perturb
+        0   1000  2020-01-01  2948668.00  ...       True
+        1   1000  2020-01-01   845054.00  ...       True
+        2   1000  2020-02-07       30.05  ...       True
+        3   1000  2020-05-09       10.05  ...       True
+        4   1000  2020-03-12       40.05  ...       True
     """
     sim_id = int(parquet_file.name.split(".", 1)[0])
     df = pq.read_table(str(parquet_file)).to_pandas()
@@ -104,21 +112,30 @@ def read_sim_csv_file(csv_file: Path) -> tuple[int, pd.DataFrame]:
     """
     Reads a CSV file and extracts the simulation ID and data.
 
-    Parameters
-    ----------
-    csv_file : Path
-        The path to the CSV file to be read.
+    The simulation ID is assumed to be the integer part of the file name before the
+    first dot.
 
-    Returns
-    -------
-    tuple of (int, pd.DataFrame)
+    Parameters
+        csv_file: The path to the CSV file to be read.
+
+    Returns:
         A tuple containing the simulation ID (extracted from the file name) and a pandas
         DataFrame with the data from the CSV file.
 
-    Notes
-    -----
-    The simulation ID is assumed to be the integer part of the file name before the
-    first dot.
+    Examples:
+        >>> from pathlib import Path
+        >>> path = Path("000000001.data.seed.csv")
+        >>> sim_id, df = read_sim_csv_file(path)
+        >>> sim_id
+        1
+        >>> df.head()
+        >>> df.head()
+           place        date      amount  ... no_perturb
+        0   1000  2020-01-01  2948668.00  ...       True
+        1   1000  2020-01-01   845054.00  ...       True
+        2   1000  2020-02-07       30.05  ...       True
+        3   1000  2020-05-09       10.05  ...       True
+        4   1000  2020-03-12       40.05  ...       True
     """
     sim_id = int(csv_file.name.split(".", 1)[0])
     df = pd.read_csv(filepath_or_buffer=str(csv_file))
@@ -130,17 +147,12 @@ def read_hosp_parquet_file(file_path: Path, verbose: int) -> pd.DataFrame:
     Reads a hosp Parquet file, transforms the data, and returns it as a pandas
     DataFrame.
 
-    Parameters
-    ----------
-    file_path : Path
-        The path to the hosp Parquet file to be read.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 2 or higher, detailed
-        messages will be printed during the process.
+    Args:
+        file_path: The path to the hosp Parquet file to be read.
+        verbose: The verbosity level for logging messages. If `verbose` is 2 or higher,
+            detailed messages will be printed during the process.
 
-    Returns
-    -------
-    pd.DataFrame
+    Returns:
         A pandas DataFrame containing the transformed data with columns: 'sim_id',
         'date', 'geoid', 'indicator', 'value'.
     """
@@ -184,17 +196,12 @@ def read_spar_parquet_file(file_path: Path, verbose: int) -> pd.DataFrame:
     Reads a spar Parquet file, transforms the data, and returns it as a pandas
     DataFrame.
 
-    Parameters
-    ----------
-    file_path : Path
-        The path to the spar Parquet file to be read.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 2 or higher, detailed
-        messages will be printed during the process.
+    Args:
+        file_path: The path to the spar Parquet file to be read.
+        verbose: The verbosity level for logging messages. If `verbose` is 2 or higher,
+            detailed messages will be printed during the process.
 
-    Returns
-    -------
-    pd.DataFrame
+    Returns:
         A pandas DataFrame containing the transformed data with columns: 'sim_id',
         'value'.
     """
@@ -230,22 +237,6 @@ def read_seed_parquet_csv_file(file_path: Path, verbose: int) -> pd.DataFrame:
     If the `verbose` level is set to 2 or higher, it will print timing and
     transformation messages.
 
-    Parameters
-    ----------
-    file_path : Path
-        The path to the file to be read. The file can be in CSV or Parquet format.
-    verbose : int
-        The verbosity level. If 2 or higher, prints detailed messages about
-        reading and transforming the file.
-
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame containing the transformed data with columns 'geoid',
-        'date', 'indicator', and 'value'.
-
-    Notes
-    -----
     The function performs the following transformations on the DataFrame:
     - Renames 'subpop' and 'place' columns to 'geoid'.
     - Creates an 'indicator' column by concatenating 'source_infection_stage',
@@ -253,18 +244,28 @@ def read_seed_parquet_csv_file(file_path: Path, verbose: int) -> pd.DataFrame:
     - Selects only the 'geoid', 'date', 'indicator', and 'value' columns
       for the final DataFrame.
 
-    Examples
-    --------
-    >>> from pathlib import Path
-    >>> df = read_seed_parquet_csv_file(Path('data.csv'), verbose=2)
-    Reading data.csv
-    Finished reading data.csv
-    Transforming data.csv
-    Finished transforming data.csv
-    >>> df.head()
-        geoid         dat     indicator  value
-    0       1  2021-01-01  incid1_1_1_1     10
-    1       2  2021-01-01  incid1_1_1_1     15
+    Args:
+        file_path: The path to the file to be read. The file can be in CSV or Parquet
+            format.
+        verbose: The verbosity level. If 2 or higher, prints detailed messages about
+            reading and transforming the file.
+
+    Returns:
+        A DataFrame containing the transformed data with columns 'geoid',
+        'date', 'indicator', and 'value'.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> path = Path("data.csv")
+        >>> df = read_seed_parquet_csv_file(path, 2)
+        [2024-07-12 11:50:35] Reading data.csv.
+        [2024-07-12 11:50:35] Finished reading data.csv. 0.02 seconds elapsed.
+        [2024-07-12 11:50:35] Transforming data.csv.
+        [2024-07-12 11:50:35] Finished transforming data.csv. 0.00 seconds elapsed.
+        >>> df.head()
+            geoid         dat     indicator  value
+        0       1  2021-01-01  incid1_1_1_1     10
+        1       2  2021-01-01  incid1_1_1_1     15
     """
     if verbose >= 2:
         start_time = time.time()
@@ -315,27 +316,20 @@ def read_dataframe_from_folder(
     Reads and concatenates spar or hosp Parquet files from a specified directory into a
     pandas DataFrame.
 
-    Parameters
-    ----------
-    input_directory : str
-        The directory containing the Parquet files.
-    file_type : {'spar', 'hosp', 'seed'}
-        The type of files to read. Must be either 'spar', 'hosp', or 'seed'.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 1 or higher, progress
-        messages will be printed.
+    If `verbose` is set to 1 or higher the function logs messages about the number of
+    files found and the progress of reading and concatenating these files.
 
-    Returns
-    -------
-    pd.DataFrame
+    Args:
+        input_directory: The directory containing the Parquet files.
+        file_type: The type of files to read. Must be either 'spar', 'hosp', or 'seed'.
+        verbose: The verbosity level for logging messages. If `verbose` is 1 or higher,
+            progress messages will be printed.
+
+    Returns:
         A pandas DataFrame containing the concatenated data from all specified Parquet
         files. The DataFrame will have columns 'sim_id', 'date', 'geoid', 'indicator', &
         'value' if file_type is 'hosp' or if the file_type is 'spar' the columns will be
         'sim_id' & 'value'.
-
-    Notes
-    -----
-    If `verbose` is set to 1 or higher the function logs messages about the number of files found and the progress of reading and concatenating these files.
     """
     spar_hosp_seed_path = Path(input_directory)
     spar_hosp_seed_files = [
@@ -390,25 +384,18 @@ def calculate_dates_series(
     Calculate a series of unique, sorted dates and their formatted string
     representations from a hosp DataFrame.
 
-    Parameters
-    ----------
-    hosp_df : pd.DataFrame
-        The DataFrame containing the hosp data with a 'date' column.
-
-    Returns
-    -------
-    tuple of (pd.Series, list of str)
-        A tuple containing:
-        - dates_series: pd.Series
-            A pandas Series of unique, sorted dates.
-        - formatted_dates_list: list of str
-            A list of formatted date strings in the 'YYYY-MM-DD' format.
-
-    Notes
-    -----
     The function extracts unique dates from the 'date' column of the input DataFrame,
     sorts them, and then returns them both as a pandas Series and as a list of formatted
     date strings.
+
+    Args:
+        hosp_df: The DataFrame containing the hosp data with a 'date' column.
+
+    Returns:
+        A tuple containing:
+        - dates_series: A pandas Series of unique, sorted dates.
+        - formatted_dates_list: A list of formatted date strings in the 'YYYY-MM-DD'
+            format.
     """
     dates_array = hosp_df["date"].unique()
     dates_array = dates_array[dates_array.argsort()]
@@ -430,26 +417,21 @@ def calculate_indicator_array(
     provided DataFrame, converts them to an object dtype, sorts them, and
     returns the resulting array.
 
-    Parameters
-    ----------
-    hosp_df : pandas.DataFrame
-        The DataFrame containing the "indicator" column from which unique
-        indicators are to be extracted.
+    Args:
+        hosp_df: The DataFrame containing the "indicator" column from which unique
+            indicators are to be extracted.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         A sorted array of unique indicators with object dtype.
 
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> import numpy as np
-    >>> hosp_df = pd.DataFrame({
-    ...     "indicator": ["A", "B", "A", "C", "B", "C", "D"]
-    ... })
-    >>> calculate_indicator_array(hosp_df)
-    array(['A', 'B', 'C', 'D'], dtype=object)
+    Examples:
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> hosp_df = pd.DataFrame({
+        ...     "indicator": ["A", "B", "A", "C", "B", "C", "D"]
+        ... })
+        >>> calculate_indicator_array(hosp_df)
+        array(['A', 'B', 'C', 'D'], dtype=object)
     """
     indicators = hosp_df["indicator"].unique().astype(object)
     indicators.sort()
@@ -463,25 +445,18 @@ def calculate_summary_from_hosp_dataframe(
     """
     Calculate a summary DataFrame from hosp data using a specified aggregation function.
 
-    Parameters
-    ----------
-    hosp_df : pd.DataFrame
-        The DataFrame containing the hosp data with columns 'date', 'geoid',
-        'indicator', and 'value'.
-    func : callable, optional
-        The function to apply for aggregation. The default is `np.mean`.
-
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame containing the aggregated summary with columns 'date',
-        'state_geoid', 'geoid', 'indicator', & 'value'.
-
-    Notes
-    -----
     The function groups the input DataFrame by 'date', 'geoid', and 'indicator', applies
     the specified aggregation function, resets the index, and adds a 'state_geoid'
     column by slicing the 'geoid' column.
+
+    Args:
+        hosp_df: The DataFrame containing the hosp data with columns 'date', 'geoid',
+            'indicator', and 'value'.
+        func: The function to apply for aggregation. The default is `np.mean`.
+
+    Returns:
+        A DataFrame containing the aggregated summary with columns 'date',
+        'state_geoid', 'geoid', 'indicator', & 'value'.
     """
     summary_df = hosp_df[["date", "geoid", "indicator", "value"]].groupby(
         ["date", "geoid", "indicator"]
@@ -500,25 +475,50 @@ def json_dump_efficient(obj: dict, file_path: Path) -> int:
     """
     Efficiently serialize an object to a JSON formatted stream.
 
-    Parameters
-    ----------
-    obj : dict
-        The dictionary to serialize.
-    fp : Path
-        The path which the JSON data will be written.
-
-    Returns
-    -------
-    int
-        The size of the file after writing the JSON data in bytes.
-
-    Notes
-    -----
     This function uses `json.dump` with optimizations:
     - `ensure_ascii=False` to allow non-ASCII characters, making the process faster.
     - `check_circular=False` to skip circular reference checking, which is valid for the
       data produced by this script.
     - `separators=(',', ':')` to minimize whitespace and trim the file size.
+
+    Args:
+        obj: The dictionary to serialize.
+        fp: The path which the JSON data will be written.
+
+    Returns:
+        The size of the file after writing the JSON data in bytes.
+
+    Examples:
+        >>> import json
+        >>> from pathlib import Path
+        >>> from tempfile import NamedTemporaryFile
+        >>> import time
+        >>> import numpy as np
+        >>> def time_func(func, *args):
+        ...     st = time.time()
+        ...     out = func(*args)
+        ...     tt = 1000. * (time.time() - st)
+        ...     print(f"Total Time: {tt:.3f} ms")
+        ...     return out
+        ...
+        >>> def json_dump(obj, path):
+        ...     with path.open(mode="w") as fp:
+        ...         json.dump(obj, fp)
+        ...     return path.stat().st_size
+        ...
+        >>> keys = np.arange(1, 100_000).astype(str).tolist()
+        >>> values = np.round(np.random.uniform(size=100_000), decimals=2).tolist()
+        >>> obj = {k: v for k, v in zip(keys, values)}
+        >>> tf1 = NamedTemporaryFile()
+        >>> tf2 = NamedTemporaryFile()
+        >>> path1 = Path(tf1.name)
+        >>> path2 = Path(tf2.name)
+        >>> time_func(json_dump, obj, path1)
+        Total Time: 67.796 ms
+        1478815
+        >>> time_func(json_dump_efficient, obj, path2)
+        Total Time: 62.026 ms
+        1278818
     """
     if obj:
         with file_path.open(mode="w") as fp:
@@ -541,25 +541,6 @@ def write_outcomes_json(
     """
     Write outcomes from a hosp DataFrame to a JSON file in the specified directory.
 
-    Parameters
-    ----------
-    output_directory : str
-        The directory where the output JSON file will be written.
-    hosp_df : pd.DataFrame
-        The DataFrame containing hosp data, which includes an 'indicator' column.
-    indicator_array: npt.NDArray[object]
-        A numpy array of indicator names.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 1 or higher, progress
-        messages will be printed.
-
-    Returns
-    -------
-    str
-        The path to the output JSON file as a string.
-
-    Notes
-    -----
     This function generates a JSON file named 'outcomes.json' in the specified output
     directory. It creates a dictionary of outcomes from the unique values in the
     'indicator' column of `hosp_df`, with each outcome assigned a unique ID. The JSON
@@ -568,6 +549,17 @@ def write_outcomes_json(
 
     If `verbose` is 1 or higher, the function logs messages indicating the start and
     completion of the writing process, including the size of the written file.
+
+    Args:
+        output_directory: The directory where the output JSON file will be written.
+        hosp_df: The DataFrame containing hosp data, which includes an 'indicator'
+            column.
+        indicator_array: A numpy array of indicator names.
+        verbose: The verbosity level for logging messages. If `verbose` is 1 or higher,
+            progress messages will be printed.
+
+    Returns:
+        The path to the output JSON file as a string.
     """
     output_path = Path(output_directory, "outcomes.json")
     if verbose >= 1:
@@ -604,40 +596,26 @@ def write_geo_jsons(
     """
     Write geographical JSON files from hosp and spar data.
 
-    Parameters
-    ----------
-    output_directory : str
-        The directory where the output JSON files will be written.
-    hosp_df : pd.DataFrame
-        The DataFrame containing hosp data.
-    spar_df : pd.DataFrame
-        The DataFrame containing spar data.
-    dates_series : pd.Series
-        A Series of dates used for merging data.
-    formatted_dates: list[str]
-        A list of dates formatted in "YYYY-MM-DD" format.
-    indicator_array: npt.NDArray[object]
-        A numpy array of indicator names.
-    scenario_name : str
-        The name of the scenario.
-    severity_name : str
-        The name of the severity level.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 1 or higher, progress
-        messages will be printed.
-
-    Returns
-    -------
-    list of str
-        A list of paths to the written JSON files.
-
-    Notes
-    -----
     This function generates JSON files for each unique geoid in `hosp_df`. It groups the
     data by 'geoid' and writes each group to a separate JSON file. The JSON files
     include nested structures for scenarios, severity levels, and indicators, with each
     indicator containing data from multiple simulations. The function logs progress
     messages if `verbose` is set to 1 or higher.
+
+    Args:
+        output_directory: The directory where the output JSON files will be written.
+        hosp_df: The DataFrame containing hosp data.
+        spar_df: The DataFrame containing spar data.
+        dates_series: A Series of dates used for merging data.
+        formatted_dates: A list of dates formatted in "YYYY-MM-DD" format.
+        indicator_array: A numpy array of indicator names.
+        scenario_name: The name of the scenario.
+        severity_name: The name of the severity level.
+        verbose: The verbosity level for logging messages. If `verbose` is 1 or higher,
+            progress messages will be printed.
+
+    Returns:
+        A list of paths to the written JSON files.
     """
     if verbose >= 1:
         files_start_time = time.time()
@@ -707,29 +685,20 @@ def write_actuals_jsons(
     """
     Write actuals JSON files from seed data.
 
-    Parameters
-    ----------
-    output_directory : str
-        The directory where the output JSON files will be written.
-    seed_df : pd.DataFrame
-        The DataFrame containing seed data.
-    indicator_array: npt.NDArray[object]
-        A numpy array of indicator names.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 1 or higher, progress
-        messages will be printed.
-
-    Returns
-    -------
-    list of str
-        A list of paths to the written JSON files.
-
-    Notes
-    -----
     This function generates JSON files for each unique geoid in `seed_df`. It groups the
     data by 'geoid' and writes each group to a separate JSON file. The JSON files
     include for each indicator a list of dates and values. The function logs progress
     messages if `verbose` is set to 1 or higher.
+
+    Args:
+        output_directory: The directory where the output JSON files will be written.
+        seed_df: The DataFrame containing seed data.
+        indicator_array: A numpy array of indicator names.
+        verbose: The verbosity level for logging messages. If `verbose` is 1 or higher,
+            progress messages will be printed.
+
+    Returns:
+        A list of paths to the written JSON files.
     """
     if verbose >= 1:
         files_start_time = time.time()
@@ -781,34 +750,23 @@ def write_stats_for_map_json(
     Write statistics for the map visual to a JSON file in the specified output
     directory.
 
-    Parameters
-    ----------
-    output_directory : str
-        The directory where the output JSON file will be written.
-    summary_df : pd.DataFrame
-        The DataFrame containing the summary data.
-    dates_series : pd.Series
-        A Series of dates used for merging data.
-    indicator_array: npt.NDArray[object]
-        A numpy array of indicator names.
-    scenario_name : str
-        The name of the scenario.
-    verbose : int
-        The verbosity level for logging messages. If `verbose` is 1 or higher, progress
-        messages will be printed.
-
-    Returns
-    -------
-    str
-        The path to the output JSON file as a string.
-
-    Notes
-    -----
     This function generates a JSON file named 'statsForMap.json' in the specified output
     directory. It groups the data by 'state_geoid' and 'geoid', then organizes it by
     scenario and indicator. Each indicator's values are merged with a series of dates
     and stored in the JSON structure. The function logs progress messages if `verbose`
     is set to 1 or higher.
+
+    Args:
+        output_directory: The directory where the output JSON file will be written.
+        summary_df: The DataFrame containing the summary data.
+        dates_series: A Series of dates used for merging data.
+        indicator_array: A numpy array of indicator names.
+        scenario_name: The name of the scenario.
+        verbose: The verbosity level for logging messages. If `verbose` is 1 or higher,
+            progress messages will be printed.
+
+    Returns:
+        The path to the output JSON file as a string.
     """
     output_path = Path(output_directory, "statsForMap.json")
     if verbose >= 1:
@@ -854,29 +812,22 @@ def write_valid_geoids_json(
     file in the specified output directory. The verbosity level controls the
     amount of progress information printed.
 
-    Parameters
-    ----------
-    output_directory : str
-        The directory where the JSON file will be saved.
-    summary_df : pandas.DataFrame
-        The DataFrame containing the "geoid" column from which unique geoids
-        are to be extracted.
-    verbose : int
-        The verbosity level. If >= 1, progress information is printed.
+    Args:
+        output_directory: The directory where the JSON file will be saved.
+        summary_df: The DataFrame containing the "geoid" column from which unique geoids
+            are to be extracted.
+        verbose: The verbosity level. If >= 1, progress information is printed.
 
-    Returns
-    -------
-    str
+    Returns:
         The path to the created JSON file as a string.
 
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> summary_df = pd.DataFrame({
-    ...     'geoid': ['123000', '456000', '789000', '123456']
-    ... })
-    >>> write_valid_geoids_json('output', summary_df, verbose=0)
-    'output/validGeoids.json'
+    Examples:
+        >>> import pandas as pd
+        >>> summary_df = pd.DataFrame({
+        ...     'geoid': ['123000', '456000', '789000', '123456']
+        ... })
+        >>> write_valid_geoids_json('output', summary_df, verbose=0)
+        'output/validGeoids.json'
     """
     output_path = Path(output_directory, "validGeoids.json")
     if verbose >= 1:
@@ -898,6 +849,12 @@ def write_valid_geoids_json(
 
 
 def main() -> None:
+    """
+    The main CLI entrance to this postprocessing script
+
+    Returns:
+        None
+    """
     # Parse given arguments
     parser = argparse.ArgumentParser(
         prog="flepiMoP Parquet To JSON",
