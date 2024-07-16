@@ -649,11 +649,12 @@ def write_geo_jsons(
             # Loop over the sims
             for sim_id, sim_df in indicator_df.groupby("sim_id", observed=True):
                 r0 = float(spar_df[spar_df["sim_id"] == sim_id]["value"].iloc[0])
+                sim_values = sim_df["value"].astype(float).to_numpy()
                 data[scenario_name][severity_name][indicator].append(
                     {
                         "name": str(sim_id),
-                        "max": sim_df["value"].max(),
-                        "vals": sim_df["value"].tolist(),
+                        "max": float(np.max(sim_values)),
+                        "vals": sim_values.tolist(),
                         "over": True,
                         "r0": r0,
                     }
@@ -930,6 +931,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     # First, get the scenario name of the flepiMoP run
+    Path(args.output_directory).mkdir(parents=True, exist_ok=True)
     args.scenario_name = get_scenario_name(
         output_directory=args.output_directory,
         scenario_name=args.scenario_name,
