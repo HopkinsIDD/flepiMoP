@@ -459,7 +459,7 @@ def calculate_summary_from_hosp_dataframe(
         'state_geoid', 'geoid', 'indicator', & 'value'.
     """
     summary_df = hosp_df[["date", "geoid", "indicator", "value"]].groupby(
-        ["date", "geoid", "indicator"]
+        ["date", "geoid", "indicator"], observed=True, sort=False
     )
     if func == np.mean:
         summary_df = summary_df.mean()
@@ -468,6 +468,7 @@ def calculate_summary_from_hosp_dataframe(
     summary_df = summary_df.reset_index()
     summary_df["state_geoid"] = summary_df["geoid"].str.slice(stop=2)
     summary_df = summary_df[["date", "state_geoid", "geoid", "indicator", "value"]]
+    summary_df = summary_df.sort_values(["date", "state_geoid", "geoid", "indicator"])
     return summary_df
 
 
@@ -622,7 +623,7 @@ def write_geo_jsons(
         verbose_message(msg=f"Writing geo JSONs.")
     written_files = []
     total_file_size = 0
-    for geoid, geoid_df in hosp_df.groupby("geoid"):
+    for geoid, geoid_df in hosp_df.groupby("geoid", observed=True):
         if geoid[2:] == "000":
             geoid = geoid[:2]
         output_path = Path(output_directory, f"{geoid}.json")
@@ -646,7 +647,7 @@ def write_geo_jsons(
                 on="date",
             )
             # Loop over the sims
-            for sim_id, sim_df in indicator_df.groupby("sim_id"):
+            for sim_id, sim_df in indicator_df.groupby("sim_id", observed=True):
                 r0 = float(spar_df[spar_df["sim_id"] == sim_id]["value"].iloc[0])
                 data[scenario_name][severity_name][indicator].append(
                     {
@@ -707,7 +708,7 @@ def write_actuals_jsons(
     total_file_size = 0
     seed_df = seed_df[seed_df["indicator"].isin(indicator_array)]
     seed_df["date"] = pd.to_datetime(seed_df["date"]).dt.strftime("%Y-%m-%d")
-    for geoid, geoid_df in seed_df.groupby("geoid"):
+    for geoid, geoid_df in seed_df.groupby("geoid", observed=True):
         if geoid[2:] == "000":
             geoid = geoid[:2]
         output_path = Path(output_directory, f"{geoid}.json")
@@ -717,7 +718,7 @@ def write_actuals_jsons(
                 msg=f"Writing actuals JSON for {output_path.name}.",
             )
         data = {}
-        for indicator, indicator_df in geoid_df.groupby("indicator"):
+        for indicator, indicator_df in geoid_df.groupby("indicator", observed=True):
             data[indicator] = indicator_df[["date", "value"]].to_dict("records")
         file_size = json_dump_efficient(obj=data, file_path=output_path)
         total_file_size += file_size
@@ -773,9 +774,9 @@ def write_stats_for_map_json(
         start_time = time.time()
         verbose_message(msg=f"Writing outcomes to {output_path.name}.")
     stats_for_map = {}
-    for state_geoid, state_df in summary_df.groupby("state_geoid"):
+    for state_geoid, state_df in summary_df.groupby("state_geoid", observed=True):
         stats_for_map[state_geoid] = {}
-        for county_geoid, county_df in state_df.groupby("geoid"):
+        for county_geoid, county_df in state_df.groupby("geoid", observed=True):
             if county_geoid[2:] == "000":
                 # Misnomer, county is actually the state
                 county_geoid = state_geoid
