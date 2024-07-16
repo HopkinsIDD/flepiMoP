@@ -23,7 +23,17 @@ config = confuse.Configuration("flepiMoP", read=False)
 
 
 def write_df(fname: str, df: pd.DataFrame, extension: str = ""):
-    """write without index, so assume the index has been put a column"""
+    """
+    Convert a DataFrame to either a csv or parquet file.
+
+    Args:
+        fname: The filename (str).
+        df: The pandas DataFrame to be converted.
+        extension: Optional argument. Must either be 'csv' or 'parquet'. Default value is an empty string.
+    
+    Raises:
+        NotImplementedError: If an invalid file extension is given.
+    """
     # cast to str to use .split in case fname is a PosixPath
     fname = str(fname)
     if extension:  # Empty strings are falsy in python
@@ -39,6 +49,22 @@ def write_df(fname: str, df: pd.DataFrame, extension: str = ""):
 
 
 def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
+    """
+    Verifies that a command is valid by attempting to run it. Prints stream of code if command fails.
+
+    Args:
+        command: The CLI command to be given (str).
+        command_name: The reference name for you command (str). Default value is "mycommand".
+        fail_on_fail: Boolean; default is True. If True, an exception will be thrown if the command fails.
+
+    Returns:
+        returncode: The returncode message from running yourcommand.
+        stdout: Standard output
+        stderr: Standard error stream
+
+    Raises:
+        Exception: If fail_on_fail=True and the command fails, an exception will be thrown.
+    """
     import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
 
@@ -63,8 +89,21 @@ def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
 
 
 def read_df(fname: str, extension: str = "") -> pd.DataFrame:
-    """Load a dataframe from a file, agnostic to whether it is a parquet or a csv. The extension
-    can be provided as an argument or it is infered"""
+    """
+    Load a dataframe from a file, agnostic to whether it is a parquet or a csv. The extension
+    can be provided as an argument or it is inferred.
+    
+    Args:
+        fname: The filename (str).
+        extension: Optional argument. Must either be 'csv' or 'parquet'. Default value is an empty string.
+
+    Returns:
+        A pandas DataFrame of the data that was in the parquet or csv file.
+
+    Raises:
+        NotImplementedError: If an invalid file extension is given.
+        FileNotFoundError: If the file cannot be found; likely due to fname typo.
+    """
     fname = str(fname)
     if extension:  # Empty strings are falsy in python
         fname = f"{fname}.{extension}"
@@ -80,7 +119,15 @@ def read_df(fname: str, extension: str = "") -> pd.DataFrame:
 
 
 def add_method(cls):
-    "Decorator to add a method to a class"
+    """
+    Decorator to add a method to a class.
+
+    Args:
+        cls: The class you want to add a method to.
+    
+    Returns:
+        decorator: The decorator.
+    """
 
     def decorator(func):
         @functools.wraps(func)
@@ -97,6 +144,18 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
     # unfortunatelly very complicated, this is cpython only ??
+    """
+    Function serving to create a class that finds and imports the necessary modules.
+
+    Args:
+        plugin_file_path: Pathway to the module (str).
+        path_prefix: Pathway prefix to the module (str).
+        class_name: Name of the class (str).
+    Keyword args: 
+
+    Returns:
+
+    """
     import sys, os
 
     full_path = os.path.join(path_prefix, plugin_file_path)
@@ -119,6 +178,7 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
     """A time profiler decorator.
     Inspired by and modified the profile decorator of Giampaolo Rodola:
     http://code.activestate.com/recipes/577817-profile-decorator/
+
     Args:
         output_file: str or None. Default is None
             Path of the output file. If only name of the file is given, it's
@@ -136,6 +196,7 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
         strip_dirs: bool
             Whether to remove the leading path info from file names.
             This is also useful in reducing the size of the printout
+
     Returns:
         Profile of the decorated function
     """
@@ -157,6 +218,15 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
 
 
 def as_list(thing):
+    """
+    Returns argument passed as a list.
+
+    Args:
+        thing: The object that you would like to be converted to a list.
+
+    Returns:
+        thing: The object converted to a list.
+    """
     if type(thing) == list:
         return thing
     return [thing]
@@ -187,14 +257,30 @@ class ISO8601Date(confuse.Template):
 
 @add_method(confuse.ConfigView)
 def as_date(self):
-    "Evaluates an datetime.date or ISO8601 date string, raises ValueError on parsing errors."
+    """
+    Evaluates an datetime.date or ISO8601 date string.
+
+    Args:
+        self: Class instance to convert to date or date string.
+
+    Raises:
+        ValueError: On parsing errors.
+    """
 
     return self.get(ISO8601Date())
 
 
 @add_method(confuse.ConfigView)
 def as_evaled_expression(self):
-    "Evaluates an expression string, returning a float. Raises ValueError on parsing errors."
+    """
+    Evaluates an expression string, returning a float. 
+
+    Args:
+        self: Class instance expression to evaluate.
+
+    Raises:
+        ValueError: On parsing errors.
+    """
 
     value = self.get()
     if isinstance(value, numbers.Number):
@@ -209,19 +295,52 @@ def as_evaled_expression(self):
 
 
 def get_truncated_normal(*, mean=0, sd=1, a=0, b=10):
-    "Returns the truncated normal distribution"
+    """
+    Returns the truncated normal distribution.
+
+    Args: Must be assigned with keyword.
+        mean: Mean. Default value is 0.
+        sd: Standard deviation. Default value is 1.
+        a: Starting value. Default value is 0.
+        b: Ending value. Default value is 10.
+    
+    Returns:
+        A frozen random variable object holding the fixed given parameters.
+    """
 
     return scipy.stats.truncnorm((a - mean) / sd, (b - mean) / sd, loc=mean, scale=sd)
 
 
 def get_log_normal(meanlog, sdlog):
-    "Returns the log normal distribution"
+    """
+    Returns the log normal distribution.
+
+    Args:
+        meanlog: Mean.
+        sdlog: Standard deviation.
+    
+    Returns:
+        A frozen random variable object holding the fixed given parameters.
+    """
     return scipy.stats.lognorm(s=sdlog, scale=np.exp(meanlog), loc=0)
 
 
 @add_method(confuse.ConfigView)
 def as_random_distribution(self):
-    "Constructs a random distribution object from a distribution config key"
+    """
+    Constructs a random distribution object from a distribution config key.
+
+    Args:
+        self: Class instance (in this case, a config key) to construct the random distribution from.
+
+    Returns:
+        A partial object containing the random distribution.
+    
+    Raises: 
+        ValueError: When values are out of range.
+        NotImplementedError: If an unknown distribution is found.
+
+    """
 
     if isinstance(self.get(), dict):
         dist = self["distribution"].get()
@@ -267,7 +386,7 @@ def as_random_distribution(self):
 
 def list_filenames(folder: str = ".", filters: list = []) -> list:
     """
-    return the list of all filename and path in the provided folders.
+    Returns the list of all filenames and paths in the provided folders.
     If filters [list] is provided, then only the files that contains each of the
     substrings in filter will be returned. Example to get all hosp file:
     ```
@@ -277,6 +396,13 @@ def list_filenames(folder: str = ".", filters: list = []) -> list:
     ```
         gempyor.utils.list_filenames(folder="model_output/", filters=["hosp" , ".parquet"])
     ```
+
+    Args:
+        folder: A path to the folder containing files (str). Default value is ".". 
+        filters: A list of substrings to filter the filenames. Default value is an empty list.
+
+    Returns:
+        fn_list: A list of filenames.
     """
     from pathlib import Path
 
@@ -322,6 +448,10 @@ def rolling_mean_pad(data, window):
 
 
 def print_disk_diagnosis():
+    """
+    Reads and prints AWS diagnoses. 
+    Includes total bytes, used bytes, free bytes.
+    """
     import os
     from os import path
     from shutil import disk_usage
@@ -349,6 +479,20 @@ def print_disk_diagnosis():
 def create_resume_out_filename(
     flepi_run_index: str, flepi_prefix: str, flepi_slot_index: str, flepi_block_index: str, filetype: str, liketype: str
 ) -> str:
+    """
+    Compiles run output information.
+
+    Args:
+        flepi_run_index: Index of the run (str).
+        flepi_prefix: File prefix (str).
+        flepi_slot_index: Index of the slot (str).
+        flepi_block_index: Index of the block (str).
+        filetype: File type (str).
+        liketype: (str).
+    
+    Returns:
+        The path to a corresponding output file.
+    """
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
     inference_filename_prefix = "{:09d}.".format(int(flepi_slot_index))
@@ -370,6 +514,19 @@ def create_resume_out_filename(
 def create_resume_input_filename(
     resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str
 ) -> str:
+    """
+    Compiles run input information.
+
+    Args:
+        resume_run_index: Index of the run (str).
+        flepi_prefix: File prefix (str).
+        flepi_slot_index: Index of thes lot (str).
+        filetype: File type (str).
+        liketype: (str).
+    
+    Returns:
+        The path to the a corresponding input file.
+    """
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
     index = flepi_slot_index
@@ -392,9 +549,12 @@ def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str)
     specific environment variable settings. This function dynamically determines the list
     based on the current operational context given by the environment.
 
-    The function checks two environment variables:
-    - `resume_discard_seeding`: Determines whether seeding-related file types should be included.
-    - `flepi_block_index`: Determines a specific operational mode or block of the process.
+    Args:
+        resume_discard_seeding: Determines whether seeding-related file types should be included (str).
+        flepi_block_index: Determines a specific operational mode or block of the process (str).
+
+    Returns:
+        List of file types.
     """
     if flepi_block_index == "1":
         if resume_discard_seeding == "true":
@@ -419,6 +579,19 @@ def create_resume_file_names_map(
     parquet file types and environmental conditions. The function adjusts the file name mappings
     based on the operational block index and the location of the last job output.
 
+    Args:
+        resume_discard_seeding:
+        flepi_block_index:
+        resume_run_index:
+        flepi_prefix:
+        flepi_slot_index:
+        flepi_run_index:
+        last_job_output:
+
+    Return:
+        Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
+                        output file paths. The paths may be modified by the 'LAST_JOB_OUTPUT' if it
+                        is set and points to an S3 location.
     The mappings depend on:
     - Parquet file types appropriate for resuming a process, as determined by the environment.
     - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the
@@ -427,11 +600,6 @@ def create_resume_file_names_map(
       block index '1'.
     - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set to an S3 path,
       adjusts the keys in the mapping to be prefixed with this path.
-
-    Returns:
-        Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
-                        output file paths. The paths may be modified by the 'LAST_JOB_OUTPUT' if it
-                        is set and points to an S3 location.
 
     Raises:
         No explicit exceptions are raised within the function, but it relies heavily on external
