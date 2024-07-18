@@ -1,5 +1,10 @@
+from abc import ABC, abstractmethod
 import os
 from pathlib import Path
+from typing import Any
+
+
+__all__ = ["resolve_paths", "DirectoryIODriver", "infer_directory_driver_from_suffix"]
 
 
 def resolve_paths(
@@ -38,3 +43,59 @@ def resolve_paths(
     paths = Path(paths)
     paths = paths.resolve() if resolve else paths
     return paths
+
+
+class DirectoryIODriver(ABC):
+    """Represents a driver for interacting with a directory.
+
+    This abstract base class provides a template for directory drivers that can be used
+    by file IO classes that want to be abstracted away from the exact details of the
+    file type/format.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        pass
+
+    @abstractmethod
+    def read_file(self, filename: str | bytes | os.PathLike | Path) -> Any:
+        """Read a file via a directory driver.
+
+        Args:
+            filename: The name of the file to read from.
+
+        Returns:
+            The object saved to the given `filename`.
+        """
+        pass
+
+    @abstractmethod
+    def write_file(self, obj: Any, filename: str | bytes | os.PathLike | Path) -> None:
+        """Write a file via a directory driver.
+
+        Args:
+            obj: The object to save.
+            filename: The name of the file to save to.
+
+        Returns:
+            None
+        """
+        pass
+
+
+def infer_directory_driver_from_suffix(file_suffixes: set[str]) -> DirectoryIODriver:
+    """
+    Find an appropriate subclass of `DirectoryIODriver` based on the file suffixes.
+
+    TODO: Describe the heuristics used by this function in order of selection
+
+    Args:
+        file_suffixes: A set of file suffixes found in a given directory.
+
+    Raises:
+        ValueError: If an appropriate subclass cannot be found for the given
+            `file_suffixes`.
+        NotImplementedError: This functionality is not implemented yet and this
+            documentation serves only as a spec for the moment.
+    """
+    raise NotImplementedError
