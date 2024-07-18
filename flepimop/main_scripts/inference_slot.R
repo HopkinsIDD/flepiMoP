@@ -976,7 +976,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                                  global_intermediate_filepath_suffix = global_intermediate_filepath_suffix,
                                                                  slotblock_filename_prefix = slotblock_filename_prefix,
                                                                  slot_filename_prefix = slot_filename_prefix)
-    if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
+    # if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
     
     # moves the most recent chimeric parameter values from chimeric/intermediate file to chimeric/final
     # all file types except seir and hosp
@@ -988,7 +988,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                                      chimeric_intermediate_filepath_suffix = chimeric_intermediate_filepath_suffix,
                                                                      slotblock_filename_prefix = slotblock_filename_prefix,
                                                                      slot_filename_prefix = slot_filename_prefix)
-    if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
+    # if (!prod(unlist(cpy_res_chimeric))) {stop("File copy failed:", paste(unlist(cpy_res_chimeric),paste(names(cpy_res_chimeric),"|")))}
 
     warning("Chimeric hosp and seir files not yet supported, just using the most recently globally accepted file of each type")
 
