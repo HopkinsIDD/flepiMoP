@@ -28,5 +28,7 @@ If applicable, add screenshots to help explain your problem.
  - Browser [e.g. chrome, safari]
  - Version [e.g. 22]
 
+**Does this link to other issue(s)? If so, please specify.**
+
 **Additional context**
 Add any other context about the problem here.
