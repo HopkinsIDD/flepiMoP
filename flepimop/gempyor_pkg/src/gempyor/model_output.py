@@ -1,3 +1,14 @@
+"""
+Interact with a standardized `model_output/` directory.
+
+This module provides an interface for working with a `model_output/` directory in a 
+standardized way. The main entry point is the `ModelOutput` class which abstracts away 
+specific details about directory layout and file format/type from end users.  
+"""
+
+__all__ = ["ModelOutput"]
+
+
 import os
 from pathlib import Path
 import sys
@@ -9,9 +20,6 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     Self = Any
-
-
-__all__ = ["ModelOutput"]
 
 
 class ModelOutput:
@@ -59,6 +67,18 @@ class ModelOutput:
                     f"argument: {', '.join(extra_keys)}."
                 )
             )
+        if wrong_value_types := [
+            k
+            for k, v in directory_drivers.items()
+            if not isinstance(v, DirectoryIODriver)
+        ]:
+            raise ValueError(
+                (
+                    "The following keys have values that are not an instance of "
+                    "DirectoryIODriver in the 'directory_drivers' argument: "
+                    f"{', '.join(wrong_value_types)}."
+                )
+            )
         self._directory_drivers = directory_drivers
         self._default_directory_driver = default_directory_driver
 
@@ -81,4 +101,64 @@ class ModelOutput:
             raise ValueError(
                 f"The 'directory' argument given, '{directory}', is not a directory."
             )
+        raise NotImplementedError
+
+    def rglob(
+        self,
+        pattern: str,
+        output_type: Literal["hnpi", "hosp", "hpar", "init", "llik", "snpi", "spar"],
+    ) -> list[Path]:
+        """
+        Glob the given pattern recursively for a given output type.
+
+        This method will query against the file system directly, which defeats the
+        purpose of abstracting away file details. This method is meant for use in only
+        specific use cases or internally.
+
+        Args:
+            pattern: A string pattern to use when searching.
+            output_type: The output type to search under.
+
+        Returns:
+            Paths that match the given `pattern` and `output_type`.
+
+        See also:
+            [`pathlib.Path.rglob`](https://docs.python.org/3/library/pathlib.html#pathlib.Path.rglob)
+
+        Raises:
+            NotImplementedError: This functionality is not implemented yet and this
+                documentation serves only as a spec for the moment.
+        """
+        raise NotImplementedError
+
+    def write_output_type(
+        self,
+        obj: Any,
+        output_type: Literal["hnpi", "hosp", "hpar", "init", "llik", "snpi", "spar"],
+        inference: Literal[None, "chimeric", "global"],
+        inference_step: Literal[None, "final", "intermediate"],
+    ) -> None:
+        """
+        Write an object to an output type using the appropriate driver.
+
+        This method largely delegates to the `DirectoryIODriver` specified for the given
+        output type in either `directory_drivers` or `default_directory_driver` given
+        in initialization. While this method accepts an `obj` of any type, the directory
+        driver may not, please refer to the appropriate documentation for details.
+
+        Args:
+            obj: The object to write.
+            output_type: The output type to write.
+            inference: The type of inference parameter this object belongs to, if `None`
+                it is assumed this is a 'simulation' mode run.
+            inference_step: The inference step this object belongs to, if `None` it is
+                assumed this is a 'simulation' mode run.
+
+        Returns:
+            None
+
+        Raises:
+            NotImplementedError: This functionality is not implemented yet and this
+                documentation serves only as a spec for the moment.
+        """
         raise NotImplementedError
