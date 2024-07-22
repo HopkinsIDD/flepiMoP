@@ -11,6 +11,7 @@ __all__ = ["ModelOutput"]
 
 import os
 from pathlib import Path
+import re
 import sys
 from typing import Any, Literal
 
@@ -35,6 +36,9 @@ class ModelOutput:
     def __init__(
         self,
         directory: str | bytes | os.PathLike | Path,
+        name: None | str = None,
+        seir_modifier: None | str = None,
+        outcome_modifier: None | str = None,
         directory_drivers: dict[
             Literal["hnpi", "hosp", "hpar", "init", "llik", "snpi", "spar"],
             DirectoryIODriver,
@@ -46,6 +50,7 @@ class ModelOutput:
 
         Args:
             directory: The directory to center this instance around.
+            setup_name:
             directory_drivers: A mapping describing which `DirectoryIODriver` to use for
                 each output type.
             default_directory_driver: The default driver to use if not specified in the
@@ -84,7 +89,11 @@ class ModelOutput:
 
     @classmethod
     def from_existing_directory(
-        cls, directory: str | bytes | os.PathLike | Path
+        cls,
+        directory: str | bytes | os.PathLike | Path,
+        name: None | str = None,
+        seir_modifier: None | str = None,
+        outcome_modifier: None | str = None,
     ) -> Self:
         """
         Create an instance from an existing directory and infer the appropriate driver.
@@ -101,6 +110,38 @@ class ModelOutput:
             raise ValueError(
                 f"The 'directory' argument given, '{directory}', is not a directory."
             )
+        raise NotImplementedError
+
+    @staticmethod
+    def _parse_directory(
+        directory: str | bytes | os.PathLike | Path,
+        name: None | str,
+        seir_modifier: None | str,
+        outcome_modifier: None | str,
+    ) -> tuple[Path, str, str, str]:
+        """
+        Extract the relevant information from a directory with supplemental help.
+
+        Args:
+            directory: The directory to attempt parsing relevant info from.
+            name: The scenario name being considered, or `None` to be inferred from
+                `directory`.
+            seir_modifier: The SEIR scenario modifier being considered, or `None` to be
+                inferred from `directory`.
+            outcome_modifier: The outcome scenario modifier being considered, or `None`
+                to be inferred from `directory`.
+
+        Returns:
+            The parsed `directory`, `name`, `seir_modifier`, and `outcome_modifier` as a
+            tuple of appropriate types.
+        """
+        directory = resolve_paths(directory)
+        pattern = (
+            rf"^(?i).*/({name if name else ".*"})\_"
+            rf"{seir_modifier if seir_modifier else ".*"}\_"
+            rf"{outcome_modifier if outcome_modifier else ".*"}$"
+        )
+        m = re.match(pattern, str(directory))
         raise NotImplementedError
 
     def rglob(
