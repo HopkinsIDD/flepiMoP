@@ -22,15 +22,16 @@ class ModelInfo:
     """
     Parse config and hold some results, with main config sections.
     ```
-        # subpop_setup       # Always required
-        # compartments        # Required if running seir
-        # seir                # Required if running seir
-        # initial_conditions  # One of seeding or initial_conditions is required when running seir
-        # seeding             # One of seeding or initial_conditions is required when running seir
-        # outcomes            # Required if running outcomes
-        # seir_modifiers      # Not required. If exists, every modifier will be applied to seir parameters
-        # outcome_modifiers  # Not required. If exists, every modifier will be applied to outcomes parameters
-        # inference           # Required if running inference
+        subpop_setup                  # Always required
+        compartments                  # Required if running seir
+        parameters                    # required if running seir
+        seir                          # Required if running seir
+        initial_conditions            # One of seeding or initial_conditions is required when running seir
+        seeding                       # One of seeding or initial_conditions is required when running seir
+        outcomes                      # Required if running outcomes
+        seir_modifiers                # Not required. If exists, every modifier will be applied to seir parameters
+        outcomes_modifiers            # Not required. If exists, every modifier will be applied to outcomes 
+        inference                     # Required if running inference
     ```
     """
 
