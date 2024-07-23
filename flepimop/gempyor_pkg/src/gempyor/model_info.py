@@ -1,3 +1,4 @@
+import xarray as xr
 import pandas as pd
 import datetime, os, logging, pathlib, confuse
 from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
@@ -290,6 +291,31 @@ class ModelInfo:
         # print(f"Readings {fname}")
         return read_df(fname=fname)
 
+    def write_netcdf(
+        self,
+        ftype: str,
+        sim_id: int,
+        xr_df: xr.Dataset,
+        input: bool = False,
+        extension_override: str = "",
+    ):
+        
+        # construct filename
+        fname = self.get_filename(
+            ftype=ftype,
+            sim_id=sim_id,
+            input=input,
+            extension_override=extension_override,
+        )
+
+        # create the directory if it does exists
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+
+        # write xarray output to netcdf
+        xr_df.to_netcdf(f'{fname}.nc')
+
+        return fname
+
     def write_simID(
         self,
         ftype: str,
@@ -312,4 +338,5 @@ class ModelInfo:
             fname=fname,
             df=df,
         )
+        
         return fname
