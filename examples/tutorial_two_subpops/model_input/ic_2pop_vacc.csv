@@ -1,0 +1,4 @@
+subpop,mc_name,amount
+large_province,E_unvaccinated,5
+large_province,S_unvaccinated,8995
+small_province,S_unvaccinated,1000
