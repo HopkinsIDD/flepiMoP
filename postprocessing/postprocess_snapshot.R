@@ -179,24 +179,13 @@ if("hosp" %in% model_outputs){
     print(outputs_global$hosp %>%
       .[, ..cols_sim] %>%
       .[, date := lubridate::as_date(date)] %>%
-      # { if(config$subpop_setup$subpop == 'subpop'){
-      #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-      # } %>% 
-      # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-      # } %>%
       .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
       ggplot() + 
       geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
       geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
       geom_line(aes(x = date, y = V3)) + 
       geom_point(data = gt_data %>%
-                   .[, ..cols_data] #%>%
-                   # { if(config$subpop_setup$subpop == 'subpop'){
-                   #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                   # } %>% 
-                   # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                   # } 
-                 ,
+                   .[, ..cols_data],
                  aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
       facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
       labs(x = 'date', y = fit_stats[i], title = statistics$sim_var) +
@@ -220,11 +209,6 @@ if("hosp" %in% model_outputs){
     print(outputs_global$hosp %>%
             .[, ..cols_sim] %>%
             .[, date := lubridate::as_date(date)] %>%
-            # { if(config$subpop_setup$subpop == 'subpop'){
-            #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-            # } %>% 
-            # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-            # } %>%
             .[, csum := cumsum(get(statistics$sim_var)), by = .(subpop, slot)] %>%
             .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
             ggplot() + 
@@ -233,11 +217,6 @@ if("hosp" %in% model_outputs){
             geom_line(aes(x = date, y = V3)) + 
             geom_point(data = gt_data %>%
                          .[, ..cols_data] %>%
-                         # { if(config$subpop_setup$subpop == 'subpop'){
-                         #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                         # } %>% 
-                         # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                         # } %>%
                          .[, csum := cumsum(replace_na(get(statistics$data_var), 0)) , by = .(subpop)]
                          ,
                        aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) + 
@@ -279,12 +258,7 @@ if("hosp" %in% model_outputs){
                            function(e){
                              high_low_hosp_llik %>%
                                .[, date := lubridate::as_date(date)] %>%
-                               # { if(config$subpop_setup$subpop == 'subpop'){
-                               #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                               # } %>% 
                                .[subpop == e] %>%
-                               # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                               # } %>%
                                ggplot() +
                                geom_line(aes(lubridate::as_date(date), get(statistics$data_var), 
                                              group = slot, color = ll))+#, linetype = llik_bin)) +
@@ -292,12 +266,7 @@ if("hosp" %in% model_outputs){
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
                                geom_point(data = gt_data %>%
                                             .[, ..cols_data] %>%
-                                            # { if(config$subpop_setup$subpop == 'subpop'){
-                                            #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                                            # } %>% 
-                                            .[subpop == e] ,#%>%
-                                            # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                                            # } ,
+                                            .[subpop == e] ,
                                           aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
                                facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
                                labs(x = 'date', y = fit_stats[i]) + #, title = paste0("top 5, bottom 5 lliks, ", statistics$sim_var)) +
@@ -430,9 +399,6 @@ if("snpi" %in% model_outputs){
   snpi_plots <- lapply(node_names,
                        function(i){
                          if(!grepl(',', i)){
-                           
-                           # i_lab <- ifelse(config$name == "USA", geodata[subpop == i, USPS], i)
-                             
                            outputs_global$snpi %>%
                              .[outputs_global$llik, on = c("subpop", "slot")] %>%
                              .[subpop == i] %>%
@@ -443,8 +409,6 @@ if("snpi" %in% model_outputs){
                              theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
                              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
                              labs(x = "parameter", title = i)
-                           # labs(x = "parameter", title = i_lab)
-                           
                          }else{
                            nodes_ <- unlist(strsplit(i,","))
                            ll_across_nodes <- 
