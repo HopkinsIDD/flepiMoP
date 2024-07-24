@@ -332,12 +332,7 @@ if("hnpi" %in% model_outputs){
          function(i){
            outputs_global$hnpi %>%
              .[outputs_global$llik, on = c("subpop", "slot")] %>%
-             # { if(config$subpop_setup$subpop == 'subpop'){
-             #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-             # } %>% 
-             # .[get(config$subpop_setup$subpop) == i] %>%
-             # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-             # } %>%
+             .[subpop == i] %>%
              ggplot(aes(modifier_name,value)) + 
              geom_violin() +
              geom_jitter(aes(group = modifier_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
