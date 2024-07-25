@@ -579,7 +579,7 @@ def create_resume_file_names_map(
                 liketype=liketype,
             )
             input_file_name = output_file_name
-            if os.environ.get("FLEPI_BLOCK_INDEX") == "1":
+            if flepi_block_index == "1":
                 input_file_name = create_resume_input_filename(
                     resume_run_index=resume_run_index,
                     flepi_prefix=flepi_prefix,
