@@ -99,7 +99,7 @@ from gempyor.utils import create_resume_file_names_map, download_file_from_s3, m
     required=True,
     help="required bool value for discarding seeding or not",
 )
-@click.option("--block_index", "flepi_block_index", envvar="FLEPI_BLOCK_INDEX", type=click.STRING, required=True)
+@click.option("--block_index", "flepi_block_index", envvar="FLEPI_BLOCK_INDEX", type=click.INT, required=True)
 @click.option(
     "--resume_run_index", "resume_run_index", envvar="RESUME_RUN_INDEX", type=click.STRING, required=True,
 )
@@ -114,7 +114,7 @@ def fetching_resume_files(
 
     resume_file_name_map = create_resume_file_names_map(
         resume_discard_seeding=discard_seeding,
-        flepi_block_index=flepi_block_index,
+        flepi_block_index=str(flepi_block_index),
         resume_run_index=resume_run_index,
         flepi_prefix=flepi_prefix,
         flepi_slot_index=flep_slot_index,
