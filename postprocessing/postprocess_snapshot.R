@@ -313,12 +313,13 @@ if("hosp" %in% model_outputs){
   fname <- paste0("pplot/hosp_by_llik_mod_outputs_", opt$run_id,".pdf")
   # pdf_dims <- data.frame(width = gg_cols*2, length = num_nodes/gg_cols * 2)
   # pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
-  pdf(fname, width = 20, height = 20)
+  pdf(fname, width = 20, height = 10)
 
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, "subpop","slot")
     cols_data <- c("date", "subpop", statistics$data_var)
+    hosp_outputs_global_tmp <- copy(outputs_global$hosp)[,..cols_sim]
     
     if("llik" %in% model_outputs){
       # high_low_hosp_llik <- copy(outputs_global$hosp) %>% 
@@ -365,7 +366,7 @@ if("hosp" %in% model_outputs){
                                geom_line(aes(x = date, y = sim_var, group = slot, color = ll)) + 
                                scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
-                               geom_point(data = df_data,
+                               geom_point(data = df_data %>% .[subpop == e],
                                           aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.2, size=1) +
                                facet_wrap(~subpop, scales = 'free') +
                                labs(x = 'date', y = fit_stats[i]) +
