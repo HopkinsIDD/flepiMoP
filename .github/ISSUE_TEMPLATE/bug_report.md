@@ -20,8 +20,8 @@ A clear and concise description of what you expected to happen.
 
 **Environment, if relevant:**
  - OS: [e.g. iOS]
- - R Version [e.g. 4.4.0] (can obtain with command R --version)
- - Python Version [e.g. 3.10] (can obtain with command python --version)
+ - R Version [e.g. 4.4.0] (can obtain with command `R --version`)
+ - Python Version [e.g. 3.10] (can obtain with command `python --version`)
  - flepiMoP branch commit, if relevant 
 
 
