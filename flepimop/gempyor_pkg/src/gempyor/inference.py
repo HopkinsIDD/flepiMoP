@@ -538,10 +538,12 @@ class GempyorInference:
                 self.outcomes_parameters = outcomes.read_parameters_from_config(self.modinf)
 
             npi_outcomes = None
+            npi_seir = None
             if parallel:
                 with Timer("//things"):
                     with ProcessPoolExecutor(max_workers=max(mp.cpu_count(), 3)) as executor:
-                        ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
+                        if self.modinf.seir_config is not None and self.modinf.npi_config_seir is not None:
+                            ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
                         if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
                             ret_outcomes = executor.submit(
                                 outcomes.build_outcome_modifiers,
@@ -563,15 +565,17 @@ class GempyorInference:
                         self.proportion_info,
                     ) = ret_comparments.result()
                     self.already_built = True
-                npi_seir = ret_seir.result()
+                if self.modinf.seir_config is not None and self.modinf.npi_config_seir is not None:
+                    npi_seir = ret_seir.result()
                 if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
                     npi_outcomes = ret_outcomes.result()
             else:
                 if not self.already_built:
                     self.build_structure()
-                npi_seir = seir.build_npi_SEIR(
-                    modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
-                )
+                if self.modinf.seir_config is not None and self.modinf.npi_config_seir is not None:
+                    npi_seir = seir.build_npi_SEIR(
+                        modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+                    )
                 if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
                     npi_outcomes = outcomes.build_outcome_modifiers(
                         modinf=self.modinf,
