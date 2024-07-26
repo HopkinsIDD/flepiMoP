@@ -170,15 +170,17 @@ if("hosp" %in% model_outputs){
   # pdf(fname, width = 20, height = 18)
   # pdf(fname)
   fit_stats <- names(config$inference$statistics)
+  subpop_names <- unique(outputs_global$hosp %>% .[,subpop])
   
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, "subpop","slot")
     cols_data <- c("date", "subpop", statistics$data_var)
+    hosp_outputs_global_tmp <- copy(outputs_global$hosp)[,..cols_sim]
     
     # aggregate based on what is in the config
     df_sim <- lapply(subpop_names, function(y) {
-      lapply(unique(hosp_outputs_global$slot), function(x)
+      lapply(unique(outputs_global$hosp$slot), function(x)
         purrr::flatten_df(inference::getStats(
           hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
           "date",
@@ -317,7 +319,6 @@ if("hosp" %in% model_outputs){
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, "subpop","slot")
     cols_data <- c("date", "subpop", statistics$data_var)
-    hosp_outputs_global_tmp <- hosp_outputs_global[,..cols_sim]
     
     if("llik" %in% model_outputs){
       # high_low_hosp_llik <- copy(outputs_global$hosp) %>% 
@@ -325,7 +326,7 @@ if("hosp" %in% model_outputs){
       
       # aggregate simulation output and data by time based on what is in the config
       df_sim <- lapply(subpop_names, function(y) {
-        lapply(unique(hosp_outputs_global$slot), function(x)
+        lapply(unique(outputs_global$hosp$slot), function(x)
           purrr::flatten_df(inference::getStats(
             hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
             "date",
