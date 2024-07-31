@@ -1,8 +1,9 @@
 from datetime import date
+from functools import partial
 
+import numpy as np
 import pandas as pd
 import pytest
-import re
 from tempfile import NamedTemporaryFile
 
 from gempyor.parameters import Parameters
@@ -10,12 +11,6 @@ from gempyor.testing import create_confuse_subview_from_dict
 
 
 class TestParameters:
-    # Taken straight from `config_sample_2pop.yml`
-    valid_parameters_subview = create_confuse_subview_from_dict(
-        "parameters",
-        {"sigma": {"value": 0.25}, "gamma": {"value": 0.2}, "Ro": {"value": 2.5}},
-    )
-
     def test_nonunique_parameter_names_value_error(self) -> None:
         duplicated_parameters = create_confuse_subview_from_dict(
             "parameters",
@@ -110,3 +105,68 @@ class TestParameters:
         # operation returns an empty dataframe with the right columns & index and the
         # `pd.date_range` function only creates monotonic increasing sequences and
         # 0 == 0.
+
+    def test_parameters_instance_attributes(self) -> None:
+        param_df = pd.DataFrame(
+            data={
+                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+            }
+        )
+        with NamedTemporaryFile(suffix=".csv") as temp_file:
+            param_df.to_csv(temp_file.name, index=False)
+            valid_parameters = create_confuse_subview_from_dict(
+                "parameters",
+                {
+                    "sigma": {"timeseries": temp_file.name},
+                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+                    "Ro": {
+                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
+                    },
+                },
+            )
+            params = Parameters(
+                valid_parameters,
+                ti=date(2024, 1, 1),
+                tf=date(2024, 1, 5),
+                subpop_names=["1", "2"],
+            )
+            assert params.npar == 3
+            assert params.pconfig == valid_parameters
+            assert set(params.pdata.keys()) == {"sigma", "gamma", "Ro"}
+            assert set(params.pdata["sigma"].keys()) == {
+                "idx",
+                "ts",
+                "stacked_modifier_method",
+            }
+            assert params.pdata["sigma"]["idx"] == 0
+            assert params.pdata["sigma"]["ts"].equals(param_df.set_index("date"))
+            assert params.pdata["sigma"]["stacked_modifier_method"] == "product"
+            assert set(params.pdata["gamma"].keys()) == {
+                "idx",
+                "dist",
+                "stacked_modifier_method",
+            }
+            assert params.pdata["gamma"]["idx"] == 1
+            assert isinstance(params.pdata["gamma"]["dist"], partial)
+            assert params.pdata["gamma"]["dist"].func == np.random.uniform
+            assert params.pdata["gamma"]["dist"].args == (0.1234, 0.1234)
+            assert params.pdata["gamma"]["stacked_modifier_method"] == "sum"
+            assert set(params.pdata["Ro"].keys()) == {
+                "idx",
+                "dist",
+                "stacked_modifier_method",
+            }
+            assert params.pdata["Ro"]["idx"] == 2
+            assert isinstance(params.pdata["Ro"]["dist"], partial)
+            assert params.pdata["Ro"]["dist"].func == np.random.uniform
+            assert params.pdata["Ro"]["dist"].args == (1.0, 2.0)
+            assert params.pdata["Ro"]["stacked_modifier_method"] == "product"
+            assert params.pnames == ["sigma", "gamma", "Ro"]
+            assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "Ro": 2}
+            assert params.stacked_modifier_method == {
+                "sum": ["gamma"],
+                "product": ["sigma", "ro"],
+                "reduction_product": [],
+            }
