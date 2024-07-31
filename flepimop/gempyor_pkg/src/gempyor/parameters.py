@@ -34,7 +34,7 @@ class Parameters:
         pdata: A dictionary containing a processed and reformatted view of the `pconfig`
             attribute.
         pnames: The names of the parameters given.
-        pnames2index: A mapping parameter names to their location in the `pnames` 
+        pnames2pindex: A mapping parameter names to their location in the `pnames` 
             attribute.
         stacked_modifier_method: A mapping of modifier method to the parameters to which
             that modifier method is relevant for.
