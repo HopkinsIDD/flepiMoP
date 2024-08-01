@@ -107,6 +107,7 @@ class TestParameters:
         # 0 == 0.
 
     def test_parameters_instance_attributes(self) -> None:
+        # Setup
         param_df = pd.DataFrame(
             data={
                 "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
@@ -132,8 +133,14 @@ class TestParameters:
                 tf=date(2024, 1, 5),
                 subpop_names=["1", "2"],
             )
+
+            # The `npar` attribute
             assert params.npar == 3
+
+            # The `pconfig` attribute
             assert params.pconfig == valid_parameters
+
+            # The `pdata` attribute
             assert set(params.pdata.keys()) == {"sigma", "gamma", "Ro"}
             assert set(params.pdata["sigma"].keys()) == {
                 "idx",
@@ -166,10 +173,56 @@ class TestParameters:
                 params.pdata["Ro"]["dist"], partial(np.random.uniform, 1.0, 2.0)
             )
             assert params.pdata["Ro"]["stacked_modifier_method"] == "product"
+
+            # The `pnames` attribute
             assert params.pnames == ["sigma", "gamma", "Ro"]
+
+            # The `pnames2pindex` attribute
             assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "Ro": 2}
+
+            # The `stacked_modifier_method` attribute
             assert params.stacked_modifier_method == {
                 "sum": ["gamma"],
                 "product": ["sigma", "ro"],
                 "reduction_product": [],
             }
+
+    def test_picklable_lamda_alpha_method(self) -> None:
+        # Setup
+        simple_parameters = create_confuse_subview_from_dict(
+            "parameters", {"sigma": {"value": 0.1}}
+        )
+        params = Parameters(
+            simple_parameters,
+            ti=date(2024, 1, 1),
+            tf=date(2024, 1, 10),
+            subpop_names=["1", "2"],
+        )
+
+        # Attribute error if `alpha_val` is not set
+        with pytest.raises(AttributeError):
+            params.picklable_lamda_alpha()
+
+        # We get the expected value when `alpha_val` is set
+        params.alpha_val = None
+        assert params.picklable_lamda_alpha() == None
+
+    def test_picklable_lamda_sigma_method(self) -> None:
+        # Setup
+        simple_parameters = create_confuse_subview_from_dict(
+            "parameters", {"sigma": {"value": 0.1}}
+        )
+        params = Parameters(
+            simple_parameters,
+            ti=date(2024, 1, 1),
+            tf=date(2024, 1, 10),
+            subpop_names=["1", "2"],
+        )
+
+        # Attribute error if `sigma_val` is not set
+        with pytest.raises(AttributeError):
+            params.picklable_lamda_sigma()
+
+        # We get the expected value when `sigma_val` is set
+        params.sigma_val = None
+        assert params.picklable_lamda_sigma() == None
