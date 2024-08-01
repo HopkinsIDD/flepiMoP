@@ -7,7 +7,7 @@ import pytest
 from tempfile import NamedTemporaryFile
 
 from gempyor.parameters import Parameters
-from gempyor.testing import create_confuse_subview_from_dict
+from gempyor.testing import create_confuse_subview_from_dict, partials_are_similar
 
 
 class TestParameters:
@@ -150,8 +150,10 @@ class TestParameters:
             }
             assert params.pdata["gamma"]["idx"] == 1
             assert isinstance(params.pdata["gamma"]["dist"], partial)
-            assert params.pdata["gamma"]["dist"].func == np.random.uniform
-            assert params.pdata["gamma"]["dist"].args == (0.1234, 0.1234)
+            assert partials_are_similar(
+                params.pdata["gamma"]["dist"],
+                partial(np.random.uniform, 0.1234, 0.1234),
+            )
             assert params.pdata["gamma"]["stacked_modifier_method"] == "sum"
             assert set(params.pdata["Ro"].keys()) == {
                 "idx",
@@ -160,8 +162,9 @@ class TestParameters:
             }
             assert params.pdata["Ro"]["idx"] == 2
             assert isinstance(params.pdata["Ro"]["dist"], partial)
-            assert params.pdata["Ro"]["dist"].func == np.random.uniform
-            assert params.pdata["Ro"]["dist"].args == (1.0, 2.0)
+            assert partials_are_similar(
+                params.pdata["Ro"]["dist"], partial(np.random.uniform, 1.0, 2.0)
+            )
             assert params.pdata["Ro"]["stacked_modifier_method"] == "product"
             assert params.pnames == ["sigma", "gamma", "Ro"]
             assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "Ro": 2}
