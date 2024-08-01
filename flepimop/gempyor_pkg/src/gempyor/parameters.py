@@ -40,7 +40,6 @@ class Parameters:
             that modifier method is relevant for.
     """
     
-    # Minimal object to be easily picklable for // runs
     def __init__(
         self,
         parameter_config: confuse.ConfigView,
