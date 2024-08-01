@@ -128,6 +128,18 @@ if [[ $FLEPI_CONTINUATION == "TRUE" ]]; then
     else
         echo "CONTINUATION: Could not copy file of type $filetype ($IN_FILENAME -> $INIT_FILENAME)"
     fi
+
+    export IN_SEED_FILENAME=$(python -c "from gempyor import file_paths; print(file_paths.create_file_name(run_id='$FLEPI_RUN_INDEX',
+                                                                                                        prefix='$FLEPI_PREFIX/$FLEPI_RUN_INDEX',
+                                                                                                        inference_filepath_suffix='global/intermediate',
+                                                                                                        # inference_filename_prefix='%09d.'% $FLEPI_SLOT_INDEX,
+                                                                                                        # index=$FLEPI_BLOCK_INDEX-1,
+                                                                                                        inference_filename_prefix='%09d.' % $FLEPI_SLOT_INDEX,
+                                                                                                        index='{:09d}.{:09d}'.format(1, $FLEPI_BLOCK_INDEX-1),
+                                                                                                        ftype='seed',
+                                                                                                        extension='csv'))")
+    Rscript preprocessing/seir_recode_omicron.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml 
+    
     #Rscript R/scripts/init_R18_resume_highrisk.R --config $CONFIG_PATH --init_filename_raw $INIT_FILENAME --init_filename_post $INIT_FILENAME
     #Rscript $FLEPI_PATH/flepimop/main_scripts/seir_init_immuneladder.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
     #Rscript $FLEPI_PATH/preprocessing/seir_init_immuneladder_r17phase3_preOm.R --res_config config_SMH_R17_noBoo_lowIE_phase2_blk2.yml
