@@ -232,7 +232,7 @@ class Parameters:
         with a given dataframe.
         
         Args:
-            param_df: A dataframe containing the columns 'parameter' and 'value'. If 
+            param_df: A DataFrame containing the columns 'parameter' and 'value'. If 
                 more than one entry for a given parameter is given then only the first 
                 value will be taken.
             n_days: The number of days to generate an array for.
@@ -241,6 +241,12 @@ class Parameters:
         Returns:
             A numpy array of size (`npar`, `n_days`, `nsubpops`) where `npar` 
             corresponds to the `npar` attribute of this class.
+            
+        Note:
+            If any of the parameters are 'timeseries' type parameters and are not being 
+            overridden then `n_days` and `nsubpops` must be equal to the number of days 
+            between `ti` and `tf` given when initializing this class and the number of 
+            subpopulations given to this class via `subpop_names`.
         """
         param_arr = np.empty((self.npar, n_days, nsubpops), dtype="float64")
         param_arr[:] = np.nan  # fill with NaNs so we don't fail silently

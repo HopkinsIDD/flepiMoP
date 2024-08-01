@@ -291,6 +291,7 @@ class TestParameters:
             assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((5, 2)))
             assert np.greater_equal(p_draw[2, :, :], 1.0).all()
             assert np.less(p_draw[2, :, :], 2.0).all()
+            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
 
         # Second without a time series param, arbitrary sized draws
         valid_parameters = create_confuse_subview_from_dict(
@@ -322,6 +323,7 @@ class TestParameters:
         assert np.allclose(p_draw[0, :, :], 2.2)
         assert np.greater_equal(p_draw[1, :, :], -2.0).all()
         assert np.less_equal(p_draw[1, :, :], 2.0).all()
+        assert np.allclose(p_draw[1, :, :], p_draw[1, 0, 0])
 
         p_draw = params.parameters_quick_draw(4, 3)
         assert isinstance(p_draw, np.ndarray)
@@ -330,3 +332,129 @@ class TestParameters:
         assert np.allclose(p_draw[0, :, :], 2.2)
         assert np.greater_equal(p_draw[1, :, :], -2.0).all()
         assert np.less_equal(p_draw[1, :, :], 2.0).all()
+        assert np.allclose(p_draw[1, :, :], p_draw[1, 0, 0])
+
+    def test_parameters_load(self) -> None:
+        # Setup
+        param_overrides_df = pd.DataFrame(
+            {"parameter": ["nu", "gamma", "nu"], "value": [0.1, 0.2, 0.3]}
+        )
+        param_empty_df = pd.DataFrame({"parameter": [], "value": []})
+
+        # With time series
+        param_df = pd.DataFrame(
+            data={
+                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+            }
+        )
+        with NamedTemporaryFile(suffix=".csv") as temp_file:
+            param_df.to_csv(temp_file.name, index=False)
+            valid_parameters = create_confuse_subview_from_dict(
+                "parameters",
+                {
+                    "sigma": {"timeseries": temp_file.name},
+                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+                    "Ro": {
+                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
+                    },
+                },
+            )
+            params = Parameters(
+                valid_parameters,
+                ti=date(2024, 1, 1),
+                tf=date(2024, 1, 5),
+                subpop_names=["1", "2"],
+            )
+
+            # Test the exception
+            with pytest.raises(
+                ValueError,
+                match=(
+                    r"could not broadcast input array from shape "
+                    r"\(5\,2\) into shape \(4\,2\)"
+                ),
+            ):
+                params.parameters_load(param_empty_df, 4, 2)
+
+            # Empty overrides
+            p_draw = params.parameters_load(param_empty_df, 5, 2)
+            assert isinstance(p_draw, np.ndarray)
+            assert p_draw.dtype == np.float64
+            assert p_draw.shape == (3, 5, 2)
+            assert np.allclose(
+                p_draw[0, :, :],
+                np.array([[1.2, 2.3], [2.3, 3.4], [3.4, 4.5], [4.5, 5.6], [5.6, 6.7]]),
+            )
+            assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((5, 2)))
+            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
+            assert np.less(p_draw[2, :, :], 2.0).all()
+            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
+
+            # But if we override time series no exception
+            p_draw = params.parameters_load(
+                pd.DataFrame({"parameter": ["sigma"], "value": [12.34]}), 4, 2
+            )
+            assert isinstance(p_draw, np.ndarray)
+            assert p_draw.dtype == np.float64
+            assert p_draw.shape == (3, 4, 2)
+            assert np.allclose(p_draw[0, :, :], 12.34)
+            assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((4, 2)))
+            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
+            assert np.less(p_draw[2, :, :], 2.0).all()
+            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
+
+            # If not overriding time series then must conform
+            p_draw = params.parameters_load(param_overrides_df, 5, 2)
+            assert isinstance(p_draw, np.ndarray)
+            assert p_draw.dtype == np.float64
+            assert p_draw.shape == (3, 5, 2)
+            assert np.allclose(
+                p_draw[0, :, :],
+                np.array([[1.2, 2.3], [2.3, 3.4], [3.4, 4.5], [4.5, 5.6], [5.6, 6.7]]),
+            )
+            assert np.allclose(p_draw[1, :, :], 0.2 * np.ones((5, 2)))
+            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
+            assert np.less(p_draw[2, :, :], 2.0).all()
+            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
+
+        # Without time series
+        valid_parameters = create_confuse_subview_from_dict(
+            "parameters",
+            {
+                "eta": {"value": 2.2},
+                "nu": {
+                    "value": {
+                        "distribution": "truncnorm",
+                        "mean": 0.0,
+                        "sd": 2.0,
+                        "a": -2.0,
+                        "b": 2.0,
+                    }
+                },
+            },
+        )
+        params = Parameters(
+            valid_parameters,
+            ti=date(2024, 1, 1),
+            tf=date(2024, 1, 5),
+            subpop_names=["1", "2"],
+        )
+
+        # Takes an 'empty' DataFrame
+        p_draw = params.parameters_load(param_empty_df, 5, 2)
+        assert isinstance(p_draw, np.ndarray)
+        assert p_draw.dtype == np.float64
+        assert p_draw.shape == (2, 5, 2)
+        assert np.allclose(p_draw[0, :, :], 2.2)
+        assert np.greater_equal(p_draw[1, :, :], -2.0).all()
+        assert np.less_equal(p_draw[1, :, :], 2.0).all()
+
+        # Takes a DataFrame with values, only takes the first
+        p_draw = params.parameters_load(param_overrides_df, 4, 3)
+        assert isinstance(p_draw, np.ndarray)
+        assert p_draw.dtype == np.float64
+        assert p_draw.shape == (2, 4, 3)
+        assert np.allclose(p_draw[0, :, :], 2.2)
+        assert np.allclose(p_draw[1, :, :], 0.1)
