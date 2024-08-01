@@ -187,7 +187,7 @@ class TestParameters:
                 "reduction_product": [],
             }
 
-    def test_picklable_lamda_alpha_method(self) -> None:
+    def test_picklable_lamda_alpha(self) -> None:
         # Setup
         simple_parameters = create_confuse_subview_from_dict(
             "parameters", {"sigma": {"value": 0.1}}
@@ -207,7 +207,7 @@ class TestParameters:
         params.alpha_val = None
         assert params.picklable_lamda_alpha() == None
 
-    def test_picklable_lamda_sigma_method(self) -> None:
+    def test_picklable_lamda_sigma(self) -> None:
         # Setup
         simple_parameters = create_confuse_subview_from_dict(
             "parameters", {"sigma": {"value": 0.1}}
@@ -240,3 +240,93 @@ class TestParameters:
         )
         assert params.get_pnames2pindex() == params.pnames2pindex
         assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "eta": 2}
+
+    def test_parameters_quick_draw(self) -> None:
+        # First with a time series param, fixed size draws
+        param_df = pd.DataFrame(
+            data={
+                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+            }
+        )
+        with NamedTemporaryFile(suffix=".csv") as temp_file:
+            param_df.to_csv(temp_file.name, index=False)
+            valid_parameters = create_confuse_subview_from_dict(
+                "parameters",
+                {
+                    "sigma": {"timeseries": temp_file.name},
+                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+                    "Ro": {
+                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
+                    },
+                },
+            )
+            params = Parameters(
+                valid_parameters,
+                ti=date(2024, 1, 1),
+                tf=date(2024, 1, 5),
+                subpop_names=["1", "2"],
+            )
+
+            # Test the exception
+            with pytest.raises(
+                ValueError,
+                match=(
+                    r"could not broadcast input array from shape "
+                    r"\(5\,2\) into shape \(4\,2\)"
+                ),
+            ):
+                params.parameters_quick_draw(4, 2)
+
+            # Test our result
+            p_draw = params.parameters_quick_draw(5, 2)
+            assert isinstance(p_draw, np.ndarray)
+            assert p_draw.dtype == np.float64
+            assert p_draw.shape == (3, 5, 2)
+            assert np.allclose(
+                p_draw[0, :, :],
+                np.array([[1.2, 2.3], [2.3, 3.4], [3.4, 4.5], [4.5, 5.6], [5.6, 6.7]]),
+            )
+            assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((5, 2)))
+            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
+            assert np.less(p_draw[2, :, :], 2.0).all()
+
+        # Second without a time series param, arbitrary sized draws
+        valid_parameters = create_confuse_subview_from_dict(
+            "parameters",
+            {
+                "eta": {"value": 2.2},
+                "nu": {
+                    "value": {
+                        "distribution": "truncnorm",
+                        "mean": 0.0,
+                        "sd": 2.0,
+                        "a": -2.0,
+                        "b": 2.0,
+                    }
+                },
+            },
+        )
+        params = Parameters(
+            valid_parameters,
+            ti=date(2024, 1, 1),
+            tf=date(2024, 1, 5),
+            subpop_names=["1", "2"],
+        )
+
+        p_draw = params.parameters_quick_draw(5, 2)
+        assert isinstance(p_draw, np.ndarray)
+        assert p_draw.dtype == np.float64
+        assert p_draw.shape == (2, 5, 2)
+        assert np.allclose(p_draw[0, :, :], 2.2)
+        assert np.greater_equal(p_draw[1, :, :], -2.0).all()
+        assert np.less_equal(p_draw[1, :, :], 2.0).all()
+
+        p_draw = params.parameters_quick_draw(4, 3)
+        assert isinstance(p_draw, np.ndarray)
+        assert p_draw.dtype == np.float64
+        assert p_draw.shape == (2, 4, 3)
+        assert np.allclose(p_draw[0, :, :], 2.2)
+        assert np.greater_equal(p_draw[1, :, :], -2.0).all()
+        assert np.less_equal(p_draw[1, :, :], 2.0).all()

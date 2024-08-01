@@ -205,6 +205,12 @@ class Parameters:
         Returns:
             A numpy array of size (`npar`, `n_days`, `nsubpops`) where `npar` 
             corresponds to the `npar` attribute of this class. 
+            
+        Note:
+            If any of the parameters are 'timeseries' type parameters then `n_days` and
+            `nsubpops` must be equal to the number of days between `ti` and `tf` given
+            when initializing this class and the number of subpopulations given to this
+            class via `subpop_names`.
         """
         param_arr = np.empty((self.npar, n_days, nsubpops), dtype="float64")
         param_arr[:] = np.nan  # fill with NaNs so we don't fail silently
