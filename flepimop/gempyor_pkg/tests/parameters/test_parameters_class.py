@@ -226,3 +226,17 @@ class TestParameters:
         # We get the expected value when `sigma_val` is set
         params.sigma_val = None
         assert params.picklable_lamda_sigma() == None
+
+    def test_get_pnames2pindex(self) -> None:
+        simple_parameters = create_confuse_subview_from_dict(
+            "parameters",
+            {"sigma": {"value": 0.1}, "gamma": {"value": 0.2}, "eta": {"value": 0.3}},
+        )
+        params = Parameters(
+            simple_parameters,
+            ti=date(2024, 1, 1),
+            tf=date(2024, 1, 10),
+            subpop_names=["1", "2"],
+        )
+        assert params.get_pnames2pindex() == params.pnames2pindex
+        assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "eta": 2}
