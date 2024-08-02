@@ -458,3 +458,46 @@ class TestParameters:
         assert p_draw.shape == (2, 4, 3)
         assert np.allclose(p_draw[0, :, :], 2.2)
         assert np.allclose(p_draw[1, :, :], 0.1)
+
+    def test_getParameterDF(self) -> None:
+        param_df = pd.DataFrame(
+            data={
+                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+            }
+        )
+        with NamedTemporaryFile(suffix=".csv") as temp_file:
+            param_df.to_csv(temp_file.name, index=False)
+            valid_parameters = create_confuse_subview_from_dict(
+                "parameters",
+                {
+                    "sigma": {"timeseries": temp_file.name},
+                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+                    "Ro": {
+                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
+                    },
+                },
+            )
+            params = Parameters(
+                valid_parameters,
+                ti=date(2024, 1, 1),
+                tf=date(2024, 1, 5),
+                subpop_names=["1", "2"],
+            )
+
+            # Create a quick sample
+            p_draw = params.parameters_quick_draw(5, 2)
+            df = params.getParameterDF(p_draw)
+            assert isinstance(df, pd.DataFrame)
+            assert df.shape == (2, 2)
+            assert df.columns.to_list() == ["value", "parameter"]
+            assert df["parameter"].to_list() == ["gamma", "Ro"]
+            values = df["value"].to_list()
+            assert values[0] == 0.1234
+            assert values[1] >= 1.0
+            assert values[1] < 2.0
+            assert (df.index.to_series() == df["parameter"]).all()
+
+            # Make clear that 'sigma' is not present because it's a time series
+            assert "sigma" not in df["parameter"].to_list()
