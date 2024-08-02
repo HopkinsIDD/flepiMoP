@@ -10,6 +10,9 @@ on:
       - main
       - dev
   pull_request:
+    paths:
+      - examples/**/*
+      - flepimop/gempyor_pkg/**/*
     branches:
       - main
       - dev
