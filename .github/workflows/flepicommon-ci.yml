@@ -1,0 +1,40 @@
+name: flepicommon-ci
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - flepimop/R_packages/flepicommon/**/*
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+      - breaking-improvements
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: hopkinsidd/flepimop:latest-dev
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Set up Rprofile
+        run: |
+          cp build/docker/Docker.Rprofile $HOME/.Rprofile
+          cp /home/app/.bashrc $HOME/.bashrc
+        shell: bash
+      - name: Install local R packages
+        run: Rscript build/local_install.R
+        shell: bash
+      - name: Run flepicommon tests
+        run: |
+          setwd("flepimop/R_packages/flepicommon")
+          devtools::test(stop_on_failure=TRUE)
+        shell: Rscript {0}
