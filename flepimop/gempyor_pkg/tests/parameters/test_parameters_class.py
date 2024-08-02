@@ -501,3 +501,8 @@ class TestParameters:
 
             # Make clear that 'sigma' is not present because it's a time series
             assert "sigma" not in df["parameter"].to_list()
+
+    def test_parameters_reduce(self) -> None:
+        # TODO: Come back and unit test this method after getting a better handle on
+        # these NPI objects.
+        pass
