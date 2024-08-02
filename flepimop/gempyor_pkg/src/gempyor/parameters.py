@@ -268,8 +268,8 @@ class Parameters:
         """
         Serialize a parameter draw as a pandas `DataFrame`.
         
-        This method only considers distribution parameters and will pull the first 
-        sample from the `p_draw` given.
+        This method only considers distribution parameters, which does include fixed
+        parameters.
         
         Args:
             p_draw: A numpy array of shape (`npar`, `n_days`, `nsubpops`) like that 
@@ -287,7 +287,6 @@ class Parameters:
             index=[pn for idx, pn in enumerate(self.pnames) if "dist" in self.pdata[pn]],
         )
         out_df["parameter"] = out_df.index
-
         return out_df
 
     def parameters_reduce(self, p_draw: ndarray, npi: object) -> ndarray:
