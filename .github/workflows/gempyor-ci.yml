@@ -43,3 +43,4 @@ jobs:
           source /var/python/3.10/virtualenv/bin/activate
           cd examples
           pytest --exitfirst
+        shell: bash
