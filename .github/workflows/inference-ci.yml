@@ -35,6 +35,6 @@ jobs:
         shell: bash
       - name: Run inference tests
         run: |
-          setwd("inference/R_packages/inference")
+          setwd("flepimop/R_packages/inference")
           devtools::test(stop_on_failure=TRUE)
         shell: Rscript {0}
