@@ -1,6 +1,9 @@
 from datetime import date
 from functools import partial
+import pathlib
+from typing import Any, Callable
 
+import confuse
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,6 +11,7 @@ from tempfile import NamedTemporaryFile
 
 from gempyor.parameters import Parameters
 from gempyor.testing import create_confuse_subview_from_dict, partials_are_similar
+from gempyor.utils import random_distribution_sampler
 
 
 class MockData:
@@ -18,6 +22,37 @@ class MockData:
             "2": [2.3, 3.4, 4.5, 5.6, 6.7],
         }
     )
+
+
+def valid_parameters_factory(
+    tmp_path: pathlib.Path,
+) -> tuple[dict[str, pd.DataFrame], dict[str, dict[str, Any]]]:
+    """
+    Factory for creating small and valid set of parameters.
+
+    Creates the configuration for three parameters:
+    - 'sigma': A time series,
+    - 'gamma': A fixed value of 0.1234 with a sum stacked modifier,
+    - 'Ro': A uniform distribution between 1 and 2.
+
+    Args:
+        tmp_path: A temporary file path, typically provided by pytest's `tmp_path`
+            fixture.
+
+    Returns:
+        A tuple of a dictionary of pandas DataFrames where the keys are the parameter
+        names and the values are time series values and a dictionary of configuration
+        values that can be converted to a confuse subview.
+    """
+    tmp_file = tmp_path / "valid_parameters_factory_df.csv"
+    df = MockData.simple_timeseries_param_df.copy()
+    df.to_csv(tmp_file, index=False)
+    params = {
+        "sigma": {"timeseries": str(tmp_file.absolute())},
+        "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+        "Ro": {"value": {"distribution": "uniform", "low": 1.0, "high": 2.0}},
+    }
+    return [{"sigma": df}, params]
 
 
 class TestParameters:
@@ -118,86 +153,112 @@ class TestParameters:
         # `pd.date_range` function only creates monotonic increasing sequences and
         # 0 == 0.
 
-    def test_parameters_instance_attributes(self) -> None:
+    @pytest.mark.parametrize("factory", [(valid_parameters_factory)])
+    def test_parameters_instance_attributes(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[
+            [pathlib.Path], tuple[dict[str, pd.DataFrame], dict[str, dict[str, Any]]]
+        ],
+    ) -> None:
         # Setup
-        param_df = pd.DataFrame(
-            data={
-                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-            }
+        timeseries_dfs, param_config = factory(tmp_path)
+        if timeseries_dfs:
+            start_date = None
+            end_date = None
+            subpop_names = []
+            for _, df in timeseries_dfs.items():
+                df_start_date = df["date"].dt.date.min()
+                if start_date is None or df_start_date < start_date:
+                    start_date = df_start_date
+                df_end_date = df["date"].dt.date.max()
+                if end_date is None or df_end_date > end_date:
+                    end_date = df_end_date
+                if df.shape[1] > 2:
+                    subpop_names += [c for c in df.columns.to_list() if c != "date"]
+            if not subpop_names:
+                subpop_names = ["1", "2"]  # filler value if all time series are 1 value
+        else:
+            start_date = date(2024, 1, 1)
+            end_date = date(2024, 1, 5)
+            subpop_names = ["1", "2"]
+
+        valid_parameters = create_confuse_subview_from_dict("parameters", param_config)
+        params = Parameters(
+            valid_parameters,
+            ti=start_date,
+            tf=end_date,
+            subpop_names=subpop_names,
         )
-        with NamedTemporaryFile(suffix=".csv") as temp_file:
-            param_df.to_csv(temp_file.name, index=False)
-            valid_parameters = create_confuse_subview_from_dict(
-                "parameters",
-                {
-                    "sigma": {"timeseries": temp_file.name},
-                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
-                    "Ro": {
-                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
+
+        # The `npar` attribute
+        assert params.npar == len(param_config)
+
+        # The `pconfig` attribute
+        assert params.pconfig == valid_parameters
+
+        # The `pdata` attribute
+        assert set(params.pdata.keys()) == set(param_config.keys())
+        for param_name, param_conf in param_config.items():
+            assert params.pdata[param_name]["idx"] == params.pnames2pindex[param_name]
+            assert params.pdata[param_name][
+                "stacked_modifier_method"
+            ] == param_conf.get("stacked_modifier_method", "product")
+            if "timeseries" in param_conf:
+                assert params.pdata[param_name]["ts"].equals(
+                    timeseries_dfs[param_name].set_index("date")
+                )
+            elif isinstance(params.pdata[param_name]["dist"], partial):
+                if isinstance(param_conf.get("value"), float):
+                    expected = random_distribution_sampler(
+                        "fixed", value=param_conf.get("value")
+                    )
+                else:
+                    expected = random_distribution_sampler(
+                        param_conf.get("value").get("distribution"),
+                        **{
+                            k: v
+                            for k, v in param_conf.get("value").items()
+                            if k != "distribution"
+                        },
+                    )
+                assert partials_are_similar(params.pdata[param_name]["dist"], expected)
+            else:
+                expected = random_distribution_sampler(
+                    param_conf.get("value").get("distribution"),
+                    **{
+                        k: v
+                        for k, v in param_conf.get("value").items()
+                        if k != "distribution"
                     },
-                },
-            )
-            params = Parameters(
-                valid_parameters,
-                ti=date(2024, 1, 1),
-                tf=date(2024, 1, 5),
-                subpop_names=["1", "2"],
-            )
+                )
+                assert (
+                    params.pdata[param_name]["dist"].__self__.kwds
+                    == expected.__self__.kwds
+                )
+                assert (
+                    params.pdata[param_name]["dist"].__self__.support()
+                    == expected.__self__.support()
+                )
 
-            # The `npar` attribute
-            assert params.npar == 3
+        # The `pnames` attribute
+        assert params.pnames == list(param_config.keys())
 
-            # The `pconfig` attribute
-            assert params.pconfig == valid_parameters
+        # The `pnames2pindex` attribute
+        assert params.pnames2pindex == {
+            key: idx for idx, key in enumerate(param_config.keys())
+        }
 
-            # The `pdata` attribute
-            assert set(params.pdata.keys()) == {"sigma", "gamma", "Ro"}
-            assert set(params.pdata["sigma"].keys()) == {
-                "idx",
-                "ts",
-                "stacked_modifier_method",
-            }
-            assert params.pdata["sigma"]["idx"] == 0
-            assert params.pdata["sigma"]["ts"].equals(param_df.set_index("date"))
-            assert params.pdata["sigma"]["stacked_modifier_method"] == "product"
-            assert set(params.pdata["gamma"].keys()) == {
-                "idx",
-                "dist",
-                "stacked_modifier_method",
-            }
-            assert params.pdata["gamma"]["idx"] == 1
-            assert isinstance(params.pdata["gamma"]["dist"], partial)
-            assert partials_are_similar(
-                params.pdata["gamma"]["dist"],
-                partial(np.random.uniform, 0.1234, 0.1234),
-            )
-            assert params.pdata["gamma"]["stacked_modifier_method"] == "sum"
-            assert set(params.pdata["Ro"].keys()) == {
-                "idx",
-                "dist",
-                "stacked_modifier_method",
-            }
-            assert params.pdata["Ro"]["idx"] == 2
-            assert isinstance(params.pdata["Ro"]["dist"], partial)
-            assert partials_are_similar(
-                params.pdata["Ro"]["dist"], partial(np.random.uniform, 1.0, 2.0)
-            )
-            assert params.pdata["Ro"]["stacked_modifier_method"] == "product"
-
-            # The `pnames` attribute
-            assert params.pnames == ["sigma", "gamma", "Ro"]
-
-            # The `pnames2pindex` attribute
-            assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "Ro": 2}
-
-            # The `stacked_modifier_method` attribute
-            assert params.stacked_modifier_method == {
-                "sum": ["gamma"],
-                "product": ["sigma", "ro"],
-                "reduction_product": [],
-            }
+        # # The `stacked_modifier_method` attribute
+        expected_stacked_modifier_method = {
+            "sum": [],
+            "product": [],
+            "reduction_product": [],
+        }
+        for param_name, param_conf in param_config.items():
+            modifier_type = param_conf.get("stacked_modifier_method", "product")
+            expected_stacked_modifier_method[modifier_type].append(param_name.lower())
+        assert params.stacked_modifier_method == expected_stacked_modifier_method
 
     def test_picklable_lamda_alpha(self) -> None:
         # Setup
