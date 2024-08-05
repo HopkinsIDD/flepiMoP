@@ -23,6 +23,25 @@ class MockData:
         }
     )
 
+    simple_inputs = {
+        "parameter_config": create_confuse_subview_from_dict(
+            "parameters", {"sigma": {"value": 0.1}}
+        ),
+        "ti": date(2024, 1, 1),
+        "tf": date(2024, 1, 10),
+        "subpop_names": ["1", "2", "3"],
+    }
+
+    small_inputs = {
+        "parameter_config": create_confuse_subview_from_dict(
+            "parameters",
+            {"sigma": {"value": 0.1}, "gamma": {"value": 0.2}, "eta": {"value": 0.3}},
+        ),
+        "ti": date(2024, 1, 1),
+        "tf": date(2024, 1, 31),
+        "subpop_names": ["1", "2"],
+    }
+
 
 def valid_parameters_factory(
     tmp_path: pathlib.Path,
@@ -260,59 +279,50 @@ class TestParameters:
             expected_stacked_modifier_method[modifier_type].append(param_name.lower())
         assert params.stacked_modifier_method == expected_stacked_modifier_method
 
-    def test_picklable_lamda_alpha(self) -> None:
+    @pytest.mark.parametrize(
+        "parameters_inputs,alpha_val", [(MockData.simple_inputs, None)]
+    )
+    def test_picklable_lamda_alpha(
+        self, parameters_inputs: dict[str, Any], alpha_val: Any
+    ) -> None:
         # Setup
-        simple_parameters = create_confuse_subview_from_dict(
-            "parameters", {"sigma": {"value": 0.1}}
-        )
-        params = Parameters(
-            simple_parameters,
-            ti=date(2024, 1, 1),
-            tf=date(2024, 1, 10),
-            subpop_names=["1", "2"],
-        )
+        params = Parameters(**parameters_inputs)
 
         # Attribute error if `alpha_val` is not set
         with pytest.raises(AttributeError):
             params.picklable_lamda_alpha()
 
         # We get the expected value when `alpha_val` is set
-        params.alpha_val = None
-        assert params.picklable_lamda_alpha() == None
+        params.alpha_val = alpha_val
+        assert params.picklable_lamda_alpha() == alpha_val
 
-    def test_picklable_lamda_sigma(self) -> None:
+    @pytest.mark.parametrize(
+        "parameters_inputs,sigma_val", [(MockData.simple_inputs, None)]
+    )
+    def test_picklable_lamda_sigma(
+        self, parameters_inputs: dict[str, Any], sigma_val: Any
+    ) -> None:
         # Setup
-        simple_parameters = create_confuse_subview_from_dict(
-            "parameters", {"sigma": {"value": 0.1}}
-        )
-        params = Parameters(
-            simple_parameters,
-            ti=date(2024, 1, 1),
-            tf=date(2024, 1, 10),
-            subpop_names=["1", "2"],
-        )
+        params = Parameters(**parameters_inputs)
 
         # Attribute error if `sigma_val` is not set
         with pytest.raises(AttributeError):
             params.picklable_lamda_sigma()
 
         # We get the expected value when `sigma_val` is set
-        params.sigma_val = None
-        assert params.picklable_lamda_sigma() == None
+        params.sigma_val = sigma_val
+        assert params.picklable_lamda_sigma() == sigma_val
 
-    def test_get_pnames2pindex(self) -> None:
-        simple_parameters = create_confuse_subview_from_dict(
-            "parameters",
-            {"sigma": {"value": 0.1}, "gamma": {"value": 0.2}, "eta": {"value": 0.3}},
-        )
-        params = Parameters(
-            simple_parameters,
-            ti=date(2024, 1, 1),
-            tf=date(2024, 1, 10),
-            subpop_names=["1", "2"],
-        )
+    @pytest.mark.parametrize(
+        "parameters_inputs", [(MockData.simple_inputs), (MockData.small_inputs)]
+    )
+    def test_get_pnames2pindex(self, parameters_inputs: dict[str, Any]) -> None:
+        params = Parameters(**parameters_inputs)
         assert params.get_pnames2pindex() == params.pnames2pindex
-        assert params.pnames2pindex == {"sigma": 0, "gamma": 1, "eta": 2}
+        assert params.pnames2pindex == {
+            key: idx
+            for idx, key in enumerate(parameters_inputs["parameter_config"].keys())
+        }
 
     def test_parameters_quick_draw(self) -> None:
         # First with a time series param, fixed size draws
