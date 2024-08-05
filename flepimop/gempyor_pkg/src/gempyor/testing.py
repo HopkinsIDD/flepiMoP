@@ -9,6 +9,7 @@ __all__ = [
     "change_directory_to_temp_directory",
     "create_confuse_rootview_from_dict",
     "create_confuse_subview_from_dict",
+    "partials_are_similar",
 ]
 
 from collections.abc import Generator
