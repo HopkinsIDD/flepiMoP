@@ -10,6 +10,16 @@ from gempyor.parameters import Parameters
 from gempyor.testing import create_confuse_subview_from_dict, partials_are_similar
 
 
+class MockData:
+    simple_timeseries_param_df = pd.DataFrame(
+        data={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+            "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+            "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+        }
+    )
+
+
 class TestParameters:
     def test_nonunique_parameter_names_value_error(self) -> None:
         duplicated_parameters = create_confuse_subview_from_dict(
@@ -58,38 +68,40 @@ class TestParameters:
                     subpop_names=["1", "2", "3"],
                 )
 
-    def test_timeseries_parameter_has_insufficient_dates_value_error(self) -> None:
+    @pytest.mark.parametrize(
+        "start_date,end_date,timeseries_df",
+        [(date(2024, 1, 1), date(2024, 1, 6), MockData.simple_timeseries_param_df)],
+    )
+    def test_timeseries_parameter_has_insufficient_dates_value_error(
+        self, start_date: date, end_date: date, timeseries_df: pd.DataFrame
+    ) -> None:
         # First way to get at this error, purely a length difference
-        param_df = pd.DataFrame(
-            data={
-                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-            }
-        )
         with NamedTemporaryFile(suffix=".csv") as temp_file:
-            param_df.to_csv(temp_file.name, index=False)
+            timeseries_df.to_csv(temp_file.name, index=False)
             invalid_timeseries_parameters = create_confuse_subview_from_dict(
                 "parameters", {"sigma": {"timeseries": temp_file.name}}
             )
+            timeseries_start_date = timeseries_df["date"].dt.date.min()
+            timeseries_end_date = timeseries_df["date"].dt.date.max()
+            subpop_names = [c for c in timeseries_df.columns.to_list() if c != "date"]
             with pytest.raises(
                 ValueError,
                 match=(
                     rf"ERROR loading file {temp_file.name} for parameter sigma\:\s+"
                     rf"the \'date\' entries of the provided file do not include all the"
                     rf" days specified to be modeled by\s+the config\. the provided "
-                    rf"file includes 5 days between 2024-01-01( 00\:00\:00)? to "
-                    rf"2024-01-05( 00\:00\:00)?,\s+while there are 6 days in the config"
-                    rf" time span of 2024-01-01->2024-01-06\. The file must contain "
-                    rf"entries for the\s+the exact start and end dates from the "
-                    rf"config\. "
+                    rf"file includes 5 days between {timeseries_start_date}"
+                    rf"( 00\:00\:00)? to {timeseries_end_date}( 00\:00\:00)?,\s+while "
+                    rf"there are 6 days in the config time span of {start_date}->"
+                    rf"{end_date}\. The file must contain entries for the\s+the exact "
+                    rf"start and end dates from the config\. "
                 ),
             ):
                 Parameters(
                     invalid_timeseries_parameters,
-                    ti=date(2024, 1, 1),
-                    tf=date(2024, 1, 6),
-                    subpop_names=["1", "2"],
+                    ti=start_date,
+                    tf=end_date,
+                    subpop_names=subpop_names,
                 )
 
         # TODO: I'm not sure how to get to the second pathway to this error message.
