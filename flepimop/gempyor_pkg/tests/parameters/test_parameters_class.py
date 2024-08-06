@@ -87,7 +87,7 @@ class MockParametersInput:
         return len(self.subpop_names)
 
     def number_of_days(self) -> int:
-        return (self.tf - self.ti).days
+        return (self.tf - self.ti).days + 1
 
     def number_of_parameters(self) -> int:
         return len(self.config)
@@ -119,6 +119,8 @@ class MockParametersInput:
             )
         df = pd.read_csv(df_file, index_col=None)
         df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date")
+        df = df[self.subpop_names]
         self._timeseries_dfs[param_name] = df
         return df.copy()
 
@@ -261,7 +263,14 @@ class TestParameters:
         # `pd.date_range` function only creates monotonic increasing sequences and
         # 0 == 0.
 
-    @pytest.mark.parametrize("factory", [(valid_parameters_factory)])
+    @pytest.mark.parametrize(
+        "factory",
+        [
+            (fixed_three_valid_parameter_factory),
+            (distribution_three_valid_parameter_factory),
+            (valid_parameters_factory),
+        ],
+    )
     def test_parameters_instance_attributes(
         self,
         tmp_path: pathlib.Path,
@@ -286,7 +295,7 @@ class TestParameters:
             ] == param_conf.get("stacked_modifier_method", "product")
             if "timeseries" in param_conf:
                 assert params.pdata[param_name]["ts"].equals(
-                    mock_inputs.get_timeseries_df(param_name).set_index("date")
+                    mock_inputs.get_timeseries_df(param_name)
                 )
             elif isinstance(params.pdata[param_name]["dist"], partial):
                 if isinstance(param_conf.get("value"), float):
@@ -392,6 +401,8 @@ class TestParameters:
             (fixed_three_valid_parameter_factory, 4, 2),
             (distribution_three_valid_parameter_factory, None, None),
             (distribution_three_valid_parameter_factory, 5, 2),
+            (valid_parameters_factory, None, None),
+            (valid_parameters_factory, 13, 3),
         ],
     )
     def test_parameters_quick_draw(
@@ -404,20 +415,20 @@ class TestParameters:
         # Setup
         mock_inputs = factory(tmp_path)
         params = mock_inputs.create_parameters_instance()
+        n_days_expected = mock_inputs.number_of_days()
+        nsubpops_expected = mock_inputs.number_of_subpops()
         n_days = mock_inputs.number_of_days() if n_days is None else n_days
         nsubpops = mock_inputs.number_of_subpops() if nsubpops is None else nsubpops
 
         if mock_inputs.has_timeseries_parameter() and (
-            (n_days_expected := mock_inputs.number_of_days()) != n_days
-            or (nsubpops_expected := mock_inputs.number_of_subpops()) != nsubpops
+            n_days_expected != n_days or nsubpops_expected != nsubpops
         ):
             # Incompatible shapes
             with pytest.raises(
                 ValueError,
                 match=(
-                    rf"could not broadcast input array from shape \({n_days}\,"
-                    rf"{nsubpops}\) into shape \({n_days_expected}\,"
-                    rf"{nsubpops_expected}\)"
+                    rf"^could not broadcast input array from shape \({n_days_expected}"
+                    rf"\,{nsubpops_expected}\) into shape \({n_days}\,{nsubpops}\)$"
                 ),
             ):
                 params.parameters_quick_draw(n_days, nsubpops)
@@ -477,6 +488,18 @@ class TestParameters:
                 5,
                 2,
             ),
+            (
+                valid_parameters_factory,
+                MockData.empty_param_overrides_df,
+                None,
+                None,
+            ),
+            (
+                valid_parameters_factory,
+                MockData.empty_param_overrides_df,
+                13,
+                2,
+            ),
         ],
     )
     def test_parameters_load(
@@ -490,24 +513,24 @@ class TestParameters:
         # Setup
         mock_inputs = factory(tmp_path)
         params = mock_inputs.create_parameters_instance()
-        n_days = mock_inputs.number_of_days() if n_days is None else n_days
-        nsubpops = mock_inputs.number_of_subpops() if nsubpops is None else nsubpops
+        n_days_expected = mock_inputs.number_of_days()
+        nsubpops_expected = mock_inputs.number_of_subpops()
+        n_days = n_days_expected if n_days is None else n_days
+        nsubpops = nsubpops_expected if nsubpops is None else nsubpops
 
         timeseries_parameters = set(mock_inputs.get_timeseries_parameters())
         override_parameters = set(param_df["parameter"].unique())
         timeseries_not_overridden = timeseries_parameters - override_parameters
 
         if len(timeseries_not_overridden) and (
-            (n_days_expected := mock_inputs.number_of_days()) != n_days
-            or (nsubpops_expected := mock_inputs.number_of_subpops()) != nsubpops
+            n_days_expected != n_days or nsubpops_expected != nsubpops
         ):
             # Incompatible shapes
             with pytest.raises(
                 ValueError,
                 match=(
-                    rf"could not broadcast input array from shape \({n_days}\,"
-                    rf"{nsubpops}\) into shape \({n_days_expected}\,"
-                    rf"{nsubpops_expected}\)"
+                    rf"^could not broadcast input array from shape \({n_days_expected}"
+                    rf"\,{nsubpops_expected}\) into shape \({n_days}\,{nsubpops}\)$"
                 ),
             ):
                 params.parameters_load(param_df, n_days, nsubpops)
@@ -555,6 +578,7 @@ class TestParameters:
             (fixed_three_valid_parameter_factory, 4, 2),
             (distribution_three_valid_parameter_factory, None, None),
             (distribution_three_valid_parameter_factory, 5, 2),
+            (valid_parameters_factory, None, None),
         ],
     )
     def test_getParameterDF(
