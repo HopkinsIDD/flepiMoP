@@ -45,6 +45,8 @@ class MockData:
         "subpop_names": ["1", "2"],
     }
 
+    empty_param_overrides_df = pd.DataFrame(data={"parameter": [], "value": []})
+
 
 class MockParametersInput:
     def __init__(
@@ -81,6 +83,9 @@ class MockParametersInput:
 
     def number_of_parameters(self) -> int:
         return len(self.config)
+
+    def get_timeseries_parameters(self) -> list[str]:
+        return [k for k, v in self.config.items() if "timeseries" in v]
 
     def has_timeseries_parameter(self) -> bool:
         for _, v in self.config.items():
@@ -411,7 +416,9 @@ class TestParameters:
     @pytest.mark.parametrize(
         "factory,n_days,nsubpops",
         [
+            (fixed_three_valid_parameter_factory, None, None),
             (fixed_three_valid_parameter_factory, 4, 2),
+            (distribution_three_valid_parameter_factory, None, None),
             (distribution_three_valid_parameter_factory, 5, 2),
         ],
     )
@@ -419,12 +426,14 @@ class TestParameters:
         self,
         tmp_path: pathlib.Path,
         factory: Callable[[pathlib.Path], MockParametersInput],
-        n_days: int,
-        nsubpops: int,
+        n_days: None | int,
+        nsubpops: None | int,
     ) -> None:
         # Setup
         mock_inputs = factory(tmp_path)
         params = mock_inputs.create_parameters_instance()
+        n_days = mock_inputs.number_of_days() if n_days is None else n_days
+        nsubpops = mock_inputs.number_of_subpops() if nsubpops is None else nsubpops
 
         if mock_inputs.has_timeseries_parameter() and (
             (n_days_expected := mock_inputs.number_of_days()) != n_days
@@ -469,130 +478,103 @@ class TestParameters:
                         value, **{k: v for k, v in conf.get("value").items()}
                     )
 
-    def test_parameters_load(self) -> None:
+    @pytest.mark.parametrize(
+        "factory,param_df,n_days,nsubpops",
+        [
+            (
+                fixed_three_valid_parameter_factory,
+                MockData.empty_param_overrides_df,
+                None,
+                None,
+            ),
+            (
+                fixed_three_valid_parameter_factory,
+                MockData.empty_param_overrides_df,
+                4,
+                2,
+            ),
+            (
+                distribution_three_valid_parameter_factory,
+                MockData.empty_param_overrides_df,
+                None,
+                None,
+            ),
+            (
+                distribution_three_valid_parameter_factory,
+                MockData.empty_param_overrides_df,
+                5,
+                2,
+            ),
+        ],
+    )
+    def test_parameters_load(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+        param_df: pd.DataFrame,
+        n_days: None | int,
+        nsubpops: None | int,
+    ) -> None:
         # Setup
-        param_overrides_df = pd.DataFrame(
-            {"parameter": ["nu", "gamma", "nu"], "value": [0.1, 0.2, 0.3]}
-        )
-        param_empty_df = pd.DataFrame({"parameter": [], "value": []})
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
+        n_days = mock_inputs.number_of_days() if n_days is None else n_days
+        nsubpops = mock_inputs.number_of_subpops() if nsubpops is None else nsubpops
 
-        # With time series
-        param_df = pd.DataFrame(
-            data={
-                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-            }
-        )
-        with NamedTemporaryFile(suffix=".csv") as temp_file:
-            param_df.to_csv(temp_file.name, index=False)
-            valid_parameters = create_confuse_subview_from_dict(
-                "parameters",
-                {
-                    "sigma": {"timeseries": temp_file.name},
-                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
-                    "Ro": {
-                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
-                    },
-                },
-            )
-            params = Parameters(
-                valid_parameters,
-                ti=date(2024, 1, 1),
-                tf=date(2024, 1, 5),
-                subpop_names=["1", "2"],
-            )
+        timeseries_parameters = set(mock_inputs.get_timeseries_parameters())
+        override_parameters = set(param_df["parameter"].unique())
+        timeseries_not_overridden = timeseries_parameters - override_parameters
 
-            # Test the exception
+        if len(timeseries_not_overridden) and (
+            (n_days_expected := mock_inputs.number_of_days()) != n_days
+            or (nsubpops_expected := mock_inputs.number_of_subpops()) != nsubpops
+        ):
+            # Incompatible shapes
             with pytest.raises(
                 ValueError,
                 match=(
-                    r"could not broadcast input array from shape "
-                    r"\(5\,2\) into shape \(4\,2\)"
+                    rf"could not broadcast input array from shape \({n_days}\,"
+                    rf"{nsubpops}\) into shape \({n_days_expected}\,"
+                    rf"{nsubpops_expected}\)"
                 ),
             ):
-                params.parameters_load(param_empty_df, 4, 2)
-
-            # Empty overrides
-            p_draw = params.parameters_load(param_empty_df, 5, 2)
+                params.parameters_load(param_df, n_days, nsubpops)
+        else:
+            # Compatible shapes
+            p_draw = params.parameters_load(param_df, n_days, nsubpops)
             assert isinstance(p_draw, np.ndarray)
             assert p_draw.dtype == np.float64
-            assert p_draw.shape == (3, 5, 2)
-            assert np.allclose(
-                p_draw[0, :, :],
-                np.array([[1.2, 2.3], [2.3, 3.4], [3.4, 4.5], [4.5, 5.6], [5.6, 6.7]]),
+            assert p_draw.shape == (
+                mock_inputs.number_of_parameters(),
+                n_days,
+                nsubpops,
             )
-            assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((5, 2)))
-            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
-            assert np.less(p_draw[2, :, :], 2.0).all()
-            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
 
-            # But if we override time series no exception
-            p_draw = params.parameters_load(
-                pd.DataFrame({"parameter": ["sigma"], "value": [12.34]}), 4, 2
-            )
-            assert isinstance(p_draw, np.ndarray)
-            assert p_draw.dtype == np.float64
-            assert p_draw.shape == (3, 4, 2)
-            assert np.allclose(p_draw[0, :, :], 12.34)
-            assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((4, 2)))
-            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
-            assert np.less(p_draw[2, :, :], 2.0).all()
-            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
-
-            # If not overriding time series then must conform
-            p_draw = params.parameters_load(param_overrides_df, 5, 2)
-            assert isinstance(p_draw, np.ndarray)
-            assert p_draw.dtype == np.float64
-            assert p_draw.shape == (3, 5, 2)
-            assert np.allclose(
-                p_draw[0, :, :],
-                np.array([[1.2, 2.3], [2.3, 3.4], [3.4, 4.5], [4.5, 5.6], [5.6, 6.7]]),
-            )
-            assert np.allclose(p_draw[1, :, :], 0.2 * np.ones((5, 2)))
-            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
-            assert np.less(p_draw[2, :, :], 2.0).all()
-            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
-
-        # Without time series
-        valid_parameters = create_confuse_subview_from_dict(
-            "parameters",
-            {
-                "eta": {"value": 2.2},
-                "nu": {
-                    "value": {
-                        "distribution": "truncnorm",
-                        "mean": 0.0,
-                        "sd": 2.0,
-                        "a": -2.0,
-                        "b": 2.0,
-                    }
-                },
-            },
-        )
-        params = Parameters(
-            valid_parameters,
-            ti=date(2024, 1, 1),
-            tf=date(2024, 1, 5),
-            subpop_names=["1", "2"],
-        )
-
-        # Takes an 'empty' DataFrame
-        p_draw = params.parameters_load(param_empty_df, 5, 2)
-        assert isinstance(p_draw, np.ndarray)
-        assert p_draw.dtype == np.float64
-        assert p_draw.shape == (2, 5, 2)
-        assert np.allclose(p_draw[0, :, :], 2.2)
-        assert np.greater_equal(p_draw[1, :, :], -2.0).all()
-        assert np.less_equal(p_draw[1, :, :], 2.0).all()
-
-        # Takes a DataFrame with values, only takes the first
-        p_draw = params.parameters_load(param_overrides_df, 4, 3)
-        assert isinstance(p_draw, np.ndarray)
-        assert p_draw.dtype == np.float64
-        assert p_draw.shape == (2, 4, 3)
-        assert np.allclose(p_draw[0, :, :], 2.2)
-        assert np.allclose(p_draw[1, :, :], 0.1)
+            # Loop over each param and check it individually
+            for param_name, conf in mock_inputs.config.items():
+                i = params.pnames.index(param_name)
+                if param_name in param_df["parameter"].values:
+                    # Check that the values in p_draw[i, :, :] match override
+                    assert np.allclose(
+                        p_draw[i, :, :],
+                        param_df[param_df["parameter"] == param_name]
+                        .get("value")
+                        .item(),
+                    )
+                elif "timeseries" in conf:
+                    # Check if the values in p_draw[i, :, :] match timeseries
+                    timeseries_df = mock_inputs.get_timeseries_df(param_name)
+                    assert np.allclose(p_draw[i, :, :], timeseries_df.values)
+                elif isinstance((fixed_value := conf.get("value")), float):
+                    # Check if all the values in p_draw[i, :, :] match a const
+                    assert np.allclose(p_draw[i, :, :], fixed_value)
+                else:
+                    # Check if the values in p_draw[i, :, :] match the distribution
+                    assert np.allclose(p_draw[i, :, :], p_draw[i, 0, 0])
+                    value = float(p_draw[i, 0, 0])
+                    assert sample_fits_distribution(
+                        value, **{k: v for k, v in conf.get("value").items()}
+                    )
 
     def test_getParameterDF(self) -> None:
         param_df = pd.DataFrame(
