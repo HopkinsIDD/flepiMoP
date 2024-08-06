@@ -3,14 +3,17 @@ from functools import partial
 import pathlib
 from typing import Any, Callable
 
-import confuse
 import numpy as np
 import pandas as pd
 import pytest
 from tempfile import NamedTemporaryFile
 
 from gempyor.parameters import Parameters
-from gempyor.testing import create_confuse_subview_from_dict, partials_are_similar
+from gempyor.testing import (
+    create_confuse_subview_from_dict,
+    partials_are_similar,
+    sample_fits_distribution,
+)
 from gempyor.utils import random_distribution_sampler
 
 
@@ -41,6 +44,87 @@ class MockData:
         "tf": date(2024, 1, 31),
         "subpop_names": ["1", "2"],
     }
+
+
+class MockParametersInput:
+    def __init__(
+        self,
+        config: dict[str, Any],
+        ti: date,
+        tf: date,
+        subpop_names: list[str],
+        path_prefix: str = ".",
+    ) -> None:
+        self.config = config
+        self.ti = ti
+        self.tf = tf
+        self.subpop_names = subpop_names
+        self.path_prefix = path_prefix
+        self._timeseries_dfs = {}
+
+    def create_parameters_instance(self) -> Parameters:
+        return Parameters(
+            parameter_config=create_confuse_subview_from_dict(
+                "parameters", self.config
+            ),
+            ti=self.ti,
+            tf=self.tf,
+            subpop_names=self.subpop_names,
+            path_prefix=self.path_prefix,
+        )
+
+    def number_of_subpops(self) -> int:
+        return len(self.subpop_names)
+
+    def number_of_days(self) -> int:
+        return (self.tf - self.ti).days
+
+    def number_of_parameters(self) -> int:
+        return len(self.config)
+
+    def has_timeseries_parameter(self) -> bool:
+        for _, v in self.config.items():
+            if "timeseries" in v:
+                return True
+        return False
+
+    def get_timeseries_df(self, param_name: str) -> pd.DataFrame:
+        df = self._timeseries_dfs.get(param_name)
+        if df is not None:
+            return df.copy()
+        conf = self.config.get(param_name, {})
+        df_file = conf.get("timeseries")
+        if df_file is None:
+            raise ValueError(
+                f"The given param '{param_name}' does not have a timeseries dataframe."
+            )
+        df = pd.read_csv(df_file, index_col="date")
+        self._timeseries_dfs[param_name] = df
+        return df.copy()
+
+
+def fixed_three_valid_parameter_factory(tmp_path: pathlib.Path) -> MockParametersInput:
+    return MockParametersInput(
+        config={"sigma": {"value": 0.1}, "eta": {"value": 0.2}, "nu": {"value": 0.3}},
+        ti=date(2024, 1, 1),
+        tf=date(2024, 1, 31),
+        subpop_names=["1", "2", "3"],
+    )
+
+
+def distribution_three_valid_parameter_factory(
+    tmp_path: pathlib.Path,
+) -> MockParametersInput:
+    return MockParametersInput(
+        config={
+            "sigma": {"value": {"distribution": "uniform", "low": 1.0, "high": 2.0}},
+            "eta": {"value": {"distribution": "binomial", "n": 20, "p": 0.5}},
+            "nu": {"value": {"distribution": "lognorm", "meanlog": 1.0, "sdlog": 1.0}},
+        },
+        ti=date(2024, 1, 1),
+        tf=date(2024, 1, 31),
+        subpop_names=["1", "2", "3"],
+    )
 
 
 def valid_parameters_factory(
@@ -324,98 +408,66 @@ class TestParameters:
             for idx, key in enumerate(parameters_inputs["parameter_config"].keys())
         }
 
-    def test_parameters_quick_draw(self) -> None:
-        # First with a time series param, fixed size draws
-        param_df = pd.DataFrame(
-            data={
-                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-            }
-        )
-        with NamedTemporaryFile(suffix=".csv") as temp_file:
-            param_df.to_csv(temp_file.name, index=False)
-            valid_parameters = create_confuse_subview_from_dict(
-                "parameters",
-                {
-                    "sigma": {"timeseries": temp_file.name},
-                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
-                    "Ro": {
-                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
-                    },
-                },
-            )
-            params = Parameters(
-                valid_parameters,
-                ti=date(2024, 1, 1),
-                tf=date(2024, 1, 5),
-                subpop_names=["1", "2"],
-            )
+    @pytest.mark.parametrize(
+        "factory,n_days,nsubpops",
+        [
+            (fixed_three_valid_parameter_factory, 4, 2),
+            (distribution_three_valid_parameter_factory, 5, 2),
+        ],
+    )
+    def test_parameters_quick_draw(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+        n_days: int,
+        nsubpops: int,
+    ) -> None:
+        # Setup
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
 
-            # Test the exception
+        if mock_inputs.has_timeseries_parameter() and (
+            (n_days_expected := mock_inputs.number_of_days()) != n_days
+            or (nsubpops_expected := mock_inputs.number_of_subpops()) != nsubpops
+        ):
+            # Incompatible shapes
             with pytest.raises(
                 ValueError,
                 match=(
-                    r"could not broadcast input array from shape "
-                    r"\(5\,2\) into shape \(4\,2\)"
+                    rf"could not broadcast input array from shape \({n_days}\,"
+                    rf"{nsubpops}\) into shape \({n_days_expected}\,"
+                    rf"{nsubpops_expected}\)"
                 ),
             ):
-                params.parameters_quick_draw(4, 2)
-
-            # Test our result
-            p_draw = params.parameters_quick_draw(5, 2)
+                params.parameters_quick_draw(n_days, nsubpops)
+        else:
+            # Compatible shapes
+            p_draw = params.parameters_quick_draw(n_days, nsubpops)
             assert isinstance(p_draw, np.ndarray)
             assert p_draw.dtype == np.float64
-            assert p_draw.shape == (3, 5, 2)
-            assert np.allclose(
-                p_draw[0, :, :],
-                np.array([[1.2, 2.3], [2.3, 3.4], [3.4, 4.5], [4.5, 5.6], [5.6, 6.7]]),
+            assert p_draw.shape == (
+                mock_inputs.number_of_parameters(),
+                n_days,
+                nsubpops,
             )
-            assert np.allclose(p_draw[1, :, :], 0.1234 * np.ones((5, 2)))
-            assert np.greater_equal(p_draw[2, :, :], 1.0).all()
-            assert np.less(p_draw[2, :, :], 2.0).all()
-            assert np.allclose(p_draw[2, :, :], p_draw[2, 0, 0])
 
-        # Second without a time series param, arbitrary sized draws
-        valid_parameters = create_confuse_subview_from_dict(
-            "parameters",
-            {
-                "eta": {"value": 2.2},
-                "nu": {
-                    "value": {
-                        "distribution": "truncnorm",
-                        "mean": 0.0,
-                        "sd": 2.0,
-                        "a": -2.0,
-                        "b": 2.0,
-                    }
-                },
-            },
-        )
-        params = Parameters(
-            valid_parameters,
-            ti=date(2024, 1, 1),
-            tf=date(2024, 1, 5),
-            subpop_names=["1", "2"],
-        )
-
-        p_draw = params.parameters_quick_draw(5, 2)
-        assert isinstance(p_draw, np.ndarray)
-        assert p_draw.dtype == np.float64
-        assert p_draw.shape == (2, 5, 2)
-        assert np.allclose(p_draw[0, :, :], 2.2)
-        assert np.greater_equal(p_draw[1, :, :], -2.0).all()
-        assert np.less_equal(p_draw[1, :, :], 2.0).all()
-        assert np.allclose(p_draw[1, :, :], p_draw[1, 0, 0])
-
-        p_draw = params.parameters_quick_draw(4, 3)
-        assert isinstance(p_draw, np.ndarray)
-        assert p_draw.dtype == np.float64
-        assert p_draw.shape == (2, 4, 3)
-        assert np.allclose(p_draw[0, :, :], 2.2)
-        assert np.greater_equal(p_draw[1, :, :], -2.0).all()
-        assert np.less_equal(p_draw[1, :, :], 2.0).all()
-        assert np.allclose(p_draw[1, :, :], p_draw[1, 0, 0])
+            # Loop over each param and check it individually
+            for param_name, conf in mock_inputs.config.items():
+                i = params.pnames.index(param_name)
+                if "timeseries" in conf:
+                    # Check if the values in p_draw[i, :, :] match timeseries
+                    timeseries_df = mock_inputs.get_timeseries_df(param_name)
+                    assert np.allclose(p_draw[i, :, :], timeseries_df.values)
+                elif isinstance((fixed_value := conf.get("value")), float):
+                    # Check if all the values in p_draw[i, :, :] match a const
+                    assert np.allclose(p_draw[i, :, :], fixed_value)
+                else:
+                    # Check if the values in p_draw[i, :, :] match the distribution
+                    assert np.allclose(p_draw[i, :, :], p_draw[i, 0, 0])
+                    value = float(p_draw[i, 0, 0])
+                    assert sample_fits_distribution(
+                        value, **{k: v for k, v in conf.get("value").items()}
+                    )
 
     def test_parameters_load(self) -> None:
         # Setup
