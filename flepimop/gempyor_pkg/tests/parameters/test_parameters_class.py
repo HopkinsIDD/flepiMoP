@@ -87,6 +87,12 @@ class MockParametersInput:
     def get_timeseries_parameters(self) -> list[str]:
         return [k for k, v in self.config.items() if "timeseries" in v]
 
+    def get_nontimeseries_parameters(self) -> list[str]:
+        return [k for k, v in self.config.items() if "timeseries" not in v]
+
+    def number_of_nontimeseries_parameters(self) -> int:
+        return len(self.get_nontimeseries_parameters())
+
     def has_timeseries_parameter(self) -> bool:
         for _, v in self.config.items():
             if "timeseries" in v:
@@ -576,48 +582,43 @@ class TestParameters:
                         value, **{k: v for k, v in conf.get("value").items()}
                     )
 
-    def test_getParameterDF(self) -> None:
-        param_df = pd.DataFrame(
-            data={
-                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-            }
+    @pytest.mark.parametrize(
+        "factory,n_days,nsubpops",
+        [
+            (fixed_three_valid_parameter_factory, None, None),
+            (fixed_three_valid_parameter_factory, 4, 2),
+            (distribution_three_valid_parameter_factory, None, None),
+            (distribution_three_valid_parameter_factory, 5, 2),
+        ],
+    )
+    def test_getParameterDF(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+        n_days: None | int,
+        nsubpops: None | int,
+    ) -> None:
+        # Setup
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
+        n_days = mock_inputs.number_of_days() if n_days is None else n_days
+        nsubpops = mock_inputs.number_of_subpops() if nsubpops is None else nsubpops
+
+        p_draw = params.parameters_quick_draw(n_days, nsubpops)
+        df = params.getParameterDF(p_draw)
+
+        # Go through assertions on the structure of the DataFrame
+        assert isinstance(df, pd.DataFrame)
+        assert df.shape == (mock_inputs.number_of_nontimeseries_parameters(), 2)
+        assert df.columns.to_list() == ["value", "parameter"]
+        assert (df.index.to_series() == df["parameter"]).all()
+        assert not df["parameter"].duplicated().any()
+        assert set(df["parameter"].to_list()) == set(
+            mock_inputs.get_nontimeseries_parameters()
         )
-        with NamedTemporaryFile(suffix=".csv") as temp_file:
-            param_df.to_csv(temp_file.name, index=False)
-            valid_parameters = create_confuse_subview_from_dict(
-                "parameters",
-                {
-                    "sigma": {"timeseries": temp_file.name},
-                    "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
-                    "Ro": {
-                        "value": {"distribution": "uniform", "low": 1.0, "high": 2.0}
-                    },
-                },
-            )
-            params = Parameters(
-                valid_parameters,
-                ti=date(2024, 1, 1),
-                tf=date(2024, 1, 5),
-                subpop_names=["1", "2"],
-            )
-
-            # Create a quick sample
-            p_draw = params.parameters_quick_draw(5, 2)
-            df = params.getParameterDF(p_draw)
-            assert isinstance(df, pd.DataFrame)
-            assert df.shape == (2, 2)
-            assert df.columns.to_list() == ["value", "parameter"]
-            assert df["parameter"].to_list() == ["gamma", "Ro"]
-            values = df["value"].to_list()
-            assert values[0] == 0.1234
-            assert values[1] >= 1.0
-            assert values[1] < 2.0
-            assert (df.index.to_series() == df["parameter"]).all()
-
-            # Make clear that 'sigma' is not present because it's a time series
-            assert "sigma" not in df["parameter"].to_list()
+        for row in df.itertuples(index=False):
+            i = params.pnames.index(row.parameter)
+            assert np.isclose(row.value, p_draw[i, 0, 0])
 
     def test_parameters_reduce(self) -> None:
         # TODO: Come back and unit test this method after getting a better handle on
