@@ -107,10 +107,12 @@ class MockParametersInput:
                 return True
         return False
 
-    def get_timeseries_df(self, param_name: str) -> pd.DataFrame:
+    def get_timeseries_df(
+        self, param_name: str, subset_by_subpops: bool = True
+    ) -> pd.DataFrame:
         df = self._timeseries_dfs.get(param_name)
         if df is not None:
-            return df.copy()
+            return df[self.subpop_names].copy() if subset_by_subpops else df.copy()
         conf = self.config.get(param_name, {})
         df_file = conf.get("timeseries")
         if df_file is None:
@@ -120,9 +122,8 @@ class MockParametersInput:
         df = pd.read_csv(df_file, index_col=None)
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date")
-        df = df[self.subpop_names]
         self._timeseries_dfs[param_name] = df
-        return df.copy()
+        return df[self.subpop_names].copy() if subset_by_subpops else df.copy()
 
 
 def fixed_three_valid_parameter_factory(tmp_path: pathlib.Path) -> MockParametersInput:
@@ -165,12 +166,65 @@ def valid_parameters_factory(tmp_path: pathlib.Path) -> MockParametersInput:
     )
 
 
+def nonunique_invalid_parameter_factory(tmp_path: pathlib.Path) -> MockParametersInput:
+    return MockParametersInput(
+        config={
+            "sigma": {"value": 0.1},
+            "eta": {"value": 0.2},
+            "SIGMA": {"value": 0.3},
+        },
+        ti=date(2024, 1, 1),
+        tf=date(2024, 1, 3),
+        subpop_names=["1", "2", "3"],
+    )
+
+
+def insufficient_columns_parameter_factory(
+    tmp_path: pathlib.Path,
+) -> MockParametersInput:
+    df = pd.DataFrame(
+        data={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+            "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+            "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+        }
+    )
+    tmp_file = tmp_path / f"{uuid4().hex}.csv"
+    df.to_csv(tmp_file, index=False)
+    return MockParametersInput(
+        config={"sigma": {"timeseries": str(tmp_file.absolute())}},
+        ti=date(2024, 1, 1),
+        tf=date(2024, 1, 5),
+        subpop_names=["1", "2", "3"],
+    )
+
+
+def insufficient_dates_parameter_factory(tmp_path: pathlib.Path) -> MockParametersInput:
+    df = pd.DataFrame(
+        data={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+            "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+            "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+        }
+    )
+    tmp_file = tmp_path / f"{uuid4().hex}.csv"
+    df.to_csv(tmp_file, index=False)
+    return MockParametersInput(
+        config={"sigma": {"timeseries": str(tmp_file.absolute())}},
+        ti=date(2024, 1, 1),
+        tf=date(2024, 1, 6),
+        subpop_names=["1", "2"],
+    )
+
+
 class TestParameters:
-    def test_nonunique_parameter_names_value_error(self) -> None:
-        duplicated_parameters = create_confuse_subview_from_dict(
-            "parameters",
-            {"sigma": {"value": 0.1}, "gamma": {"value": 0.2}, "GAMMA": {"value": 0.3}},
-        )
+    @pytest.mark.parametrize("factory", [(nonunique_invalid_parameter_factory)])
+    def test_nonunique_parameter_names_value_error(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+    ) -> None:
+        mock_inputs = factory(tmp_path)
         with pytest.raises(
             ValueError,
             match=(
@@ -178,90 +232,94 @@ class TestParameters:
                 r"\(remember that case is not sufficient\!\)"
             ),
         ):
-            Parameters(
-                duplicated_parameters,
-                ti=date(2024, 1, 1),
-                tf=date(2024, 12, 31),
-                subpop_names=["1", "2"],
-            )
+            mock_inputs.create_parameters_instance()
 
-    def test_timeseries_parameter_has_insufficient_columns_value_error(self) -> None:
-        param_df = pd.DataFrame(
-            data={
-                "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-                "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-                "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-            }
-        )
-        with NamedTemporaryFile(suffix=".csv") as temp_file:
-            param_df.to_csv(temp_file.name, index=False)
-            invalid_timeseries_parameters = create_confuse_subview_from_dict(
-                "parameters", {"sigma": {"timeseries": temp_file.name}}
-            )
-            with pytest.raises(
-                ValueError,
-                match=(
-                    rf"ERROR loading file {temp_file.name} for parameter sigma\: "
-                    rf"the number of non 'date'\s+columns are 2, expected 3 "
-                    rf"\(the number of subpops\) or one\."
-                ),
-            ):
-                Parameters(
-                    invalid_timeseries_parameters,
-                    ti=date(2024, 1, 1),
-                    tf=date(2024, 1, 5),
-                    subpop_names=["1", "2", "3"],
-                )
-
-    @pytest.mark.parametrize(
-        "start_date,end_date,timeseries_df",
-        [(date(2024, 1, 1), date(2024, 1, 6), MockData.simple_timeseries_param_df)],
-    )
-    def test_timeseries_parameter_has_insufficient_dates_value_error(
-        self, start_date: date, end_date: date, timeseries_df: pd.DataFrame
+    @pytest.mark.parametrize("factory", [(insufficient_columns_parameter_factory)])
+    def test_timeseries_parameter_has_insufficient_columns_value_error(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
     ) -> None:
-        # First way to get at this error, purely a length difference
-        with NamedTemporaryFile(suffix=".csv") as temp_file:
-            timeseries_df.to_csv(temp_file.name, index=False)
-            invalid_timeseries_parameters = create_confuse_subview_from_dict(
-                "parameters", {"sigma": {"timeseries": temp_file.name}}
-            )
-            timeseries_start_date = timeseries_df["date"].dt.date.min()
-            timeseries_end_date = timeseries_df["date"].dt.date.max()
-            subpop_names = [c for c in timeseries_df.columns.to_list() if c != "date"]
-            with pytest.raises(
-                ValueError,
-                match=(
-                    rf"ERROR loading file {temp_file.name} for parameter sigma\:\s+"
-                    rf"the \'date\' entries of the provided file do not include all the"
-                    rf" days specified to be modeled by\s+the config\. the provided "
-                    rf"file includes 5 days between {timeseries_start_date}"
-                    rf"( 00\:00\:00)? to {timeseries_end_date}( 00\:00\:00)?,\s+while "
-                    rf"there are 6 days in the config time span of {start_date}->"
-                    rf"{end_date}\. The file must contain entries for the\s+the exact "
-                    rf"start and end dates from the config\. "
-                ),
-            ):
-                Parameters(
-                    invalid_timeseries_parameters,
-                    ti=start_date,
-                    tf=end_date,
-                    subpop_names=subpop_names,
+        mock_inputs = factory(tmp_path)
+        tmp_file = None
+        for param_name, conf in mock_inputs.config.items():
+            if "timeseries" in conf:
+                df = mock_inputs.get_timeseries_df(param_name, subset_by_subpops=False)
+                actual_columns = len(df.columns)
+                if (
+                    actual_columns != mock_inputs.number_of_subpops()
+                    and actual_columns != 1
+                ):
+                    tmp_file = conf.get("timeseries")
+                    break
+        if tmp_file is None:
+            raise RuntimeError(
+                (
+                    "The given factory does not produce a timeseries "
+                    "with an insufficient number of columns."
                 )
+            )
+        with pytest.raises(
+            ValueError,
+            match=(
+                rf"^ERROR loading file {tmp_file} for parameter sigma\: the number of "
+                rf"non 'date'\s+columns are {actual_columns}, expected "
+                rf"{mock_inputs.number_of_subpops()} \(the number of subpops\) or "
+                rf"one\.$"
+            ),
+        ):
+            mock_inputs.create_parameters_instance()
 
-        # TODO: I'm not sure how to get to the second pathway to this error message.
-        # 1) We subset the read in dataframe to `ti` to `tf` so if the dataframe goes
-        # from 2024-01-01 through 2024-01-05 and the given date range is 2024-01-02
-        # through 2024-01-06 the dataframe's date range will be subsetted to 2024-01-02
-        # through 2024-01-05 which is a repeat of the above.
-        # 2) Because of the subsetting you can't provide anything except a monotonic
-        # increasing sequence of dates, pandas only allows subsetting on ordered date
-        # indexes so you'll get a different error.
-        # 3) If you provide a monotonic increasing sequence of dates but 'reverse' `ti`
-        # and `tf` you get no errors (which I think is also bad) because the slice
-        # operation returns an empty dataframe with the right columns & index and the
-        # `pd.date_range` function only creates monotonic increasing sequences and
-        # 0 == 0.
+    @pytest.mark.parametrize("factory", [(insufficient_dates_parameter_factory)])
+    def test_timeseries_parameter_has_insufficient_dates_value_error(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+    ) -> None:
+        mock_inputs = factory(tmp_path)
+
+        tmp_file = None
+        for param_name, conf in mock_inputs.config.items():
+            if "timeseries" in conf:
+                df = mock_inputs.get_timeseries_df(param_name)
+                timeseries_start_date = df.index.to_series().dt.date.min()
+                timeseries_end_date = df.index.to_series().dt.date.max()
+                if (
+                    (timeseries_start_date > mock_inputs.ti)
+                    or (timeseries_end_date < mock_inputs.tf)
+                    or (
+                        not pd.date_range(mock_inputs.ti, mock_inputs.tf)
+                        .isin(df.index)
+                        .all()
+                    )
+                ):
+                    tmp_file = conf.get("timeseries")
+                    break
+
+        if tmp_file is None:
+            raise RuntimeError(
+                (
+                    "The given factory does not produce a timeseries with an "
+                    "insufficient date range."
+                )
+            )
+
+        file_days = (timeseries_end_date - timeseries_start_date).days + 1
+        with pytest.raises(
+            ValueError,
+            match=(
+                rf"^ERROR loading file {tmp_file} for parameter sigma\:\s+the \'date\' "
+                rf"entries of the provided file do not include all the days specified "
+                rf"to be modeled by\s+the config\. the provided file includes "
+                rf"{(timeseries_end_date - timeseries_start_date).days + 1} days "
+                rf"between {timeseries_start_date}( 00\:00\:00)? to "
+                rf"{timeseries_end_date}( 00\:00\:00)?,\s+while there are "
+                rf"{mock_inputs.number_of_days()} days in the config time span of "
+                rf"{mock_inputs.ti}->{mock_inputs.tf}\. The file must contain entries "
+                rf"for the\s+the exact start and end dates from the config\. $"
+            ),
+        ):
+            mock_inputs.create_parameters_instance()
 
     @pytest.mark.parametrize(
         "factory",
