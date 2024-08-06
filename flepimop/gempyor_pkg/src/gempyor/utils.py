@@ -564,7 +564,7 @@ def create_resume_out_filename(
         flepi_slot_index: Index of the slot (str).
         flepi_block_index: Index of the block (str).
         filetype: File type (str).
-        liketype: (str).
+        liketype: Chimeric or global (str).
     
     Returns:
         The path to a corresponding output file.
@@ -598,7 +598,7 @@ def create_resume_input_filename(
         flepi_prefix: File prefix (str).
         flepi_slot_index: Index of thes lot (str).
         filetype: File type (str).
-        liketype: (str).
+        liketype: Chimeric or global (str).
     
     Returns:
         The path to the a corresponding input file.
