@@ -19,37 +19,6 @@ from gempyor.testing import (
 from gempyor.utils import random_distribution_sampler
 
 
-class MockData:
-    simple_timeseries_param_df = pd.DataFrame(
-        data={
-            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
-            "1": [1.2, 2.3, 3.4, 4.5, 5.6],
-            "2": [2.3, 3.4, 4.5, 5.6, 6.7],
-        }
-    )
-
-    simple_inputs = {
-        "parameter_config": create_confuse_subview_from_dict(
-            "parameters", {"sigma": {"value": 0.1}}
-        ),
-        "ti": date(2024, 1, 1),
-        "tf": date(2024, 1, 10),
-        "subpop_names": ["1", "2", "3"],
-    }
-
-    small_inputs = {
-        "parameter_config": create_confuse_subview_from_dict(
-            "parameters",
-            {"sigma": {"value": 0.1}, "gamma": {"value": 0.2}, "eta": {"value": 0.3}},
-        ),
-        "ti": date(2024, 1, 1),
-        "tf": date(2024, 1, 31),
-        "subpop_names": ["1", "2"],
-    }
-
-    empty_param_overrides_df = pd.DataFrame(data={"parameter": [], "value": []})
-
-
 class MockParametersInput:
     def __init__(
         self,
@@ -152,7 +121,13 @@ def distribution_three_valid_parameter_factory(
 
 def valid_parameters_factory(tmp_path: pathlib.Path) -> MockParametersInput:
     tmp_file = tmp_path / f"{uuid4().hex}.csv"
-    df = MockData.simple_timeseries_param_df.copy()
+    df = pd.DataFrame(
+        data={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 5)),
+            "1": [1.2, 2.3, 3.4, 4.5, 5.6],
+            "2": [2.3, 3.4, 4.5, 5.6, 6.7],
+        }
+    )
     df.to_csv(tmp_file, index=False)
     return MockParametersInput(
         config={
@@ -554,37 +529,67 @@ class TestParameters:
         [
             (
                 fixed_three_valid_parameter_factory,
-                MockData.empty_param_overrides_df,
+                pd.DataFrame(data={"parameter": [], "value": []}),
                 None,
                 None,
             ),
             (
                 fixed_three_valid_parameter_factory,
-                MockData.empty_param_overrides_df,
+                pd.DataFrame(data={"parameter": [], "value": []}),
+                4,
+                2,
+            ),
+            (
+                fixed_three_valid_parameter_factory,
+                pd.DataFrame(data={"parameter": ["sigma"], "value": [-0.123]}),
+                None,
+                None,
+            ),
+            (
+                fixed_three_valid_parameter_factory,
+                pd.DataFrame(data={"parameter": ["sigma"], "value": [-0.123]}),
                 4,
                 2,
             ),
             (
                 distribution_three_valid_parameter_factory,
-                MockData.empty_param_overrides_df,
+                pd.DataFrame(data={"parameter": [], "value": []}),
                 None,
                 None,
             ),
             (
                 distribution_three_valid_parameter_factory,
-                MockData.empty_param_overrides_df,
+                pd.DataFrame(data={"parameter": [], "value": []}),
                 5,
                 2,
             ),
             (
-                valid_parameters_factory,
-                MockData.empty_param_overrides_df,
+                distribution_three_valid_parameter_factory,
+                pd.DataFrame(data={"parameter": ["nu", "alpha"], "value": [-9.9, 0.0]}),
                 None,
                 None,
             ),
             (
                 valid_parameters_factory,
-                MockData.empty_param_overrides_df,
+                pd.DataFrame(data={"parameter": [], "value": []}),
+                None,
+                None,
+            ),
+            (
+                valid_parameters_factory,
+                pd.DataFrame(data={"parameter": [], "value": []}),
+                13,
+                2,
+            ),
+            (
+                valid_parameters_factory,
+                pd.DataFrame(data={"parameter": ["Ro", "Ro"], "value": [2.5, 3.6]}),
+                None,
+                None,
+            ),
+            (
+                valid_parameters_factory,
+                pd.DataFrame(data={"parameter": ["Ro", "Ro"], "value": [2.5, 3.6]}),
                 13,
                 2,
             ),
@@ -641,7 +646,7 @@ class TestParameters:
                     assert np.allclose(
                         p_draw[i, :, :],
                         param_df[param_df["parameter"] == param_name]
-                        .get("value")
+                        .iloc[0]["value"]
                         .item(),
                     )
                 elif "timeseries" in conf:
