@@ -2,7 +2,9 @@ from datetime import date
 from functools import partial
 import pathlib
 from typing import Any, Callable
+from uuid import uuid4
 
+import confuse
 import numpy as np
 import pandas as pd
 import pytest
@@ -63,12 +65,18 @@ class MockParametersInput:
         self.subpop_names = subpop_names
         self.path_prefix = path_prefix
         self._timeseries_dfs = {}
+        self._confuse_subview = None
+
+    def create_confuse_subview(self) -> confuse.Subview:
+        if self._confuse_subview is None:
+            self._confuse_subview = create_confuse_subview_from_dict(
+                "parameters", self.config
+            )
+        return self._confuse_subview
 
     def create_parameters_instance(self) -> Parameters:
         return Parameters(
-            parameter_config=create_confuse_subview_from_dict(
-                "parameters", self.config
-            ),
+            parameter_config=self.create_confuse_subview(),
             ti=self.ti,
             tf=self.tf,
             subpop_names=self.subpop_names,
@@ -109,7 +117,8 @@ class MockParametersInput:
             raise ValueError(
                 f"The given param '{param_name}' does not have a timeseries dataframe."
             )
-        df = pd.read_csv(df_file, index_col="date")
+        df = pd.read_csv(df_file, index_col=None)
+        df["date"] = pd.to_datetime(df["date"])
         self._timeseries_dfs[param_name] = df
         return df.copy()
 
@@ -138,35 +147,20 @@ def distribution_three_valid_parameter_factory(
     )
 
 
-def valid_parameters_factory(
-    tmp_path: pathlib.Path,
-) -> tuple[dict[str, pd.DataFrame], dict[str, dict[str, Any]]]:
-    """
-    Factory for creating small and valid set of parameters.
-
-    Creates the configuration for three parameters:
-    - 'sigma': A time series,
-    - 'gamma': A fixed value of 0.1234 with a sum stacked modifier,
-    - 'Ro': A uniform distribution between 1 and 2.
-
-    Args:
-        tmp_path: A temporary file path, typically provided by pytest's `tmp_path`
-            fixture.
-
-    Returns:
-        A tuple of a dictionary of pandas DataFrames where the keys are the parameter
-        names and the values are time series values and a dictionary of configuration
-        values that can be converted to a confuse subview.
-    """
-    tmp_file = tmp_path / "valid_parameters_factory_df.csv"
+def valid_parameters_factory(tmp_path: pathlib.Path) -> MockParametersInput:
+    tmp_file = tmp_path / f"{uuid4().hex}.csv"
     df = MockData.simple_timeseries_param_df.copy()
     df.to_csv(tmp_file, index=False)
-    params = {
-        "sigma": {"timeseries": str(tmp_file.absolute())},
-        "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
-        "Ro": {"value": {"distribution": "uniform", "low": 1.0, "high": 2.0}},
-    }
-    return [{"sigma": df}, params]
+    return MockParametersInput(
+        config={
+            "sigma": {"timeseries": str(tmp_file.absolute())},
+            "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+            "Ro": {"value": {"distribution": "uniform", "low": 1.0, "high": 2.0}},
+        },
+        ti=df["date"].dt.date.min(),
+        tf=df["date"].dt.date.max(),
+        subpop_names=[c for c in df.columns.to_list() if c != "date"],
+    )
 
 
 class TestParameters:
@@ -271,56 +265,28 @@ class TestParameters:
     def test_parameters_instance_attributes(
         self,
         tmp_path: pathlib.Path,
-        factory: Callable[
-            [pathlib.Path], tuple[dict[str, pd.DataFrame], dict[str, dict[str, Any]]]
-        ],
+        factory: Callable[[pathlib.Path], MockParametersInput],
     ) -> None:
         # Setup
-        timeseries_dfs, param_config = factory(tmp_path)
-        if timeseries_dfs:
-            start_date = None
-            end_date = None
-            subpop_names = []
-            for _, df in timeseries_dfs.items():
-                df_start_date = df["date"].dt.date.min()
-                if start_date is None or df_start_date < start_date:
-                    start_date = df_start_date
-                df_end_date = df["date"].dt.date.max()
-                if end_date is None or df_end_date > end_date:
-                    end_date = df_end_date
-                if df.shape[1] > 2:
-                    subpop_names += [c for c in df.columns.to_list() if c != "date"]
-            if not subpop_names:
-                subpop_names = ["1", "2"]  # filler value if all time series are 1 value
-        else:
-            start_date = date(2024, 1, 1)
-            end_date = date(2024, 1, 5)
-            subpop_names = ["1", "2"]
-
-        valid_parameters = create_confuse_subview_from_dict("parameters", param_config)
-        params = Parameters(
-            valid_parameters,
-            ti=start_date,
-            tf=end_date,
-            subpop_names=subpop_names,
-        )
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
 
         # The `npar` attribute
-        assert params.npar == len(param_config)
+        assert params.npar == mock_inputs.number_of_parameters()
 
         # The `pconfig` attribute
-        assert params.pconfig == valid_parameters
+        assert params.pconfig == mock_inputs.create_confuse_subview()
 
         # The `pdata` attribute
-        assert set(params.pdata.keys()) == set(param_config.keys())
-        for param_name, param_conf in param_config.items():
+        assert set(params.pdata.keys()) == set(mock_inputs.config.keys())
+        for param_name, param_conf in mock_inputs.config.items():
             assert params.pdata[param_name]["idx"] == params.pnames2pindex[param_name]
             assert params.pdata[param_name][
                 "stacked_modifier_method"
             ] == param_conf.get("stacked_modifier_method", "product")
             if "timeseries" in param_conf:
                 assert params.pdata[param_name]["ts"].equals(
-                    timeseries_dfs[param_name].set_index("date")
+                    mock_inputs.get_timeseries_df(param_name).set_index("date")
                 )
             elif isinstance(params.pdata[param_name]["dist"], partial):
                 if isinstance(param_conf.get("value"), float):
@@ -356,11 +322,11 @@ class TestParameters:
                 )
 
         # The `pnames` attribute
-        assert params.pnames == list(param_config.keys())
+        assert params.pnames == list(mock_inputs.config.keys())
 
         # The `pnames2pindex` attribute
         assert params.pnames2pindex == {
-            key: idx for idx, key in enumerate(param_config.keys())
+            key: idx for idx, key in enumerate(mock_inputs.config.keys())
         }
 
         # # The `stacked_modifier_method` attribute
@@ -369,7 +335,7 @@ class TestParameters:
             "product": [],
             "reduction_product": [],
         }
-        for param_name, param_conf in param_config.items():
+        for param_name, param_conf in mock_inputs.config.items():
             modifier_type = param_conf.get("stacked_modifier_method", "product")
             expected_stacked_modifier_method[modifier_type].append(param_name.lower())
         assert params.stacked_modifier_method == expected_stacked_modifier_method
