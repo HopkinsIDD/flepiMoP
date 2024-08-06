@@ -350,13 +350,22 @@ class TestParameters:
         assert params.stacked_modifier_method == expected_stacked_modifier_method
 
     @pytest.mark.parametrize(
-        "parameters_inputs,alpha_val", [(MockData.simple_inputs, None)]
+        "factory,alpha_val",
+        [
+            (fixed_three_valid_parameter_factory, None),
+            (fixed_three_valid_parameter_factory, 123),
+            (valid_parameters_factory, "abc"),
+        ],
     )
     def test_picklable_lamda_alpha(
-        self, parameters_inputs: dict[str, Any], alpha_val: Any
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+        alpha_val: Any,
     ) -> None:
         # Setup
-        params = Parameters(**parameters_inputs)
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
 
         # Attribute error if `alpha_val` is not set
         with pytest.raises(AttributeError):
@@ -367,13 +376,22 @@ class TestParameters:
         assert params.picklable_lamda_alpha() == alpha_val
 
     @pytest.mark.parametrize(
-        "parameters_inputs,sigma_val", [(MockData.simple_inputs, None)]
+        "factory,sigma_val",
+        [
+            (fixed_three_valid_parameter_factory, None),
+            (fixed_three_valid_parameter_factory, 123),
+            (valid_parameters_factory, "abc"),
+        ],
     )
     def test_picklable_lamda_sigma(
-        self, parameters_inputs: dict[str, Any], sigma_val: Any
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+        sigma_val: Any,
     ) -> None:
         # Setup
-        params = Parameters(**parameters_inputs)
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
 
         # Attribute error if `sigma_val` is not set
         with pytest.raises(AttributeError):
@@ -384,14 +402,26 @@ class TestParameters:
         assert params.picklable_lamda_sigma() == sigma_val
 
     @pytest.mark.parametrize(
-        "parameters_inputs", [(MockData.simple_inputs), (MockData.small_inputs)]
+        "factory",
+        [
+            (fixed_three_valid_parameter_factory),
+            (distribution_three_valid_parameter_factory),
+            (valid_parameters_factory),
+        ],
     )
-    def test_get_pnames2pindex(self, parameters_inputs: dict[str, Any]) -> None:
-        params = Parameters(**parameters_inputs)
+    def test_get_pnames2pindex(
+        self,
+        tmp_path: pathlib.Path,
+        factory: Callable[[pathlib.Path], MockParametersInput],
+    ) -> None:
+        # Setup
+        mock_inputs = factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
+
+        # Assertions
         assert params.get_pnames2pindex() == params.pnames2pindex
         assert params.pnames2pindex == {
-            key: idx
-            for idx, key in enumerate(parameters_inputs["parameter_config"].keys())
+            key: idx for idx, key in enumerate(mock_inputs.config.keys())
         }
 
     @pytest.mark.parametrize(
