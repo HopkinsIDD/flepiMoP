@@ -10,15 +10,17 @@ __all__ = [
     "create_confuse_rootview_from_dict",
     "create_confuse_subview_from_dict",
     "partials_are_similar",
+    "sample_fits_distribution",
 ]
 
 from collections.abc import Generator
 import functools
 import os
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, Literal
 
 import confuse
+import numpy as np
 import pytest
 
 
@@ -155,3 +157,76 @@ def partials_are_similar(
     elif check_keywords and f.keywords != g.keywords:
         return False
     return True
+
+
+def sample_fits_distribution(
+    sample: float | int,
+    distribution: Literal[
+        "fixed", "uniform", "poisson", "binomial", "truncnorm", "lognorm"
+    ],
+    **kwargs: dict[str, Any],
+) -> bool:
+    """
+    Test if a sample fits a distribution with a given set of parameters.
+
+    This function tests if the given `sample` could possibly be drawn from the
+    distribution given with its parameters, but it does not test if it could reasonably
+    be drawn from that distribution.
+
+    Args:
+        sample: The value to test.
+        distribution: The name of the distribution to test against.
+        **kwargs: Further arguments to specify the parameters of a distribution.
+
+    Returns:
+        A boolean indicating if the sample given could be from the distribution.
+
+    See Also:
+        gempyor.utils.random_distribution_sampler
+
+    Examples:
+        >>> sample_fits_distribution(0.0, "fixed", value=0.0)
+        True
+        >>> sample_fits_distribution(0.0, "fixed", value=0.5)
+        False
+        >>> sample_fits_distribution(0.5, "poisson", lam=3.0)
+        False
+        >>> sample_fits_distribution(
+        ...     -3.5, "truncnorm", a=-5.5, b=3.4, mean=-1.4, sd=1.1
+        ... )
+        True
+        >>> sample_fits_distribution(100000000, "lognorm", meanlog=1.0, sdlog=1.0)
+        True
+    """
+    # Poisson and binomial only have support on a subset of the integers
+    if distribution in ["poisson", "binomial"] and not (
+        isinstance(sample, int) or (isinstance(sample, float) and sample.is_integer())
+    ):
+        return False
+    # Now check distribution constraints
+    if distribution == "fixed":
+        return bool(np.isclose(sample, kwargs.get("value")))
+    elif distribution == "uniform":
+        # Uniform is on [low,high), but want uniform to match fixed when low == high.
+        return bool(
+            (
+                np.isclose(kwargs.get("high"), kwargs.get("low"))
+                and np.isclose(sample, kwargs.get("low"))
+            )
+            or (
+                np.greater_equal(sample, kwargs.get("low"))
+                and np.less(sample, kwargs.get("high"))
+            )
+        )
+    elif distribution == "poisson":
+        return bool(np.greater_equal(sample, 0.0))
+    elif distribution == "binomial":
+        return bool(
+            np.greater_equal(sample, 0.0) and np.less_equal(sample, kwargs.get("n"))
+        )
+    elif distribution == "truncnorm":
+        return bool(
+            np.greater(sample, kwargs.get("a")) and np.less(sample, kwargs.get("b"))
+        )
+    elif distribution == "lognorm":
+        return bool(np.greater(sample, 0.0))
