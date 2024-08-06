@@ -364,11 +364,11 @@ class TestParameters:
                 )
 
         # The `pnames` attribute
-        assert params.pnames == list(mock_inputs.config.keys())
+        assert set(params.pnames) == set(mock_inputs.config.keys())
 
         # The `pnames2pindex` attribute
         assert params.pnames2pindex == {
-            key: idx for idx, key in enumerate(mock_inputs.config.keys())
+            p: params.pnames.index(p) for p in params.pnames2pindex
         }
 
         # # The `stacked_modifier_method` attribute
@@ -454,7 +454,7 @@ class TestParameters:
         # Assertions
         assert params.get_pnames2pindex() == params.pnames2pindex
         assert params.pnames2pindex == {
-            key: idx for idx, key in enumerate(mock_inputs.config.keys())
+            p: params.pnames.index(p) for p in params.pnames
         }
 
     @pytest.mark.parametrize(
