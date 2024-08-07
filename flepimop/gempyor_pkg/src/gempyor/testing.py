@@ -7,8 +7,7 @@ the optional test dependencies must be installed.
 
 __all__ = [
     "change_directory_to_temp_directory",
-    "create_confuse_rootview_from_dict",
-    "create_confuse_subview_from_dict",
+    "create_confuse_configview_from_dict",
     "partials_are_similar",
     "sample_fits_distribution",
 ]
@@ -44,15 +43,19 @@ def change_directory_to_temp_directory() -> Generator[None, None, None]:
     temp_dir.cleanup()
 
 
-def create_confuse_rootview_from_dict(data: dict[str, Any]) -> confuse.RootView:
+def create_confuse_configview_from_dict(
+    data: dict[str, Any], name: None | str = None
+) -> confuse.ConfigView:
     """
-    Create a RootView from a dictionary for unit testing confuse parameters.
+    Create a ConfigView from a dictionary for unit testing confuse parameters.
 
     Args:
-        data: The data to populate the confuse root view with.
+        data: The data to populate the confuse ConfigView with.
+        name: The name of the Subview being created or if is `None` a RootView is
+            created instead.
 
     Returns:
-        A confuse root view.
+        Either a confuse Subview or RootView depending on the value of `name`.
 
     Examples:
         >>> data = {
@@ -61,7 +64,7 @@ def create_confuse_rootview_from_dict(data: dict[str, Any]) -> confuse.RootView:
         ...     "alphabet": ["a", "b", "c"],
         ...     "mapping": {"x": 1, "y": 2},
         ... }
-        >>> rv = create_confuse_rootview_from_dict(data)
+        >>> rv = create_confuse_configview_from_dict(data)
         >>> rv
         <RootView: root>
         >>> rv.keys()
@@ -72,31 +75,7 @@ def create_confuse_rootview_from_dict(data: dict[str, Any]) -> confuse.RootView:
         True
         >>> rv.name
         'root'
-    """
-    return confuse.RootView([confuse.ConfigSource.of(data)])
-
-
-def create_confuse_subview_from_dict(
-    name: str, data: dict[str, Any]
-) -> confuse.Subview:
-    """
-    Create a Subview from a dictionary for unit testing confuse parameters.
-
-    Args:
-        name: The name of the subview being created.
-        data: The data to populate the confuse subview with.
-
-    Returns:
-        A confuse subview.
-
-    Examples:
-        >>> data = {
-        ...     "foo": "bar",
-        ...     "fizz": 123,
-        ...     "alphabet": ["a", "b", "c"],
-        ...     "mapping": {"x": 1, "y": 2},
-        ... }
-        >>> sv = create_confuse_subview_from_dict("params", data)
+        >>> sv = create_confuse_configview_from_dict(data, "params")
         >>> sv
         <Subview: params>
         >>> sv.keys()
@@ -108,8 +87,10 @@ def create_confuse_subview_from_dict(
         >>> sv.name
         'params'
     """
-    root_view = create_confuse_rootview_from_dict({name: data})
-    return root_view[name]
+    data = {name: data} if name is not None else data
+    cv = confuse.RootView([confuse.ConfigSource.of(data)])
+    cv = cv[name] if name is not None else cv
+    return cv
 
 
 def partials_are_similar(
