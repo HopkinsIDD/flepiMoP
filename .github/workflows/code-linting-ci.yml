@@ -1,0 +1,32 @@
+name: Code Linting
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**/*.py'
+    branches:
+      - main
+      - dev
+  pull_request:
+    paths:
+      - '**/*.py'
+    branches:
+      - main
+      - dev
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: hopkinsidd/flepimop:latest-dev
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Black Formatter Check
+        uses: psf/black@stable
+        src: "."
+        options: "--check --quiet"
