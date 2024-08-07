@@ -40,15 +40,20 @@ Before committing, make sure you **format your code** using black (see below) an
 
 ### Formatting
 
-We try to remain close to python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull-requests. It provides a consistent style, which is useful when diffing. We use a custom length of 120 characters as the baseline is short for scientific code. Here is the line to use to format your code:
+{% hint style="info" %}
+Code formatters are necessary, but not sufficient for well formatted code and further style changes may be requested in PRs. Furthermore, the formatting/linting requirements for code contributed to `flepiMoP` are likely to be enhanced in the future and those changes will be reflected here when they come.
+{% endhint %}
+
+For python code formatting the [black](https://black.readthedocs.io/en/stable/) code formatter is applied to all edits to python files being merged into `flepiMoP`. For installation and detailed usage guides please refer to the black documentation. For most use cases the following commands are sufficient:
 
 ```bash
-black --line-length 120 . --exclude renv*
+# See what style changes need to be made
+black --diff .
+# Reformat the python files automatically
+black .
+# Check if current work would be allowed to merged into flepiMoP
+black --check .
 ```
-
-{% hint style="warning" %}
-Please use type-hints as much as possible, as we are trying to move towards static checks.
-{% endhint %}
 
 ### Structure of the main classes
 
