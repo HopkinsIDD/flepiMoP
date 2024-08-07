@@ -27,7 +27,9 @@ class SubpopulationStructure:
 
         self.setup_name = setup_name
         self.data = pd.read_csv(
-            geodata_file, converters={subpop_names_key: lambda x: str(x).strip()}, skipinitialspace=True
+            geodata_file,
+            converters={subpop_names_key: lambda x: str(x).strip()},
+            skipinitialspace=True,
         )  # subpops and populations, strip whitespaces
         self.nsubpops = len(self.data)  # K = # of locations
 
@@ -44,7 +46,9 @@ class SubpopulationStructure:
 
         # subpop_names_key is the name of the column in geodata_file with subpops
         if subpop_names_key not in self.data:
-            raise ValueError(f"subpop_names_key: {subpop_names_key} does not correspond to a column in geodata.")
+            raise ValueError(
+                f"subpop_names_key: {subpop_names_key} does not correspond to a column in geodata."
+            )
         self.subpop_names = self.data[subpop_names_key].tolist()
         if len(self.subpop_names) != len(set(self.subpop_names)):
             raise ValueError(f"There are duplicate subpop_names in geodata.")
@@ -53,7 +57,9 @@ class SubpopulationStructure:
             mobility_file = path_prefix / subpop_config["mobility"].get()
             mobility_file = pathlib.Path(mobility_file)
             if mobility_file.suffix == ".txt":
-                print("Mobility files as matrices are not recommended. Please switch soon to long form csv files.")
+                print(
+                    "Mobility files as matrices are not recommended. Please switch soon to long form csv files."
+                )
                 self.mobility = scipy.sparse.csr_matrix(
                     np.loadtxt(mobility_file), dtype=int
                 )  # K x K matrix of people moving
@@ -64,17 +70,28 @@ class SubpopulationStructure:
                     )
 
             elif mobility_file.suffix == ".csv":
-                mobility_data = pd.read_csv(mobility_file, converters={"ori": str, "dest": str}, skipinitialspace=True)
+                mobility_data = pd.read_csv(
+                    mobility_file,
+                    converters={"ori": str, "dest": str},
+                    skipinitialspace=True,
+                )
                 nn_dict = {v: k for k, v in enumerate(self.subpop_names)}
-                mobility_data["ori_idx"] = mobility_data["ori"].apply(nn_dict.__getitem__)
-                mobility_data["dest_idx"] = mobility_data["dest"].apply(nn_dict.__getitem__)
+                mobility_data["ori_idx"] = mobility_data["ori"].apply(
+                    nn_dict.__getitem__
+                )
+                mobility_data["dest_idx"] = mobility_data["dest"].apply(
+                    nn_dict.__getitem__
+                )
                 if any(mobility_data["ori_idx"] == mobility_data["dest_idx"]):
                     raise ValueError(
                         f"Mobility fluxes with same origin and destination in long form matrix. This is not supported"
                     )
 
                 self.mobility = scipy.sparse.coo_matrix(
-                    (mobility_data.amount, (mobility_data.ori_idx, mobility_data.dest_idx)),
+                    (
+                        mobility_data.amount,
+                        (mobility_data.ori_idx, mobility_data.dest_idx),
+                    ),
                     shape=(self.nsubpops, self.nsubpops),
                     dtype=int,
                 ).tocsr()
@@ -115,7 +132,9 @@ class SubpopulationStructure:
                 )
         else:
             logging.critical("No mobility matrix specified -- assuming no one moves")
-            self.mobility = scipy.sparse.csr_matrix(np.zeros((self.nsubpops, self.nsubpops)), dtype=int)
+            self.mobility = scipy.sparse.csr_matrix(
+                np.zeros((self.nsubpops, self.nsubpops)), dtype=int
+            )
 
         if subpop_config["selected"].exists():
             selected = subpop_config["selected"].get()
@@ -129,4 +148,6 @@ class SubpopulationStructure:
             self.subpop_names = selected
             self.nsubpops = len(self.data)
             # TODO: this needs to be tested
-            self.mobility = self.mobility[selected_subpop_indices][:, selected_subpop_indices]
+            self.mobility = self.mobility[selected_subpop_indices][
+                :, selected_subpop_indices
+            ]

@@ -53,7 +53,11 @@ def ode_integration(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -65,7 +69,9 @@ def ode_integration(
     def rhs(t, x, today):
         print("rhs.t", t)
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -80,52 +86,72 @@ def ode_integration(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -142,9 +168,15 @@ def ode_integration(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return np.reshape(states_diff, states_diff.size)  # return a 1D vector
@@ -168,18 +200,24 @@ def ode_integration(
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
                 seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                seeding_destinations = seeding_data["seeding_destinations"][
+                    seeding_instance_idx
+                ]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
                 states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                    states_next[seeding_sources][seeding_subpops] > 0
-                )
-                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[
+                    seeding_sources
+                ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
+                states_next[seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 ### Shape
 
@@ -257,7 +295,11 @@ def rk4_integration1(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -267,7 +309,9 @@ def rk4_integration1(
 
     def rhs(t, x, today):
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -282,52 +326,72 @@ def rk4_integration1(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -344,9 +408,15 @@ def rk4_integration1(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return np.reshape(states_diff, states_diff.size)  # return a 1D vector
@@ -380,18 +450,24 @@ def rk4_integration1(
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
                 seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                seeding_destinations = seeding_data["seeding_destinations"][
+                    seeding_instance_idx
+                ]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
                 states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                    states_next[seeding_sources][seeding_subpops] > 0
-                )
-                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[
+                    seeding_sources
+                ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
+                states_next[seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 ### Shape
 
@@ -447,7 +523,11 @@ def rk4_integration2(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -458,7 +538,9 @@ def rk4_integration2(
     @jit(nopython=True)
     def rhs(t, x, today):
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -473,52 +555,72 @@ def rk4_integration2(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -535,9 +637,15 @@ def rk4_integration2(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return np.reshape(states_diff, states_diff.size)  # return a 1D vector
@@ -572,18 +680,24 @@ def rk4_integration2(
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
                 seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                seeding_destinations = seeding_data["seeding_destinations"][
+                    seeding_instance_idx
+                ]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
                 states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                    states_next[seeding_sources][seeding_subpops] > 0
-                )
-                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[
+                    seeding_sources
+                ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
+                states_next[seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 ### Shape
 
@@ -644,7 +758,11 @@ def rk4_integration3(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -655,7 +773,9 @@ def rk4_integration3(
     @jit(nopython=True)
     def rhs(t, x, today):
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -670,52 +790,72 @@ def rk4_integration3(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -732,9 +872,15 @@ def rk4_integration3(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return np.reshape(states_diff, states_diff.size)  # return a 1D vector
@@ -753,16 +899,18 @@ def rk4_integration3(
     @jit(nopython=True)
     def day_wrapper_rk4(today, states_next):
         x_ = np.zeros((2, ncompartments, nspatial_nodes))
-        for seeding_instance_idx in range(day_start_idx_dict[today], day_start_idx_dict[today + 1]):
+        for seeding_instance_idx in range(
+            day_start_idx_dict[today], day_start_idx_dict[today + 1]
+        ):
             this_seeding_amounts = seeding_amounts[seeding_instance_idx]
             seeding_subpops = seeding_subpops_dict[seeding_instance_idx]
             seeding_sources = seeding_sources_dict[seeding_instance_idx]
             seeding_destinations = seeding_destinations_dict[seeding_instance_idx]
             # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
             states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-            states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                states_next[seeding_sources][seeding_subpops] > 0
-            )
+            states_next[seeding_sources][seeding_subpops] = states_next[
+                seeding_sources
+            ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
             states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
 
             # ADD TO cumulative, this is debatable,
@@ -838,7 +986,11 @@ def rk4_integration4(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -849,7 +1001,9 @@ def rk4_integration4(
     @jit(nopython=True)  # , fastmath=True, parallel=True)
     def rhs(t, x, today):
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -864,52 +1018,72 @@ def rk4_integration4(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -926,9 +1100,15 @@ def rk4_integration4(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return np.reshape(states_diff, states_diff.size)  # return a 1D vector
@@ -963,18 +1143,24 @@ def rk4_integration4(
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
                 seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                seeding_destinations = seeding_data["seeding_destinations"][
+                    seeding_instance_idx
+                ]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
                 states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                    states_next[seeding_sources][seeding_subpops] > 0
-                )
-                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[
+                    seeding_sources
+                ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
+                states_next[seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 ### Shape
 
@@ -1031,7 +1217,11 @@ def rk4_integration5(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -1058,18 +1248,24 @@ def rk4_integration5(
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
                 seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                seeding_destinations = seeding_data["seeding_destinations"][
+                    seeding_instance_idx
+                ]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
                 states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                    states_next[seeding_sources][seeding_subpops] > 0
-                )
-                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[
+                    seeding_sources
+                ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
+                states_next[seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 ### Shape
 
@@ -1092,7 +1288,9 @@ def rk4_integration5(
                 x = x_ + kx[i - 1] * rk_coefs[i]
 
                 states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-                states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+                states_diff = np.zeros(
+                    (2, ncompartments, nspatial_nodes)
+                )  # first dim: 0 -> states_diff, 1: states_cum
 
                 for transition_index in range(ntransitions):
                     total_rate = np.ones((nspatial_nodes))
@@ -1104,48 +1302,72 @@ def rk4_integration5(
                         relevant_number_in_comp = np.zeros((nspatial_nodes))
                         relevant_exponent = np.ones((nspatial_nodes))
                         for proportion_sum_index in range(
-                            proportion_info[proportion_sum_starts_col][proportion_index],
+                            proportion_info[proportion_sum_starts_col][
+                                proportion_index
+                            ],
                             proportion_info[proportion_sum_stops_col][proportion_index],
                         ):
-                            relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
-                            # exponents should not be a proportion, since we don't sum them over sum compartments
-                            relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][
-                                today
+                            relevant_number_in_comp += states_current[
+                                transition_sum_compartments[proportion_sum_index]
                             ]
+                            # exponents should not be a proportion, since we don't sum them over sum compartments
+                            relevant_exponent = parameters[
+                                proportion_info[proportion_exponent_col][
+                                    proportion_index
+                                ]
+                            ][today]
                         if first_proportion:
                             only_one_proportion = (
-                                transitions[transition_proportion_start_col][transition_index] + 1
-                            ) == transitions[transition_proportion_stop_col][transition_index]
+                                transitions[transition_proportion_start_col][
+                                    transition_index
+                                ]
+                                + 1
+                            ) == transitions[transition_proportion_stop_col][
+                                transition_index
+                            ]
                             first_proportion = False
                             source_number = relevant_number_in_comp
                             if source_number.max() > 0:
                                 total_rate[source_number > 0] *= (
-                                    source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                                    source_number[source_number > 0]
+                                    ** relevant_exponent[source_number > 0]
                                     / source_number[source_number > 0]
                                 )
                             if only_one_proportion:
-                                total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                                total_rate *= parameters[
+                                    transitions[transition_rate_col][transition_index]
+                                ][today]
                         else:
                             for spatial_node in range(nspatial_nodes):
-                                proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                                proportion_keep_compartment = (
+                                    1
+                                    - percent_day_away * percent_who_move[spatial_node]
+                                )
                                 proportion_change_compartment = (
                                     percent_day_away
                                     * mobility_data[
-                                        mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                        mobility_data_indices[
+                                            spatial_node
+                                        ] : mobility_data_indices[spatial_node + 1]
                                     ]
                                     / population[spatial_node]
                                 )
                                 rate_keep_compartment = (
                                     proportion_keep_compartment
-                                    * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                                    * relevant_number_in_comp[spatial_node]
+                                    ** relevant_exponent[spatial_node]
                                     / population[spatial_node]
-                                    * parameters[transitions[transition_rate_col][transition_index]][today][
-                                        spatial_node
-                                    ]
+                                    * parameters[
+                                        transitions[transition_rate_col][
+                                            transition_index
+                                        ]
+                                    ][today][spatial_node]
                                 )
 
                                 visiting_compartment = mobility_row_indices[
-                                    mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                    mobility_data_indices[
+                                        spatial_node
+                                    ] : mobility_data_indices[spatial_node + 1]
                                 ]
 
                                 rate_change_compartment = proportion_change_compartment
@@ -1153,11 +1375,16 @@ def rk4_integration5(
                                     relevant_number_in_comp[visiting_compartment]
                                     ** relevant_exponent[visiting_compartment]
                                 )
-                                rate_change_compartment /= population[visiting_compartment]
+                                rate_change_compartment /= population[
+                                    visiting_compartment
+                                ]
                                 rate_change_compartment *= parameters[
                                     transitions[transition_rate_col][transition_index]
                                 ][today][visiting_compartment]
-                                total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                                total_rate[spatial_node] *= (
+                                    rate_keep_compartment
+                                    + rate_change_compartment.sum()
+                                )
 
                     # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -1169,13 +1396,19 @@ def rk4_integration5(
                     #        )
                     # else:
                     if True:
-                        number_move = source_number * total_rate  # * compound_adjusted_rate
+                        number_move = (
+                            source_number * total_rate
+                        )  # * compound_adjusted_rate
                     # for spatial_node in range(nspatial_nodes):
                     # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
                     #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
                     # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-                    states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-                    states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
+                    states_diff[
+                        0, transitions[transition_source_col][transition_index]
+                    ] -= number_move
+                    states_diff[
+                        0, transitions[transition_destination_col][transition_index]
+                    ] += number_move
                     states_diff[
                         1, transitions[transition_destination_col][transition_index], :
                     ] += number_move  # Cumumlative
@@ -1234,7 +1467,11 @@ def rk4_integration2_smart(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -1248,7 +1485,9 @@ def rk4_integration2_smart(
         if (today) > ndays:
             today = ndays - 1
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -1263,52 +1502,72 @@ def rk4_integration2_smart(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -1325,9 +1584,15 @@ def rk4_integration2_smart(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return np.reshape(states_diff, states_diff.size)  # return a 1D vector
@@ -1372,20 +1637,34 @@ def rk4_integration2_smart(
                     seeding_data["day_start_idx"][today + 1],
                 ):
                     this_seeding_amounts = seeding_amounts[seeding_instance_idx]
-                    seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
-                    seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                    seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                    seeding_subpops = seeding_data["seeding_subpops"][
+                        seeding_instance_idx
+                    ]
+                    seeding_sources = seeding_data["seeding_sources"][
+                        seeding_instance_idx
+                    ]
+                    seeding_destinations = seeding_data["seeding_destinations"][
+                        seeding_instance_idx
+                    ]
                     # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
-                    states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                    states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
+                    states_next[seeding_sources][
+                        seeding_subpops
+                    ] -= this_seeding_amounts
+                    states_next[seeding_sources][seeding_subpops] = states_next[
+                        seeding_sources
+                    ][seeding_subpops] * (
                         states_next[seeding_sources][seeding_subpops] > 0
                     )
-                    states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                    states_next[seeding_destinations][
+                        seeding_subpops
+                    ] += this_seeding_amounts
 
                     total_seeded += this_seeding_amounts
                     times_seeded += 1
                     # ADD TO cumulative, this is debatable,
-                    states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                    states_daily_incid[today][seeding_destinations][
+                        seeding_subpops
+                    ] += this_seeding_amounts
 
                     ### Shape
 
@@ -1450,9 +1729,12 @@ cc.verbose = True
     ## Return
     "UniTuple(float64[:, :, :], 2) ("  ## return states and cumlative states, both [ ndays x ncompartments x nspatial_nodes ]
     ## Dimensions
-    "int32," "int32," "int32,"  ## ncompartments  ## nspatial_nodes  ## Number of days
+    "int32,"
+    "int32,"
+    "int32,"  ## ncompartments  ## nspatial_nodes  ## Number of days
     ## Parameters
-    "float64[:, :, :]," "float64,"  ## Parameters [ nparameters x ndays x nspatial_nodes]  ## dt
+    "float64[:, :, :],"
+    "float64,"  ## Parameters [ nparameters x ndays x nspatial_nodes]  ## dt
     ## Transitions
     "int64[:, :],"  ## transitions [ [source, destination, proportion_start, proportion_stop, rate] x ntransitions ]
     "int64[:, :],"  ## proportions_info [ [sum_starts, sum_stops, exponent] x ntransition_proportions ]
@@ -1504,7 +1786,11 @@ def rk4_integration_aot(
     percent_day_away = 0.5
     for spatial_node in range(nspatial_nodes):
         percent_who_move[spatial_node] = min(
-            mobility_data[mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]].sum()
+            mobility_data[
+                mobility_data_indices[spatial_node] : mobility_data_indices[
+                    spatial_node + 1
+                ]
+            ].sum()
             / population[spatial_node],
             1,
         )
@@ -1515,7 +1801,9 @@ def rk4_integration_aot(
     def rhs(t, x, today):
         # states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
         states_current = x[0]
-        states_diff = np.zeros((2, ncompartments, nspatial_nodes))  # first dim: 0 -> states_diff, 1: states_cum
+        states_diff = np.zeros(
+            (2, ncompartments, nspatial_nodes)
+        )  # first dim: 0 -> states_diff, 1: states_cum
 
         for transition_index in range(ntransitions):
             total_rate = np.ones((nspatial_nodes))
@@ -1530,52 +1818,72 @@ def rk4_integration_aot(
                     proportion_info[proportion_sum_starts_col][proportion_index],
                     proportion_info[proportion_sum_stops_col][proportion_index],
                 ):
-                    relevant_number_in_comp += states_current[transition_sum_compartments[proportion_sum_index]]
+                    relevant_number_in_comp += states_current[
+                        transition_sum_compartments[proportion_sum_index]
+                    ]
                     # exponents should not be a proportion, since we don't sum them over sum compartments
-                    relevant_exponent = parameters[proportion_info[proportion_exponent_col][proportion_index]][today]
+                    relevant_exponent = parameters[
+                        proportion_info[proportion_exponent_col][proportion_index]
+                    ][today]
                 if first_proportion:
                     only_one_proportion = (
-                        transitions[transition_proportion_start_col][transition_index] + 1
+                        transitions[transition_proportion_start_col][transition_index]
+                        + 1
                     ) == transitions[transition_proportion_stop_col][transition_index]
                     first_proportion = False
                     source_number = relevant_number_in_comp
                     if source_number.max() > 0:
                         total_rate[source_number > 0] *= (
-                            source_number[source_number > 0] ** relevant_exponent[source_number > 0]
+                            source_number[source_number > 0]
+                            ** relevant_exponent[source_number > 0]
                             / source_number[source_number > 0]
                         )
                     if only_one_proportion:
-                        total_rate *= parameters[transitions[transition_rate_col][transition_index]][today]
+                        total_rate *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today]
                 else:
                     for spatial_node in range(nspatial_nodes):
-                        proportion_keep_compartment = 1 - percent_day_away * percent_who_move[spatial_node]
+                        proportion_keep_compartment = (
+                            1 - percent_day_away * percent_who_move[spatial_node]
+                        )
                         proportion_change_compartment = (
                             percent_day_away
                             * mobility_data[
-                                mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                                mobility_data_indices[
+                                    spatial_node
+                                ] : mobility_data_indices[spatial_node + 1]
                             ]
                             / population[spatial_node]
                         )
                         rate_keep_compartment = (
                             proportion_keep_compartment
-                            * relevant_number_in_comp[spatial_node] ** relevant_exponent[spatial_node]
+                            * relevant_number_in_comp[spatial_node]
+                            ** relevant_exponent[spatial_node]
                             / population[spatial_node]
-                            * parameters[transitions[transition_rate_col][transition_index]][today][spatial_node]
+                            * parameters[
+                                transitions[transition_rate_col][transition_index]
+                            ][today][spatial_node]
                         )
 
                         visiting_compartment = mobility_row_indices[
-                            mobility_data_indices[spatial_node] : mobility_data_indices[spatial_node + 1]
+                            mobility_data_indices[spatial_node] : mobility_data_indices[
+                                spatial_node + 1
+                            ]
                         ]
 
                         rate_change_compartment = proportion_change_compartment
                         rate_change_compartment *= (
-                            relevant_number_in_comp[visiting_compartment] ** relevant_exponent[visiting_compartment]
+                            relevant_number_in_comp[visiting_compartment]
+                            ** relevant_exponent[visiting_compartment]
                         )
                         rate_change_compartment /= population[visiting_compartment]
-                        rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
-                            today
-                        ][visiting_compartment]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        rate_change_compartment *= parameters[
+                            transitions[transition_rate_col][transition_index]
+                        ][today][visiting_compartment]
+                        total_rate[spatial_node] *= (
+                            rate_keep_compartment + rate_change_compartment.sum()
+                        )
 
             # compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
 
@@ -1592,9 +1900,15 @@ def rk4_integration_aot(
             # if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
             #    number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
             # Not possible to enforce this anymore, but it shouldn't be a problem or maybe ? # TODO
-            states_diff[0, transitions[transition_source_col][transition_index]] -= number_move
-            states_diff[0, transitions[transition_destination_col][transition_index]] += number_move
-            states_diff[1, transitions[transition_destination_col][transition_index], :] += number_move  # Cumumlative
+            states_diff[
+                0, transitions[transition_source_col][transition_index]
+            ] -= number_move
+            states_diff[
+                0, transitions[transition_destination_col][transition_index]
+            ] += number_move
+            states_diff[
+                1, transitions[transition_destination_col][transition_index], :
+            ] += number_move  # Cumumlative
 
         # states_current = states_next.copy()
         return states_diff  # return a 1D vector
@@ -1628,18 +1942,24 @@ def rk4_integration_aot(
                 this_seeding_amounts = seeding_amounts[seeding_instance_idx]
                 seeding_subpops = seeding_data["seeding_subpops"][seeding_instance_idx]
                 seeding_sources = seeding_data["seeding_sources"][seeding_instance_idx]
-                seeding_destinations = seeding_data["seeding_destinations"][seeding_instance_idx]
+                seeding_destinations = seeding_data["seeding_destinations"][
+                    seeding_instance_idx
+                ]
                 # this_seeding_amounts = this_seeding_amounts < states_next[seeding_sources] ?  this_seeding_amounts : states_next[seeding_instance_idx]
                 states_next[seeding_sources][seeding_subpops] -= this_seeding_amounts
-                states_next[seeding_sources][seeding_subpops] = states_next[seeding_sources][seeding_subpops] * (
-                    states_next[seeding_sources][seeding_subpops] > 0
-                )
-                states_next[seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_next[seeding_sources][seeding_subpops] = states_next[
+                    seeding_sources
+                ][seeding_subpops] * (states_next[seeding_sources][seeding_subpops] > 0)
+                states_next[seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 total_seeded += this_seeding_amounts
                 times_seeded += 1
                 # ADD TO cumulative, this is debatable,
-                states_daily_incid[today][seeding_destinations][seeding_subpops] += this_seeding_amounts
+                states_daily_incid[today][seeding_destinations][
+                    seeding_subpops
+                ] += this_seeding_amounts
 
                 ### Shape
 

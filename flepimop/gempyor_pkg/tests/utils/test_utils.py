@@ -10,7 +10,11 @@ tmp_path = "/tmp"
 
 
 @pytest.mark.parametrize(
-    ("fname", "extension"), [("mobility", "csv"), ("usa-geoid-params-output", "parquet"),],
+    ("fname", "extension"),
+    [
+        ("mobility", "csv"),
+        ("usa-geoid-params-output", "parquet"),
+    ],
 )
 def test_read_df_and_write_success(fname, extension):
     os.chdir(tmp_path)
@@ -23,13 +27,18 @@ def test_read_df_and_write_success(fname, extension):
         utils.write_df(tmp_path + "/data/" + fname, df2, extension=extension)
         assert os.path.isfile(tmp_path + "/data/" + fname + "." + extension)
     elif extension == "parquet":
-        df2 = pa.parquet.read_table(f"{DATA_DIR}/" + fname + "." + extension).to_pandas()
+        df2 = pa.parquet.read_table(
+            f"{DATA_DIR}/" + fname + "." + extension
+        ).to_pandas()
         assert df2.equals(df1)
         utils.write_df(tmp_path + "/data/" + fname, df2, extension=extension)
         assert os.path.isfile(tmp_path + "/data/" + fname + "." + extension)
 
 
-@pytest.mark.parametrize(("fname", "extension"), [("mobility", "csv"), ("usa-geoid-params-output", "parquet")])
+@pytest.mark.parametrize(
+    ("fname", "extension"),
+    [("mobility", "csv"), ("usa-geoid-params-output", "parquet")],
+)
 def test_read_df_and_write_fail(fname, extension):
     with pytest.raises(NotImplementedError, match=r".*Invalid.*extension.*Must.*"):
         os.chdir(tmp_path)
@@ -41,7 +50,9 @@ def test_read_df_and_write_fail(fname, extension):
             assert df2.equals(df1)
             utils.write_df(tmp_path + "/data/" + fname, df2, extension="")
         elif extension == "parquet":
-            df2 = pa.parquet.read_table(f"{DATA_DIR}/" + fname + "." + extension).to_pandas()
+            df2 = pa.parquet.read_table(
+                f"{DATA_DIR}/" + fname + "." + extension
+            ).to_pandas()
             assert df2.equals(df1)
             utils.write_df(tmp_path + "/data/" + fname, df2, extension="")
 
@@ -91,9 +102,7 @@ def test_create_resume_out_filename():
         filetype="spar",
         liketype="global",
     )
-    expected_filename = (
-        "model_output/output/123/spar/global/intermediate/000000002.000000001.000000001.123.spar.parquet"
-    )
+    expected_filename = "model_output/output/123/spar/global/intermediate/000000002.000000001.000000001.123.spar.parquet"
     assert result == expected_filename
 
     result2 = utils.create_resume_out_filename(
@@ -111,32 +120,59 @@ def test_create_resume_out_filename():
 def test_create_resume_input_filename():
 
     result = utils.create_resume_input_filename(
-        flepi_slot_index="2", resume_run_index="321", flepi_prefix="output", filetype="spar", liketype="global"
+        flepi_slot_index="2",
+        resume_run_index="321",
+        flepi_prefix="output",
+        filetype="spar",
+        liketype="global",
     )
-    expect_filename = "model_output/output/321/spar/global/final/000000002.321.spar.parquet"
+    expect_filename = (
+        "model_output/output/321/spar/global/final/000000002.321.spar.parquet"
+    )
 
     assert result == expect_filename
 
     result2 = utils.create_resume_input_filename(
-        flepi_slot_index="2", resume_run_index="321", flepi_prefix="output", filetype="seed", liketype="chimeric"
+        flepi_slot_index="2",
+        resume_run_index="321",
+        flepi_prefix="output",
+        filetype="seed",
+        liketype="chimeric",
     )
-    expect_filename2 = "model_output/output/321/seed/chimeric/final/000000002.321.seed.csv"
+    expect_filename2 = (
+        "model_output/output/321/seed/chimeric/final/000000002.321.seed.csv"
+    )
     assert result2 == expect_filename2
 
 
 def test_get_filetype_resume_discard_seeding_true_flepi_block_index_1():
     expected_types = ["spar", "snpi", "hpar", "hnpi", "init"]
-    assert utils.get_filetype_for_resume(resume_discard_seeding="true", flepi_block_index="1") == expected_types
+    assert (
+        utils.get_filetype_for_resume(
+            resume_discard_seeding="true", flepi_block_index="1"
+        )
+        == expected_types
+    )
 
 
 def test_get_filetype_resume_discard_seeding_false_flepi_block_index_1():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
-    assert utils.get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1") == expected_types
+    assert (
+        utils.get_filetype_for_resume(
+            resume_discard_seeding="false", flepi_block_index="1"
+        )
+        == expected_types
+    )
 
 
 def test_get_filetype_flepi_block_index_2():
     expected_types = ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
-    assert utils.get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="2") == expected_types
+    assert (
+        utils.get_filetype_for_resume(
+            resume_discard_seeding="false", flepi_block_index="2"
+        )
+        == expected_types
+    )
 
 
 def test_create_resume_file_names_map():

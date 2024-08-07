@@ -1,6 +1,13 @@
 import pandas as pd
 import datetime, os, logging, pathlib, confuse
-from . import seeding, subpopulation_structure, parameters, compartments, file_paths, initial_conditions
+from . import (
+    seeding,
+    subpopulation_structure,
+    parameters,
+    compartments,
+    file_paths,
+    initial_conditions,
+)
 from .utils import read_df, write_df
 
 logger = logging.getLogger(__name__)
@@ -11,7 +18,9 @@ class TimeSetup:
         self.ti = config["start_date"].as_date()
         self.tf = config["end_date"].as_date()
         if self.tf <= self.ti:
-            raise ValueError("tf (time to finish) is less than or equal to ti (time to start)")
+            raise ValueError(
+                "tf (time to finish) is less than or equal to ti (time to start)"
+            )
         self.n_days = (self.tf - self.ti).days + 1
         self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
 
@@ -29,7 +38,7 @@ class ModelInfo:
         seeding                       # One of seeding or initial_conditions is required when running seir
         outcomes                      # Required if running outcomes
         seir_modifiers                # Not required. If exists, every modifier will be applied to seir parameters
-        outcomes_modifiers            # Not required. If exists, every modifier will be applied to outcomes 
+        outcomes_modifiers            # Not required. If exists, every modifier will be applied to outcomes
         inference                     # Required if running inference
     ```
     """
@@ -94,7 +103,9 @@ class ModelInfo:
         # 3. What about subpopulations
         subpop_config = config["subpop_setup"]
         if "data_path" in config:
-            raise ValueError("The config has a data_path section. This is no longer supported.")
+            raise ValueError(
+                "The config has a data_path section. This is no longer supported."
+            )
         self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
@@ -112,9 +123,13 @@ class ModelInfo:
             self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
             self.initial_conditions_config = (
-                config["initial_conditions"] if config["initial_conditions"].exists() else None
+                config["initial_conditions"]
+                if config["initial_conditions"].exists()
+                else None
             )
-            self.seeding_config = config["seeding"] if config["seeding"].exists() else None
+            self.seeding_config = (
+                config["seeding"] if config["seeding"].exists() else None
+            )
 
             if self.seeding_config is None and self.initial_conditions_config is None:
                 logging.critical(
@@ -130,25 +145,36 @@ class ModelInfo:
                 subpop_names=self.subpop_struct.subpop_names,
                 path_prefix=self.path_prefix,
             )
-            self.seeding = seeding.SeedingFactory(config=self.seeding_config, path_prefix=self.path_prefix)
+            self.seeding = seeding.SeedingFactory(
+                config=self.seeding_config, path_prefix=self.path_prefix
+            )
             self.initial_conditions = initial_conditions.InitialConditionsFactory(
                 config=self.initial_conditions_config, path_prefix=self.path_prefix
             )
             # really ugly references to the config globally here.
             if config["compartments"].exists() and self.seir_config is not None:
                 self.compartments = compartments.Compartments(
-                    seir_config=self.seir_config, compartments_config=config["compartments"]
+                    seir_config=self.seir_config,
+                    compartments_config=config["compartments"],
                 )
 
             # SEIR modifiers
             self.npi_config_seir = None
             if config["seir_modifiers"].exists():
                 if config["seir_modifiers"]["scenarios"].exists():
-                    self.npi_config_seir = config["seir_modifiers"]["modifiers"][seir_modifiers_scenario]
-                    self.seir_modifiers_library = config["seir_modifiers"]["modifiers"].get()
+                    self.npi_config_seir = config["seir_modifiers"]["modifiers"][
+                        seir_modifiers_scenario
+                    ]
+                    self.seir_modifiers_library = config["seir_modifiers"][
+                        "modifiers"
+                    ].get()
                 else:
-                    self.seir_modifiers_library = config["seir_modifiers"]["modifiers"].get()
-                    raise ValueError("Not implemented yet")  # TODO create a Stacked from all
+                    self.seir_modifiers_library = config["seir_modifiers"][
+                        "modifiers"
+                    ].get()
+                    raise ValueError(
+                        "Not implemented yet"
+                    )  # TODO create a Stacked from all
             elif self.seir_modifiers_scenario is not None:
                 raise ValueError(
                     "An seir modifiers scenario was provided to ModelInfo but no 'seir_modifiers' sections in config"
@@ -157,21 +183,33 @@ class ModelInfo:
                 logging.info("Running ModelInfo with seir but without SEIR Modifiers")
 
         elif self.seir_modifiers_scenario is not None:
-            raise ValueError("A seir modifiers scenario was provided to ModelInfo but no 'seir:' sections in config")
+            raise ValueError(
+                "A seir modifiers scenario was provided to ModelInfo but no 'seir:' sections in config"
+            )
         else:
             logging.critical("Running ModelInfo without SEIR")
 
         # 5. Outcomes
-        self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        self.outcomes_config = (
+            config["outcomes"] if config["outcomes"].exists() else None
+        )
         if self.outcomes_config is not None:
             self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
-                    self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][self.outcome_modifiers_scenario]
-                    self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
+                    self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][
+                        self.outcome_modifiers_scenario
+                    ]
+                    self.outcome_modifiers_library = config["outcome_modifiers"][
+                        "modifiers"
+                    ].get()
                 else:
-                    self.outcome_modifiers_library = config["outcome_modifiers"]["modifiers"].get()
-                    raise ValueError("Not implemented yet")  # TODO create a Stacked from all
+                    self.outcome_modifiers_library = config["outcome_modifiers"][
+                        "modifiers"
+                    ].get()
+                    raise ValueError(
+                        "Not implemented yet"
+                    )  # TODO create a Stacked from all
 
             ## NEED TO IMPLEMENT THIS -- CURRENTLY CANNOT USE outcome modifiers
             elif self.outcome_modifiers_scenario is not None:
@@ -182,7 +220,9 @@ class ModelInfo:
                 else:
                     self.outcome_modifiers_scenario = None
             else:
-                logging.info("Running ModelInfo with outcomes but without Outcomes Modifiers")
+                logging.info(
+                    "Running ModelInfo with outcomes but without Outcomes Modifiers"
+                )
         elif self.outcome_modifiers_scenario is not None:
             raise ValueError(
                 "An outcome modifiers scenario was provided to ModelInfo but no 'outcomes:' sections in config"
@@ -228,7 +268,9 @@ class ModelInfo:
                 os.makedirs(datadir, exist_ok=True)
 
             if self.write_parquet and self.write_csv:
-                print("Confused between reading .csv or parquet. Assuming input file is .parquet")
+                print(
+                    "Confused between reading .csv or parquet. Assuming input file is .parquet"
+                )
             if self.write_parquet:
                 self.extension = "parquet"
             elif self.write_csv:
@@ -244,7 +286,9 @@ class ModelInfo:
             extension_override=extension_override,
         )
 
-    def get_output_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
+    def get_output_filename(
+        self, ftype: str, sim_id: int, extension_override: str = ""
+    ):
         return self.path_prefix / self.get_filename(
             ftype=ftype,
             sim_id=sim_id,
@@ -252,7 +296,9 @@ class ModelInfo:
             extension_override=extension_override,
         )
 
-    def get_filename(self, ftype: str, sim_id: int, input: bool, extension_override: str = ""):
+    def get_filename(
+        self, ftype: str, sim_id: int, input: bool, extension_override: str = ""
+    ):
         """return a CSP formated filename."""
 
         if extension_override:  # empty strings are Falsy
@@ -281,7 +327,9 @@ class ModelInfo:
     def get_setup_name(self):
         return self.setup_name
 
-    def read_simID(self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""):
+    def read_simID(
+        self, ftype: str, sim_id: int, input: bool = True, extension_override: str = ""
+    ):
         fname = self.get_filename(
             ftype=ftype,
             sim_id=sim_id,

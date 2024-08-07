@@ -36,7 +36,9 @@ modinf = model_info.ModelInfo(
 )
 
 seeding_data = modinf.seeding.get_from_config(sim_id=100, modinf=modinf)
-initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+initial_conditions = modinf.initial_conditions.get_from_config(
+    sim_id=100, modinf=modinf
+)
 
 mobility_subpop_indices = modinf.mobility.indices
 mobility_data_indices = modinf.mobility.indptr
@@ -48,7 +50,9 @@ npi = NPI.NPIBase.execute(
     modifiers_library=modinf.seir_modifiers_library,
     subpops=modinf.subpop_struct.subpop_names,
     pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-    pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+    pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+        "reduction_product"
+    ],
 )
 
 params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -81,7 +85,12 @@ states = seir.steps_SEIR_nb(
     True,
 )
 df = seir.states2Df(modinf, states)
-assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] > 1
+assert (
+    df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[
+        str(modinf.tf), "20002"
+    ]
+    > 1
+)
 print(df)
 ts = df
 cp = "R"

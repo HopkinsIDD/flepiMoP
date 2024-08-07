@@ -21,7 +21,8 @@ class SinglePeriodModifier(NPIBase):
             name=getattr(
                 npi_config,
                 "key",
-                (npi_config["scenario"].exists() and npi_config["scenario"].get()) or "unknown",
+                (npi_config["scenario"].exists() and npi_config["scenario"].get())
+                or "unknown",
             )
         )
 
@@ -29,7 +30,9 @@ class SinglePeriodModifier(NPIBase):
         self.end_date = modinf.tf
 
         self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
-        self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
+        self.pnames_overlap_operation_reductionprod = (
+            pnames_overlap_operation_reductionprod
+        )
 
         self.subpops = subpops
 
@@ -60,15 +63,22 @@ class SinglePeriodModifier(NPIBase):
             self.__createFromConfig(npi_config)
 
         # if parameters are exceeding global start/end dates, index of parameter df will be out of range so check first
-        if self.parameters["start_date"].min() < self.start_date or self.parameters["end_date"].max() > self.end_date:
-            raise ValueError(f"""{self.name} : at least one period start or end date is not between global dates""")
+        if (
+            self.parameters["start_date"].min() < self.start_date
+            or self.parameters["end_date"].max() > self.end_date
+        ):
+            raise ValueError(
+                f"""{self.name} : at least one period start or end date is not between global dates"""
+            )
 
         # for index in self.parameters.index:
         #    period_range = pd.date_range(self.parameters["start_date"][index], self.parameters["end_date"][index])
         ## This the line that does the work
         #    self.npi_old.loc[index, period_range] = np.tile(self.parameters["value"][index], (len(period_range), 1)).T
 
-        period_range = pd.date_range(self.parameters["start_date"].iloc[0], self.parameters["end_date"].iloc[0])
+        period_range = pd.date_range(
+            self.parameters["start_date"].iloc[0], self.parameters["end_date"].iloc[0]
+        )
         self.npi.loc[self.parameters.index, period_range] = np.tile(
             self.parameters["value"][:], (len(period_range), 1)
         ).T
@@ -80,7 +90,9 @@ class SinglePeriodModifier(NPIBase):
         max_start_date = self.parameters["start_date"].max()
         min_end_date = self.parameters["end_date"].min()
         max_end_date = self.parameters["end_date"].max()
-        if not ((self.start_date <= min_start_date) & (max_start_date <= self.end_date)):
+        if not (
+            (self.start_date <= min_start_date) & (max_start_date <= self.end_date)
+        ):
             raise ValueError(
                 f"at least one period_start_date [{min_start_date}, {max_start_date}] is not between global dates [{self.start_date}, {self.end_date}]"
             )
@@ -90,7 +102,9 @@ class SinglePeriodModifier(NPIBase):
             )
 
         if not (self.parameters["start_date"] <= self.parameters["end_date"]).all():
-            raise ValueError(f"at least one period_start_date is greater than the corresponding period end date")
+            raise ValueError(
+                f"at least one period_start_date is greater than the corresponding period end date"
+            )
 
         for n in self.affected_subpops:
             if n not in self.subpops:
@@ -116,19 +130,27 @@ class SinglePeriodModifier(NPIBase):
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
             self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
 
-        self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
+        self.parameters = self.parameters[
+            self.parameters.index.isin(self.affected_subpops)
+        ]
         # Create reduction
         self.dist = npi_config["value"].as_random_distribution()
 
         self.parameters["modifier_name"] = self.name
         self.parameters["start_date"] = (
-            npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
+            npi_config["period_start_date"].as_date()
+            if npi_config["period_start_date"].exists()
+            else self.start_date
         )
         self.parameters["end_date"] = (
-            npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
+            npi_config["period_end_date"].as_date()
+            if npi_config["period_end_date"].exists()
+            else self.end_date
         )
         self.parameters["parameter"] = self.param_name
-        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_subpops))
+        self.spatial_groups = helpers.get_spatial_groups(
+            npi_config, list(self.affected_subpops)
+        )
         if self.spatial_groups["ungrouped"]:
             self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = self.dist(
                 size=len(self.spatial_groups["ungrouped"])
@@ -146,17 +168,23 @@ class SinglePeriodModifier(NPIBase):
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
             self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
 
-        self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
+        self.parameters = self.parameters[
+            self.parameters.index.isin(self.affected_subpops)
+        ]
         self.parameters["modifier_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
         # self.parameters = loaded_df[["modifier_name", "start_date", "end_date", "parameter", "value"]].copy()
         # dates are picked from config
         self.parameters["start_date"] = (
-            npi_config["period_start_date"].as_date() if npi_config["period_start_date"].exists() else self.start_date
+            npi_config["period_start_date"].as_date()
+            if npi_config["period_start_date"].exists()
+            else self.start_date
         )
         self.parameters["end_date"] = (
-            npi_config["period_end_date"].as_date() if npi_config["period_end_date"].exists() else self.end_date
+            npi_config["period_end_date"].as_date()
+            if npi_config["period_end_date"].exists()
+            else self.end_date
         )
         ## This is more legible to me, but if we change it here, we should change it in __createFromConfig as well
         # if npi_config["period_start_date"].exists():
@@ -175,17 +203,24 @@ class SinglePeriodModifier(NPIBase):
         # TODO: to be consistent with MTR, we want to also draw the values for the subpops
         # that are not in the loaded_df.
 
-        self.spatial_groups = helpers.get_spatial_groups(npi_config, list(self.affected_subpops))
+        self.spatial_groups = helpers.get_spatial_groups(
+            npi_config, list(self.affected_subpops)
+        )
         if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = loaded_df.loc[
-                self.spatial_groups["ungrouped"], "value"
-            ]
+            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = (
+                loaded_df.loc[self.spatial_groups["ungrouped"], "value"]
+            )
         if self.spatial_groups["grouped"]:
             for group in self.spatial_groups["grouped"]:
-                self.parameters.loc[group, "value"] = loaded_df.loc[",".join(group), "value"]
+                self.parameters.loc[group, "value"] = loaded_df.loc[
+                    ",".join(group), "value"
+                ]
 
     def get_default(self, param):
-        if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
+        if (
+            param in self.pnames_overlap_operation_sum
+            or param in self.pnames_overlap_operation_reductionprod
+        ):
             return 0.0
         else:
             return 1.0
@@ -198,7 +233,9 @@ class SinglePeriodModifier(NPIBase):
 
     def getReductionToWrite(self):
         # spatially ungrouped dataframe
-        df = self.parameters[self.parameters.index.isin(self.spatial_groups["ungrouped"])].copy()
+        df = self.parameters[
+            self.parameters.index.isin(self.spatial_groups["ungrouped"])
+        ].copy()
         df.index.name = "subpop"
         df["start_date"] = df["start_date"].astype("str")
         df["end_date"] = df["end_date"].astype("str")

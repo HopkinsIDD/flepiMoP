@@ -11,7 +11,11 @@ import pyarrow.parquet as pq
 
 
 def get_all_filenames(
-    file_type, fs_results_path="to_prune/", finals_only=False, intermediates_only=True, ignore_chimeric=True
+    file_type,
+    fs_results_path="to_prune/",
+    finals_only=False,
+    intermediates_only=True,
+    ignore_chimeric=True,
 ) -> dict:
     """
     return dictionary for each run name
@@ -113,14 +117,18 @@ fill_from_max = 300
 if fill_missing:
     # Extract the numbers from the filenames
     numbers = [int(os.path.basename(filename).split(".")[0]) for filename in all_files]
-    missing_numbers = [num for num in range(fill_from_min, fill_from_max + 1) if num not in numbers]
+    missing_numbers = [
+        num for num in range(fill_from_min, fill_from_max + 1) if num not in numbers
+    ]
     if missing_numbers:
         missing_filenames = []
         for num in missing_numbers:
             filename = os.path.basename(all_files[0])
             filename_prefix = re.search(r"^.*?(\d+)", filename).group()
             filename_suffix = re.search(r"(\..*?)$", filename).group()
-            missing_filename = os.path.join(os.path.dirname(all_files[0]), f"{num:09d}{filename_suffix}")
+            missing_filename = os.path.join(
+                os.path.dirname(all_files[0]), f"{num:09d}{filename_suffix}"
+            )
             missing_filenames.append(missing_filename)
         print("The missing filenames with full paths are:")
         for missing_filename in missing_filenames:
@@ -143,7 +151,7 @@ def copy_path(src, dst):
 
 file_types = [
     "llik",
-    #"seed",
+    # "seed",
     "init",
     "snpi",
     "hnpi",
@@ -160,7 +168,9 @@ if prune_method == "replace":
         if fn in files_to_keep:
             for file_type in file_types:
                 src = fn.replace("llik", file_type)
-                dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
+                dst = fn.replace(fs_results_path, output_folder).replace(
+                    "llik", file_type
+                )
                 if file_type == "seed":
                     src = src.replace(".parquet", ".csv")
                     dst = dst.replace(".parquet", ".csv")
@@ -169,7 +179,9 @@ if prune_method == "replace":
             file_to_keep = np.random.choice(files_to_keep)
             for file_type in file_types:
                 src = file_to_keep.replace("llik", file_type)
-                dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
+                dst = fn.replace(fs_results_path, output_folder).replace(
+                    "llik", file_type
+                )
                 if file_type == "seed":
                     src = src.replace(".parquet", ".csv")
                     dst = dst.replace(".parquet", ".csv")

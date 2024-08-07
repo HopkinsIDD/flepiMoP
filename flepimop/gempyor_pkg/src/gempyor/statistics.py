@@ -48,7 +48,10 @@ class Statistic:
             if resample_config["aggregator"].exists():
                 self.resample_aggregator_name = resample_config["aggregator"].get()
             self.resample_skipna = False  # TODO
-            if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
+            if (
+                resample_config["aggregator"].exists()
+                and resample_config["skipna"].exists()
+            ):
                 self.resample_skipna = resample_config["skipna"].get()
 
         self.scale = False
@@ -71,7 +74,10 @@ class Statistic:
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
 
-        last_n_llik = self.llik(model_data.isel(date=slice(-last_n, None)), gt_data.isel(date=slice(-last_n, None)))
+        last_n_llik = self.llik(
+            model_data.isel(date=slice(-last_n, None)),
+            gt_data.isel(date=slice(-last_n, None)),
+        )
 
         return mult * last_n_llik.sum().sum().values
 
@@ -89,7 +95,9 @@ class Statistic:
 
     def apply_resample(self, data):
         if self.resample:
-            aggregator_method = getattr(data.resample(date=self.resample_freq), self.resample_aggregator_name)
+            aggregator_method = getattr(
+                data.resample(date=self.resample_freq), self.resample_aggregator_name
+            )
             return aggregator_method(skipna=self.resample_skipna)
         else:
             return data
@@ -113,7 +121,9 @@ class Statistic:
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
             ),  # TODO: check, that it's really the loc
-            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
+            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
+                x, n=self.params.get("n"), p=model_data
+            ),
             "rmse": lambda x, y: -np.log(np.nansum(np.sqrt((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
         }
@@ -147,6 +157,8 @@ class Statistic:
 
         regularization = 0
         for reg_func, reg_config in self.regularizations:
-            regularization += reg_func(model_data=model_data, gt_data=gt_data, **reg_config)  # Pass config parameters
+            regularization += reg_func(
+                model_data=model_data, gt_data=gt_data, **reg_config
+            )  # Pass config parameters
 
         return self.llik(model_data, gt_data).sum("date"), regularization

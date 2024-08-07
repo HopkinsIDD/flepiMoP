@@ -17,7 +17,13 @@ import os
 
 
 class LogLoss:
-    def __init__(self, inference_config: confuse.ConfigView, subpop_struct, time_setup, path_prefix: str = "."):
+    def __init__(
+        self,
+        inference_config: confuse.ConfigView,
+        subpop_struct,
+        time_setup,
+        path_prefix: str = ".",
+    ):
         # TODO: bad format for gt because each date must have a value for each column, but if it doesn't and you add NA
         # then this NA has a meaning that depends on skip NA, which is annoying.
         # A lot of things can go wrong here, in the previous approach where GT was cast to xarray as
@@ -35,20 +41,36 @@ class LogLoss:
 
         # made the controversial choice of storing the gt as an xarray dataset instead of a dictionary
         # of dataframes
-        self.gt_xr = xr.Dataset.from_dataframe(self.gt.reset_index().set_index(["date", "subpop"]))
+        self.gt_xr = xr.Dataset.from_dataframe(
+            self.gt.reset_index().set_index(["date", "subpop"])
+        )
         # Very important: subsample the subpop in the population, in the right order, and sort by the date index.
-        self.gt_xr = self.gt_xr.sortby("date").reindex({"subpop": subpop_struct.subpop_names})
+        self.gt_xr = self.gt_xr.sortby("date").reindex(
+            {"subpop": subpop_struct.subpop_names}
+        )
 
         # This will force at 0, if skipna is False, data of some variable that don't exist if iother exist
         # and damn python datetime types are ugly...
-        self.first_date = max(pd.to_datetime(self.gt_xr.date[0].values).date(), time_setup.ti)
-        self.last_date = min(pd.to_datetime(self.gt_xr.date[-1].values).date(), time_setup.tf)
+        self.first_date = max(
+            pd.to_datetime(self.gt_xr.date[0].values).date(), time_setup.ti
+        )
+        self.last_date = min(
+            pd.to_datetime(self.gt_xr.date[-1].values).date(), time_setup.tf
+        )
 
         self.statistics = {}
         for key, value in inference_config["statistics"].items():
             self.statistics[key] = statistics.Statistic(key, value)
 
-    def plot_gt(self, ax=None, subpop=None, statistic=None, subplot=False, filename=None, **kwargs):
+    def plot_gt(
+        self,
+        ax=None,
+        subpop=None,
+        statistic=None,
+        subplot=False,
+        filename=None,
+        **kwargs,
+    ):
         """Plots ground truth data.
 
         Args:
@@ -68,7 +90,10 @@ class LogLoss:
                 fig, axes = plt.subplots(
                     len(self.gt["subpop"].unique()),
                     len(self.gt.columns.drop("subpop")),
-                    figsize=(4 * len(self.gt.columns.drop("subpop")), 3 * len(self.gt["subpop"].unique())),
+                    figsize=(
+                        4 * len(self.gt.columns.drop("subpop")),
+                        3 * len(self.gt["subpop"].unique()),
+                    ),
                     dpi=250,
                     sharex=True,
                 )
@@ -81,7 +106,9 @@ class LogLoss:
             subpops = [subpop]
 
         if statistic is None:
-            statistics = self.gt.columns.drop("subpop")  # Assuming other columns are statistics
+            statistics = self.gt.columns.drop(
+                "subpop"
+            )  # Assuming other columns are statistics
         else:
             statistics = [statistic]
 
@@ -89,14 +116,18 @@ class LogLoss:
             # One subplot for each subpop/statistic combination
             for i, subpop in enumerate(subpops):
                 for j, stat in enumerate(statistics):
-                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat].sort_index()
+                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][
+                        stat
+                    ].sort_index()
                     axes[i, j].plot(data_to_plot, **kwargs)
                     axes[i, j].set_title(f"{subpop} - {stat}")
         else:
             # All lines in a single plot
             for subpop in subpops:
                 for stat in statistics:
-                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][stat].sort_index()
+                    data_to_plot = self.gt[(self.gt["subpop"] == subpop)][
+                        stat
+                    ].sort_index()
                     data_to_plot.plot(ax=ax, **kwargs, label=f"{subpop} - {stat}")
             if len(statistics) > 1:
                 ax.legend()
@@ -107,7 +138,10 @@ class LogLoss:
             plt.savefig(filename, **kwargs)  # Save the figure
 
         if subplot:
-            return fig, axes  # Return figure and subplots for potential further customization
+            return (
+                fig,
+                axes,
+            )  # Return figure and subplots for potential further customization
         else:
             return ax  # Optionally return the axis
 
@@ -121,13 +155,17 @@ class LogLoss:
         coords = {"statistic": list(self.statistics.keys()), "subpop": subpop_names}
 
         logloss = xr.DataArray(
-            np.zeros((len(coords["statistic"]), len(coords["subpop"]))), dims=["statistic", "subpop"], coords=coords
+            np.zeros((len(coords["statistic"]), len(coords["subpop"]))),
+            dims=["statistic", "subpop"],
+            coords=coords,
         )
 
         regularizations = 0
 
         model_xr = (
-            xr.Dataset.from_dataframe(model_df.reset_index().set_index(["date", "subpop"]))
+            xr.Dataset.from_dataframe(
+                model_df.reset_index().set_index(["date", "subpop"])
+            )
             .sortby("date")
             .reindex({"subpop": subpop_names})
         )

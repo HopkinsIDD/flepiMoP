@@ -82,11 +82,21 @@ def simulation_atomic(
     np.random.seed(int.from_bytes(os.urandom(4), byteorder="little"))
     random_id = np.random.randint(0, 1e8)
 
-    npi_seir = seir.build_npi_SEIR(modinf=modinf, load_ID=False, sim_id2load=None, config=config, bypass_DF=snpi_df_in)
+    npi_seir = seir.build_npi_SEIR(
+        modinf=modinf,
+        load_ID=False,
+        sim_id2load=None,
+        config=config,
+        bypass_DF=snpi_df_in,
+    )
 
     if modinf.npi_config_outcomes:
         npi_outcomes = outcomes.build_outcome_modifiers(
-            modinf=modinf, load_ID=False, sim_id2load=None, config=config, bypass_DF=hnpi_df_in
+            modinf=modinf,
+            load_ID=False,
+            sim_id2load=None,
+            config=config,
+            bypass_DF=hnpi_df_in,
         )
     else:
         npi_outcomes = None
@@ -94,10 +104,14 @@ def simulation_atomic(
     # reduce them
     parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
     # Parse them
-    parsed_parameters = modinf.compartments.parse_parameters(parameters, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        parameters, modinf.parameters.pnames, unique_strings
+    )
 
     # Convert the seeding data dictionnary to a numba dictionnary
-    seeding_data_nbdict = nb.typed.Dict.empty(key_type=nb.types.unicode_type, value_type=nb.types.int64[:])
+    seeding_data_nbdict = nb.typed.Dict.empty(
+        key_type=nb.types.unicode_type, value_type=nb.types.int64[:]
+    )
 
     for k, v in seeding_data.items():
         seeding_data_nbdict[k] = np.array(v, dtype=np.int64)
@@ -151,7 +165,9 @@ def get_static_arguments(modinf):
     ) = modinf.compartments.get_transition_array()
 
     outcomes_parameters = outcomes.read_parameters_from_config(modinf)
-    npi_seir = seir.build_npi_SEIR(modinf=modinf, load_ID=False, sim_id2load=None, config=config)
+    npi_seir = seir.build_npi_SEIR(
+        modinf=modinf, load_ID=False, sim_id2load=None, config=config
+    )
     if modinf.npi_config_outcomes:
         npi_outcomes = outcomes.build_outcome_modifiers(
             modinf=modinf,
@@ -162,15 +178,23 @@ def get_static_arguments(modinf):
     else:
         npi_outcomes = None
 
-    p_draw = modinf.parameters.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
+    p_draw = modinf.parameters.parameters_quick_draw(
+        n_days=modinf.n_days, nsubpops=modinf.nsubpops
+    )
 
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=0, modinf=modinf)
-    seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id=0, modinf=modinf)
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=0, modinf=modinf
+    )
+    seeding_data, seeding_amounts = modinf.seeding.get_from_config(
+        sim_id=0, modinf=modinf
+    )
 
     # reduce them
     parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
     # Parse them
-    parsed_parameters = modinf.compartments.parse_parameters(parameters, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        parameters, modinf.parameters.pnames, unique_strings
+    )
 
     if real_simulation:
         states = seir.steps_SEIR(
@@ -190,7 +214,10 @@ def get_static_arguments(modinf):
         compartment_df = modinf.compartments.get_compartments_explicitDF()
         # Iterate over columns of the DataFrame and populate the dictionary
         for column in compartment_df.columns:
-            compartment_coords[column] = ("compartment", compartment_df[column].tolist())
+            compartment_coords[column] = (
+                "compartment",
+                compartment_df[column].tolist(),
+            )
 
         coords = dict(
             date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
@@ -198,7 +225,9 @@ def get_static_arguments(modinf):
             subpop=modinf.subpop_struct.subpop_names,
         )
 
-        zeros = np.zeros((len(coords["date"]), len(coords["mc_name"][1]), len(coords["subpop"])))
+        zeros = np.zeros(
+            (len(coords["date"]), len(coords["mc_name"][1]), len(coords["subpop"]))
+        )
         states = xr.Dataset(
             data_vars=dict(
                 prevalence=(["date", "compartment", "subpop"], zeros),
@@ -256,12 +285,16 @@ def autodetect_scenarios(config):
     seir_modifiers_scenarios = None
     if config["seir_modifiers"].exists():
         if config["seir_modifiers"]["scenarios"].exists():
-            seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+            seir_modifiers_scenarios = config["seir_modifiers"][
+                "scenarios"
+            ].as_str_seq()
 
     outcome_modifiers_scenarios = None
     if config["outcomes"].exists() and config["outcome_modifiers"].exists():
         if config["outcome_modifiers"]["scenarios"].exists():
-            outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
+            outcome_modifiers_scenarios = config["outcome_modifiers"][
+                "scenarios"
+            ].as_str_seq()
 
     outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
     seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
@@ -275,39 +308,39 @@ def autodetect_scenarios(config):
 
     return seir_modifiers_scenarios[0], outcome_modifiers_scenarios[0]
 
+
 # rewrite the get log loss functions as single functions, not in a class. This is not faster
 # def get_logloss(proposal, inferpar, logloss, static_sim_arguments, modinf, silent=True, save=False):
 #     if not inferpar.check_in_bound(proposal=proposal):
 #         if not silent:
 #             print("OUT OF BOUND!!")
 #         return -np.inf, -np.inf, -np.inf
-# 
+#
 #     snpi_df_mod, hnpi_df_mod = inferpar.inject_proposal(
 #         proposal=proposal,
 #         snpi_df=static_sim_arguments["snpi_df_ref"],
 #         hnpi_df=static_sim_arguments["hnpi_df_ref"],
 #     )
-# 
+#
 #     ss = copy.deepcopy(static_sim_arguments)
 #     ss["snpi_df_in"] = snpi_df_mod
 #     ss["hnpi_df_in"] = hnpi_df_mod
 #     del ss["snpi_df_ref"]
 #     del ss["hnpi_df_ref"]
-# 
+#
 #     outcomes_df = simulation_atomic(**ss, modinf=modinf, save=save)
-# 
+#
 #     ll_total, logloss, regularizations = logloss.compute_logloss(
 #         model_df=outcomes_df, subpop_names=modinf.subpop_struct.subpop_names
 #     )
 #     if not silent:
 #         print(f"llik is {ll_total}")
-# 
+#
 #     return ll_total, logloss, regularizations
-# 
+#
 # def get_logloss_as_single_number(proposal, inferpar, logloss, static_sim_arguments, modinf, silent=True, save=False):
 #     ll_total, logloss, regularizations = get_logloss(proposal, inferpar, logloss, static_sim_arguments, modinf, silent, save)
 #     return ll_total
-
 
 
 class GempyorInference:
@@ -333,12 +366,20 @@ class GempyorInference:
 
         config.set_file(os.path.join(path_prefix, config_filepath))
 
-        self.seir_modifiers_scenario, self.outcome_modifiers_scenario = autodetect_scenarios(config)
+        self.seir_modifiers_scenario, self.outcome_modifiers_scenario = (
+            autodetect_scenarios(config)
+        )
 
         if run_id is None:
             run_id = file_paths.run_id()
         if prefix is None:
-            prefix = config["name"].get() + f"_{self.seir_modifiers_scenario}_{self.outcome_modifiers_scenario}" + "/" + run_id + "/"
+            prefix = (
+                config["name"].get()
+                + f"_{self.seir_modifiers_scenario}_{self.outcome_modifiers_scenario}"
+                + "/"
+                + run_id
+                + "/"
+            )
         in_run_id = run_id
         if out_run_id is None:
             out_run_id = in_run_id
@@ -387,7 +428,8 @@ class GempyorInference:
                 self.do_inference = True
                 self.inference_method = "emcee"
                 self.inferpar = inference_parameter.InferenceParameters(
-                    global_config=config, subpop_names=self.modinf.subpop_struct.subpop_names
+                    global_config=config,
+                    subpop_names=self.modinf.subpop_struct.subpop_names,
                 )
                 self.logloss = logloss.LogLoss(
                     inference_config=config["inference"],
@@ -412,7 +454,14 @@ class GempyorInference:
 
     def get_all_sim_arguments(self):
         # inferpar, logloss, static_sim_arguments, modinf, proposal, silent, save
-        return [self.inferpar, self.logloss, self.static_sim_arguments, self.modinf, self.silent, self.save]
+        return [
+            self.inferpar,
+            self.logloss,
+            self.static_sim_arguments,
+            self.modinf,
+            self.silent,
+            self.save,
+        ]
 
     def get_logloss(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):
@@ -479,11 +528,15 @@ class GempyorInference:
         else:
             self.modinf.out_run_id = new_out_run_id
 
-    def one_simulation_legacy(self, sim_id2write: int, load_ID: bool = False, sim_id2load: int = None):
+    def one_simulation_legacy(
+        self, sim_id2write: int, load_ID: bool = False, sim_id2load: int = None
+    ):
         sim_id2write = int(sim_id2write)
         if load_ID:
             sim_id2load = int(sim_id2load)
-        with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
+        with Timer(
+            f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"
+        ):
             with Timer("onerun_SEIR"):
                 seir.onerun_SEIR(
                     sim_id2write=sim_id2write,
@@ -533,16 +586,31 @@ class GempyorInference:
             sim_id2load = int(sim_id2load)
             self.lastsim_sim_id2load = sim_id2load
 
-        with Timer(f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"):
+        with Timer(
+            f">>> GEMPYOR onesim {'(loading file)' if load_ID else '(from config)'}"
+        ):
             if not self.already_built and self.modinf.outcomes_config is not None:
-                self.outcomes_parameters = outcomes.read_parameters_from_config(self.modinf)
+                self.outcomes_parameters = outcomes.read_parameters_from_config(
+                    self.modinf
+                )
 
             npi_outcomes = None
             if parallel:
                 with Timer("//things"):
-                    with ProcessPoolExecutor(max_workers=max(mp.cpu_count(), 3)) as executor:
-                        ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
-                        if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
+                    with ProcessPoolExecutor(
+                        max_workers=max(mp.cpu_count(), 3)
+                    ) as executor:
+                        ret_seir = executor.submit(
+                            seir.build_npi_SEIR,
+                            self.modinf,
+                            load_ID,
+                            sim_id2load,
+                            config,
+                        )
+                        if (
+                            self.modinf.outcomes_config is not None
+                            and self.modinf.npi_config_outcomes
+                        ):
                             ret_outcomes = executor.submit(
                                 outcomes.build_outcome_modifiers,
                                 self.modinf,
@@ -551,7 +619,9 @@ class GempyorInference:
                                 config,
                             )
                         if not self.already_built:
-                            ret_comparments = executor.submit(self.modinf.compartments.get_transition_array)
+                            ret_comparments = executor.submit(
+                                self.modinf.compartments.get_transition_array
+                            )
 
                 # print("expections:", ret_seir.exception(), ret_outcomes.exception(), ret_comparments.exception())
 
@@ -564,15 +634,24 @@ class GempyorInference:
                     ) = ret_comparments.result()
                     self.already_built = True
                 npi_seir = ret_seir.result()
-                if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
+                if (
+                    self.modinf.outcomes_config is not None
+                    and self.modinf.npi_config_outcomes
+                ):
                     npi_outcomes = ret_outcomes.result()
             else:
                 if not self.already_built:
                     self.build_structure()
                 npi_seir = seir.build_npi_SEIR(
-                    modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+                    modinf=self.modinf,
+                    load_ID=load_ID,
+                    sim_id2load=sim_id2load,
+                    config=config,
                 )
-                if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
+                if (
+                    self.modinf.outcomes_config is not None
+                    and self.modinf.npi_config_outcomes
+                ):
                     npi_outcomes = outcomes.build_outcome_modifiers(
                         modinf=self.modinf,
                         load_ID=load_ID,
@@ -585,7 +664,9 @@ class GempyorInference:
             with Timer("SEIR.parameters"):
                 # Draw or load parameters
 
-                p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
+                p_draw = self.get_seir_parameters(
+                    load_ID=load_ID, sim_id2load=sim_id2load
+                )
                 # reduce them
                 parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
                 # Parse them
@@ -598,8 +679,12 @@ class GempyorInference:
 
             with Timer("onerun_SEIR.seeding"):
                 if load_ID:
-                    initial_conditions = self.modinf.initial_conditions.get_from_file(sim_id2load, modinf=self.modinf)
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(sim_id2load, modinf=self.modinf)
+                    initial_conditions = self.modinf.initial_conditions.get_from_file(
+                        sim_id2load, modinf=self.modinf
+                    )
+                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(
+                        sim_id2load, modinf=self.modinf
+                    )
                 else:
                     initial_conditions = self.modinf.initial_conditions.get_from_config(
                         sim_id2write, modinf=self.modinf
@@ -645,7 +730,7 @@ class GempyorInference:
                         parameters=self.outcomes_parameters,
                         loaded_values=loaded_values,
                         npi=npi_outcomes,
-                        bypass_seir_xr=states
+                        bypass_seir_xr=states,
                     )
                     self.lastsim_outcomes_df = outcomes_df
                     self.lastsim_hpar_df = hpar_df
@@ -660,14 +745,18 @@ class GempyorInference:
                     )
         return 0
 
-    def plot_transition_graph(self, output_file="transition_graph", source_filters=[], destination_filters=[]):
+    def plot_transition_graph(
+        self, output_file="transition_graph", source_filters=[], destination_filters=[]
+    ):
         self.modinf.compartments.plot(
             output_file=output_file,
             source_filters=source_filters,
             destination_filters=destination_filters,
         )
 
-    def get_outcome_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
+    def get_outcome_npi(
+        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+    ):
         npi_outcomes = None
         if self.modinf.npi_config_outcomes:
             npi_outcomes = outcomes.build_outcome_modifiers(
@@ -680,7 +769,9 @@ class GempyorInference:
             )
         return npi_outcomes
 
-    def get_seir_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
+    def get_seir_npi(
+        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+    ):
         npi_seir = seir.build_npi_SEIR(
             modinf=self.modinf,
             load_ID=load_ID,
@@ -691,7 +782,9 @@ class GempyorInference:
         )
         return npi_seir
 
-    def get_seir_parameters(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
+    def get_seir_parameters(
+        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+    ):
         param_df = None
         if bypass_DF is not None:
             param_df = bypass_DF
@@ -712,7 +805,9 @@ class GempyorInference:
             )
         return p_draw
 
-    def get_seir_parametersDF(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
+    def get_seir_parametersDF(
+        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+    ):
         p_draw = self.get_seir_parameters(
             load_ID=load_ID,
             sim_id2load=sim_id2load,
@@ -767,7 +862,9 @@ class GempyorInference:
         if not self.already_built:
             self.build_structure()
 
-        npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_seir = seir.build_npi_SEIR(
+            modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+        )
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
         parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
@@ -784,7 +881,9 @@ class GempyorInference:
         # bypass_DF=None,
         # bypass_FN=None,
     ):
-        npi_seir = seir.build_npi_SEIR(modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_seir = seir.build_npi_SEIR(
+            modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+        )
         p_draw = self.get_seir_parameters(load_ID=load_ID, sim_id2load=sim_id2load)
 
         parameters = self.modinf.parameters.parameters_reduce(p_draw, npi_seir)
@@ -805,7 +904,9 @@ def paramred_parallel(run_spec, snpi_fn):
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
+        path_prefix=run_spec[
+            "geodata"
+        ],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     snpi = pq.read_table(snpi_fn).to_pandas()
@@ -816,7 +917,9 @@ def paramred_parallel(run_spec, snpi_fn):
     params_draw_arr = gempyor_inference.get_seir_parameters(
         bypass_FN=snpi_fn.replace("snpi", "spar")
     )  # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
-    param_reduc_from = gempyor_inference.get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
+    param_reduc_from = gempyor_inference.get_seir_parameter_reduced(
+        npi_seir=npi_seir, p_draw=params_draw_arr
+    )
 
     return param_reduc_from
 
@@ -831,7 +934,9 @@ def paramred_parallel_config(run_spec, dummy):
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
         stoch_traj_flag=False,
-        path_prefix=run_spec["geodata"],  # prefix where to find the folder indicated in subpop_setup$
+        path_prefix=run_spec[
+            "geodata"
+        ],  # prefix where to find the folder indicated in subpop_setup$
     )
 
     npi_seir = gempyor_inference.get_seir_npi()
@@ -839,6 +944,8 @@ def paramred_parallel_config(run_spec, dummy):
     params_draw_arr = (
         gempyor_inference.get_seir_parameters()
     )  # could also accept (load_ID=True, sim_id2load=XXX) or (bypass_DF=<some_spar_df>) or (bypass_FN=<some_spar_filename>)
-    param_reduc_from = gempyor_inference.get_seir_parameter_reduced(npi_seir=npi_seir, p_draw=params_draw_arr)
+    param_reduc_from = gempyor_inference.get_seir_parameter_reduced(
+        npi_seir=npi_seir, p_draw=params_draw_arr
+    )
 
     return param_reduc_from

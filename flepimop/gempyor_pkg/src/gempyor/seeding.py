@@ -17,9 +17,13 @@ logger = logging.getLogger(__name__)
 
 def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     if not df["date"].is_monotonic_increasing:
-        raise ValueError("_DataFrame2NumbaDict got an unsorted dataframe, exposing itself to non-sense")
+        raise ValueError(
+            "_DataFrame2NumbaDict got an unsorted dataframe, exposing itself to non-sense"
+        )
 
-    cmp_grp_names = [col for col in modinf.compartments.compartments.columns if col != "name"]
+    cmp_grp_names = [
+        col for col in modinf.compartments.compartments.columns if col != "name"
+    ]
     seeding_dict: nb.typed.Dict = nb.typed.Dict.empty(
         key_type=nb.types.unicode_type,
         value_type=nb.types.int64[:],
@@ -45,16 +49,26 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
                 nb_seed_perday[(row["date"].date() - modinf.ti).days] = (
                     nb_seed_perday[(row["date"].date() - modinf.ti).days] + 1
                 )
-                source_dict = {grp_name: row[f"source_{grp_name}"] for grp_name in cmp_grp_names}
-                destination_dict = {grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names}
+                source_dict = {
+                    grp_name: row[f"source_{grp_name}"] for grp_name in cmp_grp_names
+                }
+                destination_dict = {
+                    grp_name: row[f"destination_{grp_name}"]
+                    for grp_name in cmp_grp_names
+                }
                 seeding_dict["seeding_sources"][idx] = modinf.compartments.get_comp_idx(
-                    source_dict, error_info=f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)"
+                    source_dict,
+                    error_info=f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)",
                 )
-                seeding_dict["seeding_destinations"][idx] = modinf.compartments.get_comp_idx(
-                    destination_dict,
-                    error_info=f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)",
+                seeding_dict["seeding_destinations"][idx] = (
+                    modinf.compartments.get_comp_idx(
+                        destination_dict,
+                        error_info=f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)",
+                    )
                 )
-                seeding_dict["seeding_subpops"][idx] = modinf.subpop_struct.subpop_names.index(row["subpop"])
+                seeding_dict["seeding_subpops"][idx] = (
+                    modinf.subpop_struct.subpop_names.index(row["subpop"])
+                )
                 seeding_amounts[idx] = amounts[idx]
                 # id_seed+=1
             else:
@@ -97,7 +111,9 @@ class Seeding(SimulationComponent):
             )
             dupes = seeding[seeding.duplicated(["subpop", "date"])].index + 1
             if not dupes.empty:
-                raise ValueError(f"Repeated subpop-date in rows {dupes.tolist()} of seeding::lambda_file.")
+                raise ValueError(
+                    f"Repeated subpop-date in rows {dupes.tolist()} of seeding::lambda_file."
+                )
         elif method == "FolderDraw":
             seeding = pd.read_csv(
                 self.path_prefix
@@ -127,7 +143,9 @@ class Seeding(SimulationComponent):
         # print(seeding.shape)
         seeding = seeding.sort_values(by="date", axis="index").reset_index()
         # print(seeding)
-        mask = (seeding["date"].dt.date > modinf.ti) & (seeding["date"].dt.date <= modinf.tf)
+        mask = (seeding["date"].dt.date > modinf.ti) & (
+            seeding["date"].dt.date <= modinf.tf
+        )
         seeding = seeding.loc[mask].reset_index()
         # print(seeding.shape)
         # print(seeding)
@@ -138,7 +156,9 @@ class Seeding(SimulationComponent):
         if method == "PoissonDistributed":
             amounts = np.random.poisson(seeding["amount"])
         elif method == "NegativeBinomialDistributed":
-            raise ValueError("Seeding method 'NegativeBinomialDistributed' is not supported by flepiMoP anymore.")
+            raise ValueError(
+                "Seeding method 'NegativeBinomialDistributed' is not supported by flepiMoP anymore."
+            )
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
         else:
