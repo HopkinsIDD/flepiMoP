@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import re
 
 import pytest
@@ -23,7 +23,7 @@ class TestRunId:
 
         # Run id is between before/after
         before = before.replace(microsecond=0)
-        after = after.replace(microsecond=0, second=after.second + 1)
+        after = (after + timedelta(seconds=1)).replace(microsecond=0)
         run_time = datetime.strptime(rid, "%Y%m%d_%H%M%S")
         assert run_time >= before
         assert run_time <= after
