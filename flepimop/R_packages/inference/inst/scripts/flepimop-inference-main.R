@@ -124,10 +124,15 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
     if (nchar(opt$ground_truth_end) > 0) {
       ground_truth_end_text <- c("--ground_truth_end", opt$ground_truth_end)
     }
-    
-    err <- system(
-      paste(
-        "flepimop-inference-slot",
+    #log_file <- paste0("log_inference_slot_", config$name, "_", opt$run_id, "_", flepi_slot, ".txt")
+    log_file2 <- paste0("model_output/", config$name, "/", opt$run_id, "/log/log_inference_slot_", flepi_slot, ".txt")
+
+    if (!dir.exists(dirname(log_file2))) {
+      dir.create(dirname(log_file2), recursive = TRUE, showWarnings = TRUE)
+    }
+    command <- c(
+        # opt$rpath,
+        file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$seir_modifiers_scenarios,
@@ -153,7 +158,13 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
         #paste("2>&1 | tee log_inference_slot_",config$name,"_",opt$run_id, "_", flepi_slot, ".txt", sep=""), # works on Mac only, not windows
         #paste("2>&1 | tee model_output/",config$name,"/",opt$run_id,"/log/log_inference_slot", flepi_slot, ".txt", sep=""), # doesn't work because config$name needs to be combined with scenarios to generate the folder name, and, because this command seems to only be able to pipe output to pre-existing folders
         sep = " ")
-    )
+    err <- tryCatch({
+        system2(command = opt$rpath, args = command, stdout = log_file2, stderr = log_file2)
+    }, error = function(e) {
+        message <- paste("Error in slot", flepi_slot, ":", e$message)
+        writeLines(message, con = log_file2)
+        return(1)  # Return non-zero to indicate error
+    })
     if(err != 0){quit("no")}
   }
 parallel::stopCluster(cl)
