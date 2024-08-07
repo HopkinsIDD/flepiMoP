@@ -28,5 +28,6 @@ jobs:
           lfs: true
       - name: Black Formatter Check
         uses: psf/black@stable
-        src: "."
-        options: "--check --quiet"
+        with:
+          src: "."
+          options: "--check --quiet"
