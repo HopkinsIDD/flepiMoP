@@ -12,7 +12,7 @@ from tempfile import NamedTemporaryFile
 
 from gempyor.parameters import Parameters
 from gempyor.testing import (
-    create_confuse_subview_from_dict,
+    create_confuse_configview_from_dict,
     partials_are_similar,
     sample_fits_distribution,
 )
@@ -38,8 +38,8 @@ class MockParametersInput:
 
     def create_confuse_subview(self) -> confuse.Subview:
         if self._confuse_subview is None:
-            self._confuse_subview = create_confuse_subview_from_dict(
-                "parameters", self.config
+            self._confuse_subview = create_confuse_configview_from_dict(
+                self.config, name="parameters"
             )
         return self._confuse_subview
 
