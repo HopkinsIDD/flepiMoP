@@ -268,12 +268,12 @@ if (config$inference$do_inference){
   obs <- suppressMessages(
     readr::read_csv(config$inference$gt_data_path,
                     col_types = readr::cols(date = readr::col_date(),
-                                            source = readr::col_character(),
+                                            # source = readr::col_character(),
                                             subpop = readr::col_character(),
                                             .default = readr::col_double()), )) %>%
     dplyr::filter(subpop %in% subpops_, date >= gt_start_date, date <= gt_end_date) %>%
-    dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) %>%
-    dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
+    dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) #%>%
+    # dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
 
 
   # add aggregate groundtruth to the obs data for the likelihood calc
