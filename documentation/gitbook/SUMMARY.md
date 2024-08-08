@@ -59,11 +59,6 @@
 
 ## Deprecated pages
 
-* [Running with RStudio Server on AWS EC2](deprecated-pages/running-with-rstudio-server-on-aws-ec2.md)
-* [Running with docker on AWS - OLD probably outdated](deprecated-pages/running-with-docker-on-aws/README.md)
-  * [Provisioning AWS EC2 instance](deprecated-pages/running-with-docker-on-aws/provisioning-aws-ec2-instance.md)
-  * [AWS Submission Instructions: Influenza](deprecated-pages/running-with-docker-on-aws/aws-submission-instructions-influenza.md)
-  * [AWS Submission Instructions: COVID-19](deprecated-pages/running-with-docker-on-aws/aws-submission-instructions-covid-19.md)
 * [Module specification](deprecated-pages/module-specification.md)
 
 ## JHU Internal
@@ -71,4 +66,9 @@
 * [US specific How to Run](jhu-internal/us-specific-how-to-run/README.md)
   * [Running with Docker locally (outdated/US specific) 🛳](jhu-internal/us-specific-how-to-run/running-with-docker-locally.md)
   * [Running on Rockfish/MARCC - JHU 🪨🐠](jhu-internal/us-specific-how-to-run/slurm-submission-on-marcc.md)
+  * [Running with docker on AWS - OLD probably outdated](jhu-internal/us-specific-how-to-run/running-with-docker-on-aws/README.md)
+    * [Provisioning AWS EC2 instance](jhu-internal/us-specific-how-to-run/running-with-docker-on-aws/provisioning-aws-ec2-instance.md)
+    * [AWS Submission Instructions: Influenza](jhu-internal/us-specific-how-to-run/running-with-docker-on-aws/aws-submission-instructions-influenza.md)
+    * [AWS Submission Instructions: COVID-19](jhu-internal/us-specific-how-to-run/running-with-docker-on-aws/aws-submission-instructions-covid-19.md)
+  * [Running with RStudio Server on AWS EC2](jhu-internal/us-specific-how-to-run/running-with-rstudio-server-on-aws-ec2.md)
 * [Inference scratch](jhu-internal/inference-scratch.md)
