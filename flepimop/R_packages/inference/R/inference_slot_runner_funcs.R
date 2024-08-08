@@ -67,12 +67,16 @@ aggregate_and_calc_loc_likelihoods <- function(
         this_location_log_likelihood <- 0
         for (var in names(ground_truth_data[[location]])) {
 
+          obs_tmp1 <- ground_truth_data[[location]][[var]]
+          obs_tmp <- obs_tmp1[!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),]
+          sim_tmp <- this_location_modeled_outcome[[var]][!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),] %>%
+            dplyr::filter(date >= min(obs_tmp1$date) & date <= max(obs_tmp1$date))
 
             this_location_log_likelihood <- this_location_log_likelihood +
                 ## Actually compute likelihood for this location and statistic here:
                 sum(inference::logLikStat(
-                    obs = ground_truth_data[[location]][[var]]$data_var,
-                    sim = this_location_modeled_outcome[[var]]$sim_var,
+                    obs = as.numeric(obs_tmp$data_var),
+                    sim = as.numeric(sim_tmp$sim_var),
                     dist = targets_config[[var]]$likelihood$dist,
                     param = targets_config[[var]]$likelihood$param,
                     add_one = targets_config[[var]]$add_one
