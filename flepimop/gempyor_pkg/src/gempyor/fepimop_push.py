@@ -48,3 +48,7 @@ def flepimop_push(aws: bool,
             dst = os.path.join(fs_results_path, file)
             os.path.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy(file, dst)
+
+            
+if __name__ =="__main__":
+    flepimop_push()
