@@ -65,7 +65,6 @@
   * [AWS Submission Instructions: Influenza](deprecated-pages/running-with-docker-on-aws/aws-submission-instructions-influenza.md)
   * [AWS Submission Instructions: COVID-19](deprecated-pages/running-with-docker-on-aws/aws-submission-instructions-covid-19.md)
 * [Module specification](deprecated-pages/module-specification.md)
-* [Block that don't go anywhere](deprecated-pages/block-that-dont-go-anywhere.md)
 
 ## JHU Internal
 
@@ -73,7 +72,3 @@
   * [Running with Docker locally (outdated/US specific) 🛳](jhu-internal/us-specific-how-to-run/running-with-docker-locally.md)
   * [Running on Rockfish/MARCC - JHU 🪨🐠](jhu-internal/us-specific-how-to-run/slurm-submission-on-marcc.md)
 * [Inference scratch](jhu-internal/inference-scratch.md)
-
-## Group 1
-
-* [Page 1](group-1/page-1.md)
