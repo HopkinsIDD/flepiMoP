@@ -1,5 +1,9 @@
 # Provisioning AWS EC2 instance
 
+{% hint style="warning" %}
+This page, along with the other AWS run guides, are not deprecated in case we need to run `flepiMoP` on AWS again in the future, but also are not maintained as other platforms (such as longleaf and rockfish) are preferred for running production jobs.
+{% endhint %}
+
 ### Signing in to AWS Management Console&#x20;
 
 Click on below:
