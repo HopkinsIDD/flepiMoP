@@ -73,8 +73,12 @@ def test_constant_population_legacy_integration():
     )
     integration_method = "legacy"
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -82,7 +86,9 @@ def test_constant_population_legacy_integration():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -94,7 +100,9 @@ def test_constant_population_legacy_integration():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
 
     states = seir.steps_SEIR(
         modinf,
@@ -142,16 +150,24 @@ def test_constant_population_rk4jit_integration_fail():
         )
         modinf.seir_config["integration"]["method"] = "rk4.jit"
 
-        seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-        initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+        seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+            sim_id=100, modinf=modinf
+        )
+        initial_conditions = modinf.initial_conditions.get_from_config(
+            sim_id=100, modinf=modinf
+        )
 
         npi = NPI.NPIBase.execute(
             npi_config=modinf.npi_config_seir,
             modinf=modinf,
             modifiers_library=modinf.seir_modifiers_library,
             subpops=modinf.subpop_struct.subpop_names,
-            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-            pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
+                "sum"
+            ],
+            pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+                "reduction_product"
+            ],
         )
 
         params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -163,7 +179,9 @@ def test_constant_population_rk4jit_integration_fail():
             proportion_array,
             proportion_info,
         ) = modinf.compartments.get_transition_array()
-        parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+        parsed_parameters = modinf.compartments.parse_parameters(
+            params, modinf.parameters.pnames, unique_strings
+        )
 
         states = seir.steps_SEIR(
             modinf,
@@ -212,8 +230,12 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -221,7 +243,9 @@ def test_constant_population_rk4jit_integration():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -233,7 +257,9 @@ def test_constant_population_rk4jit_integration():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
     states = seir.steps_SEIR(
         modinf,
         parsed_parameters,
@@ -280,8 +306,12 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -289,7 +319,9 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -301,7 +333,9 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
 
     for i in range(5):
         states = seir.steps_SEIR(
@@ -316,11 +350,17 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         )
         df = seir.states2Df(modinf, states)
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "10001"]
+            df[
+                (df["mc_value_type"] == "prevalence")
+                & (df["mc_infection_stage"] == "R")
+            ].loc[str(modinf.tf), "10001"]
             > 1
         )
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"]
+            df[
+                (df["mc_value_type"] == "prevalence")
+                & (df["mc_infection_stage"] == "R")
+            ].loc[str(modinf.tf), "20002"]
             > 1
         )
 
@@ -336,11 +376,26 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         )
         df = seir.states2Df(modinf, states)
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"]
+            df[
+                (df["mc_value_type"] == "prevalence")
+                & (df["mc_infection_stage"] == "R")
+            ].loc[str(modinf.tf), "20002"]
             > 1
         )
-        assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["20002"] > 0
-        assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["10001"] > 0
+        assert (
+            df[
+                (df["mc_value_type"] == "incidence")
+                & (df["mc_infection_stage"] == "I1")
+            ].max()["20002"]
+            > 0
+        )
+        assert (
+            df[
+                (df["mc_value_type"] == "incidence")
+                & (df["mc_infection_stage"] == "I1")
+            ].max()["10001"]
+            > 0
+        )
 
 
 def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
@@ -366,8 +421,12 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -375,7 +434,9 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -387,7 +448,9 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
 
     for i in range(5):
         states = seir.steps_SEIR(
@@ -402,8 +465,20 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         )
         df = seir.states2Df(modinf, states)
 
-        assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["20002"] > 0
-        assert df[(df["mc_value_type"] == "incidence") & (df["mc_infection_stage"] == "I1")].max()["10001"] > 0
+        assert (
+            df[
+                (df["mc_value_type"] == "incidence")
+                & (df["mc_infection_stage"] == "I1")
+            ].max()["20002"]
+            > 0
+        )
+        assert (
+            df[
+                (df["mc_value_type"] == "incidence")
+                & (df["mc_infection_stage"] == "I1")
+            ].max()["10001"]
+            > 0
+        )
 
 
 def test_steps_SEIR_no_spread():
@@ -426,8 +501,12 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     modinf.mobility.data = modinf.mobility.data * 0
 
@@ -437,7 +516,9 @@ def test_steps_SEIR_no_spread():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -449,7 +530,9 @@ def test_steps_SEIR_no_spread():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
 
     for i in range(10):
         states = seir.steps_SEIR(
@@ -464,7 +547,10 @@ def test_steps_SEIR_no_spread():
         )
         df = seir.states2Df(modinf, states)
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"]
+            df[
+                (df["mc_value_type"] == "prevalence")
+                & (df["mc_infection_stage"] == "R")
+            ].loc[str(modinf.tf), "20002"]
             == 0.0
         )
 
@@ -480,7 +566,10 @@ def test_steps_SEIR_no_spread():
         )
         df = seir.states2Df(modinf, states)
         assert (
-            df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"]
+            df[
+                (df["mc_value_type"] == "prevalence")
+                & (df["mc_infection_stage"] == "R")
+            ].loc[str(modinf.tf), "20002"]
             == 0.0
         )
 
@@ -515,7 +604,9 @@ def test_continuation_resume():
     seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
 
     states_old = pq.read_table(
-        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, 100, "seir", "parquet"),
+        file_paths.create_file_name(
+            modinf.in_run_id, modinf.in_prefix, 100, "seir", "parquet"
+        ),
     ).to_pandas()
     states_old = states_old[states_old["date"] == "2020-03-15"].reset_index(drop=True)
 
@@ -547,7 +638,9 @@ def test_continuation_resume():
     seir.onerun_SEIR(sim_id2write=sim_id2write, modinf=modinf, config=config)
 
     states_new = pq.read_table(
-        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "seir", "parquet"),
+        file_paths.create_file_name(
+            modinf.in_run_id, modinf.in_prefix, sim_id2write, "seir", "parquet"
+        ),
     ).to_pandas()
     states_new = states_new[states_new["date"] == "2020-03-15"].reset_index(drop=True)
     assert (
@@ -560,10 +653,16 @@ def test_continuation_resume():
     )
 
     seir.onerun_SEIR(
-        sim_id2write=sim_id2write + 1, modinf=modinf, sim_id2load=sim_id2write, load_ID=True, config=config
+        sim_id2write=sim_id2write + 1,
+        modinf=modinf,
+        sim_id2load=sim_id2write,
+        load_ID=True,
+        config=config,
     )
     states_new = pq.read_table(
-        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "seir", "parquet"),
+        file_paths.create_file_name(
+            modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "seir", "parquet"
+        ),
     ).to_pandas()
     states_new = states_new[states_new["date"] == "2020-03-15"].reset_index(drop=True)
     for path in ["model_output/seir", "model_output/snpi", "model_output/spar"]:
@@ -587,7 +686,9 @@ def test_inference_resume():
 
     spatial_config = config["subpop_setup"]
     if "data_path" in config:
-        raise ValueError("The config has a data_path section. This is no longer supported.")
+        raise ValueError(
+            "The config has a data_path section. This is no longer supported."
+        )
     # spatial_base_path = pathlib.Path(config["data_path"].get())
     modinf = model_info.ModelInfo(
         config=config,
@@ -604,7 +705,9 @@ def test_inference_resume():
 
     seir.onerun_SEIR(sim_id2write=int(sim_id2write), modinf=modinf, config=config)
     npis_old = pq.read_table(
-        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet")
+        file_paths.create_file_name(
+            modinf.in_run_id, modinf.in_prefix, sim_id2write, "snpi", "parquet"
+        )
     ).to_pandas()
 
     config.clear()
@@ -632,14 +735,24 @@ def test_inference_resume():
     )
 
     seir.onerun_SEIR(
-        sim_id2write=sim_id2write + 1, modinf=modinf, sim_id2load=sim_id2write, load_ID=True, config=config
+        sim_id2write=sim_id2write + 1,
+        modinf=modinf,
+        sim_id2load=sim_id2write,
+        load_ID=True,
+        config=config,
     )
     npis_new = pq.read_table(
-        file_paths.create_file_name(modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "snpi", "parquet")
+        file_paths.create_file_name(
+            modinf.in_run_id, modinf.in_prefix, sim_id2write + 1, "snpi", "parquet"
+        )
     ).to_pandas()
 
     assert npis_old["modifier_name"].isin(["None", "Wuhan", "KansasCity"]).all()
-    assert npis_new["modifier_name"].isin(["None", "Wuhan", "KansasCity", "BrandNew"]).all()
+    assert (
+        npis_new["modifier_name"]
+        .isin(["None", "Wuhan", "KansasCity", "BrandNew"])
+        .all()
+    )
     # assert((['None', 'Wuhan', 'KansasCity']).isin(npis_old["modifier_name"]).all())
     # assert((['None', 'Wuhan', 'KansasCity', 'BrandNew']).isin(npis_new["modifier_name"]).all())
     assert (npis_old["start_date"] == "2020-04-01").all()
@@ -674,8 +787,12 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -683,7 +800,9 @@ def test_parallel_compartments_with_vacc():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -695,7 +814,9 @@ def test_parallel_compartments_with_vacc():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
 
     for i in range(5):
         states = seir.steps_SEIR(
@@ -761,8 +882,12 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+        sim_id=100, modinf=modinf
+    )
+    initial_conditions = modinf.initial_conditions.get_from_config(
+        sim_id=100, modinf=modinf
+    )
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
@@ -770,7 +895,9 @@ def test_parallel_compartments_no_vacc():
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+        pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+            "reduction_product"
+        ],
     )
 
     params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -782,7 +909,9 @@ def test_parallel_compartments_no_vacc():
         proportion_array,
         proportion_info,
     ) = modinf.compartments.get_transition_array()
-    parsed_parameters = modinf.compartments.parse_parameters(params, modinf.parameters.pnames, unique_strings)
+    parsed_parameters = modinf.compartments.parse_parameters(
+        params, modinf.parameters.pnames, unique_strings
+    )
 
     for i in range(5):
         states = seir.steps_SEIR(

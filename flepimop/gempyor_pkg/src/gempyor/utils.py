@@ -103,7 +103,9 @@ def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
     import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
 
-    sr = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    sr = subprocess.Popen(
+        shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     (stdout, stderr) = sr.communicate()
     if sr.returncode != 0:
         print(f"{command_name} failed failed with returncode {sr.returncode}")
@@ -137,7 +139,9 @@ def add_method(cls):
     return decorator
 
 
-def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs):
+def search_and_import_plugins_class(
+    plugin_file_path: str, path_prefix: str, class_name: str, **kwargs
+):
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
     # unfortunatelly very complicated, this is cpython only ??
@@ -159,7 +163,9 @@ import pstats
 from functools import wraps
 
 
-def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_dirs=False):
+def profile(
+    output_file=None, sort_by="cumulative", lines_to_print=None, strip_dirs=False
+):
     """A time profiler decorator.
     Inspired by and modified the profile decorator of Giampaolo Rodola:
     http://code.activestate.com/recipes/577817-profile-decorator/
@@ -307,14 +313,20 @@ def as_random_distribution(self):
         dist = self["distribution"].get()
         if dist == "fixed":
             return functools.partial(
-                np.random.uniform, self["value"].as_evaled_expression(), self["value"].as_evaled_expression(),
+                np.random.uniform,
+                self["value"].as_evaled_expression(),
+                self["value"].as_evaled_expression(),
             )
         elif dist == "uniform":
             return functools.partial(
-                np.random.uniform, self["low"].as_evaled_expression(), self["high"].as_evaled_expression(),
+                np.random.uniform,
+                self["low"].as_evaled_expression(),
+                self["high"].as_evaled_expression(),
             )
         elif dist == "poisson":
-            return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
+            return functools.partial(
+                np.random.poisson, self["lam"].as_evaled_expression()
+            )
         elif dist == "binomial":
             p = self["p"].as_evaled_expression()
             if (p < 0) or (p > 1):
@@ -336,13 +348,18 @@ def as_random_distribution(self):
             ).rvs
         elif dist == "lognorm":
             return get_log_normal(
-                meanlog=self["meanlog"].as_evaled_expression(), sdlog=self["sdlog"].as_evaled_expression(),
+                meanlog=self["meanlog"].as_evaled_expression(),
+                sdlog=self["sdlog"].as_evaled_expression(),
             ).rvs
         else:
             raise NotImplementedError(f"unknown distribution [got: {dist}]")
     else:
         # we allow a fixed value specified directly:
-        return functools.partial(np.random.uniform, self.as_evaled_expression(), self.as_evaled_expression(),)
+        return functools.partial(
+            np.random.uniform,
+            self.as_evaled_expression(),
+            self.as_evaled_expression(),
+        )
 
 
 def list_filenames(
@@ -431,14 +448,14 @@ def rolling_mean_pad(
             [20.2, 21.2, 22.2, 23.2],
             [22.6, 23.6, 24.6, 25.6]])
     """
-    weights = (1. / window) * np.ones(window)
+    weights = (1.0 / window) * np.ones(window)
     output = scipy.ndimage.convolve1d(data, weights, axis=0, mode="nearest")
     if window % 2 == 0:
         rows, cols = data.shape
         i = rows - 1
-        output[i, :] = 0.
+        output[i, :] = 0.0
         window -= 1
-        weight = 1. / window
+        weight = 1.0 / window
         for l in range(-((window - 1) // 2), 1 + (window // 2)):
             i_star = min(max(i + l, 0), i)
             for j in range(cols):
@@ -472,7 +489,12 @@ def print_disk_diagnosis():
 
 
 def create_resume_out_filename(
-    flepi_run_index: str, flepi_prefix: str, flepi_slot_index: str, flepi_block_index: str, filetype: str, liketype: str
+    flepi_run_index: str,
+    flepi_prefix: str,
+    flepi_slot_index: str,
+    flepi_block_index: str,
+    filetype: str,
+    liketype: str,
 ) -> str:
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
@@ -493,7 +515,11 @@ def create_resume_out_filename(
 
 
 def create_resume_input_filename(
-    resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str
+    resume_run_index: str,
+    flepi_prefix: str,
+    flepi_slot_index: str,
+    filetype: str,
+    liketype: str,
 ) -> str:
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
@@ -511,7 +537,9 @@ def create_resume_input_filename(
     )
 
 
-def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str) -> List[str]:
+def get_filetype_for_resume(
+    resume_discard_seeding: str, flepi_block_index: str
+) -> List[str]:
     """
     Retrieves a list of parquet file types that are relevant for resuming a process based on
     specific environment variable settings. This function dynamically determines the list
@@ -564,7 +592,8 @@ def create_resume_file_names_map(
         behavior.
     """
     file_types = get_filetype_for_resume(
-        resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
+        resume_discard_seeding=resume_discard_seeding,
+        flepi_block_index=flepi_block_index,
     )
     resume_file_name_mapping = dict()
     liketypes = ["global", "chimeric"]
@@ -638,10 +667,12 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
         import boto3
         from botocore.exceptions import ClientError
     except ModuleNotFoundError:
-        raise ModuleNotFoundError((
-            "No module named 'boto3', which is required for "
-            "gempyor.utils.download_file_from_s3. Please install the aws target."
-        ))
+        raise ModuleNotFoundError(
+            (
+                "No module named 'boto3', which is required for "
+                "gempyor.utils.download_file_from_s3. Please install the aws target."
+            )
+        )
     s3 = boto3.client("s3")
     first_output_filename = next(iter(name_map.values()))
     output_dir = os.path.dirname(first_output_filename)
@@ -664,13 +695,13 @@ def move_file_at_local(name_map: Dict[str, str]) -> None:
     """
     Moves files locally according to a given mapping.
 
-    This function takes a dictionary where the keys are source file paths and 
-    the values are destination file paths. It ensures that the destination 
-    directories exist and then copies the files from the source paths to the 
+    This function takes a dictionary where the keys are source file paths and
+    the values are destination file paths. It ensures that the destination
+    directories exist and then copies the files from the source paths to the
     destination paths.
 
     Parameters:
-    name_map (Dict[str, str]): A dictionary mapping source file paths to 
+    name_map (Dict[str, str]): A dictionary mapping source file paths to
                                destination file paths.
 
     Returns:
