@@ -93,6 +93,13 @@ _**A warning for Windows**_\
 Once _gempyor_ is successfully installed locally, you will need to make sure the executable file `gempyor-seir.exe` is runnable via command line. To do this, you will need to add the directory where it was created to PATH. Follow the instructions [here](https://techpp.com/2021/08/26/set-path-variable-in-windows-guide/) to add the directory where this .exe file is located to PATH. This can be done via GUI or CLI.
 {% endhint %}
 
+If you would like to install _gempyor_ directly from GitHub, go to the flepiMoP directory and use the following command:
+
+```bash
+cd $FLEPI_PATH
+pip install --no-deps "git+https://github.com/HopkinsIDD/flepiMoP.git@main#egg=gempyor&subdirectory=flepimop/gempyor_pkg"
+```
+
 If you just want to [run a forward simulation](quick-start-guide.md#non-inference-run), installing python's _gempyor_ is all you need.
 
 To [run an inference run](quick-start-guide.md#inference-run) and to explore your model outputs using provided post-processing functionality, there are some packages you'll need to **install in R**. Open your **R terminal** (at the bottom of RStudio, or in the R IDE), and run the following command to install the necessary R packages:
@@ -100,6 +107,12 @@ To [run an inference run](quick-start-guide.md#inference-run) and to explore you
 <pre class="language-r" data-overflow="wrap"><code class="lang-r"><strong># while in R
 </strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph"))
 </strong></code></pre>
+
+{% hint style="info" %}
+_**On Linux**_
+
+The R packages "`sf"` and "`ggraph"` require you to have `libgdal-dev` and `libopenblas-dev` installed on your local linux machine.&#x20;
+{% endhint %}
 
 This step does not need to be repeated unless you use a new computer or delete and reinstall R.&#x20;
 

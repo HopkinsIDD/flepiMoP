@@ -90,7 +90,7 @@ This section is where users can specify the details of the infectious disease tr
 Optional section
 {% endhint %}
 
-This section is used to specify the initial conditions of the model, which define how individuals are distributed between the model compartments at the time the model simulation begins. Importantly, the initial conditions specify the time and location where infection is first introduced. If this section is omitted, default values are used. If users want to add infections to the population at later times, or add or remove individuals from compartments separately from the model rules, they can do so via the related `seeding` section. More details [here](specifying-initial-conditions-and-seeding.md).&#x20;
+This section is used to specify the initial conditions of the model, which define how individuals are distributed between the model compartments at the time the model simulation begins. Importantly, the initial conditions specify the time and location where infection is first introduced. If this section is omitted, default values are used. If users want to add infections to the population at later times, or add or remove individuals from compartments separately from the model rules, they can do so via the related `seeding` section. More details [here](specifying-initial-conditions.md).&#x20;
 
 ### `seeding` section
 
@@ -98,7 +98,7 @@ This section is used to specify the initial conditions of the model, which defin
 Optional section
 {% endhint %}
 
-This section is used to specify how individuals are instantaneously "seeded" from one compartment to another, where they then continue to be governed by the model equations. For example, this seeding could be used to represent importations of infected individuals from an outside population, mutation events that create new strains, or vaccinations that alter disease susceptibility. Seeding events can occur at any time in the simulation. The seeding section specifies the numeric values added to or removed from any compartment of the model. More details [here](specifying-initial-conditions-and-seeding.md).&#x20;
+This section is used to specify how individuals are instantaneously "seeded" from one compartment to another, where they then continue to be governed by the model equations. For example, this seeding could be used to represent importations of infected individuals from an outside population, mutation events that create new strains, or vaccinations that alter disease susceptibility. Seeding events can occur at any time in the simulation. The seeding section specifies the numeric values added to or removed from any compartment of the model. More details [here](specifying-initial-conditions.md).&#x20;
 
 ### `outcomes` section
 
