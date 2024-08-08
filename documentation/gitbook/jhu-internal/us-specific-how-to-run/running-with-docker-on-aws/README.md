@@ -1,5 +1,9 @@
 # Running with docker on AWS - OLD probably outdated
 
+{% hint style="warning" %}
+This page, along with the other AWS run guides, are not deprecated in case we need to run `flepiMoP` on AWS again in the future, but also are not maintained as other platforms (such as longleaf and rockfish) are preferred for running production jobs.
+{% endhint %}
+
 For large simulations, running the model on a cluster or cloud computing is required. AWS provides a good solution for this, if funding or credits are available (AWS can get very expensive).
 
 ### Introduction
