@@ -31,10 +31,10 @@ def flepimop_push(aws: bool,
         except ModuleNotFoundError:
             raise ModuleNotFoundError((
                 "No module named 'boto3', which is required for "
-                "gempyor.utils.download_file_from_s3. Please install the aws target."
+                "gempyor.flepimop_push.flepimop_push. Please install the aws target."
             ))
         if s3_results_path == "":
-            raise ValueError("argument aws is setted to True, you must use --s3_results_path too or environment variable S3_RESULTS_PATH.")
+            raise ValueError("argument aws is setted to True, you must use --s3_results_path or environment variable S3_RESULTS_PATH.")
         s3 = boto3.client("s3")
         for file in exist_files:
             s3_path = os.path.join(s3_results_path, file)
