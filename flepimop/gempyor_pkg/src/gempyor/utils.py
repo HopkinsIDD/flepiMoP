@@ -99,7 +99,23 @@ def read_df(
     )
 
 
-def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
+def command_safe_run(command: str, command_name: str="mycommand", fail_on_fail: bool=True):
+    """
+    Runs a shell command and prints diagnostics if command fails.
+
+    Args:
+        command: The CLI command to be given.
+        command_name: The reference name for you command (str). Default value is "mycommand".
+        fail_on_fail: If True, an exception will be thrown if the command fails (default is True)
+
+    Returns:
+        returncode: The returncode message from running yourcommand.
+        stdout: Standard output.
+        stderr: Standard error stream.
+
+    Raises:
+        Exception: If fail_on_fail=True and the command fails, an exception will be thrown.
+    """
     import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
 
@@ -124,7 +140,15 @@ def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
 
 
 def add_method(cls):
-    "Decorator to add a method to a class"
+    """
+    Decorator to add a method to a class.
+
+    Args:
+        cls: The class you want to add a method to.
+    
+    Returns:
+        decorator: The decorator.
+    """
 
     def decorator(func):
         @functools.wraps(func)
@@ -138,6 +162,18 @@ def add_method(cls):
 
 
 def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs):
+    """
+    Function serving to create a class that finds and imports the necessary modules.
+
+    Args:
+        plugin_file_path: Pathway to the module.
+        path_prefix: Pathway prefix to the module.
+        class_name: Name of the class.
+        kwargs: Further arguments passed to initilization of the class.
+
+    Returns:
+
+    """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
     # unfortunatelly very complicated, this is cpython only ??
@@ -159,10 +195,11 @@ import pstats
 from functools import wraps
 
 
-def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_dirs=False):
+def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_dirs: bool=False):
     """A time profiler decorator.
     Inspired by and modified the profile decorator of Giampaolo Rodola:
     http://code.activestate.com/recipes/577817-profile-decorator/
+
     Args:
         output_file: str or None. Default is None
             Path of the output file. If only name of the file is given, it's
@@ -179,9 +216,10 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
             are printed toward the top of the file.
         strip_dirs: bool
             Whether to remove the leading path info from file names.
-            This is also useful in reducing the size of the printout
+            This is also useful in reducing the size of the printout.
+
     Returns:
-        Profile of the decorated function
+        Profile of the decorated function.
     """
 
     def inner(func):
@@ -200,7 +238,16 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
     return inner
 
 
-def as_list(thing):
+def as_list(thing) -> list:
+    """
+    Returns argument passed as a list.
+
+    Args:
+        thing: The object that you would like to be converted to a list.
+
+    Returns:
+        thing: The object converted to a list.
+    """
     if type(thing) == list:
         return thing
     return [thing]
@@ -208,6 +255,12 @@ def as_list(thing):
 
 ### A little timer class
 class Timer(object):
+    """
+    A timer class that starts, ends, and records time in between.
+
+    Attributes:
+        name: Name of event.
+    """
     def __init__(self, name):
         self.name = name
 
@@ -220,6 +273,12 @@ class Timer(object):
 
 
 class ISO8601Date(confuse.Template):
+    """
+    Reads in config dates into datetimes.dates.
+
+    Attributes:
+        value: Date value.
+    """
     def convert(self, value, view):
         if isinstance(value, datetime.date):
             return value
@@ -231,14 +290,27 @@ class ISO8601Date(confuse.Template):
 
 @add_method(confuse.ConfigView)
 def as_date(self):
-    "Evaluates an datetime.date or ISO8601 date string, raises ValueError on parsing errors."
+    """
+    Evaluates an datetime.date or ISO8601 date string.
+
+    Raises:
+        ValueError: On parsing errors.
+    """
 
     return self.get(ISO8601Date())
 
 
 @add_method(confuse.ConfigView)
 def as_evaled_expression(self):
-    "Evaluates an expression string, returning a float. Raises ValueError on parsing errors."
+    """
+    Evaluates an expression string, returning a float. 
+
+    Args:
+        self: Class instance expression to evaluate.
+
+    Raises:
+        ValueError: On parsing errors.
+    """
 
     value = self.get()
     if isinstance(value, numbers.Number):
@@ -258,7 +330,8 @@ def get_truncated_normal(
     a: float | int = 0,
     b: float | int = 10,
 ) -> scipy.stats._distn_infrastructure.rv_frozen:
-    """Returns a truncated normal distribution.
+    """
+    Returns a truncated normal distribution.
 
     This function constructs a truncated normal distribution with the specified
     mean, standard deviation, and bounds. The truncated normal distribution is
@@ -301,7 +374,20 @@ def get_log_normal(
 
 @add_method(confuse.ConfigView)
 def as_random_distribution(self):
-    "Constructs a random distribution object from a distribution config key"
+    """
+    Constructs a random distribution object from a distribution config key.
+
+    Args:
+        self: Class instance (in this case, a config key) to construct the random distribution from.
+
+    Returns:
+        A partial object containing the random distribution.
+    
+    Raises: 
+        ValueError: When values are out of range.
+        NotImplementedError: If an unknown distribution is found.
+
+    """
 
     if isinstance(self.get(), dict):
         dist = self["distribution"].get()
@@ -447,6 +533,10 @@ def rolling_mean_pad(
 
 
 def print_disk_diagnosis():
+    """
+    Reads and prints AWS diagnoses. 
+    Includes total bytes, used bytes, free bytes.
+    """
     import os
     from os import path
     from shutil import disk_usage
@@ -474,6 +564,20 @@ def print_disk_diagnosis():
 def create_resume_out_filename(
     flepi_run_index: str, flepi_prefix: str, flepi_slot_index: str, flepi_block_index: str, filetype: str, liketype: str
 ) -> str:
+    """
+    Compiles run output information.
+
+    Args:
+        flepi_run_index: Index of the run (str).
+        flepi_prefix: File prefix (str).
+        flepi_slot_index: Index of the slot (str).
+        flepi_block_index: Index of the block (str).
+        filetype: File type (str).
+        liketype: Chimeric or global (str).
+    
+    Returns:
+        The path to a corresponding output file.
+    """
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
     inference_filename_prefix = "{:09d}.".format(int(flepi_slot_index))
@@ -495,6 +599,19 @@ def create_resume_out_filename(
 def create_resume_input_filename(
     resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str
 ) -> str:
+    """
+    Compiles run input information.
+
+    Args:
+        resume_run_index: Index of the run (str).
+        flepi_prefix: File prefix (str).
+        flepi_slot_index: Index of thes lot (str).
+        filetype: File type (str).
+        liketype: Chimeric or global (str).
+    
+    Returns:
+        The path to the a corresponding input file.
+    """
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
     index = flepi_slot_index
@@ -517,9 +634,12 @@ def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str)
     specific environment variable settings. This function dynamically determines the list
     based on the current operational context given by the environment.
 
-    The function checks two environment variables:
-    - `resume_discard_seeding`: Determines whether seeding-related file types should be included.
-    - `flepi_block_index`: Determines a specific operational mode or block of the process.
+    Args:
+        resume_discard_seeding: Determines whether seeding-related file types should be included (str).
+        flepi_block_index: Determines a specific operational mode or block of the process (str).
+
+    Returns:
+        List of file types.
     """
     if flepi_block_index == "1":
         if resume_discard_seeding == "true":
@@ -544,6 +664,18 @@ def create_resume_file_names_map(
     parquet file types and environmental conditions. The function adjusts the file name mappings
     based on the operational block index and the location of the last job output.
 
+    Args:
+        resume_discard_seeding:
+        flepi_block_index:
+        resume_run_index:
+        flepi_prefix:
+        flepi_slot_index:
+        flepi_run_index:
+        last_job_output:
+
+    Return:
+        Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
+                        output file paths. 
     The mappings depend on:
     - Parquet file types appropriate for resuming a process, as determined by the environment.
     - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the
@@ -553,15 +685,13 @@ def create_resume_file_names_map(
     - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set to an S3 path,
       adjusts the keys in the mapping to be prefixed with this path.
 
-    Returns:
-        Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
-                        output file paths. The paths may be modified by the 'LAST_JOB_OUTPUT' if it
-                        is set and points to an S3 location.
-
     Raises:
         No explicit exceptions are raised within the function, but it relies heavily on external
         functions and environment variables which if improperly configured could lead to unexpected
         behavior.
+    
+    Notes:
+    - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to an S3 location.
     """
     file_types = get_filetype_for_resume(
         resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
