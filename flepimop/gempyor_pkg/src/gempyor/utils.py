@@ -99,19 +99,19 @@ def read_df(
     )
 
 
-def command_safe_run(command, command_name="mycommand", fail_on_fail=True):
+def command_safe_run(command: str, command_name: str="mycommand", fail_on_fail: bool=True):
     """
-    Verifies that a command is valid by attempting to run it. Prints stream of code if command fails.
+    Runs a shell command and prints diagnostics if command fails.
 
     Args:
-        command: The CLI command to be given (str).
+        command: The CLI command to be given.
         command_name: The reference name for you command (str). Default value is "mycommand".
-        fail_on_fail: Boolean; default is True. If True, an exception will be thrown if the command fails.
+        fail_on_fail: If True, an exception will be thrown if the command fails (default is True)
 
     Returns:
         returncode: The returncode message from running yourcommand.
-        stdout: Standard output
-        stderr: Standard error stream
+        stdout: Standard output.
+        stderr: Standard error stream.
 
     Raises:
         Exception: If fail_on_fail=True and the command fails, an exception will be thrown.
@@ -162,21 +162,21 @@ def add_method(cls):
 
 
 def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs):
-    # Look for all possible plugins and import them
-    # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-    # unfortunatelly very complicated, this is cpython only ??
     """
     Function serving to create a class that finds and imports the necessary modules.
 
     Args:
-        plugin_file_path: Pathway to the module (str).
-        path_prefix: Pathway prefix to the module (str).
-        class_name: Name of the class (str).
-    Keyword args: 
+        plugin_file_path: Pathway to the module.
+        path_prefix: Pathway prefix to the module.
+        class_name: Name of the class.
+        kwargs: Further arguments passed to initilization of the class.
 
     Returns:
 
     """
+    # Look for all possible plugins and import them
+    # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
+    # unfortunatelly very complicated, this is cpython only ??
     import sys, os
 
     full_path = os.path.join(path_prefix, plugin_file_path)
@@ -195,7 +195,7 @@ import pstats
 from functools import wraps
 
 
-def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_dirs=False):
+def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_dirs: bool=False):
     """A time profiler decorator.
     Inspired by and modified the profile decorator of Giampaolo Rodola:
     http://code.activestate.com/recipes/577817-profile-decorator/
@@ -216,10 +216,10 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
             are printed toward the top of the file.
         strip_dirs: bool
             Whether to remove the leading path info from file names.
-            This is also useful in reducing the size of the printout
+            This is also useful in reducing the size of the printout.
 
     Returns:
-        Profile of the decorated function
+        Profile of the decorated function.
     """
 
     def inner(func):
@@ -238,7 +238,7 @@ def profile(output_file=None, sort_by="cumulative", lines_to_print=None, strip_d
     return inner
 
 
-def as_list(thing):
+def as_list(thing) -> list:
     """
     Returns argument passed as a list.
 
@@ -255,6 +255,12 @@ def as_list(thing):
 
 ### A little timer class
 class Timer(object):
+    """
+    A timer class that starts, ends, and records time in between.
+
+    Attributes:
+        name: Name of event.
+    """
     def __init__(self, name):
         self.name = name
 
@@ -267,6 +273,12 @@ class Timer(object):
 
 
 class ISO8601Date(confuse.Template):
+    """
+    Reads in config dates into datetimes.dates.
+
+    Attributes:
+        value: Date value.
+    """
     def convert(self, value, view):
         if isinstance(value, datetime.date):
             return value
@@ -280,9 +292,6 @@ class ISO8601Date(confuse.Template):
 def as_date(self):
     """
     Evaluates an datetime.date or ISO8601 date string.
-
-    Args:
-        self: Class instance to convert to date or date string.
 
     Raises:
         ValueError: On parsing errors.
@@ -666,8 +675,7 @@ def create_resume_file_names_map(
 
     Return:
         Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
-                        output file paths. The paths may be modified by the 'LAST_JOB_OUTPUT' if it
-                        is set and points to an S3 location.
+                        output file paths. 
     The mappings depend on:
     - Parquet file types appropriate for resuming a process, as determined by the environment.
     - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the
@@ -681,6 +689,9 @@ def create_resume_file_names_map(
         No explicit exceptions are raised within the function, but it relies heavily on external
         functions and environment variables which if improperly configured could lead to unexpected
         behavior.
+    
+    Notes:
+    - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to an S3 location.
     """
     file_types = get_filetype_for_resume(
         resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
