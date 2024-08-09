@@ -1,0 +1,71 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+
+body:
+  - type: dropdown
+    id: label
+    attributes:
+      label: Label
+      description: Which label(s) describe this issue?
+      multiple: true
+      options:
+        - bug
+        - batch
+        - config.writer
+        - documentation
+        - duplicate
+        - enhancement
+        - gempyor
+        - good first issue
+        - help wanted
+        - inference
+        - invalid
+        - meta/workflow
+        - operations
+        - performance
+        - post-processing
+        - question
+        - quick issue
+        - revisit ASAP
+        - seeding
+        - submission
+        - wontfix
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Label
+      description: What priority level is this issue?
+      options:
+        - low priority
+        - medium priority
+        - high priority
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Describe the bug/issue
+      placeholder: A clear and concise description of what the issue is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: to-reproduce
+    attributes:
+      label: To Reproduce
+      placeholder: Run code '...' or expect this error '...'
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment, if relevant
+      placeholder: OS (e.g. Ubuntu 22.04, macOS 14.5, etc.). R or Python version (terminal command `R --version` or `python --version). fleiMoP branch and/or commit if relevant (`git rev-parse HEAD`)
+    validations:
+      required: false
