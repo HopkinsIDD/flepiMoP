@@ -251,9 +251,9 @@ def create_file_name_for_push(flepi_run_index: str,
         file_name = create_file_name(run_id=flepi_run_index,
                                      prefix=prefix,
                                      inference_filename_prefix="{:09d}.".format(int(flepi_slot_index)),
-                                     inference_filename_suffix='chimeric/intermediate',
+                                     inference_filepath_suffix='chimeric/intermediate',
                                      index=flepi_block_index,
-                                     type=type_name,
+                                     ftype=type_name,
                                      extension=extension)
         name_list.append(file_name)
     return name_list
