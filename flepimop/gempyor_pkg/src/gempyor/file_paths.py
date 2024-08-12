@@ -59,13 +59,7 @@ def create_file_name(
     """
     if create_directory:
         os.makedirs(
-            create_dir_name(
-                run_id,
-                prefix,
-                ftype,
-                inference_filepath_suffix,
-                inference_filename_prefix,
-            ),
+            create_dir_name(run_id, prefix, ftype, inference_filepath_suffix, inference_filename_prefix,),
             exist_ok=True,
         )
 
@@ -124,13 +118,7 @@ def create_file_name_without_extension(
     """
     if create_directory:
         os.makedirs(
-            create_dir_name(
-                run_id,
-                prefix,
-                ftype,
-                inference_filepath_suffix,
-                inference_filename_prefix,
-            ),
+            create_dir_name(run_id, prefix, ftype, inference_filepath_suffix, inference_filename_prefix,),
             exist_ok=True,
         )
     filename = Path(
@@ -170,11 +158,7 @@ def run_id(timestamp: None | datetime = None) -> str:
 
 
 def create_dir_name(
-    run_id: str,
-    prefix: str,
-    ftype: str,
-    inference_filepath_suffix: str,
-    inference_filename_prefix: str,
+    run_id: str, prefix: str, ftype: str, inference_filepath_suffix: str, inference_filename_prefix: str,
 ) -> str:
     """
     Generate a directory name based on the given parameters.
@@ -199,20 +183,14 @@ def create_dir_name(
     """
     return os.path.dirname(
         create_file_name_without_extension(
-            run_id,
-            prefix,
-            1,
-            ftype,
-            inference_filepath_suffix,
-            inference_filename_prefix,
-            create_directory=False,
+            run_id, prefix, 1, ftype, inference_filepath_suffix, inference_filename_prefix, create_directory=False,
         )
     )
 
-def create_file_name_for_push(flepi_run_index: str,
-                               prefix: str,
-                               flepi_slot_index: str,
-                               flepi_block_index: str) -> List[str]:
+
+def create_file_name_for_push(
+    flepi_run_index: str, prefix: str, flepi_slot_index: str, flepi_block_index: str
+) -> List[str]:
     """
     Generate a list of file names for different types of inference results.
     
@@ -248,13 +226,14 @@ def create_file_name_for_push(flepi_run_index: str,
     name_list = []
     for type_name in type_list:
         extension = "csv" if type_name == "seed" else "parquet"
-        file_name = create_file_name(run_id=flepi_run_index,
-                                     prefix=prefix,
-                                     inference_filename_prefix="{:09d}.".format(int(flepi_slot_index)),
-                                     inference_filepath_suffix='chimeric/intermediate',
-                                     index=flepi_block_index,
-                                     ftype=type_name,
-                                     extension=extension)
+        file_name = create_file_name(
+            run_id=flepi_run_index,
+            prefix=prefix,
+            inference_filename_prefix="{:09d}.".format(int(flepi_slot_index)),
+            inference_filepath_suffix="chimeric/intermediate",
+            index=flepi_block_index,
+            ftype=type_name,
+            extension=extension,
+        )
         name_list.append(file_name)
     return name_list
-        
