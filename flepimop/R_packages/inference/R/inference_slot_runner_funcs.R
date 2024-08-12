@@ -69,9 +69,11 @@ aggregate_and_calc_loc_likelihoods <- function(
 
           obs_tmp1 <- ground_truth_data[[location]][[var]]
           obs_tmp <- obs_tmp1[!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),]
-          sim_tmp <- this_location_modeled_outcome[[var]][!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),] %>%
-            dplyr::filter(date >= min(obs_tmp1$date) & date <= max(obs_tmp1$date))
-
+          sim_tmp1 <- this_location_modeled_outcome[[var]] 
+          sim_tmp <- sim_tmp1[match(lubridate::as_date(sim_tmp1$date), 
+                                    lubridate::as_date(obs_tmp$date)),] %>% na.omit()
+          
+          
             this_location_log_likelihood <- this_location_log_likelihood +
                 ## Actually compute likelihood for this location and statistic here:
                 sum(inference::logLikStat(
