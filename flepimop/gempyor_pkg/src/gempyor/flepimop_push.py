@@ -18,7 +18,7 @@ from gempyor.file_paths import create_file_name_for_push
     "--fs_results_path", "fs_results_path", envvar="FS_RESULTS_PATH", type=click.STRING, default="", required=False
 )
 def flepimop_push(
-    s3_upload: bool,
+    s3_upload: str,
     data_path: str,
     flepi_run_index: str,
     flepi_prefix: str,
@@ -129,7 +129,7 @@ def flepimop_push(
         for file in exist_files:
             dst = os.path.join(fs_results_path, file)
             os.path.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.copy(os.path.join(fs_results_path, file), dst)
+            shutil.copy(os.path.join(data_path, file), dst)
     print("flepimop-push successfully push all existing files.")
 
 
