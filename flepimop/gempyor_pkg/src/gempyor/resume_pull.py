@@ -113,7 +113,7 @@ from gempyor.utils import create_resume_file_names_map, download_file_from_s3, m
 def fetching_resume_files(
     resume_location, discard_seeding, flepi_block_index, resume_run_index, flepi_run_index, flepi_prefix
 ):
-    flep_slot_index = os.environ["SLURM_ARRAY_TASK_ID"]
+    flepi_slot_index = os.environ["SLURM_ARRAY_TASK_ID"]
     if discard_seeding is True:
         discard_seeding = "true"
 
@@ -122,7 +122,7 @@ def fetching_resume_files(
         flepi_block_index=str(flepi_block_index),
         resume_run_index=resume_run_index,
         flepi_prefix=flepi_prefix,
-        flepi_slot_index=flep_slot_index,
+        flepi_slot_index=flepi_slot_index,
         flepi_run_index=flepi_run_index,
         last_job_output=resume_location,
     )
