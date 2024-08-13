@@ -68,7 +68,6 @@ def flepimop_push(
     ------
     ValueError
         If `s3_upload` is set to True and `s3_results_path` is not provided.
-        If `s3_upload` is set to False and `fs_results_path` is not provided.
     
     ModuleNotFoundError
         If `boto3` is not installed when `s3_upload` is set to True.
@@ -103,7 +102,10 @@ def flepimop_push(
         file_path = os.path.join(data_path, file_name)
         if os.path.exists(file_path):
             exist_files.append(file_name)
-    print("Exist files: " + str(exist_files))
+    print("flepimos-push find these existing files: " + " ".join(exist_files))
+    # Track failed uploads/copies separately
+    failed_s3_uploads = []
+    failed_fs_copies = []
     if s3_upload == "true":
         try:
             import boto3
@@ -124,13 +126,39 @@ def flepimop_push(
             s3_path = os.path.join(s3_results_path, file)
             bucket = s3_path.split("/")[2]
             object_name = s3_path[len(bucket) + 6 :]
-            s3.upload_file(os.path.join(data_path, file), bucket, object_name)
+            try:
+                s3.upload_file(os.path.join(data_path, file), bucket, object_name)
+                print(f"Uploaded {file} to S3 successfully.")
+            except ClientError as e:
+                print(f"Failed to upload {file} to S3: {e}")
+                failed_s3_uploads.append(file)
+
     if fs_results_path != "":
         for file in exist_files:
             dst = os.path.join(fs_results_path, file)
-            os.path.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.copy(os.path.join(data_path, file), dst)
-    print("flepimop-push successfully push all existing files.")
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            try:
+                shutil.copy(os.path.join(data_path, file), dst)
+                print(f"Copied {file} to local filesystem successfully.")
+            except IOError as e:
+                print(f"Failed to copy {file} to local filesystem: {e}")
+                failed_fs_copies.append(file)
+
+    # Print failed files for S3 uploads
+    if failed_s3_uploads:
+        print("The following files failed to upload to S3:")
+        for file in failed_s3_uploads:
+            print(file)
+
+    # Print failed files for local filesystem copies
+    if failed_fs_copies:
+        print("The following files failed to copy to the local filesystem:")
+        for file in failed_fs_copies:
+            print(file)
+
+    # Success message if no failures
+    if not failed_s3_uploads and not failed_fs_copies:
+        print("flepimop-push successfully pushed all existing files.")
 
 
 if __name__ == "__main__":
