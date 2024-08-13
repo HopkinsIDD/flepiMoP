@@ -7,7 +7,7 @@ config.writer:
 documentation:
   - '(documentation)'
 enhancement:
-  - '(enhancemet)'
+  - '(enhancement)'
 gempyor:
   - '(gempyor)'
 good first issue:
