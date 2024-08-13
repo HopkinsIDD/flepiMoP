@@ -58,7 +58,7 @@ body:
     id: to-reproduce
     attributes:
       label: To Reproduce
-      placeholder: Run code '...' or expect this error '...'
+      placeholder: Run code '...' and expect this error '...'
     validations:
       required: false
 
@@ -66,6 +66,6 @@ body:
     id: environment
     attributes:
       label: Environment, if relevant
-      placeholder: OS (e.g. Ubuntu 22.04, macOS 14.5, etc.). R or Python version (terminal command `R --version` or `python --version). fleiMoP branch and/or commit if relevant (`git rev-parse HEAD`)
+      placeholder: OS (e.g. Ubuntu 22.04, macOS 14.5, etc.). R and/or Python version (terminal command `R --version` or `python --version`). fleiMoP branch and/or commit if relevant (`git rev-parse HEAD`)
     validations:
       required: false
