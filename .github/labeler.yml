@@ -6,8 +6,6 @@ config.writer:
   - '(config.writer)'
 documentation:
   - '(documentation)'
-duplicate:
-  - '(duplicate)'
 enhancement:
   - '(enhancemet)'
 gempyor:
@@ -27,7 +25,7 @@ low priority:
 medium priority:
   - '(medium priority)'
 meta/workflow:
-  - '(meta/workflow)'
+  - '(meta|workflow)'
 operations:
   - '(operations)'
 performance:
