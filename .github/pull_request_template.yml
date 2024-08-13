@@ -1,6 +1,5 @@
 name: Pull Request
 description: Pull request template
-title: "[PR]: "
 
 body:
   - type: textarea
