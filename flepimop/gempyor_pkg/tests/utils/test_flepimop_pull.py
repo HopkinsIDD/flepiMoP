@@ -17,9 +17,9 @@ class TestFetchingResumeFiles:
             yield
 
     def test_s3_resume_location(self, runner):
-        with patch(
-            "gempyor.resume_pull.create_resume_file_names_map", return_value="dummy_map"
-        ) as mock_create_map, patch("gempyor.resume_pull.download_file_from_s3") as mock_download:
+        with patch("gempyor.resume_pull.download_file_from_s3") as mock_download, patch(
+            "gempyor.resume_pull.pull_check_for_s3"
+        ) as mock_pull_check_for_s3:
             result = runner.invoke(
                 fetching_resume_files,
                 [
@@ -38,8 +38,8 @@ class TestFetchingResumeFiles:
                 ],
             )
             assert result.exit_code == 0
-            mock_create_map.assert_called_once()
             mock_download.assert_called_once()
+            mock_pull_check_for_s3.assert_called_once()
 
     def test_local_resume_location(self, runner):
         with patch("gempyor.resume_pull.move_file_at_local") as mock_move:
