@@ -1,5 +1,5 @@
 name: Feature Request
-description: File a feagure request
+description: File a feature request
 title: "[Feature request]: "
 
 body:
@@ -14,7 +14,7 @@ body:
   - type: textarea
     id: relevant-relationship
     attributes:
-      label: Is your feature request related toa new application, scenario round, pathogen? Please describe.
+      label: Is your feature request related to a new application, scenario round, pathogen? Please describe.
       placeholder: A clear and concise description of th application, round, etc. that the feature addresses. 
     validations:
       required: false
