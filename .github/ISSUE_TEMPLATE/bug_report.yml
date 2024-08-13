@@ -14,7 +14,6 @@ body:
         - batch
         - config.writer
         - documentation
-        - duplicate
         - enhancement
         - gempyor
         - good first issue
