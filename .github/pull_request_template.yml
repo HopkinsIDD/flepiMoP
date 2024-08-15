@@ -1,0 +1,24 @@
+name: Pull Request
+description: Pull request template
+
+body:
+  - type: textarea
+    id: describe-changes
+    attributes:
+      label: Describe your changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-it-addresses
+    attributes:
+      label: What does your pull request address? Tag relevant issues.
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevant-team-members
+    attributes:
+      label: Tag relevant team members.
+    validations:
+      required: false 
