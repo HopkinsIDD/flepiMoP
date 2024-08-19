@@ -1,29 +1,58 @@
-import xarray as xr
-import pandas as pd
-import numpy as np
+"""
+Abstractions for interacting with output statistic configurations.
+
+This module provides the `Statistic` class which represents a entry in the inference ->
+statistics section.
+"""
+
+__all__ = ["Statistic"]
+
+
 import confuse
+import numpy as np
 import scipy.stats
+import xarray as xr
 
 
 class Statistic:
     """
-    A statistic is a function that takes two time series and returns a scalar value.
-    It applies resample, scale, and regularization to the data before computing the statistic's log-loss.
-    Configuration:
-    - sim_var: the variable in the simulation data
-    - data_var: the variable in the ground truth data
-    - resample: resample the data before computing the statistic
-        - freq: the frequency to resample the data to
-        - aggregator: the aggregation function to use
-        - skipna: whether to skip NA values
-    - regularize: apply a regularization term to the data before computing the statistic
-
-    # SkipNA is False by default, which results in NA values broadcasting when resampling (e.g a NA withing a sum makes the whole sum a NA)
-    # if True, then NA are replaced with 0 (for sum), 1 for product, ...
-    # In doubt, plot stat.plot_transformed() to see the effect of the resampling
+    Encapsulates logic for representing/implementing output statistic configurations.
+    
+    A statistic is a function that takes two time series and returns a scalar value. It 
+    applies resample, scale, and regularization to the data before computing the 
+    statistic's log-loss.
+    
+    Attributes:
+        data_var: The variable in the ground truth data.
+        dist: The name of the distribution to use for calculating log-likelihood.
+        name: The human readable name for the statistic given during instantiation.
+        params: Distribution parameters used in the log-likelihood calculation and
+            dependent on `dist`.
+        regularizations: Regularization functions that are added to the log loss of this
+            statistic.
+        resample: If the data should be resampled before computing the statistic.
+        resample_aggregator_name: The name of the aggregation function to use.
+        resample_freq: The frequency to resample the data to if the `resample` attribute
+            is `True`.
+        resample_skipna: If NAs should be skipped when aggregating. `False` by default.
+        scale: If the data should be rescaled before computing the statistic.
+        scale_func: The function to use when rescaling the data. Can be any function 
+            exported by `numpy`.
+        sim_var: The variable in the simulation data.
+        zero_to_one: Should non-zero values be coerced to 1 when calculating 
+            log-likelihood.
     """
-
-    def __init__(self, name, statistic_config: confuse.ConfigView):
+    
+    def __init__(self, name: str, statistic_config: confuse.ConfigView) -> None:
+        """
+        Create an `Statistic` instance from a confuse config view.
+        
+        Args:
+            name: A human readable name for the statistic, mostly used for error 
+                messages.
+            statistic_config: A confuse configuration view object describing an output
+                statistic.
+        """
         self.sim_var = statistic_config["sim_var"].as_str()
         self.data_var = statistic_config["data_var"].as_str()
         self.name = name
@@ -62,12 +91,28 @@ class Statistic:
             self.params = {}
 
         self.zero_to_one = False
-        # TODO: this should be set_zeros_to and only do it for the probabilily
+        # TODO: this should be set_zeros_to and only do it for the probability
         if statistic_config["zero_to_one"].exists():
             self.zero_to_one = statistic_config["zero_to_one"].get()
 
     def _forecast_regularize(self, model_data, gt_data, **kwargs):
-        # scale the data so that the lastest X items are more important
+        """
+        Regularization function to add weight to more recent forecasts.
+        
+        Args:
+            model_data: An xarray Dataset of the model data with date and subpop
+                dimensions.
+            gt_data: An xarray Dataset of the ground truth data with date and subpop
+                dimensions.
+            **kwargs: Optional keyword arguments that influence regularization. 
+                Currently uses `last_n` for the number of observations to up weight and
+                `mult` for the coefficient of the regularization value. 
+        
+        Returns:
+            The log-likelihood of the `last_n` observation up weighted by a factor of 
+            `mult`.
+        """
+        # scale the data so that the latest X items are more important
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
 
@@ -76,7 +121,20 @@ class Statistic:
         return mult * last_n_llik.sum().sum().values
 
     def _allsubpop_regularize(self, model_data, gt_data, **kwargs):
-        """add a regularization term that is the sum of all subpopulations"""
+        """
+        Regularization function to add the sum of all subpopulations.
+        
+        Args:
+            model_data: An xarray Dataset of the model data with date and subpop
+                dimensions.
+            gt_data: An xarray Dataset of the ground truth data with date and subpop
+                dimensions.
+            **kwargs: Optional keyword arguments that influence regularization. 
+                Currently uses `mult` for the coefficient of the regularization value.
+        
+        Returns:
+            The sum of the subpopulations multiplied by `mult`. 
+        """
         mult = kwargs.get("mult", 1)
         llik_total = self.llik(model_data.sum("subpop"), gt_data.sum("subpop"))
         return mult * llik_total.sum().sum().values
@@ -88,6 +146,15 @@ class Statistic:
         return f"A Statistic(): {self.__str__()}"
 
     def apply_resample(self, data):
+        """
+        Resample a data set to the given frequency using the specified aggregation.
+        
+        Args:
+            data: An xarray dataset with "date" and "subpop" dimensions.
+        
+        Returns:
+            A resample dataset with similar dimensions to `data`.
+        """
         if self.resample:
             aggregator_method = getattr(data.resample(date=self.resample_freq), self.resample_aggregator_name)
             return aggregator_method(skipna=self.resample_skipna)
@@ -95,16 +162,49 @@ class Statistic:
             return data
 
     def apply_scale(self, data):
+        """
+        Scale a data set using the specified scaling function.
+        
+        Args:
+            data: An xarray dataset with "date" and "subpop" dimensions.
+        
+        Returns:
+            An xarray dataset of the same shape and dimensions as `data` with the 
+            `scale_func` attribute applied.
+        """
         if self.scale:
             return self.scale_func(data)
         else:
             return data
 
     def apply_transforms(self, data):
+        """
+        Convenient wrapper for resampling and scaling a data set.
+        
+        The resampling is applied *before* scaling which can affect the log-likelihood.
+        
+        Args:
+            data: An xarray dataset with "date" and "subpop" dimensions.
+        
+        Returns:
+            An scaled and resampled dataset with similar dimensions to `data`.
+        """
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
         return data_scaled_resampled
 
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
+        """
+        Compute the log-likelihood of observing the ground truth given model output.
+        
+        Args:
+            model_data: An xarray Dataset of the model data with date and subpop
+                dimensions.
+            gt_data: An xarray Dataset of the ground truth data with date and subpop
+                dimensions.
+        
+        Returns:
+            The log-likelihood of observing `gt_data` from the model `model_data`.
+        """
         dist_map = {
             "pois": scipy.stats.poisson.logpmf,
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
@@ -137,6 +237,19 @@ class Statistic:
         return likelihood
 
     def compute_logloss(self, model_data, gt_data):
+        """
+        Compute the logistic loss of observing the ground truth given model output.
+        
+        Args:
+            model_data: An xarray Dataset of the model data with date and subpop
+                dimensions.
+            gt_data: An xarray Dataset of the ground truth data with date and subpop
+                dimensions.
+        
+        Returns:
+            The logistic loss of observing `gt_data` from the model `model_data` 
+            decomposed into the log-likelihood and regularizations.
+        """
         model_data = self.apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
 
