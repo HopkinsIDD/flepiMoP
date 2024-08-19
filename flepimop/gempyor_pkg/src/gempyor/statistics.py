@@ -17,11 +17,11 @@ import xarray as xr
 class Statistic:
     """
     Encapsulates logic for representing/implementing output statistic configurations.
-    
-    A statistic is a function that takes two time series and returns a scalar value. It 
-    applies resample, scale, and regularization to the data before computing the 
+
+    A statistic is a function that takes two time series and returns a scalar value. It
+    applies resample, scale, and regularization to the data before computing the
     statistic's log-loss.
-    
+
     Attributes:
         data_var: The variable in the ground truth data.
         dist: The name of the distribution to use for calculating log-likelihood.
@@ -36,19 +36,19 @@ class Statistic:
             is `True`.
         resample_skipna: If NAs should be skipped when aggregating. `False` by default.
         scale: If the data should be rescaled before computing the statistic.
-        scale_func: The function to use when rescaling the data. Can be any function 
+        scale_func: The function to use when rescaling the data. Can be any function
             exported by `numpy`.
         sim_var: The variable in the simulation data.
-        zero_to_one: Should non-zero values be coerced to 1 when calculating 
+        zero_to_one: Should non-zero values be coerced to 1 when calculating
             log-likelihood.
     """
-    
+
     def __init__(self, name: str, statistic_config: confuse.ConfigView) -> None:
         """
         Create an `Statistic` instance from a confuse config view.
-        
+
         Args:
-            name: A human readable name for the statistic, mostly used for error 
+            name: A human readable name for the statistic, mostly used for error
                 messages.
             statistic_config: A confuse configuration view object describing an output
                 statistic.
@@ -77,7 +77,10 @@ class Statistic:
             if resample_config["aggregator"].exists():
                 self.resample_aggregator_name = resample_config["aggregator"].get()
             self.resample_skipna = False  # TODO
-            if resample_config["aggregator"].exists() and resample_config["skipna"].exists():
+            if (
+                resample_config["aggregator"].exists()
+                and resample_config["skipna"].exists()
+            ):
                 self.resample_skipna = resample_config["skipna"].get()
 
         self.scale = False
@@ -98,42 +101,45 @@ class Statistic:
     def _forecast_regularize(self, model_data, gt_data, **kwargs):
         """
         Regularization function to add weight to more recent forecasts.
-        
+
         Args:
             model_data: An xarray Dataset of the model data with date and subpop
                 dimensions.
             gt_data: An xarray Dataset of the ground truth data with date and subpop
                 dimensions.
-            **kwargs: Optional keyword arguments that influence regularization. 
+            **kwargs: Optional keyword arguments that influence regularization.
                 Currently uses `last_n` for the number of observations to up weight and
-                `mult` for the coefficient of the regularization value. 
-        
+                `mult` for the coefficient of the regularization value.
+
         Returns:
-            The log-likelihood of the `last_n` observation up weighted by a factor of 
+            The log-likelihood of the `last_n` observation up weighted by a factor of
             `mult`.
         """
         # scale the data so that the latest X items are more important
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
 
-        last_n_llik = self.llik(model_data.isel(date=slice(-last_n, None)), gt_data.isel(date=slice(-last_n, None)))
+        last_n_llik = self.llik(
+            model_data.isel(date=slice(-last_n, None)),
+            gt_data.isel(date=slice(-last_n, None)),
+        )
 
         return mult * last_n_llik.sum().sum().values
 
     def _allsubpop_regularize(self, model_data, gt_data, **kwargs):
         """
         Regularization function to add the sum of all subpopulations.
-        
+
         Args:
             model_data: An xarray Dataset of the model data with date and subpop
                 dimensions.
             gt_data: An xarray Dataset of the ground truth data with date and subpop
                 dimensions.
-            **kwargs: Optional keyword arguments that influence regularization. 
+            **kwargs: Optional keyword arguments that influence regularization.
                 Currently uses `mult` for the coefficient of the regularization value.
-        
+
         Returns:
-            The sum of the subpopulations multiplied by `mult`. 
+            The sum of the subpopulations multiplied by `mult`.
         """
         mult = kwargs.get("mult", 1)
         llik_total = self.llik(model_data.sum("subpop"), gt_data.sum("subpop"))
@@ -148,15 +154,17 @@ class Statistic:
     def apply_resample(self, data):
         """
         Resample a data set to the given frequency using the specified aggregation.
-        
+
         Args:
             data: An xarray dataset with "date" and "subpop" dimensions.
-        
+
         Returns:
             A resample dataset with similar dimensions to `data`.
         """
         if self.resample:
-            aggregator_method = getattr(data.resample(date=self.resample_freq), self.resample_aggregator_name)
+            aggregator_method = getattr(
+                data.resample(date=self.resample_freq), self.resample_aggregator_name
+            )
             return aggregator_method(skipna=self.resample_skipna)
         else:
             return data
@@ -164,12 +172,12 @@ class Statistic:
     def apply_scale(self, data):
         """
         Scale a data set using the specified scaling function.
-        
+
         Args:
             data: An xarray dataset with "date" and "subpop" dimensions.
-        
+
         Returns:
-            An xarray dataset of the same shape and dimensions as `data` with the 
+            An xarray dataset of the same shape and dimensions as `data` with the
             `scale_func` attribute applied.
         """
         if self.scale:
@@ -180,12 +188,12 @@ class Statistic:
     def apply_transforms(self, data):
         """
         Convenient wrapper for resampling and scaling a data set.
-        
+
         The resampling is applied *before* scaling which can affect the log-likelihood.
-        
+
         Args:
             data: An xarray dataset with "date" and "subpop" dimensions.
-        
+
         Returns:
             An scaled and resampled dataset with similar dimensions to `data`.
         """
@@ -195,13 +203,13 @@ class Statistic:
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
         """
         Compute the log-likelihood of observing the ground truth given model output.
-        
+
         Args:
             model_data: An xarray Dataset of the model data with date and subpop
                 dimensions.
             gt_data: An xarray Dataset of the ground truth data with date and subpop
                 dimensions.
-        
+
         Returns:
             The log-likelihood of observing `gt_data` from the model `model_data`.
         """
@@ -213,7 +221,9 @@ class Statistic:
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
             ),  # TODO: check, that it's really the loc
-            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
+            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
+                x, n=self.params.get("n"), p=model_data
+            ),
             "rmse": lambda x, y: -np.log(np.nansum(np.sqrt((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
         }
@@ -239,15 +249,15 @@ class Statistic:
     def compute_logloss(self, model_data, gt_data):
         """
         Compute the logistic loss of observing the ground truth given model output.
-        
+
         Args:
             model_data: An xarray Dataset of the model data with date and subpop
                 dimensions.
             gt_data: An xarray Dataset of the ground truth data with date and subpop
                 dimensions.
-        
+
         Returns:
-            The logistic loss of observing `gt_data` from the model `model_data` 
+            The logistic loss of observing `gt_data` from the model `model_data`
             decomposed into the log-likelihood and regularizations.
         """
         model_data = self.apply_transforms(model_data[self.sim_var])
@@ -260,6 +270,8 @@ class Statistic:
 
         regularization = 0
         for reg_func, reg_config in self.regularizations:
-            regularization += reg_func(model_data=model_data, gt_data=gt_data, **reg_config)  # Pass config parameters
+            regularization += reg_func(
+                model_data=model_data, gt_data=gt_data, **reg_config
+            )  # Pass config parameters
 
         return self.llik(model_data, gt_data).sum("date"), regularization
