@@ -142,3 +142,20 @@ class TestStatistic:
 
         # `zero_to_one` attribute
         assert statistic.zero_to_one == mock_inputs.config.get("zero_to_one", False)
+
+    @pytest.mark.parametrize("factory", [(simple_valid_factory)])
+    def test_statistic_str_and_repr(
+        self, factory: Callable[[], MockStatisticInput]
+    ) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        statistic_str = (
+            f"{mock_inputs.name}: {mock_inputs.config['likelihood']['dist']} between "
+            f"{mock_inputs.config['sim_var']} (sim) and "
+            f"{mock_inputs.config['data_var']} (data)."
+        )
+        assert str(statistic) == statistic_str
+        assert repr(statistic) == f"A Statistic(): {statistic_str}"
