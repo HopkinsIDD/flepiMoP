@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
-from typing import List, Dict, Literal
+from typing import Any, Callable, Dict, List, Literal
 
 import confuse
 import numpy as np
@@ -297,6 +297,81 @@ def get_log_normal(
         specified parameters.
     """
     return scipy.stats.lognorm(s=sdlog, scale=np.exp(meanlog), loc=0)
+
+
+def random_distribution_sampler(
+    distribution: Literal[
+        "fixed", "uniform", "poisson", "binomial", "truncnorm", "lognorm"
+    ], 
+    **kwargs: dict[str, Any]
+) -> Callable[[], float | int]:
+    """
+    Create function to sample from a random distribution.
+    
+    Args:
+        distribution: The type of distribution to generate a sampling function for.
+        **kwargs: Further parameters that are passed to the underlying function for the
+            given distribution.
+    
+    Notes:
+        The further args expected by each distribution type are:
+        - fixed: value,
+        - uniform: low, high,
+        - poisson: lam,
+        - binomial: n, p,
+        - truncnorm: mean, sd, a, b,
+        - lognorm: meanlog, sdlog.
+    
+    Returns:
+        A function that can be called to sample from that distribution.
+    
+    Raises:
+        ValueError: If `distribution` is 'binomial' the given `p` must be in (0,1).
+        NotImplementedError: If `distribution` is not one of the type hinted options.
+        
+    Examples:
+        >>> import numpy as np
+        >>> np.random.seed(123)
+        >>> uniform_sampler = random_distribution_sampler("uniform", low=0.0, high=3.0)
+        >>> uniform_sampler()
+        2.089407556793585
+        >>> uniform_sampler()
+        0.8584180048511384
+    """
+    if distribution == "fixed":
+        # Fixed value is the same as uniform on [a, a)
+        return functools.partial(
+            np.random.uniform, 
+            kwargs.get("value"), 
+            kwargs.get("value"),
+        )
+    elif distribution == "uniform":
+        # Uniform on [low, high)
+        return functools.partial(
+            np.random.uniform, 
+            kwargs.get("low"), 
+            kwargs.get("high"),
+        )
+    elif distribution == "poisson":
+        # Poisson with mean lambda
+        return functools.partial(np.random.poisson, kwargs.get("lam"))
+    elif distribution == "binomial":
+        p = kwargs.get("p")
+        if not (0 < p < 1):
+            raise ValueError(f"p value {p} is out of range [0,1]")
+        return functools.partial(np.random.binomial, kwargs.get("n"), p)
+    elif distribution == "truncnorm":
+        # Truncated normal with mean, sd on interval [a, b]
+        return get_truncated_normal(
+            mean=kwargs.get("mean"), 
+            sd=kwargs.get("sd"), 
+            a=kwargs.get("a"), 
+            b=kwargs.get("b"),
+        ).rvs
+    elif distribution == "lognorm":
+        # Lognormal distribution with meanlog, sdlog
+        return get_log_normal(kwargs.get("meanlog"), kwargs.get("sdlog")).rvs
+    raise NotImplementedError(f"unknown distribution [got: {distribution}]")
 
 
 @add_method(confuse.ConfigView)
