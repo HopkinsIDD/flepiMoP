@@ -47,7 +47,7 @@ export FLEPI_PATH=$(pwd)/flepiMoP
 export PROJECT_PATH=$(pwd)/flepimop_sample
 ```
 
-You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEP_PATH` to see the value of `FLEPI_PATH`.&#x20;
+You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEPI_PATH` to see the value of `FLEPI_PATH`.&#x20;
 
 If you're on a **Windows** machine
 
@@ -61,7 +61,7 @@ or, if you have already navigated to your parent directory
 </strong>set PROJECT_PATH=%CD%\flepimop_sample
 </code></pre>
 
-You can check that the variables have been set by either typing `set` to see all defined environmental variables, or typing `echo $FLEP_PATH$` to see the value of `FLEPI_PATH`.&#x20;
+You can check that the variables have been set by either typing `set` to see all defined environmental variables, or typing `echo $FLEPI_PATH$` to see the value of `FLEPI_PATH`.&#x20;
 
 {% hint style="info" %}
 If you don't want to bother defining the environmental variables, it's no problem, just remember to use the full or relative path names for navigating to the right files or folders in future steps
