@@ -98,7 +98,21 @@ class Statistic:
         if statistic_config["zero_to_one"].exists():
             self.zero_to_one = statistic_config["zero_to_one"].get()
 
-    def _forecast_regularize(self, model_data, gt_data, **kwargs):
+    def __str__(self) -> str:
+        return (
+            f"{self.name}: {self.dist} between {self.sim_var} "
+            f"(sim) and {self.data_var} (data)."
+        )
+
+    def __repr__(self) -> str:
+        return f"A Statistic(): {self.__str__()}"
+
+    def _forecast_regularize(
+        self,
+        model_data: xr.DataArray,
+        gt_data: xr.DataArray,
+        **kwargs: dict[str, int | float],
+    ) -> float:
         """
         Regularization function to add weight to more recent forecasts.
 
@@ -126,7 +140,12 @@ class Statistic:
 
         return mult * last_n_llik.sum().sum().values
 
-    def _allsubpop_regularize(self, model_data, gt_data, **kwargs):
+    def _allsubpop_regularize(
+        self,
+        model_data: xr.DataArray,
+        gt_data: xr.DataArray,
+        **kwargs: dict[str, int | float],
+    ) -> float:
         """
         Regularization function to add the sum of all subpopulations.
 
@@ -145,13 +164,7 @@ class Statistic:
         llik_total = self.llik(model_data.sum("subpop"), gt_data.sum("subpop"))
         return mult * llik_total.sum().sum().values
 
-    def __str__(self) -> str:
-        return f"{self.name}: {self.dist} between {self.sim_var} (sim) and {self.data_var} (data)."
-
-    def __repr__(self) -> str:
-        return f"A Statistic(): {self.__str__()}"
-
-    def apply_resample(self, data):
+    def apply_resample(self, data: xr.DataArray) -> xr.DataArray:
         """
         Resample a data set to the given frequency using the specified aggregation.
 
@@ -169,7 +182,7 @@ class Statistic:
         else:
             return data
 
-    def apply_scale(self, data):
+    def apply_scale(self, data: xr.DataArray) -> xr.DataArray:
         """
         Scale a data set using the specified scaling function.
 
@@ -185,7 +198,7 @@ class Statistic:
         else:
             return data
 
-    def apply_transforms(self, data):
+    def apply_transforms(self, data: xr.DataArray):
         """
         Convenient wrapper for resampling and scaling a data set.
 
@@ -200,7 +213,7 @@ class Statistic:
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
         return data_scaled_resampled
 
-    def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
+    def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray) -> float:
         """
         Compute the log-likelihood of observing the ground truth given model output.
 
@@ -246,7 +259,9 @@ class Statistic:
         # TODO: check the order of the arguments
         return likelihood
 
-    def compute_logloss(self, model_data, gt_data):
+    def compute_logloss(
+        self, model_data: xr.DataArray, gt_data: xr.DataArray
+    ) -> tuple[float, float]:
         """
         Compute the logistic loss of observing the ground truth given model output.
 
@@ -265,7 +280,11 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(
-                f"{self.name} Statistic error: data and groundtruth do not have the same shape: model_data.shape={model_data.shape} != gt_data.shape={gt_data.shape}"
+                (
+                    f"{self.name} Statistic error: data and groundtruth do not have "
+                    f"the same shape: model_data.shape={model_data.shape} != "
+                    f"gt_data.shape={gt_data.shape}"
+                )
             )
 
         regularization = 0
