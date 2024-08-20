@@ -61,7 +61,7 @@ class Statistic:
         if statistic_config["regularize"].exists():
             for reg_config in statistic_config["regularize"]:  # Iterate over the list
                 reg_name = reg_config["name"].get()
-                reg_func = getattr(self, f"_{reg_name}_regularize")
+                reg_func = getattr(self, f"_{reg_name}_regularize", None)
                 if reg_func is None:
                     raise ValueError(f"Unsupported regularization: {reg_name}")
                 self.regularizations.append((reg_func, reg_config.get()))
