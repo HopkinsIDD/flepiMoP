@@ -31,14 +31,20 @@ class Statistic:
         regularizations: Regularization functions that are added to the log loss of this
             statistic.
         resample: If the data should be resampled before computing the statistic.
-        resample_aggregator_name: The name of the aggregation function to use.
+            Defaults to `False`.
+        resample_aggregator_name: The name of the aggregation function to use. This
+            attribute is not set when a "resample" section is not defined in the
+            `statistic_config` arg.
         resample_freq: The frequency to resample the data to if the `resample` attribute
-            is `True`.
+            is `True`. This attribute is not set when a "resample" section is not
+            defined in the `statistic_config` arg.
         resample_skipna: If NAs should be skipped when aggregating. `False` by default.
+            This attribute is not set when a "resample" section is not defined in the
+            `statistic_config` arg.
         scale: If the data should be rescaled before computing the statistic.
         scale_func: The function to use when rescaling the data. Can be any function
-            exported by `numpy`.
-        sim_var: The variable in the simulation data.
+            exported by `numpy`. This attribute is not set when a "scale" value is not
+            defined in the `statistic_config` arg.
         zero_to_one: Should non-zero values be coerced to 1 when calculating
             log-likelihood.
     """
@@ -52,6 +58,11 @@ class Statistic:
                 messages.
             statistic_config: A confuse configuration view object describing an output
                 statistic.
+        
+        Raises:
+            ValueError: If an unsupported regularization name is provided via the
+                `statistic_config` arg. Currently only 'forecast' and 'allsubpop' are
+                supported.
         """
         self.sim_var = statistic_config["sim_var"].as_str()
         self.data_var = statistic_config["data_var"].as_str()
