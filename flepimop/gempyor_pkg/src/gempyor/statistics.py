@@ -58,7 +58,7 @@ class Statistic:
                 messages.
             statistic_config: A confuse configuration view object describing an output
                 statistic.
-        
+
         Raises:
             ValueError: If an unsupported regularization name is provided via the
                 `statistic_config` arg. Currently only 'forecast' and 'allsubpop' are
@@ -224,7 +224,7 @@ class Statistic:
         data_scaled_resampled = self.apply_scale(self.apply_resample(data))
         return data_scaled_resampled
 
-    def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray) -> float:
+    def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray) -> xr.DataArray:
         """
         Compute the log-likelihood of observing the ground truth given model output.
 
@@ -235,7 +235,8 @@ class Statistic:
                 dimensions.
 
         Returns:
-            The log-likelihood of observing `gt_data` from the model `model_data`.
+            The log-likelihood of observing `gt_data` from the model `model_data` as an
+            xarray DataArray with a "subpop" dimension.
         """
         dist_map = {
             "pois": scipy.stats.poisson.logpmf,
@@ -272,7 +273,7 @@ class Statistic:
 
     def compute_logloss(
         self, model_data: xr.DataArray, gt_data: xr.DataArray
-    ) -> tuple[float, float]:
+    ) -> tuple[xr.DataArray, float]:
         """
         Compute the logistic loss of observing the ground truth given model output.
 
@@ -284,7 +285,8 @@ class Statistic:
 
         Returns:
             The logistic loss of observing `gt_data` from the model `model_data`
-            decomposed into the log-likelihood and regularizations.
+            decomposed into the log-likelihood along the "subpop" dimension and 
+            regularizations.
         """
         model_data = self.apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
