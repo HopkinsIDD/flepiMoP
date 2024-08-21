@@ -163,6 +163,45 @@ def simple_valid_scale_factory() -> MockStatisticInput:
     )
 
 
+def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
+    date_coords = pd.date_range(date(2024, 1, 1), date(2024, 12, 31))
+    subpop_coords = ["01", "02", "03", "04"]
+    dim = (len(date_coords), len(subpop_coords))
+    model_data = xr.DataArray(
+        data=np.random.randn(*dim),
+        dims=("date", "subpop"),
+        coords={
+            "date": date_coords,
+            "subpop": subpop_coords,
+        },
+    )
+    gt_data = xr.DataArray(
+        data=np.random.randn(*dim),
+        dims=("date", "subpop"),
+        coords={
+            "date": date_coords,
+            "subpop": subpop_coords,
+        },
+    )
+    return MockStatisticInput(
+        "total_hospitalizations",
+        {
+            "name": "sum_hospitalizations",
+            "aggregator": "sum",
+            "period": "1 months",
+            "sim_var": "incidH",
+            "data_var": "incidH",
+            "remove_na": True,
+            "add_one": True,
+            "likelihood": {"dist": "pois"},
+            "resample": {"freq": "W", "aggregator": "max"},
+            "scale": "sin",
+        },
+        model_data=model_data,
+        gt_data=gt_data,
+    )
+
+
 class TestStatistic:
     @pytest.mark.parametrize("factory", [(invalid_regularization_factory)])
     def test_unsupported_regularizations_value_error(
@@ -331,3 +370,42 @@ class TestStatistic:
         else:
             # No scale config, `apply_scale` is a no-op
             assert scaled_data.identical(mock_inputs.model_data)
+
+    @pytest.mark.parametrize(
+        "factory",
+        [
+            (simple_valid_factory),
+            (simple_valid_resample_factory),
+            (simple_valid_scale_factory),
+            (simple_valid_resample_and_scale_factory),
+        ],
+    )
+    def test_apply_transforms(self, factory: Callable[[], MockStatisticInput]) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        transformed_data = statistic.apply_transforms(mock_inputs.model_data)
+        expected_transformed_data = mock_inputs.model_data.copy()
+        if resample_config := mock_inputs.config.get("resample", {}):
+            # Resample config
+            expected_transformed_data = expected_transformed_data.resample(
+                date=resample_config.get("freq", "")
+            )
+            aggregation_func = getattr(
+                expected_transformed_data, resample_config.get("aggregator", "")
+            )
+            expected_transformed_data = aggregation_func(
+                skipna=(
+                    resample_config.get("skipna", False)
+                    if resample_config.get("aggregator") is not None
+                    else False
+                )
+            )
+        if (scale_func := mock_inputs.config.get("scale")) is not None:
+            # Scale config
+            expected_transformed_data = getattr(np, scale_func)(
+                expected_transformed_data
+            )
+        assert transformed_data.identical(expected_transformed_data)
