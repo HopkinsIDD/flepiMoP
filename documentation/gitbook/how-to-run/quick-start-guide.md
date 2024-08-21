@@ -6,24 +6,24 @@ description: >-
 
 # Quick Start Guide
 
-## 🧱 Set up&#x20;
+## 🧱 Set up
 
 ### Access model files
 
-Follow all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your custom model or a sample model with flepiMoP.&#x20;
+Follow all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your custom model or a sample model with flepiMoP.
 
-Take note of the location of the directory on your local computer where you cloned the flepiMoP model code (which we'll call `FLEPI_PATH`), as well as where you cloned your project files (which we'll call `PROJECT_PATH`). &#x20;
+Take note of the location of the directory on your local computer where you cloned the flepiMoP model code (which we'll call `FLEPI_PATH`), as well as where you cloned your project files (which we'll call `PROJECT_PATH`).
 
 {% hint style="info" %}
 For example, if you cloned your Github repositories into a local folder called `Github` and are using [_flepimop\_sample_](https://github.com/HopkinsIDD/flepimop\_sample) as a project repository, your directory names could be\
 \
-_**On Mac:**_&#x20;
+_**On Mac:**_
 
 /Users/YourName/Github/flepiMoP
 
 /Users/YourName/Github/flepimop\_sample\
 \
-_**On Windows:**_ \
+_**On Windows:**_\
 C:\Users\YourName\Github\flepiMoP
 
 C:\Users\YourName\Github\flepimop\_sample
@@ -47,7 +47,7 @@ export FLEPI_PATH=$(pwd)/flepiMoP
 export PROJECT_PATH=$(pwd)/flepimop_sample
 ```
 
-You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEPI_PATH` to see the value of `FLEPI_PATH`.&#x20;
+You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEPI_PATH` to see the value of `FLEPI_PATH`.
 
 If you're on a **Windows** machine
 
@@ -61,7 +61,7 @@ or, if you have already navigated to your parent directory
 </strong>set PROJECT_PATH=%CD%\flepimop_sample
 </code></pre>
 
-You can check that the variables have been set by either typing `set` to see all defined environmental variables, or typing `echo $FLEPI_PATH$` to see the value of `FLEPI_PATH`.&#x20;
+You can check that the variables have been set by either typing `set` to see all defined environmental variables, or typing `echo $FLEPI_PATH$` to see the value of `FLEPI_PATH`.
 
 {% hint style="info" %}
 If you don't want to bother defining the environmental variables, it's no problem, just remember to use the full or relative path names for navigating to the right files or folders in future steps
@@ -69,14 +69,14 @@ If you don't want to bother defining the environmental variables, it's no proble
 
 ### Install packages
 
-The code is written in a combination of [R](https://www.r-project.org/) and [Python](https://www.python.org/). The Python part of the model is a package called [_gempyor_](../gempyor/model-description.md), and includes all the code to simulate the epidemic model and the observational model and apply time-dependent interventions. The R component conducts the (optional) parameter inference, and all the (optional) provided pre and post processing scripts are also written in R. Most uses of the code require interacting with components written in both languages, and thus making sure that both are installed along with a set of required packages. However, Python alone can be used to do forward simulations of the model using _gempyor_.&#x20;
+The code is written in a combination of [R](https://www.r-project.org/) and [Python](https://www.python.org/). The Python part of the model is a package called [_gempyor_](../gempyor/model-description.md), and includes all the code to simulate the epidemic model and the observational model and apply time-dependent interventions. The R component conducts the (optional) parameter inference, and all the (optional) provided pre and post processing scripts are also written in R. Most uses of the code require interacting with components written in both languages, and thus making sure that both are installed along with a set of required packages. However, Python alone can be used to do forward simulations of the model using _gempyor_.
 
 First, ensure you have python and R installed. You need a working python3.7+ installation. We recommend using the latest stable python release (python 3.12) to benefit from huge speed-ups and future-proof your installation. We also recommend installing Rstudio to interact with the R code and for exploring your model outputs.
 
 {% hint style="info" %}
 _**On Mac**_ 🍏
 
-Python 3 is installed by default on recent MacOS installation. If it is not, you might want to check [homebrew](https://brew.sh/) and install the appropriate installation.&#x20;
+Python 3 is installed by default on recent MacOS installation. If it is not, you might want to check [homebrew](https://brew.sh/) and install the appropriate installation.
 {% endhint %}
 
 #### Install packages
@@ -105,16 +105,16 @@ If you just want to [run a forward simulation](quick-start-guide.md#non-inferenc
 To [run an inference run](quick-start-guide.md#inference-run) and to explore your model outputs using provided post-processing functionality, there are some packages you'll need to **install in R**. Open your **R terminal** (at the bottom of RStudio, or in the R IDE), and run the following command to install the necessary R packages:
 
 <pre class="language-r" data-overflow="wrap"><code class="lang-r"><strong># while in R
-</strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph"))
+</strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph","data.table"))
 </strong></code></pre>
 
 {% hint style="info" %}
 _**On Linux**_
 
-The R packages "`sf"` and "`ggraph"` require you to have `libgdal-dev` and `libopenblas-dev` installed on your local linux machine.&#x20;
+The R packages "`sf"` and "`ggraph"` require you to have `libgdal-dev` and `libopenblas-dev` installed on your local linux machine.
 {% endhint %}
 
-This step does not need to be repeated unless you use a new computer or delete and reinstall R.&#x20;
+This step does not need to be repeated unless you use a new computer or delete and reinstall R.
 
 Now return to your system terminal. To install _flepiMop_-internal R packages, run the following from command line:
 
@@ -124,16 +124,16 @@ Rscript build/local_install.R  # Install R packages
 ```
 {% endcode %}
 
-Each installation step may take a few minutes to run.&#x20;
+Each installation step may take a few minutes to run.
 
 {% hint style="info" %}
-Note: These installations take place on your local operating system. You will need an active internet connection for installation, but not for other steps of running the model. \
-If you are concerned about disrupting your base environment that you use for other projects, try using [Docker](advanced-run-guides/running-with-docker-locally.md) or [conda](advanced-run-guides/quick-start-guide-conda.md) instead. &#x20;
+Note: These installations take place on your local operating system. You will need an active internet connection for installation, but not for other steps of running the model.\
+If you are concerned about disrupting your base environment that you use for other projects, try using [Docker](advanced-run-guides/running-with-docker-locally.md) or [conda](advanced-run-guides/quick-start-guide-conda.md) instead.
 {% endhint %}
 
 ## 🚀 Run the code
 
-Everything is now ready 🎉 .&#x20;
+Everything is now ready 🎉 .
 
 The next step depends on what sort of simulation you want to run: One that includes inference (fitting model to data) or only a forward simulation (non-inference). Inference is run from R, while forward-only simulations are run directly from the Python package `gempyor`.
 
@@ -144,19 +144,19 @@ cd $PROJECT_PATH       # goes to your project repository
 rm -r model_output/ # delete the outputs of past run if there are
 ```
 
-For the following examples we use an example config from _flepimop\_sample_, but you can provide the name of any configuration file you want.&#x20;
+For the following examples we use an example config from _flepimop\_sample_, but you can provide the name of any configuration file you want.
 
-To get started, let's start with just running a forward simulation (non-inference).&#x20;
+To get started, let's start with just running a forward simulation (non-inference).
 
 ### Non-inference run
 
-Stay in the `PROJECT_PATH` folder, and run a simulation directly from forward-simulation Python package gempyor. Call `gempyor-simulate` providing the name of the configuration file you want to run. For example here, we use `config_sample_2pop.yml` from _flepimop\_sample_.&#x20;
+Stay in the `PROJECT_PATH` folder, and run a simulation directly from forward-simulation Python package gempyor. Call `gempyor-simulate` providing the name of the configuration file you want to run. For example here, we use `config_sample_2pop.yml` from _flepimop\_sample_.
 
 ```
 gempyor-simulate -c config_sample_2pop.yml
 ```
 
-This will produce a `model_output` folder, which you can look using provided post-processing functions and scripts.&#x20;
+This will produce a `model_output` folder, which you can look using provided post-processing functions and scripts.
 
 We recommend using `model_output_notebook.Rmd` from _flepimop\_sample_ as a starting point to interact with your model outputs. First, modify the yaml preamble in the notebook, then knit this markdown. This will produce some nice plots of the prevalence of infection states over time. You can edit this markdown to produce any figures you'd like to explore your model output.
 
@@ -181,7 +181,7 @@ gempyor-simulate -c new_config.yml
 
 ### Inference run
 
-An inference run requires a configuration file that has the `inference` section. Stay in the `$PROJECT_PATH` folder, and run the inference script, providing the name of the configuration file you want to run.  For example here, we use `config_sample_2pop_inference.yml` from _flepimop\_sample_.&#x20;
+An inference run requires a configuration file that has the `inference` section. Stay in the `$PROJECT_PATH` folder, and run the inference script, providing the name of the configuration file you want to run. For example here, we use `config_sample_2pop_inference.yml` from _flepimop\_sample_.
 
 {% code overflow="wrap" %}
 ```bash
@@ -189,7 +189,7 @@ Rscript  $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_sample_2po
 ```
 {% endcode %}
 
-This will run the model and create a lot of output files in `$PROJECT_PATH/model_output/`.&#x20;
+This will run the model and create a lot of output files in `$PROJECT_PATH/model_output/`.
 
 The last few lines visible on the command prompt should be:
 
@@ -213,7 +213,7 @@ where:
 * `j` is the number of CPU cores to use on your machine (if `j` > `n`, only `n` cores will actually be used. If `j` <`n`, some cores will run multiple slots in sequence)
 * `k` is the number of iterations per slots.
 
-Again, it is helpful to run the model output notebook (`model_output_notebook.Rmd` from _flepimop\_sample)_ to explore your model outputs. Knitting this file for an inference run will also provide an analysis of your fits: the acceptance probabilities, likelihoods overtime, and the fits against the provided ground truth.&#x20;
+Again, it is helpful to run the model output notebook (`model_output_notebook.Rmd` from _flepimop\_sample)_ to explore your model outputs. Knitting this file for an inference run will also provide an analysis of your fits: the acceptance probabilities, likelihoods overtime, and the fits against the provided ground truth.
 
 The first time you run all this, it's , it's better to run each command individually as described above to be sure each exits successfully. However, eventually you can **put all these steps together in a script**, like below
 
@@ -232,9 +232,15 @@ Note that you only have to re-run the installation steps once each time you upda
 
 ```
 rm -rf model_output
-gempyor-simulate -c new_config_inference.yml
+Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_inference_new.yml
 ```
 
-### Next steps
+## 📈 Examining model output
 
-These configs and notebooks should be a good starting point for getting started with flepiMoP. To explore other running options, see [How to run: Advanced](advanced-run-guides/).&#x20;
+If your run is successful, you should see your output files in the model\_output folder. The structure of the files in this folder is described in the [Model Output](../gempyor/output-files.md) section. By default, all the output files are .parquet format (a compressed format which can be imported as dataframes using R's arrow package `arrow::read_parquet` or using the free desktop application [Tad ](https://www.tadviewer.com/)for quick viewing). However, you can add the option `--write-csv` to the end of the commands to run the code (e.g.,  `> gempyor-simulate -c config.yml --write-csv)` to have everything saved as .csv files instead.&#x20;
+
+
+
+## 🪜 Next steps
+
+These configs and notebooks should be a good starting point for getting started with flepiMoP. To explore other running options, see [How to run: Advanced](advanced-run-guides/).
