@@ -87,7 +87,7 @@ class Statistic:
             self.resample_aggregator = ""
             if resample_config["aggregator"].exists():
                 self.resample_aggregator_name = resample_config["aggregator"].get()
-            self.resample_skipna = False  # TODO
+            self.resample_skipna = False
             if (
                 resample_config["aggregator"].exists()
                 and resample_config["skipna"].exists()
@@ -105,7 +105,6 @@ class Statistic:
             self.params = {}
 
         self.zero_to_one = False
-        # TODO: this should be set_zeros_to and only do it for the probability
         if statistic_config["zero_to_one"].exists():
             self.zero_to_one = statistic_config["zero_to_one"].get()
 
@@ -245,7 +244,7 @@ class Statistic:
             ),  # wrong:
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
-            ),  # TODO: check, that it's really the loc
+            ),
             "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
                 x, n=self.params.get("n"), p=model_data
             ),
@@ -268,7 +267,6 @@ class Statistic:
 
         likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
-        # TODO: check the order of the arguments
         return likelihood
 
     def compute_logloss(
@@ -285,7 +283,7 @@ class Statistic:
 
         Returns:
             The logistic loss of observing `gt_data` from the model `model_data`
-            decomposed into the log-likelihood along the "subpop" dimension and 
+            decomposed into the log-likelihood along the "subpop" dimension and
             regularizations.
         """
         model_data = self.apply_transforms(model_data[self.sim_var])
