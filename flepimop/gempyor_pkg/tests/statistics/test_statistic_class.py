@@ -125,6 +125,44 @@ def simple_valid_resample_factory() -> MockStatisticInput:
     )
 
 
+def simple_valid_scale_factory() -> MockStatisticInput:
+    date_coords = pd.date_range(date(2024, 1, 1), date(2024, 12, 31))
+    subpop_coords = ["01", "02", "03", "04"]
+    dim = (len(date_coords), len(subpop_coords))
+    model_data = xr.DataArray(
+        data=np.random.randn(*dim),
+        dims=("date", "subpop"),
+        coords={
+            "date": date_coords,
+            "subpop": subpop_coords,
+        },
+    )
+    gt_data = xr.DataArray(
+        data=np.random.randn(*dim),
+        dims=("date", "subpop"),
+        coords={
+            "date": date_coords,
+            "subpop": subpop_coords,
+        },
+    )
+    return MockStatisticInput(
+        "total_hospitalizations",
+        {
+            "name": "sum_hospitalizations",
+            "aggregator": "sum",
+            "period": "1 months",
+            "sim_var": "incidH",
+            "data_var": "incidH",
+            "remove_na": True,
+            "add_one": True,
+            "likelihood": {"dist": "pois"},
+            "scale": "exp",
+        },
+        model_data=model_data,
+        gt_data=gt_data,
+    )
+
+
 class TestStatistic:
     @pytest.mark.parametrize("factory", [(invalid_regularization_factory)])
     def test_unsupported_regularizations_value_error(
@@ -275,3 +313,21 @@ class TestStatistic:
         else:
             # No resample config, `apply_resample` returns our input
             assert resampled_data.identical(mock_inputs.model_data)
+
+    @pytest.mark.parametrize(
+        "factory", [(simple_valid_factory), (simple_valid_scale_factory)]
+    )
+    def test_apply_scale(self, factory: Callable[[], MockStatisticInput]) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        scaled_data = statistic.apply_scale(mock_inputs.model_data)
+        if (scale_func := mock_inputs.config.get("scale")) is not None:
+            # Scale config
+            expected_scaled_data = getattr(np, scale_func)(mock_inputs.model_data)
+            assert scaled_data.identical(expected_scaled_data)
+        else:
+            # No scale config, `apply_scale` is a no-op
+            assert scaled_data.identical(mock_inputs.model_data)

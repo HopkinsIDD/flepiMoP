@@ -96,6 +96,7 @@ class Statistic:
 
         self.scale = False
         if statistic_config["scale"].exists():
+            self.scale = True
             self.scale_func = getattr(np, statistic_config["scale"].get())
 
         self.dist = statistic_config["likelihood"]["dist"].get()
