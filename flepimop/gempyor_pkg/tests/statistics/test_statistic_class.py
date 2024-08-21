@@ -202,6 +202,14 @@ def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
     )
 
 
+all_valid_factories = [
+    (simple_valid_factory),
+    (simple_valid_resample_factory),
+    (simple_valid_resample_factory),
+    (simple_valid_resample_and_scale_factory),
+]
+
+
 class TestStatistic:
     @pytest.mark.parametrize("factory", [(invalid_regularization_factory)])
     def test_unsupported_regularizations_value_error(
@@ -220,7 +228,7 @@ class TestStatistic:
         ):
             mock_inputs.create_statistic_instance()
 
-    @pytest.mark.parametrize("factory", [(simple_valid_factory)])
+    @pytest.mark.parametrize("factory", all_valid_factories)
     def test_statistic_instance_attributes(
         self, factory: Callable[[], MockStatisticInput]
     ) -> None:
@@ -269,8 +277,8 @@ class TestStatistic:
         assert statistic.scale == (mock_inputs.config.get("scale") is not None)
 
         # `scale_func` attribute
-        if scale_func := mock_inputs.config.get("scale") is not None:
-            assert statistic.scale_func == scale_func
+        if (scale_func := mock_inputs.config.get("scale")) is not None:
+            assert statistic.scale_func == getattr(np, scale_func)
 
         # `sim_var` attribute
         assert statistic.sim_var == mock_inputs.config["sim_var"]
@@ -278,7 +286,7 @@ class TestStatistic:
         # `zero_to_one` attribute
         assert statistic.zero_to_one == mock_inputs.config.get("zero_to_one", False)
 
-    @pytest.mark.parametrize("factory", [(simple_valid_factory)])
+    @pytest.mark.parametrize("factory", all_valid_factories)
     def test_statistic_str_and_repr(
         self, factory: Callable[[], MockStatisticInput]
     ) -> None:
@@ -323,9 +331,7 @@ class TestStatistic:
         )
         assert isinstance(forecast_regularization, float)
 
-    @pytest.mark.parametrize(
-        "factory", [(simple_valid_factory), (simple_valid_resample_factory)]
-    )
+    @pytest.mark.parametrize("factory", all_valid_factories)
     def test_apply_resample(self, factory: Callable[[], MockStatisticInput]) -> None:
         # Setup
         mock_inputs = factory()
@@ -353,9 +359,7 @@ class TestStatistic:
             # No resample config, `apply_resample` returns our input
             assert resampled_data.identical(mock_inputs.model_data)
 
-    @pytest.mark.parametrize(
-        "factory", [(simple_valid_factory), (simple_valid_scale_factory)]
-    )
+    @pytest.mark.parametrize("factory", all_valid_factories)
     def test_apply_scale(self, factory: Callable[[], MockStatisticInput]) -> None:
         # Setup
         mock_inputs = factory()
@@ -371,15 +375,7 @@ class TestStatistic:
             # No scale config, `apply_scale` is a no-op
             assert scaled_data.identical(mock_inputs.model_data)
 
-    @pytest.mark.parametrize(
-        "factory",
-        [
-            (simple_valid_factory),
-            (simple_valid_resample_factory),
-            (simple_valid_scale_factory),
-            (simple_valid_resample_and_scale_factory),
-        ],
-    )
+    @pytest.mark.parametrize("factory", all_valid_factories)
     def test_apply_transforms(self, factory: Callable[[], MockStatisticInput]) -> None:
         # Setup
         mock_inputs = factory()
