@@ -1,7 +1,9 @@
-import pathlib
+from datetime import date
 from typing import Any, Callable
 
 import confuse
+import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -52,6 +54,22 @@ def invalid_regularization_factory() -> MockStatisticInput:
 
 
 def simple_valid_factory() -> MockStatisticInput:
+    model_data = xr.DataArray(
+        data=np.random.randn(10, 3),
+        dims=("date", "subpop"),
+        coords={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
+            "subpop": ["01", "02", "03"],
+        },
+    )
+    gt_data = xr.DataArray(
+        data=np.random.randn(10, 3),
+        dims=("date", "subpop"),
+        coords={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
+            "subpop": ["01", "02", "03"],
+        },
+    )
     return MockStatisticInput(
         "total_hospitalizations",
         {
@@ -64,6 +82,8 @@ def simple_valid_factory() -> MockStatisticInput:
             "add_one": True,
             "likelihood": {"dist": "pois"},
         },
+        model_data=model_data,
+        gt_data=gt_data,
     )
 
 
@@ -159,3 +179,31 @@ class TestStatistic:
         )
         assert str(statistic) == statistic_str
         assert repr(statistic) == f"A Statistic(): {statistic_str}"
+
+    @pytest.mark.parametrize("factory,last_n,mult", [(simple_valid_factory, 4, 2.0)])
+    def test_forecast_regularize(
+        self, factory: Callable[[], MockStatisticInput], last_n: int, mult: int | float
+    ) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        forecast_regularization = statistic._forecast_regularize(
+            mock_inputs.model_data, mock_inputs.gt_data, last_n=last_n, mult=mult
+        )
+        assert isinstance(forecast_regularization, float)
+
+    @pytest.mark.parametrize("factory,mult", [(simple_valid_factory, 2.0)])
+    def test_allsubpop_regularize(
+        self, factory: Callable[[], MockStatisticInput], mult: int | float
+    ) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        forecast_regularization = statistic._allsubpop_regularize(
+            mock_inputs.model_data, mock_inputs.gt_data, mult=mult
+        )
+        assert isinstance(forecast_regularization, float)
