@@ -87,6 +87,44 @@ def simple_valid_factory() -> MockStatisticInput:
     )
 
 
+def simple_valid_resample_factory() -> MockStatisticInput:
+    date_coords = pd.date_range(date(2024, 1, 1), date(2024, 12, 31))
+    subpop_coords = ["01", "02", "03", "04"]
+    dim = (len(date_coords), len(subpop_coords))
+    model_data = xr.DataArray(
+        data=np.random.randn(*dim),
+        dims=("date", "subpop"),
+        coords={
+            "date": date_coords,
+            "subpop": subpop_coords,
+        },
+    )
+    gt_data = xr.DataArray(
+        data=np.random.randn(*dim),
+        dims=("date", "subpop"),
+        coords={
+            "date": date_coords,
+            "subpop": subpop_coords,
+        },
+    )
+    return MockStatisticInput(
+        "total_hospitalizations",
+        {
+            "name": "sum_hospitalizations",
+            "aggregator": "sum",
+            "period": "1 months",
+            "sim_var": "incidH",
+            "data_var": "incidH",
+            "remove_na": True,
+            "add_one": True,
+            "likelihood": {"dist": "pois"},
+            "resample": {"freq": "MS", "aggregator": "sum"},
+        },
+        model_data=model_data,
+        gt_data=gt_data,
+    )
+
+
 class TestStatistic:
     @pytest.mark.parametrize("factory", [(invalid_regularization_factory)])
     def test_unsupported_regularizations_value_error(
@@ -207,3 +245,33 @@ class TestStatistic:
             mock_inputs.model_data, mock_inputs.gt_data, mult=mult
         )
         assert isinstance(forecast_regularization, float)
+
+    @pytest.mark.parametrize(
+        "factory", [(simple_valid_factory), (simple_valid_resample_factory)]
+    )
+    def test_apply_resample(self, factory: Callable[[], MockStatisticInput]) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        resampled_data = statistic.apply_resample(mock_inputs.model_data)
+        if resample_config := mock_inputs.config.get("resample", {}):
+            # Resample config
+            expected_resampled_data = mock_inputs.model_data.resample(
+                date=resample_config.get("freq", "")
+            )
+            aggregation_func = getattr(
+                expected_resampled_data, resample_config.get("aggregator", "")
+            )
+            expected_resampled_data = aggregation_func(
+                skipna=(
+                    resample_config.get("skipna", False)
+                    if resample_config.get("aggregator") is not None
+                    else False
+                )
+            )
+            assert resampled_data.identical(expected_resampled_data)
+        else:
+            # No resample config, `apply_resample` returns our input
+            assert resampled_data.identical(mock_inputs.model_data)
