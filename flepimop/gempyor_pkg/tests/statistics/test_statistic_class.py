@@ -5,6 +5,7 @@ import confuse
 import numpy as np
 import pandas as pd
 import pytest
+import scipy
 import xarray as xr
 
 from gempyor.statistics import Statistic
@@ -47,7 +48,7 @@ def invalid_regularization_factory() -> MockStatisticInput:
             "data_var": "incidH",
             "remove_na": True,
             "add_one": True,
-            "likelihood": {"dist": "pois"},
+            "likelihood": {"dist": "rmse"},
             "regularize": [{"name": "forecast"}, {"name": "invalid"}],
         },
     )
@@ -80,7 +81,7 @@ def simple_valid_factory() -> MockStatisticInput:
             "data_var": "incidH",
             "remove_na": True,
             "add_one": True,
-            "likelihood": {"dist": "pois"},
+            "likelihood": {"dist": "norm", "params": {"scale": 2.0}},
         },
         model_data=model_data,
         gt_data=gt_data,
@@ -117,7 +118,7 @@ def simple_valid_resample_factory() -> MockStatisticInput:
             "data_var": "incidH",
             "remove_na": True,
             "add_one": True,
-            "likelihood": {"dist": "pois"},
+            "likelihood": {"dist": "rmse"},
             "resample": {"freq": "MS", "aggregator": "sum"},
         },
         model_data=model_data,
@@ -155,7 +156,7 @@ def simple_valid_scale_factory() -> MockStatisticInput:
             "data_var": "incidH",
             "remove_na": True,
             "add_one": True,
-            "likelihood": {"dist": "pois"},
+            "likelihood": {"dist": "rmse"},
             "scale": "exp",
         },
         model_data=model_data,
@@ -193,7 +194,7 @@ def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
             "data_var": "incidH",
             "remove_na": True,
             "add_one": True,
-            "likelihood": {"dist": "pois"},
+            "likelihood": {"dist": "rmse"},
             "resample": {"freq": "W", "aggregator": "max"},
             "scale": "sin",
         },
@@ -405,3 +406,53 @@ class TestStatistic:
                 expected_transformed_data
             )
         assert transformed_data.identical(expected_transformed_data)
+
+    @pytest.mark.parametrize("factory", all_valid_factories)
+    def test_llik(self, factory: Callable[[], MockStatisticInput]) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        log_likelihood = statistic.llik(mock_inputs.model_data, mock_inputs.gt_data)
+
+        assert isinstance(log_likelihood, xr.DataArray)
+        assert log_likelihood.dims == mock_inputs.gt_data.dims
+        assert log_likelihood.coords.equals(mock_inputs.gt_data.coords)
+        dist_name = mock_inputs.config["likelihood"]["dist"]
+        if dist_name in {"absolute_error", "rmse"}:
+            # MAE produces a single repeated number
+            assert np.allclose(
+                log_likelihood.values,
+                -np.log(
+                    np.nansum(np.abs(mock_inputs.model_data - mock_inputs.gt_data))
+                ),
+            )
+        elif dist_name == "pois":
+            assert np.allclose(
+                log_likelihood.values,
+                scipy.stats.poisson.logpmf(
+                    mock_inputs.gt_data.values, mock_inputs.model_data.values
+                ),
+            )
+        elif dist_name == {"norm", "norm_cov"}:
+            scale = mock_inputs.config["likelihood"]["params"]["scale"]
+            if dist_name == "norm_cov":
+                scale *= mock_inputs.model_data.where(mock_inputs.model_data > 5, 5)
+            assert np.allclose(
+                log_likelihood.values,
+                scipy.stats.norm.logpdf(
+                    mock_inputs.gt_data.values,
+                    mock_inputs.model_data.values,
+                    scale=scale,
+                ),
+            )
+        elif dist_name == "nbinom":
+            assert np.allclose(
+                log_likelihood.values,
+                scipy.stats.nbinom.logpmf(
+                    mock_inputs.gt_data.values,
+                    n=mock_inputs.config["likelihood"]["params"]["n"],
+                    p=mock_inputs.model_data.values,
+                ),
+            )
