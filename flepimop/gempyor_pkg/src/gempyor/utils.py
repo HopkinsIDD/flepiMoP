@@ -172,7 +172,7 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
         kwargs: Further arguments passed to initilization of the class.
 
     Returns:
-
+        The classs_name attribute of module class.
     """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
@@ -260,6 +260,7 @@ class Timer(object):
 
     Attributes:
         name: Name of event.
+        tstart: Time start.
     """
     def __init__(self, name):
         self.name = name
@@ -289,9 +290,12 @@ class ISO8601Date(confuse.Template):
 
 
 @add_method(confuse.ConfigView)
-def as_date(self):
+def as_date(self) -> datetime.date:
     """
     Evaluates an datetime.date or ISO8601 date string.
+
+    Returns:
+        A datetime.date data type of the date associated with the object.
 
     Raises:
         ValueError: On parsing errors.
@@ -305,8 +309,8 @@ def as_evaled_expression(self):
     """
     Evaluates an expression string, returning a float. 
 
-    Args:
-        self: Class instance expression to evaluate.
+    Returns:
+        A float data type of the value associated with the object.
 
     Raises:
         ValueError: On parsing errors.
@@ -386,7 +390,6 @@ def as_random_distribution(self):
     Raises: 
         ValueError: When values are out of range.
         NotImplementedError: If an unknown distribution is found.
-
     """
 
     if isinstance(self.get(), dict):
@@ -441,6 +444,15 @@ def list_filenames(
     If filters are provided, only the files containing each of the substrings
     in the filters will be returned.
 
+    Args:
+        folder: The directory to search for files. Defaults to the current directory.
+        filters: A string or a list of strings to filter filenames. Only files
+        containing all the provided substrings will be returned. Defaults to an
+        empty list.
+
+    Returns:
+        A list of strings representing the paths to the files that match the filters.
+
     Example:
         To get all files containing "hosp":
         ```
@@ -457,15 +469,6 @@ def list_filenames(
             filters=["hosp", ".parquet"],
         )
         ```
-
-    Args:
-        folder: The directory to search for files. Defaults to the current directory.
-        filters: A string or a list of strings to filter filenames. Only files
-            containing all the provided substrings will be returned. Defaults to an
-            empty list.
-
-    Returns:
-        A list of strings representing the paths to the files that match the filters.
     """
     filters = [filters] if not isinstance(filters, list) else filters
     filters = filters if len(filters) else [""]
@@ -534,8 +537,7 @@ def rolling_mean_pad(
 
 def print_disk_diagnosis():
     """
-    Reads and prints AWS diagnoses. 
-    Includes total bytes, used bytes, free bytes.
+    Reads and prints AWS diagnoses. Includes total bytes, used bytes, free bytes.
     """
     import os
     from os import path
@@ -603,11 +605,11 @@ def create_resume_input_filename(
     Compiles run input information.
 
     Args:
-        resume_run_index: Index of the run (str).
-        flepi_prefix: File prefix (str).
-        flepi_slot_index: Index of thes lot (str).
-        filetype: File type (str).
-        liketype: Chimeric or global (str).
+        resume_run_index: Index of the run.
+        flepi_prefix: File prefix.
+        flepi_slot_index: Index of the slot.
+        filetype: File type.
+        liketype: Chimeric or global.
     
     Returns:
         The path to the a corresponding input file.
@@ -628,7 +630,7 @@ def create_resume_input_filename(
     )
 
 
-def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str) -> List[str]:
+def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str) -> list[str]:
     """
     Retrieves a list of parquet file types that are relevant for resuming a process based on
     specific environment variable settings. This function dynamically determines the list
@@ -665,13 +667,13 @@ def create_resume_file_names_map(
     based on the operational block index and the location of the last job output.
 
     Args:
-        resume_discard_seeding:
-        flepi_block_index:
-        resume_run_index:
-        flepi_prefix:
-        flepi_slot_index:
-        flepi_run_index:
-        last_job_output:
+        resume_discard_seeding:  Determines whether seeding-related file types should be included.
+        flepi_block_index: Determines a specific operational mode or block of the process.
+        resume_run_index: Resume run index.
+        flepi_prefix: File prefix.
+        flepi_slot_index: Index of the slot.
+        flepi_run_index: flepiMoP run index.
+        last_job_output: Adjusts the keys in the mapping to be prefixed with this path.
 
     Return:
         Dict[str, str]: A dictionary where keys are input file paths and values are corresponding
@@ -734,7 +736,7 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
     then iterates over each S3 URI in the provided mapping, downloads the file to the corresponding
     local path, and handles errors if the S3 URI format is incorrect or if the download fails.
 
-    Parameters:
+    Args:
         name_map (Dict[str, str]): A dictionary where keys are S3 URIs (strings) and values
                                    are the local file paths (strings) where the files should
                                    be saved.
@@ -793,18 +795,16 @@ def download_file_from_s3(name_map: Dict[str, str]) -> None:
 def move_file_at_local(name_map: Dict[str, str]) -> None:
     """
     Moves files locally according to a given mapping.
-
     This function takes a dictionary where the keys are source file paths and 
     the values are destination file paths. It ensures that the destination 
     directories exist and then copies the files from the source paths to the 
     destination paths.
 
-    Parameters:
-    name_map (Dict[str, str]): A dictionary mapping source file paths to 
-                               destination file paths.
+    Args:
+        name_map (Dict[str, str]): A dictionary mapping source file paths to destination file paths.
 
     Returns:
-    None
+        None
     """
     for src, dst in name_map.items():
         os.path.makedirs(os.path.dirname(dst), exist_ok=True)
