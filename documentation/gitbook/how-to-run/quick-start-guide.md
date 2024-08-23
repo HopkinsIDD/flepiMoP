@@ -77,6 +77,10 @@ First, ensure you have python and R installed. You need a working python3.7+ ins
 _**On Mac**_ 🍏
 
 Python 3 is installed by default on recent MacOS installation. If it is not, you might want to check [homebrew](https://brew.sh/) and install the appropriate installation.
+
+However, this may result in two versions of Python being installed on your computer. If there are multiple versions of Python (e.g., multiple versions of Python 3), you may need to specify which version to use in the installation. This can be done by following the instructions for using a conda environment, in which case the version of Python to use can be specified in the creation of the virtual environment, e.g., `conda create -c conda-forge -n flepimop-env python=3.12 numba pandas numpy seaborn tqdm matplotlib click confuse pyarrow sympy dask pytest scipy graphviz emcee xarray boto3 slack_sdk`. The conda environment will be activated in the same way and when installing gempyor, the version of pip used in the installation will reflect the Python version used in the conda environment (e.g., 3.12), so you can use `pip install -e flepimop/gempyor_pkg/` in this case.
+
+There is also the possibility that multiple versions of _gempyor_ have been installed on your computer in the various iterations of Python. You will only want to have _gempyor_ installed on the latest version of Python (e.g., Python 3.8+) that you have. You can remove a _gempyor_ iteration installed for a given version of Python using `pip[version] uninstall gempyor` e.g., `pip3.7 uninstall gempyor`. Then, you will need to specify which version of Python to install _gempyor_ on during that step (see above).
 {% endhint %}
 
 #### Install packages
