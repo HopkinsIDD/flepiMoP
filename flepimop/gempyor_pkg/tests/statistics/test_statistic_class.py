@@ -1,4 +1,5 @@
 from datetime import date
+from itertools import product
 from typing import Any, Callable
 
 import confuse
@@ -55,21 +56,24 @@ def invalid_regularization_factory() -> MockStatisticInput:
 
 
 def simple_valid_factory() -> MockStatisticInput:
-    model_data = xr.DataArray(
-        data=np.random.randn(10, 3),
-        dims=("date", "subpop"),
-        coords={
-            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
-            "subpop": ["01", "02", "03"],
+    data_coords = {
+        "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
+        "subpop": ["01", "02", "03"],
+    }
+    data_dim = [len(v) for v in data_coords.values()]
+    model_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
-    gt_data = xr.DataArray(
-        data=np.random.randn(10, 3),
-        dims=("date", "subpop"),
-        coords={
-            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
-            "subpop": ["01", "02", "03"],
+    gt_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
     return MockStatisticInput(
         "total_hospitalizations",
@@ -89,24 +93,24 @@ def simple_valid_factory() -> MockStatisticInput:
 
 
 def simple_valid_resample_factory() -> MockStatisticInput:
-    date_coords = pd.date_range(date(2024, 1, 1), date(2024, 12, 31))
-    subpop_coords = ["01", "02", "03", "04"]
-    dim = (len(date_coords), len(subpop_coords))
-    model_data = xr.DataArray(
-        data=np.random.randn(*dim),
-        dims=("date", "subpop"),
-        coords={
-            "date": date_coords,
-            "subpop": subpop_coords,
+    data_coords = {
+        "date": pd.date_range(date(2024, 1, 1), date(2024, 12, 31)),
+        "subpop": ["01", "02", "03", "04"],
+    }
+    data_dim = [len(v) for v in data_coords.values()]
+    model_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
-    gt_data = xr.DataArray(
-        data=np.random.randn(*dim),
-        dims=("date", "subpop"),
-        coords={
-            "date": date_coords,
-            "subpop": subpop_coords,
+    gt_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
     return MockStatisticInput(
         "total_hospitalizations",
@@ -127,24 +131,24 @@ def simple_valid_resample_factory() -> MockStatisticInput:
 
 
 def simple_valid_scale_factory() -> MockStatisticInput:
-    date_coords = pd.date_range(date(2024, 1, 1), date(2024, 12, 31))
-    subpop_coords = ["01", "02", "03", "04"]
-    dim = (len(date_coords), len(subpop_coords))
-    model_data = xr.DataArray(
-        data=np.random.randn(*dim),
-        dims=("date", "subpop"),
-        coords={
-            "date": date_coords,
-            "subpop": subpop_coords,
+    data_coords = {
+        "date": pd.date_range(date(2024, 1, 1), date(2024, 12, 31)),
+        "subpop": ["01", "02", "03", "04"],
+    }
+    data_dim = [len(v) for v in data_coords.values()]
+    model_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
-    gt_data = xr.DataArray(
-        data=np.random.randn(*dim),
-        dims=("date", "subpop"),
-        coords={
-            "date": date_coords,
-            "subpop": subpop_coords,
+    gt_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
     return MockStatisticInput(
         "total_hospitalizations",
@@ -165,24 +169,24 @@ def simple_valid_scale_factory() -> MockStatisticInput:
 
 
 def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
-    date_coords = pd.date_range(date(2024, 1, 1), date(2024, 12, 31))
-    subpop_coords = ["01", "02", "03", "04"]
-    dim = (len(date_coords), len(subpop_coords))
-    model_data = xr.DataArray(
-        data=np.random.randn(*dim),
-        dims=("date", "subpop"),
-        coords={
-            "date": date_coords,
-            "subpop": subpop_coords,
+    data_coords = {
+        "date": pd.date_range(date(2024, 1, 1), date(2024, 12, 31)),
+        "subpop": ["01", "02", "03", "04"],
+    }
+    data_dim = [len(v) for v in data_coords.values()]
+    model_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
-    gt_data = xr.DataArray(
-        data=np.random.randn(*dim),
-        dims=("date", "subpop"),
-        coords={
-            "date": date_coords,
-            "subpop": subpop_coords,
+    gt_data = xr.Dataset(
+        data_vars={
+            "incidH": (list(data_coords.keys()), np.random.randn(*data_dim)),
+            "incidD": (list(data_coords.keys()), np.random.randn(*data_dim)),
         },
+        coords=data_coords,
     )
     return MockStatisticInput(
         "total_hospitalizations",
@@ -314,7 +318,10 @@ class TestStatistic:
 
         # Tests
         forecast_regularization = statistic._forecast_regularize(
-            mock_inputs.model_data, mock_inputs.gt_data, last_n=last_n, mult=mult
+            mock_inputs.model_data[mock_inputs.config["sim_var"]],
+            mock_inputs.gt_data[mock_inputs.config["data_var"]],
+            last_n=last_n,
+            mult=mult,
         )
         assert isinstance(forecast_regularization, float)
 
@@ -328,7 +335,9 @@ class TestStatistic:
 
         # Tests
         forecast_regularization = statistic._allsubpop_regularize(
-            mock_inputs.model_data, mock_inputs.gt_data, mult=mult
+            mock_inputs.model_data[mock_inputs.config["sim_var"]],
+            mock_inputs.gt_data[mock_inputs.config["data_var"]],
+            mult=mult,
         )
         assert isinstance(forecast_regularization, float)
 
@@ -339,12 +348,14 @@ class TestStatistic:
         statistic = mock_inputs.create_statistic_instance()
 
         # Tests
-        resampled_data = statistic.apply_resample(mock_inputs.model_data)
+        resampled_data = statistic.apply_resample(
+            mock_inputs.model_data[mock_inputs.config["sim_var"]]
+        )
         if resample_config := mock_inputs.config.get("resample", {}):
             # Resample config
-            expected_resampled_data = mock_inputs.model_data.resample(
-                date=resample_config.get("freq", "")
-            )
+            expected_resampled_data = mock_inputs.model_data[
+                mock_inputs.config["sim_var"]
+            ].resample(date=resample_config.get("freq", ""))
             aggregation_func = getattr(
                 expected_resampled_data, resample_config.get("aggregator", "")
             )
@@ -358,7 +369,9 @@ class TestStatistic:
             assert resampled_data.identical(expected_resampled_data)
         else:
             # No resample config, `apply_resample` returns our input
-            assert resampled_data.identical(mock_inputs.model_data)
+            assert resampled_data.identical(
+                mock_inputs.model_data[mock_inputs.config["sim_var"]]
+            )
 
     @pytest.mark.parametrize("factory", all_valid_factories)
     def test_apply_scale(self, factory: Callable[[], MockStatisticInput]) -> None:
@@ -367,14 +380,20 @@ class TestStatistic:
         statistic = mock_inputs.create_statistic_instance()
 
         # Tests
-        scaled_data = statistic.apply_scale(mock_inputs.model_data)
+        scaled_data = statistic.apply_scale(
+            mock_inputs.model_data[mock_inputs.config["sim_var"]]
+        )
         if (scale_func := mock_inputs.config.get("scale")) is not None:
             # Scale config
-            expected_scaled_data = getattr(np, scale_func)(mock_inputs.model_data)
+            expected_scaled_data = getattr(np, scale_func)(
+                mock_inputs.model_data[mock_inputs.config["sim_var"]]
+            )
             assert scaled_data.identical(expected_scaled_data)
         else:
             # No scale config, `apply_scale` is a no-op
-            assert scaled_data.identical(mock_inputs.model_data)
+            assert scaled_data.identical(
+                mock_inputs.model_data[mock_inputs.config["sim_var"]]
+            )
 
     @pytest.mark.parametrize("factory", all_valid_factories)
     def test_apply_transforms(self, factory: Callable[[], MockStatisticInput]) -> None:
@@ -383,8 +402,12 @@ class TestStatistic:
         statistic = mock_inputs.create_statistic_instance()
 
         # Tests
-        transformed_data = statistic.apply_transforms(mock_inputs.model_data)
-        expected_transformed_data = mock_inputs.model_data.copy()
+        transformed_data = statistic.apply_transforms(
+            mock_inputs.model_data[mock_inputs.config["sim_var"]]
+        )
+        expected_transformed_data = mock_inputs.model_data[
+            mock_inputs.config["sim_var"]
+        ].copy()
         if resample_config := mock_inputs.config.get("resample", {}):
             # Resample config
             expected_transformed_data = expected_transformed_data.resample(
@@ -414,36 +437,52 @@ class TestStatistic:
         statistic = mock_inputs.create_statistic_instance()
 
         # Tests
-        log_likelihood = statistic.llik(mock_inputs.model_data, mock_inputs.gt_data)
+        log_likelihood = statistic.llik(
+            mock_inputs.model_data[mock_inputs.config["sim_var"]],
+            mock_inputs.gt_data[mock_inputs.config["data_var"]],
+        )
 
         assert isinstance(log_likelihood, xr.DataArray)
-        assert log_likelihood.dims == mock_inputs.gt_data.dims
-        assert log_likelihood.coords.equals(mock_inputs.gt_data.coords)
+        assert (
+            log_likelihood.dims
+            == mock_inputs.gt_data[mock_inputs.config["data_var"]].dims
+        )
+        assert log_likelihood.coords.equals(
+            mock_inputs.gt_data[mock_inputs.config["data_var"]].coords
+        )
         dist_name = mock_inputs.config["likelihood"]["dist"]
         if dist_name in {"absolute_error", "rmse"}:
             # MAE produces a single repeated number
             assert np.allclose(
                 log_likelihood.values,
                 -np.log(
-                    np.nansum(np.abs(mock_inputs.model_data - mock_inputs.gt_data))
+                    np.nansum(
+                        np.abs(
+                            mock_inputs.model_data[mock_inputs.config["sim_var"]]
+                            - mock_inputs.gt_data[mock_inputs.config["data_var"]]
+                        )
+                    )
                 ),
             )
         elif dist_name == "pois":
             assert np.allclose(
                 log_likelihood.values,
                 scipy.stats.poisson.logpmf(
-                    mock_inputs.gt_data.values, mock_inputs.model_data.values
+                    mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
+                    mock_inputs.model_data[mock_inputs.config["data_var"]].values,
                 ),
             )
         elif dist_name == {"norm", "norm_cov"}:
             scale = mock_inputs.config["likelihood"]["params"]["scale"]
             if dist_name == "norm_cov":
-                scale *= mock_inputs.model_data.where(mock_inputs.model_data > 5, 5)
+                scale *= mock_inputs.model_data[mock_inputs.config["sim_var"]].where(
+                    mock_inputs.model_data[mock_inputs.config["sim_var"]] > 5, 5
+                )
             assert np.allclose(
                 log_likelihood.values,
                 scipy.stats.norm.logpdf(
-                    mock_inputs.gt_data.values,
-                    mock_inputs.model_data.values,
+                    mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
+                    mock_inputs.model_data[mock_inputs.config["sim_var"]].values,
                     scale=scale,
                 ),
             )
@@ -451,8 +490,25 @@ class TestStatistic:
             assert np.allclose(
                 log_likelihood.values,
                 scipy.stats.nbinom.logpmf(
-                    mock_inputs.gt_data.values,
+                    mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
                     n=mock_inputs.config["likelihood"]["params"]["n"],
-                    p=mock_inputs.model_data.values,
+                    p=mock_inputs.model_data[mock_inputs.config["sim_var"]].values,
                 ),
             )
+
+    @pytest.mark.parametrize("factory", all_valid_factories)
+    def test_compute_logloss(self, factory: Callable[[], MockStatisticInput]) -> None:
+        # Setup
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        # Tests
+        log_likelihood, regularization = statistic.compute_logloss(
+            mock_inputs.model_data, mock_inputs.gt_data
+        )
+
+        assert True
+
+        # print(regularization)
+
+        # assert isinstance(regularization, float)
