@@ -55,6 +55,36 @@ def invalid_regularization_factory() -> MockStatisticInput:
     )
 
 
+def invalid_misshaped_data_factory() -> MockStatisticInput:
+    model_data = xr.Dataset(
+        data_vars={"incidH": (["date", "subpop"], np.random.randn(10, 3))},
+        coords={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
+            "subpop": ["01", "02", "03"],
+        },
+    )
+    gt_data = xr.Dataset(
+        data_vars={"incidH": (["date", "subpop"], np.random.randn(11, 2))},
+        coords={
+            "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 11)),
+            "subpop": ["02", "03"],
+        },
+    )
+    return MockStatisticInput(
+        "total_hospitalizations",
+        {
+            "name": "sum_hospitalizations",
+            "sim_var": "incidH",
+            "data_var": "incidH",
+            "remove_na": True,
+            "add_one": True,
+            "likelihood": {"dist": "norm", "params": {"scale": 2.0}},
+        },
+        model_data=model_data,
+        gt_data=gt_data,
+    )
+
+
 def simple_valid_factory() -> MockStatisticInput:
     data_coords = {
         "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
@@ -495,6 +525,25 @@ class TestStatistic:
                     p=mock_inputs.model_data[mock_inputs.config["sim_var"]].values,
                 ),
             )
+
+    @pytest.mark.parametrize("factory", [(invalid_misshaped_data_factory)])
+    def test_compute_logloss_data_misshape_value_error(
+        self, factory: Callable[[], MockStatisticInput]
+    ) -> None:
+        mock_inputs = factory()
+        statistic = mock_inputs.create_statistic_instance()
+
+        model_rows, model_cols = mock_inputs.model_data[
+            mock_inputs.config["sim_var"]
+        ].shape
+        gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
+        expected_match = (
+            rf"^{mock_inputs.name} Statistic error\: data and groundtruth do not have "
+            rf"the same shape\: model\_data\.shape\=\({model_rows}\, {model_cols}\) "
+            rf"\!\= gt\_data\.shape\=\({gt_rows}\, {gt_cols}\)$"
+        )
+        with pytest.raises(ValueError, match=expected_match):
+            statistic.compute_logloss(mock_inputs.model_data, mock_inputs.gt_data)
 
     @pytest.mark.parametrize("factory", all_valid_factories)
     def test_compute_logloss(self, factory: Callable[[], MockStatisticInput]) -> None:
