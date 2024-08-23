@@ -194,8 +194,8 @@ def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "aggregator": "sum",
             "period": "1 months",
-            "sim_var": "incidH",
-            "data_var": "incidH",
+            "sim_var": "incidD",
+            "data_var": "incidD",
             "remove_na": True,
             "add_one": True,
             "likelihood": {"dist": "rmse"},
@@ -447,7 +447,7 @@ class TestStatistic:
             log_likelihood.dims
             == mock_inputs.gt_data[mock_inputs.config["data_var"]].dims
         )
-        assert log_likelihood.coords.equals(
+        assert log_likelihood.coords.identical(
             mock_inputs.gt_data[mock_inputs.config["data_var"]].coords
         )
         dist_name = mock_inputs.config["likelihood"]["dist"]
@@ -501,14 +501,22 @@ class TestStatistic:
         # Setup
         mock_inputs = factory()
         statistic = mock_inputs.create_statistic_instance()
-
-        # Tests
         log_likelihood, regularization = statistic.compute_logloss(
             mock_inputs.model_data, mock_inputs.gt_data
         )
+        regularization_config = mock_inputs.config.get("regularize", [])
 
-        assert True
+        # Assertions on log_likelihood
+        assert isinstance(log_likelihood, xr.DataArray)
+        assert log_likelihood.coords.identical(
+            xr.Coordinates(coords={"subpop": mock_inputs.gt_data.coords.get("subpop")})
+        )
 
-        # print(regularization)
-
-        # assert isinstance(regularization, float)
+        # Assertions on regularization
+        assert isinstance(regularization, float)
+        if regularization_config:
+            # Regularizations on logistic loss
+            assert regularization != 0.0
+        else:
+            # No regularizations on logistic loss
+            assert regularization == 0.0

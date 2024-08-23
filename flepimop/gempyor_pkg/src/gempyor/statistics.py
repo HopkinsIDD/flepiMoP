@@ -271,7 +271,7 @@ class Statistic:
         return likelihood
 
     def compute_logloss(
-        self, model_data: xr.DataArray, gt_data: xr.DataArray
+        self, model_data: xr.Dataset, gt_data: xr.Dataset
     ) -> tuple[xr.DataArray, float]:
         """
         Compute the logistic loss of observing the ground truth given model output.
@@ -286,6 +286,9 @@ class Statistic:
             The logistic loss of observing `gt_data` from the model `model_data`
             decomposed into the log-likelihood along the "subpop" dimension and
             regularizations.
+
+        Raises:
+            ValueError: If `model_data` and `gt_data` do not have the same shape.
         """
         model_data = self.apply_transforms(model_data[self.sim_var])
         gt_data = self.apply_transforms(gt_data[self.data_var])
@@ -299,7 +302,7 @@ class Statistic:
                 )
             )
 
-        regularization = 0
+        regularization = 0.0
         for reg_func, reg_config in self.regularizations:
             regularization += reg_func(
                 model_data=model_data, gt_data=gt_data, **reg_config
