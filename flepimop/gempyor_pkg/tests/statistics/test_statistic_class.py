@@ -43,8 +43,6 @@ def invalid_regularization_factory() -> MockStatisticInput:
         "total_hospitalizations",
         {
             "name": "sum_hospitalizations",
-            "aggregator": "sum",
-            "period": "1 months",
             "sim_var": "incidH",
             "data_var": "incidH",
             "remove_na": True,
@@ -109,8 +107,6 @@ def simple_valid_factory() -> MockStatisticInput:
         "total_hospitalizations",
         {
             "name": "sum_hospitalizations",
-            "aggregator": "sum",
-            "period": "1 months",
             "sim_var": "incidH",
             "data_var": "incidH",
             "remove_na": True,
@@ -146,8 +142,6 @@ def simple_valid_resample_factory() -> MockStatisticInput:
         "total_hospitalizations",
         {
             "name": "sum_hospitalizations",
-            "aggregator": "sum",
-            "period": "1 months",
             "sim_var": "incidH",
             "data_var": "incidH",
             "remove_na": True,
@@ -184,8 +178,6 @@ def simple_valid_scale_factory() -> MockStatisticInput:
         "total_hospitalizations",
         {
             "name": "sum_hospitalizations",
-            "aggregator": "sum",
-            "period": "1 months",
             "sim_var": "incidH",
             "data_var": "incidH",
             "remove_na": True,
@@ -222,8 +214,6 @@ def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
         "total_hospitalizations",
         {
             "name": "sum_hospitalizations",
-            "aggregator": "sum",
-            "period": "1 months",
             "sim_var": "incidD",
             "data_var": "incidD",
             "remove_na": True,
