@@ -172,7 +172,7 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
         kwargs: Further arguments passed to initilization of the class.
 
     Returns:
-        The classs_name attribute of module class.
+        The class_name attribute of module class.
     """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
