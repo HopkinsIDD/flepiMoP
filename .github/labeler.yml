@@ -1,0 +1,46 @@
+batch:
+  - '(batch)'
+bug:
+  - '(bug)'
+config.writer:
+  - '(config.writer)'
+documentation:
+  - '(documentation)'
+enhancement:
+  - '(enhancement)'
+gempyor:
+  - '(gempyor)'
+good first issue:
+  - '(good first issue)'
+help wanted:
+  - '(help wanted)'
+high priority:
+  - '(high priority)'
+inference:
+  - '(inference)'
+invalid:
+  - '(invalid)'
+low priority:
+  - '(low priority)'
+medium priority:
+  - '(medium priority)'
+meta/workflow:
+  - '(meta|workflow)'
+operations:
+  - '(operations)'
+performance:
+  - '(performance)'
+post-processing:
+  - '(post-processing)'
+question:
+  - '(question)'
+quick issue:
+  - '(quick issue)'
+revisit ASAP:
+  - '(revisit ASAP)'
+seeding:
+  - '(seeding)'
+submission:
+  - '(submission)' 
+wontfix:
+  - '(wontfix)'
