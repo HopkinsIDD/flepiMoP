@@ -530,6 +530,13 @@ Note that there is an alternative way to specify time dependence in parameter va
 
 Compartmental model parameters can have an additional attribute beyond `value` or `timeseries`, which is called `stacked_modifier_method`. This value is explained in the section on coding [`time-dependent parameter modifications`](intervention-templates.md) (also known as "modifiers") as it determines what happens when two different modifiers act on the same parameter at the same time (are they combined additively or multiplicatively?).&#x20;
 
+| Config item               | Required?                              | Type/Format                                   | Description                                                                               |
+| ------------------------- | -------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `value`                   | either value or timeseries is required | numerical, or distribution                    | This defines the value of the parameter, as described above.                              |
+| `timeseries`              | either value or timeseries is required | path to a csv file                            | This defines a timeseries for each day, as above.                                         |
+| `stacked_modifier_method` | optional                               | string: `sum`, `product`, `reduction_product` | This option defines the method used when modifiers are applied. The default is `product`. |
+| `rolling_mean_windows`    | optional                               | integer                                       | The size of the rolling mean window if a rolling mean is applied.                         |
+
 ## Specifying model simulation method `(seir::integration)`
 
 A compartmental model defined using the notation in the previous sections describes rules for classifying individuals in the population based on infection state dynamically, but does not uniquely specify the mathematical framework that should be used to simulate the model.
