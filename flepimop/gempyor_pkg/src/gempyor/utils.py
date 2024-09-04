@@ -169,7 +169,6 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
         **kwargs: Further arguments passed to initilization of the class.
 
     Returns:
-<<<<<<< HEAD
         The instance of the class that was instantiated with provided **kwargs.
 
     Example:
@@ -184,9 +183,6 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
         ```
         print(instance.display())
         ```
-=======
-        The class_name attribute of module class.
->>>>>>> 2b779bb54bb320b5df2f2aea90dea03d9624af92
     """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
@@ -300,7 +296,7 @@ class ISO8601Date(confuse.Template):
     """
     Reads in config dates into datetimes.dates.
     """
-    def convert(self, value: any, view: confuse.View):
+    def convert(self, value: any, view: confuse.ConfigView):
         """
         Converts the given value to a datetime.date object.
 
