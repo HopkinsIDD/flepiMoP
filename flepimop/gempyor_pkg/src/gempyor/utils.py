@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
+import typing
 from typing import List, Dict, Literal
 
 import confuse
@@ -110,6 +111,7 @@ def command_safe_run(command: str, command_name: str="mycommand", fail_on_fail: 
 
     Returns:
         As a tuple; the return code, the standard output, and standard error from running the command.
+    
     Raises:
         Exception: If fail_on_fail=True and the command fails, an exception will be thrown.
     """
@@ -158,7 +160,7 @@ def add_method(cls):
     return decorator
 
 
-def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs: dict[str, any]) -> any:
+def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs: dict[str, typing.Any]) -> typing.Any:
     """
     Function serving to create a class that finds and imports the necessary modules.
 
@@ -171,18 +173,18 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
     Returns:
         The instance of the class that was instantiated with provided **kwargs.
 
-    Example:
+    Examples:
         Suppose there is a module called `my_plugin.py with a class `MyClass` located at `/path/to/plugin/`.
         
         Dynamically import and instantiate the class:
-        ```
-        instance = search_and_import_plugins_class('/path/to/plugin', path_prefix, 'MyClass', **params)
-        ```
 
+        >>> instance = search_and_import_plugins_class('/path/to/plugin', path_prefix, 'MyClass', **params)
+      
         View the instance:
-        ```
-        print(instance.display())
-        ```
+
+        >>> print(instance)
+        <__main__.MyClass object at 0x7f8b2c6b4d60>
+
     """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
@@ -231,14 +233,14 @@ def profile(output_file: str = None, sort_by: str = "cumulative", lines_to_print
     Returns:
         Profile of the decorated function.
 
-    Example:
-        ```
-        @profile(output_file="my_function.prof")
-        def my_function():
+    Examples:
+        >>> @profile(output_file="my_function.prof")
+        >>> def my_function():
             # Function body content
             pass
-        my_function()
-        ```
+        >>> my_function()
+        After running ``my_function``, a file named ``my_function.prof`` will be created in the current WD. 
+        This file contains the profiling data.
     """
 
     def inner(func):
@@ -265,7 +267,7 @@ def as_list(thing: any) -> list[any]:
         thing: The object that you would like to be converted to a list.
 
     Returns:
-        he object converted to a list.
+        The object converted to a list.
     """
     if type(thing) == list:
         return thing
@@ -373,11 +375,11 @@ def get_truncated_normal(
     Returns:
         rv_frozen: A frozen instance of the truncated normal distribution with the specified parameters.
     
-    Example:
+    Examples:
         Create a truncated normal distribution with specified parameters (truncated between 1 and 10):
-        ```
-        truncated_normal_dist = get_truncated_normal(mean=5, sd=2, a=1, b=10)
-        ```
+        >>> truncated_normal_dist = get_truncated_normal(mean=5, sd=2, a=1, b=10)
+        >>> print(truncated_normal_dist)
+        rv_frozen(<scipy.stats._distn_infrastructure.rv_frozen object at 0x...>)
     """
     lower = (a - mean) / sd
     upper = (b - mean) / sd
@@ -402,11 +404,11 @@ def get_log_normal(
         rv_frozen: A frozen instance of the log normal distribution with the
         specified parameters.
     
-    Example:
+    Examples:
         Create a log-normal distribution with specified parameters:
-        ```
-        log_normal_dist = get_log_normal(meanlog=1, sdlog=0.5)
-        ```
+        >>> log_normal_dist = get_log_normal(meanlog=1, sdlog=0.5)
+        >>> print(log_normal_dist)
+        <scipy.stats._distn_infrastructure.rv_frozen object at 0x...>
     """
     return scipy.stats.lognorm(s=sdlog, scale=np.exp(meanlog), loc=0)
 
@@ -426,26 +428,25 @@ def as_random_distribution(self):
         ValueError: When values are out of range.
         NotImplementedError: If an unknown distribution is found.
 
-    Example:
-        Say that `config` is a `confuse.ConfigView` instance.
+    Examples:
+        Say that ``config`` is a ``confuse.ConfigView`` instance.
 
         To create a uniform distribution between 1 and 10:
-        ```
-        dist_function = config.as_random_distribution()
-        sample = dist_function()
-        ```
+        >>> dist_function = config.as_random_distribution()
+        >>> sample = dist_function()
+        5.436789235794546
 
         To use a truncated normal distribution:
-        ```
-        config_truncnorm = confuse.ConfigView({
+        >>> config_truncnorm = confuse.ConfigView({
             "distribution": "truncnorm",
             "mean": 0
             "sd": 1,
             "a": -1, 
             "b": 1
             })
-        truncnorm_dist_function = config_truncnorm.as_random_distribution()
-        truncnorm_sample = truncnorm_dist_function()
+        >>> truncnorm_dist_function = config_truncnorm.as_random_distribution()
+        >>> truncnorm_sample = truncnorm_dist_function()
+        0.312745
         ```
     """
 
@@ -495,7 +496,8 @@ def list_filenames(
     folder: str | bytes | os.PathLike = ".",
     filters: str | list[str] = [],
 ) -> list[str]:
-    """Return the list of all filenames and paths in the provided folder.
+    """
+    Return the list of all filenames and paths in the provided folder.
 
     This function lists all files in the specified folder and its subdirectories.
     If filters are provided, only the files containing each of the substrings
@@ -512,22 +514,18 @@ def list_filenames(
     Returns:
         A list of strings representing the paths to the files that match the filters.
 
-    Example:
+    Examples:
         To get all files containing "hosp":
-        ```
-        gempyor.utils.list_filenames(
+        >>> gempyor.utils.list_filenames(
             folder="model_output/",
             filters=["hosp"],
         )
-        ```
 
         To get only "hosp" files with a ".parquet" extension:
-        ```
-        gempyor.utils.list_filenames(
+        >>> gempyor.utils.list_filenames(
             folder="model_output/",
             filters=["hosp", ".parquet"],
         )
-        ```
     """
     filters = [filters] if not isinstance(filters, list) else filters
     filters = filters if len(filters) else [""]
@@ -649,10 +647,9 @@ def create_resume_out_filename(
     Returns:
         The path to a corresponding output file.
     
-    Example:
+    Examples:
         Generate an output file with specified parameters:
-        ```
-        filename = create_resume_out_filename(
+        >>> filename = create_resume_out_filename(
             flepi_run_index="test_run",
             flepi_prefix="model_output/run_id/",
             flepi_slot_index="1",
@@ -660,11 +657,8 @@ def create_resume_out_filename(
             filetype="seed",
             liketype="chimeric"
             )
-        ```
-        Example output:
-        ```
+        >>> print(filename)
         "experiment/001/normal/intermediate/000000123.000000000.1.parquet"
-        ```
     """
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
@@ -700,21 +694,17 @@ def create_resume_input_filename(
     Returns:
         The path to the a corresponding input file.
     
-    Example:
+    Examples:
         Generate an input file with specified parameters:
-        ```
-        filename = create_resume_input_filename(
+        >>> filename = create_resume_input_filename(
             resume_run_index="2",
             flepi_prefix="model_output/run_id/",
             flepi_slot_index="1",
             filetype="seed",
             liketype="chimeric"
             )
-        ```
-        Example output:
-        ```
+        >>> print(filename)
         "experiment/002/normal/final/789.csv"
-        ```
     """
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
@@ -746,24 +736,16 @@ def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str)
     Returns:
         List of file types.
     
-    Example:
+    Examples:
         Determine file types for block index 1 with seeding data NOT discarded:
-        ```
-        filetypes = get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1")
-        ```
-        Output of `print(filetypes)`:
-        ```
+        >>> filetypes = get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1")
+        >>> print(filetypes)
         ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
-        ```
 
         Determine file types for block index 2 with seeding data discarded:
-        ```
-        filtypes = get_filetype_for_resume(resume_discard_seeding="true", flepi_block_index="2")
-        ```
-        Output of `print(filetypes)`:
-        ```
+        >>> filtypes = get_filetype_for_resume(resume_discard_seeding="true", flepi_block_index="2")
+        >>> print(filetypes)
         ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
-        ```
     """
     if flepi_block_index == "1":
         if resume_discard_seeding == "true":
@@ -782,7 +764,7 @@ def create_resume_file_names_map(
     flepi_slot_index,
     flepi_run_index,
     last_job_output,
-) -> dict:
+) -> dict[str, str]:
     """
     Generates a mapping of input file names to output file names for a resume process based on
     parquet file types and environmental conditions. The function adjusts the file name mappings
@@ -797,7 +779,7 @@ def create_resume_file_names_map(
         flepi_run_index: flepiMoP run index.
         last_job_output: Adjusts the keys in the mapping to be prefixed with this path.
 
-    Return:
+    Returns:
         A dictionary where keys are input file paths and values are corresponding
         output file paths. 
 
@@ -815,10 +797,9 @@ def create_resume_file_names_map(
         functions and environment variables which if improperly configured could lead to unexpected
         behavior.
     
-    Example:
+    Examples:
         Generate a mapping of file names for a given resume process:
-        ```
-        file_names_map = create_resume_file_names_map(
+        >>> file_names_map = create_resume_file_names_map(
             resume_discard_seeding="false",
             flepi_block_index="1",
             resume_run_index="1",
@@ -826,10 +807,17 @@ def create_resume_file_names_map(
             flepi_slot_index="1",
             flepi_run_index="test_run",
             last_job_output="s3://bucket/path/")
-        ```
+        >>> print(file_names_map)
+        {
+        's3://bucket/path/model_output/run_id/1_type1_global_1.in': 'model_output/run_id/test_run_type1_global_1_1.out',
+        's3://bucket/path/model_output/run_id/1_type1_chimeric_1.in': 'model_output/run_id/test_run_type1_chimeric_1_1.out',
+        's3://bucket/path/model_output/run_id/1_type2_global_1.in': 'model_output/run_id/test_run_type2_global_1_1.out',
+        's3://bucket/path/model_output/run_id/1_type2_chimeric_1.in': 'model_output/run_id/test_run_type2_chimeric_1_1.out'
+        }
+        # Note: this output is toy output implemented with toy file names.
 
     Notes:
-    - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to an S3 location.
+        - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to an S3 location.
     """
     file_types = get_filetype_for_resume(
         resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
@@ -865,7 +853,7 @@ def create_resume_file_names_map(
     return resume_file_name_mapping
 
 
-def download_file_from_s3(name_map: dict) -> None:
+def download_file_from_s3(name_map: dict[str, str]) -> None:
     """
     Downloads files from AWS S3 based on a mapping of S3 URIs to local file paths. The function
     checks if the directory for the first output file exists and creates it if necessary. It
@@ -929,7 +917,7 @@ def download_file_from_s3(name_map: dict) -> None:
             print("Could not download file from s3")
 
 
-def move_file_at_local(name_map: Dict[str, str]) -> None:
+def move_file_at_local(name_map: dict[str, str]) -> None:
     """
     Moves files locally according to a given mapping.
     This function takes a dictionary where the keys are source file paths and 
@@ -938,7 +926,7 @@ def move_file_at_local(name_map: Dict[str, str]) -> None:
     destination paths.
 
     Args:
-        name_map (Dict[str, str]): A dictionary mapping source file paths to destination file paths.
+        name_map: A dictionary mapping source file paths to destination file paths.
     """
     for src, dst in name_map.items():
         os.path.makedirs(os.path.dirname(dst), exist_ok=True)
