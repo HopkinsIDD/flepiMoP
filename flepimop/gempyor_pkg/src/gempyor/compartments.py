@@ -13,7 +13,13 @@ logger = logging.getLogger(__name__)
 
 class Compartments:
     # Minimal object to be easily picklable for // runs
-    def __init__(self, seir_config=None, compartments_config=None, compartments_file=None, transitions_file=None):
+    def __init__(
+        self,
+        seir_config=None,
+        compartments_config=None,
+        compartments_file=None,
+        transitions_file=None,
+    ):
         self.times_set = 0
 
         ## Something like this is needed for check script:
@@ -29,7 +35,7 @@ class Compartments:
         return
 
     def constructFromConfig(self, seir_config, compartment_config):
-        """ 
+        """
         This method is called by the constructor if the compartments are not loaded from a file.
         It will parse the compartments and transitions from the configuration files.
         It will populate self.compartments and self.transitions.
@@ -43,7 +49,7 @@ class Compartments:
         ).all().all()
 
     def parse_compartments(self, seir_config, compartment_config):
-        """ Parse the compartments from the configuration file:
+        """Parse the compartments from the configuration file:
         seir_config: the configuration file for the SEIR model
         compartment_config: the configuration file for the compartments
         Example: if config says:
@@ -75,40 +81,57 @@ class Compartments:
             else:
                 compartment_df = pd.merge(compartment_df, tmp, on="key")
         compartment_df = compartment_df.drop(["key"], axis=1)
-        compartment_df["name"] = compartment_df.apply(lambda x: reduce(lambda a, b: a + "_" + b, x), axis=1)
+        compartment_df["name"] = compartment_df.apply(
+            lambda x: reduce(lambda a, b: a + "_" + b, x), axis=1
+        )
         return compartment_df
 
     def parse_transitions(self, seir_config, fake_config=False):
         rc = reduce(
-            lambda a, b: pd.concat([a, self.parse_single_transition(seir_config, b, fake_config)]),
+            lambda a, b: pd.concat(
+                [a, self.parse_single_transition(seir_config, b, fake_config)]
+            ),
             seir_config["transitions"],
             pd.DataFrame(),
         )
         rc = rc.reset_index(drop=True)
         return rc
 
-    def check_transition_element(self, single_transition_config, problem_dimension=None):
+    def check_transition_element(
+        self, single_transition_config, problem_dimension=None
+    ):
         return True
 
     def check_transition_elements(self, single_transition_config, problem_dimension):
         return True
 
-    def access_original_config_by_multi_index(self, config_piece, index, dimension=None, encapsulate_as_list=False):
+    def access_original_config_by_multi_index(
+        self, config_piece, index, dimension=None, encapsulate_as_list=False
+    ):
         if dimension is None:
             dimension = [None for i in index]
         tmp = [y for y in zip(index, range(len(index)), dimension)]
         tmp = zip(index, range(len(index)), dimension)
-        tmp = [list_access_element_safe(config_piece[x[1]], x[0], x[2], encapsulate_as_list) for x in tmp]
+        tmp = [
+            list_access_element_safe(
+                config_piece[x[1]], x[0], x[2], encapsulate_as_list
+            )
+            for x in tmp
+        ]
         return tmp
 
     def expand_transition_elements(self, single_transition_config, problem_dimension):
-        proportion_size = get_list_dimension(single_transition_config["proportional_to"])
+        proportion_size = get_list_dimension(
+            single_transition_config["proportional_to"]
+        )
         new_transition_config = single_transition_config.copy()
 
         # replace "source" by the actual source from the config
         for p_idx in range(proportion_size):
             if new_transition_config["proportional_to"][p_idx] == "source":
-                new_transition_config["proportional_to"][p_idx] = new_transition_config["source"]
+                new_transition_config["proportional_to"][p_idx] = new_transition_config[
+                    "source"
+                ]
 
         temp_array = np.zeros(problem_dimension)
 
@@ -116,44 +139,80 @@ class Compartments:
         new_transition_config["destination"] = np.zeros(problem_dimension, dtype=object)
         new_transition_config["rate"] = np.zeros(problem_dimension, dtype=object)
 
-        new_transition_config["proportional_to"] = np.zeros(problem_dimension, dtype=object)
-        new_transition_config["proportion_exponent"] = np.zeros(problem_dimension, dtype=object)
+        new_transition_config["proportional_to"] = np.zeros(
+            problem_dimension, dtype=object
+        )
+        new_transition_config["proportion_exponent"] = np.zeros(
+            problem_dimension, dtype=object
+        )
 
-        it = np.nditer(temp_array, flags=["multi_index"]) # it is an iterator that will go through all the indexes of the array
+        it = np.nditer(
+            temp_array, flags=["multi_index"]
+        )  # it is an iterator that will go through all the indexes of the array
         for x in it:
             try:
-                new_transition_config["source"][it.multi_index] = list_recursive_convert_to_string(
-                    self.access_original_config_by_multi_index(single_transition_config["source"], it.multi_index)
+                new_transition_config["source"][it.multi_index] = (
+                    list_recursive_convert_to_string(
+                        self.access_original_config_by_multi_index(
+                            single_transition_config["source"], it.multi_index
+                        )
+                    )
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `source:` at index {it.multi_index}")
-                print(f">>> this transition source is: {single_transition_config['source']}")
-                print(f">>> this transition destination is: {single_transition_config['destination']}")
+                print(
+                    f">>> in expand_transition_elements for `source:` at index {it.multi_index}"
+                )
+                print(
+                    f">>> this transition source is: {single_transition_config['source']}"
+                )
+                print(
+                    f">>> this transition destination is: {single_transition_config['destination']}"
+                )
                 print(f"transition_dimension: {problem_dimension}")
                 raise e
 
             try:
-                new_transition_config["destination"][it.multi_index] = list_recursive_convert_to_string(
-                    self.access_original_config_by_multi_index(single_transition_config["destination"], it.multi_index)
+                new_transition_config["destination"][it.multi_index] = (
+                    list_recursive_convert_to_string(
+                        self.access_original_config_by_multi_index(
+                            single_transition_config["destination"], it.multi_index
+                        )
+                    )
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `destination:` at index {it.multi_index}")
-                print(f">>> this transition source is: {single_transition_config['source']}")
-                print(f">>> this transition destination is: {single_transition_config['destination']}")
+                print(
+                    f">>> in expand_transition_elements for `destination:` at index {it.multi_index}"
+                )
+                print(
+                    f">>> this transition source is: {single_transition_config['source']}"
+                )
+                print(
+                    f">>> this transition destination is: {single_transition_config['destination']}"
+                )
                 print(f"transition_dimension: {problem_dimension}")
                 raise e
-            
+
             try:
-                new_transition_config["rate"][it.multi_index] = list_recursive_convert_to_string(
-                    self.access_original_config_by_multi_index(single_transition_config["rate"], it.multi_index)
+                new_transition_config["rate"][it.multi_index] = (
+                    list_recursive_convert_to_string(
+                        self.access_original_config_by_multi_index(
+                            single_transition_config["rate"], it.multi_index
+                        )
+                    )
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `rate:` at index {it.multi_index}")
-                print(f">>> this transition source is: {single_transition_config['source']}")
-                print(f">>> this transition destination is: {single_transition_config['destination']}")
+                print(
+                    f">>> in expand_transition_elements for `rate:` at index {it.multi_index}"
+                )
+                print(
+                    f">>> this transition source is: {single_transition_config['source']}"
+                )
+                print(
+                    f">>> this transition destination is: {single_transition_config['destination']}"
+                )
                 print(f"transition_dimension: {problem_dimension}")
                 raise e
 
@@ -173,43 +232,68 @@ class Compartments:
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `proportional_to:` at index {it.multi_index}")
-                print(f">>> this transition source is: {single_transition_config['source']}")
-                print(f">>> this transition destination is: {single_transition_config['destination']}")
+                print(
+                    f">>> in expand_transition_elements for `proportional_to:` at index {it.multi_index}"
+                )
+                print(
+                    f">>> this transition source is: {single_transition_config['source']}"
+                )
+                print(
+                    f">>> this transition destination is: {single_transition_config['destination']}"
+                )
                 print(f"transition_dimension: {problem_dimension}")
                 raise e
-            
-            if "proportion_exponent" in single_transition_config: # if proportion_exponent is not defined, it is set to 1
+
+            if (
+                "proportion_exponent" in single_transition_config
+            ):  # if proportion_exponent is not defined, it is set to 1
                 try:
                     self.access_original_config_by_multi_index(
                         single_transition_config["proportion_exponent"][0],
                         it.multi_index,
                         problem_dimension,
                     )
-                    new_transition_config["proportion_exponent"][it.multi_index] = list_recursive_convert_to_string(
-                        [
-                            self.access_original_config_by_multi_index(
-                                single_transition_config["proportion_exponent"][p_idx],
-                                it.multi_index,
-                                problem_dimension,
-                            )
-                            for p_idx in range(proportion_size)
-                        ]
+                    new_transition_config["proportion_exponent"][it.multi_index] = (
+                        list_recursive_convert_to_string(
+                            [
+                                self.access_original_config_by_multi_index(
+                                    single_transition_config["proportion_exponent"][
+                                        p_idx
+                                    ],
+                                    it.multi_index,
+                                    problem_dimension,
+                                )
+                                for p_idx in range(proportion_size)
+                            ]
+                        )
                     )
                 except Exception as e:
                     print(f"Error {e}:")
-                    print(f">>> in expand_transition_elements for `proportion_exponent:` at index {it.multi_index}")
-                    print(f">>> this transition source is: {single_transition_config['source']}")
-                    print(f">>> this transition destination is: {single_transition_config['destination']}")
+                    print(
+                        f">>> in expand_transition_elements for `proportion_exponent:` at index {it.multi_index}"
+                    )
+                    print(
+                        f">>> this transition source is: {single_transition_config['source']}"
+                    )
+                    print(
+                        f">>> this transition destination is: {single_transition_config['destination']}"
+                    )
                     print(f"transition_dimension: {problem_dimension}")
                     raise e
             else:
-                new_transition_config["proportion_exponent"][it.multi_index] = ["1"] * proportion_size
+                new_transition_config["proportion_exponent"][it.multi_index] = [
+                    "1"
+                ] * proportion_size
 
         return new_transition_config
 
     def format_source(self, source_column):
-        rc = [y for y in map(lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x), source_column)]
+        rc = [
+            y
+            for y in map(
+                lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x), source_column
+            )
+        ]
         return rc
 
     def unformat_source(self, source_column):
@@ -231,7 +315,12 @@ class Compartments:
         return rc
 
     def format_rate(self, rate_column):
-        rc = [y for y in map(lambda x: reduce(lambda a, b: str(a) + "%*%" + str(b), x), rate_column)]
+        rc = [
+            y
+            for y in map(
+                lambda x: reduce(lambda a, b: str(a) + "%*%" + str(b), x), rate_column
+            )
+        ]
         return rc
 
     def unformat_rate(self, rate_column, compartment_dimension):
@@ -251,7 +340,9 @@ class Compartments:
                         lambda x: reduce(
                             lambda a, b: str(a) + "_" + str(b),
                             map(
-                                lambda x: reduce(lambda a, b: str(a) + "+" + str(b), as_list(x)),
+                                lambda x: reduce(
+                                    lambda a, b: str(a) + "+" + str(b), as_list(x)
+                                ),
                                 x,
                             ),
                         ),
@@ -284,27 +375,41 @@ class Compartments:
         ]
         return rc
 
-    def unformat_proportion_exponent(self, proportion_exponent_column, compartment_dimension):
+    def unformat_proportion_exponent(
+        self, proportion_exponent_column, compartment_dimension
+    ):
         rc = [x.split("%*%") for x in proportion_exponent_column]
         for row in range(len(rc)):
-            rc[row] = [x.split("*", maxsplit=compartment_dimension - 1) for x in rc[row]]
+            rc[row] = [
+                x.split("*", maxsplit=compartment_dimension - 1) for x in rc[row]
+            ]
             for elem in rc[row]:
                 while len(elem) < compartment_dimension:
                     elem.append(1)
         return rc
 
-    def parse_single_transition(self, seir_config, single_transition_config, fake_config=False):
+    def parse_single_transition(
+        self, seir_config, single_transition_config, fake_config=False
+    ):
 
         ## This method relies on having run parse_compartments
         if not fake_config:
             single_transition_config = single_transition_config.get()
         self.check_transition_element(single_transition_config["source"])
         self.check_transition_element(single_transition_config["destination"])
-        source_dimension = [get_list_dimension(x) for x in single_transition_config["source"]]
-        destination_dimension = [get_list_dimension(x) for x in single_transition_config["destination"]]
-        problem_dimension = reduce(lambda x, y: max(x, y), (source_dimension, destination_dimension))
+        source_dimension = [
+            get_list_dimension(x) for x in single_transition_config["source"]
+        ]
+        destination_dimension = [
+            get_list_dimension(x) for x in single_transition_config["destination"]
+        ]
+        problem_dimension = reduce(
+            lambda x, y: max(x, y), (source_dimension, destination_dimension)
+        )
         self.check_transition_elements(single_transition_config, problem_dimension)
-        transitions = self.expand_transition_elements(single_transition_config, problem_dimension)
+        transitions = self.expand_transition_elements(
+            single_transition_config, problem_dimension
+        )
 
         tmp_array = np.zeros(problem_dimension)
         it = np.nditer(tmp_array, flags=["multi_index"])
@@ -316,8 +421,12 @@ class Compartments:
                         "source": [transitions["source"][it.multi_index]],
                         "destination": [transitions["destination"][it.multi_index]],
                         "rate": [transitions["rate"][it.multi_index]],
-                        "proportional_to": [transitions["proportional_to"][it.multi_index]],
-                        "proportion_exponent": [transitions["proportion_exponent"][it.multi_index]],
+                        "proportional_to": [
+                            transitions["proportional_to"][it.multi_index]
+                        ],
+                        "proportion_exponent": [
+                            transitions["proportion_exponent"][it.multi_index]
+                        ],
                     },
                     index=[0],
                 )
@@ -328,7 +437,10 @@ class Compartments:
         return rc
 
     def toFile(
-        self, compartments_file="compartments.parquet", transitions_file="transitions.parquet", write_parquet=True
+        self,
+        compartments_file="compartments.parquet",
+        transitions_file="transitions.parquet",
+        write_parquet=True,
     ):
         out_df = self.compartments.copy()
         if write_parquet:
@@ -341,8 +453,12 @@ class Compartments:
         out_df["source"] = self.format_source(out_df["source"])
         out_df["destination"] = self.format_destination(out_df["destination"])
         out_df["rate"] = self.format_rate(out_df["rate"])
-        out_df["proportional_to"] = self.format_proportional_to(out_df["proportional_to"])
-        out_df["proportion_exponent"] = self.format_proportion_exponent(out_df["proportion_exponent"])
+        out_df["proportional_to"] = self.format_proportional_to(
+            out_df["proportional_to"]
+        )
+        out_df["proportion_exponent"] = self.format_proportion_exponent(
+            out_df["proportion_exponent"]
+        )
         if write_parquet:
             pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
             pa.parquet.write_table(pa_df, transitions_file)
@@ -355,9 +471,15 @@ class Compartments:
         self.transitions = pq.read_table(transitions_file).to_pandas()
         compartment_dimension = self.compartments.shape[1] - 1
         self.transitions["source"] = self.unformat_source(self.transitions["source"])
-        self.transitions["destination"] = self.unformat_destination(self.transitions["destination"])
-        self.transitions["rate"] = self.unformat_rate(self.transitions["rate"], compartment_dimension)
-        self.transitions["proportional_to"] = self.unformat_proportional_to(self.transitions["proportional_to"])
+        self.transitions["destination"] = self.unformat_destination(
+            self.transitions["destination"]
+        )
+        self.transitions["rate"] = self.unformat_rate(
+            self.transitions["rate"], compartment_dimension
+        )
+        self.transitions["proportional_to"] = self.unformat_proportional_to(
+            self.transitions["proportional_to"]
+        )
         self.transitions["proportion_exponent"] = self.unformat_proportion_exponent(
             self.transitions["proportion_exponent"], compartment_dimension
         )
@@ -371,7 +493,9 @@ class Compartments:
         :param comp_dict:
         :return:
         """
-        mask = pd.concat([self.compartments[k] == v for k, v in comp_dict.items()], axis=1).all(axis=1)
+        mask = pd.concat(
+            [self.compartments[k] == v for k, v in comp_dict.items()], axis=1
+        ).all(axis=1)
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
@@ -382,10 +506,11 @@ class Compartments:
     def get_ncomp(self) -> int:
         return len(self.compartments)
 
-
     def get_transition_array(self):
         with Timer("SEIR.compartments"):
-            transition_array = np.zeros((self.transitions.shape[1], self.transitions.shape[0]), dtype="int64")
+            transition_array = np.zeros(
+                (self.transitions.shape[1], self.transitions.shape[0]), dtype="int64"
+            )
             for cit, colname in enumerate(("source", "destination")):
                 for it, elem in enumerate(self.transitions[colname]):
                     elem = reduce(lambda a, b: a + "_" + b, elem)
@@ -395,7 +520,9 @@ class Compartments:
                             rc = compartment
                     if rc == -1:
                         print(self.compartments)
-                        raise ValueError(f"Could not find {colname} defined by {elem} in compartments")
+                        raise ValueError(
+                            f"Could not find {colname} defined by {elem} in compartments"
+                        )
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -417,8 +544,12 @@ class Compartments:
             # parenthesis are now supported
             # assert reduce(lambda a, b: a and b, [(x.find("(") == -1) for x in unique_strings])
             # assert reduce(lambda a, b: a and b, [(x.find(")") == -1) for x in unique_strings])
-            assert reduce(lambda a, b: a and b, [(x.find("%") == -1) for x in unique_strings])
-            assert reduce(lambda a, b: a and b, [(x.find(" ") == -1) for x in unique_strings])
+            assert reduce(
+                lambda a, b: a and b, [(x.find("%") == -1) for x in unique_strings]
+            )
+            assert reduce(
+                lambda a, b: a and b, [(x.find(" ") == -1) for x in unique_strings]
+            )
 
             for it, elem in enumerate(self.transitions["rate"]):
                 candidate = reduce(lambda a, b: a + "*" + b, elem)
@@ -454,8 +585,12 @@ class Compartments:
                     #             rc = compartment
                     #     if rc == -1:
                     #         raise ValueError(f"Could not find match for {elem3} in compartments")
-                    proportion_info[0][current_proportion_sum_it] = current_proportion_sum_start
-                    proportion_info[1][current_proportion_sum_it] = current_proportion_sum_start + len(elem_tmp)
+                    proportion_info[0][
+                        current_proportion_sum_it
+                    ] = current_proportion_sum_start
+                    proportion_info[1][current_proportion_sum_it] = (
+                        current_proportion_sum_start + len(elem_tmp)
+                    )
                     current_proportion_sum_it += 1
                     current_proportion_sum_start += len(elem_tmp)
             proportion_compartment_index = 0
@@ -466,7 +601,9 @@ class Compartments:
                     # candidate = candidate.replace("*1", "")
                     if not candidate in unique_strings:
                         raise ValueError("Something went wrong")
-                    rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
+                    rc = [it for it, x in enumerate(unique_strings) if x == candidate][
+                        0
+                    ]
                     proportion_info[2][proportion_compartment_index] = rc
                     proportion_compartment_index += 1
 
@@ -490,7 +627,9 @@ class Compartments:
                             if self.compartments["name"][compartment] == elem3:
                                 rc = compartment
                         if rc == -1:
-                            raise ValueError(f"Could not find proportional_to {elem3} in compartments")
+                            raise ValueError(
+                                f"Could not find proportional_to {elem3} in compartments"
+                            )
 
                         proportion_array[proportion_index] = rc
                         proportion_index += 1
@@ -528,21 +667,29 @@ class Compartments:
 
     def parse_parameters(self, parameters, parameter_names, unique_strings):
         # parsed_parameters_old = self.parse_parameter_strings_to_numpy_arrays(parameters, parameter_names, unique_strings)
-        parsed_parameters = self.parse_parameter_strings_to_numpy_arrays_v2(parameters, parameter_names, unique_strings)
+        parsed_parameters = self.parse_parameter_strings_to_numpy_arrays_v2(
+            parameters, parameter_names, unique_strings
+        )
         # for i in range(len(unique_strings)):
         #    print(unique_strings[i], (parsed_parameters[i]==parsed_parameters_old[i]).all())
         return parsed_parameters
 
-    def parse_parameter_strings_to_numpy_arrays_v2(self, parameters, parameter_names, string_list):
+    def parse_parameter_strings_to_numpy_arrays_v2(
+        self, parameters, parameter_names, string_list
+    ):
         # is using eval a better way ???
         import sympy as sp
 
         # Validate input lengths
         if len(parameters) != len(parameter_names):
-            raise ValueError("Number of parameter values does not match the number of parameter names.")
+            raise ValueError(
+                "Number of parameter values does not match the number of parameter names."
+            )
 
         # Define the symbols used in the formulas
-        symbolic_parameters_namespace = {name: sp.symbols(name) for name in parameter_names}
+        symbolic_parameters_namespace = {
+            name: sp.symbols(name) for name in parameter_names
+        }
 
         symbolic_parameters = [sp.symbols(name) for name in parameter_names]
 
@@ -554,12 +701,18 @@ class Compartments:
                 f = sp.sympify(formula, locals=symbolic_parameters_namespace)
                 parsed_formulas.append(f)
             except Exception as e:
-                print(f"Cannot parse formula: '{formula}' from parameters {parameter_names}")
+                print(
+                    f"Cannot parse formula: '{formula}' from parameters {parameter_names}"
+                )
                 raise (e)  # Print the error message for debugging
 
         # the list order needs to be right.
-        parameter_values = {param: value for param, value in zip(symbolic_parameters, parameters)}
-        parameter_values_list = [parameter_values[param] for param in symbolic_parameters]
+        parameter_values = {
+            param: value for param, value in zip(symbolic_parameters, parameters)
+        }
+        parameter_values_list = [
+            parameter_values[param] for param in symbolic_parameters
+        ]
 
         # Create a lambdify function for substitution
         substitution_function = sp.lambdify(symbolic_parameters, parsed_formulas)
@@ -573,7 +726,9 @@ class Compartments:
             if not isinstance(substituted_formulas[i], np.ndarray):
                 for k in range(len(substituted_formulas)):
                     if isinstance(substituted_formulas[k], np.ndarray):
-                        substituted_formulas[i] = substituted_formulas[i] * np.ones_like(substituted_formulas[k])
+                        substituted_formulas[i] = substituted_formulas[
+                            i
+                        ] * np.ones_like(substituted_formulas[k])
 
         return np.array(substituted_formulas)
 
@@ -621,19 +776,29 @@ class Compartments:
             is_resolvable = [x[0] or x[1] for x in zip(is_numeric, is_parameter)]
             is_totally_resolvable = reduce(lambda a, b: a and b, is_resolvable)
             if not is_totally_resolvable:
-                not_resolvable_indices = [it for it, x in enumerate(is_resolvable) if not x]
+                not_resolvable_indices = [
+                    it for it, x in enumerate(is_resolvable) if not x
+                ]
 
-                tmp_rc[not_resolvable_indices] = self.parse_parameter_strings_to_numpy_arrays(
-                    parameters,
-                    parameter_names,
-                    [string[not is_resolvable]],
-                    operator_reduce_lambdas,
-                    operators[1:],
+                tmp_rc[not_resolvable_indices] = (
+                    self.parse_parameter_strings_to_numpy_arrays(
+                        parameters,
+                        parameter_names,
+                        [string[not is_resolvable]],
+                        operator_reduce_lambdas,
+                        operators[1:],
+                    )
                 )
             for numeric_index in [x for x in range(len(is_numeric)) if is_numeric[x]]:
                 tmp_rc[numeric_index] = parameters[0] * 0 + float(string[numeric_index])
-            for parameter_index in [x for x in range(len(is_parameter)) if is_parameter[x]]:
-                parameter_name_index = [it for it, x in enumerate(parameter_names) if x == string[parameter_index]]
+            for parameter_index in [
+                x for x in range(len(is_parameter)) if is_parameter[x]
+            ]:
+                parameter_name_index = [
+                    it
+                    for it, x in enumerate(parameter_names)
+                    if x == string[parameter_index]
+                ]
                 tmp_rc[parameter_index] = parameters[parameter_name_index]
             rc[sit] = reduce(operator_reduce_lambdas[operators[0]], tmp_rc)
 
@@ -648,7 +813,9 @@ class Compartments:
         df = df.rename(columns=rename_dict)
         return df
 
-    def plot(self, output_file="transition_graph", source_filters=[], destination_filters=[]):
+    def plot(
+        self, output_file="transition_graph", source_filters=[], destination_filters=[]
+    ):
         """
         if source_filters is [["age0to17"], ["OMICRON", "WILD"]], it means filter all transitions that have
         as source age0to17 AND (OMICRON OR WILD).
@@ -712,8 +879,12 @@ def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=Fal
     except Exception as e:
         print(f"Error {e}:")
         print(f">>> in list_access_element_safe for {thing} at index {idx}")
-        print(">>> This is often, but not always because the object above is a list (there are brackets around it).")
-        print(">>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it.")
+        print(
+            ">>> This is often, but not always because the object above is a list (there are brackets around it)."
+        )
+        print(
+            ">>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it."
+        )
         print(f"dimension: {dimension}")
         raise e
 
@@ -755,7 +926,9 @@ def compartments():
 def plot():
     assert config["compartments"].exists()
     assert config["seir"].exists()
-    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+    comp = Compartments(
+        seir_config=config["seir"], compartments_config=config["compartments"]
+    )
 
     # TODO: this should be a command like build compartments.
     (
@@ -774,7 +947,9 @@ def plot():
 def export():
     assert config["compartments"].exists()
     assert config["seir"].exists()
-    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+    comp = Compartments(
+        seir_config=config["seir"], compartments_config=config["compartments"]
+    )
     (
         unique_strings,
         transition_array,

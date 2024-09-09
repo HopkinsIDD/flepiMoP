@@ -25,7 +25,9 @@ def test_subpopulation_structure_mobility():
             mobility: {DATA_DIR}/mobility.csv
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
@@ -59,7 +61,9 @@ def test_subpopulation_structure_mobility_txt():
             mobility: {DATA_DIR}/mobility.csv
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
@@ -89,7 +93,9 @@ def test_subpopulation_structure_subpop_population_zero_fail():
             mobility: {DATA_DIR}/mobility.csv
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
@@ -110,7 +116,9 @@ def test_subpopulation_structure_dulpicate_subpop_names_fail():
             mobility: {DATA_DIR}/mobility.csv
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
@@ -130,12 +138,16 @@ def test_subpopulation_structure_mobility_shape_fail():
             mobility: {DATA_DIR}/mobility_2x3.txt
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
-    with pytest.raises(ValueError, match=r"mobility data must have dimensions of length of geodata.*"):
+    with pytest.raises(
+        ValueError, match=r"mobility data must have dimensions of length of geodata.*"
+    ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
         )
@@ -150,12 +162,16 @@ def test_subpopulation_structure_mobility_fluxes_same_ori_and_dest_fail():
             mobility: {DATA_DIR}/mobility_same_ori_dest.csv
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
-    with pytest.raises(ValueError, match=r"Mobility fluxes with same origin and destination.*"):
+    with pytest.raises(
+        ValueError, match=r"Mobility fluxes with same origin and destination.*"
+    ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
         )
@@ -170,12 +186,16 @@ def test_subpopulation_structure_mobility_npz_shape_fail():
             mobility: {DATA_DIR}/mobility_2x3.npz
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
-    with pytest.raises(ValueError, match=r"mobility data must have dimensions of length of geodata.*"):
+    with pytest.raises(
+        ValueError, match=r"mobility data must have dimensions of length of geodata.*"
+    ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
         )
@@ -190,7 +210,9 @@ def test_subpopulation_structure_mobility_no_extension_fail():
             mobility: {DATA_DIR}/mobility
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
@@ -210,13 +232,16 @@ def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
             mobility: {DATA_DIR}/mobility1001.csv
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
     with pytest.raises(
-        ValueError, match=r"The following entries in the mobility data exceed the source subpop populations.*"
+        ValueError,
+        match=r"The following entries in the mobility data exceed the source subpop populations.*",
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
@@ -232,13 +257,16 @@ def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
             mobility: {DATA_DIR}/mobility_row_exceeed.txt
     """
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
     with pytest.raises(
-        ValueError, match=r"The following entries in the mobility data exceed the source subpop populations.*"
+        ValueError,
+        match=r"The following entries in the mobility data exceed the source subpop populations.*",
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
@@ -252,7 +280,9 @@ def test_subpopulation_structure_mobility_no_mobility_matrix_specified():
     """
     config.clear()
     config.read(user=False)
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Creates a temporary file
+    with tempfile.NamedTemporaryFile(
+        delete=False
+    ) as temp_file:  # Creates a temporary file
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path

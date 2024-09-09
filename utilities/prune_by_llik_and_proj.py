@@ -11,7 +11,11 @@ import pyarrow.parquet as pq
 
 
 def get_all_filenames(
-    file_type, fs_results_path="to_prune/", finals_only=False, intermediates_only=True, ignore_chimeric=True
+    file_type,
+    fs_results_path="to_prune/",
+    finals_only=False,
+    intermediates_only=True,
+    ignore_chimeric=True,
 ) -> dict:
     """
     return dictionary for each run name
@@ -23,7 +27,7 @@ def get_all_filenames(
     l = []
     for f in Path(str(fs_results_path + "model_output")).rglob(f"*.{ext}"):
         f = str(f)
-        
+
         if file_type in f:
             print(f)
             if (
@@ -61,7 +65,9 @@ print("pruning by llik")
 fs_results_path = "to_prune/"
 
 best_n = 200
-llik_filenames = get_all_filenames("llik", fs_results_path, finals_only=True, intermediates_only=False)
+llik_filenames = get_all_filenames(
+    "llik", fs_results_path, finals_only=True, intermediates_only=False
+)
 # In[7]:
 resultST = []
 for filename in llik_filenames:
@@ -100,7 +106,6 @@ for slot in best_slots:
     print(f" - {slot:4}, llik: {sorted_llik.loc[slot]['ll']:0.3f}")
 
 
-
 #### RERUN FROM HERE TO CHANGE THE REGULARIZATION
 files_to_keep = list(full_df.loc[best_slots]["filename"].unique())
 # important to sort by llik
@@ -109,8 +114,9 @@ files_to_keep3 = [f for f in files_to_keep]
 files_to_keep = []
 for fn in all_files:
     if fn in files_to_keep3:
-        outcome_fn =  fn.replace("llik", "hosp")
+        outcome_fn = fn.replace("llik", "hosp")
         import gempyor.utils
+
         outcomes_df = gempyor.utils.read_df(outcome_fn)
         outcomes_df = outcomes_df.set_index("date")
         reg = 1.5
@@ -118,19 +124,27 @@ for fn in all_files:
         this_bad = 0
         bad_subpops = []
         for sp in outcomes_df["subpop"].unique():
-            max_fit = outcomes_df[outcomes_df["subpop"]==sp]["incidC"][:"2024-04-08"].max() 
-            max_summer = outcomes_df[outcomes_df["subpop"]==sp]["incidC"]["2024-04-08":"2024-09-30"].max()
-            if max_summer > max_fit*reg:
+            max_fit = outcomes_df[outcomes_df["subpop"] == sp]["incidC"][
+                :"2024-04-08"
+            ].max()
+            max_summer = outcomes_df[outcomes_df["subpop"] == sp]["incidC"][
+                "2024-04-08":"2024-09-30"
+            ].max()
+            if max_summer > max_fit * reg:
                 this_bad += 1
-                max_reg = max(max_reg, max_summer/max_fit)
+                max_reg = max(max_reg, max_summer / max_fit)
                 bad_subpops.append(sp)
-                #print(f"changing {sp} because max_summer max_summer={max_summer:.1f} > reg*max_fit={max_fit:.1f}, diff {max_fit/max_summer*100:.1f}%")
-                #print(f">>> MULT BY {max_summer/max_fit*mult:2f}")
-                #outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]] = outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]]*max_summer/max_fit*mult
-        if this_bad>4 or max_reg>4:
-            print(f"{outcome_fn.split('/')[-1].split('.')[0]} >>> BAAD: {this_bad} subpops AND max_ratio={max_reg:.1f}, sp with max_summer > max_fit*{reg} {bad_subpops}")
+                # print(f"changing {sp} because max_summer max_summer={max_summer:.1f} > reg*max_fit={max_fit:.1f}, diff {max_fit/max_summer*100:.1f}%")
+                # print(f">>> MULT BY {max_summer/max_fit*mult:2f}")
+                # outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]] = outcomes_df.loc[outcomes_df["subpop"]==sp, ["incidH", "incidD"]]*max_summer/max_fit*mult
+        if this_bad > 4 or max_reg > 4:
+            print(
+                f"{outcome_fn.split('/')[-1].split('.')[0]} >>> BAAD: {this_bad} subpops AND max_ratio={max_reg:.1f}, sp with max_summer > max_fit*{reg} {bad_subpops}"
+            )
         else:
-            print(f"{outcome_fn.split('/')[-1].split('.')[0]} >>> GOOD: {this_bad} subpops AND max_ratio={max_reg:.1f}, sp with max_summer > max_fit*{reg} {bad_subpops}")
+            print(
+                f"{outcome_fn.split('/')[-1].split('.')[0]} >>> GOOD: {this_bad} subpops AND max_ratio={max_reg:.1f}, sp with max_summer > max_fit*{reg} {bad_subpops}"
+            )
             files_to_keep.append(fn)
 print(len(files_to_keep))
 ### END OF CODE
@@ -146,14 +160,18 @@ fill_from_max = 500
 if fill_missing:
     # Extract the numbers from the filenames
     numbers = [int(os.path.basename(filename).split(".")[0]) for filename in all_files]
-    missing_numbers = [num for num in range(fill_from_min, fill_from_max + 1) if num not in numbers]
+    missing_numbers = [
+        num for num in range(fill_from_min, fill_from_max + 1) if num not in numbers
+    ]
     if missing_numbers:
         missing_filenames = []
         for num in missing_numbers:
             filename = os.path.basename(all_files[0])
             filename_prefix = re.search(r"^.*?(\d+)", filename).group()
             filename_suffix = re.search(r"(\..*?)$", filename).group()
-            missing_filename = os.path.join(os.path.dirname(all_files[0]), f"{num:09d}{filename_suffix}")
+            missing_filename = os.path.join(
+                os.path.dirname(all_files[0]), f"{num:09d}{filename_suffix}"
+            )
             missing_filenames.append(missing_filename)
         print("The missing filenames with full paths are:")
         for missing_filename in missing_filenames:
@@ -191,7 +209,9 @@ if prune_method == "replace":
         if fn in files_to_keep:
             for file_type in file_types:
                 src = fn.replace("llik", file_type)
-                dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
+                dst = fn.replace(fs_results_path, output_folder).replace(
+                    "llik", file_type
+                )
                 if file_type == "seed":
                     src = src.replace(".parquet", ".csv")
                     dst = dst.replace(".parquet", ".csv")
@@ -200,7 +220,9 @@ if prune_method == "replace":
             file_to_keep = np.random.choice(files_to_keep)
             for file_type in file_types:
                 src = file_to_keep.replace("llik", file_type)
-                dst = fn.replace(fs_results_path, output_folder).replace("llik", file_type)
+                dst = fn.replace(fs_results_path, output_folder).replace(
+                    "llik", file_type
+                )
                 if file_type == "seed":
                     src = src.replace(".parquet", ".csv")
                     dst = dst.replace(".parquet", ".csv")

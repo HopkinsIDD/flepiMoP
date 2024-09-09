@@ -26,7 +26,9 @@ class SampleClass:
     def __init__(self):
         self.value = 11
 
-    @utils.profile(output_file="get_value.prof", sort_by="time", lines_to_print=10, strip_dirs=True)
+    @utils.profile(
+        output_file="get_value.prof", sort_by="time", lines_to_print=10, strip_dirs=True
+    )
     def get_value(self):
         return self.value
 
@@ -198,7 +200,9 @@ def test_as_random_distribution_binomial_w_fraction_error(config):
 
 
 def test_as_random_distribution_truncnorm(config):
-    config.add({"value": {"distribution": "truncnorm", "mean": 0, "sd": 1, "a": -1, "b": 1}})
+    config.add(
+        {"value": {"distribution": "truncnorm", "mean": 0, "sd": 1, "a": -1, "b": 1}}
+    )
     dist = config["value"].as_random_distribution()
     rvs = dist(size=1000)
     assert len(rvs) == 1000

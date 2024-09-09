@@ -7,7 +7,7 @@ from gempyor.utils import get_log_normal
 
 class TestGetLogNormal:
     """Unit tests for the `gempyor.utils.get_log_normal` function."""
-    
+
     @pytest.mark.parametrize(
         "meanlog,sdlog",
         [
@@ -22,15 +22,15 @@ class TestGetLogNormal:
         ],
     )
     def test_construct_distribution(
-        self, 
-        meanlog: float | int, 
-        sdlog: float | int, 
+        self,
+        meanlog: float | int,
+        sdlog: float | int,
     ) -> None:
         """Test the construction of a log normal distribution.
 
-        This test checks whether the `get_log_normal` function correctly constructs 
-        a log normal distribution with the specified parameters. It verifies that 
-        the returned object is an instance of `rv_frozen`, and that its support and 
+        This test checks whether the `get_log_normal` function correctly constructs
+        a log normal distribution with the specified parameters. It verifies that
+        the returned object is an instance of `rv_frozen`, and that its support and
         parameters (log mean and log standard deviation) are correctly set.
 
         Args:
