@@ -82,7 +82,7 @@ git clone https://github.com/HopkinsIDD/COVID19_USA.git
 # or any other data directories
 </code></pre>
 
-### Setup your Amazon Web Services (AWS) credentials (if applicable)
+### Setup your Amazon Web Services (AWS) credentials
 
 This can be done in a second step -- but is necessary in order to push and pull data to Amazon Simple Storage Service (S3). Setup your AWS credentials by running
 
