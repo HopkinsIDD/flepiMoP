@@ -22,7 +22,7 @@ Note that the repository is cloned **flat,** i.e the `flepiMoP` repository is at
 * **output folder:**`/scratch4/struelo1/flepimop-runs` stores the run outputs. After an inference run finishes, it's output and the logs files are copied from the `$DATA_PATH/model_output` to `/scratch4/struelo1/flepimop-runs/THISRUNJOBNAME` where the jobname is usually of the form `USA-DATE.`
 
 {% hint style="warning" %}
-When logging on you'll see two folders `data_struelo1` and `scr4_struelo1`, which are shortcuts to `/data/struelo1` and `/scratch4/struelo1`.
+When logging on you'll see two folders `data_struelo1` and `scr4_struelo1`, which are shortcuts to `/data/struelo1` and `/scratch4/struelo1`. We don't use `data/struelo1`.
 {% endhint %}
 
 
