@@ -69,18 +69,33 @@ conda install -c conda-forge r-readr r-sf r-lubridate r-tigris r-tidyverse r-gri
 ```
 {% endcode %}
 
-### Create the directory structure
+### Clone the FlepiMoP and other model repositories
 
-type the following commands. $USER is a variable that contains your username.
+Use the following commands to have git clone the FlepiMoP repository and any other model repositories you'd like to work on through `https`. In the code below, $USER is a variable that contains your username.
 
 <pre class="language-bash"><code class="lang-bash"><strong>cd /scratch4/struelo1/flepimop-code/
 </strong><strong>mkdir $USER
 </strong><strong>cd $USER
 </strong>git clone https://github.com/HopkinsIDD/flepiMoP.git
 git clone https://github.com/HopkinsIDD/Flu_USA.git
-git clone https://github.com/HopkinsIDD/COVID19_USA.git
-# or any other data directories
+# or any other model repositories
 </code></pre>
+
+You will be prompted to provide your GitHub username and password. Note that from 2021, GitHub has changed the use of passwords to the use of [personal acces tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens), so the prompted "password" is not the password you use to login. Instead, we recommend using the more safe `ssh` protocol to clone GitHub repositories. To do so, first [generate an ssh private-public keypair](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux) on the Rockfish cluster and then copy the generated public key from the Rockfish cluster to your local computer by opening a terminal and prompting,
+
+`scp -r <username>@rfdtn1.rockfish.jhu.edu:/home/<username>/.ssh/<key_name.pub>" .`
+
+Then [add the public key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) to your GitHub account. Now clone the github repositories as follows,
+
+<pre class="language-bash"><code class="lang-bash"><strong>cd /scratch4/struelo1/flepimop-code/
+</strong><strong>mkdir $USER
+</strong><strong>cd $USER
+</strong>git clone git@github.com:HopkinsIDD/flepiMoP.git
+git clone git@github.com:HopkinsIDD/Flu_USA.git
+# or any other model repositories
+</code></pre>
+
+and you will not be prompted for credentials.
 
 ### Setup your Amazon Web Services (AWS) credentials
 
