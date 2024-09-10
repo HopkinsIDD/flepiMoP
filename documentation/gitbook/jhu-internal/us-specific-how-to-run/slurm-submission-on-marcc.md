@@ -25,7 +25,6 @@ Note that the repository is cloned **flat,** i.e the `flepiMoP` repository is at
 When logging on you'll see two folders `data_struelo1` and `scr4_struelo1`, which are shortcuts to `/data/struelo1` and `/scratch4/struelo1`. We don't use `data/struelo1`.
 {% endhint %}
 
-
 ## Login on rockfish
 
 Using ssh from your terminal, type in:
@@ -83,9 +82,9 @@ git clone https://github.com/HopkinsIDD/COVID19_USA.git
 # or any other data directories
 </code></pre>
 
-### Setup your AWS credentials (allows to copy runs to s3)
+### Setup your Amazon Web Services (AWS) credentials (if applicable)
 
-This can be done in a second step -- but is necessary in order to push and pull to s3. Setup your AWS credentials by:
+This can be done in a second step -- but is necessary in order to push and pull data to Amazon Simple Storage Service (S3). Setup your AWS credentials by running
 
 <pre class="language-bash"><code class="lang-bash">cd ~ # go in your home directory
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
