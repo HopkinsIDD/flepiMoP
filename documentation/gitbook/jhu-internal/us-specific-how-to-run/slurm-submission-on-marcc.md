@@ -177,12 +177,15 @@ git checkout main
 git pull
 conda activate flepimop-env # normally already done, but in case.
 
-#install gempyor and the R module. There should be no error, please report if not.
-# Sometimes you might need to run the next line two times because inference depends
-# on report.generation, which is installed later because of alphabetical order.
-# (or if you know R well enough to fix that 😊)
+# install dependencies ggraph and tidy graph
+R
+> install.packages(c("ggraph","tidygraph"))
+> quit()
 
+# install the R module
 Rscript build/local_install.R # warnings are ok; there should be no error.
+
+# install gempyor
 pip install --no-deps -e flepimop/gempyor_pkg/
 ```
 
