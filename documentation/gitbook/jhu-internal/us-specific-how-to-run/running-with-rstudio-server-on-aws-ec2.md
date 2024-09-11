@@ -1,5 +1,9 @@
 # Running with RStudio Server on AWS EC2
 
+{% hint style="warning" %}
+This page, along with the other AWS run guides, are not deprecated in case we need to run `flepiMoP` on AWS again in the future, but also are not maintained as other platforms (such as longleaf and rockfish) are preferred for running production jobs.
+{% endhint %}
+
 ## Introduction
 
 As a computational environment, you can use an RStudio Server integrated AWS EC2 instance for either your personal space or shared usages among multiple users, via GUI as well as CLI using ssh.  The EC2 instance-type was selected to be appropriate one for running programs as of now (2023/1), in views of both computational resources and finances, so that you can use a cloud-based computing environment which you can access with GUI including  from Web, without any difficulties to set it up. The details hereinafter may be able to change.
