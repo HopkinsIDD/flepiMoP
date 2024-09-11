@@ -6,7 +6,11 @@ description: HPC using the slurm workload manager
 
 ## 🧱 Setting up your environment (only once per user)
 
-You will need to load some modules in order to run the code. These include `gcc`, `anaconda`, and `git`. You should be able to do this using the `module` commands.
+You will need to load some modules in order to run `flepiMoP`. These include `gcc`, `anaconda`, `git`, and `r`. You should be able to do this using the `module` commands.
+
+{% hint style="warning" %}
+Each cluster's setup is slightly different and these commands, especially the `module` ones, might need to be adapted on the fly.
+{% endhint %}
 
 * First purge the current modules:
 
@@ -18,7 +22,7 @@ module purge
 
 {% code overflow="wrap" fullWidth="false" %}
 ```bash
-module spider gc
+module spider gcc
 module load <gcc 9.x version>
 ```
 {% endcode %}
@@ -35,18 +39,30 @@ Now you need to create the conda environment. You will create the environment in
 ```bash
 # install all python stuff first
 conda create -c conda-forge -n flepimop-env numba pandas numpy seaborn tqdm matplotlib click confuse pyarrow sympy dask pytest scipy graphviz emcee xarray boto3 slack_sdk
+
+# This launches the environment you just created
+conda activate flepimop-env
+
+# To confirm that the env was activated
+which python
 ```
 {% endcode %}
 
-The next step in preparing your environment is to install the necessary R packages. First, activate your environment, launch R and then install the following packages.
+* Now load R:
 
-<pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>conda activate flepimop-env # this launches the environment you just created
-</strong>
-R # to launch R from command line
+{% code overflow="wrap" %}
+```bash
+module load r
+```
+{% endcode %}
 
-<strong># while in R
-</strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph"))
-</strong></code></pre>
+Launch R and then install the following packages.
+
+{% code overflow="wrap" %}
+```R
+install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph"))
+```
+{% endcode %}
 
 You are now ready to run using SLURM!
 
