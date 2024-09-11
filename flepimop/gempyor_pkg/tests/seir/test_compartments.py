@@ -86,3 +86,4 @@ def test_ModelInfo_has_compartments_component():
     )
     assert type(s.compartments) == compartments.Compartments
     assert type(s.compartments) == compartments.Compartments
+

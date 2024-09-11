@@ -170,36 +170,71 @@ if("hosp" %in% model_outputs){
   # pdf(fname, width = 20, height = 18)
   # pdf(fname)
   fit_stats <- names(config$inference$statistics)
+  subpop_names <- unique(outputs_global$hosp %>% .[,subpop])
   
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, "subpop","slot")
     cols_data <- c("date", "subpop", statistics$data_var)
+    hosp_outputs_global_tmp <- copy(outputs_global$hosp)[,..cols_sim]
+    
+    # aggregate based on what is in the config
+    df_sim <- lapply(subpop_names, function(y) {
+      lapply(unique(outputs_global$hosp$slot), function(x)
+        purrr::flatten_df(inference::getStats(
+          hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
+          "date",
+          "sim_var",
+          stat_list = config$inference$statistics[i],
+          start_date = config$start_date_groundtruth,
+          end_date = config$end_date_groundtruth
+        )) %>% dplyr::mutate(subpop = y, slot = x)) %>% dplyr::bind_rows() 
+    }) %>% dplyr::bind_rows() 
+    
+    df_data <- lapply(subpop_names, function(x) {
+      purrr::flatten_df(
+        inference::getStats(
+          gt_data %>% .[subpop == x,..cols_data],
+          "date",
+          "data_var",
+          stat_list = config$inference$statistics[i],
+          start_date = config$start_date_groundtruth,
+          end_date = config$end_date_groundtruth
+        )) %>% dplyr::mutate(subpop = x) %>% 
+        mutate(data_var = as.numeric(data_var)) }) %>% dplyr::bind_rows()
+    
+    
     ## summarize slots 
-    print(outputs_global$hosp %>%
-      .[, ..cols_sim] %>%
+    # print(outputs_global$hosp %>%
+    #   .[, ..cols_sim] %>%
+    #   .[, date := lubridate::as_date(date)] %>%
+    #   .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
+    #   ggplot() + 
+    #   geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
+    #   geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
+    #   geom_line(aes(x = date, y = V3)) + 
+    #   geom_point(data = gt_data %>%
+    #                .[, ..cols_data],
+    #              aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
+    #   facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
+    #   labs(x = 'date', y = fit_stats[i], title = statistics$sim_var) +
+    #   theme_classic()
+    # )
+    print(
+      df_sim %>%
+      setDT() %>%
       .[, date := lubridate::as_date(date)] %>%
-      # { if(config$subpop_setup$subpop == 'subpop'){
-      #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-      # } %>% 
-      # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-      # } %>%
-      .[, as.list(quantile(get(statistics$sim_var), c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
+      .[, as.list(quantile(sim_var, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
+      setnames(., paste0("V", 1:5), paste0("q", c(.05,.25,.5,.75,.95))) %>%
       ggplot() + 
-      geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
-      geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
-      geom_line(aes(x = date, y = V3)) + 
-      geom_point(data = gt_data %>%
-                   .[, ..cols_data] #%>%
-                   # { if(config$subpop_setup$subpop == 'subpop'){
-                   #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                   # } %>% 
-                   # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                   # } 
-                 ,
-                 aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
-      facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
-      labs(x = 'date', y = fit_stats[i], title = statistics$sim_var) +
+      geom_ribbon(aes(x = date, ymin = q0.05, ymax = q0.95), alpha = 0.1) +
+      geom_ribbon(aes(x = date, ymin = q0.25, ymax = q0.75), alpha = 0.1) +
+      geom_line(aes(x = date, y = q0.5)) + 
+      # if inference, plot gt along side
+      geom_point(data = df_data,
+                 aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.2, size=1) +
+      facet_wrap(~subpop, scales = 'free') +
+      labs(x = 'date', y = fit_stats[i]) +
       theme_classic()
     )
     
@@ -217,33 +252,44 @@ if("hosp" %in% model_outputs){
     # )
     
     ## plot cumulatives
-    print(outputs_global$hosp %>%
-            .[, ..cols_sim] %>%
-            .[, date := lubridate::as_date(date)] %>%
-            # { if(config$subpop_setup$subpop == 'subpop'){
-            #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-            # } %>% 
-            # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-            # } %>%
-            .[, csum := cumsum(get(statistics$sim_var)), by = .(subpop, slot)] %>%
-            .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
-            ggplot() + 
-            geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
-            geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
-            geom_line(aes(x = date, y = V3)) + 
-            geom_point(data = gt_data %>%
-                         .[, ..cols_data] %>%
-                         # { if(config$subpop_setup$subpop == 'subpop'){
-                         #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                         # } %>% 
-                         # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                         # } %>%
-                         .[, csum := cumsum(replace_na(get(statistics$data_var), 0)) , by = .(subpop)]
-                         ,
-                       aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) + 
-            facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
-            labs(x = 'date', y = fit_stats[i], title = paste0("cumulative ", statistics$sim_var)) +
-            theme_classic()
+    print(
+      df_sim %>%
+        setDT() %>%
+        .[, date := lubridate::as_date(date)] %>%
+        .[, .(date, subpop, sim_var, slot)] %>%
+        data.table::melt(., id.vars = c("date", "slot", "subpop")) %>%
+        # dplyr::arrange(subpop, slot, date) %>% 
+        .[, csum := cumsum(value), by = .(slot, subpop, variable)] %>%
+        .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$subpop_setup$subpop)] %>%
+        setnames(., paste0("V", 1:5), paste0("q", c(.05,.25,.5,.75,.95))) %>%
+        ggplot() + 
+        geom_ribbon(aes(x = date, ymin = q0.05, ymax = q0.95), alpha = 0.1) +
+        geom_ribbon(aes(x = date, ymin = q0.25, ymax = q0.75), alpha = 0.1) +
+        geom_line(aes(x = date, y = q0.5)) + 
+        geom_point(data = df_data %>% setDT() %>%
+                     .[, csum := cumsum(data_var) , by = .(subpop)],
+                   aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.2, size=1) +
+        facet_wrap(~subpop, scales = 'free') +
+        # facet_wrap(~get(subpop), scales = 'free') +      
+        labs(x = 'date', y = paste0("cumulative ", fit_stats[i])) +
+        theme_classic() 
+      # outputs_global$hosp %>%
+      #       .[, ..cols_sim] %>%
+      #       .[, date := lubridate::as_date(date)] %>%
+      #       .[, csum := cumsum(get(statistics$sim_var)), by = .(subpop, slot)] %>%
+      #       .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
+      #       ggplot() + 
+      #       geom_ribbon(aes(x = date, ymin = V1, ymax = V5), alpha = 0.1) +
+      #       geom_ribbon(aes(x = date, ymin = V2, ymax = V4), alpha = 0.1) +
+      #       geom_line(aes(x = date, y = V3)) + 
+      #       geom_point(data = gt_data %>%
+      #                    .[, ..cols_data] %>%
+      #                    .[, csum := cumsum(replace_na(get(statistics$data_var), 0)) , by = .(subpop)]
+      #                    ,
+      #                  aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.1) + 
+      #       facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
+      #       labs(x = 'date', y = fit_stats[i], title = paste0("cumulative ", statistics$sim_var)) +
+      #       theme_classic()
     )
     
   }
@@ -252,57 +298,96 @@ if("hosp" %in% model_outputs){
   
   ## hosp by highest and lowest llik
   
+  if("llik" %in% model_outputs){
+    llik_rank <- copy(outputs_global$llik) %>% 
+      .[, .SD[order(ll)], subpop] 
+    high_low_llik <- rbindlist(list(data.table(llik_rank, key = "subpop") %>%
+                                      .[, head(.SD,5), by = subpop] %>% 
+                                      .[, llik_bin := "top"], 
+                                    data.table(llik_rank, key = "subpop") %>%
+                                      .[, tail(.SD,5), by = subpop]%>% 
+                                      .[, llik_bin := "bottom"])
+    )
+  }
+  
   fname <- paste0("pplot/hosp_by_llik_mod_outputs_", opt$run_id,".pdf")
   # pdf_dims <- data.frame(width = gg_cols*2, length = num_nodes/gg_cols * 2)
   # pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
-  pdf(fname, width = 20, height = 20)
+  pdf(fname, width = 20, height = 10)
 
   for(i in 1:length(fit_stats)){
     statistics <- purrr::flatten(config$inference$statistics[i])
     cols_sim <- c("date", statistics$sim_var, "subpop","slot")
     cols_data <- c("date", "subpop", statistics$data_var)
+    hosp_outputs_global_tmp <- copy(outputs_global$hosp)[,..cols_sim]
+    
     if("llik" %in% model_outputs){
-      llik_rank <- copy(outputs_global$llik) %>% 
-        .[, .SD[order(ll)], subpop] 
-      high_low_llik <- rbindlist(list(data.table(llik_rank, key = "subpop") %>%
-                                        .[, head(.SD,5), by = subpop] %>% 
-                                        .[, llik_bin := "top"], 
-                                      data.table(llik_rank, key = "subpop") %>%
-                                        .[, tail(.SD,5), by = subpop]%>% 
-                                        .[, llik_bin := "bottom"])
-      )
+      # high_low_hosp_llik <- copy(outputs_global$hosp) %>% 
+      #   .[high_low_llik, on = c("slot", "subpop"), allow.cartesian = TRUE]
       
-      high_low_hosp_llik <- copy(outputs_global$hosp) %>% 
-        .[high_low_llik, on = c("slot", "subpop"), allow.cartesian = TRUE]
+      # aggregate simulation output and data by time based on what is in the config
+      df_sim <- lapply(subpop_names, function(y) {
+        lapply(unique(outputs_global$hosp$slot), function(x)
+          purrr::flatten_df(inference::getStats(
+            hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
+            "date",
+            "sim_var",
+            stat_list = config$inference$statistics[i],
+            start_date = config$start_date_groundtruth,
+            end_date = config$end_date_groundtruth
+          )) %>% dplyr::mutate(subpop = y, slot = x)) %>% dplyr::bind_rows() 
+      }) %>% dplyr::bind_rows() %>% setDT()
+      
+      df_data <- lapply(subpop_names, function(x) {
+        purrr::flatten_df(
+          inference::getStats(
+            gt_data %>% .[subpop == x,..cols_data],
+            "date",
+            "data_var",
+            stat_list = config$inference$statistics[i],
+            start_date = config$start_date_groundtruth,
+            end_date = config$end_date_groundtruth
+          )) %>% dplyr::mutate(subpop = x) %>% 
+          dplyr::mutate(data_var = as.numeric(data_var)) %>%
+          dplyr::mutate(date = lubridate::as_date(date)) }) %>%
+        dplyr::bind_rows() %>% setDT()
+      
+      # add likelihood ranking to simulation output
+      high_low_hosp_llik <- df_sim %>% 
+        .[high_low_llik, on = c("slot", "subpop"), allow.cartesian=TRUE] %>% # right join by "on" variables
+        .[subpop != "Total"]
       
       hosp_llik_plots <- lapply(unique(high_low_hosp_llik %>% .[, subpop]),
                            function(e){
                              high_low_hosp_llik %>%
-                               .[, date := lubridate::as_date(date)] %>%
-                               # { if(config$subpop_setup$subpop == 'subpop'){
-                               #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                               # } %>% 
                                .[subpop == e] %>%
-                               # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                               # } %>%
-                               ggplot() +
-                               geom_line(aes(lubridate::as_date(date), get(statistics$data_var), 
-                                             group = slot, color = ll))+#, linetype = llik_bin)) +
-                               # scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
+                               .[, date := lubridate::as_date(date)] %>%
+                               ggplot() + 
+                               geom_line(aes(x = date, y = sim_var, group = slot, color = ll)) + 
+                               scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
                                scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
-                               geom_point(data = gt_data %>%
-                                            .[, ..cols_data] %>%
-                                            # { if(config$subpop_setup$subpop == 'subpop'){
-                                            #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-                                            # } %>% 
-                                            .[subpop == e] ,#%>%
-                                            # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-                                            # } ,
-                                          aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
-                               facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
-                               labs(x = 'date', y = fit_stats[i]) + #, title = paste0("top 5, bottom 5 lliks, ", statistics$sim_var)) +
-                               theme_classic() +
-                               guides(linetype = 'none')
+                               geom_point(data = df_data %>% .[subpop == e],
+                                          aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.2, size=1) +
+                               facet_wrap(~subpop, scales = 'free') +
+                               labs(x = 'date', y = fit_stats[i]) +
+                               theme_classic() + 
+                               theme(legend.key.size = unit(0.2, "cm"))
+                             # high_low_hosp_llik %>%
+                             #   .[, date := lubridate::as_date(date)] %>%
+                             #   .[subpop == e] %>%
+                             #   ggplot() +
+                             #   geom_line(aes(lubridate::as_date(date), get(statistics$data_var), 
+                             #                 group = slot, color = ll))+#, linetype = llik_bin)) +
+                             #   # scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
+                             #   scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
+                             #   geom_point(data = gt_data %>%
+                             #                .[, ..cols_data] %>%
+                             #                .[subpop == e] ,
+                             #              aes(lubridate::as_date(date), get(statistics$data_var)), color = 'firebrick', alpha = 0.1) + 
+                             #   facet_wrap(~subpop, scales = 'free', ncol = gg_cols) +
+                             #   labs(x = 'date', y = fit_stats[i]) + #, title = paste0("top 5, bottom 5 lliks, ", statistics$sim_var)) +
+                             #   theme_classic() +
+                             #   guides(linetype = 'none')
                            }
       )
       
@@ -321,8 +406,8 @@ if("hnpi" %in% model_outputs){
   
   gg_cols <- 4
   num_nodes <- length(unique(outputs_global$hnpi %>% .[,subpop]))
-  pdf_dims <- data.frame(width = gg_cols*3, length = num_nodes/gg_cols * 2)
-  #pdf_dims <- data.frame(width = 20, length = 5)
+  # pdf_dims <- data.frame(width = gg_cols*3, length = num_nodes/gg_cols * 2)
+  pdf_dims <- data.frame(width = 20, length = 10)
 
   fname <- paste0("pplot/hnpi_mod_outputs_", opt$run_id,".pdf")
   pdf(fname, width = pdf_dims$width, height = pdf_dims$length)
@@ -332,12 +417,7 @@ if("hnpi" %in% model_outputs){
          function(i){
            outputs_global$hnpi %>%
              .[outputs_global$llik, on = c("subpop", "slot")] %>%
-             # { if(config$subpop_setup$subpop == 'subpop'){
-             #   .[geodata %>% .[, subpop := stringr::str_pad(subpop, width = 5, side = "left", pad = "0")], on = .(subpop)]} 
-             # } %>% 
-             # .[get(config$subpop_setup$subpop) == i] %>%
-             # { if(config$subpop_setup$subpop == 'subpop'){ .[, subpop := USPS]} 
-             # } %>%
+             .[subpop == i] %>%
              ggplot(aes(modifier_name,value)) + 
              geom_violin() +
              geom_jitter(aes(group = modifier_name, color = ll), size = 0.6, height = 0, width = 0.2, alpha = 1) +
@@ -435,9 +515,6 @@ if("snpi" %in% model_outputs){
   snpi_plots <- lapply(node_names,
                        function(i){
                          if(!grepl(',', i)){
-                           
-                           # i_lab <- ifelse(config$name == "USA", geodata[subpop == i, USPS], i)
-                             
                            outputs_global$snpi %>%
                              .[outputs_global$llik, on = c("subpop", "slot")] %>%
                              .[subpop == i] %>%
@@ -448,8 +525,6 @@ if("snpi" %in% model_outputs){
                              theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
                              scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
                              labs(x = "parameter", title = i)
-                           # labs(x = "parameter", title = i_lab)
-                           
                          }else{
                            nodes_ <- unlist(strsplit(i,","))
                            ll_across_nodes <- 
