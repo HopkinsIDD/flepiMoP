@@ -64,3 +64,15 @@ class TestGempyorInference:
 
         i.already_built = False
         i.one_simulation(sim_id2write=0, parallel=True)
+
+    # HopkinsIDD/flepiMoP#269
+    def test_inference_without_seir_modifiers(self):
+        # Setup
+        os.chdir(os.path.dirname(__file__))
+        gempyor_inference = inference.GempyorInference(
+            f"{DATA_DIR}/config_inference_without_seir_modifiers.yml",
+        )
+
+        # Test
+        simulation_int = gempyor_inference.one_simulation(0)
+        assert simulation_int == 0
