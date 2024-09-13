@@ -58,6 +58,16 @@ def create_confuse_configview_from_dict(
         Either a confuse Subview or RootView depending on the value of `name`.
 
     Examples:
+        This example gives a brief demonstration of how to represent this yaml:
+        ```yaml
+        foo: bar
+        fizz: 123
+        alphabet: [a, b, c]
+        mapping:
+            x: 1
+            y: 2
+        ```
+        with this function as a python dict for unit testing purposes.
         >>> data = {
         ...     "foo": "bar",
         ...     "fizz": 123,
