@@ -78,7 +78,7 @@ if [[ "$WHICH_R_OKAY" -ne 1 ]]; then
     exit 1
 fi
 PYTHON_ARROW_VERSION=$( python -c "import pyarrow; print(pyarrow.__version__)" )
-R_ARROW_VERSION=$( Rscript -e "packageVersion('arrow')" )
+R_ARROW_VERSION=$( Rscript -e "cat(as.character(packageVersion('arrow')))" )
 COMPATIBLE_ARROW_VERSION=$( echo "$R_ARROW_VERSION" | grep "$PYTHON_ARROW_VERSION" | wc -l )
 if [[ "$COMPATIBLE_ARROW_VERSION" -ne 1 ]]; then
     echo "The R version of arrow is '$R_ARROW_VERSION' and the python version is '$PYTHON_ARROW_VERSION'. These may not be compatible versions."
@@ -118,7 +118,7 @@ echo -n "Please set a flepi run index: "
 read FLEPI_RUN_INDEX
 
 # Done
-echo << EOF 
+cat << EOM
 > The HPC install script has successfully finished.
 
 If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepimop_sample\` repository:
@@ -144,4 +144,4 @@ Otherwise make sure this diagnostic info looks correct before continuing:
 * Validation date: $VALIDATION_DATE
 * Resume location: $RESUME_LOCATION
 * Flepi run index: $FLEPI_RUN_INDEX
-EOF
+EOM
