@@ -30,15 +30,13 @@ export CENSUS_API_KEY="*****"
 
 Replacing the `*****` with the appropriate secrets. This file contains sensitive credentials so make sure that the file has the appropriate permissions, typically `chmod 600 /users/<o>/<n>/<onyen>/slack_credentials.sh` will be sufficient.
 
-4. Run the Longleaf init script:
+4. Run the HPC installation script with the longleaf flag:
 
 ```bash
-source /users/<o>/<n>/<onyen>/flepiMoP/batch/slurm_init_longleaf.sh
+source /users/<o>/<n>/<onyen>/flepiMoP/build/hpc_install.sh longleaf
 ```
 
 This script takes a while to run, but has some interactive components so make sure you have something else to do but don't walk away.
-
-NOTE: That if a `module purge` command is run this init script will need to be run again.
 
 
 ## Per Run Steps
