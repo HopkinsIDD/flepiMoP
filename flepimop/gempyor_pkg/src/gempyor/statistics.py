@@ -114,7 +114,7 @@ class Statistic:
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
             ),  # TODO: check, that it's really the loc
             "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
-            "rmse": lambda x, y: -np.log(np.nansum(np.sqrt((x - y) ** 2))),
+            "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
         }
         if self.dist not in dist_map:
