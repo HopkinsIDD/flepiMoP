@@ -25,7 +25,7 @@ class Compartments:
             self.times_set += 1
 
         if self.times_set == 0:
-            raise ValueError("Compartments object not set, no config or file provided")
+            raise ValueError("Compartments object not set, no config or file provided.")
         return
 
     def constructFromConfig(self, seir_config, compartment_config):
@@ -375,7 +375,9 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'."
+                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} "
+                f" isolate {self.compartments[mask]} from options {self.compartments}. "
+                f"The get_comp_idx function was called by '{error_info}'."
             )
         return comp_idx[0]
 
@@ -395,7 +397,7 @@ class Compartments:
                             rc = compartment
                     if rc == -1:
                         print(self.compartments)
-                        raise ValueError(f"Could not find {colname} defined by {elem} in compartments")
+                        raise ValueError(f"Could not find {colname} defined by {elem} in compartments.")
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -424,8 +426,11 @@ class Compartments:
                 candidate = reduce(lambda a, b: a + "*" + b, elem)
                 candidate = candidate.replace(" ", "")
                 # candidate = candidate.replace("*1", "")
-                if not candidate in unique_strings:
-                    raise ValueError("Something went wrong")
+                if candidate not in unique_strings:
+                    raise ValueError(
+                        f"Candidate '{candidate}' from 'rate' column is not in the list of unique strings. "
+                        f"Unique strings: {unique_strings}"
+                    )
                 rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                 transition_array[2][it] = rc
 
@@ -464,8 +469,11 @@ class Compartments:
                     candidate = reduce(lambda a, b: a + "*" + b, y)
                     candidate = candidate.replace(" ", "")
                     # candidate = candidate.replace("*1", "")
-                    if not candidate in unique_strings:
-                        raise ValueError("Something went wrong")
+                    if candidate not in unique_strings:
+                        raise ValueError(
+                            f"Proportion exponent '{candidate}' is not found in the list of unique strings. "
+                            f"Unique strings: {unique_strings}"
+                            )
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                     proportion_info[2][proportion_compartment_index] = rc
                     proportion_compartment_index += 1
@@ -490,7 +498,10 @@ class Compartments:
                             if self.compartments["name"][compartment] == elem3:
                                 rc = compartment
                         if rc == -1:
-                            raise ValueError(f"Could not find proportional_to {elem3} in compartments")
+                            raise ValueError(
+                                f"Could not find proportional_to {elem3} in compartments. "
+                                f"Available compartments: {self.compartments}"
+                            )
 
                         proportion_array[proportion_index] = rc
                         proportion_index += 1
@@ -554,7 +565,10 @@ class Compartments:
                 f = sp.sympify(formula, locals=symbolic_parameters_namespace)
                 parsed_formulas.append(f)
             except Exception as e:
-                print(f"Cannot parse formula: '{formula}' from parameters {parameter_names}")
+                print(
+                    f"Cannot parse formula: '{formula}' :" 
+                    f"from parameters: {parameter_names}."
+                )
                 raise (e)  # Print the error message for debugging
 
         # the list order needs to be right.
@@ -600,10 +614,10 @@ class Compartments:
             not operators
         ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
             raise ValueError(
-                f"""Could not parse string {string_list}. 
-    This usually mean that '{string_list[0]}' is a parameter name that is not defined
-    or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-.
-    The defined parameters are {parameter_names}."""
+                f"Could not parse string {string_list}. " 
+                f"This usually mean that '{string_list[0]}' is a parameter name that is not defined "
+                f" or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-. "
+                f"The defined parameters are {parameter_names}."
             )
 
         split_strings = [x.split(operators[0]) for x in string_list]
@@ -710,12 +724,14 @@ def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=Fal
     try:
         return list_access_element(thing, idx, dimension, encapsulate_as_list)
     except Exception as e:
-        print(f"Error {e}:")
-        print(f">>> in list_access_element_safe for {thing} at index {idx}")
-        print(">>> This is often, but not always because the object above is a list (there are brackets around it).")
-        print(">>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it.")
-        print(f"dimension: {dimension}")
-        raise e
+        raise Exception(
+            f"Error {e}: "
+            f"in list_access_element_safe for {thing} at index {idx}. "
+            f"This is often, but not always because the object above is a list (there are brackets around it). "
+            f"and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it. "
+            f"dimension: {dimension}."
+        )
+
 
 
 def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):

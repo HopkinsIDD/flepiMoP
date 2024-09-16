@@ -268,9 +268,9 @@ def autodetect_scenarios(config):
 
     if len(seir_modifiers_scenarios) != 1 or len(outcome_modifiers_scenarios) != 1:
         raise ValueError(
-            f"Inference only support configurations files with one scenario, got"
-            f"seir: {seir_modifiers_scenarios}"
-            f"outcomes: {outcome_modifiers_scenarios}"
+            f"Inference only supports configuration files with one scenario, recieved:\n"
+            f"SEIR modifiers: {seir_modifiers_scenarios}."
+            f"Outcomes modifiers: {outcome_modifiers_scenarios}."
         )
 
     return seir_modifiers_scenarios[0], outcome_modifiers_scenarios[0]
