@@ -200,7 +200,7 @@ def calibrate(
     print("EMCEE Run done, doing sampling")
 
     shutil.rmtree("model_output/", ignore_errors=True)
-    shutil.rmtree(project_path + "model_output/", ignore_errors=True)
+    shutil.rmtree(os.path.join(project_path, "model_output/"), ignore_errors=True)
 
     max_indices = np.argsort(sampler.get_log_prob()[-1, :])[-nsamples:]
     samples = sampler.get_chain()[-1, max_indices, :]  # the last iteration, for selected slots
@@ -209,11 +209,17 @@ def calibrate(
         results = pool.starmap(
             gempyor_inference.get_logloss_as_single_number, [(samples[i, :],) for i in range(len(max_indices))]
         )
-    # results = []
-    # for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id, "hosp.parquet"]):
-    #    df = gempyor.read_df(fn)
-    #    df = df.set_index("date")
-    #    results.append(df)
+
+    results = []
+    for fn in gempyor.utils.list_filenames(folder=os.path.join(project_path,"model_output/"), filters=[run_id, "hosp.parquet"]):
+        df = gempyor.read_df(fn)
+        df = df.set_index("date")
+        results.append(df)
+
+    gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
+                                           inferpar=gempyor_inference.inferpar, 
+                                           loss=gempyor_inference.logloss, 
+                                           list_of_df=results, save_to=f"{run_id}_fit.pdf")
 
 
 if __name__ == "__main__":

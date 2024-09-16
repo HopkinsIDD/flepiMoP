@@ -121,32 +121,36 @@ def plot_chains(inferpar, chains, llik, save_to, sampled_slots=None, param_gt=No
             pdf.savefig(fig)
             plt.close(fig)
 
-def plot_fit(modinf, loss):
-    subpop_names = modinf.subpop_struct.subpop_names
-    fig, axes = plt.subplots(
-        len(subpop_names), len(loss.statistics), figsize=(3 * len(loss.statistics), 3 * len(subpop_names)), sharex=True
-    )
-    for j, subpop in enumerate(modinf.subpop_struct.subpop_names):
-        gt_s = loss.gt[loss.gt["subpop"] == subpop].sort_index()
-        first_date = max(gt_s.index.min(), results[0].index.min())
-        last_date = min(gt_s.index.max(), results[0].index.max())
-        gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1).resample("W-SAT").sum()
+def plot_fit(modinf, loss, list_of_df, save_to):
+    with PdfPages(f"{save_to}") as pdf:
+            d = pdf.infodict()
+            d["Title"] = "FlepiMoP Inference Fit"
+            d["Author"] = "FlepiMoP Inference"
+            
 
-        for i, (stat_name, stat) in enumerate(loss.statistics.items()):
-            ax = axes[j, i]
+            for j, subpop in enumerate(modinf.subpop_struct.subpop_names):
+                fig, axes = plt.subplots(1, len(loss.statistics), figsize=(3 * len(loss.statistics), 4), sharex=True)
+                
+                gt_s = loss.gt[loss.gt["subpop"] == subpop].sort_index()
+                first_date = max(gt_s.index.min(), list_of_df[0].index.min())
+                last_date = min(gt_s.index.max(), list_of_df[0].index.max())
+                gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1).resample("W-SAT").sum()
 
-            ax.plot(gt_s[stat.data_var], color="k", marker=".", lw=1)
-            for model_df in results:
-                model_df_s = (
-                    model_df[model_df["subpop"] == subpop]
-                    .drop(["subpop"], axis=1)
-                    .loc[first_date:last_date]
-                    .resample("W-SAT")
-                    .sum()
-                )  # todo sub subpop here
-                ax.plot(model_df_s[stat.sim_var], lw=0.9, alpha=0.5)
-            # if True:
-            #        init_df_s = outcomes_df_ref[model_df["subpop"]==subpop].drop(["subpop","time"],axis=1).loc[min(gt_s.index):max(gt_s.index)].resample("W-SAT").sum() # todo sub subpop here
-            ax.set_title(f"{stat_name}, {subpop}")
-    fig.tight_layout()
-    plt.savefig(f"{run_id}_results.pdf")
+                for i, (stat_name, stat) in enumerate(loss.statistics.items()):
+                    ax = axes[i]
+                    ax.plot(gt_s[stat.data_var], color="k", marker=".", lw=1)
+                    for model_df in list_of_df:
+                        model_df_s = (
+                            model_df[model_df["subpop"] == subpop]
+                            .drop(["subpop"], axis=1)
+                            .loc[first_date:last_date]
+                            .resample("W-SAT")
+                            .sum()
+                        )  # todo sub subpop here
+                        ax.plot(model_df_s[stat.sim_var], lw=0.9, alpha=0.5)
+                    # if True:
+                    #        init_df_s = outcomes_df_ref[model_df["subpop"]==subpop].drop(["subpop","time"],axis=1).loc[min(gt_s.index):max(gt_s.index)].resample("W-SAT").sum() # todo sub subpop here
+                    ax.set_title(f"{stat_name}, {subpop}")
+                fig.tight_layout()
+                pdf.savefig(fig)
+                plt.close(fig)
