@@ -43,36 +43,10 @@ This script takes a while to run, but has some interactive components so make su
 
 These steps are needed prior to running `flepiMoP` and will need to be ran once per a session.
 
-1. Run the pre-run Longleaf script:
+1. Run the HPC install script which will update installed packages and help you set environment variables:
 
 ```bash
-source /users/<o>/<n>/<onyen>/flepiMoP/batch/slurm_prerun_longleaf.sh
+source /users/<o>/<n>/<onyen>/flepiMoP/build/hpc_install.sh longleaf
 ```
 
-If you just did the steps above you can skip this step, the init script calls the pre-run script for you.
-
-2. Set the project path to the appropriate location, in this case the `flepimop_sample` directory:
-
-```bash
-export FLEPI_PATH=/users/<o>/<n>/<onyen>/flepiMoP
-export PROJECT_PATH=/users/<o>/<n>/<onyen>/flepimop_sample
-```
-
-3. Set the configuration path environment variable. In this case using the `config_sample_2pop_inference.yml` file from the `flepimop_sample` reop.
-
-```bash
-export CONFIG_PATH=$PROJECT_PATH/config_sample_2pop_inference.yml
-```
-
-4. Now, let's test if this works. If you are just refreshing yourself on the steps to submit to slurm you can skip this.
-
-``bash
-cd $PROJECT_PATH
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c $CONFIG_PATH -j 1 -n 1 -k 1
-```
-
-If you do run this command to test the installation up until this point make sure to delete the model output folder after successfully running.
-
-```bash
-rm -r model_output/
-```
+This will run much faster than the first time running this script. If you just did the steps above you can skip this step.
