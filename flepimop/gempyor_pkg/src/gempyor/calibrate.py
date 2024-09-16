@@ -195,7 +195,7 @@ def calibrate(
     # plotting the chain
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
     gempyor.postprocess_inference.plot_chains(
-        inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=None, save_to=f"{run_id}_chains.pdf"
+        inferpar=gempyor_inference.inferpar, chains = sampler.get_chain(), llik = sampler.get_log_prob(), sampled_slots=None, save_to=f"{run_id}_chains.pdf"
     )
     print("EMCEE Run done, doing sampling")
 
