@@ -254,6 +254,8 @@ Rscript $FLEPI_PATH/datasetup/build_US_setup.R
 Rscript $FLEPI_PATH/datasetup/build_covid_data.R
 
 # For Flu do
+R
+> install.packages(c("RSocrata"))
 Rscript $FLEPI_PATH/datasetup/build_flu_data.R
 
 # build seeding
