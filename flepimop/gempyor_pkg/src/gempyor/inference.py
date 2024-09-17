@@ -441,7 +441,7 @@ class GempyorInference:
                 print("OUT OF BOUND!!")
             return -np.inf, -np.inf, -np.inf
         
-        outcomes_df = self.perform_simulation(proposal=proposal)
+        outcomes_df = self.simulate_proposal(proposal=proposal)
 
         ll_total, logloss, regularizations = self.logloss.compute_logloss(
             model_df=outcomes_df, subpop_names=self.modinf.subpop_struct.subpop_names
