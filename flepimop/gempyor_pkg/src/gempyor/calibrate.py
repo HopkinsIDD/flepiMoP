@@ -124,6 +124,15 @@ def calibrate(
     resume,
     resume_location,
 ):
+    
+    filename = f"{run_id}_backend.h5"
+    if os.path.exists(filename):
+        if not resume:
+            print(f"File {filename} already exists, remove it or use --resume")
+            return
+    else:
+        print(f"writing to {filename}")
+        
     gempyor_inference = GempyorInference(
         config_filepath=config_filepath,
         run_id=run_id,
@@ -148,13 +157,7 @@ def calibrate(
     if test_run:
         gempyor_inference.perform_test_run()
 
-    filename = f"{run_id}_backend.h5"
-    if os.path.exists(filename):
-        if not resume:
-            print(f"File {filename} already exists, remove it or use --resume")
-            return
-    else:
-        print(f"writing to {filename}")
+    
 
     # TODO here for resume
     if resume or resume_location is not None:
