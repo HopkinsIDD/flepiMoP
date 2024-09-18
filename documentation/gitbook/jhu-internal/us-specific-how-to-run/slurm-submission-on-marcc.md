@@ -99,7 +99,7 @@ and you will not be prompted for credentials.
 
 ### Setup your Amazon Web Services (AWS) credentials
 
-This can be done in a second step -- but is necessary in order to push and pull data to Amazon Simple Storage Service (S3). Setup your AWS credentials by running
+This can be done in a second step -- but is necessary in order to push and pull data to Amazon Simple Storage Service (S3). Setup AWS by running,
 
 <pre class="language-bash"><code class="lang-bash">cd ~ # go in your home directory
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -108,14 +108,16 @@ unzip awscliv2.zip
 <strong>./aws-cli/bin/aws --version
 </strong></code></pre>
 
-Then run `./aws-cli/bin/aws configure` and use the following :
+Then run `./aws-cli/bin/aws configure` to set up your credentials,
 
 ```
-# AWS Access Key ID [None]: YOUR ID
-# AWS Secret Access Key [None]: YOUR SECRET ID
+# AWS Access Key ID [None]: Access key
+# AWS Secret Access Key [None]: Secret Access key
 # Default region name [None]: us-west-2
 # Default output format [None]: json
 ```
+
+To get the (secret) access key, ask the AWS administrator (Shaun Truelove) to generate them for you.
 
 ## 🚀 Run inference using slurm (do everytime)
 
