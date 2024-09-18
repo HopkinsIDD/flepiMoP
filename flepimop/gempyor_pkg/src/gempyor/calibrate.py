@@ -132,7 +132,7 @@ def calibrate(
             return
     else:
         print(f"writing to {filename}")
-        
+    
     gempyor_inference = GempyorInference(
         config_filepath=config_filepath,
         run_id=run_id,
@@ -182,17 +182,36 @@ def calibrate(
 
     moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
     gempyor_inference.set_silent(False)
-    with multiprocessing.Pool(ncpu) as pool:
-        sampler = emcee.EnsembleSampler(
-            nwalkers,
-            gempyor_inference.inferpar.get_dim(),
-            gempyor_inference.get_logloss_as_single_number,
-            pool=pool,
-            backend=backend,
-            moves=moves,
-        )
-        state = sampler.run_mcmc(p0, niter, progress=True, skip_initial_state_check=True)
+    
+    #with multiprocessing.Pool(ncpu) as pool:
+    #    sampler = emcee.EnsembleSampler(
+    #        nwalkers,
+    #        gempyor_inference.inferpar.get_dim(),
+    #        gempyor_inference.get_logloss_as_single_number,
+    #        pool=pool,
+    #        backend=backend,
+    #        moves=moves,
+    #    )
+    #    state = sampler.run_mcmc(p0, niter, progress=True, skip_initial_state_check=True)
 
+    # hack around memory management: run by batch of 10 iterations
+    nbatch = 10
+    for i in range(niter // nbatch):
+        if i == 0:
+            start_val = p0
+        else:
+            start_val = None
+
+        with multiprocessing.Pool(ncpu) as pool:
+            sampler = emcee.EnsembleSampler(
+                nwalkers,
+                gempyor_inference.inferpar.get_dim(),
+                gempyor_inference.get_logloss_as_single_number,
+                pool=pool,
+                backend=backend,
+                moves=moves,
+            )
+            state = sampler.run_mcmc(start_val, nbatch, progress=True, skip_initial_state_check=True)
     print(f"Done, mean acceptance fraction: {np.mean(sampler.acceptance_fraction):.3f}")
 
     # plotting the chain
@@ -220,7 +239,6 @@ def calibrate(
         results.append(df)
 
     gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
-                                           inferpar=gempyor_inference.inferpar, 
                                            loss=gempyor_inference.logloss, 
                                            list_of_df=results, save_to=f"{run_id}_fit.pdf")
 
