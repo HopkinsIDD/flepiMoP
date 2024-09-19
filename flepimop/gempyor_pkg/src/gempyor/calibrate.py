@@ -162,7 +162,6 @@ def calibrate(
     # TODO here for resume
     if resume or resume_location is not None:
         print("Doing a resume, this only work with the same number of slot and parameters right now")
-        p0 = None
         if resume_location is not None:
             backend = emcee.backends.HDFBackend(resume_location)
         else:
@@ -171,9 +170,9 @@ def calibrate(
                 return
             backend = emcee.backends.HDFBackend(filename)
 
-        # We add a new state to the backend, with the evaluation using the current likelyhood in case the data has been changed
-        # or the llik function. Otherwise, there is no acceptance.
-        p0 = backend.get_last_sample().coords
+        # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
+        # and then acceptances are not guaranted, see issue #316. This solves this issue.
+        p0 = backend.get_last_sample().coords  
 
 
     else:
