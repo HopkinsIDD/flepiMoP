@@ -171,6 +171,11 @@ def calibrate(
                 return
             backend = emcee.backends.HDFBackend(filename)
 
+        # We add a new state to the backend, with the evaluation using the current likelyhood in case the data has been changed
+        # or the llik function. Otherwise, there is no acceptance.
+        p0 = backend.get_last_sample().coords
+
+
     else:
         backend = emcee.backends.HDFBackend(filename)
         backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
