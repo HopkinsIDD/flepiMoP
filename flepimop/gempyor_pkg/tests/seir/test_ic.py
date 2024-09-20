@@ -44,7 +44,7 @@ class TestIC:
         sic.get_from_config(sim_id=100, modinf=s)
 
     def test_IC_IC_notImplemented_fail(self):
-        with pytest.raises(NotImplementedError, match=r".*unknown.*initial.*conditions.*"):
+        with pytest.raises(NotImplementedError, match=r"^Unknown initial conditions method \[received: .*\]\.$"):
             config.clear()
             config.read(user=False)
             config.set_file(f"{DATA_DIR}/config.yml")

@@ -237,9 +237,9 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                rf"^ERROR loading file {tmp_file} for parameter sigma\: the number of "
-                rf"non 'date'\s+columns are {actual_columns}, expected "
-                rf"{mock_inputs.number_of_subpops()} \(the number of subpops\) or "
+                rf"^Error loading file {tmp_file} for parameter sigma\: the number of "
+                rf"non- 'date'\s+columns is {actual_columns}, expected "
+                rf"{mock_inputs.number_of_subpops()} \(number of subpops\) or "
                 rf"one\.$"
             ),
         ):
@@ -288,10 +288,10 @@ class TestParameters:
                 rf"to be modeled by\s+the config\. the provided file includes "
                 rf"{(timeseries_end_date - timeseries_start_date).days + 1} days "
                 rf"between {timeseries_start_date}( 00\:00\:00)? to "
-                rf"{timeseries_end_date}( 00\:00\:00)?,\s+while there are "
+                rf"{timeseries_end_date}( 00\:00\:00)?, while there are "
                 rf"{mock_inputs.number_of_days()} days in the config time span of "
                 rf"{mock_inputs.ti}->{mock_inputs.tf}\. The file must contain entries "
-                rf"for the\s+the exact start and end dates from the config\. $"
+                rf"for the the exact start and end dates from the config\. $"
             ),
         ):
             mock_inputs.create_parameters_instance()
