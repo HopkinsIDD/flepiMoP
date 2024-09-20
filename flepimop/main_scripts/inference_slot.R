@@ -53,7 +53,7 @@ option_list = list(
   optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
   optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
   optparse::make_option(c("-g", "--subpop_len"), action="store", default=Sys.getenv("SUBPOP_LENGTH", 5), type='integer', help = "number of digits in subpop"),
-  optparse::make_option(c("-a", "--incl_aggr_likelihood"), action = "store", default = Sys.getenv("INCL_AGGR_LIKELIHOOD", TRUE), type = 'logical', help = 'Should the likelihood be calculated with the aggregate estiamtes.')
+  optparse::make_option(c("-a", "--incl_aggr_likelihood"), action = "store", default = Sys.getenv("INCL_AGGR_LIKELIHOOD", FALSE), type = 'logical', help = 'Should the likelihood be calculated with the aggregate estiamtes.')
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -268,12 +268,12 @@ if (config$inference$do_inference){
   obs <- suppressMessages(
     readr::read_csv(config$inference$gt_data_path,
                     col_types = readr::cols(date = readr::col_date(),
-                                            source = readr::col_character(),
+                                            # source = readr::col_character(),
                                             subpop = readr::col_character(),
                                             .default = readr::col_double()), )) %>%
     dplyr::filter(subpop %in% subpops_, date >= gt_start_date, date <= gt_end_date) %>%
-    dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) %>%
-    dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
+    dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) #%>%
+    # dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
 
 
   # add aggregate groundtruth to the obs data for the likelihood calc

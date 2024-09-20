@@ -1,31 +1,46 @@
-import numpy as np
-import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
+"""
+Abstractions for interacting with the parameters configurations.
+
+This module contains abstractions for interacting with the parameters section of given
+config files. Namely it contains the `Parameters` class.
+"""
+
+__all__ = ["Parameters"]
+
+
 import copy
-import confuse
-from numpy import ndarray
-import logging
-from . import model_info, NPI, utils
 import datetime
-import xarray as xr
+import logging
 import os
+from typing import Any, Literal
+
+import confuse
+import numpy as np
+from numpy import ndarray
+import pandas as pd
+
+from . import NPI, utils
+
 
 logger = logging.getLogger(__name__)
 
-# TODO: it should work like
-# import xarray as xr
-# xr.DataArray(p_draw, dims=["parameter", "date", "subpop"],
-#                 coords={"parameter":modinf.parameters.pnames,
-#                 "date":pd.date_range(modinf.ti, modinf.tf, freq="D"),
-#                 "subpop":modinf.subpop_struct.subpop_names}).sel(parameter="gamma_0").plot()
-
-
-## TODO: ideally here path_prefix should not be used and all files loaded from modinf
-
 
 class Parameters:
-    # Minimal object to be easily picklable for // runs
+    """
+    Encapsulates logic for loading, parsing, and summarizing parameter configurations.
+
+    Attributes:
+        npar: The number of parameters contained within the given configuration.
+        pconfig: A view subsetting to the parameters section of a given config file.
+        pdata: A dictionary containing a processed and reformatted view of the `pconfig`
+            attribute.
+        pnames: The names of the parameters given.
+        pnames2pindex: A mapping parameter names to their location in the `pnames`
+            attribute.
+        stacked_modifier_method: A mapping of modifier method to the parameters to which
+            that modifier method is relevant for.
+    """
+
     def __init__(
         self,
         parameter_config: confuse.ConfigView,
@@ -35,18 +50,42 @@ class Parameters:
         subpop_names: list,
         path_prefix: str = ".",
     ):
-        self.pconfig = parameter_config
-        self.pnames = []
-        self.npar = len(self.pnames)
+        """
+        Initialize a `Parameters` instance from a parameter config view.
 
-        self.pdata = {}
-        self.pnames2pindex = {}
-        self.stacked_modifier_method = {"sum": [], "product": [], "reduction_product": []}
+        Args:
+            parameter_config: A view subsetting to the parameters section of a given
+                config file.
+            ti: An initial date.
+            tf: A final date.
+            subpop_names: A list of subpopulation names.
+            path_prefix: A file path prefix to use when reading in parameter values from
+                a dataframe like file.
+
+        Raises:
+            ValueError: The parameter names for the SEIR model are not unique.
+            ValueError: The dataframe file found for a given parameter contains an
+                insufficient number of columns for the subpopulations being considered.
+            ValueError: The dataframe file found for a given parameter does not have
+                enough date entries to cover the time span being considered by the given
+                `ti` and `tf`.
+        """
+        self.pconfig: confuse.ConfigView = parameter_config
+        self.pnames: list[str] = []
+        self.npar: int = len(self.pnames)
+
+        self.pdata: dict[str, dict[str, Any]] = {}
+        self.pnames2pindex: dict[str, int] = {}
+        self.stacked_modifier_method: dict[
+            Literal["sum", "product", "reduction_product"], list[str]
+        ] = {"sum": [], "product": [], "reduction_product": []}
 
         self.pnames = self.pconfig.keys()
         self.npar = len(self.pnames)
         if self.npar != len(set([name.lower() for name in self.pnames])):
-            raise ValueError("Parameters of the SEIR model have the same name (remember that case is not sufficient!)")
+            raise ValueError(
+                "Parameters of the SEIR model have the same name (remember that case is not sufficient!)"
+            )
 
         # Attributes of dictionary
         for idx, pn in enumerate(self.pnames):
@@ -56,19 +95,29 @@ class Parameters:
 
             # Parameter characterized by it's distribution
             if self.pconfig[pn]["value"].exists():
-                self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
+                self.pdata[pn]["dist"] = self.pconfig[pn][
+                    "value"
+                ].as_random_distribution()
 
             # Parameter given as a file
             elif self.pconfig[pn]["timeseries"].exists():
-                fn_name = os.path.join(path_prefix, self.pconfig[pn]["timeseries"].get())
+                fn_name = os.path.join(
+                    path_prefix, self.pconfig[pn]["timeseries"].get()
+                )
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
-                if len(df.columns) == 1:  # if only one ts, assume it applies to all subpops
+                if (
+                    len(df.columns) == 1
+                ):  # if only one ts, assume it applies to all subpops
                     df = pd.DataFrame(
-                        pd.concat([df] * len(subpop_names), axis=1).values, index=df.index, columns=subpop_names
+                        pd.concat([df] * len(subpop_names), axis=1).values,
+                        index=df.index,
+                        columns=subpop_names,
                     )
                 elif len(df.columns) >= len(subpop_names):  # one ts per subpop
-                    df = df[subpop_names]  # make sure the order of subpops is the same as the reference
+                    df = df[
+                        subpop_names
+                    ]  # make sure the order of subpops is the same as the reference
                     # (subpop_names from spatial setup) and select the columns
                 else:
                     print("loaded col :", sorted(list(df.columns)))
@@ -103,15 +152,23 @@ class Parameters:
 
                 self.pdata[pn]["ts"] = df
             if self.pconfig[pn]["stacked_modifier_method"].exists():
-                self.pdata[pn]["stacked_modifier_method"] = self.pconfig[pn]["stacked_modifier_method"].as_str()
+                self.pdata[pn]["stacked_modifier_method"] = self.pconfig[pn][
+                    "stacked_modifier_method"
+                ].as_str()
             else:
                 self.pdata[pn]["stacked_modifier_method"] = "product"
-                logging.debug(f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs")
+                logging.debug(
+                    f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs"
+                )
 
             if self.pconfig[pn]["rolling_mean_windows"].exists():
-                self.pdata[pn]["rolling_mean_windows"] = self.pconfig[pn]["rolling_mean_windows"].get()
+                self.pdata[pn]["rolling_mean_windows"] = self.pconfig[pn][
+                    "rolling_mean_windows"
+                ].get()
 
-            self.stacked_modifier_method[self.pdata[pn]["stacked_modifier_method"]].append(pn.lower())
+            self.stacked_modifier_method[
+                self.pdata[pn]["stacked_modifier_method"]
+            ].append(pn.lower())
 
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
         logging.debug(f"Data to sample is: {self.pdata}")
@@ -119,22 +176,65 @@ class Parameters:
         logging.debug(f"NPI overlap operation is {self.stacked_modifier_method} ")
 
     def picklable_lamda_alpha(self):
-        """These two functions were lambda in __init__ before, it was more elegant. but as the object needs to be pickable,
-        we cannot use second order function, hence these ugly definitions"""
+        """
+        Read the `alpha_val` attribute.
+
+        This defunct method returns the `alpha_val` attribute of this class which is
+        never set by this class. If this method is called and the `alpha_val` attribute
+        is not set an AttributeError will be raised.
+
+        Returns:
+            The `alpha_val` attribute.
+        """
         return self.alpha_val
 
     def picklable_lamda_sigma(self):
+        """
+        Read the `sigma_val` attribute.
+
+        This defunct method returns the `sigma_val` attribute of this class which is
+        never set by this class. If this method is called and the `sigma_val` attribute
+        is not set an AttributeError will be raised.
+
+        Returns:
+            The `sigma_val` attribute.
+        """
         return self.sigma_val
 
     def get_pnames2pindex(self) -> dict:
+        """
+        Read the `pnames2pindex` attribute.
+
+        This redundant method returns the `pnames2pindex` attribute of this class.
+
+        Returns:
+            A mapping parameter names to their location in the `pnames` attribute.
+        """
         return self.pnames2pindex
 
     def parameters_quick_draw(self, n_days: int, nsubpops: int) -> ndarray:
         """
-        Returns all parameter in an array. These are drawn based on the seir::parameters section of the config, passed in as p_config.
-        :param n_days: number of time interval
-        :param nsubpops: number of spatial nodes
-        :return:  array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time (same value)
+        Format all parameters as a numpy array including sampling.
+
+        The entries in the output array are filled based on the input given in the
+        parameters section of a yaml config file. If the given parameter is pulled from
+        a distribution rather than fixed the values will be pulled from that
+        distribution. If an appropriate value cannot be found for an entry then a
+        `np.nan` is returned.
+
+        Args:
+            n_days: The number of days to generate an array for.
+            nsubpops: The number of subpopulations to generate an array for.
+
+        Returns:
+            A numpy array of size (`npar`, `n_days`, `nsubpops`) where `npar`
+            corresponds to the `npar` attribute of this class.
+
+        Notes:
+            If any of the parameters are 'timeseries' type parameters then `n_days` and
+            `nsubpops` must be equal to the number of days between `ti` and `tf` given
+            when initializing this class and the number of subpopulations given to this
+            class via `subpop_names`.
         """
         param_arr = np.empty((self.npar, n_days, nsubpops), dtype="float64")
         param_arr[:] = np.nan  # fill with NaNs so we don't fail silently
@@ -147,14 +247,32 @@ class Parameters:
 
         return param_arr  # we don't store it as a member because this object needs to be small to be pickable
 
-    def parameters_load(self, param_df: pd.DataFrame, n_days: int, nsubpops: int) -> ndarray:
+    def parameters_load(
+        self, param_df: pd.DataFrame, n_days: int, nsubpops: int
+    ) -> ndarray:
         """
-        drop-in equivalent to param_quick_draw() that take a file as written parameter_write()
-        :param fname:
-        :param n_days:
-        :param nsubpops:
-        :param extension:
-        :return: array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time.
+        Format all parameters as a numpy array including sampling and overrides.
+
+        This method serves largely the same purpose as the `parameters_quick_draw`, but
+        has the ability to override the parameter specifications contained by this class
+        with a given dataframe.
+
+        Args:
+            param_df: A DataFrame containing the columns 'parameter' and 'value'. If
+                more than one entry for a given parameter is given then only the first
+                value will be taken.
+            n_days: The number of days to generate an array for.
+            nsubpops: The number of subpopulations to generate an array for.
+
+        Returns:
+            A numpy array of size (`npar`, `n_days`, `nsubpops`) where `npar`
+            corresponds to the `npar` attribute of this class.
+
+        Notes:
+            If any of the parameters are 'timeseries' type parameters and are not being
+            overridden then `n_days` and `nsubpops` must be equal to the number of days
+            between `ti` and `tf` given when initializing this class and the number of
+            subpopulations given to this class via `subpop_names`.
         """
         param_arr = np.empty((self.npar, n_days, nsubpops), dtype="float64")
         param_arr[:] = np.nan  # fill with NaNs so we don't fail silently
@@ -166,7 +284,9 @@ class Parameters:
             elif "ts" in self.pdata[pn]:
                 param_arr[idx] = self.pdata[pn]["ts"].values
             else:
-                print(f"PARAM: parameter {pn} NOT found in loadID file. Drawing from config distribution")
+                print(
+                    f"PARAM: parameter {pn} NOT found in loadID file. Drawing from config distribution"
+                )
                 pval = self.pdata[pn]["dist"]()
                 param_arr[idx] = np.full((n_days, nsubpops), pval)
 
@@ -174,26 +294,47 @@ class Parameters:
 
     def getParameterDF(self, p_draw: ndarray) -> pd.DataFrame:
         """
-        return parameters generated by parameters_quick_draw() as dataframe, just the first value as they are all similar.
-        :param p_draw:
-        :return: The dataframe (to be written to disk, or not)
+        Serialize a parameter draw as a pandas `DataFrame`.
+
+        This method only considers distribution parameters, which does include fixed
+        parameters.
+
+        Args:
+            p_draw: A numpy array of shape (`npar`, `n_days`, `nsubpops`) like that
+                returned by `parameters_quick_draw`.
+
+        Returns:
+            A pandas `DataFrame` with the columns 'parameter' and 'value' corresponding
+            to the parameter name and value as well as an index containing the parameter
+            name.
         """
         # we don't write to disk time series parameters.
         out_df = pd.DataFrame(
-            [p_draw[idx, 0, 0] for idx, pn in enumerate(self.pnames) if "dist" in self.pdata[pn]],
+            [
+                p_draw[idx, 0, 0]
+                for idx, pn in enumerate(self.pnames)
+                if "dist" in self.pdata[pn]
+            ],
             columns=["value"],
-            index=[pn for idx, pn in enumerate(self.pnames) if "dist" in self.pdata[pn]],
+            index=[
+                pn for idx, pn in enumerate(self.pnames) if "dist" in self.pdata[pn]
+            ],
         )
         out_df["parameter"] = out_df.index
-
         return out_df
 
     def parameters_reduce(self, p_draw: ndarray, npi: object) -> ndarray:
         """
         Params reduced according to the NPI provided.
-        :param p_draw: array of shape (nparam, n_days, nsubpops) from p_draw
-        :param npi: NPI object with the reduction
-        :return: array of shape (nparam, n_days, nsubpops) with all parameters for all nodes and all time, reduced
+
+        Args:
+            p_draw: A numpy array of shape (`npar`, `n_days`, `nsubpops`) like that
+                returned by `parameters_quick_draw`.
+            npi: An NPI object describing the parameter reduction to perform.
+
+        Returns:
+            An array the same shape as `p_draw` with the prescribed reductions
+            performed.
         """
         p_reduced = copy.deepcopy(p_draw)
         if npi is not None:
@@ -205,6 +346,8 @@ class Parameters:
                 )
                 p_reduced[idx] = npi_val
                 if "rolling_mean_windows" in self.pdata[pn]:
-                    p_reduced[idx] = utils.rolling_mean_pad(data=npi_val, window=self.pdata[pn]["rolling_mean_windows"])
+                    p_reduced[idx] = utils.rolling_mean_pad(
+                        data=npi_val, window=self.pdata[pn]["rolling_mean_windows"]
+                    )
 
         return p_reduced
