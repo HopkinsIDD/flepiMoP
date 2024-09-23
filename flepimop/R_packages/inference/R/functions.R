@@ -39,11 +39,13 @@ periodAggregate <- function(data, dates, start_date = NULL, end_date = NULL, per
     tmp <- tmp %>%
         tidyr::unite("time_unit", names(tmp)[grepl("time_unit_", names(tmp))]) %>%
         dplyr::group_by(time_unit) %>%
-        dplyr::summarize(first_date = min(date), value = aggregator(value), valid = period_unit_validator(date,time_unit)) %>%
+        dplyr::summarize(last_date = max(date),first_date = min(date), value = aggregator(value), valid = period_unit_validator(date,time_unit)) %>%
         dplyr::ungroup() %>%
         dplyr::arrange(first_date) %>%
         dplyr::filter(valid)
-    return(matrix(tmp$value, ncol = 1, dimnames = list(as.character(tmp$first_date))))
+    # return(matrix(tmp$value, ncol = 1, dimnames = list(as.character(tmp$first_date))))
+    return(matrix(tmp$value, ncol = 1, dimnames = list(as.character(tmp$last_date))))
+    
 }
 
 
