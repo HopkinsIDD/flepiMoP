@@ -198,7 +198,7 @@ Rscript build/local_install.R # warnings are ok; there should be no error.
 pip install --no-deps -e flepimop/gempyor_pkg/
 ```
 
-Now flepiMoP is ready 🎉.
+Now flepiMoP is ready 🎉. If the `R` command doesn't work, try `r` and if that doesn't work run `module load `r/4.0.2`.
 
 Next step is to setup the data. First $DATA\_PATH to your data folder, and set any data options. If you are using the Delph Epidata API, first register for a key here: [https://cmu-delphi.github.io/delphi-epidata/](https://cmu-delphi.github.io/delphi-epidata/). Once you have a key, add that below where you see \[YOUR API KEY]. Alternatively, you can put that key in your config file in the `inference` section as `gt_api_key: "YOUR API KEY"`.
 
