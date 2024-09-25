@@ -105,8 +105,9 @@ class Statistic:
         return data_scaled_resampled
 
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
+        from scipy.special import gammaln
         dist_map = {
-            "pois": scipy.stats.poisson.logpmf,
+            "pois": lambda ymodel, ydata: - (np.sum(ymodel+1) + np.sum(ydata*np.log(ymodel+1)) - np.sum(gammaln(ydata+1))).values,
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=self.params.get("scale", scale)
             ),  # wrong:
