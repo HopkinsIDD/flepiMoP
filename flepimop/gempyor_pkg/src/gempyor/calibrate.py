@@ -141,7 +141,7 @@ def calibrate(
         stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
-        inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
+        inference_filename_prefix="global/final/",  # usually for {global or chimeric}/{intermediate or final}
         inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
@@ -172,9 +172,7 @@ def calibrate(
 
         # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
         # and then acceptances are not guaranted, see issue #316. This solves this issue.
-        p0 = backend.get_last_sample().coords  
-
-
+        p0 = backend.get_last_sample().coords
     else:
         backend = emcee.backends.HDFBackend(filename)
         backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
@@ -242,9 +240,16 @@ def calibrate(
         df = df.set_index("date")
         results.append(df)
 
+    print(len(results))
+
     gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
                                            loss=gempyor_inference.logloss, 
                                            list_of_df=results, save_to=f"{run_id}_fit.pdf")
+    
+    gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
+                                           loss=gempyor_inference.logloss,
+                                           plot_projections=True,
+                                           list_of_df=results, save_to=f"{run_id}_fit_w_proj.pdf")
 
 
 if __name__ == "__main__":
