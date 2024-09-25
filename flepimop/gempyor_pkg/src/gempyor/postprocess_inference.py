@@ -121,7 +121,7 @@ def plot_chains(inferpar, chains, llik, save_to, sampled_slots=None, param_gt=No
             pdf.savefig(fig)
             plt.close(fig)
 
-def plot_fit(modinf, loss, list_of_df, save_to, apply_transforms=True):
+def plot_fit(modinf, loss, list_of_df, save_to, apply_transforms=True, plot_projections=False):
     with PdfPages(f"{save_to}") as pdf:
             d = pdf.infodict()
             d["Title"] = "FlepiMoP Inference Fit"
@@ -138,24 +138,26 @@ def plot_fit(modinf, loss, list_of_df, save_to, apply_transforms=True):
 
                 for i, (stat_name, stat) in enumerate(loss.statistics.items()):
                     ax = axes[i]
+                    for model_df in list_of_df:
+                        model_df_s = (
+                            model_df[model_df["subpop"] == subpop]
+                            .drop(["subpop"], axis=1)
+                        )  # todo sub subpop here
+                        if not plot_projections:
+                            model_df_s = model_df_s.loc[first_date:last_date]
+                        if apply_transforms:
+                            df_p = stat.apply_transforms(model_df_s[stat.sim_var].to_xarray())
+                        else:
+                            df_p = model_df_s[stat.sim_var].to_xarray()
+                        ax.plot(df_p.date,  df_p, lw=0.9, alpha=0.5, marker=".", markersize=1)
+                    # if True:
+                    #        init_df_s = outcomes_df_ref[model_df["subpop"]==subpop].drop(["subpop","time"],axis=1).loc[min(gt_s.index):max(gt_s.index)].resample("W-SAT").sum() # todo sub subpop here
                     if apply_transforms:
                         gt_p = stat.apply_transforms(gt_s[stat.data_var].to_xarray())
                     else:
                         gt_p = gt_s[stat.data_var].to_xarray()
                     ax.plot(gt_p.date, gt_p, color="k", marker=".", lw=1)
-                    for model_df in list_of_df:
-                        model_df_s = (
-                            model_df[model_df["subpop"] == subpop]
-                            .drop(["subpop"], axis=1)
-                            .loc[first_date:last_date]
-                        )  # todo sub subpop here
-                        if apply_transforms:
-                            df_p = stat.apply_transforms(model_df_s[stat.sim_var].to_xarray())
-                        else:
-                            df_p = model_df_s[stat.sim_var].to_xarray()
-                        ax.plot(df_p.date,  df_p, lw=0.9, alpha=0.5, marker=".")
-                    # if True:
-                    #        init_df_s = outcomes_df_ref[model_df["subpop"]==subpop].drop(["subpop","time"],axis=1).loc[min(gt_s.index):max(gt_s.index)].resample("W-SAT").sum() # todo sub subpop here
+                    
                     ax.set_title(f"{stat_name}, {subpop}")
                 fig.autofmt_xdate()
                 fig.tight_layout()
