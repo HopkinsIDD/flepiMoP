@@ -1,3 +1,19 @@
+
+# FlepiMoP
+
+The *Fle*xible *Epi*demic *Mo*deling *P*ipeline, `FlepiMoP`, makes it easy to build an infectious disease model, infer that model's parameters, and project scenario outcomes.
+
+# Quickstart
+
+```bash
+$ mkdir myflepimopworkspace && cd $_
+$ git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1
+$ ./flepiMop/install_ubuntu.sh
+$ cp -r ./flepiMoP/examples/tutorial_two_subpops test_model && cd $_
+$ gempyor-simulate -c config_sample_2pop.yml
+$ $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_sample_2pop_inference.yml
+```
+
 # flepiMoP
 
 Welcome to the Johns Hopkins University Infectious Disease Dynamics COVID-19 Working Group's `Flexible Epidemic Modeling Pipeline`(“FlepiMoP”, formerly the COVID Scenario Pipeline, “CSP”), a flexible modeling framework that projects epidemic trajectories and healthcare impacts under different suites of interventions in order to aid in scenario planning. The model is generic enough to be applied to different spatial scales given shapefiles, population data, and COVID-19 confirmed case data. There are multiple components to the pipeline, which may be characterized as follows: 1) epidemic seeding; 2) disease transmission and non-pharmaceutical intervention scenarios; 3) calculation of health outcomes (hospital and ICU admissions and bed use, ventilator use, and deaths); and 4) summarization of model outputs.
