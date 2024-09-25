@@ -108,12 +108,23 @@ class Statistic:
         from scipy.special import gammaln
         dist_map = {
             "pois": lambda ymodel, ydata: - (np.sum(ymodel+1) + np.sum(ydata*np.log(ymodel+1)) - np.sum(gammaln(ydata+1))).values,
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            # OLD: # TODO: Swap out in favor of NEW
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=self.params.get("scale", scale)
-            ),  # wrong:
+            ),
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
-            ),  # TODO: check, that it's really the loc
+            ), 
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov` --> `norm_heteroskedastic`; names of input `scale` --> `sd`
+            "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
+                x, loc=loc, scale=self.params.get("sd", sd)
+            ),  # scale = standard deviation
+            "norm_heteroskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
+                x, loc=loc, scale=self.params.get("sd", sd) * loc
+            ),  # scale = standard deviation
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
             "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
