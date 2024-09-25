@@ -107,7 +107,7 @@ class Statistic:
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray):
         from scipy.special import gammaln
         dist_map = {
-            "pois": lambda ymodel, ydata: (- np.sum(ymodel+1) + np.sum(ydata*np.log(ymodel+1)) - np.sum(gammaln(ydata+1))).values,
+            "pois": lambda ymodel, ydata: - (ymodel+1) + ydata*np.log(ymodel+1) - gammaln(ydata+1),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # OLD: # TODO: Swap out in favor of NEW
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
@@ -142,7 +142,6 @@ class Statistic:
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
-
         likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
         # TODO: check the order of the arguments
