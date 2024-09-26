@@ -146,7 +146,7 @@ rm -r model_output/ # delete the outputs of past run if there are
 An inference run requires a configuration file that has the `inference` section. Stay in the `$DATA_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml` ;
 
 ```bash
-$ flepimop-inference-main -c config.yml
+flepimop-inference-main -c config.yml
 ```
 
 This will run the model and create a lot of output files in `$DATA_PATH/model_output/` ;
