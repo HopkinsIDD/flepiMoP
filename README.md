@@ -6,12 +6,12 @@ The *Fle*xible *Epi*demic *Mo*deling *P*ipeline, `FlepiMoP`, makes it easy to bu
 # Quickstart
 
 ```bash
-$ mkdir myflepimopworkspace && cd $_
-$ git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1
-$ ./flepiMop/install_ubuntu.sh
-$ cp -r ./flepiMoP/examples/tutorial_two_subpops test_model && cd $_
-$ gempyor-simulate -c config_sample_2pop.yml
-$ $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_sample_2pop_inference.yml
+mkdir myflepimopworkspace && cd $_
+git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1
+./flepiMop/install_ubuntu.sh
+cp -r ./flepiMoP/examples/tutorial_two_subpops test_model && cd $_
+gempyor-simulate -c config_sample_2pop.yml
+flepimop-inference-main -c config_sample_2pop_inference.yml
 ```
 
 # flepiMoP
