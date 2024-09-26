@@ -162,7 +162,7 @@ rm -r model_output/ # delete the outputs of past run if there are
 An inference run requires a configuration file that has an `inference` section. Stay in the `$DATA_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml`). In the example data folder (flepimop\_sample), try out the example config XXX.
 
 ```bash
-Rscript  $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config.yml
+$ flepimop-inference-main.R -c config.yml
 ```
 
 This will run the model and create [a lot of output files](../../gempyor/output-files.md) in `$DATA_PATH/model_output/`.
@@ -179,14 +179,14 @@ The last few lines visible on the command prompt should be:
 
 If you want to quickly do runs with options different from those encoded in the configuration file, you can do that from the command line, for example
 
-```
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -j 1 -n 1 -k 1 -c config.yml
+```bash
+$ flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
 ```
 
 where:
 
 * `n` is the number of parallel inference slots,
-* `j` is the number of CPU cores to use on your machine (if `j` > `n`, only `n` cores will actually be used. If `j` <`n`, some cores will run multiple slots in sequence)
+* `j` is the number of CPU cores to use on your machine (if `j` > `n`, only `n` cores will actually be used. If `j` < `n`, some cores will run multiple slots in sequence)
 * `k` is the number of iterations per slots.
 
 #### Non-inference run
@@ -220,6 +220,6 @@ cd $DATA_PATH
 rm -rf model_output
 export CONFIG_PATH=config.yml # set your configuration file path
 
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R.R -j 1 -n 1 -k 1
+flepimop-inference-main -j 1 -n 1 -k 1
 ```
 {% endcode %}
