@@ -146,7 +146,7 @@ rm -r model_output/ # delete the outputs of past run if there are
 An inference run requires a configuration file that has the `inference` section. Stay in the `$DATA_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml`)&#x20;
 
 ```bash
-Rscript  $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config.yml
+$ flepimop-inference-main -c config.yml
 ```
 
 This will run the model and create a lot of output files in `$DATA_PATH/model_output/`.&#x20;
@@ -163,8 +163,8 @@ The last few lines visible on the command prompt should be:
 
 If you want to quickly do runs with options different from those encoded in the configuration file, you can do that from the command line, for example
 
-```
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -j 1 -n 1 -k 1 -c config.yml
+```bash
+flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
 ```
 
 where:
@@ -187,7 +187,7 @@ Rscript build/local_install.R
 pip install --no-deps -e flepimop/gempyor_pkg/
 cd $DATA_PATH
 rm -rf model_output
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -j 1 -n 1 -k 1 -c config.yml
+flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
 </code></pre>
 
 ### Non-inference run

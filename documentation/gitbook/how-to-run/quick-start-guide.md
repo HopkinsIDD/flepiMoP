@@ -172,7 +172,7 @@ An inference run requires a configuration file that has the `inference` section.
 
 {% code overflow="wrap" %}
 ```bash
-Rscript  $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_sample_2pop_inference.yml
+flepimop-inference-main.R -c config_sample_2pop_inference.yml
 ```
 {% endcode %}
 
@@ -190,8 +190,8 @@ The last few lines visible on the command prompt should be:
 
 If you want to quickly do runs with options different from those encoded in the configuration file, you can do that from the command line, for example
 
-```
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -j 1 -n 1 -k 1 -c config_inference.yml
+```bash
+flepimop-inference-main.R -j 1 -n 1 -k 1 -c config_inference.yml
 ```
 
 where:
@@ -204,7 +204,7 @@ Again, it is helpful to run the model output notebook (`model_output_notebook.Rm
 
 The first time you run all this, it's , it's better to run each command individually as described above to be sure each exits successfully. However, eventually you can **put all these steps together in a script**, like below
 
-```
+```bash
 export FLEPI_PATH=/Users/YourName/Github/flepiMoP
 export PROJECT_PATH=/Users/YourName/Github/flepiMoP_sample
 cd $FLEPI_PATH
@@ -212,7 +212,7 @@ pip install --no-deps -e flepimop/gempyor_pkg/
 Rscript build/local_install.R
 cd $PROJECT_PATH
 rm -rf model_output
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_inference.yml
+flepimop-inference-main -c config_inference.yml
 ```
 
 Note that you only have to re-run the installation steps once each time you update any of the files in the flepimop repository (either by pulling changes made by the developers and stored on Github, or by changing them yourself). If you're just running the same or different configuration file, just repeat the final steps
