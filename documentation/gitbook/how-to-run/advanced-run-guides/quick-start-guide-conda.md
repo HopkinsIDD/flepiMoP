@@ -162,7 +162,7 @@ rm -r model_output/ # delete the outputs of past run if there are
 An inference run requires a configuration file that has an `inference` section. Stay in the `$DATA_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml`). In the example data folder (flepimop\_sample), try out the example config XXX.
 
 ```bash
-$ flepimop-inference-main.R -c config.yml
+flepimop-inference-main.R -c config.yml
 ```
 
 This will run the model and create [a lot of output files](../../gempyor/output-files.md) in `$DATA_PATH/model_output/`.
@@ -180,7 +180,7 @@ The last few lines visible on the command prompt should be:
 If you want to quickly do runs with options different from those encoded in the configuration file, you can do that from the command line, for example
 
 ```bash
-$ flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
+flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
 ```
 
 where:
