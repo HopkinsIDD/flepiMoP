@@ -199,7 +199,7 @@ Rscript $FLEPI_PATH/datasetup/build_flu_data.R
 Now you may want to test that it works :
 
 ```bash
-$ flepimop-inference-main -c $CONFIG_PATH -j 1 -n 1 -k 1 
+flepimop-inference-main -c $CONFIG_PATH -j 1 -n 1 -k 1 
 ```
 
 If this fails, you may want to investigate this error. In case this succeeds, then you can proceed by first deleting the model\_output:
