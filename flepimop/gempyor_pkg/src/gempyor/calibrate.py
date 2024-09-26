@@ -182,6 +182,14 @@ def calibrate(
                 proposal=p0[i]
             ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # @JOSEPH: find below a "cocktail" move proposal 
+    moves = [(emcee.moves.DEMove(), 0.5*0.9*0.9),
+             (emcee.moves.DEMove(gamma0=1.0),0.5*0.9*0.1),
+             (emcee.moves.DESnookerMove(),0.5*0.1),                     # First three moves: DEMove --> DE is good at "optimizing". Moves based on the (really great!) discussion in https://groups.google.com/g/emcee-users/c/FCAq459Y9OE
+             (emcee.moves.StretchMove(live_dangerously=True), 0.25),    # Stretch gives good chain movement
+             (emcee.moves.KDEMove(bw_method='scott'), 0.25)]            # Based on personal experience with pySODM (Tijs) - KDEMove works really well but I think it's important for this one to have at least 3x more walkers than parameters.
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
     gempyor_inference.set_silent(False)
     
@@ -239,8 +247,6 @@ def calibrate(
         df = gempyor.read_df(fn)
         df = df.set_index("date")
         results.append(df)
-
-    print(len(results))
 
     gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
                                            loss=gempyor_inference.logloss, 
