@@ -127,7 +127,6 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
     
     err <- system(
       paste(
-        opt$rpath,
         "flepimop-inference-slot",
         "-c", opt$config,
         "-u", opt$run_id,
