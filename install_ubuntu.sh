@@ -30,4 +30,4 @@ sudo apt install libudunits2-dev libssl-dev libfontconfig1-dev libxml2-dev libcu
 pip install -e $FLEPI_PATH/flepimop/gempyor_pkg/
 
 # install the R packages
-$FLEPI_PATH/build/setup.R
+sudo $FLEPI_PATH/build/setup.R $FLEPI_PATH
