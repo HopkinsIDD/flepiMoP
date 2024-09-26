@@ -1,3 +1,5 @@
+#! /usr/bin/env Rscript
+
 # About ------------------------------------------------------------------------
 
 ## This script processes the options for an inference run and then creates a separate parallel processing job for each combination of SEIR parameter modification scenario, outcome parameter modification scenario, and independent MCMC chain ("slot")
@@ -11,8 +13,8 @@ suppressMessages(library(parallel))
 suppressMessages(library(doParallel))
 options(readr.num_columns = 0)
 
-# There are multiple ways to specify options when inference_main.R is run, which take the following precedence:
-#  1) (optional) options called along with the script at the command line (ie > Rscript inference_main.R -c my_config.yml)
+# There are multiple ways to specify options when flepimop-inference-main is run, which take the following precedence:
+#  1) (optional) options called along with the script at the command line (ie > flepimop-inference-main -c my_config.yml)
 #  2) (optional) environmental variables set by the user (ie user could set > export CONFIG_PATH = ~/flepimop_sample/my_config.yml to not have t specify it each time the script is run)
 # If neither are specified, then a default value is used, given by the second argument of Sys.getenv() commands below. 
 #  *3) For some options, a default doesn't exist, and the value specified in the config will be used if the option is not specified at the command line or by an environmental variable (iterations_per_slot, slots)
@@ -126,7 +128,7 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
     err <- system(
       paste(
         opt$rpath,
-        file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
+        "flepimop-inference-slot",
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$seir_modifiers_scenarios,
