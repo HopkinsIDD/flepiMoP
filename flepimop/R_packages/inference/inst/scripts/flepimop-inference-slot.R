@@ -1,6 +1,8 @@
+#! /usr/bin/env Rscript
+
 # About
 
-## This script runs a single slot (MCMC chain) of an inference run. It can be called directly, but is often called from inference_main.R if multiple slots are run.
+## This script runs a single slot (MCMC chain) of an inference run. It can be called directly, but is often called from flepimop-inference-main if multiple slots are run.
 
 # Run Options ---------------------------------------------------------------------
 
@@ -24,8 +26,8 @@ required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
 #set.seed(1) # set within R
 #reticulate::py_run_string(paste0("rng_seed = ", 1)) #set within Python
 
-# There are multiple ways to specify options when inference_slot.R is run, which take the following precedence:
-#  1) (optional) options called along with the script at the command line (ie > Rscript inference_main.R -c my_config.yml)
+# There are multiple ways to specify options when flepimop-inference-slot is run, which take the following precedence:
+#  1) (optional) options called along with the script at the command line (ie > flepimop-inference-slot -c my_config.yml)
 #  2) (optional) environmental variables set by the user (ie user could set > export CONFIG_PATH = ~/flepimop_sample/my_config.yml to not have t specify it each time the script is run)
 # If neither are specified, then a default value is used, given by the second argument of Sys.getenv() commands below.
 #  *3) For some options, a default doesn't exist, and the value specified in the config will be used if the option is not specified at the command line or by an environmental variable (iterations_per_slot, slots)
@@ -453,7 +455,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         autowrite_seir = TRUE
       )
     }, error = function(e) {
-      print("GempyorInference failed to run (call on l. 443 of inference_slot.R).")
+      print("GempyorInference failed to run (call on l. 443 of flepimop-inference-slot).")
       print("Here is all the debug information I could find:")
       for(m in reticulate::py_last_error()) print(m)
       stop("GempyorInference failed to run... stopping")
@@ -625,7 +627,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           load_ID=TRUE,
           sim_id2load=this_index)
       }, error = function(e) {
-        print("GempyorInference failed to run (call on l. 575 of inference_slot.R).")
+        print("GempyorInference failed to run (call on l. 575 of flepimop-inference-sl).")
         print("Here is all the debug information I could find:")
         for(m in reticulate::py_last_error()) print(m)
         stop("GempyorInference failed to run... stopping")
