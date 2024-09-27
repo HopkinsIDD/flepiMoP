@@ -131,6 +131,10 @@ def plot_fit(modinf, loss, list_of_df, save_to, apply_transforms=True, plot_proj
             for j, subpop in enumerate(modinf.subpop_struct.subpop_names):
                 fig, axes = plt.subplots(1, len(loss.statistics), figsize=(3 * len(loss.statistics), 4), sharex=True)
                 
+                # only one outcome
+                if len(loss.statistics) == 1:
+                    axes = [axes,]
+
                 gt_s = loss.gt[loss.gt["subpop"] == subpop].sort_index()
                 first_date = max(gt_s.index.min(), list_of_df[0].index.min())
                 last_date = min(gt_s.index.max(), list_of_df[0].index.max())
