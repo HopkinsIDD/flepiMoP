@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 import functools
 import logging
@@ -19,7 +20,6 @@ import scipy.stats
 import sympy.parsing.sympy_parser
 
 from gempyor import file_paths
-
 
 logger = logging.getLogger(__name__)
 
