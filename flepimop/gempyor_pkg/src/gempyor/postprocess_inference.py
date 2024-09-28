@@ -163,6 +163,8 @@ def plot_fit(modinf, loss, list_of_df, save_to, apply_transforms=True, plot_proj
                     ax.plot(gt_p.date, gt_p, color="k", marker=".", lw=1)
                     
                     ax.set_title(f"{stat_name}, {subpop}")
+                    ax.grid(True)
+                    ax.set_ylim(bottom=0)
                 fig.autofmt_xdate()
                 fig.tight_layout()
                 pdf.savefig(fig)
