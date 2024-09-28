@@ -9,7 +9,7 @@ Functions:
     - run_id: Generates a run ID based on the current or provided timestamp.
     - create_dir_name: Creates a directory name based on given parameters.
 """
-
+from __future__ import annotations
 from datetime import datetime
 import os
 from pathlib import Path
