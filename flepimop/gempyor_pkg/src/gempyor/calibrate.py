@@ -124,7 +124,8 @@ def calibrate(
     resume,
     resume_location,
 ):
-    
+    run_id = config_filepath.split("/")[-1].split(".")[0].replace("config_", "")
+    # TODO check the other default...
     filename = f"{run_id}_backend.h5"
     if os.path.exists(filename):
         if not resume:
