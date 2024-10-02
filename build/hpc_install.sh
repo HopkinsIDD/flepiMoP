@@ -10,9 +10,18 @@ if [[ $1 == "longleaf" ]]; then
     module purge
     module load gcc/9.1.0
     module load anaconda/2023.03
-    module load r
+    module load git
+elif [[ $1 == "rockfish" ]]; then
+    # Setup general purspose user variables needed for RockFish
+    USERDIR="/scratch4/struelo1/flepimop-code/$USER/"
+
+    # Load required modules
+    module purge
+    module load gcc/9.3.0
+    module load anaconda/2020.07
+    module load git/2.42.0
 else
-    echo "The cluster name '$1' is not recognized, must be one of: 'longleaf'."
+    echo "The cluster name '$1' is not recognized, must be one of: 'longleaf', 'rockfish'."
     exit 1
 fi
 
@@ -63,6 +72,7 @@ EOF
 conda env create --prefix $USERDIR/flepimop-env --file $USERDIR/environment.yml
 fi
 conda activate $USERDIR/flepimop-env
+conda update --all
 
 # Check the conda environment is valid
 WHICH_PYTHON=$( which python )
