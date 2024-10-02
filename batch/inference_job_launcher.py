@@ -271,15 +271,6 @@ def user_confirmation(question="Continue?", default=False):
     default=None,
     help="The run_id of the run we are continuing from",
 )
-@click.option(
-    "--partition",
-    type=str,
-    default=None,
-    help=(
-        "The slurm partition to use for the job, see the slurm documentation "
-        "for details. Only used when the --slurm flag is given."
-    ),
-)
 def launch_batch(
     batch_system,
     config_filepath,
@@ -309,7 +300,6 @@ def launch_batch(
     continuation,
     continuation_location,
     continuation_run_id,
-    partition,
 ):
     config = None
     with open(config_filepath) as f:
@@ -401,7 +391,6 @@ def launch_batch(
         continuation,
         continuation_location,
         continuation_run_id,
-        partition,
     )
 
     seir_modifiers_scenarios = None
@@ -554,7 +543,6 @@ class BatchJobHandler(object):
         continuation,
         continuation_location,
         continuation_run_id,
-        partition,
     ):
         self.batch_system = batch_system
         self.flepi_path = flepi_path
@@ -583,7 +571,6 @@ class BatchJobHandler(object):
         self.continuation = continuation
         self.continuation_location = continuation_location
         self.continuation_run_id = continuation_run_id
-        self.partition = partition
 
     def build_job_metadata(self, job_name):
         """
@@ -807,11 +794,7 @@ class BatchJobHandler(object):
                 #    f"--job-name={cur_job_name}",
                 #    f"{os.path.dirname(os.path.realpath(__file__))}/inference_job.run",
                 # ]
-                partition_flag = (
-                    "" if self.partition is None else f"--partition={self.partition}"
-                )
-                
-                command = f"sbatch {export_str} --array=1-{self.num_jobs} --mem={self.memory}M --time={time_limit} --job-name={cur_job_name} --output=log_inference_{self.run_id}_{cur_job_name}_%a.txt {partition_flag} {os.path.dirname(os.path.realpath(__file__))}/SLURM_inference_job.run"
+                command = f"sbatch {export_str} --array=1-{self.num_jobs} --mem={self.memory}M --time={time_limit} --job-name={cur_job_name} --output=log_inference_{self.run_id}_{cur_job_name}_%a.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_inference_job.run"
 
                 print("slurm command to be run >>>>>>>> ")
                 print(command)
@@ -823,7 +806,7 @@ class BatchJobHandler(object):
                 slurm_job_id = stdout.decode().split(" ")[-1][:-1]
                 print(f">>> SUCCESS SCHEDULING JOB. Slurm job id is {slurm_job_id}")
 
-                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={12000}M --time={60} --job-name=post-{cur_job_name} --output=log_postprod_{self.run_id}_{cur_job_name}.txt {partition_flag} {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
+                postprod_command = f"""sbatch {export_str} --dependency=afterany:{slurm_job_id} --mem={12000}M --time={60} --job-name=post-{cur_job_name} --output=log_postprod_{self.run_id}_{cur_job_name}.txt {os.path.dirname(os.path.realpath(__file__))}/SLURM_postprocess_runner.run"""
                 print("post-processing command to be run >>>>>>>> ")
                 print(postprod_command)
                 print(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ")
