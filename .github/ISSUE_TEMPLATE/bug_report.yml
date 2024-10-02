@@ -3,6 +3,46 @@ description: File a bug report
 title: "[Bug]: "
 
 body:
+  - type: dropdown
+    id: label
+    attributes:
+      label: Label
+      description: Which label(s) describe this issue?
+      multiple: true
+      options:
+        - bug
+        - batch
+        - flepiconfig
+        - documentation
+        - docstring
+        - duplicate
+        - enhancement
+        - gempyor
+        - good first issue
+        - inference
+        - installation
+        - meta/workflow
+        - operations
+        - performance
+        - post-processing
+        - quick issue
+        - seeding
+        - submission
+        - wontfix
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Label
+      description: What priority level is this issue?
+      options:
+        - low priority
+        - medium priority
+        - high priority
+    validations:
+      required: true
 
   - type: textarea
     id: what-happened
