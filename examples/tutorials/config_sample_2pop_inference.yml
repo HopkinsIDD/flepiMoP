@@ -2,7 +2,6 @@ name: sample_2pop
 setup_name: minimal
 start_date: 2020-02-01
 end_date: 2020-08-31
-data_path: model_input
 nslots: 1
 
 subpop_setup:
@@ -48,26 +47,66 @@ seir:
 
 seir_modifiers:
   scenarios:
-    - Ro_lockdown
     - Ro_all
   modifiers:
-    Ro_lockdown:
+    Ro_mod: # assume same for all subpopulations, as a method to fit baseline R0
+      method: SinglePeriodModifier
+      parameter: Ro
+      period_start_date: 2020-02-01
+      period_end_date: 2020-08-31
+      subpop: "all"
+      subpop_groups: "all"
+      value: 
+        distribution: truncnorm
+        mean: 1.0
+        sd: 0.001
+        a: 0
+        b: 1
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    Ro_lockdown: # allow to vary by subpopulation
       method: SinglePeriodModifier
       parameter: Ro
       period_start_date: 2020-03-15
       period_end_date: 2020-05-01
       subpop: "all"
-      value: 0.8
-    Ro_relax:
+      value: 
+        distribution: truncnorm
+        mean: 0.5
+        sd: 0.001
+        a: 0
+        b: 1
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    Ro_relax: # allow to vary by subpopulation
       method: SinglePeriodModifier
       parameter: Ro
       period_start_date: 2020-05-01
       period_end_date: 2020-07-01
       subpop: "all"
-      value: 0.4
+      value: 
+        distribution: truncnorm
+        mean: 0.8
+        sd: 0.001
+        a: 0
+        b: 1
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
     Ro_all:
       method: StackedModifier
-      modifiers: ["Ro_lockdown","Ro_relax"]
+      modifiers: ["Ro_mod","Ro_lockdown","Ro_relax"]
 
 
 outcomes:
@@ -110,5 +149,34 @@ outcome_modifiers:
       subpop: "all"
       period_start_date: 2020-02-01
       period_end_date: 2020-06-01
-      value: 0.5
+      value: 
+        distribution: truncnorm
+        mean: 0.5
+        sd: 0.001
+        a: 0
+        b: 1
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
 
+inference:
+  iterations_per_slot: 1
+  do_inference: TRUE
+  gt_data_path: data/sample_2pop_cases.csv 
+  statistics:
+    sum_hosp:
+      name: "Weekly incident hospitalizations"
+      aggregator: sum
+      period: "1 weeks"
+      #gt_start_date:
+      #gt_end_date: 
+      sim_var: incidHosp
+      data_var: incidH
+      remove_na: TRUE
+      add_one: TRUE
+      likelihood: 
+        dist: norm_cov
+        param: 0.3

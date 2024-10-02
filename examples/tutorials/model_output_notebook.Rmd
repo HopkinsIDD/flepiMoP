@@ -1,0 +1,1207 @@
+---
+title: "Model Output plots"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: 
+    toc: true
+    toc_depth: 2
+    number_sections: TRUE
+    keep_tex: FALSE
+params:
+  report_location: offline # if report is being run within an environment in which a model run was already specified and that already has all                                flepmiop packages installed, "online", otherwise, "offline"
+  opt: !r option_list = list(optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"), optparse::make_option(c("-d", "--data_path"), action="store", default=Sys.getenv("DATA_PATH", Sys.getenv("DATA_PATH")), type='character', help="path to the data repo"), optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),  optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH")))) # parameter options that will be used if report ran "online". If "offline", options below will be used
+  config: config_sample_2pop_inference.yml #name of configuration file
+  model_output_dir: model_output #usually model_output, but if results were moved, might be different
+  #results_path:  # path to the project folder within which the model_output directory lies. Comment out if current directory 
+  #run_id: # name of the run_id to plot results for. Required if multiple run_ids in model_output. Comment out if only one run_id in config
+  #seir_modifier_scenario: Ro_all
+  # name of the scenario to plot results for. Required if multiple scenarios in config. Comment out if no scecnarios in config
+  #outcome_modifier_scenario: test_limits
+  # name of the scenario to plot results for. Required if multiple scenarios in config. Comment out if no scecnarios in config
+  # NOTE: Eventually would want this to be able to plot multipe scenarios or run_ids on the same graphs?
+  continue_on_error: yes
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	cache = FALSE,
+	cache.lazy = FALSE
+)
+# knitr::opts_knit$set(root.dir = opt$data_path)
+
+```
+
+
+```{r install-packages, include=FALSE}
+
+# Only need to run this cell once. Takes quite a long time the first time, because downloads and installs many packages. Uncomment if it's the first run to make sure packages get installed!
+
+if (params$report_location == "offline"){
+  
+  # # Install CRAN packages
+  # print("installing CRAN packages") 
+  # install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph","data.table"), dependencies = TRUE, repos = "http://cran.us.r-project.org")
+  # 
+  # # Install flepimop custom R packages. See flepimop/flepimop/local_install.R, or simply run below
+  # pkg.dir <- "../flepimop/flepimop/R_packages/"
+  # 
+  # # list of local packages (reorder so flepicommon is installed first)
+  # loc_pkgs <- list.files(pkg.dir,full.names=TRUE)
+  # loc_pkgs <- loc_pkgs[c(which(grepl("flepicommon", loc_pkgs)), which(!grepl("flepicommon", loc_pkgs)))]
+  # 
+  # # Install them
+  # print("installing flepimop packages")
+  # install.packages(loc_pkgs,type='source',repos=NULL, dependencies = TRUE)
+  
+}
+ 
+
+suppressMessages(library(flepicommon))
+suppressMessages(library(inference))
+suppressMessages(library(parallel))
+suppressMessages(library(foreach))
+suppressMessages(library(tidyverse))
+suppressMessages(library(tidyr))
+suppressMessages(library(doParallel))
+suppressMessages(library(dplyr))
+suppressMessages(library(data.table))
+suppressMessages(library(ggplot2))
+suppressMessages(library(ggforce))
+suppressMessages(library(ggforce))
+suppressMessages(library(gridExtra))
+
+
+```
+
+
+```{r parameter-setup, include=FALSE}
+
+if (params$report_location == "online"){
+  parser=optparse::OptionParser(option_list=params$opt)
+  opt = optparse::parse_args(parser, convert_hyphens_to_underscores = TRUE)
+}else if (params$report_location == "offline"){
+  opt <- params
+}else{
+  stop('params:report_location must be either online or offline')
+}
+
+#load configuration file
+config <- flepicommon::load_config(opt$config)
+
+# get the location of model_output file
+res_dir <- paste0(ifelse(is.null(opt$results_path),"",paste0(opt$results_path,"/")), opt$model_output_dir)
+print(res_dir)
+
+# get the directory of the results for this config + scenario: {config$name}_{seir_modifier_scenario}_{outcome_modifier_scenario}
+setup_prefix <- paste0(config$name,ifelse(is.null(config$seir_modifiers$scenarios),"",ifelse(length(config$seir_modifiers$scenarios)==1,paste0("_",config$seir_modifiers$scenarios),paste0("_",opt$seir_modifier_scenario))),ifelse(is.null(config$outcome_modifiers$scenarios),"",ifelse(length(config$outcome_modifiers$scenarios)==1,paste0("_",config$outcome_modifiers$scenarios),paste0("_",opt$outcome_modifier_scenario))))
+#print(setup_prefix)
+
+scenario_dir <-file.path(res_dir,setup_prefix)
+print(scenario_dir)
+
+# find all unique run_ids within model_output. Must choose one only for plotting
+run_ids <- list.files(scenario_dir)
+print(run_ids)
+
+this_run_id <- ifelse(length(run_ids)==1,run_ids[1],ifelse(is.null(opt$run_id),stop(paste0('There are multiple run_ids within ',scenario_dir,'/, you must specify which one to plot the results for in the notebook header using params:run_id')),opt$run_id))
+print(this_run_id)
+
+# entire path to the directory for each type of model output
+scenario_run_dir <- file.path(scenario_dir,this_run_id)
+
+# detects whether this is an inference or non-inference config
+inference <- ifelse(is.null(config$inference),FALSE,TRUE)
+
+# detects whether seir parameter modifiers were run in config
+eval_snpi <- ifelse(is.null(config$seir_modifiers),FALSE,TRUE)
+
+# detects whether outcomes were specified in config
+eval_hosp <- ifelse(is.null(config$outcomes),FALSE,TRUE)
+
+# detects whether outcome parameter modifiers were included in config
+eval_hnpi <- ifelse(is.null(config$outcome_modifiers),FALSE,TRUE)
+
+# detects whether SEIR output is saved in the model_output folder (sometimes not downloaded from cluster runs for space reasons)
+eval_seir <- ifelse(file.exists(res_dir),TRUE,FALSE)
+
+```
+
+```{r read-model-output}
+
+# Function to read in any model output file type for inference or non-inference run
+
+import_model_outputs <- function(scn_run_dir, inference, outcome, global_opt = NULL, final_opt = NULL){
+  
+  if(inference){ 
+    
+    if(is.null(global_opt) | is.null(final_opt)){
+      stop("Inference run, must specify global_opt and final_opt")
+    }else{
+      inference_filepath_suffix <-paste0("/",global_opt,"/",final_opt)
+    print(paste0('Assuming inference run with files in',inference_filepath_suffix))
+    }
+    
+  }else{ # non inference run
+    
+   inference_filepath_suffix <-""
+  print('Assuming non-inference run. Ignoring values of global_opt and final_opt if specified') 
+    
+  }
+  
+  subdir <- paste0(scn_run_dir,"/", outcome,"/",inference_filepath_suffix, "/")
+  #print(subdir)
+  subdir_list <- list.files(subdir)
+  #print(subdir_list)
+  
+  out <- NULL
+  total <- length(subdir_list)
+  
+  print(paste0("Importing ", outcome, " files (n = ", total, "):"))
+  
+  for (i in 1:length(subdir_list)) {
+    
+    # read in parquet or csv files
+    if (any(grepl("parquet", subdir_list))) {
+      dat <-
+        arrow::read_parquet(paste(subdir, subdir_list[i], sep = "/"))
+    } else if (any(grepl("csv", subdir_list))) {
+      dat <- read.csv(paste(subdir, subdir_list[i], sep = "/"))
+    }
+    
+    if(inference == TRUE & final_opt == "intermediate"){ # if an 'intermediate inference run', filename prefix will include slot, (block), and iteration number
+      
+      dat$slot <- as.numeric(str_sub(subdir_list[i], start = 1, end = 9))
+      dat$block <-as.numeric(str_sub(subdir_list[i], start = 11, end = 19))
+      dat$iter <-as.numeric(str_sub(subdir_list[i], start = 21, end = 29))
+      
+    }else{ # if a non-inference run or a 'final' inference run, filename prefix will only contain slot #. Each file is a separate slot
+      
+      dat$slot <- as.numeric(str_sub(subdir_list[i], start = 1, end = 9))
+      
+    }
+    
+    out <- rbind(out, dat)
+    
+  }
+  return(out)
+  
+}
+                        
+```
+
+
+```{r read-in-data}
+# Pull in subpopulation structure
+geodata <- setDT(read.csv(config$subpop_setup$geodata))
+
+# Pull in 
+if (!is.null(config$inference)) {
+  gt_data <- data.table::fread(config$inference$gt_data_path) #%>%
+    # .[, subpop := stringr::str_pad(FIPS,
+    #                                width = 5,
+    #                                side = "left",
+    #                                pad = "0")]
+}
+
+```
+
+
+```{r rmd_formatting}
+fig_counter <- 1
+tab_counter <- 1
+multi_fig_height <- length(unique(geodata$subpop))
+
+theme_small <-
+  theme(
+    text = element_text(size = 8),
+    strip.background = element_blank(),
+    strip.placement = "outside"
+  )
+
+
+```
+
+
+
+Here is a snapshot 📸 of your model outputs for run ID `r this_run_id`, from config `r opt$config`, stored in `r opt$model_output_dir`. 
+
+
+
+# Infection timeseries: `SEIR` model output
+
+These are the outputs for the compartmental epidemic model, stored in the `seir` directory, which track the prevalence and incidence of individuals in each model compartment over time.
+
+Incidence values are per day.
+
+```{r choose-slot}
+
+# read in SEIR model outputs, and LLIK if inference was done. Choose which slot to plot results for when only one slot can be chosen. If it's a non-inference run, just choose one randomly. If it's an inference run, choose one with the highest global final likelihood (summed over all subpopulations). If multiple slots have the same final likelihood, it'll choose the first of those
+if(eval_seir){ 
+seir_outputs_global <-
+  setDT(import_model_outputs(scenario_run_dir, inference, "seir", 'global', 'final'))
+}
+
+if(inference){
+  
+  llik <- setDT(import_model_outputs(scenario_run_dir, inference,  "llik", 'global', 'final'))
+  
+  # llik_max <- llik %>% .[subpop == "Total"] %>% slice_max(ll) # gives us slot where likelihood of fit to sum of all subpops best. but inference optimizes sum of likelihood, not likelihood of sum
+  
+  llik_max <- llik %>% 
+    .[subpop != "Total"] %>%
+    group_by(slot) %>%
+    summarize(ll_total = sum(ll)) %>%
+    slice_max(ll_total)
+  
+  plot_slot <- as.integer(llik_max$slot)
+  
+}else{
+  
+  # plot_slot <-sample(unique(seir_outputs_global$slot), 1)
+  plot_slot <- 1
+  
+}
+
+```
+
+
+## All infections{.tabset}
+Total number of individuals in each infection state over time (compartments defined by `infection_stage`), aggregated across other strata. Plotted for slot `r plot_slot` which has the highest total likelihood over all subpopulations (if inferrence was run) or was randomly chosen (if no inference).
+
+```{r seir, results='asis',fig.keep='all',eval=eval_seir, out.width = "95%"}
+
+# currently, assuming there is always infection_stage, aggregate over this. Can update this to make it general to whatever the first stratification listed in the config file is, ie names(config$compartments)[1]
+# can also update this to aggregate by week, using the periodAggregate function in flepimop R inference package
+# ideally we want to update this so that the compartment names are ordered the same way they are in the config's compartments section
+
+group_by_cols <-
+  c("mc_infection_stage", "mc_value_type", "slot", "date") # If just one slot, gets read in as slot = 1
+subpop_cols <-
+  colnames(seir_outputs_global)[!str_detect(colnames(seir_outputs_global), "mc")]
+subpop_cols <-
+  subpop_cols[which(!subpop_cols %in% c("date", "slot"))]
+
+tmp_seir <- seir_outputs_global %>%
+  .[, lapply(.SD, sum, na.rm = TRUE), by = group_by_cols, .SDcols = subpop_cols] %>%
+  mutate(mc_infection_stage = factor(mc_infection_stage, levels=config$compartments$infection_stage)) %>%
+  .[slot == plot_slot] %>%
+   data.table::melt(., measure.vars = subpop_cols, variable.name = "subpop") %>%
+    left_join(geodata) %>% 
+    mutate(value_frac = value/population)
+
+# cat("\n\n")
+# cat(paste0("### Total {.tabset} \n"))
+# cat(paste0("#### Prevalence \n"))
+# print("test")
+# cat("\n\n")
+# cat(paste0("#### Cumulative \n"))
+# print("test")
+# cat("\n\n")
+
+cat("\n\n")
+cat("### Total{.tabset}\n")
+cat("#### Prevalence\n")
+
+print(
+  tmp_seir %>% .[mc_value_type == "prevalence"] %>%
+    ggplot() +
+    geom_line(aes(lubridate::as_date(date), value, colour = mc_infection_stage)) +
+    facet_wrap(
+      ~ subpop,
+      scales = 'free',
+      ncol = 5,
+      strip.position = "top"
+    ) +
+    labs(y="Prevalence", x= "Date", colour = "Infection stage") +
+    theme_classic() +
+    theme(legend.position = "bottom") +
+    theme_small + 
+    scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+    theme(axis.text.x=element_text(angle=60, hjust=1))
+)
+
+cat("\n\n")
+
+cat("#### Cumulative incidence\n")
+print(
+  tmp_seir %>% .[mc_value_type == "incidence"] %>%
+    .[, csum := cumsum(value), by = .(mc_infection_stage, subpop, slot)] %>%
+    ggplot() +
+    geom_line(aes(lubridate::as_date(date), csum, colour = mc_infection_stage)) +
+    facet_wrap(
+      ~ subpop,
+      scales = 'free',
+      ncol = 5,
+      # ncol = 1,
+      strip.position = "top"
+    ) +
+    labs(y="Cumulative incidence",x = "Date", colour = "Infection stage") +
+    theme_classic() +
+    theme(legend.position = "bottom") +
+    theme_small + 
+    scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+    theme(axis.text.x=element_text(angle=60, hjust=1))
+)
+cat("\n\n")
+
+# now plot but per capita infections
+
+cat("### Per capita{.tabset}\n")
+
+cat("#### Prevalence\n")
+print(
+  tmp_seir %>% .[mc_value_type == "prevalence"] %>%
+    ggplot() +
+    geom_line(aes(lubridate::as_date(date), value_frac, colour = mc_infection_stage)) +
+    facet_wrap(
+      ~subpop,
+      scales = 'free',
+      ncol = 5,
+      strip.position = "top"
+    ) +
+    labs(y="Prevalence",x ="Date", colour = "Infection stage") +
+    scale_y_continuous(labels = scales::percent) +
+    theme_classic() +
+    theme(legend.position = "bottom") +
+    theme_small + 
+    scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+    theme(axis.text.x=element_text(angle=60, hjust=1))
+)
+cat("\n\n")
+
+cat("#### Cumulative incidence\n")
+print(
+  tmp_seir %>% .[mc_value_type == "incidence"] %>%
+    .[, csum := cumsum(value_frac), by = .(mc_infection_stage, subpop, slot)] %>%
+    ggplot() +
+    geom_line(aes(lubridate::as_date(date), csum, colour = mc_infection_stage)) +
+    facet_wrap(
+      ~subpop,
+      scales = 'free',
+      ncol = 5,
+      strip.position = "top"
+    ) +
+    labs(y="Cumulative incidence",x = "Date", colour = "Infection stage") +
+    scale_y_continuous(labels = scales::percent) +
+    theme_classic() +
+    theme(legend.position = "bottom") +
+    theme_small + 
+    scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+    theme(axis.text.x=element_text(angle=60, hjust=1))
+)
+cat("\n\n")
+
+
+```
+
+
+# Outcome timeseries: `HOSP` model output
+
+These are the outputs for the observational ("outcomes") model, stored in the `hosp` directory, which tracks the incidence and prevalence of individuals with defined observed disease outcomes over time. 
+
+
+## Aggregate outcomes{.tabset}
+Total number of individuals with each outcome over time, aggregated across other strata (only outcomes without an "_" specifying a stratification are plotted). If more than one simulation (slot) was run, results are plotted for slot `r plot_slot` which has the highest total likelihood over all subpopulations (if inference was run) or was randomly chosen (if no inference). Incidence values are per day.
+
+If inference was run, only some of these outcomes may have been used in inference, and the outcomes may have been aggregated to a longer time period (e.g., weeks, months). Inference-specific outcomes, along with the data they were compared to, are shown in later plots.
+
+```{r hosp_single_slot, results='asis', eval = eval_hosp, out.width = "95%"}
+
+# read in model outputs
+hosp_outputs_global <- setDT(import_model_outputs(scenario_run_dir, inference,  "hosp", 'global', 'final'))
+
+# get all outcome variables
+# (note - cannot just read them from the config subsections using onfig$outcomes$outcomes, because this will miss 'duration' outcomes defined within other outcomes)
+outcome_vars <- setdiff(colnames(hosp_outputs_global),c("date","subpop","slot"))
+
+# convert to long format
+hosp_outputs_global <-  hosp_outputs_global %>% 
+  data.table::melt(., measure.vars = outcome_vars, variable.name = "outcome") %>%
+  .[, date := lubridate::as_date(date)] %>%
+  left_join(geodata) %>% 
+  mutate(value_frac = value/population)
+
+
+# for simplicity, get aggregate outcome variables (those with no underscores in name)
+outcome_vars_agg <- outcome_vars[!str_detect(outcome_vars, "_")]
+
+
+num_nodes <- length(unique(hosp_outputs_global %>% .[,"subpop"])) 
+
+cat("\n\n")
+
+## plot one slot
+for(i in 1:length(outcome_vars_agg)){
+  
+  this_outcome <- outcome_vars_agg[i]
+  
+  cat(paste0("### ",this_outcome," {.tabset} \n"))
+  
+  cat(paste0("#### Total \n"))
+
+  print(
+    hosp_outputs_global %>%
+      .[outcome == this_outcome] %>%
+      .[slot == plot_slot] %>%
+      ggplot() + 
+      geom_line(aes(x = date, y = value)) + 
+      # if inference, plot gt along side
+      # {if(inference)
+      #   if(this_outcome %in% colnames(gt_data)) # this is not actually right. variables could have different names
+      #    if(any(!is.na(gt_data %>% .[, this_outcome])))
+      #      geom_point(data = gt_data %>% .[, .(date, subpop, value = get(this_outcome))],
+      #                 aes(lubridate::as_date(date), value), color = 'firebrick', alpha = 0.2, size=1)
+      # } +
+      facet_wrap(~subpop, scales = 'free', ncol = 5) +
+      labs(x = 'date', y = this_outcome) +
+      theme_classic() + theme_small + 
+      scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+      theme(axis.text.x=element_text(angle=60, hjust=1))
+  )
+  
+    cat("\n\n")
+
+}
+
+```
+
+## Inference-specific outcomes - by slot{.tabset}
+
+The inference method specified that the model be fit to `r names(config$inference$statistics)`, with aggregation over period: `r unlist(config$inference$statistics)[which(stringr::str_detect(names(unlist(config$inference$statistics)), "period"))]`. Plotted for slot `r plot_slot` which has the highest total likelihood over all subpopulations (if inference was run) or was randomly chosen (if no inference).
+
+```{r hosp_trajectories_inference_aggregate, results='asis', eval = inference, out.width = "95%"}
+
+
+# get all outcome variables used in inference
+fit_stats <- names(config$inference$statistics)
+outcome_vars <- sapply(1:length(fit_stats), function(j) config$inference$statistics[[j]]$sim_var) #name of all model variables fit
+
+# read in model outputs
+hosp_outputs_global <- setDT(import_model_outputs(scenario_run_dir, inference,  "hosp", 'global', 'final'))
+
+subpop_names <- unique(sort(hosp_outputs_global %>% .[ , subpop]))
+#subpop_names <- c(subpop_names[str_detect(subpop_names,",")], subpop_names[!str_detect(subpop_names,",")]) # sort so that groups of multiple subpops are in front
+
+cat("\n\n")
+for(i in 1:length(fit_stats)){
+  
+  cat(paste0("### ",fit_stats[i]," {.tabset} \n"))
+  
+  statistics <- purrr::flatten(config$inference$statistics[i])
+  cols_sim <- c("date", statistics$sim_var, "subpop","slot")
+  cols_data <- c("date", "subpop", statistics$data_var)
+  hosp_outputs_global_tmp <- hosp_outputs_global[,..cols_sim]
+  
+  # aggregate time based on what is in the config
+  df_sim <- lapply(subpop_names, function(y) {
+    lapply(unique(hosp_outputs_global$slot), function(x)
+      purrr::flatten_df(inference::getStats(
+        hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
+        "date",
+        "sim_var",
+        stat_list = config$inference$statistics[i],
+        #start_date = config$start_date_groundtruth,
+        #end_date = config$end_date_groundtruth
+      )) %>% dplyr::mutate(subpop = y, slot = x)) %>% dplyr::bind_rows() 
+  }) %>% dplyr::bind_rows() 
+  
+  df_data <- lapply(subpop_names, function(x) {
+    purrr::flatten_df(
+      inference::getStats(
+        gt_data %>% .[subpop == x,..cols_data],
+        "date",
+        "data_var",
+        stat_list = config$inference$statistics[i],
+        start_date = config$start_date_groundtruth,
+        end_date = config$end_date_groundtruth
+      )) %>% dplyr::mutate(subpop = x) %>% 
+      mutate(data_var = as.numeric(data_var)) }) %>% dplyr::bind_rows()
+  
+  #cat(paste0("#### Time period with data{.tabset} \n"))
+  
+  print(
+    df_sim %>%
+      setDT() %>%
+      .[, date := lubridate::as_date(date)] %>%
+      .[, .(date, subpop, sim_var, slot)] %>%
+      .[slot == plot_slot ] %>%
+      data.table::melt(., id.vars = c("date", "slot", "subpop")) %>%
+      ggplot() + 
+      geom_line(aes(x = date, y = value)) + 
+      # if inference, plot gt along side
+      geom_point(data = df_data,
+                 aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.2, size=1) +
+      # facet_wrap(~subpop, scales = 'free',ncol = 1) +
+      facet_wrap(~subpop, scales = 'free') +
+      labs(x = 'date', y = config$inference$statistics[[fit_stats[i]]]$name, title = "Incidence") +
+      theme_classic() + theme_small + 
+      scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+      theme(axis.text.x=element_text(angle=60, hjust=1))
+  )
+  #cat("\n\n")
+  
+  # ## Cumulative
+  # cat(paste0("##### Cumulative \n"))
+  # print(
+  #   df_sim %>%
+  #     setDT() %>%
+  #     .[, date := lubridate::as_date(date)] %>%
+  #     .[, .(date, subpop, sim_var, slot)] %>%
+  #     .[slot == plot_slot ] %>%
+  #     data.table::melt(., id.vars = c("date", "slot", "subpop")) %>%
+  #     # dplyr::arrange(subpop, slot, date) %>% 
+  #     .[, csum := cumsum(value), by = .(slot, subpop, variable)] %>%
+  #     ggplot() + 
+  #     geom_line(aes(x = date, y = csum)) + 
+  #     geom_point(data = df_data %>% setDT() %>%
+  #                  .[, csum := cumsum(data_var) , by = .(subpop)],
+  #                aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.2, size=1) +
+  #     facet_wrap(~subpop, scales = 'free', ncol = 1) + 
+  #     labs(x = 'date', y = paste0("cumulative ", fit_stats[i]), title = "Cumulative") +
+  #     theme_classic()  + theme_small
+  # )
+  # cat("\n\n")
+  
+}
+
+
+```
+
+## Inference-specific outcomes - quantiles {.tabset}
+The inference method specified that the model be fit to `r names(config$inference$statistics)`, with aggregation over period: `r unlist(config$inference$statistics)[which(stringr::str_detect(names(unlist(config$inference$statistics)), "period"))]`. In total `r length(unique(hosp_outputs_global$slot))` slots ran successfully. 
+
+```{r hosp_aggregate_quantiles, results='asis', eval = inference, out.width = "95%"}
+
+if(length(unique(hosp_outputs_global$slot)) > 1){
+
+  cat("\n\n")
+  for(i in 1:length(fit_stats)){
+    
+    cat(paste0("### ",fit_stats[i]," {.tabset} \n"))
+    statistics <- purrr::flatten(config$inference$statistics[i])
+    cols_sim <- c("date", statistics$sim_var, "subpop","slot")
+    cols_data <- c("date", "subpop", statistics$data_var)
+    hosp_outputs_global_tmp <- hosp_outputs_global[,..cols_sim]
+    
+    # aggregate based on what is in the config
+    df_sim <- lapply(subpop_names, function(y) {
+      lapply(unique(hosp_outputs_global$slot), function(x)
+        purrr::flatten_df(inference::getStats(
+          hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
+          "date",
+          "sim_var",
+          stat_list = config$inference$statistics[i],
+          #start_date = config$start_date_groundtruth,
+          #end_date = config$end_date_groundtruth
+        )) %>% dplyr::mutate(subpop = y, slot = x)) %>% dplyr::bind_rows() 
+    }) %>% dplyr::bind_rows() 
+    
+    df_data <- lapply(subpop_names, function(x) {
+      purrr::flatten_df(
+      inference::getStats(
+        gt_data %>% .[subpop == x,..cols_data],
+        "date",
+        "data_var",
+        stat_list = config$inference$statistics[i],
+        start_date = config$start_date_groundtruth,
+        end_date = config$end_date_groundtruth
+      )) %>% dplyr::mutate(subpop = x) %>% 
+      mutate(data_var = as.numeric(data_var)) }) %>% dplyr::bind_rows()
+    
+    #cat(paste0("#### Seasons with data{.tabset} \n"))
+    
+    # Incident
+    # cat(paste0("##### Incident \n"))
+    print(
+      df_sim %>%
+        setDT() %>%
+        .[, date := lubridate::as_date(date)] %>%
+        .[, as.list(quantile(sim_var, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", "subpop")] %>%
+        setnames(., paste0("V", 1:5), paste0("q", c(.05,.25,.5,.75,.95))) %>%
+        ggplot() + 
+        geom_ribbon(aes(x = date, ymin = q0.05, ymax = q0.95), alpha = 0.1) +
+        geom_ribbon(aes(x = date, ymin = q0.25, ymax = q0.75), alpha = 0.1) +
+        geom_line(aes(x = date, y = q0.5)) + 
+        # if inference, plot gt along side
+        geom_point(data = df_data,
+                   aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.2, size=1) +
+        facet_wrap(~subpop, scales = 'free') +
+        labs(x = 'date', y = config$inference$statistics[[fit_stats[i]]]$name) +
+        theme_classic() + theme_small + 
+        scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+        theme(axis.text.x=element_text(angle=60, hjust=1))
+    )
+     cat("\n\n")
+
+    # ## Cumulative
+    # cat(paste0("##### Cumulative \n"))
+    # 
+    # print(
+    #   df_sim %>%
+    #     setDT() %>%
+    #     .[, date := lubridate::as_date(date)] %>%
+    #     .[, .(date, subpop, sim_var, slot)] %>%
+    #     data.table::melt(., id.vars = c("date", "slot", "subpop")) %>%
+    #     # dplyr::arrange(subpop, slot, date) %>% 
+    #     .[, csum := cumsum(value), by = .(slot, subpop, variable)] %>%
+    #     .[, as.list(quantile(csum, c(.05, .25, .5, .75, .95), na.rm = TRUE, names = FALSE)), by = c("date", config$subpop_setup$subpop)] %>%
+    #     setnames(., paste0("V", 1:5), paste0("q", c(.05,.25,.5,.75,.95))) %>%
+    #     ggplot() + 
+    #     geom_ribbon(aes(x = date, ymin = q0.05, ymax = q0.95), alpha = 0.1) +
+    #     geom_ribbon(aes(x = date, ymin = q0.25, ymax = q0.75), alpha = 0.1) +
+    #     geom_line(aes(x = date, y = q0.5)) + 
+    #     geom_point(data = df_data %>% setDT() %>%
+    #                  .[, csum := cumsum(data_var) , by = .(subpop)],
+    #                aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.2, size=1) +
+    #     facet_wrap(~subpop, scales = 'free') +
+    #     # facet_wrap(~get(subpop), scales = 'free') +      
+    #     labs(x = 'date', y = paste0("cumulative ", fit_stats[i])) +
+    #     theme_classic() + theme_small
+    # )
+    # cat("\n\n")
+    
+  }
+}
+
+```
+## Inference-specific outcomes -  by likelihood{.tabset}
+
+The inference method specified that the model be fit to `r names(config$inference$statistics)`, with aggregation over period: `r unlist(config$inference$statistics)[which(stringr::str_detect(names(unlist(config$inference$statistics)), "period"))]`. In total `r length(unique(hosp_outputs_global$slot))` slots ran successfully. 
+
+This section plots the top 5 and bottom 5 log likelihoods for each subpopulation. 
+
+```{r hosp_trajectories_by_likelihood,results='asis',fig.keep='all', eval=inference, out.width = "95%"}
+
+
+# find slots with highest and lowest likelihoods
+llik_rank <- llik %>% 
+  .[, .SD[order(ll)], subpop] %>%
+  select(subpop,ll,slot) %>%
+  .[subpop != "Total"]
+
+high_low_llik <- rbindlist(list(data.table(llik_rank, key = "subpop") %>%
+                                  .[, head(.SD,5), by = "subpop"] %>% 
+                                  .[, llik_bin := "top"], 
+                                data.table(llik_rank, key = "subpop") %>%
+                                  .[, tail(.SD,5), by = "subpop"]%>% 
+                                  .[, llik_bin := "bottom"]))
+
+for(i in 1:length(fit_stats)){
+  
+  statistics <- purrr::flatten(config$inference$statistics[i])
+  cols_sim <- c("date", statistics$sim_var, "subpop","slot")
+  cols_data <- c("date", "subpop", statistics$data_var)
+  hosp_outputs_global_tmp <- hosp_outputs_global[,..cols_sim]
+  
+  # aggregate simulation output and data by time based on what is in the config
+  df_sim <- lapply(subpop_names, function(y) {
+    lapply(unique(hosp_outputs_global$slot), function(x)
+      purrr::flatten_df(inference::getStats(
+        hosp_outputs_global_tmp %>% .[subpop == y & slot == x] ,
+        "date",
+        "sim_var",
+        stat_list = config$inference$statistics[i],
+        #start_date = config$start_date_groundtruth,
+        #end_date = config$end_date_groundtruth
+      )) %>% dplyr::mutate(subpop = y, slot = x)) %>% dplyr::bind_rows() 
+  }) %>% dplyr::bind_rows() %>% setDT()
+  
+    df_data <- lapply(subpop_names, function(x) {
+      purrr::flatten_df(
+      inference::getStats(
+        gt_data %>% .[subpop == x,..cols_data],
+        "date",
+        "data_var",
+        stat_list = config$inference$statistics[i],
+        start_date = config$start_date_groundtruth,
+        end_date = config$end_date_groundtruth
+      )) %>% dplyr::mutate(subpop = x) %>% 
+        dplyr::mutate(data_var = as.numeric(data_var)) %>%
+        dplyr::mutate(date = lubridate::as_date(date)) }) %>%
+      dplyr::bind_rows() %>% setDT()
+    
+    # if gt data is empty for a given subpop, fill with NAs
+    #df_data <- rbindlist(list(df_data, data.table(date = lubridate::as_date("2020-01-01"), subpop = "US", data_var = NA)),use.names = TRUE)
+    
+  
+  # add likelihood ranking to simulation output
+  high_low_hosp_llik <- df_sim %>% 
+    .[high_low_llik, on = c("slot", "subpop"), allow.cartesian=TRUE] # right join by "on" variables
+  
+  cat(paste0("### ",fit_stats[i]," {.tabset} \n"))
+  #cat(paste0("#### Seasons with data{.tabset} \n"))
+  
+  ## Incident 
+  #cat(paste0("##### Incident \n"))
+  print(
+    high_low_hosp_llik %>%
+      .[, date := lubridate::as_date(date)] %>%
+      ggplot() + 
+      geom_line(aes(x = date, y = sim_var, group = slot, color = ll)) + 
+      scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
+      scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
+      geom_point(data = df_data,
+                 aes(lubridate::as_date(date), data_var), color = 'firebrick', alpha = 0.2, size=1) +
+      facet_wrap(~subpop, scales = 'free') +
+      labs(x = 'date', y = config$inference$statistics[[fit_stats[i]]]$name) +
+      theme_classic() + theme_small + 
+      theme(legend.key.size = unit(0.2, "cm"))  + 
+      scale_x_date(date_breaks = "1 months", date_labels =  "%b %Y") + 
+      theme(axis.text.x=element_text(angle=60, hjust=1))
+  )
+  cat("\n\n")
+  # 
+  # cat(paste0("##### Cumulative \n"))
+  # print(
+  #   high_low_hosp_llik %>%
+  #     .[, date := lubridate::as_date(date)] %>%
+  #     .[, csum := cumsum(sim_var), by = .(slot, subpop,ll,llik_bin)] %>%
+  #     ggplot() + 
+  #     geom_line(aes(x = date, y = csum, group = slot, color = ll)) + 
+  #     scale_linetype_manual(values = c(1, 2), name = "likelihood\nbin") +
+  #     scale_color_viridis_c(option = "D", name = "log\nlikelihood") +
+  #     geom_point(data = df_data %>% .[, csum := cumsum(data_var), by = .(subpop)],
+  #                aes(lubridate::as_date(date), csum), color = 'firebrick', alpha = 0.2, size=1) +
+  #     facet_wrap(~subpop, scales = 'free') +
+  #     labs(x = 'date', y = fit_stats[i]) +
+  #     theme_classic() + theme_small + 
+  #     theme(legend.key.size = unit(0.2, "cm"))
+  # )
+  # cat("\n\n")
+
+  
+}
+
+
+```
+
+
+
+
+# Infection model parameters: `SNPI` model output
+
+These are the parameters that define time-dependent modifications to the infection model parameters, and are stored in the `snpi` directory. 
+
+
+## Values by slot
+
+If inference is run, parameters are the final values at the end of all MCMC iterations, colored by their likelihoods in a given subpopulation.  
+```{r snpi, results='hide',fig.keep='all',eval = eval_snpi, out.width="95%"} 
+# read in model outputs
+snpi_outputs_global <- setDT(import_model_outputs(scenario_run_dir, inference,  "snpi", 'global', 'final'))
+subpop_names <- unique(sort(snpi_outputs_global %>% .[ , subpop]))
+subpop_names <- c(subpop_names[!str_detect(subpop_names,",")],subpop_names[str_detect(subpop_names,",")]) # sort so that multiple subpops are at the end
+
+# update plots to recognize if parameters are multiplicative or reductions, additive, etc
+
+snpi_plots <- lapply(subpop_names,
+                     function(i){
+                       # print(i)
+                       if(!grepl(',', i)){ # if an individual subpop, not a group
+                         snpi_outputs_global %>%
+                           {if(inference)
+                             .[llik, on = c("subpop", "slot")] else .} %>%
+                           .[subpop == i] %>%
+                           ggplot(aes(modifier_name,value)) +
+                           geom_violin() +
+                           {if(inference)
+                             geom_jitter(aes(group = modifier_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           {if(!inference)
+                             geom_jitter(aes(group = modifier_name), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           theme_bw(base_size = 10) +
+                           theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
+                                 text = element_text(size = 8),
+                                 legend.key.size = unit(0.2, "cm")) +
+                               # guides(color = guide_legend(override.aes = list(size = 0.5)))+
+                           scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+                           labs(x = "modifier name", y = "modifier value", title = i) + theme_small
+                           # print("finished 1")
+                       }else{ #if a group of subpops
+                         if(inference){
+                           nodes_ <- unlist(strsplit(i,",")) # sum likelihood for each subpop
+                           ll_across_nodes <-
+                             llik %>%
+                             .[subpop %in% nodes_] %>%
+                             .[, .(ll_sum = sum(ll)), by = .(slot)]
+                         }
+
+                         snpi_outputs_global %>%
+                           {if(inference)
+                             .[ll_across_nodes, on = c("slot")]} %>%
+                           # .[subpop == "sample_state"] %>%
+                           .[subpop == i] %>%
+                           ggplot(aes(modifier_name,value)) +
+                           geom_violin() +
+                           {if(inference)
+                             geom_jitter(aes(group = modifier_name, color = ll_sum), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           {if(!inference)
+                             geom_jitter(aes(group = modifier_name), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           theme_bw(base_size = 10) +
+                           theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
+                                 text = element_text(size = 8),
+                                 legend.key.size = unit(0.2, "cm")) +
+                           scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+                           labs(x = "modifier name",y = "modifier value", title = "group of subpops") + theme_small
+                         
+                         # print("finished 2")
+                       }
+                     }
+)
+
+if(length(snpi_plots)!=1){
+  print(do.call("grid.arrange", c(snpi_plots, ncol=2)))
+}else{
+  print(snpi_plots[[1]])
+}
+
+# for(i in 1:length(subpop_names)){
+#   if(length(snpi_plots)!=1){
+#       cat(paste0("### ",subpop_names[i]," {.tabset} \n"))
+#     print(snpi_plots[[i]])
+#           cat("\n\n")
+#   }
+# }
+
+```
+
+## MCMC evolution
+
+The accepted value of the parameter for each iteration of the MCMC algorithm, colored by their likelihood in a given subpopulation. If more than 5 slots were run, we will plot only the top 5 and bottom 5 log likelihoods for each subpopulation. 
+
+```{r snpi_evolution, results='hide',fig.keep='all', eval=inference, out.width = "95%"}
+
+snpi_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "snpi", 'global', 'intermediate'))
+
+llik_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "llik", 'global', 'intermediate'))
+
+snpi_llik_global_int <- llik_outputs_global_int %>% .[snpi_outputs_global_int, on = .(subpop, slot, block, iter)] # %>%
+#  .[, iter_name := ifelse(is.na(iter), "F", iter)]
+# want all rows of snpi, just add appropriate llik value if it exists. this is a left join?
+# for data.table, left_table[right_table] results in a right outer join. Add nomatch = NULL to get a inner join. 
+
+
+max_iter <- max(snpi_llik_global_int$iter, na.rm=TRUE) # length of MCMC chain
+
+finished_slots <- unique(snpi_llik_global_int[snpi_llik_global_int$iter == max_iter]$slot) # unique slots that completed MCMC
+
+if(length(finished_slots) >= 10){
+ 
+  # add likelihood ranking to simulation output
+  snpi_llik_global_int <- snpi_llik_global_int %>% 
+    .[high_low_llik, on = c("slot", "subpop"), allow.cartesian=TRUE] # right join by "on" variables
+  
+}
+
+subpop_names <- unique(sort(snpi_llik_global_int %>% .[ , subpop]))
+subpop_names <- c(subpop_names[!str_detect(subpop_names,",")],subpop_names[str_detect(subpop_names,",")]) # sort so that multiple subpops are at the end
+snpi_llik_global_int <-  snpi_llik_global_int %>% .[, subpop := factor(subpop,levels=subpop_names)]
+setorder(snpi_llik_global_int,subpop)
+
+snpi_llik_global_int %>% 
+  ggplot() + 
+  geom_line(aes(iter,value, group = slot)) +
+  geom_point(aes(iter, value, colour = ll), size=1) +
+  facet_grid(subpop ~ modifier_name, scales = 'free_y') + 
+  scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+  labs(x = "iteration",y = "modifier value") + 
+  theme_bw() + theme_small
+
+
+```
+
+## MCMC evolution - chimeric vs global
+
+The accepted value of the parameter for each iteration of the MCMC algorithm, for both the chimeric and global chain, in a given subpopulation.  Plotted for slot `r plot_slot` which has the highest total likelihood over all subpopulations (if inference was run) or was randomly chosen (if no inference).
+
+```{r snpi_evolution_lliktype, results='hide',fig.keep='all', eval=inference, out.width = "95%"}
+
+snpi_outputs_chimeric_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "snpi", 'chimeric', 'intermediate')) %>% mutate(ll_type = "chimeric")
+snpi_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "snpi", 'global', 'intermediate')) %>% mutate(ll_type = "global")
+
+snpi_outputs_int <- rbind(snpi_outputs_chimeric_int,snpi_outputs_global_int) %>%
+  relocate(subpop, slot, block, iter) %>% arrange(subpop,slot,block,iter)
+
+subpop_names <- unique(sort(snpi_outputs_int %>% .[ , subpop]))
+subpop_names <- c(subpop_names[!str_detect(subpop_names,",")],subpop_names[str_detect(subpop_names,",")]) # sort so that multiple subpops are at the end
+snpi_outputs_int <-  snpi_outputs_int %>% .[, subpop := factor(subpop,levels=subpop_names)]
+setorder(snpi_outputs_int,subpop)
+
+snpi_outputs_int %>% 
+  .[slot == plot_slot] %>%
+  ggplot() + 
+  geom_line(aes(iter,value, color=ll_type)) +
+  facet_grid(subpop ~ modifier_name, scales = 'free_y') + 
+  #scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+  labs(x = "iteration",y = "modifier value") + 
+  theme_bw() + theme_small
+
+
+```
+
+
+
+
+# Outcome model parameters: `HNPI` model output
+This shows the parameters associated with your outcomes model, for all subpopulations. 
+
+## Values by slot
+If inference is run, parameters are the final values at the end of all MCMC iterations, coloured by their likelihoods in a given subpopulation.
+
+```{r hnpi, results='hide',fig.keep='all',eval = eval_hnpi, out.width="95%"} 
+# read in model outputs
+hnpi_outputs_global <- setDT(import_model_outputs(scenario_run_dir, inference,  "hnpi", 'global', 'final'))
+subpop_names <- unique(sort(hnpi_outputs_global %>% .[ , subpop]))
+subpop_names <- c(subpop_names[str_detect(subpop_names,",")], subpop_names[!str_detect(subpop_names,",")]) # sort so that multiple subpops are in front
+
+hnpi_plots <- lapply(subpop_names,
+                     function(i){
+                       # print(i)
+                       if(!grepl(',', i)){ # if an individual subpop, not a group
+                         hnpi_outputs_global %>%
+                           {if(inference)
+                             .[llik, on = c("subpop", "slot")] else .} %>%
+                           .[subpop == i] %>%
+                           ggplot(aes(modifier_name,value)) +
+                           geom_violin() +
+                           {if(inference)
+                             geom_jitter(aes(group = modifier_name, color = ll), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           {if(!inference)
+                             geom_jitter(aes(group = modifier_name), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           theme_bw(base_size = 10) +
+                           theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
+                                 text = element_text(size = 8),
+                                 legend.key.size = unit(0.2, "cm")) +
+                               # guides(color = guide_legend(override.aes = list(size = 0.5)))+
+                           scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+                           labs(x = "modifier name", y = "modifier value", title = i) + theme_small
+                           # print("finished 1")
+                       }else{ #if a group of subpops
+                         if(inference){
+                           nodes_ <- unlist(strsplit(i,",")) # sum likelihood for each subpop
+                           ll_across_nodes <-
+                             llik %>%
+                             .[subpop %in% nodes_] %>%
+                             .[, .(ll_sum = sum(ll)), by = .(slot)]
+                         }
+
+                         hnpi_outputs_global %>%
+                           {if(inference)
+                             .[ll_across_nodes, on = c("slot")]} %>%
+                           # .[subpop == "sample_state"] %>%
+                           .[subpop == i] %>%
+                           ggplot(aes(modifier_name,value)) +
+                           geom_violin() +
+                           {if(inference)
+                             geom_jitter(aes(group = modifier_name, color = ll_sum), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           {if(!inference)
+                             geom_jitter(aes(group = modifier_name), size = 0.5, height = 0, width = 0.2, alpha = 0.5)
+                           } +
+                           theme_bw(base_size = 10) +
+                           theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
+                                 text = element_text(size = 8),
+                                 legend.key.size = unit(0.2, "cm")) +
+                           scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+                           labs(x = "modifier name",y = "modifier value", title = "group of subpops") + theme_small
+                         
+                         # print("finished 2")
+                       }
+                     }
+)
+
+if(length(hnpi_plots)!=1){
+  print(do.call("grid.arrange", c(hnpi_plots, ncol=2)))
+}else{
+  print(hnpi_plots[[1]])
+}
+
+# for(i in 1:length(subpop_names)){
+#   if(length(hnpi_plots)!=1){
+#       cat(paste0("### ",subpop_names[i]," {.tabset} \n"))
+#     print(hnpi_plots[[i]])
+#           cat("\n\n")
+#   }
+# }
+
+```
+
+## MCMC evolution
+
+The accepted value of the parameter for each iteration of the MCMC algorithm, colored by their likelihood in a given subpopulation. If more than 5 slots were run, we will plot only the top 5 and bottom 5 log likelihoods for each subpopulation.
+
+```{r hnpi_evolution, results='hide',fig.keep='all', eval=inference, out.width = "95%"}
+
+hnpi_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "hnpi", 'global', 'intermediate'))
+
+llik_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "llik", 'global', 'intermediate'))
+
+hnpi_llik_global_int <- llik_outputs_global_int %>% .[hnpi_outputs_global_int, on = .(subpop, slot, block, iter)] # %>%
+#  .[, iter_name := ifelse(is.na(iter), "F", iter)]
+# want all rows of hnpi, just add appropriate llik value if it exists. this is a left join?
+# for data.table, left_table[right_table] results in a right outer join. Add nomatch = NULL to get a inner join. 
+
+
+max_iter <- max(hnpi_llik_global_int$iter, na.rm=TRUE) # length of MCMC chain
+
+finished_slots <- unique(hnpi_llik_global_int[hnpi_llik_global_int$iter == max_iter]$slot) # unique slots that completed MCMC
+
+if(length(finished_slots) >= 10){
+ 
+  # add likelihood ranking to simulation output
+  hnpi_llik_global_int <- hnpi_llik_global_int %>% 
+    .[high_low_llik, on = c("slot", "subpop"), allow.cartesian=TRUE] # right join by "on" variables
+  
+}
+
+subpop_names <- unique(sort(hnpi_llik_global_int %>% .[ , subpop]))
+subpop_names <- c(subpop_names[!str_detect(subpop_names,",")],subpop_names[str_detect(subpop_names,",")]) # sort so that multiple subpops are at the end
+hnpi_llik_global_int <-  hnpi_llik_global_int %>% .[, subpop := factor(subpop,levels=subpop_names)]
+setorder(hnpi_llik_global_int,subpop)
+
+hnpi_llik_global_int %>% 
+  ggplot() + 
+  geom_line(aes(iter,value, group = slot)) +
+  geom_point(aes(iter, value, colour = ll), size=1) +
+  facet_grid(subpop ~ modifier_name, scales = 'free_y') + 
+  scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+  labs(x = "iteration",y = "modifier value") + 
+  theme_bw() + theme_small
+
+
+```
+
+## MCMC evolution - chimeric vs global
+
+The accepted value of the parameter for each iteration of the MCMC algorithm, for both the chimeric and global chain, in a given subpopulation.  Plotted for slot `r plot_slot` which has the highest total likelihood over all subpopulations (if inference was run) or was randomly chosen (if no inference).
+
+```{r hnpi_evolution_lliktype, results='hide',fig.keep='all', eval=inference, out.width = "95%"}
+
+hnpi_outputs_chimeric_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "hnpi", 'chimeric', 'intermediate')) %>% mutate(ll_type = "chimeric")
+hnpi_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "hnpi", 'global', 'intermediate')) %>% mutate(ll_type = "global")
+
+hnpi_outputs_int <- rbind(hnpi_outputs_chimeric_int,hnpi_outputs_global_int) %>%
+  relocate(subpop, slot, block, iter) %>% arrange(subpop,slot,block,iter)
+
+hnpi_outputs_int %>% 
+  .[slot == plot_slot] %>%
+  ggplot() + 
+  geom_line(aes(iter,value, color=ll_type)) +
+  facet_grid(subpop ~ modifier_name, scales = 'free_y') + 
+  #scale_color_viridis_c(option = "B", name = "log\nlikelihood") +
+  labs(x = "iteration",y = "modifier value") + 
+  theme_bw() + theme_small
+
+
+```
+
+# Likelihood: `LLIK` model output
+
+
+## Acceptance and likelihood trajectories - All slots and subpopulations
+
+This plot shows the binary acceptance decision for each MCMC iteration (`accept`), the probability of acceptance for that acceptance decision (`accept_prob`), the running average acceptance probability (`accept_avg`), and the likelihood. `Chimeric` values are subpopulation specific - there are likely more acceptances as well as acceptances that can increase subpop-specific likelihood while not changing the total likelihood. `Global` acceptances occur for all subpopulations together, and will always result in the total likelihood increasing, but could result in decreases in the subpop-specific likelihood.
+
+```{r llik_acceptances, eval = inference, out.width = "95%"}
+
+llik_outputs_global_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "llik", 'global', 'intermediate')) %>% mutate(ll_type = "global")
+llik_outputs_chimeric_int <- setDT(import_model_outputs(scenario_run_dir, inference,  "llik", 'chimeric', 'intermediate'))%>% mutate(ll_type = "chimeric")
+
+llik_outputs_int <- rbind(llik_outputs_chimeric_int,llik_outputs_global_int) %>%
+  relocate(subpop, slot, block, iter) %>% arrange(subpop,slot,block,iter)
+
+# add a column for sum of likelihoods across subpops, which is what algorithm is optimizing
+
+llik_outputs_int_sum <- llik_outputs_int %>% 
+  .[subpop != "Total"] %>%
+  group_by(slot,block,iter,ll_type) %>%
+  summarize(ll = sum(ll)) %>%
+  mutate(subpop = "Sum")
+
+llik_outputs_int <- full_join(llik_outputs_int,llik_outputs_int_sum)
+
+# sort so the total and sum are at the end
+
+
+  llik_max <- llik %>% 
+    .[subpop != "Total"] %>%
+    group_by(slot) %>%
+    summarize(ll_total = sum(ll)) %>%
+    slice_max(ll_total)
+
+# print(
+#   llik_outputs_int %>% 
+#     ggplot() + 
+#     geom_line(aes(iter,accept_prob, group = as.factor(slot))) +
+#     guides(colour = "none") + 
+#     labs(x = 'iterations', y = "probability of acceptance") +
+#     facet_wrap(~subpop) +
+#   theme_classic() + theme_small
+# )
+
+
+
+# print(
+#   llik_outputs_int %>% 
+#   ggplot() + 
+#   geom_line(aes(iter,accept_avg, group = as.factor(slot))) +
+#   guides(colour = "none") + 
+#   labs(x = 'iterations', y = "acceptance average") +
+#   facet_wrap(~subpop) +
+#   theme_classic() + theme_small
+# )
+
+
+llik_outputs_int %>% 
+  pivot_longer(cols = c("ll","accept_avg","accept","accept_prob")) %>% #filter(slot == 10 | slot == 7) %>%
+  ggplot() +
+  geom_step(aes(iter, value, color = as.factor(slot),linetype = factor(ll_type,levels=c("global","chimeric")))) + 
+  facet_wrap(subpop~name, scales = "free")+
+  labs(x = 'iterations', y = "llikelihood stats", color = "slot", linetype="likelihood type") +
+  theme_bw() + theme_small
+
+
+# for(pop in subpop_names){
+#   print(
+#     llik_outputs_int %>% 
+#       pivot_longer(cols = c("ll","accept_avg","accept","accept_prob")) %>% #filter(slot == 10 | slot == 7) %>%
+#       filter(subpop == pop) %>%
+#       ggplot() +
+#       geom_line(aes(iter, value, color = as.factor(slot))) + 
+#       facet_grid(name ~ ll_type, scales = 'free_y')+
+#       labs(x = 'iterations', y = "llikelihood stats", color = "slot", linetype="likelihood type") +
+#       theme_minimal() + theme_small
+#   )
+# }
+
+```
+
+## Acceptance and likelihood trajectories - Single slot
+
+```{r llik_acceptances_slot, , results = 'hide', eval = inference, out.width = "95%"}
+
+llik_outputs_int %>% 
+  pivot_longer(cols = c("ll","accept_avg","accept","accept_prob")) %>% filter(slot == plot_slot) %>%
+  ggplot() +
+  geom_step(aes(iter, value, color = as.factor(slot),linetype = factor(ll_type,levels=c("global","chimeric")))) + 
+  facet_wrap(subpop~name, scales = "free")+
+  labs(x = 'iterations', y = "llikelihood stats", color = "slot", linetype="likelihood type") +
+  theme_bw() + theme_small
+
+```
+
+
+
+```{r}
+#knitr::knit_exit()
+```
