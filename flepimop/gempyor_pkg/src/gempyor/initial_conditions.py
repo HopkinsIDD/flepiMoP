@@ -99,7 +99,7 @@ class InitialConditions(SimulationComponent):
                 allow_missing_subpops=self.allow_missing_subpops,
             )
         else:
-            raise NotImplementedError(f"Unknown initial conditions method [recieved: {method}].")
+            raise NotImplementedError(f"Unknown initial conditions method [received: {method}].")
 
         # check that the inputed values sums to the subpop population:
         check_population(y0=y0, modinf=modinf, ignore_population_checks=self.ignore_population_checks)
