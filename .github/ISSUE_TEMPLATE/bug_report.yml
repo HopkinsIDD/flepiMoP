@@ -12,7 +12,7 @@ body:
       options:
         - bug
         - batch
-        - flepiconfig
+        - config
         - documentation
         - docstring
         - duplicate
