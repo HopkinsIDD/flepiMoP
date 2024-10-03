@@ -190,12 +190,14 @@ def calibrate(
     test_run = True
 
     if test_run:
+        # test on single core so that errors are well reported
         gempyor_inference.perform_test_run()
         # Make a plot of the runs directly from config
-        print(f"Making {nwalkers//2} simulations from config to plot")
+        n_config_samples = min(30, nwalkers // 2)
+        print(f"Making {n_config_samples} simulations from config to plot")
         with multiprocessing.Pool(ncpu) as pool:
             results = pool.starmap(
-                gempyor_inference.simulate_proposal, [(p0[i],) for i in range(nwalkers//2)]
+                gempyor_inference.simulate_proposal, [(p0[i],) for i in range(n_config_samples)]
             )
         gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
                                             loss=gempyor_inference.logloss,
