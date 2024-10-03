@@ -133,7 +133,9 @@ def calibrate(
     else:
         run_id = input_run_id
 
-    # Select a file name and create the backend/resume, and create the initial parameters
+    
+
+    # Select a file name and create the backend/resume
     if resume or resume_location is not None:
         if resume_location is None:
             filename = f"{run_id}_backend.h5"
@@ -144,24 +146,12 @@ def calibrate(
             print(f"File {filename} does not exist, cannot resume")
             return
         print(f"Doing a resume from {filename}, this only work with the same number of slot/walkers and parameters right now")
-        backend = emcee.backends.HDFBackend(filename)
-
-        # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
-        # and then acceptances are not guaranted, see issue #316. This solves this issue and greates a new chain with llik evaluation
-        p0 = backend.get_last_sample().coords
     else:
         filename = f"{run_id}_backend.h5"
         if os.path.exists(filename):
             if not resume:
                 print(f"File {filename} already exists, remove it or use --resume")
                 return
-        backend = emcee.backends.HDFBackend(filename)
-        backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
-        p0 = gempyor_inference.inferpar.draw_initial(n_draw=nwalkers)
-        for i in range(nwalkers):
-            assert gempyor_inference.inferpar.check_in_bound(
-                proposal=p0[i]
-            ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
     
     gempyor_inference = GempyorInference(
         config_filepath=config_filepath,
@@ -179,6 +169,20 @@ def calibrate(
         autowrite_seir=False,
     )
 
+    # Draw/get initial parameters:
+    backend = emcee.backends.HDFBackend(filename)
+    if resume or resume_location is not None:
+        # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
+        # and then acceptances are not guaranted, see issue #316. This solves this issue and greates a new chain with llik evaluation
+        p0 = backend.get_last_sample().coords
+    else:
+        backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
+        p0 = gempyor_inference.inferpar.draw_initial(n_draw=nwalkers)
+        for i in range(nwalkers):
+            assert gempyor_inference.inferpar.check_in_bound(
+                proposal=p0[i]
+            ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
+
     if not nwalkers:
         nwalkers = config["nslots"].as_number()  # TODO
     print(f"Number of walkers be run: {nwalkers}")
@@ -191,7 +195,7 @@ def calibrate(
         print(f"Making {nwalkers//2} simulations from config to plot")
         with multiprocessing.Pool(ncpu) as pool:
             results = pool.starmap(
-                gempyor_inference.simulate_proposal, [p0[i] for i in range(nwalkers//2)]
+                gempyor_inference.simulate_proposal, [(p0[i],) for i in range(nwalkers//2)]
             )
         gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
                                             loss=gempyor_inference.logloss,
@@ -201,13 +205,15 @@ def calibrate(
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # @JOSEPH: find below a "cocktail" move proposal 
-    moves = [(emcee.moves.DEMove(), 0.5*0.9*0.9),
-             (emcee.moves.DEMove(gamma0=1.0),0.5*0.9*0.1),
-             (emcee.moves.DESnookerMove(),0.5*0.1),                     # First three moves: DEMove --> DE is good at "optimizing". Moves based on the (really great!) discussion in https://groups.google.com/g/emcee-users/c/FCAq459Y9OE
-             (emcee.moves.StretchMove(live_dangerously=True), 0.25),    # Stretch gives good chain movement
-             (emcee.moves.KDEMove(bw_method='scott'), 0.25)]            # Based on personal experience with pySODM (Tijs) - KDEMove works really well but I think it's important for this one to have at least 3x more walkers than parameters.
+    moves = [(emcee.moves.DEMove(live_dangerously=True), 0.5*0.5*0.5),
+             (emcee.moves.DEMove(gamma0=1.0,live_dangerously=True),0.5*0.5*0.5),
+             (emcee.moves.DESnookerMove(live_dangerously=True),0.5*0.5),                     # First three moves: DEMove --> DE is good at "optimizing". Moves based on the (really great!) discussion in https://groups.google.com/g/emcee-users/c/FCAq459Y9OE
+             (emcee.moves.StretchMove(live_dangerously=True), 0.5),    # Stretch gives good chain movement
+             #(emcee.moves.KDEMove(live_dangerously=True, bw_method='scott'), 0.25)
+             ]            # Based on personal experience with pySODM (Tijs) - KDEMove works really well but I think it's important for this one to have at least 3x more walkers than parameters.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
+    #moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
+
     gempyor_inference.set_silent(False)
     
     #with multiprocessing.Pool(ncpu) as pool:
