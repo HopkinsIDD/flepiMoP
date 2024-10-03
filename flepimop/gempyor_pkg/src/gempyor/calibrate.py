@@ -7,6 +7,7 @@ import gempyor
 import numpy as np
 import os, shutil, copy
 import emcee
+import pathlib
 import multiprocessing
 import gempyor.postprocess_inference
 
@@ -76,10 +77,10 @@ os.environ["OMP_NUM_THREADS"] = "1"
 @click.option(
     "--id",
     "--id",
-    "run_id",
+    "input_run_id",
     envvar="FLEPI_RUN_INDEX",
     type=str,
-    default=file_paths.run_id(),
+    default=None,
     help="Unique identifier for this run",
 )
 @click.option(
@@ -119,20 +120,48 @@ def calibrate(
     nsamples,
     nthin,
     ncpu,
-    run_id,
+    input_run_id,
     prefix,
     resume,
     resume_location,
 ):
-    run_id = config_filepath.split("/")[-1].split(".")[0].replace("config_", "")
-    # TODO check the other default...
-    filename = f"{run_id}_backend.h5"
-    if os.path.exists(filename):
-        if not resume:
-            print(f"File {filename} already exists, remove it or use --resume")
-            return
+    # Choose a run_id
+    if input_run_id is None:
+        base_run_id = pathlib.Path(config_filepath).stem.replace("config_", "")
+        run_id = f"{base_run_id}-{file_paths.run_id()}"
+        print(f"Auto-generating run_id: {run_id}")
     else:
-        print(f"writing to {filename}")
+        run_id = input_run_id
+
+    # Select a file name and create the backend/resume, and create the initial parameters
+    if resume or resume_location is not None:
+        if resume_location is None:
+            filename = f"{run_id}_backend.h5"
+        else:
+            filename = resume_location
+
+        if not os.path.exists(filename):
+            print(f"File {filename} does not exist, cannot resume")
+            return
+        print(f"Doing a resume from {filename}, this only work with the same number of slot/walkers and parameters right now")
+        backend = emcee.backends.HDFBackend(filename)
+
+        # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
+        # and then acceptances are not guaranted, see issue #316. This solves this issue and greates a new chain with llik evaluation
+        p0 = backend.get_last_sample().coords
+    else:
+        filename = f"{run_id}_backend.h5"
+        if os.path.exists(filename):
+            if not resume:
+                print(f"File {filename} already exists, remove it or use --resume")
+                return
+        backend = emcee.backends.HDFBackend(filename)
+        backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
+        p0 = gempyor_inference.inferpar.draw_initial(n_draw=nwalkers)
+        for i in range(nwalkers):
+            assert gempyor_inference.inferpar.check_in_bound(
+                proposal=p0[i]
+            ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
     
     gempyor_inference = GempyorInference(
         config_filepath=config_filepath,
@@ -155,33 +184,20 @@ def calibrate(
     print(f"Number of walkers be run: {nwalkers}")
 
     test_run = True
+
     if test_run:
         gempyor_inference.perform_test_run()
+        # Make a plot of the runs directly from config
+        print(f"Making {nwalkers//2} simulations from config to plot")
+        with multiprocessing.Pool(ncpu) as pool:
+            results = pool.starmap(
+                gempyor_inference.simulate_proposal, [p0[i] for i in range(nwalkers//2)]
+            )
+        gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
+                                            loss=gempyor_inference.logloss,
+                                            plot_projections=True,
+                                            list_of_df=results, save_to=f"{run_id}_config.pdf")
 
-    
-
-    # TODO here for resume
-    if resume or resume_location is not None:
-        print("Doing a resume, this only work with the same number of slot and parameters right now")
-        if resume_location is not None:
-            backend = emcee.backends.HDFBackend(resume_location)
-        else:
-            if not os.path.exists(filename):
-                print(f"File {filename} does not exist, cannot resume")
-                return
-            backend = emcee.backends.HDFBackend(filename)
-
-        # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
-        # and then acceptances are not guaranted, see issue #316. This solves this issue.
-        p0 = backend.get_last_sample().coords
-    else:
-        backend = emcee.backends.HDFBackend(filename)
-        backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
-        p0 = gempyor_inference.inferpar.draw_initial(n_draw=nwalkers)
-        for i in range(nwalkers):
-            assert gempyor_inference.inferpar.check_in_bound(
-                proposal=p0[i]
-            ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # @JOSEPH: find below a "cocktail" move proposal 
