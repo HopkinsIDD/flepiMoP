@@ -97,15 +97,7 @@ fi
 pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 
 # Install the local R packages
-INSTALL_R=$( mktemp )
-cat << EOF > $INSTALL_R
-library(devtools)
-devtools::install_github('HopkinsIDD/flepiMoP', subdir='flepimop/R_packages/flepicommon')
-devtools::install_github('HopkinsIDD/flepiMoP', subdir='flepimop/R_packages/flepiconfig')
-devtools::install_github('HopkinsIDD/flepiMoP', subdir='flepimop/R_packages/inference')
-EOF
-Rscript $INSTALL_R
-rm $INSTALL_R
+$FLEPI_PATH/build/setup.R
 
 # Set correct env vars
 export FLEPI_STOCHASTIC_RUN=false
