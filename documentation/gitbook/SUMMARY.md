@@ -53,6 +53,7 @@
   * [Running on AWS 🌳](how-to-run/advanced-run-guides/running-on-aws.md)
 * [Common errors](how-to-run/common-errors.md)
 * [Useful commands](how-to-run/useful-commands.md)
+* [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)
 
 ## 🗜️ Development
 
