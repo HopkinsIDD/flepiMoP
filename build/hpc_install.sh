@@ -1,10 +1,12 @@
+# Generic setup
+set -e
+
 # Cluster specific setup
 if [[ $1 == "longleaf" ]]; then
     # Setup general purpose user variables needed for Longleaf
     USERO=$( echo $USER | awk '{ print substr($0, 1, 1) }' )
     USERN=$( echo $USER | awk '{ print substr($0, 2, 1) }' )
     USERDIR="/users/$USERO/$USERN/$USER"
-    cd $USERDIR
 
     # Load required modules
     module purge
@@ -42,7 +44,7 @@ fi
 # Test that flepiMoP is located there
 if [ ! -d "$FLEPI_PATH" ]; then
     echo "Did not find flepiMoP at '$FLEPI_PATH', cloning on your behalf."
-    git clone https://github.com/HopkinsIDD/flepiMoP.git $FLEPI_PATH
+    git clone git@github.com:HopkinsIDD/flepiMoP.git $FLEPI_PATH
 elif [ ! -d "$FLEPI_PATH/.git" ]; then
     echo "The flepiMoP found at '$FLEPI_PATH' is not a git clone, unsure of how to proceed."
     exit 1
@@ -66,13 +68,10 @@ dependencies:
 - r-sf 
 # This packages are probably missing from the DESCRIPTION of the R packages
 - r-optparse
-- pip:
-    - git+https://github.com/HopkinsIDD/flepiMoP.git#subdirectory=flepimop/gempyor_pkg
 EOF
 conda env create --prefix $USERDIR/flepimop-env --file $USERDIR/environment.yml
 fi
 conda activate $USERDIR/flepimop-env
-conda update --all
 
 # Check the conda environment is valid
 WHICH_PYTHON=$( which python )
@@ -93,6 +92,9 @@ COMPATIBLE_ARROW_VERSION=$( echo "$R_ARROW_VERSION" | grep "$PYTHON_ARROW_VERSIO
 if [[ "$COMPATIBLE_ARROW_VERSION" -ne 1 ]]; then
     echo "The R version of arrow is '$R_ARROW_VERSION' and the python version is '$PYTHON_ARROW_VERSION'. These may not be compatible versions."
 fi
+
+# Install the gempyor package from local
+pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 
 # Install the local R packages
 INSTALL_R=$( mktemp )
