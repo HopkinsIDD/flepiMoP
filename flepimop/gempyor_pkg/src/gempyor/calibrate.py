@@ -200,6 +200,7 @@ def calibrate(
             print(f"Test run failed, logloss with the same parameters is different: {lliks[0]} != {lliks[1]} ❌")
             print("This means that there is config variability not captured in the emcee fits")
             return
+            # TODO THIS Test in fact does nnot work.
         else:
             print(f"Test run done, logloss with same parameters: {lliks[0]}=={lliks[1]} ✅ ")
         assert lliks[1] != lliks[2], "Test run failed, logloss with different parameters is the same, perturbation are not taken into account"        
@@ -243,6 +244,7 @@ def calibrate(
     #    state = sampler.run_mcmc(p0, niter, progress=True, skip_initial_state_check=True)
 
     # hack around memory management: run by batch of 10 iterations
+    # TODO this fails for less thant 10 iterations
     nbatch = 10
     for i in range(niter // nbatch):
         if i == 0:
