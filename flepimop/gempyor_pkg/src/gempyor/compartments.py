@@ -396,8 +396,7 @@ class Compartments:
                         if self.compartments["name"][compartment] == elem:
                             rc = compartment
                     if rc == -1:
-                        print(self.compartments)
-                        raise ValueError(f"Could not find {colname} defined by {elem} in compartments.")
+                        raise ValueError(f"Could not find {colname} defined by {elem} in {self.compartments}.")
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -616,7 +615,7 @@ class Compartments:
             raise ValueError(
                 f"Could not parse string {string_list}. " 
                 f"This usually mean that '{string_list[0]}' is a parameter name that is not defined "
-                f" or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-. "
+                f"or that it contains an operator that is not in the list of supported operators: ^,*,/,+,-. "
                 f"The defined parameters are {parameter_names}."
             )
 
