@@ -16,8 +16,9 @@ if [[ $1 == "longleaf" ]]; then
     module load git
 elif [[ $1 == "rockfish" ]]; then
     # Setup general purspose user variables needed for RockFish
-    USERDIR="/scratch4/struelo1/flepimop-code/$USER/"
-    WORKDIR=$USERDIR
+    USERDIR=$HOME
+    WORKDIR="/scratch4/struelo1/flepimop-code/$USER/"
+    mkdir -vp $WORKDIR
 
     # Load required modules
     module purge
