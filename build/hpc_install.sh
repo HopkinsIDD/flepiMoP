@@ -99,7 +99,7 @@ fi
 pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 
 # Install the local R packages
-$FLEPI_PATH/build/setup.R
+$FLEPI_PATH/build/setup.R $FLEPI_PATH
 
 # Set correct env vars
 export FLEPI_STOCHASTIC_RUN=false
