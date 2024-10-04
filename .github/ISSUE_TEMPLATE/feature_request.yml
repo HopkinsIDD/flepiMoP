@@ -1,0 +1,70 @@
+name: Feature Request
+description: File a feature request
+title: "[Feature request]: "
+
+body:
+  - type: dropdown
+    id: label
+    attributes:
+      label: Label
+      description: Which label(s) describe this issue?
+      multiple: true
+      options:
+        - bug
+        - batch
+        - config.writer
+        - documentation
+        - enhancement
+        - gempyor
+        - good first issue
+        - help wanted
+        - inference
+        - invalid
+        - meta/workflow
+        - operations
+        - performance
+        - post-processing
+        - question
+        - quick issue
+        - revisit ASAP
+        - seeding
+        - submission
+        - wontfix
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Label
+      description: What priority level is this issue?
+      options:
+        - low priority
+        - medium priority
+        - high priority
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Is your feature request related to a problem? Please describe.
+      placeholder: A clear and concise description of what the problem is.
+    validations:
+      required: true
+    
+  - type: textarea
+    id: relevant-relationship
+    attributes:
+      label: Is your feature request related to a new application, scenario round, pathogen? Please describe.
+      placeholder: A clear and concise description of th application, round, etc. that the feature addresses. 
+    validations:
+      required: false
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      placeholder: A clear and concise description of what you want to happen. 
+    validations:
+      required: true

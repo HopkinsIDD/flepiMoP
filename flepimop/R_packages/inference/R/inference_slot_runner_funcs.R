@@ -51,8 +51,7 @@ aggregate_and_calc_loc_likelihoods <- function(
             ## Filter to this location
             dplyr::filter(
                 modeled_outcome,
-                !!rlang::sym(obs_subpop) == location,
-                date %in% unique(obs$date[obs$subpop == location])
+                !!rlang::sym(obs_subpop) == location 
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
@@ -68,12 +67,18 @@ aggregate_and_calc_loc_likelihoods <- function(
         this_location_log_likelihood <- 0
         for (var in names(ground_truth_data[[location]])) {
 
-
+          obs_tmp1 <- ground_truth_data[[location]][[var]]
+          obs_tmp <- obs_tmp1[!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),]
+          sim_tmp1 <- this_location_modeled_outcome[[var]] 
+          sim_tmp <- sim_tmp1[match(lubridate::as_date(sim_tmp1$date), 
+                                    lubridate::as_date(obs_tmp$date)),] %>% na.omit()
+          
+          
             this_location_log_likelihood <- this_location_log_likelihood +
                 ## Actually compute likelihood for this location and statistic here:
                 sum(inference::logLikStat(
-                    obs = ground_truth_data[[location]][[var]]$data_var,
-                    sim = this_location_modeled_outcome[[var]]$sim_var,
+                    obs = as.numeric(obs_tmp$data_var),
+                    sim = as.numeric(sim_tmp$sim_var),
                     dist = targets_config[[var]]$likelihood$dist,
                     param = targets_config[[var]]$likelihood$param,
                     add_one = targets_config[[var]]$add_one
@@ -616,72 +621,77 @@ initialize_mcmc_first_block <- function(
     ## initial conditions (init)
 
     if (!is.null(config$initial_conditions)){
+      if(config$initial_conditions$method  != "plugin"){
+        
         if ("init_filename" %in% global_file_names) {
-
-            if (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions")){
-
-                if (is.null(config$initial_conditions$initial_conditions_file)) {
-                    stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
-                }
-                initial_init_file <- config$initial_conditions$initial_conditions_file
-
-            } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw", "plugin")) {
-                print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
+          
+          if (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions")){
+            
+            if (is.null(config$initial_conditions$initial_conditions_file)) {
+              stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
+            }
+            initial_init_file <- config$initial_conditions$initial_conditions_file
+            
+          } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
+            print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
                       and no copying to global or chimeric files is being done.")
-
-                if (is.null(config$initial_conditions$initial_file_type)) {
-                    stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
-                }
-                initial_init_file <- global_files[[paste0(config$initial_conditions$initial_file_type, "_filename")]]
-            }
-
-
-            if (!file.exists(initial_init_file)) {
-                stop("ERROR: Initial conditions file specified but does not exist.")
-            }
             
-            if (grepl(".csv", initial_init_file)){
-                initial_init <- readr::read_csv(initial_init_file,show_col_types = FALSE)
-            }else{
-                initial_init <- arrow::read_parquet(initial_init_file)
+            if (is.null(config$initial_conditions$initial_file_type)) {
+              stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
             }
+            initial_init_file <- global_files[[paste0(config$initial_conditions$initial_file_type, "_filename")]]
+          }
+          
+          
+          if (!file.exists(initial_init_file)) {
+            stop("ERROR: Initial conditions file specified but does not exist.")
+          }
+          
+          if (grepl(".csv", initial_init_file)){
+            initial_init <- readr::read_csv(initial_init_file,show_col_types = FALSE)
+          }else{
+            initial_init <- arrow::read_parquet(initial_init_file)
+          }
+          
+          # if the initial conditions file contains a 'date' column, filter for config$start_date
+          
+          if("date" %in% colnames(initial_init)){
             
-            # if the initial conditions file contains a 'date' column, filter for config$start_date
-            
-            if("date" %in% colnames(initial_init)){
-                
-                initial_init <- initial_init %>%
-                    dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
-                    dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
-                
-                if (nrow(initial_init) == 0) {
-                    stop("ERROR: Initial conditions file specified but does not contain the start date.")
-                }  
-                
-            }
-
-            arrow::write_parquet(initial_init, global_files[["init_filename"]])
-        }
-
-        # if the initial conditions file contains a 'date' column, filter for config$start_date
-        if (grepl(".csv", global_files[["init_filename"]])){
-            initial_init <- readr::read_csv(global_files[["init_filename"]],show_col_types = FALSE)
-        }else{
-            initial_init <- arrow::read_parquet(global_files[["init_filename"]])
-        }
-
-        if("date" %in% colnames(initial_init)){
-                
             initial_init <- initial_init %>%
-                dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
-                dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+              dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+              dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
             
             if (nrow(initial_init) == 0) {
-                stop("ERROR: Initial conditions file specified but does not contain the start date.")
+              stop("ERROR: Initial conditions file specified but does not contain the start date.")
             }  
-                
+            
+          }
+          
+          arrow::write_parquet(initial_init, global_files[["init_filename"]])
+        }
+        
+        # if the initial conditions file contains a 'date' column, filter for config$start_date
+        if (grepl(".csv", global_files[["init_filename"]])){
+          initial_init <- readr::read_csv(global_files[["init_filename"]],show_col_types = FALSE)
+        }else{
+          initial_init <- arrow::read_parquet(global_files[["init_filename"]])
+        }
+        
+        if("date" %in% colnames(initial_init)){
+          
+          initial_init <- initial_init %>%
+            dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
+            dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
+          
+          if (nrow(initial_init) == 0) {
+            stop("ERROR: Initial conditions file specified but does not contain the start date.")
+          }  
+          
         }
         arrow::write_parquet(initial_init, global_files[["init_filename"]])
+      }else if(config$initial_conditions$method  == "plugin"){
+        print("Initial conditions files generated by gempyor using plugin method.")
+      }
     }
 
 

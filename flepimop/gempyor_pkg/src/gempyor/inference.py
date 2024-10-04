@@ -330,14 +330,15 @@ class GempyorInference:
         # Config prep
         config.clear()
         config.read(user=False)
-        config.set_file(path_prefix + config_filepath)
+
+        config.set_file(os.path.join(path_prefix, config_filepath))
 
         self.seir_modifiers_scenario, self.outcome_modifiers_scenario = autodetect_scenarios(config)
 
         if run_id is None:
             run_id = file_paths.run_id()
         if prefix is None:
-            prefix = config["name"].get() + "_inference_all" + "/" + run_id + "/"
+            prefix = config["name"].get() + f"_{self.seir_modifiers_scenario}_{self.outcome_modifiers_scenario}" + "/" + run_id + "/"
         in_run_id = run_id
         if out_run_id is None:
             out_run_id = in_run_id
@@ -537,10 +538,12 @@ class GempyorInference:
                 self.outcomes_parameters = outcomes.read_parameters_from_config(self.modinf)
 
             npi_outcomes = None
+            npi_seir = None
             if parallel:
                 with Timer("//things"):
                     with ProcessPoolExecutor(max_workers=max(mp.cpu_count(), 3)) as executor:
-                        ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
+                        if self.modinf.seir_config is not None and self.modinf.npi_config_seir is not None:
+                            ret_seir = executor.submit(seir.build_npi_SEIR, self.modinf, load_ID, sim_id2load, config)
                         if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
                             ret_outcomes = executor.submit(
                                 outcomes.build_outcome_modifiers,
@@ -562,15 +565,17 @@ class GempyorInference:
                         self.proportion_info,
                     ) = ret_comparments.result()
                     self.already_built = True
-                npi_seir = ret_seir.result()
+                if self.modinf.seir_config is not None and self.modinf.npi_config_seir is not None:
+                    npi_seir = ret_seir.result()
                 if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
                     npi_outcomes = ret_outcomes.result()
             else:
                 if not self.already_built:
                     self.build_structure()
-                npi_seir = seir.build_npi_SEIR(
-                    modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
-                )
+                if self.modinf.seir_config is not None and self.modinf.npi_config_seir is not None:
+                    npi_seir = seir.build_npi_SEIR(
+                        modinf=self.modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+                    )
                 if self.modinf.outcomes_config is not None and self.modinf.npi_config_outcomes:
                     npi_outcomes = outcomes.build_outcome_modifiers(
                         modinf=self.modinf,
