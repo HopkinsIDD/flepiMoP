@@ -6,7 +6,8 @@ if [[ $1 == "longleaf" ]]; then
     # Setup general purpose user variables needed for Longleaf
     USERO=$( echo $USER | awk '{ print substr($0, 1, 1) }' )
     USERN=$( echo $USER | awk '{ print substr($0, 2, 1) }' )
-    USERDIR="/users/$USERO/$USERN/$USER"
+    USERDIR="/users/$USERO/$USERN/$USER/"
+    WORKDIR="/work/users/$USERO/$USERN/$USER/"
 
     # Load required modules
     module purge
@@ -16,6 +17,7 @@ if [[ $1 == "longleaf" ]]; then
 elif [[ $1 == "rockfish" ]]; then
     # Setup general purspose user variables needed for RockFish
     USERDIR="/scratch4/struelo1/flepimop-code/$USER/"
+    WORKDIR=$USERDIR
 
     # Load required modules
     module purge
@@ -104,9 +106,9 @@ export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export TODAY=`date --rfc-3339='date'`
 
-echo -n "Please set a project path (relative to '$USERDIR'): "
+echo -n "Please set a project path (relative to '$WORKDIR'): "
 read PROJECT_PATH
-export PROJECT_PATH="$USERDIR/$PROJECT_PATH"
+export PROJECT_PATH="$WORKDIR/$PROJECT_PATH"
 
 echo -n "Please set a config path (relative to '$PROJECT_PATH'): "
 read CONFIG_PATH
