@@ -192,17 +192,30 @@ def calibrate(
     if test_run:
         # test on single core so that errors are well reported
         gempyor_inference.perform_test_run()
-        # Make a plot of the runs directly from config
-        n_config_samples = min(30, nwalkers // 2)
-        print(f"Making {n_config_samples} simulations from config to plot")
         with multiprocessing.Pool(ncpu) as pool:
-            results = pool.starmap(
-                gempyor_inference.simulate_proposal, [(p0[i],) for i in range(n_config_samples)]
+            lliks = pool.starmap(
+                gempyor_inference.get_logloss_as_single_number, [(p0[0],), (p0[0],), (p0[1],),]
             )
-        gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
-                                            loss=gempyor_inference.logloss,
-                                            plot_projections=True,
-                                            list_of_df=results, save_to=f"{run_id}_config.pdf")
+        if lliks[0] != lliks[1]:
+            print(f"Test run failed, logloss with the same parameters is different: {lliks[0]} != {lliks[1]} ❌")
+            print("This means that there is config variability not captured in the emcee fits")
+            return
+        else:
+            print(f"Test run done, logloss with same parameters: {lliks[0]}=={lliks[1]} ✅ ")
+        assert lliks[1] != lliks[2], "Test run failed, logloss with different parameters is the same, perturbation are not taken into account"        
+        
+        
+    # Make a plot of the runs directly from config
+    n_config_samples = min(30, nwalkers // 2)
+    print(f"Making {n_config_samples} simulations from config to plot")
+    with multiprocessing.Pool(ncpu) as pool:
+        results = pool.starmap(
+            gempyor_inference.simulate_proposal, [(p0[i],) for i in range(n_config_samples)]
+        )
+    gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
+                                        loss=gempyor_inference.logloss,
+                                        plot_projections=True,
+                                        list_of_df=results, save_to=f"{run_id}_config.pdf")
 
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
