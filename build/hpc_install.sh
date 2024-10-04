@@ -72,6 +72,10 @@ dependencies:
 - r-optparse
 EOF
 conda env create --prefix $USERDIR/flepimop-env --file $USERDIR/environment.yml
+cat << EOF > $USERDIR/flepimop-env/conda-meta/pinned
+r-arrow==17.0.0
+arrow==17.0.0
+EOF
 fi
 conda activate $USERDIR/flepimop-env
 
