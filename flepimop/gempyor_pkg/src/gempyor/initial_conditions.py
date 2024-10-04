@@ -182,7 +182,7 @@ def read_initial_condition_from_tidydataframe(
             logger.critical(
                 f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartment ({modinf.compartments.compartments['name'].iloc[0]})"
             )
-            raise ValueError("THERE IS A BUG; REPORT THIS MESSAGE. Past implemenation was buggy.")
+            raise ValueError(f"THERE IS A BUG; REPORT THIS MESSAGE. Past implemenation was buggy.")
             # TODO: this is probably ok but highlighting for consistency
             if "proportional" in self.initial_conditions_config.keys():
                 if self.initial_conditions_config["proportional"].get():
@@ -235,7 +235,8 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
 
     ic_df = ic_df[(ic_df["date"] == str(modinf.ti)) & (ic_df["mc_value_type"] == "prevalence")]
     if ic_df.empty:
-        raise ValueError(f"No entry provided for initial time `ti` in the `initial_conditions::states_file.`")
+        raise ValueError(f"No entry provided for initial time `ti` in the `initial_conditions::states_file.` "
+                         f"`ti`: {modinf.ti}.")
     y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
 
     for comp_idx, comp_name in modinf.compartments.compartments["name"].items():
