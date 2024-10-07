@@ -30,11 +30,7 @@ Parameters and other options specified in the configuration files can take on a 
 * **boolean** values are either "TRUE" or "FALSE"
 * **files** names are strings
 * **probability** is a float between 0 and 1
-* **distribution** is a probability distribution from which a random value for the parameter is drawn each time a new simulation is run (or chain, if doing inference), and is specified with the following config structure:
-
-### Distributions
-
-<table><thead><tr><th width="165">Distribution</th><th width="135">Parameters</th><th width="185">Type/Format</th><th>Description</th></tr></thead><tbody><tr><td><code>fixed</code></td><td><code>value</code></td><td>Any real number</td><td>Draws all values exactly equal to <code>value</code></td></tr><tr><td><code>uniform</code></td><td><code>low</code></td><td>Any real number</td><td>Draws all values randomly from a uniform distribution with range <code>[low, high]</code></td></tr><tr><td></td><td><code>high</code></td><td>Any real number greater than <code>low</code></td><td></td></tr><tr><td><code>poisson</code></td><td><code>lam</code></td><td>Any positive real number</td><td>Draws all values randomly from a Poisson distribution with rate parameter  (mean) <code>lam</code> (lambda)</td></tr><tr><td><code>binomial</code></td><td><code>size</code></td><td>Any non-negative integer</td><td>Draws all values randomly from a binomial distribution with number of trials (n) = <code>size</code> and probability of success on each trial (p) = <code>prob</code></td></tr><tr><td></td><td><code>prob</code></td><td>Any number in [0,1]</td><td></td></tr><tr><td><code>lognormal</code></td><td><code>meanlog</code></td><td>Any real number</td><td>Draws all values randomly from a lognormal distribution (natural log, base <em>e</em>) with mean on a log scale of <code>meanlog</code> and standard deviation on a log scale of <code>sdlog</code></td></tr><tr><td></td><td><code>sdlog</code></td><td>Any non-negative real number</td><td></td></tr><tr><td><code>truncnorm</code></td><td><code>mean</code></td><td>Any real number</td><td>Draws all values randomly from a truncated normal distribution with mean <code>mean</code> and standard deviation <code>sd</code>, truncated to have a maximum value of <code>a</code> and a minimum value of <code>b</code></td></tr><tr><td></td><td><code>sd</code></td><td>Any non-negative real number</td><td></td></tr><tr><td></td><td><code>a</code></td><td>Any real number, or <code>-Inf</code></td><td></td></tr><tr><td></td><td><code>b</code></td><td>Any real number greater than <code>a</code>, or <code>Inf</code></td><td></td></tr></tbody></table>
+* **distribution** is a probability distribution from which a random value for the parameter is drawn each time a new simulation is run (or chain, if doing inference). See [the distributions section](distributions.md) for the require structure.
 
 ## Configuration files sections
 
@@ -66,7 +62,7 @@ nslots: 1000
 Required section
 {% endhint %}
 
-This section specifies the population structure on which the model will be simulated, including the names and sizes of each subpopulation and the connectivity between them. More details [here](broken-reference).
+This section specifies the population structure on which the model will be simulated, including the names and sizes of each subpopulation and the connectivity between them. More details [here](specifying-population-structure.md).
 
 ### `compartments` section
 
