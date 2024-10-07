@@ -30,7 +30,7 @@ Parameters and other options specified in the configuration files can take on a 
 * **boolean** values are either "TRUE" or "FALSE"
 * **files** names are strings
 * **probability** is a float between 0 and 1
-* **distribution** is a probability distribution from which a random value for the parameter is drawn each time a new simulation is run (or chain, if doing inference). See [the distributions section](distributions.md) for the require structure.
+* **distribution** is a probability distribution from which a random value for the parameter is drawn each time a new simulation is run (or chain, if doing inference). See [here](distributions.md) for the require schema.
 
 ## Configuration files sections
 
