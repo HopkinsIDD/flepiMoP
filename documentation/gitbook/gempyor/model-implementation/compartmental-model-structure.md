@@ -476,7 +476,7 @@ seir:
         logsd: 0.2
 ```
 
-Details on the possible distributions that are currently available, and how to specify their parameters, is provided in the [Introduction to configuration files section](introduction-to-configuration-files.md#distributions).
+Details on the possible distributions that are currently available, and how to specify their parameters, is provided in the [Distributions section](distributions.md).
 
 Note that understanding when a new parameter values from this distribution is drawn becomes more complicated when the model is run in [Inference](../../model-inference/inference-description.md) mode. In Inference mode, we distinguish model runs as occurring in different "slots" – i.e., completely independent model instances that could be run on different processing cores in a parallel computing environment – and different "iterations" of the model that occur sequentially when the model is being fit to data and update fitted parameters each time based on the fit quality found in the previous iteration. A new parameter values is only drawn from the above distribution **once per slot**. Within a slot, at each iteration during an inference run, the parameter is only changed if it is being fit and the inference algorithm decides to perturb it to test a possible improved fit. Otherwise, it would maintain the same value no matter how many times the model was run within a slot.
 

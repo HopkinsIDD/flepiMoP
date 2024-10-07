@@ -76,7 +76,7 @@ and one optional parameter
 
 * `duration` after entering that an individual is counted as part of the outcome variable
 
-The `value` of the `probability`, `delay`, and `duration` parameters can be a single value or come from [distribution](introduction-to-configuration-files.md#distributions).&#x20;
+The `value` of the `probability`, `delay`, and `duration` parameters can be a single value or come from [distribution](distributions.md).&#x20;
 
 Outcome model parameters `probability`, `delay`, and `distribution` can have an additional attribute beyond `value` called `modifier_key`. This value is explained in the section on coding [`time-dependent parameter modifications`](intervention-templates.md) (also known as "modifiers") as it provides a way to have the same modifier act on multiple different outcomes.&#x20;
 

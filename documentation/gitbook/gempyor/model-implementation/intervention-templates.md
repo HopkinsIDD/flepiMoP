@@ -145,7 +145,7 @@ outcome_modifiers:
 
 `subpop:`A list of subpopulation names/ids in which the specified modification will be applied. This can be a single `subpop`, a list, or the word `"all"` (specifying the modification applies to all existing subpopulations in the model). The modification will do nothing for any subpopulations not listed here.
 
-`value:`The fractional reduction of the parameter during the time period the modification is active.  This can be a scalar number, or a distribution using the notation described in the [Distributions](introduction-to-configuration-files.md#distributions) section. The new parameter value will be
+`value:`The fractional reduction of the parameter during the time period the modification is active.  This can be a scalar number, or a distribution using the notation described in the [Distributions](distributions.md) section. The new parameter value will be
 
 ```
 new_parameter_value = old_parameter_value * (1 - value)
@@ -194,7 +194,7 @@ school_year:
   * `groups:periods:start_date` The date when the modification starts, in YYYY-MM-DD format. The modification will only reduce the value of the parameter after (inclusive of) this date.
   * `groups:periods:end_date` The date when the modification ends, in YYYY-MM-DD format. The modification will only reduce the value of the parameter before (inclusive of) this date.
 
-`value:`The fractional reduction of the parameter during the time period the modification is active.  This can be a scalar number, or a distribution using the notation described in the [Distributions](introduction-to-configuration-files.md#distributions) section. The new parameter value will be
+`value:`The fractional reduction of the parameter during the time period the modification is active.  This can be a scalar number, or a distribution using the notation described in the [Distributions](distributions.md) section. The new parameter value will be
 
 ```
 new_parameter_value = old_parameter_value * (1 - value)
@@ -274,7 +274,7 @@ However, there are situations when the `ModiferModifier` notation is more conven
 
 `subpop:`A list of subpopulation names/ids in which the specified intervention modifier will be applied. This can be a single `subpop`, a list, or the word `"all"` (specifying the interventions applies to all existing subpopulations in the model). The intervention will do nothing for any subpopulations not listed here.
 
-`value:`The fractional reduction of the baseline intervention during the time period the modifier intervention is active.  This can be a scalar number, or a distribution using the notation described in the [Distributions](introduction-to-configuration-files.md#distributions) section. The new parameter value will be
+`value:`The fractional reduction of the baseline intervention during the time period the modifier intervention is active.  This can be a scalar number, or a distribution using the notation described in the [Distributions](distributions.md) section. The new parameter value will be
 
 ```
 new_intervention_value = old_intervention_value * (1 - value)
