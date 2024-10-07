@@ -20,29 +20,30 @@ on:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
-    container:
-      image: hopkinsidd/flepimop:latest-dev
-      options: --user root
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Install the gempyor package
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install gempyor
         run: |
-          source /var/python/3.10/virtualenv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install "flepimop/gempyor_pkg[test]"
+          python -m pip install "flepimop/gempyor_pkg[dev]"
         shell: bash
       - name: Run gempyor tests
         run: |
-          source /var/python/3.10/virtualenv/bin/activate
           cd flepimop/gempyor_pkg
           pytest --exitfirst
         shell: bash
       - name: Run gempyor-cli integration tests from examples
         run: |
-          source /var/python/3.10/virtualenv/bin/activate
           cd examples
           pytest --exitfirst
         shell: bash
