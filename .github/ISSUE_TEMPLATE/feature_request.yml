@@ -13,6 +13,7 @@ body:
         - bug
         - batch
         - config
+        - flepiconfig
         - documentation
         - docstring
         - duplicate
