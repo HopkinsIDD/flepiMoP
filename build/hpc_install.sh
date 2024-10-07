@@ -78,8 +78,5 @@ pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 # Install the local R packages
 set +e
 $FLEPI_PATH/build/setup.R $FLEPI_PATH
-set -e
 
-# Out source to flepi init for per run setup
-source $FLEPI_PATH/build/flepi_init.sh $1
-set +e
+echo "> Done installing/updating flepiMoP."
