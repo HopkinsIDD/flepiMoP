@@ -6,12 +6,26 @@ The *Fle*xible *Epi*demic *Mo*deling *P*ipeline, `FlepiMoP`, makes it easy to bu
 # Quickstart
 
 ```bash
-mkdir myflepimopworkspace && cd $_
-git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1
-./flepiMop/install_ubuntu.sh
-cp -r ./flepiMoP/examples/tutorial_two_subpops test_model && cd $_
-gempyor-simulate -c config_sample_2pop.yml
-flepimop-inference-main -c config_sample_2pop_inference.yml
+mkdir myflepimopworkspace && cd $_ # make a place for flepimop work on your machine, and then go to that directory
+git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1 # get the latest flepimop tool
+./flepiMop/install_ubuntu.sh # install it
+cp -r ./flepiMoP/examples/tutorial_two_subpops test_model && cd $_ # make a copy of one of the examples, and then go to that directory
+gempyor-simulate -c config_sample_2pop.yml # simulate that population
+flepimop-inference-main -c config_sample_2pop_inference.yml # do some inference on that population
+```
+
+# Advanced
+
+Requires membership in Hopkins and/or ACCIDDA organizations for access to the RSV_USA repo.
+
+```bash
+cd myflepimopworkspace
+git clone https://github.com/HopkinsIDD/RSV_USA --depth=1 --branch HW
+cp config_maternal_simple.yml config_maternal_simple_forward.yml && vi $_ # change comments to switch the seeding section to forward simulation
+gempyor-simulate -c $_
+# some visualization
+flepimop-inference-main -c config_maternal_simple.yml -n 5 -k 20
+# some visualization
 ```
 
 # flepiMoP
