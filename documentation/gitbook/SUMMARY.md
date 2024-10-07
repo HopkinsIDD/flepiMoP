@@ -12,6 +12,7 @@
   * [Specifying initial conditions](gempyor/model-implementation/specifying-initial-conditions.md)
   * [Specifying seeding](gempyor/model-implementation/specifying-seeding.md)
   * [Specifying observational model](gempyor/model-implementation/outcomes-for-compartments.md)
+  * [Distributions](gempyor/model-implementation/distributions.md)
   * [Specifying time-varying parameter modifications](gempyor/model-implementation/intervention-templates.md)
   * [Other configuration options](gempyor/model-implementation/other-configuration-options.md)
   * [Code structure](gempyor/model-implementation/code-structure.md)
