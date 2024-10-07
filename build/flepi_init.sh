@@ -125,3 +125,5 @@ Otherwise make sure this diagnostic info looks correct before continuing:
 * Resume location: $RESUME_LOCATION
 * Flepi run index: $FLEPI_RUN_INDEX
 EOM
+
+set +e
