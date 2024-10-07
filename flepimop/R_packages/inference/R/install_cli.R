@@ -10,7 +10,14 @@
 #' 
 #' @export
 install_cli <- function(
-  path = if (.Platform$OS.type == "unix") normalizePath(file.path("/usr", "local", "bin")) else stop("Unsupported OS")
+  path = {
+    condapth <- Sys.getenv("CONDA_PREFIX")
+    if (condapth != "") { 
+      file.path(condapth, "bin")
+    } else {
+      stop("only support default path installation when conda is running.")
+    }
+  }
 ) {
   scriptfiles <- list.files(
     system.file("scripts", package = utils::packageName()), pattern = "flepimop-.*", full.names = TRUE
