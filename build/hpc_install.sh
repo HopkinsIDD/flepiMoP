@@ -117,6 +117,7 @@ for d in $( ls ); do
     R CMD INSTALL $d
 done
 cd $RETURNTO
+R -e "library(inference); inference::install_cli()"
 
 # Done
 echo "> Done installing/updating flepiMoP."
