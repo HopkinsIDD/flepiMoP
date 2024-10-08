@@ -71,8 +71,8 @@ dependencies <- sapply(rpkgs, function(rpkg) {
     character()
 }, USE.NAMES = FALSE)
 dependencies <- sort(unique(unlist(dependencies)))
-# Exclude arrow, self packages, and R
-dependencies <- setdiff(dependencies, c("arrow", basename(rpkgs)))
+# Exclude arrow, methods, covidcast, self packages, and R
+dependencies <- setdiff(dependencies, c("arrow", "covidcast", "methods", basename(rpkgs)))
 dependencies <- dependencies[!grepl("^R(\\\\(.*\\\\))?$", dependencies)]
 # Print the dependencies
 cat(paste(dependencies, collapse = ","))
@@ -111,6 +111,7 @@ conda activate $USERDIR/flepimop-env
 pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 
 # Install the local R packages
+R -e "install.packages('covidcast')"
 RETURNTO=$( pwd )
 cd $FLEPI_PATH/flepiMoP/R_packages/
 for d in $( ls ); do
