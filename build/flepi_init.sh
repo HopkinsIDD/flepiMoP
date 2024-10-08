@@ -103,7 +103,7 @@ cat << EOM
 If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepimop_sample\` repository:
 \`\`\`bash
 cd \$PROJECT_PATH
-Rscript \$FLEPI_PATH/flepimop/main_scripts/inference_main.R -c \$CONFIG_PATH -j 1 -n 1 -k 1
+flepimop-inference-main -c \$CONFIG_PATH -j 1 -n 1 -k 1
 \`\`\`
 Just make sure to \`rm -r model_output\` after running.
 
