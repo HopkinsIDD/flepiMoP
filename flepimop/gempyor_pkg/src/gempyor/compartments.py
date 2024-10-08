@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import click
 from .utils import config, Timer, as_list
-from . import file_paths
 from functools import reduce
 import logging
 
@@ -744,42 +742,3 @@ def list_recursive_convert_to_string(thing):
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
 
-
-@click.group()
-def compartments():
-    pass
-
-
-# TODO: CLI arguments
-@compartments.command()
-def plot():
-    assert config["compartments"].exists()
-    assert config["seir"].exists()
-    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
-
-    # TODO: this should be a command like build compartments.
-    (
-        unique_strings,
-        transition_array,
-        proportion_array,
-        proportion_info,
-    ) = comp.get_transition_array()
-
-    comp.plot(output_file="transition_graph", source_filters=[], destination_filters=[])
-
-    print("wrote file transition_graph")
-
-
-@compartments.command()
-def export():
-    assert config["compartments"].exists()
-    assert config["seir"].exists()
-    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
-    (
-        unique_strings,
-        transition_array,
-        proportion_array,
-        proportion_info,
-    ) = comp.get_transition_array()
-    comp.toFile("compartments_file.csv", "transitions_file.csv", write_parquet=False)
-    print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")
