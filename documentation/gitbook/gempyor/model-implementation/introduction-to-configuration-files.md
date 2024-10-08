@@ -56,7 +56,7 @@ end_date_groundtruth: 2020-12-31
 nslots: 1000
 ```
 
-### `spatial_setup` section
+### `subpop_setup` section
 
 {% hint style="success" %}
 Required section
