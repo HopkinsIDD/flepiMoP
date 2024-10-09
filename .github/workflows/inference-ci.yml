@@ -2,6 +2,10 @@ name: inference-ci
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ['flepicommon-ci', 'gempyor-ci']
+    types:
+      - completed
   push:
     paths:
       - flepimop/R_packages/inference/**/*
@@ -16,8 +20,9 @@ on:
       - dev
 
 jobs:
-  unit-tests:
+  ci:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     container:
       image: hopkinsidd/flepimop:latest-dev
       options: --user root

@@ -16,7 +16,7 @@ on:
       - dev
 
 jobs:
-  unit-tests:
+  ci:
     runs-on: ubuntu-latest
     container:
       image: hopkinsidd/flepimop:latest-dev
