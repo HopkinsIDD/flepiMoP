@@ -87,7 +87,7 @@ channels:
 dependencies:
 - python=3.10
 - pip
-- r-base>=4.4
+- r-base>=4.3
 - r-essentials
 - pyarrow=17.0.0
 - r-arrow=17.0.0
@@ -111,9 +111,9 @@ conda activate $USERDIR/flepimop-env
 pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 
 # Install the local R packages
-R -e "install.packages('covidcast')"
+R -e "install.packages('covidcast', repos='https://cloud.r-project.org')"
 RETURNTO=$( pwd )
-cd $FLEPI_PATH/flepiMoP/R_packages/
+cd $FLEPI_PATH/flepimop/R_packages/
 for d in $( ls ); do
     R CMD INSTALL $d
 done
