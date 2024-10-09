@@ -24,5 +24,9 @@ install_cli <- function(
   )
   from <- scriptfiles
   to <- file.path(path, gsub("\\.R$", "", basename(scriptfiles)))
+  to_remove <- file.exists(to)
+  if (length(to_remove)) {
+    file.remove(to)
+  }
   file.symlink(from, to)
 }
