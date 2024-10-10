@@ -39,7 +39,7 @@ fi
 # Test that flepiMoP is located there
 if [ ! -d "$FLEPI_PATH" ]; then
     while true; do
-        read -p "Did not find flepiMoP at $FLEPI_PATH, do you want to clone the repo? (y/n)" resp
+        read -p "Did not find flepiMoP at $FLEPI_PATH, do you want to clone the repo? (y/n) " resp
         case "$resp" in
             [yY])
                 echo "Cloning on your behalf."
@@ -51,7 +51,7 @@ if [ ! -d "$FLEPI_PATH" ]; then
                 exit 1
                 ;;
             *)
-                echo "Invalid input. Please enter 'y' or 'n'."
+                echo "Invalid input. Please enter 'y' or 'n'. "
                 ;;
         esac
     done
