@@ -35,13 +35,6 @@ if [ -z "${FLEPI_PATH}" ]; then
     echo "An explicit \$FLEPI_PATH was not provided, setting to '$USERDIR/flepiMoP'."
     export FLEPI_PATH="$USERDIR/flepiMoP"
 fi
-if [ ! -d "$FLEPI_PATH" ]; then
-    echo "You must have a clone of flepiMoP at $FLEPI_PATH to use this script."
-    exit 1
-elif [ ! -d "$FLEPI_PATH/.git" ]; then
-    echo "The flepiMoP found at '$FLEPI_PATH' is not a git clone, unsure of how to proceed."
-    exit 1
-fi
 
 # Conda init
 conda activate $USERDIR/flepimop-env
@@ -82,10 +75,16 @@ export TODAY=`date --rfc-3339='date'`
 echo -n "Please set a project path (relative to '$WORKDIR'): "
 read PROJECT_PATH
 export PROJECT_PATH="$WORKDIR/$PROJECT_PATH"
+if [ ! -d $PROJECT_PATH ]; then
+    echo "> The project path provided, $PROJECT_PATH, is not a directory. Please ensure this is correct."
+fi
 
 echo -n "Please set a config path (relative to '$PROJECT_PATH'): "
 read CONFIG_PATH
 export CONFIG_PATH="$PROJECT_PATH/$CONFIG_PATH"
+if [ ! -f $CONFIG_PATH ]; then
+    echo "> The config path provided, $CONFIG_PATH, is not a file. Please ensure this is correct."
+fi
 
 echo -n "Please set a validation date (today is $TODAY): "
 read VALIDATION_DATE
