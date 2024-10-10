@@ -4,6 +4,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from .utils import config, Timer, as_list
 from functools import reduce
+import click
+from gempyor.shared_cli import argument_config_files, option_config_files, parse_config_files, cli
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -742,3 +745,50 @@ def list_recursive_convert_to_string(thing):
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
 
+@click.group()
+def compartments():
+    """Commands for working with FlepiMoP compartments"""
+    pass
+
+@compartments.command()
+@argument_config_files
+@option_config_files
+def plot(**kwargs):
+    """Plot compartments"""
+    parse_config_files(**kwargs)
+    assert config["compartments"].exists()
+    assert config["seir"].exists()
+    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+
+    # TODO: this should be a command like build compartments.
+    (
+        unique_strings,
+        transition_array,
+        proportion_array,
+        proportion_info,
+    ) = comp.get_transition_array()
+
+    comp.plot(output_file="transition_graph", source_filters=[], destination_filters=[])
+
+    print("wrote file transition_graph")
+
+
+@compartments.command()
+@argument_config_files
+@option_config_files
+def export(**kwargs):
+    """Export compartments"""
+    parse_config_files(**kwargs)
+    assert config["compartments"].exists()
+    assert config["seir"].exists()
+    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+    (
+        unique_strings,
+        transition_array,
+        proportion_array,
+        proportion_info,
+    ) = comp.get_transition_array()
+    comp.toFile("compartments_file.csv", "transitions_file.csv", write_parquet=False)
+    print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")
+
+cli.add_command(compartments)

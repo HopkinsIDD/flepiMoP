@@ -5,9 +5,6 @@ from typing import Dict, List, Union, Literal, Optional, Annotated, Any
 from functools import partial
 from gempyor import compartments
 
-def validate(file_path: str):
-    return True
-
 def read_yaml(file_path: str) -> dict:
     with open(file_path, 'r') as stream:
         config = yaml.safe_load(stream)
