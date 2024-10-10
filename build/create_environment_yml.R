@@ -34,15 +34,22 @@ new_environment_yml <- c(
   "channels:",
   "- conda-forge",
   "- defaults",
+  "- r",
+  "- dnachun # For osx-arm64",
   "dependencies:",
   "- python=3.10",
   "- pip",
   "- r-base>=4.3",
   "- pyarrow=17.0.0",
   "- r-arrow=17.0.0",
+  "- r-sf",
   paste0("- r-", dependencies)
 )
-old_environment_yml <- readLines(environment_yml)
+if (file.exists(environment_yml)) {
+  old_environment_yml <- readLines(environment_yml)
+} else {
+  old_environment_yml <- character()
+}
 old_environment_yml <- old_environment_yml[!grepl("^#", old_environment_yml)]
 if (!identical(new_environment_yml, old_environment_yml)) {
   new_environment_yml <- c(
