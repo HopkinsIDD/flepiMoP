@@ -134,7 +134,7 @@ def rk4_integration(
                         rate_change_compartment *= parameters[transitions[transition_rate_col][transition_index]][
                             today
                         ][visiting_subpop]
-                        total_rate[spatial_node] *= rate_keep_compartment + rate_change_compartment.sum()
+                        total_rate[spatial_node] *= (rate_keep_compartment + rate_change_compartment.sum())
 
             # compute the number of individual transitioning from source to destination from the total rate
             # number_move has shape (nspatial_nodes)
