@@ -745,7 +745,7 @@ def list_recursive_convert_to_string(thing):
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
 
-@click.group()
+@cli.group()
 def compartments():
     """Commands for working with FlepiMoP compartments"""
     pass
