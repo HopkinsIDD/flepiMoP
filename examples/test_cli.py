@@ -7,26 +7,25 @@ import os
 
 
 def test_config_sample_2pop():
-    os.chdir(os.path.dirname(__file__) + "/tutorials")
-    runner = CliRunner()
-    result = runner.invoke(simulate, ["-c", "config_sample_2pop.yml"])
-    print(result.output)  # useful for debug
-    print(result.exit_code)  # useful for debug
-    print(result.exception)  # useful for debug
-    assert result.exit_code == 0
-    assert "completed in" in result.output
+  os.chdir(os.path.dirname(__file__) + "/tutorials")
+  runner = CliRunner()
+  result = runner.invoke(simulate, ['config_sample_2pop.yml'])
+  print(result.output) # useful for debug
+  print(result.exit_code) # useful for debug
+  print(result.exception) # useful for debug
+  assert result.exit_code == 0
+  assert 'completed in' in result.output
 
 
 def test_sample_2pop_modifiers():
-    os.chdir(os.path.dirname(__file__) + "/tutorials")
-    runner = CliRunner()
-    result = runner.invoke(simulate, ["-c", "config_sample_2pop_modifiers.yml"])
-    print(result.output)  # useful for debug
-    print(result.exit_code)  # useful for debug
-    print(result.exception)  # useful for debug
-    assert result.exit_code == 0
-    assert "completed in" in result.output
-
+  os.chdir(os.path.dirname(__file__) + "/tutorials")
+  runner = CliRunner()
+  result = runner.invoke(simulate, ['config_sample_2pop.yml', 'config_sample_2pop_outcomes.yml', 'config_sample_2pop_modifiers.yml'])
+  print(result.output) # useful for debug
+  print(result.exit_code) # useful for debug
+  print(result.exception) # useful for debug
+  assert result.exit_code == 0
+  assert 'completed in' in result.output
 
 def test_simple_usa_statelevel():
     os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
