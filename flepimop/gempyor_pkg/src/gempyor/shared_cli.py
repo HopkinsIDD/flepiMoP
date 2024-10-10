@@ -59,15 +59,15 @@ config_file_options = [
         help = "Run stochastic simulations?",
     ),
     click.option(
-        "-s", "--seir_modifiers_scenario", envvar = "FLEPI_SEIR_SCENARIO",
+        "-s", "--seir_modifiers_scenarios", envvar = "FLEPI_SEIR_SCENARIO",
         type = str, default = [], multiple = True,
-        help = "override the NPI scenario(s) run for this simulation [supports multiple NPI scenarios: `-s Wuhan -s None`]",
+        help = "override/select the transmission scenario(s) to run",
     ),
     click.option(
-        "-d", "--outcome_modifiers_scenario",
+        "-d", "--outcome_modifiers_scenarios",
         envvar = "FLEPI_OUTCOME_SCENARIO",
         type = str, default = [], multiple = True,
-        help = "Scenario of outcomes to run"
+        help = "override/select the outcome scenario(s) to run"
     ),
     click.option(
         "-c", "--config", "config_filepath", envvar = "CONFIG_PATH",
@@ -87,8 +87,8 @@ def parse_config_files(
     config_filepath,
     in_run_id,
     out_run_id,
-    seir_modifiers_scenario,
-    outcome_modifiers_scenario,
+    seir_modifiers_scenarios,
+    outcome_modifiers_scenarios,
     in_prefix,
     nslots,
     jobs,
@@ -109,17 +109,18 @@ def parse_config_files(
         config.set_file(config_file)
 
     # override the config file with any command line arguments
-    if seir_modifiers_scenario:
-        if config["seir_modifiers"].exists():
-            config["seir_modifiers"]["scenarios"] = seir_modifiers_scenario
-        else:
-            config["seir_modifiers"] = {"scenarios": seir_modifiers_scenario}
+    if config["seir_modifiers"].exists():
+        if seir_modifiers_scenarios:
+            config["seir_modifiers"]["scenarios"] = seir_modifiers_scenarios
+    else:
+        config["seir_modifiers"] = {"scenarios": seir_modifiers_scenarios}
+    
 
-    if outcome_modifiers_scenario:
-        if config["outcome_modifiers"].exists():
-            config["outcome_modifiers"]["scenarios"] = outcome_modifiers_scenario
-        else:
-            config["outcome_modifiers"] = {"scenarios": outcome_modifiers_scenario}
+    if config["outcome_modifiers"].exists():
+        if outcome_modifiers_scenarios:
+            config["outcome_modifiers"]["scenarios"] = outcome_modifiers_scenarios
+    else:
+        config["outcome_modifiers"] = {"scenarios": outcome_modifiers_scenarios}
     
     if nslots:
         config["nslots"] = nslots

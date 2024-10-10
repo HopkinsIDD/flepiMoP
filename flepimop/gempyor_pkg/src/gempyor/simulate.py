@@ -176,8 +176,8 @@ def simulate(
     config_filepath,
     in_run_id,
     out_run_id,
-    seir_modifiers_scenario,
-    outcome_modifiers_scenario,
+    seir_modifiers_scenarios,
+    outcome_modifiers_scenarios,
     in_prefix,
     nslots,
     jobs,
@@ -190,12 +190,12 @@ def simulate(
     largs = locals()
     parse_config_files(**largs)
 
-    print(outcome_modifiers_scenario, seir_modifiers_scenario)
-    outcome_modifiers_scenario = as_list(config["outcome_modifiers_scenarios"])
-    seir_modifiers_scenario = as_list(config["seir_modifiers_scenarios"])
-    print(outcome_modifiers_scenario, seir_modifiers_scenario)
+    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
+    outcome_modifiers_scenarios = as_list(config["outcome_modifiers"]["scenarios"])
+    seir_modifiers_scenarios = as_list(config["seir_modifiers"]["scenarios"])
+    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
 
-    scenarios_combinations = [[s, d] for s in seir_modifiers_scenario for d in outcome_modifiers_scenario]
+    scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
     print("Combination of modifiers scenarios to be run: ")
     print(scenarios_combinations)
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
