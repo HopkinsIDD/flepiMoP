@@ -4,7 +4,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from .utils import config, Timer, as_list
 from functools import reduce
-import click
 from gempyor.shared_cli import argument_config_files, option_config_files, parse_config_files, cli
 
 import logging

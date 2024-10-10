@@ -9,7 +9,6 @@ import copy
 # import seaborn as sns
 import matplotlib._color_data as mcd
 import pyarrow.parquet as pq
-import click
 import subprocess
 import dask.dataframe as dd
 import matplotlib.dates as mdates
