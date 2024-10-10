@@ -35,7 +35,7 @@ new_environment_yml <- c(
   "- conda-forge",
   "- defaults",
   "- r",
-  "- dnachun # For osx-arm64",
+  "- dnachun",
   "dependencies:",
   "- python=3.10",
   "- pip",
