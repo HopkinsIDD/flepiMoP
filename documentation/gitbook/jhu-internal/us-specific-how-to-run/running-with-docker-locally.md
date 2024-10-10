@@ -99,7 +99,7 @@ Stay in `$DATA_PATH`, select a config, and build the setup. The setup creates th
 export CONFIG_PATH=config_SMH_R1_lowVac_optImm_2022.yml
 Rscript $FLEPI_PATH/datasetup/build_US_setup.R
 Rscript $FLEPI_PATH/datasetup/build_flu_data.R
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R.R -j 1 -n 1 -k 1
+flepimop-inference-main -j 1 -n 1 -k 1
 ```
 
 where:
