@@ -1,6 +1,14 @@
 outcomes:
   method: delayframe
   outcomes:
+    incidCase: #incidence of detected cases
+      source:
+        incidence:
+          infection_stage: "I"
+      probability:
+        value: 0.5
+      delay:
+        value: 5
     incidHosp: #incidence of hospitalizations
       source:
         incidence:
