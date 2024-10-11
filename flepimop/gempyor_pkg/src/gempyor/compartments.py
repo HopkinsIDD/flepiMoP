@@ -1,3 +1,4 @@
+from typing import Any
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -867,7 +868,28 @@ class Compartments:
         src.render(output_file, view=True)
 
 
-def get_list_dimension(thing):
+def get_list_dimension(thing: Any) -> int:
+    """
+    Get a list like dimension of an object.
+
+    Args:
+        thing: An object to get the list like dimension of.
+
+    Returns:
+        The length of `thing` if it is a list, otherwise 1.
+
+    Examples:
+        >>> get_list_dimension([1, 2, 3])
+        3
+        >>> get_list_dimension(1)
+        1
+        >>> get_list_dimension(object)
+        1
+        >>> get_list_dimension({"a": 1, "b": 2})
+        1
+        >>> get_list_dimension((1, 2, 3))
+        1
+    """
     if type(thing) == list:
         return len(thing)
     return 1
