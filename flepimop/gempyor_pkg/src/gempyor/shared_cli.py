@@ -9,7 +9,7 @@ def cli():
     """Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface"""
     pass
 
-argument_config_files = click.argument("config_files", nargs = -1, type = click.Path(exists = True), required = True)
+argument_config_files = click.argument("config_files", nargs = -1, type = click.Path(exists = True))
 
 config_file_options = [
     click.option(
@@ -104,6 +104,9 @@ def parse_config_files(
             config_files = [config_filepath]
         else:
             warnings.warn("Found CONFIG_FILES... ignoring -(-c)onfig option / CONFIG_FILE environment variable.", DeprecationWarning)
+
+    if not len(config_files):
+        raise ValueError("No configuration file(s) provided")
 
     for config_file in reversed(config_files):
         config.set_file(config_file)
