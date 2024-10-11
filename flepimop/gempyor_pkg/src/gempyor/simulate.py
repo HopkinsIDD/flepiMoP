@@ -189,11 +189,10 @@ def simulate(
     """Forward simulate a model"""
     largs = locals()
     parse_config_files(**largs)
-    print(config.dump())
 
     print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
-    outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
-    seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+    outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].get()
+    seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].get()
     print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
 
     scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
