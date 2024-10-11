@@ -1,13 +1,15 @@
+from functools import reduce
+import logging
 from typing import Any
+
+import click
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import click
+
 from .utils import config, Timer, as_list
-from . import file_paths
-from functools import reduce
-import logging
+
 
 logger = logging.getLogger(__name__)
 
