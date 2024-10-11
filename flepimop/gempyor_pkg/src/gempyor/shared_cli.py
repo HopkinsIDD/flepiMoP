@@ -116,15 +116,20 @@ def parse_config_files(
         if seir_modifiers_scenarios:
             config["seir_modifiers"]["scenarios"] = seir_modifiers_scenarios
     else:
-        config["seir_modifiers"] = {"scenarios": as_list(seir_modifiers_scenarios)}
+        if seir_modifiers_scenarios:
+            config["seir_modifiers"] = {"scenarios": as_list(seir_modifiers_scenarios)}
+        else:
+            config["seir_modifiers"] = {"scenarios": [None]}
     
 
     if config["outcome_modifiers"].exists():
         if outcome_modifiers_scenarios:
             config["outcome_modifiers"]["scenarios"] = outcome_modifiers_scenarios
     else:
-        config["outcome_modifiers"] = {"scenarios": as_list(outcome_modifiers_scenarios)}
-    
+        if outcome_modifiers_scenarios:
+            config["outcome_modifiers"] = {"scenarios": as_list(outcome_modifiers_scenarios)}
+        else:
+            config["outcome_modifiers"] = {"scenarios": [None]}
     if nslots:
         config["nslots"] = nslots
     
