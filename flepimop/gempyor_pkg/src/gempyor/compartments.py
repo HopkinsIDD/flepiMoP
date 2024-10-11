@@ -897,27 +897,48 @@ def get_list_dimension(thing: Any) -> int:
     return 1
 
 
-def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=False):
-    try:
-        return list_access_element(thing, idx, dimension, encapsulate_as_list)
-    except Exception as e:
-        print(f"Error {e}:")
-        print(f">>> in list_access_element_safe for {thing} at index {idx}")
-        print(
-            ">>> This is often, but not always because the object above is a list (there are brackets around it)."
-        )
-        print(
-            ">>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it."
-        )
-        print(f"dimension: {dimension}")
-        raise e
-
-
-def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
+def list_access_element(
+    thing: Any, idx: int, dimension: Any = None, encapsulate_as_list: bool = False
+) -> Any:
     """
-    This function is used to access elements in a list or a single element.
-    if list, it will return the element at index idx.
-    if not list, it will return the element itself, for any idx.
+    Access a list element in a convoluted way.
+
+    Args:
+        thing: A list of any type or any type.
+        idx: The index to access
+        dimension: If `None` accept thing as is, if 1 then wrap `thing` in a list if it
+            is not a list, otherwise recursively access `thing` and cast the result of
+            that as a list if it doesn't return a list.
+        encapsulate_as_list: A bool indicating if the returned value should be a list.
+
+    Returns:
+        Either a list element or a list either as a scalar or cast to a list.
+
+    Examples:
+        >>> list_access_element(1, 1)
+        1
+        >>> list_access_element(1, 30)
+        1
+        >>> try:
+        ...     list_access_element([1], 30)
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        list index out of range
+        >>> list_access_element(1, 30, 1)
+        1
+        >>> list_access_element(1, 30, dimension=1)
+        1
+        >>> list_access_element(1, -1, dimension=1)
+        1
+        >>> list_access_element(1, -1, dimension=1, encapsulate_as_list=True)
+        [1]
+        >>> list_access_element(1, -1, dimension="blue", encapsulate_as_list=True)
+        [1]
+        >>> list_access_element(
+        ...    [1, 2, 3, 4, 5], 4, dimension="blue", encapsulate_as_list=True
+        ... )
+        [5]
     """
     if not dimension is None:
         if dimension == 1:
@@ -932,6 +953,71 @@ def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
         return as_list(rc)
     else:
         return rc
+
+
+def list_access_element_safe(
+    thing: Any, idx: int, dimension: Any = None, encapsulate_as_list: bool = False
+) -> Any:
+    """
+    Wrapper around `list_access_element` that prints before raising on error.
+
+    Args:
+        thing: A list of any type or any type.
+        idx: The index to access
+        dimension: If `None` accept thing as is, if 1 then wrap `thing` in a list if it
+            is not a list, otherwise recursively access `thing` and cast the result of
+            that as a list if it doesn't return a list.
+        encapsulate_as_list: A bool indicating if the returned value should be a list.
+
+    Returns:
+        Either a list element or a list either as a scalar or cast to a list.
+
+    Examples:
+        >>> list_access_element_safe(1, 1)
+        1
+        >>> list_access_element_safe(1, 30)
+        1
+        >>> try:
+        ...     list_access_element_safe([1], 30)
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        Error list index out of range:
+        >>> in list_access_element_safe for [1] at index 30
+        >>> This is often, but not always because the object above is a list (there are brackets around it).
+        >>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it.
+        dimension: None
+        list index out of range
+        >>> list_access_element_safe(1, 30, 1)
+        1
+        >>> list_access_element_safe(1, 30, dimension=1)
+        1
+        >>> list_access_element_safe(1, -1, dimension=1)
+        1
+        >>> list_access_element_safe(1, -1, dimension=1, encapsulate_as_list=True)
+        [1]
+        >>> list_access_element_safe(1, -1, dimension="blue", encapsulate_as_list=True)
+        [1]
+        >>> list_access_element_safe(
+        ...    [1, 2, 3, 4, 5], 4, dimension="blue", encapsulate_as_list=True
+        ... )
+        [5]
+    """
+    try:
+        return list_access_element(thing, idx, dimension, encapsulate_as_list)
+    except Exception as e:
+        print(f"Error {e}:")
+        print(f">>> in list_access_element_safe for {thing} at index {idx}")
+        print(
+            ">>> This is often, but not always because the object "
+            "above is a list (there are brackets around it)."
+        )
+        print(
+            ">>> and in this case it is not broadcast, so if you want to "
+            "it to be broadcasted, you need remove the brackets around it."
+        )
+        print(f"dimension: {dimension}")
+        raise e
 
 
 def list_recursive_convert_to_string(thing):
