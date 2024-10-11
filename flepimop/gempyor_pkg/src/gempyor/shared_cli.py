@@ -1,6 +1,6 @@
 import click
 from functools import reduce
-from gempyor.utils import config
+from gempyor.utils import config, as_list
 import multiprocessing
 import warnings
 
@@ -60,13 +60,13 @@ config_file_options = [
     ),
     click.option(
         "-s", "--seir_modifiers_scenarios", envvar = "FLEPI_SEIR_SCENARIO",
-        type = str, default = [], multiple = True,
+        type = str, default = None, multiple = True,
         help = "override/select the transmission scenario(s) to run",
     ),
     click.option(
         "-d", "--outcome_modifiers_scenarios",
         envvar = "FLEPI_OUTCOME_SCENARIO",
-        type = str, default = [], multiple = True,
+        type = str, default = None, multiple = True,
         help = "override/select the outcome scenario(s) to run"
     ),
     click.option(
@@ -113,14 +113,14 @@ def parse_config_files(
         if seir_modifiers_scenarios:
             config["seir_modifiers"]["scenarios"] = seir_modifiers_scenarios
     else:
-        config["seir_modifiers"] = {"scenarios": seir_modifiers_scenarios}
+        config["seir_modifiers"] = {"scenarios": as_list(seir_modifiers_scenarios)}
     
 
     if config["outcome_modifiers"].exists():
         if outcome_modifiers_scenarios:
             config["outcome_modifiers"]["scenarios"] = outcome_modifiers_scenarios
     else:
-        config["outcome_modifiers"] = {"scenarios": outcome_modifiers_scenarios}
+        config["outcome_modifiers"] = {"scenarios": as_list(outcome_modifiers_scenarios)}
     
     if nslots:
         config["nslots"] = nslots
