@@ -11,6 +11,9 @@ import pyarrow.parquet as pq
 from .utils import config, Timer, as_list
 
 
+NestedListOfAny = Any | list["NestedListOfAny"]
+NestedListOfStr = str | list["NestedListOfStr"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -1020,7 +1023,28 @@ def list_access_element_safe(
         raise e
 
 
-def list_recursive_convert_to_string(thing):
+def list_recursive_convert_to_string(thing: NestedListOfAny) -> NestedListOfStr:
+    """
+    Recursively coerce a nested list of any to a nested of strings.
+
+    Args:
+        thing: A nested list of any type to coerce.
+
+    Returns:
+        A nested list of strings.
+
+    Examples:
+        >>> list_recursive_convert_to_string(1)
+        '1'
+        >>> list_recursive_convert_to_string("abc")
+        'abc'
+        >>> list_recursive_convert_to_string(object)
+        "<class 'object'>"
+        >>> list_recursive_convert_to_string([1, 2, 3])
+        ['1', '2', '3']
+        >>> list_recursive_convert_to_string([[1, 2], 3, [4, 5, [6]]])
+        [['1', '2'], '3', ['4', '5', ['6']]]
+    """
     if type(thing) == list:
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
