@@ -1,6 +1,9 @@
-from click.testing import CliRunner
-from gempyor.simulate import simulate
 import os
+import subprocess
+
+from click.testing import CliRunner
+
+from gempyor.simulate import simulate
 
 # See here to test click application https://click.palletsprojects.com/en/8.1.x/testing/
 # would be useful to also call the command directly
@@ -36,3 +39,11 @@ def test_simple_usa_statelevel():
   print(result.exception) # useful for debug
   assert result.exit_code == 0
   assert 'completed in' in result.output
+
+def test_simple_usa_statelevel_deprecated():
+  os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
+  result = subprocess.run(["gempyor-simulate", "-n", "1", "-c", "simple_usa_statelevel.yml"])
+  print(result.stdout) # useful for debug
+  print(result.stderr) # useful for debug
+  print(result.returncode) # useful for debug
+  assert result.returncode == 0

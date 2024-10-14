@@ -6,6 +6,10 @@ import click
 
 from .utils import config, as_list
 
+"""
+An internal module to share common CLI elements.
+"""
+
 __all__ = []
 
 @click.group()
@@ -94,7 +98,7 @@ config_file_options = [
         "--seir_modifiers_scenarios",
         envvar="FLEPI_SEIR_SCENARIO",
         type=str,
-        default=None,
+        default=[],
         multiple=True,
         help="override/select the transmission scenario(s) to run",
     ),
@@ -103,7 +107,7 @@ config_file_options = [
         "--outcome_modifiers_scenarios",
         envvar="FLEPI_OUTCOME_SCENARIO",
         type=str,
-        default=None,
+        default=[],
         multiple=True,
         help="override/select the outcome scenario(s) to run",
     ),
@@ -160,14 +164,12 @@ def parse_config_files(
         config.set_file(config_file)
 
     for option in ("seir_modifiers", "outcome_modifiers"):
-        if config[option].exists():
-            if (value := locals()[f"{option}_scenarios"]) is not None:
-                config[option]["scenarios"] = value
-        else:
-            if (value := locals()[f"{option}_scenarios"]) is not None:
-                config[option] = {"scenarios": as_list(value)}
+        value = locals()[f"{option}_scenarios"]
+        if value:
+            if config[option].exists():
+                config[option]["scenarios"] = as_list(value)
             else:
-                config[option] = {"scenarios": [None]}
+                raise ValueError(f"Specified {option}_scenarios when no {option} in configuration file(s): {value}")
 
     for option in (
         "nslots",
