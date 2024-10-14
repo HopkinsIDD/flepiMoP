@@ -12,9 +12,11 @@ __all__ = [
 
 from functools import reduce
 import logging
+from os import PathLike
 from typing import Any
 
 import click
+import confuse
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -30,15 +32,49 @@ logger = logging.getLogger(__name__)
 
 
 class Compartments:
-    # Minimal object to be easily picklable for // runs
+    """
+    A representation of a compartmental model's compartments and transitions.
+
+    This class provides an easily picklable representation of a model's parsed
+    compartments and transitions.
+
+    Attributes:
+        compartments: A pandas DataFrame that describes the grid of compartments with at
+            least a column named 'name'.
+        times_set: An indicator, either 0 or 1, for if this class' init parameters were
+            given properly.
+        transitions: ...
+    """
+
     def __init__(
         self,
-        seir_config=None,
-        compartments_config=None,
-        compartments_file=None,
-        transitions_file=None,
-    ):
-        self.times_set = 0
+        seir_config: confuse.Subview | None = None,
+        compartments_config: confuse.Subview | None = None,
+        compartments_file: PathLike | None = None,
+        transitions_file: PathLike | None = None,
+    ) -> None:
+        """
+        Construct a compartments instance using either config or files.
+
+        Args:
+            seir_config: An seir configuration containing a description of transitions
+                between compartments or `None`.
+            compartments_config: A compartments configuration containing a description
+                of compartments or `None`.
+            compartments_file: A parquet file containing a description of compartments
+                or `None`.
+            transitions_file: A parquet file containing a description of transitions
+                between compartments or `None`.
+
+        Notes:
+            Both `seir_config` and `compartments_config` must not be `None` or both
+            `compartments_file` and `transitions_file` must not be `None`.
+
+        Raises:
+            ValueError: If `seir_config` or `compartments_config` are `None` and
+                `compartments_file` or `transitions_file` are `None`.
+        """
+        self.times_set: int = 0
 
         ## Something like this is needed for check script:
         if (not compartments_file is None) and (not transitions_file is None):
@@ -52,45 +88,56 @@ class Compartments:
             raise ValueError("Compartments object not set, no config or file provided")
         return
 
-    def constructFromConfig(self, seir_config, compartment_config):
+    def __eq__(self, other: "Compartments") -> bool:
         """
-        This method is called by the constructor if the compartments are not loaded from a file.
-        It will parse the compartments and transitions from the configuration files.
-        It will populate self.compartments and self.transitions.
-        """
-        self.compartments = self.parse_compartments(seir_config, compartment_config)
-        self.transitions = self.parse_transitions(seir_config, False)
+        Determine if two Compartments instances are equal.
 
-    def __eq__(self, other):
+        Args:
+            other: The other Compartments instance to compare with.
+
+        Returns:
+            A boolean indicating if the Compartments instances represent the same
+            set of compartments and transitions.
+        """
         return (self.transitions == other.transitions).all().all() and (
             self.compartments == other.compartments
         ).all().all()
 
-    def parse_compartments(self, seir_config, compartment_config):
-        """Parse the compartments from the configuration file:
-        seir_config: the configuration file for the SEIR model
-        compartment_config: the configuration file for the compartments
-        Example: if config says:
-        ```
-        compartments:
-            infection_stage: ["S", "E", "I", "R"]
-            vaccination_stage: ["vaccinated", "unvaccinated"]
-        ```
-        compartment_df is:
-        ```
-            infection_stage vaccination_stage         name
-        0               S        vaccinated    S_vaccinated
-        1               S      unvaccinated  S_unvaccinated
-        2               E        vaccinated    E_vaccinated
-        3               E      unvaccinated  E_unvaccinated
-        4               I        vaccinated    I_vaccinated
-        5               I      unvaccinated  I_unvaccinated
-        6               R        vaccinated    R_vaccinated
-        7               R      unvaccinated  R_unvaccinated
-        ```
-        TODO: add tests
+    def constructFromConfig(
+        self, seir_config: confuse.Subview, compartment_config: confuse.Subview
+    ) -> None:
+        """
+        Parse compartments and transitions and assign them to this instance.
+
+        This method is a helper for the constructor that parses compartments and
+        transitions configurations and assigns them to the `compartments` and
+        `transitions` attributes.
+
+        Args:
+            seir_config: An seir configuration containing a description of transitions
+                between compartments.
+            compartments_config: A compartments configuration containing a description
+                of compartments/
         """
 
+        self.compartments = self.parse_compartments(seir_config, compartment_config)
+        self.transitions = self.parse_transitions(seir_config, False)
+
+    def parse_compartments(
+        self, seir_config: Any, compartment_config: confuse.Subview
+    ) -> pd.DataFrame:
+        """
+        Parse the compartments form the compartments configuration.
+
+        Args:
+            seir_config: This argument is ignored and only present for legacy reasons.
+            compartment_config: A compartments configuration listing out the stages to
+                be parsed.
+
+        Returns:
+            A pandas DataFrame with the column names being each of the stages listed in
+            the compartments configuration and 'name' for the compartment's full name.
+        """
         compartment_df = None
         for compartment_name, compartment_value in compartment_config.get().items():
             tmp = pd.DataFrame({"key": 1, compartment_name: compartment_value})
@@ -104,7 +151,9 @@ class Compartments:
         )
         return compartment_df
 
-    def parse_transitions(self, seir_config, fake_config=False):
+    def parse_transitions(
+        self, seir_config: confuse.Subview, fake_config: bool = False
+    ) -> pd.DataFrame:
         rc = reduce(
             lambda a, b: pd.concat(
                 [a, self.parse_single_transition(seir_config, b, fake_config)]
@@ -116,11 +165,37 @@ class Compartments:
         return rc
 
     def check_transition_element(
-        self, single_transition_config, problem_dimension=None
-    ):
+        self, single_transition_config: Any, problem_dimension: Any = None
+    ) -> bool:
+        """
+        Check a transition element.
+
+        Args:
+            single_transition_config: This argument is ignored and only present for
+                legacy reasons.
+            problem_dimension: This argument is ignored and only present for legacy
+                reasons.
+
+        Returns:
+            `True`.
+        """
         return True
 
-    def check_transition_elements(self, single_transition_config, problem_dimension):
+    def check_transition_elements(
+        self, single_transition_config: Any, problem_dimension: Any
+    ) -> bool:
+        """
+        Check transition elements.
+
+        Args:
+            single_transition_config: This argument is ignored and only present for
+                legacy reasons.
+            problem_dimension: This argument is ignored and only present for legacy
+                reasons.
+
+        Returns:
+            `True`.
+        """
         return True
 
     def access_original_config_by_multi_index(
