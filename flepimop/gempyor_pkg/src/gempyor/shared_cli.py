@@ -1,11 +1,12 @@
-import click
-from functools import reduce
-from gempyor.utils import config, as_list
 import multiprocessing
 import warnings
+from functools import reduce
+
+import click
+
+from .utils import config, as_list
 
 __all__ = []
-
 
 @click.group()
 def cli():
