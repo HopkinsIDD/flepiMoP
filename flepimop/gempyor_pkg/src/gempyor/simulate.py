@@ -245,7 +245,7 @@ def simulate(
 
 def _deprecation_simulate(*args):
     warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
-    cli(["simulate"] + args, standalone_mode=False)
+    cli(["simulate"].extend(args), standalone_mode=False)
 
 if __name__ == "__main__":
     _deprecation_simulate()
