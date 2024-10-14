@@ -183,7 +183,7 @@ def simulate(
     write_csv,
     write_parquet,
     first_sim_index,
-    stoch_traj_flag
+    stoch_traj_flag,
 ):
     """Forward simulate a model"""
     largs = locals()
