@@ -156,8 +156,7 @@
 
 ## @cond
 
-import multiprocessing
-import time, os, itertools
+import time, os, itertools, warnings
 
 from . import seir, outcomes, model_info, file_paths
 from .utils import config, as_list, profile
@@ -190,12 +189,10 @@ def simulate(
     largs = locals()
     parse_config_files(**largs)
 
-    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
-    outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].get()
-    seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].get()
-    print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
-
-    scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
+    scenarios_combinations = [
+        [s, d] for s in (config["seir_modifiers"]["scenarios"].as_str_seq() if config["seir_modifiers"].exists() else [None])
+        for d in (config["outcome_modifiers"]["scenarios"].as_str_seq() if config["outcome_modifiers"].exists() else [None])]
+    
     print("Combination of modifiers scenarios to be run: ")
     print(scenarios_combinations)
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
@@ -242,7 +239,11 @@ def simulate(
             f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
         )
 
+def _deprecation_simulate(**args):
+    warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
+    cli(["simulate"] + args, standalone_mode=False)
+
 if __name__ == "__main__":
-    simulate()
+    _deprecation_simulate()
 
 ## @endcond
