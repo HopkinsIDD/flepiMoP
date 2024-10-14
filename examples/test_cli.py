@@ -52,7 +52,7 @@ def test_simple_usa_statelevel():
 
 def test_simple_usa_statelevel_deprecated():
   os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
-  result = subprocess.run(["gempyor-simulate", "-n", "1", "-c", "simple_usa_statelevel.yml"])
+  result = subprocess.run(["gempyor-simulate", "-n", "1", "-c", "simple_usa_statelevel.yml"], capture_output=True, text=True)
   print(result.stdout) # useful for debug
   print(result.stderr) # useful for debug
   print(result.returncode) # useful for debug
