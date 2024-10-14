@@ -27,7 +27,7 @@ def allowed_values(v, values):
 #     value = values.get('value')
 #     parsed_val = compartments.Compartments.parse_parameter_strings_to_numpy_arrays_v2(value)
 #     return parsed_val
-
+    
 class SubpopSetupConfig(BaseModel):
     geodata: str
     mobility: Optional[str]
