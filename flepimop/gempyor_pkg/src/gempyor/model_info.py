@@ -157,7 +157,7 @@ class ModelInfo:
 
             # SEIR modifiers
             self.npi_config_seir = None
-            if config["seir_modifiers"].exists() and self.seir_modifiers_scenario is not None:
+            if config["seir_modifiers"].exists():
                 if config["seir_modifiers"]["scenarios"].exists():
                     self.npi_config_seir = config["seir_modifiers"]["modifiers"][
                         seir_modifiers_scenario
@@ -190,7 +190,7 @@ class ModelInfo:
         self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
         if self.outcomes_config is not None:
             self.npi_config_outcomes = None
-            if config["outcome_modifiers"].exists() and self.outcome_modifiers_scenario is not None:
+            if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
                     self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][
                         self.outcome_modifiers_scenario
