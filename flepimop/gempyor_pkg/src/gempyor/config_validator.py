@@ -14,7 +14,12 @@ def read_yaml(file_path: str) -> dict:
 def allowed_values(v, values):
     assert v in values
     return v
-    
+
+# def parse_value(cls, values):
+#     value = values.get('value')
+#     parsed_val = compartments.Compartments.parse_parameter_strings_to_numpy_arrays_v2(value)
+#     return parsed_val
+
 class SubpopSetupConfig(BaseModel):
     geodata: str
     mobility: Optional[str]
