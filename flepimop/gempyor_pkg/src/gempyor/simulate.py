@@ -239,7 +239,7 @@ def simulate(
             f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
         )
 
-def _deprecation_simulate(**args):
+def _deprecation_simulate(*args):
     warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
     cli(["simulate"] + args, standalone_mode=False)
 
