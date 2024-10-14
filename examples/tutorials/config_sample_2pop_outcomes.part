@@ -1,0 +1,29 @@
+outcomes:
+  method: delayframe
+  outcomes:
+    incidCase: #incidence of detected cases
+      source:
+        incidence:
+          infection_stage: "I"
+      probability:
+        value: 0.5
+      delay:
+        value: 5
+    incidHosp: #incidence of hospitalizations
+      source:
+        incidence:
+          infection_stage: "I"
+      probability:
+        value: 0.05
+      delay:
+        value: 7
+      duration:
+        value: 10
+        name: currHosp # will track number of current hospitalizations (ie prevalence)
+    incidDeath: #incidence of deaths
+      source: incidHosp
+      probability:
+        value: 0.2
+      delay:
+        value: 14
+ 
