@@ -31,6 +31,23 @@ NestedListOfStr = str | list["NestedListOfStr"]
 logger = logging.getLogger(__name__)
 
 
+def _access_original_config_by_multi_index(
+    config_piece: NestedListOfAny,
+    index: tuple[int],
+    dimension: list[int | None] | None = None,
+    encapsulate_as_list: bool = False,
+) -> NestedListOfAny:
+    if dimension is None:
+        dimension = [None for i in index]
+    # tmp = [y for y in zip(index, range(len(index)), dimension)]
+    tmp = zip(index, range(len(index)), dimension)
+    tmp = [
+        list_access_element_safe(config_piece[x[1]], x[0], x[2], encapsulate_as_list)
+        for x in tmp
+    ]
+    return tmp
+
+
 class Compartments:
     """
     A representation of a compartmental model's compartments and transitions.
@@ -200,21 +217,6 @@ class Compartments:
         """
         return True
 
-    def access_original_config_by_multi_index(
-        self, config_piece, index, dimension=None, encapsulate_as_list=False
-    ):
-        if dimension is None:
-            dimension = [None for i in index]
-        tmp = [y for y in zip(index, range(len(index)), dimension)]
-        tmp = zip(index, range(len(index)), dimension)
-        tmp = [
-            list_access_element_safe(
-                config_piece[x[1]], x[0], x[2], encapsulate_as_list
-            )
-            for x in tmp
-        ]
-        return tmp
-
     def expand_transition_elements(self, single_transition_config, problem_dimension):
         proportion_size = get_list_dimension(
             single_transition_config["proportional_to"]
@@ -248,7 +250,7 @@ class Compartments:
             try:
                 new_transition_config["source"][it.multi_index] = (
                     list_recursive_convert_to_string(
-                        self.access_original_config_by_multi_index(
+                        _access_original_config_by_multi_index(
                             single_transition_config["source"], it.multi_index
                         )
                     )
@@ -270,7 +272,7 @@ class Compartments:
             try:
                 new_transition_config["destination"][it.multi_index] = (
                     list_recursive_convert_to_string(
-                        self.access_original_config_by_multi_index(
+                        _access_original_config_by_multi_index(
                             single_transition_config["destination"], it.multi_index
                         )
                     )
@@ -292,7 +294,7 @@ class Compartments:
             try:
                 new_transition_config["rate"][it.multi_index] = (
                     list_recursive_convert_to_string(
-                        self.access_original_config_by_multi_index(
+                        _access_original_config_by_multi_index(
                             single_transition_config["rate"], it.multi_index
                         )
                     )
@@ -315,7 +317,7 @@ class Compartments:
                 new_transition_config["proportional_to"][it.multi_index] = as_list(
                     list_recursive_convert_to_string(
                         [
-                            self.access_original_config_by_multi_index(
+                            _access_original_config_by_multi_index(
                                 single_transition_config["proportional_to"][p_idx],
                                 it.multi_index,
                                 problem_dimension,
@@ -343,7 +345,7 @@ class Compartments:
                 "proportion_exponent" in single_transition_config
             ):  # if proportion_exponent is not defined, it is set to 1
                 try:
-                    self.access_original_config_by_multi_index(
+                    _access_original_config_by_multi_index(
                         single_transition_config["proportion_exponent"][0],
                         it.multi_index,
                         problem_dimension,
@@ -351,7 +353,7 @@ class Compartments:
                     new_transition_config["proportion_exponent"][it.multi_index] = (
                         list_recursive_convert_to_string(
                             [
-                                self.access_original_config_by_multi_index(
+                                _access_original_config_by_multi_index(
                                     single_transition_config["proportion_exponent"][
                                         p_idx
                                     ],
