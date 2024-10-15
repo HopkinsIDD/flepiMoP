@@ -1,6 +1,6 @@
 from .shared_cli import (
-    argument_config_files,
-    option_config_files,
+    config_files_argument,
+    config_file_options,
     parse_config_files,
     cli,
 )
@@ -17,9 +17,7 @@ from .simulate import simulate
 
 
 # add some basic commands to the CLI
-@cli.command()
-@argument_config_files
-@option_config_files
+@cli.command(params=[config_files_argument].extend(config_file_options.values()))
 def patch(**kwargs) -> None:
     """Merge configuration files"""
     parse_config_files(**kwargs)

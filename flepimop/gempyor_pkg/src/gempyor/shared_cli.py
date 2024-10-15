@@ -21,120 +21,102 @@ def cli():
 
 # click decorator to handle configuration file(s) as arguments
 # use as `@argument_config_files` before a cli command definition
-argument_config_files = click.argument(
-    "config_files", nargs=-1, type=click.Path(exists=True)
+config_files_argument = click.Argument(
+    ["config_files"], nargs=-1, type=click.Path(exists=True)
 )
 
 # List of `click` options that will be applied by `option_config_files`
 # n.b., the help for these options will be presented in the order defined here
-config_file_options = [
-    click.option(
-        "-c",
-        "--config",
-        "config_filepath",
+config_file_options = {
+    "config_filepath" : click.Option(
+        ["-c", "--config", "config_filepath"],
         envvar="CONFIG_PATH",
         type=click.Path(exists=True),
         required=False,  # deprecated = ["-c", "--config"],
         # preferred = "CONFIG_FILES...",
         help="Deprecated: configuration file for this simulation",
     ),
-    click.option(
-        "-s",
-        "--seir_modifiers_scenarios",
+    "seir_modifiers_scenarios": click.Option(
+        ["-s", "--seir_modifiers_scenarios"],
         envvar="FLEPI_SEIR_SCENARIO",
         type=str,
         default=[],
         multiple=True,
         help="override/select the transmission scenario(s) to run",
     ),
-    click.option(
-        "-d",
-        "--outcome_modifiers_scenarios",
+    "outcome_modifiers_scenarios": click.Option(
+        ["-d", "--outcome_modifiers_scenarios"],
         envvar="FLEPI_OUTCOME_SCENARIO",
         type=str,
         default=[],
         multiple=True,
         help="override/select the outcome scenario(s) to run",
     ),
-    click.option(
-        "-j",
-        "--jobs",
+    "jobs": click.Option(
+        ["-j", "--jobs"],
         envvar="FLEPI_NJOBS",
         type=click.IntRange(min=1),
         default=multiprocessing.cpu_count(),
         show_default=True,
         help="the parallelization factor",
     ),
-    click.option(
-        "-n",
-        "--nslots",
+    "nslots": click.Option(
+        ["-n", "--nslots"],
         envvar="FLEPI_NUM_SLOTS",
         type=click.IntRange(min=1),
         help="override the # of simulation runs in the config file",
     ),
-    click.option(
-        "--in-id",
-        "in_run_id",
+    "in_run_id": click.Option(
+        ["--in-id", "in_run_id"],
         envvar="FLEPI_RUN_INDEX",
         type=str,
         show_default=True,
         help="Unique identifier for the run",
     ),
-    click.option(
-        "--out-id",
-        "out_run_id",
+    "out_run_id": click.Option(
+        ["--out-id", "out_run_id"],
         envvar="FLEPI_RUN_INDEX",
         type=str,
         show_default=True,
         help="Unique identifier for the run",
     ),
-    click.option(
-        "--in-prefix",
-        "in_prefix",
+    "in_prefix": click.Option(
+        ["--in-prefix"],
         envvar="FLEPI_PREFIX",
         type=str,
         default=None,
         show_default=True,
         help="unique identifier for the run",
     ),
-    click.option(
-        "-i",
-        "--first_sim_index",
+    "first_sim_index": click.Option(
+        ["-i", "--first_sim_index"],
         envvar="FIRST_SIM_INDEX",
         type=click.IntRange(min=1),
         default=1,
         show_default=True,
         help="The index of the first simulation",
     ),
-    click.option(
-        "--stochastic/--non-stochastic",
-        "stoch_traj_flag",
+    "stoch_traj_flag": click.Option(
+        ["--stochastic/--non-stochastic", "stoch_traj_flag"],
         envvar="FLEPI_STOCHASTIC_RUN",
         default=False,
         help="Run stochastic simulations?",
     ),
-    click.option(
-        "--write-csv/--no-write-csv",
+    "write_csv": click.Option(
+        ["--write-csv/--no-write-csv"],
         default=False,
         show_default=True,
         help="write csv output?",
     ),
-    click.option(
-        "--write-parquet/--no-write-parquet",
+    "write_parquet": click.Option(
+        ["--write-parquet/--no-write-parquet"],
         default=True,
         show_default=True,
         help="write parquet output?",
     ),
-]
+}
 
-def option_config_files(function: callable) -> callable:
-    """
-    `click` Option decorator to apply handlers for all options
-    use as `@option_config_files` before a cli command definition
-    """
-    reduce(lambda f, option: option(f), reversed(config_file_options), function)
-    return function
-
+# TODO: create a custom command decorator cls ala: https://click.palletsprojects.com/en/8.1.x/advanced/#command-aliases
 
 def parse_config_files(
     config_files: list[pathlib.Path],
