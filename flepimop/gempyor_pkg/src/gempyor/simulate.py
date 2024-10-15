@@ -160,16 +160,13 @@ import time, os, itertools, warnings
 
 from . import seir, outcomes, model_info, file_paths
 from .utils import config, as_list, profile
-
-from .shared_cli import argument_config_files, option_config_files, parse_config_files, cli
+from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
 
 # from .profile import profile_options
 
 # @profile_options
 # @profile()
-@cli.command()
-@argument_config_files
-@option_config_files
+@cli.command(params=[config_files_argument].extend(config_file_options.values()))
 def simulate(
     config_files,
     config_filepath,
