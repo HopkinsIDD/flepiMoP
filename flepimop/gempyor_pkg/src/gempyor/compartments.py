@@ -43,7 +43,9 @@ class Compartments:
             least a column named 'name'.
         times_set: An indicator, either 0 or 1, for if this class' init parameters were
             given properly.
-        transitions: ...
+        transitions: A pandas DataFrame that describes the transitions between
+            compartments with the columns 'source', 'destination', 'rate',
+            'proportional_to', 'proportion_exponent'.
     """
 
     def __init__(

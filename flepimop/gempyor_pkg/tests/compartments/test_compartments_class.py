@@ -1,12 +1,15 @@
 from dataclasses import dataclass
+from itertools import product
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import confuse
+import pandas as pd
+from pandas.testing import assert_frame_equal
 import pytest
 
-from gempyor.compartments import Compartments
+from gempyor.compartments import Compartments, list_recursive_convert_to_string
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -40,7 +43,7 @@ class MockCompartmentsInput:
         return (
             None
             if self.seir is None
-            else create_confuse_configview_from_dict("seir", self.seir)
+            else create_confuse_configview_from_dict(self.seir, "seir")
         )
 
     def compartments_subview(self) -> confuse.Subview | None:
@@ -54,7 +57,7 @@ class MockCompartmentsInput:
         return (
             None
             if self.compartments is None
-            else create_confuse_configview_from_dict("compartments", self.compartments)
+            else create_confuse_configview_from_dict(self.compartments, "compartments")
         )
 
     def compartments_instance(self) -> Compartments:
@@ -72,11 +75,86 @@ class MockCompartmentsInput:
             transitions_file=self.transitions_file,
         )
 
+    def compartments_dataframe(self) -> pd.DataFrame:
+        """
+        Generate a pandas DataFrame representing the compartments of this mock input.
+
+        Returns:
+            A pandas DataFrame with the names of the stages as the columns and a column
+            called 'name' for the unique name.
+        """
+        if self.compartments:
+            df = pd.DataFrame(
+                data=list(product(*self.compartments.values())),
+                columns=self.compartments.keys(),
+            )
+            df["name"] = df.agg("_".join, axis=1)
+            return df
+        raise NotImplementedError
+
+    def transitions_dataframe(self) -> pd.DataFrame:
+        """
+        Generate a pandas DataFrame representing the transitions of this mock input.
+
+        Returns:
+            A pandas DataFrame with the columns 'source', 'destination', 'rate',
+            'proportional_to', 'proportion_exponent'.
+        """
+        if self.seir:
+            df = pd.DataFrame.from_records(self.seir.get("transitions", []))
+            df["proportional_to"] = df["proportional_to"].apply(
+                lambda x: [[y] for y in x] if isinstance(x, list) else x
+            )
+            for col in df.columns:
+                df[col] = df[col].apply(list_recursive_convert_to_string)
+            return df
+        raise NotImplementedError
+
 
 def empty_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
     return MockCompartmentsInput(
         seir=None,
         compartments=None,
+        compartments_file=None,
+        transitions_file=None,
+    )
+
+
+def sir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
+    return MockCompartmentsInput(
+        seir={
+            "integration": {
+                "method": "rk4",
+                "dt": 1.0,
+            },
+            "parameters": {
+                "beta": {
+                    "value": 0.1,
+                },
+                "gamma": {
+                    "value": 0.2,
+                },
+            },
+            "transitions": [
+                {
+                    "source": ["S"],
+                    "destination": ["I"],
+                    "rate": ["beta"],
+                    "proportional_to": [["S"], ["I"]],
+                    "proportion_exponent": [[1], [1]],
+                },
+                {
+                    "source": ["I"],
+                    "destination": ["R"],
+                    "rate": ["gamma"],
+                    "proportional_to": [["I"]],
+                    "proportion_exponent": [[1]],
+                },
+            ],
+        },
+        compartments={
+            "infection_stage": ["S", "I", "R"],
+        },
         compartments_file=None,
         transitions_file=None,
     )
@@ -90,3 +168,25 @@ class TestCompartments:
             match=r"^Compartments object not set\, no config or file provided$",
         ):
             mock_inputs.compartments_instance()
+
+    @pytest.mark.parametrize("factory", ((sir_from_config_inputs_factory),))
+    def test_instance_attributes(
+        self, tmp_path: Path, factory: Callable[[Path], MockCompartmentsInput]
+    ) -> None:
+        mock_inputs = factory(tmp_path)
+        compartments = mock_inputs.compartments_instance()
+
+        assert compartments.times_set == 1
+
+        assert isinstance(compartments.compartments, pd.DataFrame)
+        assert_frame_equal(
+            compartments.compartments, mock_inputs.compartments_dataframe()
+        )
+
+        assert isinstance(compartments.transitions, pd.DataFrame)
+        assert_frame_equal(
+            compartments.transitions, mock_inputs.transitions_dataframe()
+        )
+
+        assert compartments.check_transition_element(None, None) == True
+        assert compartments.check_transition_elements(None, None) == True
