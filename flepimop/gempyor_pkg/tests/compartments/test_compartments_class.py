@@ -160,6 +160,9 @@ def sir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
     )
 
 
+valid_input_factories = ((sir_from_config_inputs_factory),)
+
+
 class TestCompartments:
     def test_config_or_file_not_set_value_error(self, tmp_path: Path) -> None:
         mock_inputs = empty_inputs_factory(tmp_path)
@@ -169,7 +172,7 @@ class TestCompartments:
         ):
             mock_inputs.compartments_instance()
 
-    @pytest.mark.parametrize("factory", ((sir_from_config_inputs_factory),))
+    @pytest.mark.parametrize("factory", valid_input_factories)
     def test_instance_attributes_and_simpler_methods(
         self, tmp_path: Path, factory: Callable[[Path], MockCompartmentsInput]
     ) -> None:
@@ -192,3 +195,17 @@ class TestCompartments:
         assert compartments.check_transition_elements(None, None) == True
 
         assert compartments.get_ncomp() == len(mock_inputs.compartments_dataframe())
+
+    @pytest.mark.parametrize("factory", valid_input_factories)
+    def test_get_compartments_explicitDF_output_validation(
+        self, tmp_path: Path, factory: Callable[[Path], MockCompartmentsInput]
+    ) -> None:
+        mock_inputs = factory(tmp_path)
+        compartments = mock_inputs.compartments_instance()
+        assert_frame_equal(
+            compartments.get_compartments_explicitDF(),
+            compartments.compartments.add_prefix("mc_"),
+        )
+        assert id(compartments.get_compartments_explicitDF()) != id(
+            compartments.compartments
+        )

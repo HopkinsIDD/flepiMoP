@@ -907,7 +907,14 @@ class Compartments:
 
         return rc
 
-    def get_compartments_explicitDF(self):
+    def get_compartments_explicitDF(self) -> pd.DataFrame:
+        """
+        Get an explicit compartments pandas DataFrame.
+
+        Returns:
+            Returns a compartments pandas DataFrame similar in structure to the
+            compartments attribute but with the columns prefixed with "mc_".
+        """
         df: pd.DataFrame = self.compartments.copy(
             deep=True
         )  # .melt(id_vars='name', var_name='meta_compartment', value_name='sub_compartment')
