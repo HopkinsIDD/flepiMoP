@@ -599,6 +599,12 @@ class Compartments:
         return comp_idx[0]
 
     def get_ncomp(self) -> int:
+        """
+        Get the number of compartments represented by this instance
+
+        Returns:
+            A non-negative integer for the number of compartments.
+        """
         return len(self.compartments)
 
     def get_transition_array(self):

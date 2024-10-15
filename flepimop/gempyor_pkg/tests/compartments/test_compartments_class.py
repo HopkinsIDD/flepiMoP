@@ -170,7 +170,7 @@ class TestCompartments:
             mock_inputs.compartments_instance()
 
     @pytest.mark.parametrize("factory", ((sir_from_config_inputs_factory),))
-    def test_instance_attributes(
+    def test_instance_attributes_and_simpler_methods(
         self, tmp_path: Path, factory: Callable[[Path], MockCompartmentsInput]
     ) -> None:
         mock_inputs = factory(tmp_path)
@@ -190,3 +190,5 @@ class TestCompartments:
 
         assert compartments.check_transition_element(None, None) == True
         assert compartments.check_transition_elements(None, None) == True
+
+        assert compartments.get_ncomp() == len(mock_inputs.compartments_dataframe())
