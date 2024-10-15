@@ -915,13 +915,7 @@ class Compartments:
             Returns a compartments pandas DataFrame similar in structure to the
             compartments attribute but with the columns prefixed with "mc_".
         """
-        df: pd.DataFrame = self.compartments.copy(
-            deep=True
-        )  # .melt(id_vars='name', var_name='meta_compartment', value_name='sub_compartment')
-        # add prefix mc to all columns, even name
-        rename_dict = {cn: f"mc_{cn}" for cn in df.columns}
-        df = df.rename(columns=rename_dict)
-        return df
+        return self.compartments.add_prefix("mc_")
 
     def plot(
         self, output_file="transition_graph", source_filters=[], destination_filters=[]
