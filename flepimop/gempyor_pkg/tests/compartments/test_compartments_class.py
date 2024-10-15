@@ -9,7 +9,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import pytest
 
-from gempyor.compartments import Compartments, list_recursive_convert_to_string
+from gempyor.compartments import Compartments
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -31,6 +31,7 @@ class MockCompartmentsInput:
     compartments: dict[str, Any] | None
     compartments_file: PathLike | None
     transitions_file: PathLike | None
+    transitions: pd.DataFrame | None
 
     def seir_subview(self) -> confuse.Subview | None:
         """
@@ -92,24 +93,6 @@ class MockCompartmentsInput:
             return df
         raise NotImplementedError
 
-    def transitions_dataframe(self) -> pd.DataFrame:
-        """
-        Generate a pandas DataFrame representing the transitions of this mock input.
-
-        Returns:
-            A pandas DataFrame with the columns 'source', 'destination', 'rate',
-            'proportional_to', 'proportion_exponent'.
-        """
-        if self.seir:
-            df = pd.DataFrame.from_records(self.seir.get("transitions", []))
-            df["proportional_to"] = df["proportional_to"].apply(
-                lambda x: [[y] for y in x] if isinstance(x, list) else x
-            )
-            for col in df.columns:
-                df[col] = df[col].apply(list_recursive_convert_to_string)
-            return df
-        raise NotImplementedError
-
 
 def empty_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
     return MockCompartmentsInput(
@@ -117,6 +100,7 @@ def empty_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
         compartments=None,
         compartments_file=None,
         transitions_file=None,
+        transitions=None,
     )
 
 
@@ -157,10 +141,100 @@ def sir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
         },
         compartments_file=None,
         transitions_file=None,
+        transitions=pd.DataFrame.from_records(
+            data=[
+                {
+                    "source": ["S"],
+                    "destination": ["I"],
+                    "rate": ["beta"],
+                    "proportional_to": [[["S"]], [["I"]]],
+                    "proportion_exponent": [["1"], ["1"]],
+                },
+                {
+                    "source": ["I"],
+                    "destination": ["R"],
+                    "rate": ["gamma"],
+                    "proportional_to": [[["I"]]],
+                    "proportion_exponent": [["1"]],
+                },
+            ]
+        ),
     )
 
 
-valid_input_factories = ((sir_from_config_inputs_factory),)
+def seir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
+    return MockCompartmentsInput(
+        seir={
+            "integration": {
+                "method": "rk4",
+                "dt": 1,
+            },
+            "parameters": {
+                "sigma": 0.25,
+                "gamma": 0.2,
+                "R0": 2.5,
+            },
+            "transitions": [
+                {
+                    "source": ["S"],
+                    "destination": ["E"],
+                    "rate": ["R0 * gamma"],
+                    "proportional_to": [["S"], ["I"]],
+                    "proportion_exponent": ["1", "1"],
+                },
+                {
+                    "source": ["E"],
+                    "destination": ["I"],
+                    "rate": ["sigma"],
+                    "proportional_to": ["E"],
+                    "proportion_exponent": ["1"],
+                },
+                {
+                    "source": ["I"],
+                    "destination": ["R"],
+                    "rate": ["gamma"],
+                    "proportional_to": ["I"],
+                    "proportion_exponent": ["1"],
+                },
+            ],
+        },
+        compartments={
+            "infection_stage": ["S", "E", "I", "R"],
+        },
+        compartments_file=None,
+        transitions_file=None,
+        transitions=pd.DataFrame.from_records(
+            data=[
+                {
+                    "source": ["S"],
+                    "destination": ["E"],
+                    "rate": ["R0 * gamma"],
+                    "proportional_to": [[["S"]], [["I"]]],
+                    "proportion_exponent": [["1"], ["1"]],
+                },
+                {
+                    "source": ["E"],
+                    "destination": ["I"],
+                    "rate": ["sigma"],
+                    "proportional_to": [[["E"]]],
+                    "proportion_exponent": [["1"]],
+                },
+                {
+                    "source": ["I"],
+                    "destination": ["R"],
+                    "rate": ["gamma"],
+                    "proportional_to": [[["I"]]],
+                    "proportion_exponent": [["1"]],
+                },
+            ]
+        ),
+    )
+
+
+valid_input_factories = (
+    (sir_from_config_inputs_factory),
+    (seir_from_config_inputs_factory),
+)
 
 
 class TestCompartments:
@@ -187,9 +261,9 @@ class TestCompartments:
         )
 
         assert isinstance(compartments.transitions, pd.DataFrame)
-        assert_frame_equal(
-            compartments.transitions, mock_inputs.transitions_dataframe()
-        )
+
+        if mock_inputs.transitions is not None:
+            assert_frame_equal(compartments.transitions, mock_inputs.transitions)
 
         assert compartments.check_transition_element(None, None) == True
         assert compartments.check_transition_elements(None, None) == True
