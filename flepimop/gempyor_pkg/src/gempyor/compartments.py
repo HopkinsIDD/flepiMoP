@@ -1,12 +1,13 @@
+from functools import reduce
+
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from .utils import config, Timer, as_list
-from functools import reduce
-from gempyor.shared_cli import argument_config_files, option_config_files, parse_config_files, cli
-
 import logging
+
+from .utils import config, Timer, as_list
+from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
 
 logger = logging.getLogger(__name__)
 
@@ -896,9 +897,7 @@ def compartments():
     """Commands for working with FlepiMoP compartments"""
     pass
 
-@compartments.command()
-@argument_config_files
-@option_config_files
+@compartments.command(params=[config_files_argument].extend(config_file_options.values()))
 def plot(**kwargs):
     """Plot compartments"""
     parse_config_files(**kwargs)
@@ -919,9 +918,7 @@ def plot(**kwargs):
     print("wrote file transition_graph")
 
 
-@compartments.command()
-@argument_config_files
-@option_config_files
+@compartments.command(params=[config_files_argument].extend(config_file_options.values()))
 def export(**kwargs):
     """Export compartments"""
     parse_config_files(**kwargs)
