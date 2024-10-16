@@ -172,8 +172,13 @@ def click_helpstring(
 # to also apply the `@click_helpstring` decorator to the command. Possibly to also default the params argument, assuming
 # enough commands have consistent option set?
 
+# TODO: have parse_config_files check with the click.Parameter validators:
+# https://stackoverflow.com/questions/59096020/how-to-unit-test-function-that-requires-an-active-click-context-in-python
+
+mock_context = click.Context(click.Command('mock'), info_name="Mock context for non-click use of parse_config_files")
+
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def parse_config_files(**kwargs) -> None:
+def parse_config_files(ctx = mock_context, **kwargs) -> None:
     """
     Parse configuration file(s) and override with command line arguments
 
@@ -199,7 +204,9 @@ def parse_config_files(**kwargs) -> None:
             error_dict = {k: kwargs[k] for k in found_configs}
             raise ValueError(f"Exactly one config file source option must be provided; got {error_dict}.")
     else:
-        config_src = kwargs[found_configs[0]]
+        config_key = found_configs[0]
+        config_validator = config_file_options[config_key] if config_key in config_file_options else config_files_argument
+        config_src = config_validator.type_cast_value(ctx, kwargs[config_key])
         config.clear()
         for config_file in reversed(config_src):
             config.set_file(config_file)
@@ -209,7 +216,7 @@ def parse_config_files(**kwargs) -> None:
     scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs[k]}
     for option in scen_args:
         key = option.replace("_scenarios", "")
-        value = kwargs[option]
+        value = config_file_options[option].type_cast_value(ctx, kwargs[option])
         if config[key].exists():
             config[key]["scenarios"] = as_list(value)
         else:
@@ -219,4 +226,4 @@ def parse_config_files(**kwargs) -> None:
     other_args = parsed_args - config_args - scen_args
     for option in other_args:
         if (value := kwargs[option]) is not None:
-            config[option] = value
+            config[option] = config_file_options[option].type_cast_value(ctx, value)
