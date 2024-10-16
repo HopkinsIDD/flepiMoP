@@ -38,13 +38,13 @@ jobs:
         run: |
           files <- list.files()
           pkg <- files[startsWith(files, "flepicommon_")]
-          install.packages(pkg, dependencies=TRUE)
-          install.packages("testthat")
-          install.packages(pkg, repos = NULL, type = "source")
+          install.packages(pkg, dependencies = TRUE)
+          install.packages("devtools")
+          packageVersion("flepicommon")
         shell: Rscript {0}
       - name: Run Unit Tests
         run: |
-          library(flepicommon)
-          library(testthat)
-          test_local("flepimop/R_packages/flepicommon")
+          setwd("flepimop/R_packages/flepicommon")
+          library(devtools)
+          devtools::test(stop_on_failure = TRUE)
         shell: Rscript {0}
