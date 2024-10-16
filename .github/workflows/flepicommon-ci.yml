@@ -31,9 +31,12 @@ jobs:
           UBUNTU_VERSION=$( echo "$( lsb_release -r )" | awk '{print $2}' | sed 's/\.//g' )
           curl -O https://cdn.rstudio.com/r/ubuntu-${UBUNTU_VERSION}/pkgs/r-${R_VERSION}_1_amd64.deb
           sudo apt-get update
-          apt-get install ./r-${R_VERSION}_1_amd64.deb
+          sudo apt-get install ./r-${R_VERSION}_1_amd64.deb
           ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
           ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
+          echo "-"
+          sudo ls -lah /opt/R/4.3.3/lib/R/library
+          echo "-"
         shell: bash
         env:
           R_VERSION: ${{ matrix.R-version }}
