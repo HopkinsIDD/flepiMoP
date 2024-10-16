@@ -160,13 +160,14 @@ import time, os, itertools, warnings
 
 from . import seir, outcomes, model_info, file_paths
 from .utils import config, as_list, profile
-from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
+from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli, click_helpstring
 
 # from .profile import profile_options
 
 # @profile_options
 # @profile()
-@cli.command(params=[config_files_argument].extend(config_file_options.values()))
+@cli.command(params=[config_files_argument] + list(config_file_options.values()))
+@click_helpstring([config_files_argument] + list(config_file_options.values()))
 def simulate(
     config_files,
     config_filepath,
@@ -182,7 +183,13 @@ def simulate(
     first_sim_index,
     stoch_traj_flag,
 ):
-    """Forward simulate a model"""
+    """
+    Forward simulate a model using gempyor.
+
+    Args: (see auto generated CLI items below)
+
+    Returns: None (side effect: writes output to disk)
+    """
     largs = locals()
     parse_config_files(**largs)
 

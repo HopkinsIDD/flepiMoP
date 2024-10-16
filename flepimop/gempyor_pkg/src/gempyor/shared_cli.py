@@ -3,10 +3,11 @@ An internal module to share common CLI elements. Defines the overall cli group,
 supported options for config file overrides, and custom click decorators.
 """
 
-from functools import reduce
 import multiprocessing
 import pathlib
 import warnings
+from typing import List, Union
+
 
 import click
 
@@ -116,8 +117,41 @@ config_file_options = {
     ),
 }
 
-# TODO: create a custom command decorator cls ala: https://click.palletsprojects.com/en/8.1.x/advanced/#command-aliases
 
+# adapted from https://stackoverflow.com/a/78533451
+def click_helpstring(params: Union[click.Parameter, List[click.Parameter]]):
+    """
+    A decorator that dynamically appends `click.Parameter`s to the docstring of the decorated function.
+
+    Args:
+        params (Union[click.Parameter, List[click.Parameter]]): A parameter or a list of parameters whose corresponding argument values and help strings will be appended to the docstring of the decorated function.
+
+    Returns:
+        Callable: The original function with an updated docstring.
+    """
+    if not isinstance(params, list):
+        params = [params]
+
+    def decorator(func):
+        # Generate the additional docstring with args from the specified functions
+        additional_doc = "\n\nCommand Line Interface arguments:\n"
+        for param in params:
+            paraminfo = param.to_info_dict()
+            additional_doc += f"\n{paraminfo['name']}: {paraminfo['type']['param_type']}\n"
+
+        if func.__doc__ is None:
+            func.__doc__ = ""
+        func.__doc__ += additional_doc
+
+        return func
+
+    return decorator
+
+# TODO: create a custom command decorator cls ala: https://click.palletsprojects.com/en/8.1.x/advanced/#command-aliases
+# to also apply the `@click_helpstring` decorator to the command. Possibly to also default the params argument, assuming
+# enough commands have consistent option set?
+
+@click_helpstring([config_files_argument] + list(config_file_options.values()))
 def parse_config_files(
     config_files: list[pathlib.Path],
     config_filepath: pathlib.Path = None,
@@ -135,6 +169,10 @@ def parse_config_files(
 ) -> None:
     """
     Parse configuration file(s) and override with command line arguments
+
+    Args: (see auto generated CLI items below)
+
+    Returns: None (side effect: updates the global configuration object)
     """
     config.clear()
     if config_filepath:
