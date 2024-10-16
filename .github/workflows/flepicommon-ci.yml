@@ -46,7 +46,7 @@ jobs:
         run: |
           files <- list.files()
           pkg <- files[startsWith(files, "flepicommon_")]
-          install.packages(pkg, dependencies = TRUE)
+          install.packages(pkg, repos = "https://cloud.r-project.org", dependencies = TRUE)
           install.packages("devtools")
         shell: Rscript {0}
       - name: Install flepicommon
