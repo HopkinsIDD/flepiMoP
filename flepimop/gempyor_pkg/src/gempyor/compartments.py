@@ -427,8 +427,7 @@ class Compartments:
                 # candidate = candidate.replace("*1", "")
                 if candidate not in unique_strings:
                     raise ValueError(
-                        f"Candidate '{candidate}' from 'rate' column is not in the list of unique strings. "
-                        f"Unique strings: '{unique_strings}'"
+                        f"Candidate '{candidate}' from 'rate' column is not in the list of unique strings: {unique_strings}"
                     )
                 rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                 transition_array[2][it] = rc
