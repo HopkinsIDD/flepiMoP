@@ -28,14 +28,27 @@ jobs:
           lfs: true
       - name: Setup R ${{ matrix.R-version }}
         uses: r-lib/actions/setup-r@v2
-      - name: Install Dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::devtools
-          working-directory: 'flepimop/R_packages/flepicommon'
+          r-version: ${{ matrix.R-version }}
+      - name: Build flepicommon
+        run: |
+          R CMD build flepimop/R_packages/flepicommon/
+        shell: bash
+      - name: Install Dependencies
+        run: |
+          files <- list.files()
+          pkg <- files[startsWith(files, "flepicommon_")]
+          install.packages(pkg, dependencies=TRUE)
+          install.packages("testthat")
+        shell: Rscript {0}
+      - name: Install flepicommon
+        run: |
+          TAR_GZ=$( find . -maxdepth 1 -regex ".*flepicommon.*" -printf "%P\n" )
+          DEST=$( R -s -e "cat(.libPaths()[1L])" | xargs )
+          R CMD install $TAR_GZ $DEST
       - name: Run Unit Tests
         run: |
-          library(devtools)
-          setwd("flepimop/R_packages/flepicommon")
-          devtools::test(stop_on_failure=TRUE)
+          library(flepicommon)
+          library(testthat)
+          test_local("flepimop/R_packages/flepicommon")
         shell: Rscript {0}
