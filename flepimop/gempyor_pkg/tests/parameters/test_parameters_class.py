@@ -282,13 +282,14 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                rf"^Issue loading file '{tmp_file}' for parameter 'sigma': " 
-                rf"the 'date' entries of the provided file do not include " 
-                rf"all the days specified to be modeled by the config. the provided file includes " 
-                rf"'{(timeseries_end_date - timeseries_start_date).days + 1}' days between " 
-                rf"'{timeseries_start_date}( 00:00:00)?' to '{timeseries_end_date}( 00:00:00)?', while there are " 
-                rf"'{mock_inputs.number_of_days()}' days in the config time span of '{mock_inputs.ti}'->'{mock_inputs.tf}'. " 
-                rf"The file must contain entries for the exact start and end dates from the config.$"
+                f"^Issue loading file '{tmp_file}' for parameter 'sigma': the 'date' "
+                "entries of the provided file do not include all the days specified to "
+                f"be modeled by the config. the provided file includes '{file_days}' "
+                f"days between '{timeseries_start_date}( 00:00:00)?' to "
+                f"'{timeseries_end_date}( 00:00:00)?', while there are "
+                f"'{mock_inputs.number_of_days()}' days in the config time span of "
+                f"'{mock_inputs.ti}->{mock_inputs.tf}'. The file must contain "
+                "entries for the exact start and end dates from the config.$"
             ),
         ):
             mock_inputs.create_parameters_instance()
