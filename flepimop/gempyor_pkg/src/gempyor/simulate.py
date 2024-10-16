@@ -156,10 +156,10 @@
 
 ## @cond
 
-import time, os, itertools, warnings
+import time, warnings
 
-from . import seir, outcomes, model_info, file_paths
-from .utils import config, as_list, profile
+from . import seir, outcomes, model_info
+from .utils import config #, profile
 from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli, click_helpstring
 
 # from .profile import profile_options
@@ -168,21 +168,7 @@ from .shared_cli import config_files_argument, config_file_options, parse_config
 # @profile()
 @cli.command(params=[config_files_argument] + list(config_file_options.values()))
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def simulate(
-    config_files,
-    config_filepath,
-    in_run_id,
-    out_run_id,
-    seir_modifiers_scenarios,
-    outcome_modifiers_scenarios,
-    in_prefix,
-    nslots,
-    jobs,
-    write_csv,
-    write_parquet,
-    first_sim_index,
-    stoch_traj_flag,
-):
+def simulate(**kwargs) -> None:
     """
     Forward simulate a model using gempyor.
 
@@ -190,8 +176,7 @@ def simulate(
 
     Returns: None (side effect: writes output to disk)
     """
-    largs = locals()
-    parse_config_files(**largs)
+    parse_config_files(**kwargs)
 
     scenarios_combinations = [
         [s, d] for s in (config["seir_modifiers"]["scenarios"].as_str_seq() if config["seir_modifiers"].exists() else [None])
@@ -216,33 +201,31 @@ def simulate(
             nslots=nslots,
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
-            write_csv=write_csv,
-            write_parquet=write_parquet,
-            first_sim_index=first_sim_index,
-            in_run_id=in_run_id,
+            write_csv=config["write_csv"].get(bool),
+            write_parquet=config["write_parquet"].get(bool),
+            first_sim_index=config["first_sim_index"].get(int),
+            in_run_id=config["in_run_id"].get(str) if config["in_run_id"].exists() else None,
             # in_prefix=config["name"].get() + "/",
-            out_run_id=out_run_id,
+            out_run_id=config["out_run_id"].get(str) if config["out_run_id"].exists() else None,
             # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
-            stoch_traj_flag=stoch_traj_flag,
-            config_filepath=config_filepath,
+            stoch_traj_flag=config["stoch_traj_flag"].get(bool),
+            config_filepath=config["config_src"].as_str_seq(),
         )
 
         print(
             f"""
-    >> Running from config {config_filepath}
-    >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {jobs} processes
+    >> Running from config {config["config_src"].as_str_seq()}
+    >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {config["jobs"].get(int)} processes
     >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
     >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-    >> running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** trajectories
+    >> running ***{'STOCHASTIC' if config["stoch_traj_flag"].get(bool) else 'DETERMINISTIC'}*** trajectories
     """
         )
         # (there should be a run function)
         if config["seir"].exists():
-            seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
+            seir.run_parallel_SEIR(modinf, config=config, n_jobs=config["jobs"].get(int))
         if config["outcomes"].exists():
-            outcomes.run_parallel_outcomes(
-                sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs
-            )
+            outcomes.run_parallel_outcomes(sim_id2write=config["first_sim_index"].get(int), modinf=modinf, nslots=nslots, n_jobs=config["jobs"].get(int))
         print(
             f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
         )
