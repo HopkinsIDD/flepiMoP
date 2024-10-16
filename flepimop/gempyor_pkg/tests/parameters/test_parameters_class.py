@@ -287,7 +287,7 @@ class TestParameters:
                 rf"all the days specified to be modeled by the config. the provided file includes " 
                 rf"'{(timeseries_end_date - timeseries_start_date).days + 1}' days between " 
                 rf"'{timeseries_start_date}'( 00:00:00)? to '{timeseries_end_date}'( 00:00:00)?, while there are " 
-                rf"'{mock_inputs.number_of_days()}' days in the config time span of '{mock_inputs.ti}'->'{mock_inputs.tf}'\. " 
+                rf"'{mock_inputs.number_of_days()}' days in the config time span of '{mock_inputs.ti}'->'{mock_inputs.tf}'. " 
                 rf"The file must contain entries for the exact start and end dates from the config.$"
             ),
         ):
