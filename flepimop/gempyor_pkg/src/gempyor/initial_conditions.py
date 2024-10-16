@@ -8,6 +8,7 @@ import logging
 from .simulation_component import SimulationComponent
 from . import utils
 from .utils import read_df
+import warnings
 import os
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,7 @@ class InitialConditions(SimulationComponent):
                 allow_missing_subpops=self.allow_missing_subpops,
             )
         else:
-            raise NotImplementedError(f"Unknown initial conditions method [received: {method}].")
+            raise NotImplementedError(f"Unknown initial conditions method [received: '{method}'].")
 
         # check that the inputed values sums to the subpop population:
         check_population(y0=y0, modinf=modinf, ignore_population_checks=self.ignore_population_checks)
@@ -121,21 +122,20 @@ def check_population(y0, modinf, ignore_population_checks=False):
         n_pop = modinf.subpop_pop[pl_idx]
         if abs(n_y0 - n_pop) > 1:
             error = True
-            print(
-                f"ERROR: subpop_names {pl} (idx: pl_idx) has a population from initial condition of {n_y0} "
-                f"while population from geodata is {n_pop}." 
-                f"(absolute difference should be < 1, here is {abs(n_y0-n_pop)})."
+            warnings.warn(
+                f"ERROR: subpop_names {pl} (idx: plx_idx) has a population from  initial condition of {n_y0} "
+                f"while population geodata is {n_pop}. "
+                f"(absolute difference should be <1, here is {abs(n_y0-n_pop)})."
             )
 
     if error and not ignore_population_checks:
-        raise ValueError(
-            f"Geodata and initial condition do not agree on population size (see messages above). "
-            f"Use `ignore_population_checks: True` to ignore."
+        raise ValueError("Geodata and initial condition do not agree on population size. Use `ignore_population_checks: True` to ignore."
         )
     elif error and ignore_population_checks:
-        print(
-            f"WARNING: population mismatch errors ignored because `ignore_population_checks` is set to `True`."
-            f"Execution will continue, but this is not recommended."
+        warnings.warn(
+        "WARNING: Population mismatch errors ignored because `ignore_population_checks` is set to `True`. "
+        "Execution will continue, but this is not recommended.",
+        UserWarning
         )
 
 
@@ -159,16 +159,15 @@ def read_initial_condition_from_tidydataframe(
                         ]["amount"]
                 if len(ic_df_compartment_val) > 1:
                     raise ValueError(
-                        f"ERROR: Several ({len(ic_df_compartment_val)}) rows are matches for compartment {comp_name} in init file: filters returned {ic_df_compartment_val}"
+                        f"Several ('{len(ic_df_compartment_val)}') rows are matches for compartment '{comp_name}' in init file: filters returned '{ic_df_compartment_val}'"
                     )
                 elif ic_df_compartment_val.empty:
                     if allow_missing_compartments:
                         ic_df_compartment_val = 0.0
                     else:
                         raise ValueError(
-                            f"ERROR: Multiple rows ({len(ic_df_compartment_val)}) match for compartment '{comp_name}' in the initial conditions file. "
-                            f"Filters used: {filters.to_dict()}. Matches: {ic_df_compartment_val.tolist()}. "
-                            f"Ensure that each compartment has a unique initial condition entry."
+                            f"Multiple rows match for compartment '{comp_name}' in the initial conditions file; ensure each compartment has a unique entry. "
+                            f"Filters used: '{filters.to_dict()}'. Matches: '{ic_df_compartment_val.tolist()}'."
                         )
                 if "rest" in str(ic_df_compartment_val).strip().lower():
                     rests.append([comp_idx, pl_idx])
@@ -182,7 +181,7 @@ def read_initial_condition_from_tidydataframe(
             logger.critical(
                 f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartment ({modinf.compartments.compartments['name'].iloc[0]})"
             )
-            raise ValueError(f"THERE IS A BUG; REPORT THIS MESSAGE. Past implemenation was buggy.")
+            raise RuntimeError("There is a bug; report this message. Past implemenation was buggy.")
             # TODO: this is probably ok but highlighting for consistency
             if "proportional" in self.initial_conditions_config.keys():
                 if self.initial_conditions_config["proportional"].get():
@@ -193,7 +192,7 @@ def read_initial_condition_from_tidydataframe(
                 y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
         else:
             raise ValueError(
-                f"Subpop {pl} does not exist in `initial_conditions::states_file`. "
+                f"Subpop '{pl}' does not exist in `initial_conditions::states_file`. "
                 f"You can set `allow_missing_subpops=TRUE` to bypass this error."
             )
     if rests:  # not empty
@@ -236,7 +235,7 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
     ic_df = ic_df[(ic_df["date"] == str(modinf.ti)) & (ic_df["mc_value_type"] == "prevalence")]
     if ic_df.empty:
         raise ValueError(f"No entry provided for initial time `ti` in the `initial_conditions::states_file.` "
-                         f"`ti`: {modinf.ti}.")
+                         f"`ti`: '{modinf.ti}'.")
     y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
 
     for comp_idx, comp_name in modinf.compartments.compartments["name"].items():
@@ -251,27 +250,28 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
         if len(ic_df_compartment) > 1:
             # ic_df_compartment = ic_df_compartment.iloc[0]
             raise ValueError(
-                f"ERROR: Several ({len(ic_df_compartment)}) rows are matches for compartment {mc_name} in init file: filter {filters}. "
-                f"returned: {ic_df_compartment}."
+                f"Several ('{len(ic_df_compartment)}') rows are matches for compartment '{mc_name}' in init file: "
+                f"filter '{filters}'. "
+                f"returned: '{ic_df_compartment}'."
             )
         elif ic_df_compartment.empty:
             if allow_missing_compartments:
                 ic_df_compartment = pd.DataFrame(0, columns=ic_df_compartment.columns, index=[0])
             else:
                 raise ValueError(
-                    f"Initial Conditions: could not set compartment {comp_name} (id: {comp_idx}) in subpop {pl} (id: {pl_idx}). "
-                    f"The data from the init file is {ic_df_compartment[pl]}."
+                    f"Initial Conditions: could not set compartment '{comp_name}' (id: '{comp_idx}') in subpop '{pl}' (id: '{pl_idx}'). "
+                    f"The data from the init file is '{ic_df_compartment[pl]}'."
                 )
         elif ic_df_compartment["mc_name"].iloc[0] != comp_name:
-            print(
-                f"WARNING: init file `mc_name` {ic_df_compartment['mc_name'].iloc[0]} does not match compartment `mc_name` {comp_name}."
+            warnings.warn(
+                f"{ic_df_compartment['mc_name'].iloc[0]} does not match compartment `mc_name` {comp_name}."
             )
 
         for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):
             if pl in ic_df.columns:
                 y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
             elif allow_missing_subpops:
-                raise ValueError("THERE IS A BUG; REPORT THIS MESSAGE. Past implemenation was buggy")
+                raise ValueError("There is a bug; report this message. Past implemenation was buggy")
                 # TODO this should set the full subpop, not just the 0th commpartment
                 logger.critical(
                     f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartments ({modinf.compartments.compartments['name'].iloc[0]})"
@@ -282,7 +282,7 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
                 y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
             else:
                 raise ValueError(
-                    f"Subpop {pl} does not exist in `initial_conditions::states_file`. "
+                    f"Subpop '{pl}' does not exist in `initial_conditions::states_file`. "
                     f"You can set `allow_missing_subpops=TRUE` to bypass this error."
                 )
     return y0

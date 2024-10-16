@@ -42,9 +42,9 @@ class InitialConditionsConfig(BaseModel):
         initial_conditions_file = values.get('initial_conditions_file')
         initial_file_type = values.get('initial_file_type')        
         if method in {'FromFile', 'SetInitialConditions'} and not initial_conditions_file:
-            raise ValueError(f"Error in InitialConditions: An initial_conditions_file is required when method is {method}")
+            raise ValueError(f"Error in InitialConditions: An initial_conditions_file is required when method is '{method}'.")
         if method in {'InitialConditionsFolderDraw','SetInitialConditionsFolderDraw'} and not initial_file_type:
-            raise ValueError(f"Error in InitialConditions: initial_file_type is required when method is {method}")
+            raise ValueError(f"Error in InitialConditions: initial_file_type is required when method is '{method}'.")
         return values
     
     @model_validator(mode='before')
@@ -52,7 +52,7 @@ class InitialConditionsConfig(BaseModel):
         method = values.get('method')
         plugin_file_path = values.get('plugin_file_path')   
         if method == 'plugin' and not plugin_file_path:
-            raise ValueError(f"Error in InitialConditions: a plugin file path is required when method is plugin.")
+            raise ValueError("Error in InitialConditions: a plugin file path is required when method is plugin.")
         return values
 
 
@@ -71,18 +71,18 @@ class SeedingConfig(BaseModel):
         seeding_file = values.get('seeding_file')        
         if method == 'PoissonDistributed' and not lambda_file:
             raise ValueError(
-                f"Error in Seeding: A lambda_file is required when method is {method} "
-                f"Current value: {lambda_file}."
+                f"Error in Seeding: A lambda_file is required when method is '{method}'. "
+                f"Current value: '{lambda_file}'."
             )
         if method == 'FolderDraw' and not seeding_file_type:
             raise ValueError(
-                f"Error in Seeding: A seeding_file_type is required when method is FolderDraw"
-                f"Current value: {seeding_file_type}."
+                f"Error in Seeding: A seeding_file_type is required when method is FolderDraw. "
+                f"Current value: '{seeding_file_type}'."
             )
         if method == 'FromFile' and not seeding_file:
             raise ValueError(
-                f"Error in Seeding: A seeding_file is required when method is FromFile "
-                f"Current value: {seeding_file}."
+                f"Error in Seeding: A seeding_file is required when method is FromFile. "
+                f"Current value: '{seeding_file}'."
             )
         return values
     
@@ -92,8 +92,8 @@ class SeedingConfig(BaseModel):
         plugin_file_path = values.get('plugin_file_path')   
         if method == 'plugin' and not plugin_file_path:
             raise ValueError(
-                f"Error in Seeding: a plugin file path is required when method is plugin "
-                f"Current value: {plugin_file_path!r}. Please specify the path to the plugin file."
+                f"Error in Seeding: a plugin file path is required when method is plugin. "
+                f"Current value: '{plugin_file_path!r}'. Please specify the path to the plugin file."
             )
         return values
     
@@ -119,11 +119,11 @@ class ValueConfig(BaseModel):
         b = values.get('b')
         if distr != 'fixed':
             if not mean and not sd:
-                raise ValueError(f"Mean and sd must be provided for non-fixed distributions.")
+                raise ValueError("Mean and sd must be provided for non-fixed distributions.")
             if distr == 'truncnorm' and not a and not b:
-                raise ValueError(f"a and b must be provided for truncated normal distributions.")
+                raise ValueError("a and b must be provided for truncated normal distributions.")
         if distr == 'fixed' and not value:
-            raise ValueError(f"Value must be provided for fixed distributions")
+            raise ValueError("Value must be provided for fixed distributions.")
         return values
 
 class BaseParameterConfig(BaseModel):
@@ -144,7 +144,7 @@ class SeirParameterConfig(BaseParameterConfig):
         if value and timeseries:
             raise ValueError(
                 f"Configuration error in seir::parameters: your parameter is both a timeseries and a value, please choose one. "
-                f"Current values - value: {values.get('value')!r}, timeseries: {values.get('timeseries')!r}."
+                f"Current values - value: '{values.get('value')!r}', timeseries: '{values.get('timeseries')!r}'."
             )
         return values
     
@@ -221,7 +221,7 @@ class SourceConfig(BaseModel): # set up only for incidence or prevalence. Can th
             raise ValueError(
                 f"Configuration error in outcomes::source." 
                 f"Value can only be incidence or prevalence, not both."
-                f"Current values - incidence: {values.get('incidence')!r}, prevalence: {values.get('prevalence')!r}."
+                f"Current values - incidence: '{values.get('incidence')!r}', prevalence: '{values.get('prevalence')!r}'."
                 )
         return values
 
@@ -258,9 +258,9 @@ class DelayFrameConfig(BaseModel):
         source_present = values.get('source') is not None
 
         if sum_present and source_present:
-            raise ValueError(f"Error in outcome: Both 'sum' and 'source' are present. Choose one.")
+            raise ValueError("Error in outcome: Both 'sum' and 'source' are present. Choose one.")
         elif not sum_present and not source_present:
-            raise ValueError(f"Error in outcome: Neither 'sum' nor 'source' is present. Choose one.")
+            raise ValueError("Error in outcome: Neither 'sum' nor 'source' is present. Choose one.")
         return values
 
 class OutcomesConfig(BaseModel):
@@ -275,7 +275,7 @@ class OutcomesConfig(BaseModel):
         param_subpop_file = values.get('param_subpop_file') is not None
 
         if param_from_file and not param_subpop_file:
-            raise ValueError(f"Error in outcome: 'param_subpop_file' is required when 'param_from_file' is True.")
+            raise ValueError("Error in outcome: `param_subpop_file` is required when `param_from_file` is 'True'.")
         return values
 
 class ResampleConfig(BaseModel):
@@ -339,14 +339,11 @@ class CheckConfig(BaseModel):
         inference_present = values.get('inference') is not None
         start_date_groundtruth = values.get('start_date_groundtruth') is not None
         if inference_present and not start_date_groundtruth:
-            raise ValueError(
-                f"Inference mode is enabled, but no groundtruth dates are provided."
-                f"Please provide groundtruth dates."
+            raise ValueError("Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates."
             )
         elif start_date_groundtruth and not inference_present:
             raise ValueError(
-                f"Groundtruth dates are provided, but inference mode is not enabled."
-                f"Please enable inference mode."
+                f"Groundtruth dates are provided, but inference mode is not enabled. Please enable inference mode."
             )
         return values
     
@@ -357,7 +354,7 @@ class CheckConfig(BaseModel):
         if start_date and end_date:
             if end_date <= start_date:
                 raise ValueError(
-                    f"`end_date` ({end_date}) must be later than `start_date` ({start_date}))."
+                    f"`end_date` ('{end_date}') must be later than `start_date` ('{start_date}'))."
                 )
         return values
     
