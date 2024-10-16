@@ -6,8 +6,7 @@ supported options for config file overrides, and custom click decorators.
 import multiprocessing
 import pathlib
 import warnings
-from typing import List, Union
-from functools import reduce
+from typing import Callable, Any
 
 import click
 
@@ -120,8 +119,6 @@ config_file_options = {
     ),
 }
 
-
-# adapted from https://stackoverflow.com/a/78533451
 def click_helpstring(
     params: click.Parameter | list[click.Parameter],
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -158,10 +155,10 @@ def click_helpstring(
 
     def decorator(func):
         # Generate the additional docstring with args from the specified functions
-        additional_doc = "\n\nCommand Line Interface arguments:\n"
+        additional_doc = "\n\tCommand Line Interface arguments:\n"
         for param in params:
             paraminfo = param.to_info_dict()
-            additional_doc += f"\n{paraminfo['name']}: {paraminfo['type']['param_type']}\n"
+            additional_doc += f"\n\t\t{paraminfo['name']}: {paraminfo['type']['param_type']}\n"
 
         if func.__doc__ is None:
             func.__doc__ = ""
@@ -181,7 +178,7 @@ def parse_config_files(**kwargs) -> None:
     Parse configuration file(s) and override with command line arguments
 
     Args:
-        **kwargs: see auto generated CLI items below. unmatched keys will be ignored + a warning will be issued
+        **kwargs: see auto generated CLI items below. Unmatched keys will be ignored + a warning will be issued
 
     Returns: None (side effect: updates the global configuration object)
     """
@@ -206,6 +203,7 @@ def parse_config_files(**kwargs) -> None:
         config.clear()
         for config_file in reversed(config_src):
             config.set_file(config_file)
+        config["config_src"] = config_src
 
     # deal with the scenario overrides
     scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs[k]}

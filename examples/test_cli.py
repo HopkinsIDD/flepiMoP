@@ -20,7 +20,7 @@ def test_config_sample_2pop():
     assert "completed in" in result.output
 
 
-def test_config_sample_2pop():
+def test_config_sample_2pop_deprecated():
     os.chdir(os.path.dirname(__file__) + "/tutorials")
     runner = CliRunner()
     result = runner.invoke(simulate, ["-c", "config_sample_2pop.yml"])
@@ -60,7 +60,7 @@ def test_sample_2pop_modifiers_combined():
     assert "completed in" in result.output
 
 
-def test_sample_2pop_modifiers_combined():
+def test_sample_2pop_modifiers_combined_deprecated():
     os.chdir(os.path.dirname(__file__) + "/tutorials")
     runner = CliRunner()
     result = runner.invoke(simulate, ["-c", "config_sample_2pop_modifiers.yml"])
@@ -71,7 +71,7 @@ def test_sample_2pop_modifiers_combined():
     assert "completed in" in result.output
 
 
-def test_simple_usa_statelevel():
+def test_simple_usa_statelevel_deprecated():
     os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
     runner = CliRunner()
     result = runner.invoke(simulate, ["-n", "1", "-c", "simple_usa_statelevel.yml"])
@@ -82,7 +82,7 @@ def test_simple_usa_statelevel():
     assert "completed in" in result.output
 
 
-def test_simple_usa_statelevel_deprecated():
+def test_simple_usa_statelevel_more_deprecated():
     os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
     result = subprocess.run(
         ["gempyor-simulate", "-n", "1", "-c", "simple_usa_statelevel.yml"],
