@@ -168,13 +168,13 @@ from .shared_cli import config_files_argument, config_file_options, parse_config
 # @profile()
 @cli.command(params=[config_files_argument] + list(config_file_options.values()))
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def simulate(**kwargs) -> None:
+def simulate(**kwargs) -> int:
     """
     Forward simulate a model using gempyor.
 
     Args: (see auto generated CLI items below)
 
-    Returns: None (side effect: writes output to disk)
+    Returns: exit code (side effect: writes output to disk)
     """
     parse_config_files(**kwargs)
 
@@ -229,9 +229,14 @@ def simulate(**kwargs) -> None:
         print(
             f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
         )
+        return 0
+
+def _deprecated_simulate(*args: list[str]) -> int:
+    warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
+    cli(['simulate'].extend(args), standalone_mode=False)
+_deprecated_simulate.__doc__ = simulate.__doc__
 
 if __name__ == "__main__":
-    warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
-    simulate()
+    _deprecated_simulate()
 
 ## @endcond
