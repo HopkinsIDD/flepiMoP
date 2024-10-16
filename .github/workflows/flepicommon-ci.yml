@@ -34,9 +34,7 @@ jobs:
           sudo apt-get install ./r-${R_VERSION}_1_amd64.deb
           ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
           ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
-          echo "-"
-          sudo ls -lah /opt/R/4.3.3/lib/R/library
-          echo "-"
+          sudo chmod -R 777 /opt/R/4.3.3/lib/R/library
         shell: bash
         env:
           R_VERSION: ${{ matrix.R-version }}
