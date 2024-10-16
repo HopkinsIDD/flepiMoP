@@ -134,20 +134,14 @@ class Parameters:
                     print("loaded dates:", df.index)
                     raise ValueError(
                         f"Issue loading file '{fn_name}' for parameter '{pn}': " 
-                        f"the 'date' entries of the provided file do not include all the days specified to be modeled by " 
-                        f"the config. the provided file includes '{len(df.index)}' days between '{str(df.index[0])}' to '{str(df.index[-1])}', " 
-                        f"while there are '{len(pd.date_range(ti, tf))}' days in the config time span of '{ti}->{tf}'. The file must contain entries for "
-                        f"the exact start and end dates from the config."
+                        f"The 'date' entries of the provided file do not include all the days specified to be modeled by the config."
                     )
                 if not (pd.date_range(ti, tf) == df.index).all():
                     print("config dates:", pd.date_range(ti, tf))
                     print("loaded dates:", df.index)
                     raise ValueError(
                         f"Issue loading file '{fn_name}' for parameter '{pn}': "
-                        f"the 'date' entries of the provided file do not include all the days specified to be modeled by "
-                        f"the config. the provided file includes '{len(df.index)}' days between '{str(df.index[0])}' to '{str(df.index[-1])}', "
-                        f"while there are '{len(pd.date_range(ti, tf))}' days in the config time span of '{ti}'->'{tf}'. The file must contain entries for "
-                        f"the exact start and end dates from the config."
+                        f"the 'date' entries of the provided file do not include all the days specified to be modeled by the config."
                     )
 
                 self.pdata[pn]["ts"] = df
