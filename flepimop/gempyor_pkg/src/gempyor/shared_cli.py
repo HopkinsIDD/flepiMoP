@@ -7,7 +7,7 @@ import multiprocessing
 import pathlib
 import warnings
 from typing import List, Union
-
+from functools import reduce
 
 import click
 
@@ -26,16 +26,19 @@ config_files_argument = click.Argument(
     ["config_files"], nargs=-1, type=click.Path(exists=True)
 )
 
-# List of `click` options that will be applied by `option_config_files`
+# List of standard `click` options that override/update config settings
 # n.b., the help for these options will be presented in the order defined here
 config_file_options = {
     "config_filepath" : click.Option(
         ["-c", "--config", "config_filepath"],
         envvar="CONFIG_PATH",
         type=click.Path(exists=True),
-        required=False,  # deprecated = ["-c", "--config"],
+        required=False,
+        default=[],
+        # deprecated = ["-c", "--config"],
         # preferred = "CONFIG_FILES...",
-        help="Deprecated: configuration file for this simulation",
+        multiple=True,
+        help="Deprecated: configuration file(s) for this simulation",
     ),
     "seir_modifiers_scenarios": click.Option(
         ["-s", "--seir_modifiers_scenarios"],
@@ -152,62 +155,49 @@ def click_helpstring(params: Union[click.Parameter, List[click.Parameter]]):
 # enough commands have consistent option set?
 
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def parse_config_files(
-    config_files: list[pathlib.Path],
-    config_filepath: pathlib.Path = None,
-    seir_modifiers_scenarios: list[str] = [],
-    outcome_modifiers_scenarios: list[str] = [],
-    in_run_id: str = None,
-    out_run_id: str = None,
-    in_prefix: str = None,
-    nslots: int = None,
-    jobs: int = None,
-    write_csv: bool = False,
-    write_parquet: bool = True,
-    first_sim_index: int = 1,
-    stoch_traj_flag: bool = False,
-) -> None:
+def parse_config_files(**kwargs) -> None:
     """
     Parse configuration file(s) and override with command line arguments
 
-    Args: (see auto generated CLI items below)
+    Args:
+        **kwargs: see auto generated CLI items below. unmatched keys will be ignored + a warning will be issued
 
     Returns: None (side effect: updates the global configuration object)
     """
-    config.clear()
-    if config_filepath:
-        if not len(config_files):
-            config_files = [config_filepath]
+    parsed_args = {config_files_argument.name}.union({option.name for option in config_file_options.values()})
+
+    # warn re unrecognized arguments
+    if parsed_args.difference(kwargs.keys()):
+        warnings.warn(f"Unused arguments: {parsed_args.difference(kwargs.keys())}")
+
+    # initialize the config, including handling missing / double-specified config files
+    config_args = {k for k in parsed_args if k.startswith("config")}
+    found_configs = [k for k in config_args if kwargs[k]]
+    config_src = []
+    if len(found_configs) != 1:
+        if not found_configs:
+            raise ValueError(f"No config files provided.")
         else:
-            warnings.warn(
-                "Found CONFIG_FILES... ignoring -(-c)onfig option / CONFIG_FILE environment variable.",
-                DeprecationWarning,
-            )
+            error_dict = {k: kwargs[k] for k in found_configs}
+            raise ValueError(f"Exactly one config file source option must be provided; got {error_dict}.")
+    else:
+        config_src = kwargs[found_configs[0]]
+        config.clear()
+        for config_file in reversed(config_src):
+            config.set_file(config_file)
 
-    if not len(config_files):
-        raise ValueError("No configuration file(s) provided")
+    # deal with the scenario overrides
+    scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs[k]}
+    for option in scen_args:
+        key = option.replace("_scenarios", "")
+        value = kwargs[option]
+        if config[key].exists():
+            config[key]["scenarios"] = as_list(value)
+        else:
+            raise ValueError(f"Specified {option} when no {key} in configuration file(s): {config_src}")
 
-    for config_file in reversed(config_files):
-        config.set_file(config_file)
-
-    for option in ("seir_modifiers", "outcome_modifiers"):
-        value = locals()[f"{option}_scenarios"]
-        if value:
-            if config[option].exists():
-                config[option]["scenarios"] = as_list(value)
-            else:
-                raise ValueError(f"Specified {option}_scenarios when no {option} in configuration file(s): {value}")
-
-    for option in (
-        "nslots",
-        "in_run_id",
-        "out_run_id",
-        "in_prefix",
-        "jobs",
-        "write_csv",
-        "write_parquet",
-        "first_sim_index",
-        "stoch_traj_flag",
-    ):
-        if (value := locals()[option]) is not None:
+    # update the config with the remaining options
+    other_args = parsed_args - config_args - scen_args
+    for option in other_args:
+        if (value := kwargs[option]) is not None:
             config[option] = value
