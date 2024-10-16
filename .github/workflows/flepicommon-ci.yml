@@ -34,18 +34,14 @@ jobs:
         run: |
           R CMD build flepimop/R_packages/flepicommon/
         shell: bash
-      - name: Install Dependencies
+      - name: Install Dependencies And flepicommon
         run: |
           files <- list.files()
           pkg <- files[startsWith(files, "flepicommon_")]
           install.packages(pkg, dependencies=TRUE)
           install.packages("testthat")
+          install.packages(pkg, repos = NULL, type = "source")
         shell: Rscript {0}
-      - name: Install flepicommon
-        run: |
-          TAR_GZ=$( find . -maxdepth 1 -regex ".*flepicommon.*" -printf "%P\n" )
-          DEST=$( R -s -e "cat(.libPaths()[1L])" | xargs )
-          R CMD install $TAR_GZ $DEST
       - name: Run Unit Tests
         run: |
           library(flepicommon)
