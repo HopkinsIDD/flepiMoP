@@ -156,7 +156,7 @@
 
 ## @cond
 
-import time, warnings
+import time, warnings, sys
 
 from . import seir, outcomes, model_info
 from .utils import config #, profile
@@ -229,12 +229,16 @@ def simulate(**kwargs) -> int:
         )
         return 0
 
-def _deprecated_simulate(*args: list[str]) -> int:
+def _deprecated_simulate(argv : list[str] = []) -> int:
     warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
-    cli(['simulate'].extend(args), standalone_mode=False)
+    if not argv:
+        argv = sys.argv[1:]
+    clickcmd = ['simulate'] + argv
+    cli(clickcmd, standalone_mode=False)
+
 _deprecated_simulate.__doc__ = simulate.__doc__
 
 if __name__ == "__main__":
-    _deprecated_simulate()
+    _deprecated_simulate(sys.argv[1:])
 
 ## @endcond
