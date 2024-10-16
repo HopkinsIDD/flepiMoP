@@ -31,10 +31,9 @@ jobs:
           UBUNTU_VERSION=$( echo "$( lsb_release -r )" | awk '{print $2}' | sed 's/\.//g' )
           curl -O https://cdn.rstudio.com/r/ubuntu-${UBUNTU_VERSION}/pkgs/r-${R_VERSION}_1_amd64.deb
           sudo apt-get update
-          sudo apt-get install ./r-${R_VERSION}_1_amd64.deb
-          sudo ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
-          sudo ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
-          R --version
+          apt-get install ./r-${R_VERSION}_1_amd64.deb
+          ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
+          ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
         shell: bash
         env:
           R_VERSION: ${{ matrix.R-version }}
@@ -42,14 +41,19 @@ jobs:
         run: |
           R CMD build flepimop/R_packages/flepicommon/
         shell: bash
-      - name: Install Dependencies And flepicommon
+      - name: Install Dependencies
         run: |
           files <- list.files()
           pkg <- files[startsWith(files, "flepicommon_")]
           install.packages(pkg, dependencies = TRUE)
           install.packages("devtools")
-          packageVersion("flepicommon")
         shell: Rscript {0}
+      - name: Install flepicommon
+        run: |
+          R CMD install --help
+          echo "-"
+          TAR_GZ=$( find . -maxdepth 1 -regex ".*flepicommon.*" -printf "%P\n" )
+          R CMD install $TAR_GZ
       - name: Run Unit Tests
         run: |
           setwd("flepimop/R_packages/flepicommon")
