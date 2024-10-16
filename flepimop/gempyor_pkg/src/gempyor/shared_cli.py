@@ -122,15 +122,36 @@ config_file_options = {
 
 
 # adapted from https://stackoverflow.com/a/78533451
-def click_helpstring(params: Union[click.Parameter, List[click.Parameter]]):
+def click_helpstring(
+    params: click.Parameter | list[click.Parameter],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
-    A decorator that dynamically appends `click.Parameter`s to the docstring of the decorated function.
+    Dynamically append `click.Parameter`s to the docstring of a decorated function.
 
     Args:
-        params (Union[click.Parameter, List[click.Parameter]]): A parameter or a list of parameters whose corresponding argument values and help strings will be appended to the docstring of the decorated function.
+        params: A parameter or a list of parameters whose corresponding argument
+            values and help strings will be appended to the docstring of the
+            decorated function.
 
     Returns:
-        Callable: The original function with an updated docstring.
+        The original function with an updated docstring.
+
+    Notes:
+        Adapted from https://stackoverflow.com/a/78533451.
+
+    Examples:
+        >>> import click
+        >>> opt = click.Option("-n", "--number", type=int, help="Your favorite number.")
+        >>> @click_helpstring(opt)
+        ... def test_cli(num: int) -> None:
+        ...     print(f"Your favorite number is {num}!")
+        ...
+        >>> print(test_cli.__doc__)
+
+
+        Command Line Interface arguments:
+
+        n: Int
     """
     if not isinstance(params, list):
         params = [params]
