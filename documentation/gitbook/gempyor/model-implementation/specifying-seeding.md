@@ -95,5 +95,5 @@ For `method::PoissonDistributed`, the seeding value for each seeding event is dr
 
 #### FolderDraw
 
-TBA&#x20;
+TB ;
 

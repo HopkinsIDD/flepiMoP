@@ -6,7 +6,7 @@ description: >-
 
 # Specifying time-varying parameter modifications
 
-**Modifiers** are a powerful feature in _flepiMoP_ to enable users to modify any of the parameters being specified in the model during particular time periods. They can be used, for example, to mirror public health control interventions, like non-pharmaceutical interventions (NPIs) or increased access to diagnosis or care, or annual seasonal variations in disease parameters. Modifiers can act on any of the transmission model parameters or observation model parameters.&#x20;
+**Modifiers** are a powerful feature in _flepiMoP_ to enable users to modify any of the parameters being specified in the model during particular time periods. They can be used, for example, to mirror public health control interventions, like non-pharmaceutical interventions (NPIs) or increased access to diagnosis or care, or annual seasonal variations in disease parameters. Modifiers can act on any of the transmission model parameters or observation model parameters ;
 
 In the `seir_modifiers` and `outcome_modifiers` sections of the configuration file the user can specify several possible types of modifiers which will then be implemented in the model. Each modifier changes a parameter during one or multiple time periods and for one or multiple specified subpopulations.
 
@@ -15,10 +15,10 @@ We currently support the following intervention types. Each of these is describe
 * `"SinglePeriodModifier"` – Modifies a parameter during a single time period
 * `"MultiPeriodModifier"` – Modifies a parameter by the same amount during a multiple time periods
 * `"ModifierModifier"` – Modifies another intervention during a single time period
-* `"StackedModifier"` – Combines two or more interventions additively or multiplicatively, and is used to be able to turn on and off groups of interventions easily for different runs.&#x20;
+* `"StackedModifier"` – Combines two or more interventions additively or multiplicatively, and is used to be able to turn on and off groups of interventions easily for different runs ;
 
 {% hint style="info" %}
-Note that if you want a parameter to vary continuously over time (for example, a daily transmission rate that is influenced by temperature and humidity), then it is easier to do this by using a "timeseries" parameter value than by combining many separate modifiers. Timeseries parameter values are described in the [seir::parameters](compartmental-model-structure.md#specifying-parameters-values-from-distributions) section. Timeseries parameters for[`outcomes`](outcomes-for-compartments.md) parameters (e.g., a testing rate that fluctuates rapidly due to test availability) are in development but not currently available.&#x20;
+Note that if you want a parameter to vary continuously over time (for example, a daily transmission rate that is influenced by temperature and humidity), then it is easier to do this by using a "timeseries" parameter value than by combining many separate modifiers. Timeseries parameter values are described in the [seir::parameters](compartmental-model-structure.md#specifying-parameters-values-from-distributions) section. Timeseries parameters for[`outcomes`](outcomes-for-compartments.md) parameters (e.g., a testing rate that fluctuates rapidly due to test availability) are in development but not currently available ;
 {% endhint %}
 
 Within _flepiMoP_, modifiers can be run as "scenarios". With scenarios, we can use the same configuration file to run multiple versions of the model where only the modifiers applied differ.
@@ -37,7 +37,7 @@ seir_modifiers:
       ...
 ```
 
-In this example, each scenario runs a single intervention, but more complicated examples are possible. &#x20;
+In this example, each scenario runs a single intervention, but more complicated examples are possible. ;
 
 The major benefit of specifying both "scenarios" and "modifiers" is that the user can use `"StackedModifier"` option to combine other modifiers in different ways, and then run either the individual or combined modifiers as scenarios. This way, each scenario may consist of one or more individual parameter modifications, and each modification may be part of multiple scenarios. This provides a shorthand to quickly consider multiple different versions of a model that have different combinations of parameter modifications occurring. For example, during an outbreak we could evaluate the impact of school closures, case isolation, and masking, or any one or two of these three measures. An example of a configuration file combining modifiers to create new scenarios is given below
 
@@ -62,11 +62,11 @@ seir_modifiers:
 ```
 
 {% hint style="info" %}
-The `seir_modifiers::scenarios` and`outcome_modifiers::scenarios` sections are optional. If the `scenarios`section is **not** included, the model will run with all of the modifiers turned "on".&#x20;
+The `seir_modifiers::scenarios` and`outcome_modifiers::scenarios` sections are optional. If the `scenarios`section is **not** included, the model will run with all of the modifiers turned "on" ;
 {% endhint %}
 
 {% hint style="info" %}
-If the`scenarios`section is included for either `seir` or `outcomes`, then each time a configuration file is run, the user much specify which modifier scenarios will be run. If not specified, the model will be run one time for each combination of `seir` and `outcome` scenario.&#x20;
+If the`scenarios`section is included for either `seir` or `outcomes`, then each time a configuration file is run, the user much specify which modifier scenarios will be run. If not specified, the model will be run one time for each combination of `seir` and `outcome` scenario ;
 {% endhint %}
 
 #### Example
@@ -119,7 +119,7 @@ seir_modifiers:
       value: 0.7
 ```
 
-Or to create an outcome variable modifier called enhanced\_testing during which the case detection rate doubles&#x20;
+Or to create an outcome variable modifier called enhanced\_testing during which the case detection rate double ;
 
 ```
 outcome_modifiers:
@@ -137,7 +137,7 @@ outcome_modifiers:
 
 `method`: `SinglePeriodModifier`
 
-`parameter`: The name of the parameter that will be modified. This could be a parameter defined for the transmission model in [`seir::parameters`](compartmental-model-structure.md) or for the observational model in [`outcomes`](outcomes-for-compartments.md). If the parameter is used in multiple transitions in the model then all those transitions will be modified by this amount.&#x20;
+`parameter`: The name of the parameter that will be modified. This could be a parameter defined for the transmission model in [`seir::parameters`](compartmental-model-structure.md) or for the observational model in [`outcomes`](outcomes-for-compartments.md). If the parameter is used in multiple transitions in the model then all those transitions will be modified by this amount ;
 
 `period_start_date`: The date when the modification starts, in YYYY-MM-DD format. The modification will only reduce the value of the parameter after (inclusive of) this date.
 
@@ -151,7 +151,7 @@ outcome_modifiers:
 new_parameter_value = old_parameter_value * (1 - value)
 ```
 
-`subpop_groups:` An optional list of lists specifying which subsets of subpopulations in subpop should share parameter values; when parameters are drawn from a distribution or fit to data. See [`subpop_groups`](intervention-templates.md#interventions-settings-groups) section below for more details.&#x20;
+`subpop_groups:` An optional list of lists specifying which subsets of subpopulations in subpop should share parameter values; when parameters are drawn from a distribution or fit to data. See [`subpop_groups`](intervention-templates.md#interventions-settings-groups) section below for more details ;
 
 ### MultiPeriodModifier
 
@@ -185,7 +185,7 @@ school_year:
 
 `method: MultiPeriodModifier`
 
-`parameter`: The name of the parameter that will be modified. This could be a parameter defined for the transmission model in [`seir::parameters`](compartmental-model-structure.md) or for the observational model in [`outcomes`](outcomes-for-compartments.md). If the parameter is used in multiple transitions in the model then all those transitions will be modified by this amount.&#x20;
+`parameter`: The name of the parameter that will be modified. This could be a parameter defined for the transmission model in [`seir::parameters`](compartmental-model-structure.md) or for the observational model in [`outcomes`](outcomes-for-compartments.md). If the parameter is used in multiple transitions in the model then all those transitions will be modified by this amount ;
 
 `groups:` A list of subpopulations (`subpops`) or groups of them, and time periods the modification will be active in each of them
 
@@ -200,7 +200,7 @@ school_year:
 new_parameter_value = old_parameter_value * (1 - value)
 ```
 
-`subpop_groups:` An optional list of lists specifying which subsets of subpopulations in subpop should share parameter values; when parameters are drawn from a distribution or fit to data. See [`subpop_groups`](intervention-templates.md#interventions-settings-groups) section below for more details.&#x20;
+`subpop_groups:` An optional list of lists specifying which subsets of subpopulations in subpop should share parameter values; when parameters are drawn from a distribution or fit to data. See [`subpop_groups`](intervention-templates.md#interventions-settings-groups) section below for more details ;
 
 ### ModifierModifier
 
@@ -258,7 +258,7 @@ seir_modifiers:
       value: 0.3
 ```
 
-However, there are situations when the `ModiferModifier` notation is more convenient, especially when doing parameter fitting. &#x20;
+However, there are situations when the `ModiferModifier` notation is more convenient, especially when doing parameter fitting. ;
 
 #### Configuration options
 
@@ -266,7 +266,7 @@ However, there are situations when the `ModiferModifier` notation is more conven
 
 `baseline_modifier:` The name of the original parameter modification which will be further modified.
 
-`parameter`: The name of the parameter in the `baseline_scenario` that will be modified.&#x20;
+`parameter`: The name of the parameter in the `baseline_scenario` that will be modified ;
 
 `period_start_date`: The date when the intervention modifier starts, in YYYY-MM-DD format. The intervention modifier will only reduce the value of the other intervention after (inclusive of) this date.
 
@@ -286,11 +286,11 @@ and so the value of the underlying parameter that was modified by the baseline i
 new_parameter_value = original_parameter_value * (1 - baseline_intervention_value * (1 - value) )
 ```
 
-`subpop_groups:` An optional list of lists specifying which subsets of subpopulations in subpop should share parameter values; when parameters are drawn from a distribution or fit to data. See [`subpop_groups`](intervention-templates.md#interventions-settings-groups) section below for more details.&#x20;
+`subpop_groups:` An optional list of lists specifying which subsets of subpopulations in subpop should share parameter values; when parameters are drawn from a distribution or fit to data. See [`subpop_groups`](intervention-templates.md#interventions-settings-groups) section below for more details ;
 
 ### StackedModifier
 
-Combine two or more modifiers into a scenario, so that they can easily be singled out to be run together without the other modifiers. If multiply modifiers act during the same time period in the same subpopulation, their effects are combined multiplicatively. Modifiers of different types (i.e. SinglePeriodModifier, MultiPeriodModifier, ModifierModifier, other StackedModifiers) can be combined.&#x20;
+Combine two or more modifiers into a scenario, so that they can easily be singled out to be run together without the other modifiers. If multiply modifiers act during the same time period in the same subpopulation, their effects are combined multiplicatively. Modifiers of different types (i.e. SinglePeriodModifier, MultiPeriodModifier, ModifierModifier, other StackedModifiers) can be combined ;
 
 #### Examples
 
@@ -365,7 +365,7 @@ outcome_modifiers:
 
 ## modifiers::modifiers::groups
 
-`subpop_groups:` For any of the modifier types, `subpop_groups` is an optional list of lists specifying which subsets of subpopulations in `subpop` should share parameter values; when parameters are drawn from a distribution or fit to data. All other subpopulations not listed will have unique intervention values unlinked to other areas. If the value is `'all',` then all subpopulations will be assumed to have the same modifier value. When the `subpop_groups` option is not specified, all subpopulations will be assumed to have unique values of the modifier.&#x20;
+`subpop_groups:` For any of the modifier types, `subpop_groups` is an optional list of lists specifying which subsets of subpopulations in `subpop` should share parameter values; when parameters are drawn from a distribution or fit to data. All other subpopulations not listed will have unique intervention values unlinked to other areas. If the value is `'all',` then all subpopulations will be assumed to have the same modifier value. When the `subpop_groups` option is not specified, all subpopulations will be assumed to have unique values of the modifier ;
 
 For example, for a model of disease spread in Canada where we want to specify that the (to be varied) value of a modification to the transmission rate should be the same in all the Atlantic provinces (Nova Scotia, Newfoundland, Prince Edward Island, and New Brunswick), the same in all the prairie provinces (Manitoba, Saskatchewan, Alberta), the same in the three territories (Nunavut, Northwest Territories, and Yukon), and yet take unique values in Ontario, Quebec, and British Columbia, we could write
 

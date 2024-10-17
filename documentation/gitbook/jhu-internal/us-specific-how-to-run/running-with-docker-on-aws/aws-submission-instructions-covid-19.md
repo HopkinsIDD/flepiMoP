@@ -76,7 +76,7 @@ Rscript build/local_install.R &#x26;&#x26;
 
 ### Step 4. Model Setup
 
-To run the via AWS, we first run a setup run locally (in docker on the submission EC2 box).&#x20;
+To run the via AWS, we first run a setup run locally (in docker on the submission EC2 box) ;
 
 **Setup environment variables.** Modify the code chunk below and submit in the terminal. We also clear certain files and model output that get generated in the submission process. If these files exist in the repo, they may not get cleared and could cause issues. You need to modify the variable values in the _first 4 lines_ below. These include the `SCENARIO`, `VALIDATION_DATE`, `COVID_MAX_STACK_SIZE`, and `COMPUTE_QUEUE`. If submitting multiple jobs, it is recommended to split jobs between 2 queues: `Compartment-JQ-1588569569` and `Compartment-JQ-1588569574`.
 
@@ -144,13 +144,13 @@ export CONFIG_NAME=config_$SCENARIO.yml &&
 
 ### Step 5. Launch job on AWS batch
 
-**Configure AWS.** Assuming that the simulations finish successfully, you will now enter credentials and submit your job onto AWS batch. Enter the following command into the terminal:&#x20;
+**Configure AWS.** Assuming that the simulations finish successfully, you will now enter credentials and submit your job onto AWS batch. Enter the following command into the terminal ;
 
 ```
 aws configure
 ```
 
-You will be prompted to enter the following items. These can be found in a file called `new_user_credentials.csv`.&#x20;
+You will be prompted to enter the following items. These can be found in a file called `new_user_credentials.csv` ;
 
 * Access key ID when prompted
 * Secret access key when prompted

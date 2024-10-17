@@ -39,7 +39,7 @@ To get access to the flepiMoP model code - stored as a [repository on Github.com
 
 ### 📂 Create a project repository from `flepimop_sample`
 
-The flepimop\_sample repository contains example configuration files you can use to run simple models, as well as structured model inputs (e.g., population sizes, initial conditions) organized as we recommend organizing your own project repositories. A good way to start out with flepimop is to try running these simple models, or use them as a template to make more complex ones.&#x20;
+The flepimop\_sample repository contains example configuration files you can use to run simple models, as well as structured model inputs (e.g., population sizes, initial conditions) organized as we recommend organizing your own project repositories. A good way to start out with flepimop is to try running these simple models, or use them as a template to make more complex ones ;
 
 In order to create a sample project repository from the [flepimop\_sample](https://github.com/HopkinsIDD/flepimop\_sample) repository you can follow these steps:
 
@@ -53,7 +53,7 @@ In order to create a sample project repository from the [flepimop\_sample](https
    * To make sure that changes in the core flepimop code are always in sync with our example configuration files, we keep the newest versions of the sample code in the flepimop repository (in the `examples` directory). We try to keep flepimop\_sample repository up to date, but in case we haven't kept up, it's best to copy the most up to date files over yourself
    * Copy all the contents of the `examples/tutorials` directory into your local version of `flepimop_sample` . You can do this by copying and pasting the files, or, by running the following at the command line in your terminal (assuming you have navigated to the parent directory that contains both your repositories):
      * `cp -a ./flepiMoP/examples/tutorials/. ./flepimop_sample/`
-   * You will see if there are any changes to flepimop\_sample files by looking at Github's change tracking feature locally.&#x20;
+   * You will see if there are any changes to flepimop\_sample files by looking at Github's change tracking feature locally ;
 
 ### 📂 Create a project repository from scratch
 

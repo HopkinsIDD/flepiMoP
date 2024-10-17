@@ -16,7 +16,7 @@ As a computational environment, you can use an RStudio Server integrated AWS EC2
   * R version: 4.2.2
   * RStudio Server version: v2022.07.02+576
 * AWS EC2 instance configurations
-  * instance-type: r6i.4xlarge (16 cores, 128GB mem)&#x20;
+  * instance-type: r6i.4xlarge (16 cores, 128GB mem ;
   * Storage: 2TB x 1 (gp3)
   * OS: ubuntu 22.04 (Jammy)
 
@@ -27,13 +27,13 @@ To be written/ Talk to someone who would be able to do that.
 * EC2 instance initialization with specfic AMI
 * Configured network related including ports openings
 * registration of the user in the EC2 instance
-* Configuring shared directory via SMB and account&#x20;
+* Configuring shared directory via SMB and accoun ;
 
-## Starting an EC2 instance&#x20;
+## Starting an EC2 instanc ;
 
-The procedure is same as a normal ec2 instance starting. One way is to select the ec2 instance and start it in EC2 Management Console.&#x20;
+The procedure is same as a normal ec2 instance starting. One way is to select the ec2 instance and start it in EC2 Management Console ;
 
-Once the instance started, RStudio Server can be accessed without invoking manually.&#x20;
+Once the instance started, RStudio Server can be accessed without invoking manually ;
 
 ## Accessing RStudio Server
 
@@ -75,7 +75,7 @@ As a shared space, the directory named:
 /home/shared
 ```
 
-is deployed among multiple server boxes using EFS(Elastic File System) which covers NFSv4 protocol. &#x20;
+is deployed among multiple server boxes using EFS(Elastic File System) which covers NFSv4 protocol. ;
 
 ## Accessing the shared space on Linux server using Samba(obsolete)
 
@@ -104,8 +104,8 @@ By inputting the form such as `\\<ip-addr>\share` in Windows Explorer
 From Finder you can access the shared space using SMB.
 
 1. From Finder Menu, choose "MOVE" then "Connect to Server"
-2. When a dialog appears, fill username and password out as a registered user,&#x20;
-3. After pushing "connect" button, the designated area will be shown in Finder if no errors happen.&#x20;
+2. When a dialog appears, fill username and password out as a registered user ;
+3. After pushing "connect" button, the designated area will be shown in Finder if no errors happen ;
 
 <figure><img src="../.gitbook/assets/スクリーンショット 2023-01-09 午後2.06.45.png" alt=""><figcaption><p>Dialog window (in Japanese form; this will be changed according to yours OS's locale)</p></figcaption></figure>
 

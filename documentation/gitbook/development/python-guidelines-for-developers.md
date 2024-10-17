@@ -20,7 +20,7 @@ We make extensive use of the following packages:
 * numba to just-in-time compile the core model
 * sympy to parse the model equations
 * pyarrow as parquet is our main data storage format
-* [xarray](https://docs.xarray.dev/en/stable/), which provides labels in the form of dimensions, coordinates and attributes on top of raw NumPy multidimensional arrays, for performance and convenience.&#x20;
+* [xarray](https://docs.xarray.dev/en/stable/), which provides labels in the form of dimensions, coordinates and attributes on top of raw NumPy multidimensional arrays, for performance and convenience ;
 * emcee for inference, as an option
 * graphviz to export transition graph between compartments
 * pandas, numpy, scipy, seaborn, matplotlib and tqdm like many Python projects
@@ -130,4 +130,4 @@ launch\_job.py and runner.py for non inference job
 inference\_job.py launch a slurm or aws job, where it uses
 
 * \`inference\_runner.sh\` and inference\_copy.sh for aws
-* &#x20;batch/inference\_job.run for slurm
+* ;batch/inference\_job.run for slurm
