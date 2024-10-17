@@ -22,7 +22,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_run' or github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         R-version: ["4.3.3"]
