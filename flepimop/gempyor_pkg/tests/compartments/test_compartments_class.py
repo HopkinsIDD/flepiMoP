@@ -162,6 +162,64 @@ def sir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
     )
 
 
+def ris_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
+    return MockCompartmentsInput(
+        seir={
+            "integration": {
+                "method": "rk4",
+                "dt": 1.0,
+            },
+            "parameters": {
+                "beta": {
+                    "value": 0.1,
+                },
+                "gamma": {
+                    "value": 0.2,
+                },
+            },
+            "transitions": [
+                {
+                    "source": ["I"],
+                    "destination": ["R"],
+                    "rate": ["gamma"],
+                    "proportional_to": [["I"]],
+                    "proportion_exponent": [[1]],
+                },
+                {
+                    "source": ["S"],
+                    "destination": ["I"],
+                    "rate": ["beta"],
+                    "proportional_to": [["S"], ["I"]],
+                    "proportion_exponent": [[1], [1]],
+                },
+            ],
+        },
+        compartments={
+            "infection_stage": ["R", "I", "S"],
+        },
+        compartments_file=None,
+        transitions_file=None,
+        transitions=pd.DataFrame.from_records(
+            data=[
+                {
+                    "source": ["I"],
+                    "destination": ["R"],
+                    "rate": ["gamma"],
+                    "proportional_to": [[["I"]]],
+                    "proportion_exponent": [["1"]],
+                },
+                {
+                    "source": ["S"],
+                    "destination": ["I"],
+                    "rate": ["beta"],
+                    "proportional_to": [[["S"]], [["I"]]],
+                    "proportion_exponent": [["1"], ["1"]],
+                },
+            ]
+        ),
+    )
+
+
 def seir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
     return MockCompartmentsInput(
         seir={
@@ -233,6 +291,7 @@ def seir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
 
 valid_input_factories = (
     (sir_from_config_inputs_factory),
+    (ris_from_config_inputs_factory),
     (seir_from_config_inputs_factory),
 )
 
@@ -273,6 +332,41 @@ class TestCompartments:
         df = compartments.get_compartments_explicitDF()
         assert id(df) != id(compartments.compartments)
         assert all(c.startswith("mc_") for c in df.columns)
+
+    @pytest.mark.parametrize(
+        ("factory_one", "factory_two", "expected_result"),
+        (
+            (sir_from_config_inputs_factory, sir_from_config_inputs_factory, True),
+            (sir_from_config_inputs_factory, ris_from_config_inputs_factory, False),
+            (sir_from_config_inputs_factory, seir_from_config_inputs_factory, None),
+            (ris_from_config_inputs_factory, seir_from_config_inputs_factory, None),
+            (seir_from_config_inputs_factory, seir_from_config_inputs_factory, True),
+        ),
+    )
+    def test_compartments_equality(
+        self,
+        tmp_path: Path,
+        factory_one: Callable[[Path], MockCompartmentsInput],
+        factory_two: Callable[[Path], MockCompartmentsInput],
+        expected_result: bool | None,
+    ) -> None:
+        mock_inputs_one = factory_one(tmp_path)
+        mock_inputs_two = factory_two(tmp_path)
+        compartments_one = mock_inputs_one.compartments_instance()
+        compartments_two = mock_inputs_two.compartments_instance()
+
+        if isinstance(expected_result, bool):
+            assert (compartments_one == compartments_two) == expected_result
+        else:
+            # Comparing compartments is an unsafe operation
+            with pytest.raises(
+                ValueError,
+                match=(
+                    r"^Can only compare identically-labeled \(both "
+                    r"index and columns\) DataFrame objects$"
+                ),
+            ):
+                compartments_one == compartments_two
 
     @pytest.mark.parametrize(
         ("factory", "comp_dict", "error_info"),
