@@ -159,7 +159,6 @@ check_within_bounds <- function(value, obj) {
   }
 }
 
-
 #' @name prettyprint_optlist
 #' @description Print a list of options such that it does not take the whole screen
 #' Display `name : value` \n for all elements.
