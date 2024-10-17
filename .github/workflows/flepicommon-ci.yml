@@ -32,7 +32,7 @@ jobs:
           r-version: ${{ matrix.R-version }}
           update-rtools: true
       - name: Install System Dependencies
-        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev
+        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev libudunits2-dev
       - name: Determine R Library Location
         run: |
           R_LIBPATH=$( R -s -e "cat(.libPaths()[1L])" | xargs )
