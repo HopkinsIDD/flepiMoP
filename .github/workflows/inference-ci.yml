@@ -89,17 +89,11 @@ jobs:
       - name: Install R Dependencies For inference
         if: steps.r-library-cache.outputs.cache-hit != 'true'
         run: |
-          install.packages(
-            "devtools",
-            repos = "https://cloud.r-project.org",
-          )
-          library(devtools)
           devtools::install_deps(
             pkg = "flepimop/R_packages/inference",
             dependencies = TRUE
           )
           install.packages("covidcast", repos = "https://cloud.r-project.org")
-            - name: Install The flepicommon Package
       - name: Install The inference Package
         run: |
           if ("inference" %in% installed.packages()[,"Package"]) {
