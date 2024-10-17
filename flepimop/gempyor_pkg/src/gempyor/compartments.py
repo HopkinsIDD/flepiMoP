@@ -13,7 +13,7 @@ __all__ = [
 from functools import reduce
 import logging
 from os import PathLike
-from typing import Any
+from typing import Any, Iterable
 
 import click
 import confuse
@@ -46,6 +46,33 @@ def _access_original_config_by_multi_index(
         for x in tmp
     ]
     return tmp
+
+
+def _format_source(source_column: Iterable[Iterable[Any]]) -> list[Any]:
+    """
+    Format a source column of a transitions DataFrame.
+
+    Args:
+        source_column: Nested iterables that can be coerced into a formatted set of
+            columns. Typically the 'source' column of a transitions DataFrame. None
+            of the nested lists can be empty, but providing an empty list is acceptable.
+
+    Returns:
+        A list of formatted strings.
+
+    Examples:
+        >>> _format_source([[1], [2], [3, 4], [5, [6, [7, 8]]]])
+        [1, 2, '3_4', '5_[6, [7, 8]]']
+        >>> _format_source([[1, 2, 3, 4]])
+        ['1_2_3_4']
+    """
+    rc = [
+        y
+        for y in map(
+            lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x), source_column
+        )
+    ]
+    return rc
 
 
 class Compartments:
@@ -396,15 +423,6 @@ class Compartments:
 
         return new_transition_config
 
-    def format_source(self, source_column):
-        rc = [
-            y
-            for y in map(
-                lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x), source_column
-            )
-        ]
-        return rc
-
     def unformat_source(self, source_column):
         rc = [x.split("_") for x in source_column]
         return rc
@@ -578,7 +596,7 @@ class Compartments:
             out_df.to_csv(compartments_file, index=False)
 
         out_df = self.transitions.copy()
-        out_df["source"] = self.format_source(out_df["source"])
+        out_df["source"] = _format_source(out_df["source"])
         out_df["destination"] = self.format_destination(out_df["destination"])
         out_df["rate"] = self.format_rate(out_df["rate"])
         out_df["proportional_to"] = self.format_proportional_to(
