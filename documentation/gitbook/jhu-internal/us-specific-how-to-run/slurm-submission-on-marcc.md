@@ -21,6 +21,10 @@ Note that the repository is cloned **flat,** i.e the `flepiMoP` repository is at
 
 * **output folder:**`/scratch4/struelo1/flepimop-runs` stores the run outputs. After an inference run finishes, it's output and the logs files are copied from the `$DATA_PATH/model_output` to `/scratch4/struelo1/flepimop-runs/THISRUNJOBNAME` where the jobname is usually of the form `USA-DATE.`
 
+{% hint style="warning" %}
+When logging on you'll see two folders `data_struelo1` and `scr4_struelo1`, which are shortcuts to `/data/struelo1` and `/scratch4/struelo1`. We don't use `data/struelo1`.
+{% endhint %}
+
 ## Login on rockfish
 
 Using ssh from your terminal, type in:
@@ -65,22 +69,45 @@ conda install -c conda-forge r-readr r-sf r-lubridate r-tigris r-tidyverse r-gri
 ```
 {% endcode %}
 
-### Create the directory structure
+### Clone the FlepiMoP and other model repositories
 
-type the following commands. $USER is a variable that contains your username.
+Use the following commands to have git clone the FlepiMoP repository and any other model repositories you'd like to work on through `https`. In the code below, $USER is a variable that contains your username.
 
 <pre class="language-bash"><code class="lang-bash"><strong>cd /scratch4/struelo1/flepimop-code/
 </strong><strong>mkdir $USER
 </strong><strong>cd $USER
 </strong>git clone https://github.com/HopkinsIDD/flepiMoP.git
 git clone https://github.com/HopkinsIDD/Flu_USA.git
-git clone https://github.com/HopkinsIDD/COVID19_USA.git
-# or any other data directories
+# or any other model repositories
 </code></pre>
 
-### Setup your AWS credentials (allows to copy runs to s3)
+You will be prompted to provide your GitHub username and password. Note that from 2021, GitHub has changed the use of passwords to the use of [personal acces tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens), so the prompted "password" is not the password you use to login. Instead, we recommend using the more safe `ssh` protocol to clone GitHub repositories. To do so, first [generate an ssh private-public keypair](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux) on the Rockfish cluster and then copy the generated public key from the Rockfish cluster to your local computer by opening a terminal and prompting,
 
-This can be done in a second step -- but is necessary in order to push and pull to s3. Setup your AWS credentials by:
+`scp -r <username>@rfdtn1.rockfish.jhu.edu:/home/<username>/.ssh/<key_name.pub> .`
+
+Then [add the public key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) to your GitHub account. Next, make a file `~/.ssh/config` by `using the command `vi ~/.ssh/config`. Press 'I' to go into insert mode and paste the following chunck of code,
+
+```
+Host github.com
+    User git
+    IdentityFile ~/.ssh/<key_name>
+```
+
+Press 'esc' to exit INSERT model followed by ':x' to save and exit the file. By adding this configuration file, you make sure Rockfish doesn't forget your ssh key when you log out. Now clone the github repositories as follows,
+
+<pre class="language-bash"><code class="lang-bash"><strong>cd /scratch4/struelo1/flepimop-code/
+</strong><strong>mkdir $USER
+</strong><strong>cd $USER
+</strong>git clone git@github.com:HopkinsIDD/flepiMoP.git
+git clone git@github.com:HopkinsIDD/Flu_USA.git
+# or any other model repositories
+</code></pre>
+
+and you will not be prompted for credentials.
+
+### Setup your Amazon Web Services (AWS) credentials
+
+This can be done in a second step -- but is necessary in order to push and pull data to Amazon Simple Storage Service (S3). Setup AWS by running,
 
 <pre class="language-bash"><code class="lang-bash">cd ~ # go in your home directory
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -89,14 +116,16 @@ unzip awscliv2.zip
 <strong>./aws-cli/bin/aws --version
 </strong></code></pre>
 
-Then run `./aws-cli/bin/aws configure` and use the following :
+Then run `./aws-cli/bin/aws configure` to set up your credentials,
 
 ```
-# AWS Access Key ID [None]: YOUR ID
-# AWS Secret Access Key [None]: YOUR SECRET ID
+# AWS Access Key ID [None]: Access key
+# AWS Secret Access Key [None]: Secret Access key
 # Default region name [None]: us-west-2
 # Default output format [None]: json
 ```
+
+To get the (secret) access key, ask the AWS administrator (Shaun Truelove) to generate them for you.
 
 ## 🚀 Run inference using slurm (do everytime)
 
@@ -106,7 +135,7 @@ log-in to rockfish via ssh, then type:
 source /scratch4/struelo1/flepimop-code/$USER/flepiMoP/batch/slurm_init.sh
 ```
 
-which will prepare the environment and setup variables for the validation date, the resume location and the run index for this run. If you don't want to set a variable, just hit enter.
+which will prepare the environment and setup variables for the validation date (choose as day after `end_date_groundtruth`), the resume location and the run index for this run. If you don't want to set a variable, just hit enter.
 
 {% hint style="success" %}
 Note that now the run-id of the run we resume from is automatically inferred by the batch script :)
@@ -156,18 +185,20 @@ export FLEPI_PATH=$(pwd)/flepiMoP
 cd $FLEPI_PATH
 git checkout main
 git pull
-conda activate flepimop-env # normally already done, but in case.
 
-#install gempyor and the R module. There should be no error, please report if not.
-# Sometimes you might need to run the next line two times because inference depends
-# on report.generation, which is installed later because of alphabetical order.
-# (or if you know R well enough to fix that 😊)
+# install dependencies ggraph and tidy graph
+R
+> install.packages(c("ggraph","tidygraph"))
+> quit()
 
+# install the R module
 Rscript build/local_install.R # warnings are ok; there should be no error.
+
+# install gempyor
 pip install --no-deps -e flepimop/gempyor_pkg/
 ```
 
-Now flepiMoP is ready 🎉.
+Now flepiMoP is ready 🎉. If the `R` command doesn't work, try `r` and if that doesn't work run `module load `r/4.0.2`.
 
 Next step is to setup the data. First $DATA\_PATH to your data folder, and set any data options. If you are using the Delph Epidata API, first register for a key here: [https://cmu-delphi.github.io/delphi-epidata/](https://cmu-delphi.github.io/delphi-epidata/). Once you have a key, add that below where you see \[YOUR API KEY]. Alternatively, you can put that key in your config file in the `inference` section as `gt_api_key: "YOUR API KEY"`.
 
@@ -222,7 +253,7 @@ rm *.out
 
 </details>
 
-Then run the preparatory script and you are good
+Run the preparatory script for the data and you are good,
 
 ```bash
 export CONFIG_PATH=config_FCH_R16_lowBoo_modVar_ContRes_blk4_Jan29_tsvacc.yml
@@ -231,7 +262,9 @@ Rscript $FLEPI_PATH/datasetup/build_US_setup.R
 # For covid do
 Rscript $FLEPI_PATH/datasetup/build_covid_data.R
 
-# For Flu do
+# For Flu (do not do this for the scenariohub!)
+R
+> install.packages(c("RSocrata"))
 Rscript $FLEPI_PATH/datasetup/build_flu_data.R
 
 # build seeding

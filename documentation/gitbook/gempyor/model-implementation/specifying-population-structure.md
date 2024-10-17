@@ -8,7 +8,7 @@ description: >-
 
 ## Overview
 
-The `spatial_setup` section of the configuration file is where users can input the information required to define a population structure on which to simulate the model. The options allow the user to determine the population size of each subpopulation that makes up the overall population, and to specify the amount of mixing that occurs between each pair of subpopulations.
+The `subpop_setup` section of the configuration file is where users can input the information required to define a population structure on which to simulate the model. The options allow the user to determine the population size of each subpopulation that makes up the overall population, and to specify the amount of mixing that occurs between each pair of subpopulations.
 
 An example configuration file with the global header and the spatial\_setup section is below:
 
@@ -20,7 +20,7 @@ start_date: 2020-01-01
 end_date: 2020-12-31
 nslots: 100
 
-spatial_setup:
+subpop_setup:
   geodata: model_input/geodata.csv
   mobility: model_input/mobility.csv
 ```
@@ -73,7 +73,7 @@ It is also possible, but **not recommended** to specify the `mobility` file as a
 To simulate a simple population structure with two subpopulations, a large province with 10,000 individuals and a small province with only 1,000 individuals, where every day 100 residents of the large province travel to the small province and interact with residents there, and 50 residents of the small province visit the large province
 
 ```
-spatial_setup:
+subpop_setup:
   geodata: model_input/geodata.csv
   mobility: model_input/mobility.csv
 ```
