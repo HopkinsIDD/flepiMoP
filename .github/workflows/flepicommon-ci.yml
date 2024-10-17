@@ -26,38 +26,53 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Install R
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.R-version }}
+          update-rtools: true
+      - name: Install System Dependencies
+        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev
+      - name: Determine R Library Location
         run: |
-          UBUNTU_VERSION=$( echo "$( lsb_release -r )" | awk '{print $2}' | sed 's/\.//g' )
-          curl -O https://cdn.rstudio.com/r/ubuntu-${UBUNTU_VERSION}/pkgs/r-${R_VERSION}_1_amd64.deb
-          sudo apt-get update
-          sudo apt-get install ./r-${R_VERSION}_1_amd64.deb
-          ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
-          ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
-          sudo chmod -R 777 /opt/R/4.3.3/lib/R/library
-        shell: bash
-        env:
-          R_VERSION: ${{ matrix.R-version }}
-      - name: Build flepicommon
+          R_LIBPATH=$( R -s -e "cat(.libPaths()[1L])" | xargs )
+          echo "R_LIBPATH=$R_LIBPATH" >> $GITHUB_ENV
+          R_LIBPATH_CKSUM=$( echo "$R_LIBPATH" | cksum | cut -d ' ' -f 1 )
+          echo "R_LIBPATH_CKSUM=$R_LIBPATH_CKSUM" >> $GITHUB_ENV
+          CACHE_DATE=$( date -d "last Sunday" +%Y%m%d )
+          echo "CACHE_DATE=$CACHE_DATE" >> $GITHUB_ENV
+      - name: R Library Cache
+        uses: actions/cache@v4
+        with:
+          key: flepicommon-rlibs-${{ runner.os }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-${{ env.CACHE_DATE }}
+          path: ${{ env.R_LIBPATH }}
+      - name: Install R Dependencies
+        if: steps.r-library-cache.outputs.cache-hit != 'true'
         run: |
-          R CMD build flepimop/R_packages/flepicommon/
-        shell: bash
-      - name: Install Dependencies
-        run: |
-          files <- list.files()
-          pkg <- files[startsWith(files, "flepicommon_")]
-          install.packages(pkg, repos = "https://cloud.r-project.org", dependencies = TRUE)
-          install.packages("devtools")
-        shell: Rscript {0}
-      - name: Install flepicommon
-        run: |
-          R CMD install --help
-          echo "-"
-          TAR_GZ=$( find . -maxdepth 1 -regex ".*flepicommon.*" -printf "%P\n" )
-          R CMD install $TAR_GZ
-      - name: Run Unit Tests
-        run: |
-          setwd("flepimop/R_packages/flepicommon")
+          install.packages(
+            "devtools",
+            repos = "https://cloud.r-project.org",
+          )
           library(devtools)
-          devtools::test(stop_on_failure = TRUE)
+          devtools::install_deps(
+            pkg = "flepimop/R_packages/flepicommon"
+            dependencies = TRUE
+          )
+        shell: Rscript {0}
+      - name: Install The flepicommon Package
+        run: |
+          if ("flepicommon" %in% installed.packages()[,"Package"]) {
+            devtools::uninstall(pkg = "flepicommon")
+          }
+          devtools::install(
+            pkg = "flepimop/R_packages/flepicommon"
+            args = c(getOption("devtools.install.args"), "--install-tests"),
+            quick = TRUE,
+            dependencies = TRUE,
+          )
+        shell: Rscript {0}
+      - name: Run Tests
+        run: |
+          library(testthat)
+          test_package("flepicommon")
         shell: Rscript {0}
