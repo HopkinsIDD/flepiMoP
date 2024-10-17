@@ -1,0 +1,39 @@
+# Thu Oct 10 19:19:00 2024 UTC
+channels:
+- conda-forge
+- defaults
+- r
+- dnachun
+dependencies:
+- python=3.10
+- pip
+- r-base>=4.3
+- pyarrow=17.0.0
+- r-arrow=17.0.0
+- r-sf
+- r-data.table
+- r-doParallel
+- r-dplyr
+- r-foreach
+- r-ggplot2
+- r-ggraph
+- r-httr
+- r-jsonlite
+- r-lubridate
+- r-magrittr
+- r-MMWRweek
+- r-optparse
+- r-purrr
+- r-readr
+- r-reticulate
+- r-rlang
+- r-stringr
+- r-tibble
+- r-tidygraph
+- r-tidyr
+- r-tidyselect
+- r-tidyverse
+- r-truncnorm
+- r-vroom
+- r-xts
+- r-yaml
