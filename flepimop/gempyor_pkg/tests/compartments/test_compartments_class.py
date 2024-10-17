@@ -9,7 +9,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import pytest
 
-from gempyor.compartments import Compartments
+from gempyor.compartments import Compartments, NestedListOfStr
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -273,3 +273,60 @@ class TestCompartments:
         df = compartments.get_compartments_explicitDF()
         assert id(df) != id(compartments.compartments)
         assert all(c.startswith("mc_") for c in df.columns)
+
+    @pytest.mark.parametrize(
+        ("factory", "comp_dict", "error_info"),
+        (
+            (sir_from_config_inputs_factory, {"name": "Z"}, "no information"),
+            (
+                seir_from_config_inputs_factory,
+                {"infection_stage": "A"},
+                "foobar fizzbuzz",
+            ),
+        ),
+    )
+    def test_get_comp_idx_ambiguous_filter_value_error(
+        tmp_path: Path,
+        factory: Callable[[Path], MockCompartmentsInput],
+        comp_dict: dict[str, NestedListOfStr],
+        error_info: str,
+    ) -> None:
+        mock_inputs = factory(tmp_path)
+        compartments = mock_inputs.compartments_instance()
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(?s)^The provided dictionary does not allow to isolate a compartment: "
+                f"{comp_dict} isolate .* from options {compartments.compartments}. The "
+                f"get_comp_idx function was called by'{error_info}'.$"
+            ),
+        ):
+            compartments.get_comp_idx(comp_dict, error_info=error_info)
+
+    @pytest.mark.parametrize(
+        ("factory", "comp_dict"),
+        (
+            (sir_from_config_inputs_factory, {"name": "S"}),
+            (seir_from_config_inputs_factory, {"infection_stage": "E"}),
+        ),
+    )
+    def test_get_comp_idx_ambiguous_filter_value_error(
+        tmp_path: Path,
+        factory: Callable[[Path], MockCompartmentsInput],
+        comp_dict: dict[str, NestedListOfStr],
+    ) -> None:
+        mock_inputs = factory(tmp_path)
+        compartments = mock_inputs.compartments_instance()
+
+        idx = compartments.get_comp_idx(comp_dict)
+
+        comp_dict = {
+            k: (v if isinstance(v, list) else [v]) for k, v in comp_dict.items()
+        }
+        df = mock_inputs.compartments_dataframe()
+        expected_idx = df.index[
+            df[comp_dict.keys()].isin(comp_dict).all(axis="columns")
+        ][0]
+
+        assert idx == expected_idx

@@ -173,6 +173,18 @@ class Compartments:
     def parse_transitions(
         self, seir_config: confuse.Subview, fake_config: bool = False
     ) -> pd.DataFrame:
+        """
+        Parse compartment transitions from seir configuration.
+
+        Args:
+            seir_config: The seir configuration to parse.
+            fake_config: An indicator of if the configuration being parsed is real or
+                fake.
+
+        Returns:
+            A pandas DataFrame with the columns 'source', 'destination', 'rate',
+            'proportional_to', 'proportion_exponent'.
+        """
         rc = reduce(
             lambda a, b: pd.concat(
                 [a, self.parse_single_transition(seir_config, b, fake_config)]
@@ -486,8 +498,27 @@ class Compartments:
         return rc
 
     def parse_single_transition(
-        self, seir_config, single_transition_config, fake_config=False
-    ):
+        self,
+        seir_config: Any,
+        single_transition_config: confuse.Subview | dict[str, Any],
+        fake_config: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Parse a single entry in the seir transitions configuration.
+
+        Args:
+            seir_config: This argument is ignored and only present for legacy reasons.
+            single_transition_config: A description of a single transition
+                configuration, typically represented as a confuse Subview, but can be
+                given as a dictionary for fake configurations.
+            fake_config: An indicator for the type of `single_transition_config`, if
+                `True` it is assumed that `single_transition_config` is a dictionary
+                and if `False` a confuse Subview.
+
+        Returns:
+            A pandas DataFrame with a single row and the columns 'source',
+            'destination', 'rate', 'proportional_to', 'proportion_exponent'.
+        """
 
         ## This method relies on having run parse_compartments
         if not fake_config:
@@ -583,12 +614,24 @@ class Compartments:
 
         return
 
-    def get_comp_idx(self, comp_dict: dict, error_info: str = "no information") -> int:
+    def get_comp_idx(
+        self, comp_dict: dict[str, Any], error_info: str = "no information"
+    ) -> int:
         """
-        return the index of a compartiment given a filter. The filter has to isolate a compartiment,
-        but it ignore columns that don't exist:
-        :param comp_dict:
-        :return:
+        Query the parsed compartments by a set of filters.
+
+        Args:
+            comp_dict: A dictionary where the keys correspond to the compartment
+                description to query on and the value corresponds to the value to
+                search for.
+            error_info: Additional info to provided in a error message if `comp_dict`
+                returns an ambagious result.
+
+        Returns:
+            The row corresponding to the filters given in the `compartments` attribute.
+
+        Raises:
+            ValueError: If `comp_dict` does not return exactly 1 matching result.
         """
         mask = pd.concat(
             [self.compartments[k] == v for k, v in comp_dict.items()], axis=1
@@ -596,7 +639,10 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'."
+                "The provided dictionary does not allow to isolate a compartment: "
+                f"{comp_dict} isolate {self.compartments[mask]} from options "
+                f"{self.compartments}. The get_comp_idx function was called "
+                f"by'{error_info}'."
             )
         return comp_idx[0]
 
