@@ -22,25 +22,98 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    container:
-      image: hopkinsidd/flepimop:latest-dev
-      options: --user root
+    if: ${{ github.event_name != 'workflow_run' or github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      matrix:
+        R-version: ["4.3.3"]
+        python-version: ["3.10", "3.11"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Set up Rprofile
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install gempyor
         run: |
-          cp build/docker/Docker.Rprofile $HOME/.Rprofile
-          cp /home/app/.bashrc $HOME/.bashrc
+          python -m pip install --upgrade pip
+          python -m pip install "flepimop/gempyor_pkg[test]"
         shell: bash
-      - name: Install local R packages
-        run: Rscript build/local_install.R
-        shell: bash
-      - name: Run inference tests
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.R-version }}
+          update-rtools: true
+      - name: Install System Dependencies
+        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+      - name: Determine R Library Location
         run: |
-          setwd("flepimop/R_packages/inference")
-          devtools::test(stop_on_failure=TRUE)
+          R_LIBPATH=$( R -s -e "cat(.libPaths()[1L])" | xargs )
+          echo "R_LIBPATH=$R_LIBPATH" >> $GITHUB_ENV
+          R_LIBPATH_CKSUM=$( echo "$R_LIBPATH" | cksum | cut -d ' ' -f 1 )
+          echo "R_LIBPATH_CKSUM=$R_LIBPATH_CKSUM" >> $GITHUB_ENV
+          CACHE_DATE=$( date -d "last Sunday" +%Y%m%d )
+          echo "CACHE_DATE=$CACHE_DATE" >> $GITHUB_ENV
+      - name: R Library Cache
+        uses: actions/cache@v4
+        with:
+          key: inference-rlibs-${{ runner.os }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-${{ env.CACHE_DATE }}
+          path: ${{ env.R_LIBPATH }}
+      - name: Install R Dependencies For flepicommon
+        if: steps.r-library-cache.outputs.cache-hit != 'true'
+        run: |
+          install.packages(
+            "devtools",
+            repos = "https://cloud.r-project.org",
+          )
+          library(devtools)
+          devtools::install_deps(
+            pkg = "flepimop/R_packages/flepicommon",
+            dependencies = TRUE
+          )
+          install.packages("covidcast", repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+      - name: Install The flepicommon Package
+        run: |
+          if ("flepicommon" %in% installed.packages()[,"Package"]) {
+            devtools::uninstall(pkg = "flepicommon")
+          }
+          devtools::install(
+            pkg = "flepimop/R_packages/flepicommon",
+            quick = TRUE,
+            dependencies = TRUE,
+          )
+        shell: Rscript {0}
+      - name: Install R Dependencies For inference
+        if: steps.r-library-cache.outputs.cache-hit != 'true'
+        run: |
+          install.packages(
+            "devtools",
+            repos = "https://cloud.r-project.org",
+          )
+          library(devtools)
+          devtools::install_deps(
+            pkg = "flepimop/R_packages/inference",
+            dependencies = TRUE
+          )
+          install.packages("covidcast", repos = "https://cloud.r-project.org")
+            - name: Install The flepicommon Package
+      - name: Install The inference Package
+        run: |
+          if ("inference" %in% installed.packages()[,"Package"]) {
+            devtools::uninstall(pkg = "inference")
+          }
+          devtools::install(
+            pkg = "flepimop/R_packages/inference",
+            args = c(getOption("devtools.install.args"), "--install-tests"),
+            quick = TRUE,
+            dependencies = TRUE,
+          )
+        shell: Rscript {0}
+      - name: Run Tests
+        run: |
+          library(testthat)
+          test_package("inference")
         shell: Rscript {0}
