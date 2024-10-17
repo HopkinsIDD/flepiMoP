@@ -63,7 +63,7 @@ jobs:
       - name: R Library Cache
         uses: actions/cache@v4
         with:
-          key: inference-rlibs-${{ runner.os }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-${{ env.CACHE_DATE }}
+          key: inference-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-${{ env.CACHE_DATE }}
           path: ${{ env.R_LIBPATH }}
       - name: Install R Dependencies For flepicommon
         if: steps.r-library-cache.outputs.cache-hit != 'true'
