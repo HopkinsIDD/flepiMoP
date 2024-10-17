@@ -67,12 +67,20 @@ aggregate_and_calc_loc_likelihoods <- function(
         this_location_log_likelihood <- 0
         for (var in names(ground_truth_data[[location]])) {
 
+          # remove any NAs from ground truth data (ie NA's in date or data that happen from missing data, or during aggregation)
           obs_tmp1 <- ground_truth_data[[location]][[var]]
-          obs_tmp <- obs_tmp1[!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),]
-          sim_tmp1 <- this_location_modeled_outcome[[var]]
-          sim_tmp <- sim_tmp1[match(lubridate::as_date(sim_tmp1$date),
-                                    lubridate::as_date(obs_tmp$date)),] %>% na.omit()
-
+          obs_tmp <- obs_tmp1[!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),] %>% 
+            mutate(date = lubridate::as_date(date))
+          # get the same dates in the simulation data and observation data
+          sim_tmp1 <- this_location_modeled_outcome[[var]] %>% 
+            mutate(date = lubridate::as_date(date))
+          # sim_tmp <- sim_tmp1[match(lubridate::as_date(sim_tmp1$date),
+          #                         lubridate::as_date(obs_tmp$date)),] %>% na.omit()
+          tmp_ <- merge(obs_tmp %>% mutate(date = lubridate::as_date(date)),
+                        sim_tmp1 %>% mutate(date = lubridate::as_date(date)),
+                        by = "date")
+          obs_tmp <- tmp_ %>% select(-sim_var)
+          sim_tmp <- tmp_ %>% select(-data_var)
 
             this_location_log_likelihood <- this_location_log_likelihood +
                 ## Actually compute likelihood for this location and statistic here:
