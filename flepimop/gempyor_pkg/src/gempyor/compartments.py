@@ -48,7 +48,7 @@ def _access_original_config_by_multi_index(
     return tmp
 
 
-def _format_source(source_column: Iterable[Iterable[Any]]) -> list[Any]:
+def _format_source(source_column: Iterable[Iterable[str]]) -> list[str]:
     """
     Format a source column of a transitions DataFrame.
 
@@ -60,11 +60,18 @@ def _format_source(source_column: Iterable[Iterable[Any]]) -> list[Any]:
     Returns:
         A list of formatted strings.
 
+    Notes:
+        If only considering lists, this function acts as an inverse to
+        `_unformat_source`.
+
     Examples:
-        >>> _format_source([[1], [2], [3, 4], [5, [6, [7, 8]]]])
-        [1, 2, '3_4', '5_[6, [7, 8]]']
-        >>> _format_source([[1, 2, 3, 4]])
+        >>> _format_source([["a", "b", "c"], ["x", "y", "z"]])
+        ["a_b_c", "x_y_z"]
+        >>> _format_source(((1, 2, 3, 4),))
         ['1_2_3_4']
+        >>> import pandas as pd
+        >>> _format_source(pd.Series(data=[["a", "b"], ["c", "d"], ["e"]]))
+        ["a_b", "c_d", "e"]
     """
     rc = [
         y
@@ -72,6 +79,37 @@ def _format_source(source_column: Iterable[Iterable[Any]]) -> list[Any]:
             lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x), source_column
         )
     ]
+    return rc
+
+
+def _unformat_source(source_column: Iterable[str]) -> list[list[str]]:
+    """
+    Unformat a source column of a transitions DataFrame.
+
+    Args:
+        source_column: An interable of strings that can be coerced into a formatted set
+            of columns. Typically the 'source' column of a saved transitions DataFrame.
+
+    Returns:
+        A nested list of strings.
+
+    Notes:
+        If only considering lists, this function acts as an inverse to `_format_source`.
+
+    Examples:
+        >>> _unformat_source(["a_b", "c", "d_e_f"])
+        [['a', 'b'], ['c'], ['d', 'e', 'f']]
+        >>> _unformat_source([])
+        []
+        >>> _unformat_source([""])
+        [['']]
+        >>> _unformat_source(["a-b-c"])
+        [['a-b-c']]
+        >>> import pandas as pd
+        >>> _unformat_source(pd.Series(data=["a_b", "c", "d-e"]))
+        [['a', 'b'], ['c'], ['d-e']]
+    """
+    rc = [x.split("_") for x in source_column]
     return rc
 
 
@@ -423,10 +461,6 @@ class Compartments:
 
         return new_transition_config
 
-    def unformat_source(self, source_column):
-        rc = [x.split("_") for x in source_column]
-        return rc
-
     def format_destination(self, destination_column):
         rc = [
             y
@@ -616,7 +650,7 @@ class Compartments:
         self.compartments = pq.read_table(compartments_file).to_pandas()
         self.transitions = pq.read_table(transitions_file).to_pandas()
         compartment_dimension = self.compartments.shape[1] - 1
-        self.transitions["source"] = self.unformat_source(self.transitions["source"])
+        self.transitions["source"] = _unformat_source(self.transitions["source"])
         self.transitions["destination"] = self.unformat_destination(
             self.transitions["destination"]
         )
