@@ -55,7 +55,7 @@ jobs:
           )
           library(devtools)
           devtools::install_deps(
-            pkg = "flepimop/R_packages/flepicommon"
+            pkg = "flepimop/R_packages/flepicommon",
             dependencies = TRUE
           )
         shell: Rscript {0}
@@ -65,7 +65,7 @@ jobs:
             devtools::uninstall(pkg = "flepicommon")
           }
           devtools::install(
-            pkg = "flepimop/R_packages/flepicommon"
+            pkg = "flepimop/R_packages/flepicommon",
             args = c(getOption("devtools.install.args"), "--install-tests"),
             quick = TRUE,
             dependencies = TRUE,
