@@ -1,14 +1,17 @@
+from click import pass_context, Context
+
 from .shared_cli import (
     config_files_argument,
     config_file_options,
     parse_config_files,
     cli,
+    mock_context,
 )
 from .utils import config
 
 # register the commands from the other modules
-from .compartments import compartments
-from .simulate import simulate
+from . import compartments
+from . import simulate
 
 # Guidance for extending the CLI:
 # - to add a new small command to the CLI, add a new function with the @cli.command() decorator here (e.g. patch below)
@@ -18,11 +21,11 @@ from .simulate import simulate
 
 # add some basic commands to the CLI
 @cli.command(params=[config_files_argument].extend(config_file_options.values()))
-def patch(**kwargs) -> None:
+@pass_context
+def patch(ctx : Context = mock_context, **kwargs) -> None:
     """Merge configuration files"""
-    parse_config_files(**kwargs)
+    parse_config_files(ctx, **kwargs)
     print(config.dump())
-
 
 if __name__ == "__main__":
     cli()
