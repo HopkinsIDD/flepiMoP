@@ -11,13 +11,11 @@ on:
       - flepimop/R_packages/inference/**/*
     branches:
       - main
-      - dev
   pull_request:
     paths:
       - flepimop/R_packages/inference/**/*
     branches:
       - main
-      - dev
 
 jobs:
   tests:

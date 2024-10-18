@@ -8,14 +8,12 @@ on:
       - flepimop/gempyor_pkg/**/*
     branches:
       - main
-      - dev
   pull_request:
     paths:
       - examples/**/*
       - flepimop/gempyor_pkg/**/*
     branches:
       - main
-      - dev
 
 jobs:
   tests:
