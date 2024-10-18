@@ -39,7 +39,6 @@ def _access_original_config_by_multi_index(
 ) -> NestedListOfAny:
     if dimension is None:
         dimension = [None for i in index]
-    # tmp = [y for y in zip(index, range(len(index)), dimension)]
     tmp = zip(index, range(len(index)), dimension)
     tmp = [
         list_access_element_safe(config_piece[x[1]], x[0], x[2], encapsulate_as_list)
@@ -48,69 +47,63 @@ def _access_original_config_by_multi_index(
     return tmp
 
 
-def _format_source(source_column: Iterable[Iterable[str]]) -> list[str]:
+def _format_nested_iterables(x: Iterable[Iterable[str]]) -> list[str]:
     """
-    Format a source column of a transitions DataFrame.
+    Format a nested iterables of strings.
 
     Args:
-        source_column: Nested iterables that can be coerced into a formatted set of
-            columns. Typically the 'source' column of a transitions DataFrame. None
-            of the nested lists can be empty, but providing an empty list is acceptable.
+        x: Nested iterables that can be coerced into a formatted set of columns.
+            Typically the 'source' column of a transitions DataFrame. None of the
+            nested lists can be empty, but providing an empty list is acceptable.
 
     Returns:
         A list of formatted strings.
 
     Notes:
         If only considering lists, this function acts as an inverse to
-        `_unformat_source`.
+        `_unformat_nested_iterables`.
 
     Examples:
-        >>> _format_source([["a", "b", "c"], ["x", "y", "z"]])
+        >>> _format_nested_iterables([["a", "b", "c"], ["x", "y", "z"]])
         ["a_b_c", "x_y_z"]
-        >>> _format_source(((1, 2, 3, 4),))
+        >>> _format_nested_iterables(((1, 2, 3, 4),))
         ['1_2_3_4']
         >>> import pandas as pd
-        >>> _format_source(pd.Series(data=[["a", "b"], ["c", "d"], ["e"]]))
+        >>> _format_nested_iterables(pd.Series(data=[["a", "b"], ["c", "d"], ["e"]]))
         ["a_b", "c_d", "e"]
     """
-    rc = [
-        y
-        for y in map(
-            lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x), source_column
-        )
-    ]
-    return rc
+    return [y for y in map(lambda y: reduce(lambda a, b: f"{a}_{b}", y), x)]
 
 
-def _unformat_source(source_column: Iterable[str]) -> list[list[str]]:
+def _unformat_nested_iterables(x: Iterable[str]) -> list[list[str]]:
     """
-    Unformat a source column of a transitions DataFrame.
+    Unformat a nested iterables of strings.
 
     Args:
-        source_column: An interable of strings that can be coerced into a formatted set
-            of columns. Typically the 'source' column of a saved transitions DataFrame.
+        x: An iterable of strings that can be coerced into a formatted set of columns.
+            Typically the 'source' column of a saved transitions DataFrame.
 
     Returns:
         A nested list of strings.
 
     Notes:
-        If only considering lists, this function acts as an inverse to `_format_source`.
+        If only considering lists, this function acts as an inverse to
+        `_format_nested_iterables`.
 
     Examples:
-        >>> _unformat_source(["a_b", "c", "d_e_f"])
+        >>> _unformat_nested_iterables(["a_b", "c", "d_e_f"])
         [['a', 'b'], ['c'], ['d', 'e', 'f']]
-        >>> _unformat_source([])
+        >>> _unformat_nested_iterables([])
         []
-        >>> _unformat_source([""])
+        >>> _unformat_nested_iterables([""])
         [['']]
-        >>> _unformat_source(["a-b-c"])
+        >>> _unformat_nested_iterables(["a-b-c"])
         [['a-b-c']]
         >>> import pandas as pd
-        >>> _unformat_source(pd.Series(data=["a_b", "c", "d-e"]))
+        >>> _unformat_nested_iterables(pd.Series(data=["a_b", "c", "d-e"]))
         [['a', 'b'], ['c'], ['d-e']]
     """
-    rc = [x.split("_") for x in source_column]
-    return rc
+    return [y.split("_") for y in x]
 
 
 class Compartments:
@@ -630,8 +623,8 @@ class Compartments:
             out_df.to_csv(compartments_file, index=False)
 
         out_df = self.transitions.copy()
-        out_df["source"] = _format_source(out_df["source"])
-        out_df["destination"] = self.format_destination(out_df["destination"])
+        out_df["source"] = _format_nested_iterables(out_df["source"])
+        out_df["destination"] = _format_nested_iterables(out_df["destination"])
         out_df["rate"] = self.format_rate(out_df["rate"])
         out_df["proportional_to"] = self.format_proportional_to(
             out_df["proportional_to"]
@@ -650,8 +643,10 @@ class Compartments:
         self.compartments = pq.read_table(compartments_file).to_pandas()
         self.transitions = pq.read_table(transitions_file).to_pandas()
         compartment_dimension = self.compartments.shape[1] - 1
-        self.transitions["source"] = _unformat_source(self.transitions["source"])
-        self.transitions["destination"] = self.unformat_destination(
+        self.transitions["source"] = _unformat_nested_iterables(
+            self.transitions["source"]
+        )
+        self.transitions["destination"] = _unformat_nested_iterables(
             self.transitions["destination"]
         )
         self.transitions["rate"] = self.unformat_rate(

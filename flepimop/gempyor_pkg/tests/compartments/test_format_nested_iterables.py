@@ -3,23 +3,21 @@ from typing import Any, Iterable
 import pandas as pd
 import pytest
 
-from gempyor.compartments import _format_source
+from gempyor.compartments import _format_nested_iterables
 
 
 @pytest.mark.parametrize(
-    "source_column", ([[]], [[], ["1", "2"]], [["x", "y", "z"], [], ["1", "2", "3"]])
+    "x", ([[]], [[], ["1", "2"]], [["x", "y", "z"], [], ["1", "2", "3"]])
 )
-def test_cannot_accept_a_list_of_empty_list_source_column(
-    source_column: Iterable[Iterable[Any]],
-) -> None:
+def test_cannot_accept_a_list_of_empty_list(x: Iterable[Iterable[str]]) -> None:
     with pytest.raises(
         TypeError, match=r"^reduce\(\) of empty iterable with no initial value$"
     ):
-        _format_source(source_column)
+        _format_nested_iterables(x)
 
 
 @pytest.mark.parametrize(
-    ("source_column", "expected"),
+    ("x", "expected"),
     (
         ([], []),
         ((), []),
@@ -34,8 +32,8 @@ def test_cannot_accept_a_list_of_empty_list_source_column(
         ),
     ),
 )
-def test_format_source_output_validation(
-    source_column: Iterable[Iterable[Any]], expected: list[str]
+def test_format_nested_iterables_output_validation(
+    x: Iterable[Iterable[str]], expected: list[str]
 ) -> None:
-    actual = _format_source(source_column)
+    actual = _format_nested_iterables(x)
     assert actual == expected

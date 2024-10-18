@@ -3,11 +3,11 @@ from typing import Any, Iterable
 import pandas as pd
 import pytest
 
-from gempyor.compartments import _format_source, _unformat_source
+from gempyor.compartments import _format_nested_iterables, _unformat_nested_iterables
 
 
 @pytest.mark.parametrize(
-    ("source_column", "expected"),
+    ("x", "expected"),
     (
         ([], []),
         ((), []),
@@ -20,16 +20,16 @@ from gempyor.compartments import _format_source, _unformat_source
         (pd.Series(data=["a_b", "c", "d-e"]), [["a", "b"], ["c"], ["d-e"]]),
     ),
 )
-def test_unformat_source_output_validation(
-    source_column: Iterable[Iterable[Any]], expected: list[list[str]]
+def test_unformat_nested_iterables_output_validation(
+    x: Iterable[Iterable[Any]], expected: list[list[str]]
 ) -> None:
-    actual = _unformat_source(source_column)
+    actual = _unformat_nested_iterables(x)
     assert actual == expected
 
 
 @pytest.mark.parametrize(
-    "source_column",
+    "x",
     ([], ["a_b", "c", "d_e_f"], [""], ["a-b-c", "def"], ["ab_cd_ef", "gh_ij_kl"]),
 )
-def test_unformat_is_inverse_of_format_when_list(source_column: list[str]) -> None:
-    assert _format_source(_unformat_source(source_column)) == source_column
+def test_unformat_is_inverse_of_format_when_list(x: list[str]) -> None:
+    assert _format_nested_iterables(_unformat_nested_iterables(x)) == x
