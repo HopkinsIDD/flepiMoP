@@ -76,8 +76,8 @@ class SeedingConfig(BaseModel):
             )
         if method == 'FolderDraw' and not seeding_file_type:
             raise ValueError(
-                f"Error in Seeding: A seeding_file_type is required when method is FolderDraw. "
-                f"Current value: '{seeding_file_type}'."
+                f"A `seeding_file_type` is required when method is 'FolderDraw', "
+                f"was given '{seeding_file_type}'."
             )
         if method == 'FromFile' and not seeding_file:
             raise ValueError(
