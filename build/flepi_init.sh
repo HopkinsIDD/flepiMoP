@@ -56,16 +56,6 @@ conda activate $FLEPI_CONDA
 # Check the conda environment is valid
 WHICH_PYTHON=$( which python )
 WHICH_R=$( which R )
-WHICH_PYTHON_OKAY=$( echo "$WHICH_PYTHON" | grep "flepimop-env" | wc -l )
-WHICH_R_OKAY=$( echo "$WHICH_R" | grep "flepimop-env" | wc -l )
-if [[ "$WHICH_PYTHON_OKAY" -ne 1 ]]; then
-    echo "The python found is '$WHICH_PYTHON', which does not contain the expected 'flepimop-env'."
-    exit 1
-fi
-if [[ "$WHICH_R_OKAY" -ne 1 ]]; then
-    echo "The R found is '$WHICH_R', which does not contain the expected 'flepimop-env'."
-    exit 1
-fi
 PYTHON_ARROW_VERSION=$( python -c "import pyarrow; print(pyarrow.__version__)" )
 R_ARROW_VERSION=$( Rscript -e "cat(as.character(packageVersion('arrow')))" )
 COMPATIBLE_ARROW_VERSION=$( echo "$R_ARROW_VERSION" | grep "$PYTHON_ARROW_VERSION" | wc -l )
