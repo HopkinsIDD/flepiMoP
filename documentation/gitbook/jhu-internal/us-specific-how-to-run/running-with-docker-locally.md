@@ -20,9 +20,9 @@ Current Docker image: `/hopkinsidd/flepimop:latest-dev`
 
 Docker is a software platform that allows you to build, test, and deploy applications quickly. Docker packages software into standardized units called **containers** that have everything the software needs to run including libraries, system tools, code, and runtime. This means you can run and install software without installing the dependencies in the system.
 
-A docker container is an environment which is isolated from the rest of the operating system i.e. you can create files, programs, delete and everything but that will not affect your OS. It is a local virtual OS within your OS.&#x20;
+A docker container is an environment which is isolated from the rest of the operating system i.e. you can create files, programs, delete and everything but that will not affect your OS. It is a local virtual OS within your OS ;
 
-For flepiMoP, we have a docker container that will help you get running quickly!&#x20;
+For flepiMoP, we have a docker container that will help you get running quickly ;
 
 ```
 docker pull hopkinsidd/flepimop:latest-dev
@@ -32,9 +32,9 @@ docker run -it \
 hopkinsidd/flepimop:latest-dev  
 ```
 
-In this command we run the docker image `hopkinsidd/flepimop`. The `-v` command is used to allocate space from Docker and mount it at the given location.&#x20;
+In this command we run the docker image `hopkinsidd/flepimop`. The `-v` command is used to allocate space from Docker and mount it at the given location ;
 
-This mounts the data folder `<dir1>` to a path called `drp` within the docker environment, and the COVIDScenarioPipeline `<dir2>` in `flepimop`.&#x20;
+This mounts the data folder `<dir1>` to a path called `drp` within the docker environment, and the COVIDScenarioPipeline `<dir2>` in `flepimop` ;
 
 ## 🚀 Run inference
 
@@ -84,7 +84,7 @@ Note: These installations take place in the docker container and not the Operati
 
 ### Run the code
 
-Everything is now ready. 🎉 Let's do some clean-up in the data folder (these files might not exist, but it's good practice to make sure your simulation isn't re-using some old files).&#x20;
+Everything is now ready. 🎉 Let's do some clean-up in the data folder (these files might not exist, but it's good practice to make sure your simulation isn't re-using some old files) ;
 
 ```bash
 cd $DATA_PATH       # goes to Flu_USA
@@ -108,7 +108,7 @@ where:
 * `j` is the number of CPU cores it'll use in your machine,
 * `k` is the number of iterations per slots.
 
-It should run successfully and create a lot of files in `model_output/`.&#x20;
+It should run successfully and create a lot of files in `model_output/` ;
 
 The last few lines visible on the command prompt should be:
 

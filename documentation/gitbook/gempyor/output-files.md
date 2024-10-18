@@ -6,7 +6,7 @@ description: >-
 
 # Model Output
 
-The model will output 2–6 different types of files depending on whether the configuration file contains optional sections (such [interventions](model-implementation/intervention-templates.md), [outcomes](model-implementation/outcomes-for-compartments.md), and outcomes interventions) and whether [model inference](https://github.com/HopkinsIDD/flepimop-documentation/blob/main/gitbook/gempyor/broken-reference/README.md) is conducted.&#x20;
+The model will output 2–6 different types of files depending on whether the configuration file contains optional sections (such [interventions](model-implementation/intervention-templates.md), [outcomes](model-implementation/outcomes-for-compartments.md), and outcomes interventions) and whether [model inference](https://github.com/HopkinsIDD/flepimop-documentation/blob/main/gitbook/gempyor/broken-reference/README.md) is conducted ;
 
 These files contain the values of the variables for both the infection and (if included) observational model at each point in time and for each subpopulation. A new file of the same type is produced for each independent simulation and each intervention scenario. Other files report the values of the initial conditions, seeding, and model parameters for each subpopulation and independent simulation (since parameters may be chosen to vary randomly between simulations). When [model inference](https://github.com/HopkinsIDD/flepimop-documentation/blob/main/gitbook/gempyor/broken-reference/README.md) is run, there are also file types reporting the model likelihood (relative to the provided data) and files for each iteration of the inference algorithm.
 
@@ -14,18 +14,17 @@ Within the `model_output` directory in the project's directory, the files will b
 
 <pre><code><strong>flepimop_sample
 </strong>├── model_output
-│   ├── seir
-│   │   └── sample_2pop
-│   │       └── None
-│   │           └── 2023.05.24.02/12/48.
-│   │               └── 000000001.2023.05.24.02/12/48..seir.csv
+│   ├── {setup_name}_{seir_modifier_scenario}_{outcome_modifier_scenario}
+│   │   └── run_id
+│   │       └── seir
+│   │           └── 000000001.run_id.seir.parquet
 │   ├── spar
 │   ├── snpi
 </code></pre>
 
-The name of each individual file contains (in order) the .... Describe filing naming conventions
+The name of each individual file contains (in order) the slot, run\_id and file type. The first index indicates the slot (chain, in MCMC language). If multiple iterations or blocks are run, the filename will look like `000000001.000000001.000000001.run_id.seir.parquet` indicating slot.block.iteration ;
 
-Each file is a data table that is by default saved as a [parquet file](https://parquet.apache.org/) (a compressed representation that can be opened and manipulated with minimal memory) but can alternatively be saved as a csv file. See options for specifying output type in [Other Configuration Options.](model-implementation/other-configuration-options.md)
+Each file is a data table that is by default saved as a [parquet file](https://parquet.apache.org/) (a compressed representation that can be opened and manipulated with minimal memory) but can alternatively be saved as a `csv` file. See options for specifying output type in [Other Configuration Options.](model-implementation/other-configuration-options.md)
 
 The example files outputs we show were generated with the following configuration file
 
@@ -33,7 +32,7 @@ The example files outputs we show were generated with the following configuratio
 TBA
 ```
 
-The types and contents of the model output files changes slightly depending on whether the model is run as a forward simulation only, or is run in inference mode, in which parameter values are estimated by comparing the model to data. Output specific to model inference is described in a [separate section](../model-inference/inference-model-output.md).&#x20;
+The types and contents of the model output files changes slightly depending on whether the model is run as a forward simulation only, or is run in inference mode, in which parameter values are estimated by comparing the model to data. Output specific to model inference is described in a [separate section](../model-inference/inference-model-output.md) ;
 
 ## SEIR (infection model output)
 
@@ -61,19 +60,19 @@ There will be a separate `seir` file output for each slot (independent simulatio
 
 ## SPAR (infection model parameter values)
 
-The files in the `spar` folder contain the parameters that define the transitions in the compartmental model of disease transmission, defined in the `seir::parameters` section of the config.&#x20;
+The files in the `spar` folder contain the parameters that define the transitions in the compartmental model of disease transmission, defined in the `seir::parameters` section of the config ;
 
 The `value` column gives the numerical values of the parameters defined in the corresponding column `parameter`.
 
 ## SNPI (infection model parameter intervention values)
 
-Files in the `snpi` folder contain the time-dependent modifications to the transmission model parameter values (defined in `seir_modifiers` section of the config) for each subpopulation. They contain the interventions that apply to a given subpopulation and the dates within which they apply, and the value of the reduction to the given parameter.
+Files in the `snpi` folder contain the time-dependent modifications to the transmission model parameter values (defined in `seir_modifiers` section of the config) for each subpopulation. They contain the modifiers that apply to a given subpopulation and the dates within which they apply, and the value of the reduction to the given parameter.
 
 The meanings of the columns are:
 
 `subpop` – The subpopulation to which this intervention parameter applies.
 
-`npi_name` – The name of the intervention parameter.
+`modifier_name` – The name of the intervention parameter.
 
 `start_date` – The start date of this intervention, as defined in the configuration file.
 
@@ -81,7 +80,7 @@ The meanings of the columns are:
 
 `parameter` – The parameter to which the intervention applies, as defined in the configuration file.
 
-`reduction` – The size of the reduction to the parameter either from the config, or fit by inference if that is run.
+`value` – The size of the modifier to the parameter either from the config, or fit by inference if that is run.
 
 ## HPAR (observation model parameter values)
 
@@ -97,6 +96,18 @@ The meanings of the columns are:
 
 `value` – The values in this column are the parameter values of the quantity that apply to the given subpopulation and outcome.
 
+## HOSP (observation model output)
+
+Files in the `hosp` folder contain the output of the infection model over time. They contain the value of every outcome variable for each day of the simulation for every subpopulation.
+
+Columns are:
+
+`date` – The calendar date in the simulation, in YYYY-MM-DD format.
+
+`subpop` – Values in this column are the names of the nodes as defined in the `geodata` file given by the user.
+
+`outcome_variable_1, outcome_variable_2, ...` - one column for each different outcome variable as defined in the config, containing the value of the number of individuals in the described compartment in that subpopulation at the given date ;
+
 ## HNPI (observation model parameter intervention values)
 
 Files in the `hnpi` folder contain any parameter modifier values that apply to the outcomes model, defined in the `outcome_modifiers` section of the config. They contain the values of the outcome parameter modifiers, and the dates to which they apply in a given subpopulation.
@@ -105,7 +116,7 @@ The meanings of the columns are:
 
 `subpop` – The values of this column are the names of the nodes from the `geodata` file.
 
-`npi_name` – The names/labels of the modifier parameters, defined by the user in the config file, which applies to the given node and time period.
+`modifier_name` – The names/labels of the modifier parameters, defined by the user in the config file, which applies to the given node and time period.
 
 `start_date` – The start date of this intervention, as defined in the configuration file.
 
@@ -113,11 +124,11 @@ The meanings of the columns are:
 
 `parameter` – The outcome parameter to which the intervention applies.
 
-`reduction` – The values in this column are the reduction values of the intervention parameters, which apply to the given parameter in a given subpopulation. Note that these are strictly reductions; thus a negative value corresponds to an increase in the parameter, while a positive value corresponds to a decrease in the parameter.
+`value` – The values in this column are the modifier values of the intervention parameters, which apply to the given parameter in a given subpopulation. Note that these are strictly reductions; thus a negative value corresponds to an increase in the parameter, while a positive value corresponds to a decrease in the parameter.
 
 ## SEED (model seeding values)
 
-Files in the `seed` folder contain the seeded values of the infection model. They contain the amounts seeded into each variable, the variable they are seeded from, and the time at which the seeding occurs. The user can provide a single seeding file (which will be used across all simulations), or, if multiple simulations are being run the user can provide a separate file for each simulation.&#x20;
+Files in the `seed` folder contain the seeded values of the infection model. They contain the amounts seeded into each variable, the variable they are seeded from, and the time at which the seeding occurs. The user can provide a single seeding file (which will be used across all simulations), or, if multiple simulations are being run the user can provide a separate file for each simulation ;
 
 The meanings of the columns are:
 
@@ -125,17 +136,17 @@ The meanings of the columns are:
 
 `date` - The values in this column are the dates of seeding.
 
-`amount` - The amount seeded in the given subpopulation from source variables to destination variables, at the given date.&#x20;
+`amount` - The amount seeded in the given subpopulation from source variables to destination variables, at the given date ;
 
 `source_infection_stage`, `source_vaccination_status`, etc. -  The name of the compartment **from** which the amount is seeded, broken down into the infection stage for each state type (eg. vaccination, age).
 
 `destination_infection_stage`, `destination_vaccination_status`, etc. - The name of the compartment **into** which the amount is seeded, broken down into the infection stage for each state type (eg. vaccination, age).
 
-`no_perturb` - The values in this column can be either `true` or `false`. If true, then the amount and/or date can be perturbed if running an inference run. Whether the amount or date is perturbed is defined in the config using `perturb_amount` and `perturb_date`.&#x20;
+`no_perturb` - The values in this column can be either `true` or `false`. If true, then the amount and/or date can be perturbed if running an inference run. Whether the amount or date is perturbed is defined in the config using `perturb_amount` and `perturb_date` ;
 
 ## INIT (model initial conditions)
 
-Files in the `init` folder contain the initial values of the infection model. Either seed or init files will be present, depending on the configuration of the model . These files contain the initial conditions of the infection model at the start date defined in the configuration file. As with seeding, the user can provide a single initial conditions file (which will be used across all simulations), or, if multiple simulations are being run the user can provide a separate file for each simulation.&#x20;
+Files in the `init` folder contain the initial values of the infection model. Either seed or init files will be present, depending on the configuration of the model . These files contain the initial conditions of the infection model at the start date defined in the configuration file. As with seeding, the user can provide a single initial conditions file (which will be used across all simulations), or, if multiple simulations are being run the user can provide a separate file for each simulation ;
 
 The meanings of the columns are:
 
@@ -143,7 +154,7 @@ The meanings of the columns are:
 
 `mc_infection_stage`, `mc_vaccination_status`, etc. - The name of the compartment for which the value is reported, broken down into the infection stage for each state type (eg. vaccination, age).
 
-`amount` -  The amount initialized seeded in the given subpopulation at the start date defined in the configuration file.&#x20;
+`amount` -  The amount initialized seeded in the given subpopulation at the start date defined in the configuration file ;
 
 
 

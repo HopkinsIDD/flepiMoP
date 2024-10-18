@@ -107,7 +107,7 @@ Note: These installations take place in your conda environment and not the local
 
 <summary>Help! I have errors in installation</summary>
 
-If you get an error because no cran mirror is selected, just create in your home directory a `.Rprofile`file:
+If you get an error because no cran mirror is selected, just create in your home directory a `.Rprofile` file:
 
 {% code title="~/.Rprofile" lineNumbers="true" %}
 ```r

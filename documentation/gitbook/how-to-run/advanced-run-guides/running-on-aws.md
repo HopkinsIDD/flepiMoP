@@ -148,9 +148,9 @@ Rscript build/local_install.R # warnings are ok; there should be no error.
 
 ```
 
-For now, just in case: update the `arrow` package from 8.0.0 in the docker to 11.0.3.&#x20;
+For now, just in case: update the `arrow` package from 8.0.0 in the docker to 11.0.3 ;
 
-Now flepiMoP is ready 🎉.&#x20;
+Now flepiMoP is ready 🎉 ;
 
 ```bash
 cd $DATA_PATH
@@ -246,7 +246,7 @@ If you'd like to have more control, you can specify the arguments manually:
 </strong><strong>                    --restart-from-location $RESUME_LOCATION
 </strong></code></pre>
 
-We allow for a number of different jobs, with different setups, e.g., you may _not_ want to carry seeding. Some examples of appropriate setups are given below. No modification of these code chunks should be required.&#x20;
+We allow for a number of different jobs, with different setups, e.g., you may _not_ want to carry seeding. Some examples of appropriate setups are given below. No modification of these code chunks should be required ;
 
 {% tabs %}
 {% tab title="Standard" %}
