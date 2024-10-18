@@ -282,7 +282,7 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                f"^Issue loading file '{tmp_file}' for parameter 'sigma': Tßhe 'date' "
+                f"Issue loading file '{tmp_file}' for parameter 'sigma': The 'date' "
                 "entries of the provided file do not include all the days specified to "
                 f"be modeled by the config.$"
             ),
