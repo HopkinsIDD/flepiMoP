@@ -15,9 +15,18 @@ from .utils import config, as_list
 __all__ = []
 
 @click.group()
-def cli():
+@click.pass_context
+def cli(ctx: click.Context) -> None:
     """Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface"""
     pass
+
+output_option = click.Option(
+    ["-o", "--output-file"],
+    type=click.Path(allow_dash=True),
+    is_flag=False, flag_value="-",
+    default="transition_graph.pdf", show_default=True,
+    help="output file path",
+)
 
 # click decorator to handle configuration file(s) as arguments
 # use as `@argument_config_files` before a cli command definition
@@ -195,7 +204,7 @@ def parse_config_files(ctx = mock_context, **kwargs) -> None:
 
     # initialize the config, including handling missing / double-specified config files
     config_args = {k for k in parsed_args if k.startswith("config")}
-    found_configs = [k for k in config_args if kwargs[k]]
+    found_configs = [k for k in config_args if kwargs.get(k)]
     config_src = []
     if len(found_configs) != 1:
         if not found_configs:
@@ -213,7 +222,7 @@ def parse_config_files(ctx = mock_context, **kwargs) -> None:
         config["config_src"] = config_src
 
     # deal with the scenario overrides
-    scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs[k]}
+    scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs.get(k)}
     for option in scen_args:
         key = option.replace("_scenarios", "")
         value = config_file_options[option].type_cast_value(ctx, kwargs[option])
@@ -225,5 +234,5 @@ def parse_config_files(ctx = mock_context, **kwargs) -> None:
     # update the config with the remaining options
     other_args = parsed_args - config_args - scen_args
     for option in other_args:
-        if (value := kwargs[option]) is not None:
+        if (value := kwargs.get(option)) is not None:
             config[option] = config_file_options[option].type_cast_value(ctx, value)
