@@ -7,3 +7,5 @@ We recommend that most new users use the code from the stable `main` branch. Ple
 This open-source project is licensed under GPL v3.0.
 
 Details on the methods and features of our model as of December 2023 were published in [Lemaitre JC, et al. flepiMoP: The evolution of a flexible infectious disease modeling pipeline during the COVID-19 pandemic. Epidemics. 2024;47:100753](https://www.sciencedirect.com/science/article/pii/S1755436524000148). Please cite this paper if you use flepiMoP in any of your own publications. 
+
+
