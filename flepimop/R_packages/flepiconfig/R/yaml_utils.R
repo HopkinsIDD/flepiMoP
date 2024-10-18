@@ -1642,6 +1642,7 @@ print_outcomes <- function (resume_modifier = NULL,
 #' print_inference_statistics()
 #'
 print_inference_statistics <- function(iterations_per_slot = 300,
+                                       method = "R",
                                        do_inference = TRUE,
                                        gt_data_path = "data/us_data.csv",
                                        gt_source = "csse",
@@ -1661,135 +1662,154 @@ print_inference_statistics <- function(iterations_per_slot = 300,
                                        ll_param = 0.4, final_print = FALSE,
                                        variant_compartments = c("WILD", "ALPHA", "DELTA"),
                                        capitalize_variants = TRUE) {
-
-    if (length(stat_names) != length(data_var)) stop("stat_names and data_var must be the same length")
-
-    cat(paste0("\n",
-               "inference:\n",
-               "  iterations_per_slot: ", iterations_per_slot, "\n",
-               "  do_inference: ", do_inference, "\n",
-               "  gt_data_path: ", gt_data_path, "\n",
-               "  gt_source: \"", gt_source, "\"\n",
-               if (!is.null(misc_data_filename)) {
-                   paste0("  misc_data_filename: ", misc_data_filename, "\n")
-               },
-               if (!is.null(gt_api_key)) {
-                   paste0("  gt_api_key: \"", gt_api_key, "\"\n")
-               },
-               "  statistics:\n"))
-
-
-    #which outcome is not compartment disaggregated
-    not_compartment <- which(!(stat_names %in% stat_names_compartment))
-    yes_compartment <- which((stat_names %in% stat_names_compartment))
-
-    stat_names_orig <- stat_names
-
-    stat_names <- stat_names[!(stat_names %in% stat_names_compartment)]
-    sim_var <- sim_var[!(sim_var %in% sim_var_compartment)]
-    data_var <- data_var[!(data_var %in% data_var_compartment)]
-
-    if (capitalize_variants) {
-        variant_compartments <- stringr::str_to_upper(variant_compartments)
+  
+  if (length(stat_names) != length(data_var)) stop("stat_names and data_var must be the same length")
+  
+  cat(paste0("\n",
+             "inference:\n",
+             "  iterations_per_slot: ", iterations_per_slot, "\n",
+             "  do_inference: ", do_inference, "\n",
+             "  gt_data_path: ", gt_data_path, "\n",
+             if (!is.null(gt_source)) {
+               paste0("  gt_source: \"", gt_source, "\"\n")
+             },
+             if (!is.null(misc_data_filename)) {
+               paste0("  misc_data_filename: ", misc_data_filename, "\n")
+             },
+             if (!is.null(gt_api_key)) {
+               paste0("  gt_api_key: \"", gt_api_key, "\"\n")
+             },
+             if (!is.null(method)) {
+               paste0("  method: ", method, "\n")
+             },
+             "  statistics:\n"))
+  
+  
+  #which outcome is not compartment disaggregated
+  not_compartment <- which(!(stat_names %in% stat_names_compartment))
+  yes_compartment <- which((stat_names %in% stat_names_compartment))
+  
+  stat_names_orig <- stat_names
+  
+  stat_names <- stat_names[!(stat_names %in% stat_names_compartment)]
+  sim_var <- sim_var[!(sim_var %in% sim_var_compartment)]
+  data_var <- data_var[!(data_var %in% data_var_compartment)]
+  
+  if (capitalize_variants) {
+    variant_compartments <- stringr::str_to_upper(variant_compartments)
+  }
+  
+  if (!(any(c(is.null(stat_names_compartment), is.na(stat_names_compartment))))){
+    stat_names_compartment <- paste(rep(stat_names_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
+    sim_var_compartment <- paste(rep(sim_var_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
+    data_var_compartment <- paste(rep(data_var_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
+    for (i in 1:length(variant_compartments)) {
+      stat_names_compartment <- c(stat_names_compartment[stringr::str_detect(stat_names_compartment, variant_compartments[i], negate = TRUE)],
+                                  stat_names_compartment[stringr::str_detect(stat_names_compartment, variant_compartments[i], negate = FALSE)])
+      sim_var_compartment <- c(sim_var_compartment[stringr::str_detect(sim_var_compartment, variant_compartments[i], negate = TRUE)],
+                               sim_var_compartment[stringr::str_detect(sim_var_compartment, variant_compartments[i], negate = FALSE)])
+      data_var_compartment <- c(data_var_compartment[stringr::str_detect(data_var_compartment, variant_compartments[i], negate = TRUE)],
+                                data_var_compartment[stringr::str_detect(data_var_compartment, variant_compartments[i], negate = FALSE)])
     }
-
-    if (!(any(c(is.null(stat_names_compartment), is.na(stat_names_compartment))))){
-        stat_names_compartment <- paste(rep(stat_names_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
-        sim_var_compartment <- paste(rep(sim_var_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
-        data_var_compartment <- paste(rep(data_var_compartment, each = length(variant_compartments)), variant_compartments, sep = "_")
-        for (i in 1:length(variant_compartments)) {
-            stat_names_compartment <- c(stat_names_compartment[stringr::str_detect(stat_names_compartment, variant_compartments[i], negate = TRUE)],
-                                        stat_names_compartment[stringr::str_detect(stat_names_compartment, variant_compartments[i], negate = FALSE)])
-            sim_var_compartment <- c(sim_var_compartment[stringr::str_detect(sim_var_compartment, variant_compartments[i], negate = TRUE)],
-                                     sim_var_compartment[stringr::str_detect(sim_var_compartment, variant_compartments[i], negate = FALSE)])
-            data_var_compartment <- c(data_var_compartment[stringr::str_detect(data_var_compartment, variant_compartments[i], negate = TRUE)],
-                                      data_var_compartment[stringr::str_detect(data_var_compartment, variant_compartments[i], negate = FALSE)])
-        }
+  }
+  
+  n_vars <- length(stat_names)
+  aggregator_nocomp <- rep(aggregator, n_vars)
+  period_nocomp <- rep(period, n_vars)
+  remove_na_nocomp <- rep(remove_na, n_vars)
+  add_one_nocomp <- rep(add_one[not_compartment], n_vars)
+  ll_dist_nocomp <- rep(ll_dist[not_compartment], n_vars)
+  ll_param_nocomp <- rep(ll_param[not_compartment], n_vars)
+  gt_source_statistics_nocomp <- rep(gt_source_statistics, n_vars)
+  
+  n_vars <- length(stat_names_compartment)
+  aggregator_comp <- rep(aggregator, n_vars)
+  period_comp <- rep(period, n_vars)
+  remove_na_comp <- rep(remove_na, n_vars)
+  add_one_comp <- rep(add_one[yes_compartment], n_vars)
+  ll_dist_comp <- rep(ll_dist[yes_compartment], n_vars)
+  ll_param_comp <- rep(ll_param[yes_compartment], n_vars)
+  gt_source_statistics_comp <- rep(gt_source_statistics, n_vars)
+  
+  if (is.null(gt_source_statistics)) {
+    gt_source_statistics <- gt_source
+  }
+  
+  aggregator <- c(aggregator_nocomp, aggregator_comp)
+  period <- c(period_nocomp, period_comp)
+  remove_na <- c(remove_na_nocomp, remove_na_comp)
+  add_one <- c(add_one_nocomp, add_one_comp)
+  ll_dist <- c(ll_dist_nocomp, ll_dist_comp)
+  ll_param <- c(ll_param_nocomp, ll_param_comp)
+  gt_source_statistics <- c(gt_source_statistics_nocomp, gt_source_statistics_comp)
+  
+  stat_names <- c(stat_names, stat_names_compartment)
+  sim_var <- c(sim_var, sim_var_compartment)
+  data_var <- c(data_var, data_var_compartment)
+  
+  
+  
+  
+  n_vars <- length(stat_names)
+  if (length(aggregator) != n_vars) {
+    aggregator <- rep(aggregator, n_vars)
+  }
+  if (length(period) != n_vars) {
+    period <- rep(period, n_vars)
+  }
+  if (length(remove_na) != n_vars) {
+    remove_na <- rep(remove_na, n_vars)
+  }
+  if (length(add_one) != n_vars) {
+    add_one <- rep(add_one, n_vars)
+  }
+  if (length(ll_dist) != n_vars) {
+    ll_dist <- rep(ll_dist, n_vars)
+  }
+  if (length(ll_param) != n_vars) {
+    ll_param <- rep(ll_param, n_vars)
+  }
+  if (is.null(gt_source_statistics)) {
+    gt_source_statistics <- gt_source
+  }
+  if (length(gt_source_statistics) != n_vars) {
+    gt_source_statistics <- rep(gt_source_statistics, n_vars)
+  }
+  for (i in 1:length(stat_names)) {
+    if(method == "R"){
+      cat(paste0("    ", stat_names[i], ":\n",
+                 "      name: ", stat_names[i], "\n",
+                 "      aggregator: ", aggregator[i], "\n",
+                 "      period: \"", period[i], "\"\n",
+                 "      gt_source: \"", gt_source_statistics[i], "\"\n",
+                 "      sim_var: ", sim_var[i], "\n",
+                 "      data_var: ", data_var[i], "\n",
+                 "      remove_na: ", remove_na[i], "\n",
+                 "      add_one: ", add_one[i], "\n",
+                 "      likelihood:\n",
+                 "        dist: ", ll_dist[i], "\n"))
+      if (ll_dist[i] != "pois") {
+        cat(paste0("        param: ", ll_param[i], "\n"))
+      }
+    }else if(method == "emcee"){
+      cat(paste0("    ", stat_names[i], ":\n",
+                 "      name: ", stat_names[i], "\n",
+                 "      resample: ", "\n",
+                 "        aggregator: ", aggregator[i], "\n",
+                 "        freq: ", period[i], "\n",
+                 "        skipna: ", remove_na[i], "\n",
+                 "      sim_var: ", sim_var[i], "\n",
+                 "      data_var: ", data_var[i], "\n",
+                 "      zero_to_one: ", add_one[i], "\n",
+                 "      likelihood:\n",
+                 "        dist: ", ll_dist[i], "\n"))
+      
     }
-
-    n_vars <- length(stat_names)
-    aggregator_nocomp <- rep(aggregator, n_vars)
-    period_nocomp <- rep(period, n_vars)
-    remove_na_nocomp <- rep(remove_na, n_vars)
-    add_one_nocomp <- rep(add_one[not_compartment], n_vars)
-    ll_dist_nocomp <- rep(ll_dist[not_compartment], n_vars)
-    ll_param_nocomp <- rep(ll_param[not_compartment], n_vars)
-    gt_source_statistics_nocomp <- rep(gt_source_statistics, n_vars)
-
-    n_vars <- length(stat_names_compartment)
-    aggregator_comp <- rep(aggregator, n_vars)
-    period_comp <- rep(period, n_vars)
-    remove_na_comp <- rep(remove_na, n_vars)
-    add_one_comp <- rep(add_one[yes_compartment], n_vars)
-    ll_dist_comp <- rep(ll_dist[yes_compartment], n_vars)
-    ll_param_comp <- rep(ll_param[yes_compartment], n_vars)
-    gt_source_statistics_comp <- rep(gt_source_statistics, n_vars)
-
-    if (is.null(gt_source_statistics)) {
-        gt_source_statistics <- gt_source
-    }
-
-    aggregator <- c(aggregator_nocomp, aggregator_comp)
-    period <- c(period_nocomp, period_comp)
-    remove_na <- c(remove_na_nocomp, remove_na_comp)
-    add_one <- c(add_one_nocomp, add_one_comp)
-    ll_dist <- c(ll_dist_nocomp, ll_dist_comp)
-    ll_param <- c(ll_param_nocomp, ll_param_comp)
-    gt_source_statistics <- c(gt_source_statistics_nocomp, gt_source_statistics_comp)
-
-    stat_names <- c(stat_names, stat_names_compartment)
-    sim_var <- c(sim_var, sim_var_compartment)
-    data_var <- c(data_var, data_var_compartment)
-
-
-
-
-    n_vars <- length(stat_names)
-    if (length(aggregator) != n_vars) {
-        aggregator <- rep(aggregator, n_vars)
-    }
-    if (length(period) != n_vars) {
-        period <- rep(period, n_vars)
-    }
-    if (length(remove_na) != n_vars) {
-        remove_na <- rep(remove_na, n_vars)
-    }
-    if (length(add_one) != n_vars) {
-        add_one <- rep(add_one, n_vars)
-    }
-    if (length(ll_dist) != n_vars) {
-        ll_dist <- rep(ll_dist, n_vars)
-    }
-    if (length(ll_param) != n_vars) {
-        ll_param <- rep(ll_param, n_vars)
-    }
-    if (is.null(gt_source_statistics)) {
-        gt_source_statistics <- gt_source
-    }
-    if (length(gt_source_statistics) != n_vars) {
-        gt_source_statistics <- rep(gt_source_statistics, n_vars)
-    }
-    for (i in 1:length(stat_names)) {
-        cat(paste0("    ", stat_names[i], ":\n",
-                   "      name: ", stat_names[i], "\n",
-                   "      aggregator: ", aggregator[i], "\n",
-                   "      period: \"", period[i], "\"\n",
-                   "      gt_source: \"", gt_source_statistics[i], "\"\n",
-                   "      sim_var: ", sim_var[i], "\n",
-                   "      data_var: ", data_var[i], "\n",
-                   "      remove_na: ", remove_na[i], "\n",
-                   "      add_one: ", add_one[i], "\n",
-                   "      likelihood:\n",
-                   "        dist: ", ll_dist[i], "\n"))
-        if (ll_dist[i] != "pois") {
-            cat(paste0("        param: ", ll_param[i], "\n"))
-        }
-    }
-    if (final_print) {
-        cat(paste0("\n"))
-    }
+  }
+  if (final_print) {
+    cat(paste0("\n"))
+  }
 }
-
 
 
 

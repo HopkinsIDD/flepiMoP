@@ -11,11 +11,11 @@ description: >-
 
 * `For` $$m=1  \dots M$$, where $$M$$is the number of parallel MCMC chains (also known as _slots_)
   * Generate initial state
-    * Generate an initial set of parameters $$\Theta_{m,0}$$, and copy this to both the global ($$\Theta^G_{m,0}$$) and chimeric ($$\Theta^C_{m,0}$$) parameter chain (sequence)&#x20;
+    * Generate an initial set of parameters $$\Theta_{m,0}$$, and copy this to both the global ($$\Theta^G_{m,0}$$) and chimeric ($$\Theta^C_{m,0}$$) parameter chain (sequence ;
     * Generate an initial epidemic trajectory $$Z(\Theta_{m,0})$$
-    * Calculate and record the initial likelihood for each subpopulation, $$\mathcal{L_i}(D_i|Z_i(\Theta_{m,0}))$$&#x20;
+    * Calculate and record the initial likelihood for each subpopulation, $$\mathcal{L_i}(D_i|Z_i(\Theta_{m,0}))$ ;
   * `For` $$k= 1 ... K$$ where $$K$$ is the length of the MCMC chain, add to the sequence of parameter values :
-    * Generate a proposed set of parameters $$\Theta^*$$from the current chimeric parameters using the proposal distribution $$g(\Theta^*|\Theta^C_{m,k-1})$$&#x20;
+    * Generate a proposed set of parameters $$\Theta^*$$from the current chimeric parameters using the proposal distribution $$g(\Theta^*|\Theta^C_{m,k-1})$ ;
     * Generate an epidemic trajectory with these proposed parameters, $$Z(\Theta^*)$$
     * Calculate the likelihood of the data given the proposed parameters for each subpopulation, $$\mathcal{L}_i(D_i|Z_i(\Theta^*))$$
     * Calculate the overall likelihood with the proposed parameters, $$\mathcal{L}(D|Z(\Theta^*))$$
@@ -26,7 +26,7 @@ description: >-
       * `If` $$\alpha^G > u^G$$: ACCEPT the proposed parameters to the global and chimeric parameter chains
         * Set $$\Theta^G_{m,k} =$$$$\Theta^*$$
         * Set $$\Theta_{m,k}^C=\Theta^*$$
-        * Update the recorded subpopulation-specific likelihood values (chimeric and global) with the likelihoods calculated using the proposed parameters&#x20;
+        * Update the recorded subpopulation-specific likelihood values (chimeric and global) with the likelihoods calculated using the proposed parameter ;
       * `Else`: REJECT the proposed parameters for the global chain and make subpopulation-specific decisions for the chimeric chain
         * Set $$\Theta^G_{m,k} = \Theta^G_{m,k-1}$$
         * Make "chimeric" decision:
@@ -38,7 +38,7 @@ description: >-
               * Update the recorded chimeric likelihood value for subpopulation $$i$$ to that calculated with the proposed parameter​
             * `Else`: REJECT the proposed parameters for the chimeric parameter chain for this location
               * Set $$\Theta_{m,k,i}^C=\Theta_{m,k-1,i}$$​
-            * `End if`&#x20;
+            * `End if ;
           * `End for` $$N$$subpopulations
         * End making chimeric decisions
       * `End if`
