@@ -281,7 +281,7 @@ export FLEPI_MEM_PROF_ITERS=50
 Now you may want to test that it works :
 
 ```bash
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c $CONFIG_PATH -j 1 -n 1 -k 1 
+flepimop-inference-main -c $CONFIG_PATH -j 1 -n 1 -k 1 
 ```
 
 If this fails, you may want to investigate this error. In case this succeeds, then you can proceed by first deleting the model\_output:

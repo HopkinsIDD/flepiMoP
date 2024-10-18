@@ -145,14 +145,14 @@ echo "---"
 find data
 echo "==="
 
-echo "***************** RUNNING inference_slot.R *****************"
+echo "***************** RUNNING flepimop-inference-slot *****************"
 
-Rscript flepiMoP/flepimop/main_scripts/inference_slot.R -p flepiMoP
+flepimop-inference-slot -p flepiMoP
 dvc_ret=$?
 if [ $dvc_ret -ne 0 ]; then
-        error_handler "Error code returned from inference_main.R: $dvc_ret"
+        error_handler "Error code returned from flepimop-inference-slot: $dvc_ret"
 fi
-echo "***************** DONE RUNNING inference_slot.R *****************"
+echo "***************** DONE RUNNING flepimop-inference-slot *****************"
 
 echo "***************** UPLOADING RESULT TO S3 *****************"
 for type in "seir" "hosp" "llik" "spar" "snpi" "hnpi" "hpar"
