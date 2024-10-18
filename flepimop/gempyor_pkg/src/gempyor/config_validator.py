@@ -81,8 +81,8 @@ class SeedingConfig(BaseModel):
             )
         if method == 'FromFile' and not seeding_file:
             raise ValueError(
-                f"Error in Seeding: A seeding_file is required when method is FromFile. "
-                f"Current value: '{seeding_file}'."
+                f"A `seeding_file` is required when method is 'FromFile', "
+                f"was given '{seeding_file}'."
             )
         return values
     
