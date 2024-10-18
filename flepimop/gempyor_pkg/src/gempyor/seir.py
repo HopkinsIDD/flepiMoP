@@ -182,25 +182,41 @@ def steps_SEIR(
         else:
             raise ValueError(f"Unknow integration scheme, got {integration_method}")
 
+    # TODO: Simulation input arrives as a time x subpop x compartment_1 x compartment_2 n-D array
+    # Incidence is computed in postprocessing
+
     # We return an xarray instead of a ndarray now
     compartment_coords = {}
     compartment_df = modinf.compartments.get_compartments_explicitDF()
+
     # Iterate over columns of the DataFrame and populate the dictionary
-    for column in compartment_df.columns:
-        compartment_coords[column] = ("compartment", compartment_df[column].tolist())
+    for column in [col for col in compartment_df.columns if col != 'mc_name']:
+        compartment_coords[column[3:]] = compartment_df[column].unique().tolist()
+
+    # TODO: likely more orderly if dimensions are ordered: date, subpop, all remaining stratifications
+    # construct a list of dimension names 
+    dimnames = ["date",]
+    for dim in compartment_coords.keys():
+        dimnames.append(dim) # drop the mc_ prescript
+    dimnames.append("subpop")
+
+    # construct the shape the actual N-d array coming from the integrator ideally should have
+    desired_shape = [seir_sim[0].shape[0]] # time axis
+    desired_shape.extend([len(coords) for coords in compartment_coords.values()]) # compartments
+    desired_shape.append(seir_sim[0].shape[-1]) # subpops
 
     # comparment is a dimension with coordinate from each of the compartments
     states = xr.Dataset(
         data_vars=dict(
-            prevalence=(["date", "compartment", "subpop"], seir_sim[0]),
-            incidence=(["date", "compartment", "subpop"], seir_sim[1]),
+            prevalence=(dimnames, seir_sim[0].reshape(desired_shape)),
+            incidence=(dimnames, seir_sim[1].reshape(desired_shape)),
         ),
         coords=dict(
             date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
             **compartment_coords,
             subpop=modinf.subpop_struct.subpop_names,
         ),
-        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id),  # TODO add more information
+        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id),  # TODO add parameters as metadata here? and omit having a separate folder for them?
     )
 
     return states
@@ -390,7 +406,8 @@ def write_spar_snpi(sim_id, modinf, p_draw, npi):
 def write_seir(sim_id, modinf, states):
     # print_disk_diagnosis()
     out_df = states2Df(modinf, states)
-    modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
+    modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df) 
+    modinf.write_netcdf(ftype="seir", sim_id=sim_id, xr_df=states) 
 
     return out_df
 
