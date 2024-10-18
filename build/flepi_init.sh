@@ -32,21 +32,22 @@ fi
 
 # Ensure we have a $FLEPI_PATH
 if [ -z "${FLEPI_PATH}" ]; then
-    echo "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
+    echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
     read FLEPI_PATH
     if [ -z "${FLEPI_PATH}" ]; then
         export FLEPI_PATH="$USERDIR/flepiMoP"
     fi
+    echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
 fi
 
 # Conda init
-# Setup the conda environment
 if [ -z "${FLEPI_CONDA}" ]; then
-    echo "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use '$USERDIR/flepimop-env'):"
+    echo -n "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use '$USERDIR/flepimop-env'): "
     read FLEPI_CONDA
     if [ -z "${FLEPI_CONDA}" ]; then
         export FLEPI_CONDA="$USERDIR/flepimop-env"
     fi
+    echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
 fi
 conda activate $FLEPI_CONDA
 
