@@ -123,9 +123,9 @@ def check_population(y0, modinf, ignore_population_checks=False):
         if abs(n_y0 - n_pop) > 1:
             error = True
             warnings.warn(
-                f"ERROR: subpop_names {pl} (idx: plx_idx) has a population from  initial condition of {n_y0} "
-                f"while population geodata is {n_pop}. "
-                f"(absolute difference should be <1, here is {abs(n_y0-n_pop)})."
+                f"`subpop_names` '{pl}' (idx: plx_idx) has a population from  initial condition of '{n_y0}' "
+                f"while population geodata is '{n_pop}'. "
+                f"(absolute difference should be <1, here is '{abs(n_y0-n_pop)}')."
             )
 
     if error and not ignore_population_checks:
@@ -133,7 +133,7 @@ def check_population(y0, modinf, ignore_population_checks=False):
         )
     elif error and ignore_population_checks:
         warnings.warn(
-        "WARNING: Population mismatch errors ignored because `ignore_population_checks` is set to `True`. "
+        "Population mismatch errors ignored because `ignore_population_checks` is set to `True`. "
         "Execution will continue, but this is not recommended.",
         UserWarning
         )

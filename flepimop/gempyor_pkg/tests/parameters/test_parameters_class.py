@@ -282,9 +282,9 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                f"Issue loading file '{tmp_file}' for parameter 'sigma': The 'date' "
-                "entries of the provided file do not include all the days specified to "
-                f"be modeled by the config.$"
+                f"Issue loading file '{tmp_file}' for parameter 'sigma': "
+                f"Provided file dates span '{timeseries_start_date}( 00\:00\:00)?' to '{timeseries_end_date}( 00\:00\:00)?', "
+                f"but the config dates span '{mock_inputs.ti}' to '{mock_inputs.tf}'.$"
             ),
         ):
             mock_inputs.create_parameters_instance()
