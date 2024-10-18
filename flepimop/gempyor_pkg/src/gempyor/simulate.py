@@ -158,17 +158,18 @@
 
 import time, warnings, sys
 
+from click import Context, pass_context
+
 from . import seir, outcomes, model_info
 from .utils import config #, profile
-from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli, click_helpstring
+from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli, click_helpstring, mock_context
 
 # from .profile import profile_options
 
 # @profile_options
 # @profile()
-@cli.command(params=[config_files_argument] + list(config_file_options.values()))
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def simulate(**kwargs) -> int:
+def simulate(ctx : Context = mock_context, **kwargs) -> int:
     """
     Forward simulate a model using gempyor.
 
@@ -176,7 +177,7 @@ def simulate(**kwargs) -> int:
 
     Returns: exit code (side effect: writes output to disk)
     """
-    parse_config_files(**kwargs)
+    parse_config_files(ctx, **kwargs)
 
     scenarios_combinations = [
         [s, d] for s in (config["seir_modifiers"]["scenarios"].as_str_seq() if config["seir_modifiers"].exists() else [None])
@@ -231,16 +232,29 @@ def simulate(**kwargs) -> int:
         )
         return 0
 
+@cli.command(name="simulate", params=[config_files_argument] + list(config_file_options.values()))
+@pass_context
+def _click_simulate(ctx : Context, **kwargs) -> int:
+    return simulate(ctx, **kwargs)
+
+
+# will all be removed upon deprecated endpoint removal
+
+import subprocess
+
 def _deprecated_simulate(argv : list[str] = []) -> int:
-    warnings.warn("This function is deprecated, use the CLI instead: `flepimop simulate ...`", DeprecationWarning)
     if not argv:
         argv = sys.argv[1:]
-    clickcmd = ['simulate'] + argv
-    cli(clickcmd, standalone_mode=False)
+    clickcmd = ' '.join(['flepimop', 'simulate'] + argv)
+    warnings.warn(f"This command is deprecated, use the CLI instead: `{clickcmd}`", DeprecationWarning)
+    return subprocess.run(clickcmd, shell=True).returncode
 
 _deprecated_simulate.__doc__ = simulate.__doc__
 
 if __name__ == "__main__":
-    _deprecated_simulate(sys.argv[1:])
+    argv = sys.argv[1:]
+    clickcmd = ' '.join(['flepimop', 'simulate'] + argv)
+    warnings.warn(f"Use the CLI instead: `{clickcmd}`", DeprecationWarning)
+    _deprecated_simulate(argv)
 
 ## @endcond

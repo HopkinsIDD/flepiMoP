@@ -5,6 +5,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import logging
+from click import pass_context, Context
 
 from .utils import config, Timer, as_list
 from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
@@ -843,8 +844,9 @@ class Compartments:
             )
             + "\n}"
         )
+
         src = graphviz.Source(graph_description)
-        src.render(output_file, view=True)
+        src.render(output_file)
 
 
 def get_list_dimension(thing):
@@ -893,14 +895,16 @@ def list_recursive_convert_to_string(thing):
     return str(thing)
 
 @cli.group()
-def compartments():
+@pass_context
+def compartments(ctx: Context):
     """Commands for working with FlepiMoP compartments"""
     pass
 
-@compartments.command(params=[config_files_argument].extend(config_file_options.values()))
-def plot(**kwargs):
+@compartments.command(params=[config_files_argument] + list(config_file_options.values()))
+@pass_context
+def plot(ctx : Context, **kwargs):
     """Plot compartments"""
-    parse_config_files(**kwargs)
+    parse_config_files(ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
@@ -915,13 +919,12 @@ def plot(**kwargs):
 
     comp.plot(output_file="transition_graph", source_filters=[], destination_filters=[])
 
-    print("wrote file transition_graph")
 
-
-@compartments.command(params=[config_files_argument].extend(config_file_options.values()))
-def export(**kwargs):
+@compartments.command(params=[config_files_argument] + list(config_file_options.values()))
+@pass_context
+def export(ctx : Context, **kwargs):
     """Export compartments"""
-    parse_config_files(**kwargs)
+    parse_config_files(ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
