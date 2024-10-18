@@ -336,8 +336,7 @@ class CheckConfig(BaseModel):
         inference_present = values.get('inference') is not None
         start_date_groundtruth = values.get('start_date_groundtruth') is not None
         if inference_present and not start_date_groundtruth:
-            raise ValueError("Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates."
-            )
+            raise ValueError("Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates.")
         elif start_date_groundtruth and not inference_present:
             raise ValueError(
                 f"Groundtruth dates are provided, but inference mode is not enabled. Please enable inference mode."
