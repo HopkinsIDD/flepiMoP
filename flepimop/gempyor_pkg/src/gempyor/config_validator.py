@@ -71,8 +71,8 @@ class SeedingConfig(BaseModel):
         seeding_file = values.get('seeding_file')        
         if method == 'PoissonDistributed' and not lambda_file:
             raise ValueError(
-                f"Error in Seeding: A lambda_file is required when method is '{method}'. "
-                f"Current value: '{lambda_file}'."
+                f"A `lambda_file` is required when method is '{method}', "
+                f"was given '{lambda_file}'."
             )
         if method == 'FolderDraw' and not seeding_file_type:
             raise ValueError(
