@@ -339,7 +339,7 @@ class CheckConfig(BaseModel):
             raise ValueError("Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates.")
         elif start_date_groundtruth and not inference_present:
             raise ValueError(
-                f"Groundtruth dates are provided, but inference mode is not enabled. Please enable inference mode."
+                "Groundtruth dates are provided, but inference mode is not enabled. Please enable inference mode."
             )
         return values
     
