@@ -28,7 +28,6 @@ cum_death_forecast <- function (sim_data,
   
 }
 
-
 ##'
 ##' Creates a merged forecast from a data object and a set of sims.
 ##' 
