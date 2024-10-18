@@ -1,12 +1,14 @@
+from functools import reduce
+
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import click
-from .utils import config, Timer, as_list
-from . import file_paths
-from functools import reduce
 import logging
+from click import pass_context, Context
+
+from .utils import config, Timer, as_list
+from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
 
 logger = logging.getLogger(__name__)
 
@@ -696,8 +698,9 @@ class Compartments:
             )
             + "\n}"
         )
+
         src = graphviz.Source(graph_description)
-        src.render(output_file, view=True)
+        src.render(output_file)
 
 
 def get_list_dimension(thing):
@@ -744,15 +747,17 @@ def list_recursive_convert_to_string(thing):
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
 
-
-@click.group()
-def compartments():
+@cli.group()
+@pass_context
+def compartments(ctx: Context):
+    """Commands for working with FlepiMoP compartments"""
     pass
 
-
-# TODO: CLI arguments
-@compartments.command()
-def plot():
+@compartments.command(params=[config_files_argument] + list(config_file_options.values()))
+@pass_context
+def plot(ctx : Context, **kwargs):
+    """Plot compartments"""
+    parse_config_files(ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
@@ -767,11 +772,12 @@ def plot():
 
     comp.plot(output_file="transition_graph", source_filters=[], destination_filters=[])
 
-    print("wrote file transition_graph")
 
-
-@compartments.command()
-def export():
+@compartments.command(params=[config_files_argument] + list(config_file_options.values()))
+@pass_context
+def export(ctx : Context, **kwargs):
+    """Export compartments"""
+    parse_config_files(ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
@@ -783,3 +789,5 @@ def export():
     ) = comp.get_transition_array()
     comp.toFile("compartments_file.csv", "transitions_file.csv", write_parquet=False)
     print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")
+
+cli.add_command(compartments)
