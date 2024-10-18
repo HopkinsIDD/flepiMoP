@@ -143,8 +143,7 @@ class SeirParameterConfig(BaseParameterConfig):
         timeseries = values.get('timeseries') is not None
         if value and timeseries:
             raise ValueError(
-                f"Configuration error in seir::parameters: your parameter is both a timeseries and a value, please choose one. "
-                f"Current values - value: '{values.get('value')!r}', timeseries: '{values.get('timeseries')!r}'."
+                f"Parsed a parameter with both a timeseries, '{values.get('timeseries')!r}', and a value, '{values.get('value')!r}', please choose one."
             )
         return values
     
