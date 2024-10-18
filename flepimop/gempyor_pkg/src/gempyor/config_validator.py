@@ -92,8 +92,8 @@ class SeedingConfig(BaseModel):
         plugin_file_path = values.get('plugin_file_path')   
         if method == 'plugin' and not plugin_file_path:
             raise ValueError(
-                f"Error in Seeding: a plugin file path is required when method is plugin. "
-                f"Current value: '{plugin_file_path!r}'. Please specify the path to the plugin file."
+                f"A plugin file path is required when method is 'plugin', "
+                f"was given '{plugin_file_path!r}'."
             )
         return values
     
