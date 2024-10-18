@@ -563,7 +563,7 @@ class Compartments:
                 parsed_formulas.append(f)
             except Exception as e:
                 print(
-                    f"Cannot parse formula: '{formula}' from parameters: '{parameter_names}'."
+                    f"Cannot parse formula '{formula}' from parameters: '{parameter_names}'."
                 )
                 raise (e)  # Print the error message for debugging
 
