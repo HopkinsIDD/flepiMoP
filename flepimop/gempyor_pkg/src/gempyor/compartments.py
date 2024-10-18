@@ -469,7 +469,7 @@ class Compartments:
                     # candidate = candidate.replace("*1", "")
                     if candidate not in unique_strings:
                         raise ValueError(
-                            f"Proportion exponent '{candidate}' is not found in the list of unique strings: '{unique_strings}'"
+                            f"Proportion exponent '{candidate}' is not found in the list of unique strings: '{unique_strings}'."
                             )
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                     proportion_info[2][proportion_compartment_index] = rc
