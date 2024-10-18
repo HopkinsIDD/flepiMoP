@@ -42,7 +42,7 @@ class InitialConditionsConfig(BaseModel):
         initial_conditions_file = values.get('initial_conditions_file')
         initial_file_type = values.get('initial_file_type')        
         if method in {'FromFile', 'SetInitialConditions'} and not initial_conditions_file:
-            raise ValueError(f"Error in InitialConditions: An initial_conditions_file is required when method is '{method}'.")
+            raise ValueError(f"An `initial_conditions_file` is required when method is '{method}'.")
         if method in {'InitialConditionsFolderDraw','SetInitialConditionsFolderDraw'} and not initial_file_type:
             raise ValueError(f"Error in InitialConditions: initial_file_type is required when method is '{method}'.")
         return values
