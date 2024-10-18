@@ -8,7 +8,7 @@ if [[ $1 == "longleaf" ]]; then
     # Setup general purpose user variables needed for Longleaf
     USERO=$( echo $USER | awk '{ print substr($0, 1, 1) }' )
     USERN=$( echo $USER | awk '{ print substr($0, 2, 1) }' )
-    WORKDIR="/work/users/$USERO/$USERN/$USER/"
+    WORKDIR=$( realpath "/work/users/$USERO/$USERN/$USER/" )
     USERDIR=$WORKDIR
 
     # Load required modules
@@ -18,7 +18,7 @@ if [[ $1 == "longleaf" ]]; then
     module load git
 elif [[ $1 == "rockfish" ]]; then
     # Setup general purspose user variables needed for RockFish
-    WORKDIR="/scratch4/struelo1/flepimop-code/$USER/"
+    WORKDIR=$( realpath "/scratch4/struelo1/flepimop-code/$USER/"  )
     USERDIR=$WORKDIR
     mkdir -vp $WORKDIR
 
@@ -39,6 +39,7 @@ if [ -z "${FLEPI_PATH}" ]; then
     if [ -z "${FLEPI_PATH}" ]; then
         export FLEPI_PATH="$USERDIR/flepiMoP"
     fi
+    export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
     echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
 fi
 
@@ -70,6 +71,7 @@ if [ -z "${FLEPI_CONDA}" ]; then
     if [ -z "${FLEPI_CONDA}" ]; then
         export FLEPI_CONDA="$USERDIR/flepimop-env"
     fi
+    export FLEPI_CONDA=$( realpath "$FLEPI_CONDA" )
     echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
 fi
 if [ ! -d $FLEPI_CONDA ]; then
