@@ -497,7 +497,7 @@ class Compartments:
                         if rc == -1:
                             raise ValueError(
                                 f"Could not find proportional_to {elem3} in compartments. "
-                                f"Available compartments: {self.compartments}"
+                                f"Available compartments: {self.compartments}."
                             )
 
                         proportion_array[proportion_index] = rc
