@@ -66,14 +66,12 @@ jobs:
         shell: Rscript {0}
       - name: Install The flepicommon Package
         run: |
-          if ("flepicommon" %in% installed.packages()[,"Package"]) {
-            devtools::uninstall(pkg = "flepicommon")
-          }
           devtools::install(
             pkg = "flepimop/R_packages/flepicommon",
             args = c(getOption("devtools.install.args"), "--install-tests"),
             quick = TRUE,
             dependencies = TRUE,
+            force = TRUE
           )
         shell: Rscript {0}
       - name: Run Tests
