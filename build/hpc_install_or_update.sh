@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Generic setup
 set -e
 
