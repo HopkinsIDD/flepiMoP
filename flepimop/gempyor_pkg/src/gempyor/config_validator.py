@@ -52,7 +52,7 @@ class InitialConditionsConfig(BaseModel):
         method = values.get('method')
         plugin_file_path = values.get('plugin_file_path')   
         if method == 'plugin' and not plugin_file_path:
-            raise ValueError("Error in InitialConditions: a plugin file path is required when method is plugin.")
+            raise ValueError("A plugin file path is required when method is plugin.")
         return values
 
 
