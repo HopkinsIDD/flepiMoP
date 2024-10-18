@@ -255,7 +255,7 @@ class DelayFrameConfig(BaseModel):
         source_present = values.get('source') is not None
 
         if sum_present and source_present:
-            raise ValueError("Error in outcome: Both 'sum' and 'source' are present. Choose one.")
+            raise ValueError("Both 'sum' and 'source' are present, please choose one.")
         elif not sum_present and not source_present:
             raise ValueError("Error in outcome: Neither 'sum' nor 'source' is present. Choose one.")
         return values
