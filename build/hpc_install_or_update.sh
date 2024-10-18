@@ -34,8 +34,11 @@ fi
 
 # Ensure we have a $FLEPI_PATH
 if [ -z "${FLEPI_PATH}" ]; then
-    echo "An explicit \$FLEPI_PATH was not provided, setting to '$USERDIR/flepiMoP'."
-    export FLEPI_PATH="$USERDIR/flepiMoP"
+    echo "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
+    read FLEPI_PATH
+    if [ -z "${FLEPI_PATH}" ]; then
+        export FLEPI_PATH="$USERDIR/flepiMoP"
+    fi
 fi
 
 # Test that flepiMoP is located there
@@ -57,22 +60,26 @@ if [ ! -d "$FLEPI_PATH" ]; then
                 ;;
         esac
     done
-elif [ ! -d "$FLEPI_PATH/.git" ]; then
-    echo "The flepiMoP found at '$FLEPI_PATH' is not a git clone, unsure of how to proceed."
-    exit 1
 fi
 
 # Setup the conda environment
-if [ ! -d "$USERDIR/flepimop-env" ]; then
-conda env create --prefix $USERDIR/flepimop-env --file $FLEPI_PATH/environment.yml
-cat << EOF > $USERDIR/flepimop-env/conda-meta/pinned
+if [ -z "${FLEPI_CONDA}" ]; then
+    echo "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use '$USERDIR/flepimop-env'):"
+    read FLEPI_CONDA
+    if [ -z "${FLEPI_CONDA}" ]; then
+        export FLEPI_CONDA="$USERDIR/flepimop-env"
+    fi
+fi
+if [ ! -d $FLEPI_CONDA ]; then
+conda env create --prefix $FLEPI_CONDA --file $FLEPI_PATH/environment.yml
+cat << EOF > $FLEPI_CONDA/conda-meta/pinned
 r-arrow==17.0.0
 arrow==17.0.0
 EOF
 fi
 
 # Load the conda environment
-conda activate $USERDIR/flepimop-env
+conda activate $FLEPI_CONDA
 
 # Install the gempyor package from local
 pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
