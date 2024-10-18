@@ -37,7 +37,7 @@ new_environment_yml <- c(
   "- r",
   "- dnachun",
   "dependencies:",
-  "- python=3.10",
+  "- python=3.11",
   "- pip",
   "- r-base>=4.3",
   "- pyarrow=17.0.0",
