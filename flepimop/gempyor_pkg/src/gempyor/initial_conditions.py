@@ -271,7 +271,7 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
             if pl in ic_df.columns:
                 y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
             elif allow_missing_subpops:
-                raise ValueError("There is a bug; report this message. Past implemenation was buggy")
+                raise RuntimeError("There is a bug; report this message. Past implemenation was buggy")
                 # TODO this should set the full subpop, not just the 0th commpartment
                 logger.critical(
                     f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartments ({modinf.compartments.compartments['name'].iloc[0]})"
