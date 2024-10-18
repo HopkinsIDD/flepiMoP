@@ -6,8 +6,8 @@ if [[ $1 == "longleaf" ]]; then
     # Setup general purpose user variables needed for Longleaf
     USERO=$( echo $USER | awk '{ print substr($0, 1, 1) }' )
     USERN=$( echo $USER | awk '{ print substr($0, 2, 1) }' )
-    USERDIR="/users/$USERO/$USERN/$USER/"
     WORKDIR="/work/users/$USERO/$USERN/$USER/"
+    USERDIR=$WORKDIR
 
     # Load required modules
     module purge
