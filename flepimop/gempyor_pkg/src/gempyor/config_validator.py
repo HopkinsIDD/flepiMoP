@@ -257,7 +257,7 @@ class DelayFrameConfig(BaseModel):
         if sum_present and source_present:
             raise ValueError("Both 'sum' and 'source' are present, please choose one.")
         elif not sum_present and not source_present:
-            raise ValueError("Error in outcome: Neither 'sum' nor 'source' is present. Choose one.")
+            raise ValueError("Neither 'sum' nor 'source' is present, please choose one.")
         return values
 
 class OutcomesConfig(BaseModel):
