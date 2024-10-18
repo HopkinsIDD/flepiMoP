@@ -218,9 +218,7 @@ class SourceConfig(BaseModel): # set up only for incidence or prevalence. Can th
         prevalence = values.get('prevalence')
         if incidence and prevalence:
             raise ValueError(
-                f"Configuration error in outcomes::source." 
-                f"Value can only be incidence or prevalence, not both."
-                f"Current values - incidence: '{values.get('incidence')!r}', prevalence: '{values.get('prevalence')!r}'."
+                f"Parsed a source with both an incidence, '{values.get('incidence')!r}', and prevalence, '{values.get('prevalence')!r}', please choose one."
                 )
         return values
 
