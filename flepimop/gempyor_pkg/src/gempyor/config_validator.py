@@ -272,7 +272,7 @@ class OutcomesConfig(BaseModel):
         param_subpop_file = values.get('param_subpop_file') is not None
 
         if param_from_file and not param_subpop_file:
-            raise ValueError("Error in outcome: `param_subpop_file` is required when `param_from_file` is 'True'.")
+            raise ValueError("A `param_subpop_file` is required when `param_from_file` is 'True'.")
         return values
 
 class ResampleConfig(BaseModel):
