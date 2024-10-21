@@ -177,7 +177,7 @@ def simulate(ctx : Context = mock_context, **kwargs) -> int:
 
     Returns: exit code (side effect: writes output to disk)
     """
-    parse_config_files(ctx, **kwargs)
+    parse_config_files(config, ctx, **kwargs)
 
     scenarios_combinations = [
         [s, d] for s in (config["seir_modifiers"]["scenarios"].as_str_seq() if config["seir_modifiers"].exists() else [None])
