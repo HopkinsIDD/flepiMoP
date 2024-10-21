@@ -9,6 +9,7 @@ import warnings
 from typing import Callable, Any
 
 import click
+import confuse
 
 from .utils import config, as_list
 
@@ -20,18 +21,10 @@ def cli(ctx: click.Context) -> None:
     """Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface"""
     pass
 
-output_option = click.Option(
-    ["-o", "--output-file"],
-    type=click.Path(allow_dash=True),
-    is_flag=False, flag_value="-",
-    default="transition_graph.pdf", show_default=True,
-    help="output file path",
-)
-
 # click decorator to handle configuration file(s) as arguments
 # use as `@argument_config_files` before a cli command definition
 config_files_argument = click.Argument(
-    ["config_files"], nargs=-1, type=click.Path(exists=True)
+    ["config_files"], nargs=-1, type=click.Path(exists=True, path_type=pathlib.Path)
 )
 
 # List of standard `click` options that override/update config settings
@@ -40,9 +33,8 @@ config_file_options = {
     "config_filepath" : click.Option(
         ["-c", "--config", "config_filepath"],
         envvar="CONFIG_PATH",
-        type=click.Path(exists=True),
+        type=click.Path(exists=True, path_type=pathlib.Path),
         required=False,
-        default=[],
         # deprecated = ["-c", "--config"],
         # preferred = "CONFIG_FILES...",
         multiple=True,
@@ -181,26 +173,30 @@ def click_helpstring(
 # to also apply the `@click_helpstring` decorator to the command. Possibly to also default the params argument, assuming
 # enough commands have consistent option set?
 
-# TODO: have parse_config_files check with the click.Parameter validators:
-# https://stackoverflow.com/questions/59096020/how-to-unit-test-function-that-requires-an-active-click-context-in-python
-
 mock_context = click.Context(click.Command('mock'), info_name="Mock context for non-click use of parse_config_files")
 
+def _parse_option(ctx: click.Context, param : click.Parameter, value: Any) -> Any:
+    if ((param.multiple or param.nargs == -1) and not isinstance(value, list)):
+        value = [value]
+    return param.type_cast_value(ctx, value)
+
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def parse_config_files(ctx = mock_context, **kwargs) -> None:
+def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context = mock_context, **kwargs) -> None:
     """
     Parse configuration file(s) and override with command line arguments
 
     Args:
+        cfg: the configuration object to update; defaults to global `.utils.config`
+        ctx: the click context (used for type casting); defaults to a mock context for non-click use; pass actual context if using in a click command
         **kwargs: see auto generated CLI items below. Unmatched keys will be ignored + a warning will be issued
 
-    Returns: None (side effect: updates the global configuration object)
+    Returns: None; side effect: updates the `cfg` argument
     """
     parsed_args = {config_files_argument.name}.union({option.name for option in config_file_options.values()})
 
     # warn re unrecognized arguments
-    if parsed_args.difference(kwargs.keys()):
-        warnings.warn(f"Unused arguments: {parsed_args.difference(kwargs.keys())}")
+    if (unknownargs := [k for k in parsed_args.difference(kwargs.keys()) if kwargs.get(k) is not None]):
+        warnings.warn(f"Unused arguments: {unknownargs}")
 
     # initialize the config, including handling missing / double-specified config files
     config_args = {k for k in parsed_args if k.startswith("config")}
@@ -215,19 +211,19 @@ def parse_config_files(ctx = mock_context, **kwargs) -> None:
     else:
         config_key = found_configs[0]
         config_validator = config_file_options[config_key] if config_key in config_file_options else config_files_argument
-        config_src = config_validator.type_cast_value(ctx, kwargs[config_key])
-        config.clear()
+        config_src = _parse_option(ctx, config_validator, kwargs[config_key])
+        cfg.clear()
         for config_file in reversed(config_src):
-            config.set_file(config_file)
-        config["config_src"] = config_src
+            cfg.set_file(config_file)
+        cfg["config_src"] = [str(k) for k in config_src]
 
     # deal with the scenario overrides
     scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs.get(k)}
     for option in scen_args:
         key = option.replace("_scenarios", "")
-        value = config_file_options[option].type_cast_value(ctx, kwargs[option])
-        if config[key].exists():
-            config[key]["scenarios"] = as_list(value)
+        value = _parse_option(ctx, config_file_options[option], kwargs[option])
+        if cfg[key].exists():
+            cfg[key]["scenarios"] = as_list(value)
         else:
             raise ValueError(f"Specified {option} when no {key} in configuration file(s): {config_src}")
 
@@ -235,4 +231,5 @@ def parse_config_files(ctx = mock_context, **kwargs) -> None:
     other_args = parsed_args - config_args - scen_args
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
-            config[option] = config_file_options[option].type_cast_value(ctx, value)
+            # auto box the value if the option expects a multiple
+            cfg[option] = _parse_option(ctx, config_file_options[option], value)

@@ -24,7 +24,7 @@ from . import simulate
 @pass_context
 def patch(ctx : Context = mock_context, **kwargs) -> None:
     """Merge configuration files"""
-    parse_config_files(ctx, **kwargs)
+    parse_config_files(config, ctx, **kwargs)
     print(config.dump())
 
 if __name__ == "__main__":
