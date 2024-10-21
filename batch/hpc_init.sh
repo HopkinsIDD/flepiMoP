@@ -45,12 +45,11 @@ fi
 
 # Conda init
 if [ -z "${FLEPI_CONDA}" ]; then
-    echo -n "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use '$USERDIR/flepimop-env'): "
+    echo -n "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use 'flepimop-env'): "
     read FLEPI_CONDA
     if [ -z "${FLEPI_CONDA}" ]; then
-        export FLEPI_CONDA="$USERDIR/flepimop-env"
+        export FLEPI_CONDA="flepimop-env"
     fi
-    export FLEPI_CONDA=$( realpath "$FLEPI_CONDA" )
     echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
 fi
 conda activate $FLEPI_CONDA
@@ -116,6 +115,7 @@ Otherwise make sure this diagnostic info looks correct before continuing:
 * Cluster:         $1
 * User directory:  $USERDIR
 * Work directory:  $WORKDIR
+* Flepi conda:     $FLEPI_CONDA
 * Flepi path:      $FLEPI_PATH
 * Project path:    $PROJECT_PATH
 * Python:          $WHICH_PYTHON

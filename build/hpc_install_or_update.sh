@@ -68,24 +68,25 @@ fi
 
 # Setup the conda environment
 if [ -z "${FLEPI_CONDA}" ]; then
-    echo -n "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use '$USERDIR/flepimop-env'): "
+    echo -n "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use 'flepimop-env'): "
     read FLEPI_CONDA
     if [ -z "${FLEPI_CONDA}" ]; then
-        export FLEPI_CONDA="$USERDIR/flepimop-env"
+        export FLEPI_CONDA="flepimop-env"
     fi
-    export FLEPI_CONDA=$( realpath "$FLEPI_CONDA" )
     echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
 fi
-if [ ! -d $FLEPI_CONDA ]; then
-conda env create --prefix $FLEPI_CONDA --file $FLEPI_PATH/environment.yml
-cat << EOF > $FLEPI_CONDA/conda-meta/pinned
-r-arrow==17.0.0
-arrow==17.0.0
-EOF
+FLEPI_CONDA_ENV_MATCHES=$( conda info --envs | awk '{print $1}' | grep -x "$FLEPI_CONDA" | wc -l )
+if [ "$FLEPI_CONDA_ENV_MATCHES" -eq 0 ]; then
+conda env create --name $FLEPI_CONDA --file $FLEPI_PATH/environment.yml
 fi
 
 # Load the conda environment
 conda activate $FLEPI_CONDA
+[ -e "$CONDA_PREFIX/conda-meta/pinned" ] && rm $CONDA_PREFIX/conda-meta/pinned
+cat << EOF > $CONDA_PREFIX/conda-meta/pinned
+r-arrow==17.0.0
+arrow==17.0.0
+EOF
 
 # Install the gempyor package from local
 pip install --editable --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
