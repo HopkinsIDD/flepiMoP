@@ -16,6 +16,7 @@ from .utils import config, as_list
 
 __all__ = []
 
+
 @click.group()
 @click.pass_context
 def cli(ctx: click.Context) -> None:
@@ -25,6 +26,7 @@ def cli(ctx: click.Context) -> None:
 
 class AlphanumericParamType(click.ParamType):
     """A custom click parameter type for alphanumeric strings"""
+
     name = "alphanumeric"
     an_pattern = re.compile("^[a-zA-Z0-9]+$")
 
@@ -32,9 +34,14 @@ class AlphanumericParamType(click.ParamType):
         if not isinstance(value, str):
             value = str(value)
         if not self.an_pattern.match(value):
-            self.fail(f"{value!r} is not a valid alphanumeric value; must only have [a-zA-Z0-9] elements.", param, ctx)
+            self.fail(
+                f"{value!r} is not a valid alphanumeric value; must only have [a-zA-Z0-9] elements.",
+                param,
+                ctx,
+            )
         else:
-            return value            
+            return value
+
 
 AN_STR = AlphanumericParamType()
 
@@ -48,7 +55,7 @@ config_files_argument = click.Argument(
 # List of standard `click` options that override/update config settings
 # n.b., the help for these options will be presented in the order defined here
 config_file_options = {
-    "config_filepath" : click.Option(
+    "config_filepath": click.Option(
         ["-c", "--config", "config_filepath"],
         envvar="CONFIG_PATH",
         type=click.Path(exists=True, path_type=pathlib.Path),
@@ -138,6 +145,7 @@ config_file_options = {
     ),
 }
 
+
 def click_helpstring(
     params: click.Parameter | list[click.Parameter],
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -177,7 +185,9 @@ def click_helpstring(
         additional_doc = "\n\tCommand Line Interface arguments:\n"
         for param in params:
             paraminfo = param.to_info_dict()
-            additional_doc += f"\n\t\t{paraminfo['name']}: {paraminfo['type']['param_type']}\n"
+            additional_doc += (
+                f"\n\t\t{paraminfo['name']}: {paraminfo['type']['param_type']}\n"
+            )
 
         if func.__doc__ is None:
             func.__doc__ = ""
@@ -187,14 +197,21 @@ def click_helpstring(
 
     return decorator
 
+
 # TODO: create a custom command decorator cls ala: https://click.palletsprojects.com/en/8.1.x/advanced/#command-aliases
 # to also apply the `@click_helpstring` decorator to the command. Possibly to also default the params argument, assuming
 # enough commands have consistent option set?
 
-mock_context = click.Context(click.Command('mock'), info_name="Mock context for non-click use of parse_config_files")
+mock_context = click.Context(
+    click.Command("mock"),
+    info_name="Mock context for non-click use of parse_config_files",
+)
+
 
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
-def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context = mock_context, **kwargs) -> None:
+def parse_config_files(
+    cfg: confuse.Configuration = config, ctx: click.Context = mock_context, **kwargs
+) -> None:
     """
     Parse configuration file(s) and override with command line arguments
 
@@ -205,16 +222,23 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
 
     Returns: None; side effect: updates the `cfg` argument
     """
-    def _parse_option(param : click.Parameter, value: Any) -> Any:
+
+    def _parse_option(param: click.Parameter, value: Any) -> Any:
         """internal parser to autobox values"""
-        if ((param.multiple or param.nargs == -1) and not isinstance(value, (list, tuple))):
+        if (param.multiple or param.nargs == -1) and not isinstance(
+            value, (list, tuple)
+        ):
             value = [value]
         return param.type_cast_value(ctx, value)
 
-    parsed_args = {config_files_argument.name}.union({option.name for option in config_file_options.values()})
+    parsed_args = {config_files_argument.name}.union(
+        {option.name for option in config_file_options.values()}
+    )
 
     # warn re unrecognized arguments
-    if (unknownargs := [k for k in parsed_args.difference(kwargs.keys()) if kwargs.get(k) is not None]):
+    if unknownargs := [
+        k for k in parsed_args.difference(kwargs.keys()) if kwargs.get(k) is not None
+    ]:
         warnings.warn(f"Unused arguments: {unknownargs}")
 
     # initialize the config, including handling missing / double-specified config files
@@ -226,10 +250,16 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
             raise ValueError(f"No config files provided.")
         else:
             error_dict = {k: kwargs[k] for k in found_configs}
-            raise ValueError(f"Exactly one config file source option must be provided; got {error_dict}.")
+            raise ValueError(
+                f"Exactly one config file source option must be provided; got {error_dict}."
+            )
     else:
         config_key = found_configs[0]
-        config_validator = config_file_options[config_key] if config_key in config_file_options else config_files_argument
+        config_validator = (
+            config_file_options[config_key]
+            if config_key in config_file_options
+            else config_files_argument
+        )
         config_src = _parse_option(config_validator, kwargs[config_key])
         cfg.clear()
         for config_file in reversed(config_src):
@@ -244,7 +274,9 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
         if cfg[key].exists():
             cfg[key]["scenarios"] = as_list(value)
         else:
-            raise ValueError(f"Specified {option} when no {key} in configuration file(s): {config_src}")
+            raise ValueError(
+                f"Specified {option} when no {key} in configuration file(s): {config_src}"
+            )
 
     # update the config with the remaining options
     other_args = parsed_args - config_args - scen_args
