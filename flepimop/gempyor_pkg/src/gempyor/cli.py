@@ -20,7 +20,7 @@ from . import simulate
 
 
 # add some basic commands to the CLI
-@cli.command(params=[config_files_argument].extend(config_file_options.values()))
+@cli.command(params=[config_files_argument] + list(config_file_options.values()))
 @pass_context
 def patch(ctx : Context = mock_context, **kwargs) -> None:
     """Merge configuration files"""
