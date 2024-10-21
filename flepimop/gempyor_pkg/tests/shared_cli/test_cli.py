@@ -44,16 +44,25 @@ def test_sample_2pop_modifiers():
 
 def test_sample_2pop_modifiers_combined(tmp_path : Path):
     os.chdir(tutorialpath)
-    tmp_cfg = tmp_path / "patch_modifiers.yml"
+    tmp_cfg1 = tmp_path / "patch_modifiers.yml"
+    tmp_cfg2 = tmp_path / "nopatch_modifiers.yml"
     runner = CliRunner()
+    
     result = runner.invoke(patch, ["config_sample_2pop.yml",
             "config_sample_2pop_outcomes_part.yml",
             "config_sample_2pop_modifiers_part.yml"])
     assert result.exit_code == 0
-    with open(tmp_cfg, "w") as f:
+    with open(tmp_cfg1, "w") as f:
         f.write(result.output)
-    tmpconfig1 = create_confuse_config_from_file(str(tmp_cfg)).flatten()
-    tmpconfig2 = parse_config_files(cfg = mock_empty_config(), config_files = "config_sample_2pop_modifiers.yml").flatten()
+    
+    result = runner.invoke(patch, ["config_sample_2pop_modifiers.yml"])
+    assert result.exit_code == 0
+    with open(tmp_cfg2, "w") as f:
+        f.write(result.output)
+    
+                                   
+    tmpconfig1 = create_confuse_config_from_file(str(tmp_cfg1)).flatten()
+    tmpconfig2 = create_confuse_config_from_file(str(tmp_cfg2)).flatten()
 
     assert { k: v for k, v in tmpconfig1.items() if k != "config_src" } == { k: v for k, v in tmpconfig2.items() if k != "config_src" }
 
