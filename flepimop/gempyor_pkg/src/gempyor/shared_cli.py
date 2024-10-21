@@ -175,11 +175,6 @@ def click_helpstring(
 
 mock_context = click.Context(click.Command('mock'), info_name="Mock context for non-click use of parse_config_files")
 
-def _parse_option(ctx: click.Context, param : click.Parameter, value: Any) -> Any:
-    if ((param.multiple or param.nargs == -1) and not isinstance(value, list)):
-        value = [value]
-    return param.type_cast_value(ctx, value)
-
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
 def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context = mock_context, **kwargs) -> None:
     """
@@ -192,6 +187,12 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
 
     Returns: None; side effect: updates the `cfg` argument
     """
+    def _parse_option(param : click.Parameter, value: Any) -> Any:
+        """internal parser to autobox values"""
+        if ((param.multiple or param.nargs == -1) and not isinstance(value, (list, tuple))):
+            value = [value]
+        return param.type_cast_value(ctx, value)
+
     parsed_args = {config_files_argument.name}.union({option.name for option in config_file_options.values()})
 
     # warn re unrecognized arguments
