@@ -28,6 +28,7 @@ elif [[ $1 == "rockfish" ]]; then
     module load git/2.42.0
 else
     echo "The cluster name '$1' is not recognized, must be one of: 'longleaf', 'rockfish'."
+    set +e
     exit 1
 fi
 

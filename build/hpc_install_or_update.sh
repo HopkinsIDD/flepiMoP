@@ -29,6 +29,7 @@ elif [[ $1 == "rockfish" ]]; then
     module load git/2.42.0
 else
     echo "The cluster name '$1' is not recognized, must be one of: 'longleaf', 'rockfish'."
+    set +e
     exit 1
 fi
 
@@ -55,6 +56,7 @@ if [ ! -d "$FLEPI_PATH" ]; then
                 ;;
             [nN])
                 echo "Then you need to set a \$FLEPI_PATH before running, cannot proceed with install."
+                set +e
                 exit 1
                 ;;
             *)
