@@ -7,6 +7,7 @@ import multiprocessing
 import pathlib
 import warnings
 from typing import Callable, Any
+import re
 
 import click
 import confuse
@@ -20,6 +21,23 @@ __all__ = []
 def cli(ctx: click.Context) -> None:
     """Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface"""
     pass
+
+
+class AlphanumericParamType(click.ParamType):
+    """A custom click parameter type for alphanumeric strings"""
+    name = "alphanumeric"
+    an_pattern = re.compile("^[a-zA-Z0-9]+$")
+
+    def convert(self, value, param, ctx):
+        if not isinstance(value, str):
+            value = str(value)
+        if not self.an_pattern.match(value):
+            self.fail(f"{value!r} is not a valid alphanumeric value; must only have [a-zA-Z0-9] elements.", param, ctx)
+        else:
+            return value            
+
+AN_STR = AlphanumericParamType()
+
 
 # click decorator to handle configuration file(s) as arguments
 # use as `@argument_config_files` before a cli command definition
@@ -43,7 +61,7 @@ config_file_options = {
     "seir_modifiers_scenarios": click.Option(
         ["-s", "--seir_modifiers_scenarios"],
         envvar="FLEPI_SEIR_SCENARIO",
-        type=str,
+        type=AN_STR,
         default=[],
         multiple=True,
         help="override/select the transmission scenario(s) to run",
@@ -51,7 +69,7 @@ config_file_options = {
     "outcome_modifiers_scenarios": click.Option(
         ["-d", "--outcome_modifiers_scenarios"],
         envvar="FLEPI_OUTCOME_SCENARIO",
-        type=str,
+        type=AN_STR,
         default=[],
         multiple=True,
         help="override/select the outcome scenario(s) to run",
@@ -73,21 +91,21 @@ config_file_options = {
     "in_run_id": click.Option(
         ["--in-id", "in_run_id"],
         envvar="FLEPI_RUN_INDEX",
-        type=str,
+        type=AN_STR,
         show_default=True,
         help="Unique identifier for the run",
     ),
     "out_run_id": click.Option(
         ["--out-id", "out_run_id"],
         envvar="FLEPI_RUN_INDEX",
-        type=str,
+        type=AN_STR,
         show_default=True,
         help="Unique identifier for the run",
     ),
     "in_prefix": click.Option(
         ["--in-prefix"],
         envvar="FLEPI_PREFIX",
-        type=str,
+        type=AN_STR,
         default=None,
         show_default=True,
         help="unique identifier for the run",
@@ -212,7 +230,7 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
     else:
         config_key = found_configs[0]
         config_validator = config_file_options[config_key] if config_key in config_file_options else config_files_argument
-        config_src = _parse_option(ctx, config_validator, kwargs[config_key])
+        config_src = _parse_option(config_validator, kwargs[config_key])
         cfg.clear()
         for config_file in reversed(config_src):
             cfg.set_file(config_file)
@@ -222,7 +240,7 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
     scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs.get(k)}
     for option in scen_args:
         key = option.replace("_scenarios", "")
-        value = _parse_option(ctx, config_file_options[option], kwargs[option])
+        value = _parse_option(config_file_options[option], kwargs[option])
         if cfg[key].exists():
             cfg[key]["scenarios"] = as_list(value)
         else:
@@ -233,4 +251,4 @@ def parse_config_files(cfg : confuse.Configuration = config, ctx : click.Context
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
             # auto box the value if the option expects a multiple
-            cfg[option] = _parse_option(ctx, config_file_options[option], value)
+            cfg[option] = _parse_option(config_file_options[option], value)
