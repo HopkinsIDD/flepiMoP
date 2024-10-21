@@ -47,7 +47,7 @@ def _access_original_config_by_multi_index(
     return tmp
 
 
-def _format_nested_iterables(x: Iterable[Iterable[str]]) -> list[str]:
+def _format_nested_iterables(x: Iterable[Iterable[str]], sep: str = "_") -> list[str]:
     """
     Format a nested iterables of strings.
 
@@ -55,6 +55,7 @@ def _format_nested_iterables(x: Iterable[Iterable[str]]) -> list[str]:
         x: Nested iterables that can be coerced into a formatted set of columns.
             Typically the 'source' column of a transitions DataFrame. None of the
             nested lists can be empty, but providing an empty list is acceptable.
+        sep: The separator used to join the string.
 
     Returns:
         A list of formatted strings.
@@ -72,16 +73,22 @@ def _format_nested_iterables(x: Iterable[Iterable[str]]) -> list[str]:
         >>> _format_nested_iterables(pd.Series(data=[["a", "b"], ["c", "d"], ["e"]]))
         ["a_b", "c_d", "e"]
     """
-    return [y for y in map(lambda y: reduce(lambda a, b: f"{a}_{b}", y), x)]
+    return [y for y in map(lambda y: reduce(lambda a, b: f"{a}{sep}{b}", y), x)]
 
 
-def _unformat_nested_iterables(x: Iterable[str]) -> list[list[str]]:
+def _unformat_nested_iterables(
+    x: Iterable[str], sep: str = "_", maxsplit: int = -1
+) -> list[list[str | int]]:
     """
     Unformat a nested iterables of strings.
 
     Args:
         x: An iterable of strings that can be coerced into a formatted set of columns.
             Typically the 'source' column of a saved transitions DataFrame.
+        sep: The separator used to split the string.
+        maxsplit: The max number of splits to output. If set to a value other than -1
+            the resulting output will be right padded with integer 1s to `maxsplit + 1`
+            length.
 
     Returns:
         A nested list of strings.
@@ -102,8 +109,17 @@ def _unformat_nested_iterables(x: Iterable[str]) -> list[list[str]]:
         >>> import pandas as pd
         >>> _unformat_nested_iterables(pd.Series(data=["a_b", "c", "d-e"]))
         [['a', 'b'], ['c'], ['d-e']]
+        >>> _unformat_nested_iterables(
+        ...     ["1%*%2%*%3", "a%*%b", "??"], sep="%*%", maxsplit=2
+        ... )
+        [['1', '2', '3'], ['a', 'b', 1], ['??', 1, 1]]
     """
-    return [y.split("_") for y in x]
+    result = [y.split(sep, maxsplit=maxsplit) for y in x]
+    if maxsplit != -1:
+        for r in result:
+            if (fill := maxsplit + 1 - len(r)) > 0:
+                r.extend(fill * [1])
+    return result
 
 
 class Compartments:
@@ -454,36 +470,6 @@ class Compartments:
 
         return new_transition_config
 
-    def format_destination(self, destination_column):
-        rc = [
-            y
-            for y in map(
-                lambda x: reduce(lambda a, b: str(a) + "_" + str(b), x),
-                destination_column,
-            )
-        ]
-        return rc
-
-    def unformat_destination(self, destination_column):
-        rc = [x.split("_") for x in destination_column]
-        return rc
-
-    def format_rate(self, rate_column):
-        rc = [
-            y
-            for y in map(
-                lambda x: reduce(lambda a, b: str(a) + "%*%" + str(b), x), rate_column
-            )
-        ]
-        return rc
-
-    def unformat_rate(self, rate_column, compartment_dimension):
-        rc = [x.split("%*%", maxsplit=compartment_dimension - 1) for x in rate_column]
-        for row in rc:
-            while len(row) < compartment_dimension:
-                row.append(1)
-        return rc
-
     def format_proportional_to(self, proportional_to_column):
         rc = [
             y
@@ -625,7 +611,7 @@ class Compartments:
         out_df = self.transitions.copy()
         out_df["source"] = _format_nested_iterables(out_df["source"])
         out_df["destination"] = _format_nested_iterables(out_df["destination"])
-        out_df["rate"] = self.format_rate(out_df["rate"])
+        out_df["rate"] = _format_nested_iterables(out_df["rate"], sep="%*%")
         out_df["proportional_to"] = self.format_proportional_to(
             out_df["proportional_to"]
         )
@@ -649,8 +635,8 @@ class Compartments:
         self.transitions["destination"] = _unformat_nested_iterables(
             self.transitions["destination"]
         )
-        self.transitions["rate"] = self.unformat_rate(
-            self.transitions["rate"], compartment_dimension
+        self.transitions["rate"] = _unformat_nested_iterables(
+            self.transitions["rate"], sep="%*%", maxsplit=compartment_dimension - 1
         )
         self.transitions["proportional_to"] = self.unformat_proportional_to(
             self.transitions["proportional_to"]
