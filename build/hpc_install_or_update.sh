@@ -86,7 +86,7 @@ fi
 conda activate $FLEPI_CONDA
 
 # Install the gempyor package from local
-pip install --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
+pip install --editable --force-reinstall $FLEPI_PATH/flepimop/gempyor_pkg
 
 # Install the local R packages
 R -e "install.packages('covidcast', repos='https://cloud.r-project.org')"
