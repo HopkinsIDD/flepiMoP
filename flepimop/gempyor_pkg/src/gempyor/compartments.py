@@ -902,7 +902,7 @@ def compartments(ctx: Context):
 @pass_context
 def plot(ctx : Context, **kwargs):
     """Plot compartments"""
-    parse_config_files(ctx, **kwargs)
+    parse_config_files(config, ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
@@ -922,7 +922,7 @@ def plot(ctx : Context, **kwargs):
 @pass_context
 def export(ctx : Context, **kwargs):
     """Export compartments"""
-    parse_config_files(ctx, **kwargs)
+    parse_config_files(config, ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
     comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
