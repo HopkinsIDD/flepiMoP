@@ -211,7 +211,7 @@ mock_context = click.Context(
 @click_helpstring([config_files_argument] + list(config_file_options.values()))
 def parse_config_files(
     cfg: confuse.Configuration = config, ctx: click.Context = mock_context, **kwargs
-) -> None:
+) -> confuse.Configuration:
     """
     Parse configuration file(s) and override with command line arguments
 
@@ -284,3 +284,5 @@ def parse_config_files(
         if (value := kwargs.get(option)) is not None:
             # auto box the value if the option expects a multiple
             cfg[option] = _parse_option(config_file_options[option], value)
+    
+    return cfg
