@@ -14,6 +14,7 @@ from functools import reduce
 import logging
 from os import PathLike
 from typing import Any, Iterable
+import warnings
 
 import click
 import confuse
@@ -174,7 +175,7 @@ class Compartments:
             self.fromFile(compartments_file, transitions_file)
             self.times_set += 1
         if (self.times_set == 0) and (compartments_config is not None):
-            self.constructFromConfig(seir_config, compartments_config)
+            self.construct_from_config(seir_config, compartments_config)
             self.times_set += 1
 
         if self.times_set == 0:
@@ -196,7 +197,7 @@ class Compartments:
             self.compartments == other.compartments
         ).all().all()
 
-    def constructFromConfig(
+    def construct_from_config(
         self, seir_config: confuse.Subview, compartment_config: confuse.Subview
     ) -> None:
         """
@@ -212,9 +213,23 @@ class Compartments:
             compartments_config: A compartments configuration containing a description
                 of compartments/
         """
-
         self.compartments = self.parse_compartments(seir_config, compartment_config)
         self.transitions = self.parse_transitions(seir_config, False)
+
+    def constructFromConfig(
+        self, seir_config: confuse.Subview, compartment_config: confuse.Subview
+    ) -> None:
+        """
+        See Also:
+            `Compartments.construct_from_config` is now preferred and this method will
+            be removed in the future.
+        """
+        warnings.warn(
+            "`Compartments.constructFromConfig` will be removed in the "
+            "future, please use `Compartments.construct_from_config`.",
+            DeprecationWarning,
+        )
+        self.construct_from_config(seir_config, compartment_config)
 
     def parse_compartments(
         self, seir_config: Any, compartment_config: confuse.Subview
