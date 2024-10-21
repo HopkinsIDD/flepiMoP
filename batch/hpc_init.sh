@@ -22,6 +22,7 @@ elif [[ $1 == "rockfish" ]]; then
 
     # Load required modules
     module purge
+    module load slurm
     module load gcc/9.3.0
     module load anaconda/2020.07
     module load git/2.42.0
