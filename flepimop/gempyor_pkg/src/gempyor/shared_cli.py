@@ -180,18 +180,19 @@ def click_helpstring(
     if not isinstance(params, list):
         params = [params]
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # Generate the additional docstring with args from the specified functions
         additional_doc = "\n\tCommand Line Interface arguments:\n"
         for param in params:
             paraminfo = param.to_info_dict()
             additional_doc += (
-                f"\n\t\t{paraminfo['name']}: {paraminfo['type']['param_type']}\n"
+                f"\n\t{paraminfo['name']}: {paraminfo['type']['param_type']}"
             )
 
         if func.__doc__ is None:
             func.__doc__ = ""
-        func.__doc__ += additional_doc
+
+        func.__doc__ += additional_doc.lstrip()
 
         return func
 
