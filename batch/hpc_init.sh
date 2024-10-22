@@ -102,7 +102,7 @@ read FLEPI_RUN_INDEX
 
 # Done
 cat << EOM
-> The HPC install script has successfully finished.
+> The HPC init script has successfully finished.
 
 If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepimop_sample\` repository:
 \`\`\`bash
