@@ -1,6 +1,6 @@
-import yaml
+
 import pathlib
-from typing import Callable, Any
+from typing import Any
 
 import pytest
 import click
