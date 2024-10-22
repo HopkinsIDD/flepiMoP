@@ -35,7 +35,7 @@ class AlphanumericParamType(click.ParamType):
             value = str(value)
         if not self.an_pattern.match(value):
             self.fail(
-                f"{value!r} is not a valid alphanumeric value; must only have [a-zA-Z0-9] elements.",
+                f"{value!r} is not a valid alphanumeric value; must only have [a-zA-Z0-9_] elements.",
                 param,
                 ctx,
             )
