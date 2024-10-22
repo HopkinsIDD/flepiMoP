@@ -28,7 +28,7 @@ class AlphanumericParamType(click.ParamType):
     """A custom click parameter type for alphanumeric strings"""
 
     name = "alphanumeric"
-    an_pattern = re.compile("^[a-zA-Z0-9]+$")
+    an_pattern = re.compile("^[a-zA-Z0-9_]+$")
 
     def convert(self, value, param, ctx):
         if not isinstance(value, str):
