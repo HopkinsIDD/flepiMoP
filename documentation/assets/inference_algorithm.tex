@@ -1,0 +1,62 @@
+\documentclass[6pt,a4]{article}
+\usepackage[margin=0.5in]{geometry}
+
+% amsmath and amssymb packages, useful for mathematical formulas and symbols
+\usepackage{amsmath,amssymb}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+
+\begin{document}
+
+%\section{Inference Algorithm}
+\begin{algorithm}
+\caption{FlepiMoP Inference}\label{flepi-inference}
+\begin{algorithmic}[1]
+\State \textbf{Inputs:} initial parameter distribution $\mathcal{I}(\cdot)$, proposal distribution $g(\Theta)$, prior distribution $p(\Theta)$, \texttt{gempyor} epidemic model $Z(\Theta)$, likelihood function, ground-truth data $\mathcal{L}(D|Z(\Theta))$ , \textit{chimeric-reset} frequency $k_f$ (default: $k_f=\infty$) and \textit{chimeric-force} flag (default: False).
+\For{$m=1  \dots M$} \Comment{$M$: number of parallel MCMC chains}
+%  \Procedure{Initialize Chain}{$a,b$}    
+    \State $\Theta_{m,0} \sim \mathcal{I}(\cdot)$ \Comment{Sample initial set of parameters from config distribution}
+    \State  $\Theta^G_{m,0} \gets \Theta_{m,0}$ \Comment{Initialize global parameter chain}
+    \State $\Theta^G_{m,0} \gets \Theta_{m,0}$ \Comment{Initialize chimeric parameter chain}
+    \State $Z_{\Theta_{m,0}} \gets Z(\Theta_{m,0})$ \Comment{Compute the epidemic trajectory with \texttt{gempyor}}
+    %\State $\mathcal{L}(D^i|M^i)$  \textbf{for} $i=1  \dots N$ \Comment{Compute the initial likelihood for each node}
+    %\State Compute the overall initial likelihood, $\mathcal{L}(D|M))$
+  %\EndProcedure
+%s\item[]
+  \For{$k=1  \dots K$} \Comment{$K$: length of the MCMC chain}
+    \State  $\Theta^* \sim g(\Theta^*|\Theta^C_{m,k-1})$ \Comment{Generate a proposed set of parameters from chimeric chain}
+    \State $Z_{\Theta^*} \gets Z(\Theta^*)$ \Comment{Compute the epidemic trajectory with \texttt{gempyor}}
+    %\State Calculate the likelihood of the data given the proposed parameters for each subpopulation, $\mathcal{L}^i(D^i|Z^i(\Theta^*))$
+    %\State Calculate the overall likelihood with the proposed parameters, $\mathcal{L}(D|Z(\Theta^*))$
+      %\State Generate a uniform random number $u^G \sim \mathcal{U}[0,1]$
+      \State $\alpha^G \gets\min \left(1, \frac{\mathcal{L}(D|Z_{\Theta^*}) p(\Theta^*) g(\Theta_{m,k-1}|\Theta^*)}{\mathcal{L}(D|Z_{\Theta_{m,k-1}}) p(\Theta_{m,k-1}) g(\Theta^*|\Theta_{m,k-1})} \right)$ \Comment{Compute the global acceptance ratio from the likelihoods}
+      \State$ u \sim \mathcal{U}[0,1]$
+      \If{$\alpha^G > u$} \Comment{\emph{Accept} proposal to the global and chimeric parameter chains}
+        \State $\Theta^G_{m,k} \gets \Theta^*$
+        \State $\Theta_{m,k}^C \gets \Theta^*$
+      \EndIf
+      \If{$\alpha^G > u$ (or if \textit{chimeric-force}=True)} \Comment{Compute chimeric (local) acceptances on global rejection}% \Comment{on \emph{Reject} the proposal for the global chain or we }
+        \State $\Theta^G_{m,k} \gets \Theta^G_{m,k-1}$
+          \For{$i=1  \dots N$} \Comment{$N$: number of spatial nodes}
+            %\State Generate a uniform random number $u^i^C \sim \mathcal{U}[0,1]$
+            \State $\alpha_i^C \gets \frac{\mathcal{L}_i(D^i|Z^i_{\Theta^*}) p(\Theta^*) g(\Theta_{m,k-1}|\Theta^*)}{\mathcal{L}_i(D^i|Z^i_{\Theta_{m,k-1}}) p(\Theta_{m,k-1}) g(\Theta^*|\Theta_{m,k-1})}$ \Comment{Compute the \textit{chimeric} acceptance ratio in node $i$}
+            \If{$\alpha_i^C > u \sim  \mathcal{U}[0,1]$} \Comment{\emph{Accept} proposal to the chimeric parameter chain for this location}
+              \State $\Theta_{m,k,i}^C \gets \Theta^*_{i}$ 
+            \Else \Comment{\emph{Reject} proposal for the chimeric parameter chain for this location}
+              \State $\Theta_{m,k,i}^C \gets \Theta_{m,k-1,i}$ 
+            \EndIf
+            \If{$k \mod{k_f} =0$}
+                    \State $\Theta_{m,k}^C \gets \Theta^G_{m,k}$  \Comment{Optional: periodically reset chimeric chain}
+
+            \EndIf
+          \EndFor
+      \EndIf
+  \EndFor 
+\EndFor
+\State \textbf{return} the final global parameter values for each parallel chain $\theta_m = \{\Theta^G_{m,K}\}_m$
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}

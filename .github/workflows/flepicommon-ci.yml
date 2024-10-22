@@ -1,0 +1,79 @@
+name: flepicommon-ci
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - flepimop/R_packages/flepicommon/**/*
+    branches:
+      - main
+  pull_request:
+    paths:
+      - flepimop/R_packages/flepicommon/**/*
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        R-version: ["4.3.3"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            *
+            !documentation/
+          sparse-checkout-cone-mode: false
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.R-version }}
+          update-rtools: true
+      - name: Install System Dependencies
+        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+      - name: Determine R Library Location
+        run: |
+          R_LIBPATH=$( R -s -e "cat(.libPaths()[1L])" | xargs )
+          echo "R_LIBPATH=$R_LIBPATH" >> $GITHUB_ENV
+          R_LIBPATH_CKSUM=$( echo "$R_LIBPATH" | cksum | cut -d ' ' -f 1 )
+          echo "R_LIBPATH_CKSUM=$R_LIBPATH_CKSUM" >> $GITHUB_ENV
+          CACHE_DATE=$( date -d "last Sunday" +%Y%m%d )
+          echo "CACHE_DATE=$CACHE_DATE" >> $GITHUB_ENV
+      - name: R Library Cache
+        uses: actions/cache@v4
+        with:
+          key: flepicommon-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-${{ env.CACHE_DATE }}
+          path: ${{ env.R_LIBPATH }}
+      - name: Install R Dependencies
+        if: steps.r-library-cache.outputs.cache-hit != 'true'
+        run: |
+          install.packages(
+            "devtools",
+            repos = "https://cloud.r-project.org",
+          )
+          library(devtools)
+          devtools::install_deps(
+            pkg = "flepimop/R_packages/flepicommon",
+            dependencies = TRUE
+          )
+          install.packages("covidcast", repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+      - name: Install The flepicommon Package
+        run: |
+          devtools::install(
+            pkg = "flepimop/R_packages/flepicommon",
+            args = c(getOption("devtools.install.args"), "--install-tests"),
+            quick = TRUE,
+            dependencies = TRUE,
+            force = TRUE
+          )
+        shell: Rscript {0}
+      - name: Run Tests
+        run: |
+          library(testthat)
+          test_package("flepicommon")
+        shell: Rscript {0}

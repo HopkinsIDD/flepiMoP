@@ -53,7 +53,7 @@ option_list = list(
   optparse::make_option(c("-M", "--memory_profiling"), action = "store", default = Sys.getenv("FLEPI_MEM_PROFILE", FALSE), type = 'logical', help = 'Should the memory profiling be run during iterations'),
   optparse::make_option(c("-P", "--memory_profiling_iters"), action = "store", default = Sys.getenv("FLEPI_MEM_PROF_ITERS", 100), type = 'integer', help = 'If doing memory profiling, after every X iterations run the profiler'),
   optparse::make_option(c("-g", "--subpop_len"), action="store", default=Sys.getenv("SUBPOP_LENGTH", 5), type='integer', help = "number of digits in subpop"),
-  optparse::make_option(c("-a", "--incl_aggr_likelihood"), action = "store", default = Sys.getenv("INCL_AGGR_LIKELIHOOD", TRUE), type = 'logical', help = 'Should the likelihood be calculated with the aggregate estiamtes.')
+  optparse::make_option(c("-a", "--incl_aggr_likelihood"), action = "store", default = Sys.getenv("INCL_AGGR_LIKELIHOOD", FALSE), type = 'logical', help = 'Should the likelihood be calculated with the aggregate estiamtes.')
 )
 
 parser=optparse::OptionParser(option_list=option_list)
@@ -268,12 +268,12 @@ if (config$inference$do_inference){
   obs <- suppressMessages(
     readr::read_csv(config$inference$gt_data_path,
                     col_types = readr::cols(date = readr::col_date(),
-                                            source = readr::col_character(),
+                                            # source = readr::col_character(),
                                             subpop = readr::col_character(),
                                             .default = readr::col_double()), )) %>%
     dplyr::filter(subpop %in% subpops_, date >= gt_start_date, date <= gt_end_date) %>%
-    dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) %>%
-    dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
+    dplyr::right_join(tidyr::expand_grid(subpop = unique(.$subpop), date = unique(.$date))) #%>%
+    # dplyr::mutate_if(is.numeric, dplyr::coalesce, 0)
 
 
   # add aggregate groundtruth to the obs data for the likelihood calc
@@ -314,7 +314,7 @@ if (config$inference$do_inference){
   # function to calculate the likelihood when comparing simulation output (sim_hosp) to ground truth data
   likelihood_calculation_fun <- function(sim_hosp){
 
-    sim_hosp <- dplyr::filter(sim_hosp,sim_hosp$date >= min(obs$date),sim_hosp$date <= max(obs$date))
+    sim_hosp <- dplyr::filter(sim_hosp, sim_hosp$date >= min(obs$date), sim_hosp$date <= max(obs$date))
     lhs <- unique(sim_hosp[[obs_subpop]])
     rhs <- unique(names(data_stats))
     all_locations <- rhs[rhs %in% lhs]
@@ -428,7 +428,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
     reset_chimeric_files <- FALSE # this turns on whenever a global acceptance occurs
 
-    ## Set up first iteration of chain  ----------
+
+
+# ~ Set up first iteration of chain ---------------------------------------
 
     ###  Create python simulator object
 
@@ -474,7 +476,6 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                             filename_prefix=slotblock_filename_prefix,
                                                             index=opt$this_block - 1)
 
-
     print("RUNNING: MCMC initialization for the first block")
     # Output saved to files of the form {setup_prefix}/{run_id}/{type}/global/intermediate/{slotblock_filename_prefix}.(block-1).{run_id}.{type}.{ext}
     # also copied into the /chimeric/ version, which are referenced by first_global_files and first_chimeric_files
@@ -493,7 +494,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
     # So far no acceptances have occurred
     last_accepted_index <- 0
-    
+
     # get filenames of last accepted files (copy these files when rejections occur)
     last_accepted_global_files <- inference::create_filename_list(run_id=opt$run_id,
                                                                   prefix=setup_prefix,
@@ -525,7 +526,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     global_current_likelihood_data <- flepicommon::read_parquet_with_check(first_global_files[['llik_filename']]) # they are the same ... don't need to load both
 
 
-    #####Get the full likelihood (WHY IS THIS A DATA FRAME)
+    ##### Get the full likelihood (WHY IS THIS A DATA FRAME?)
     # Compute total loglik for each sim
     global_current_likelihood_total <- sum(global_current_likelihood_data$ll)
 
@@ -535,7 +536,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
     startTimeCount=Sys.time()
 
-    ## Loop over simulations in this block --------------------------------------------
+
+
+# ~ Loop through Simulations ----------------------------------------------
 
     # keep track of running average global acceptance rate, since old global likelihood data not kept in memory. Each geoID has same value for acceptance rate in global case, so we just take the 1st entry
     old_avg_global_accept_rate <- global_current_likelihood_data$accept_avg[1]
@@ -567,7 +570,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           proposed_seeding <- initial_seeding
         }
 
-      }else{ # perturb each parameter type
+      } else { # perturb each parameter type
 
         proposed_spar <- initial_spar # currently no function to perturb
         proposed_hpar <- inference::perturb_hpar(initial_hpar, config$outcomes$outcomes) # NOTE: Deprecated?? ?no scenarios possible right now?
@@ -630,7 +633,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
       # run
       if (config$inference$do_inference){
-        sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>% 
+        sim_hosp <- flepicommon::read_file_of_type(gsub(".*[.]","",this_global_files[['hosp_filename']]))(this_global_files[['hosp_filename']]) %>%
              dplyr::filter(date >= min(obs$date),date <= max(obs$date))
 
         # add aggregate groundtruth to the obs data for the likelihood calc
@@ -709,7 +712,9 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # note - we already have a catch for the first block thing earlier (we set proposed = initial likelihood) - shouldn't need 2!
       global_accept <- ifelse(  #same value for all subpopulations
         inference::iterateAccept(global_current_likelihood_total, proposed_likelihood_total) ||
-          ((last_accepted_index == 0) && (opt$this_block == 1)),1,0
+          ((last_accepted_index == 0) && (opt$this_block == 1)) ||
+          ((this_index == opt$iterations_per_slot && !opt$reset_chimeric_on_accept))
+        ,1,0
       )
 
       # only do global accept if all subpopulations accepted?
@@ -722,7 +727,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         } else {
           # gempyor_inference_runner$write_last_seir(sim_id2write=this_index)
         }
-        
+
         # delete previously accepted files if using a space saving option
         if(!opt$save_seir){
           file.remove(last_accepted_global_files[['seir_filename']]) # remove proposed SEIR file
@@ -733,7 +738,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
         # Update the index of the most recent globally accepted parameters
         last_accepted_index <- this_index
-        
+
         # update filenames of last accepted files
         last_accepted_global_files <- inference::create_filename_list(run_id=opt$run_id,
                                                                       prefix=setup_prefix,
@@ -766,12 +771,12 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         # Update current global likelihood to last accepted one, and record some acceptance statistics
 
         # Replace current global files with last accepted values
-        
+
         # If save_seir = FALSE, don't copy intermediate SEIR files because they aren't being saved
         # If save_hosp = FALSE, don't copy intermediate HOSP files because they aren't being saved
         for (type in names(this_global_files)) {
           if((!opt$save_seir & type!='seir_filename') & (!opt$save_hosp & type!='hosp_filename')){
-          # copy if (save_seir = FALSE OR type is not SEIR) AND (save_hosp = FALSE OR type is not HOSP) 
+          # copy if (save_seir = FALSE OR type is not SEIR) AND (save_hosp = FALSE OR type is not HOSP)
           file.copy(last_accepted_global_files[[type]],this_global_files[[type]], overwrite = TRUE)
           }
         }
@@ -856,7 +861,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
           new_init <- proposed_init
         }
         if (!is.null(config$seeding)){
-          new_seeding<- proposed_seeding
+          new_seeding <- proposed_seeding
         }
         new_spar <- initial_spar
         new_hpar <- proposed_hpar
@@ -958,14 +963,14 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       }
 
       # Ending this MCMC iteration
-      
+
     }
 
     # Ending this MCMC chain (aka "slot")
 
     # Create "final" files after MCMC chain is completed
     #   Will fail if unsuccessful
-    
+
     # moves the most recently globally accepted parameter values from global/intermediate file to global/final
     # all file types
     print("Copying latest global files to final")
@@ -977,7 +982,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
                                                                  slotblock_filename_prefix = slotblock_filename_prefix,
                                                                  slot_filename_prefix = slot_filename_prefix)
     # if (!prod(unlist(cpy_res_global))) {stop("File copy failed:", paste(unlist(cpy_res_global),paste(names(cpy_res_global),"|")))}
-    
+
     # moves the most recent chimeric parameter values from chimeric/intermediate file to chimeric/final
     # all file types except seir and hosp
     print("Copying latest chimeric files to final")
@@ -1002,7 +1007,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     # copy files from most recent global to end of block chimeric??
     file.copy(this_index_global_files[['hosp_filename']],output_chimeric_files[['hosp_filename']])
     file.copy(this_index_global_files[['seir_filename']],output_chimeric_files[['seir_filename']])
-    
+
     # if using space-saving options, delete the last accepted global intermediate giles
     if(!opt$save_seir){
       file.remove(last_accepted_global_files[['seir_filename']]) # remove proposed SEIR file

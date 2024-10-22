@@ -25,25 +25,27 @@ periodAggregate <- function(data, dates, start_date = NULL, end_date = NULL, per
         data <- data[dates <= end_date]
         dates <- dates[dates <= end_date]
     }
-    
+
     if (!is.null(start_date)) {
         data <- data[dates >= start_date]
         dates <- dates[dates >= start_date]
     }
-    
+
     tmp <- data.frame(date = dates, value = data)
-    
+
     for (this_unit in seq_len(length(period_unit_function))) {
         tmp[[paste("time_unit", this_unit, sep = "_")]] <- period_unit_function[[this_unit]](dates)
     }
     tmp <- tmp %>%
         tidyr::unite("time_unit", names(tmp)[grepl("time_unit_", names(tmp))]) %>%
         dplyr::group_by(time_unit) %>%
-        dplyr::summarize(first_date = min(date), value = aggregator(value), valid = period_unit_validator(date,time_unit)) %>%
+        dplyr::summarize(last_date = max(date),first_date = min(date), value = aggregator(value), valid = period_unit_validator(date,time_unit)) %>%
         dplyr::ungroup() %>%
         dplyr::arrange(first_date) %>%
         dplyr::filter(valid)
-    return(matrix(tmp$value, ncol = 1, dimnames = list(as.character(tmp$first_date))))
+    # return(matrix(tmp$value, ncol = 1, dimnames = list(as.character(tmp$first_date))))
+    return(matrix(tmp$value, ncol = 1, dimnames = list(as.character(tmp$last_date))))
+
 }
 
 
@@ -78,12 +80,12 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
         } else {
             stop(paste(period_info[2], "as an aggregation unit is not supported right now"))
         }
-        
+
         if (period_info[1] != 1) {
             stop(paste(period_info[1], period_info[2], "as an aggregation unit is not supported right now"))
         }
-        
-        
+
+
         period_unit_validator <- function(dates, units, local_period_unit_function = period_unit_function) {
             first_date <- min(dates)
             last_date <- min(dates) + (length(unique(dates))-1)
@@ -92,7 +94,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
                 , local_period_unit_function[[1]](last_date) != local_period_unit_function[[1]](last_date + 1)
             )))
         }
-        
+
         if (s$period == "1 weeks") {
             period_unit_validator <- function(dates, units) {
                 return(length(unique(dates)) <= 7 & length(unique(dates)) > 0)
@@ -120,7 +122,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
                 )
             }
         }
-        
+
         if (!all(c(time_col, s[[var_col]]) %in% names(df))) {
             stop(paste0(
                 "At least one of columns: [",
@@ -131,7 +133,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
                 paste(names(df), collapse = ",")
             ))
         }
-        
+
         res <- inference::periodAggregate(df[[s[[var_col]]]],
                                           df[[time_col]],
                                           stat_list[[stat]][["gt_start_date"]],
@@ -159,7 +161,7 @@ getStats <- function(df, time_col, var_col, start_date = NULL, end_date = NULL, 
 ##' @return NULL
 #' @export
 logLikStat <- function(obs, sim, distr, param, add_one = F) {
-    
+
     if(length(obs) != length(sim)){
         stop(sprintf("Expecting sim (%d) and obs (%d) to be the same length",length(sim),length(obs)))
     }
@@ -170,9 +172,9 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
     }else{
         eval <- as.logical(rep(1,length(obs)))
     }
-    
+
     rc <- rep(0,length(obs))
-    
+
     if(distr == "pois") {
         rc[eval] <- dpois(round(obs[eval]), sim[eval], log = T)
     } else if (distr == "norm") {
@@ -195,7 +197,7 @@ logLikStat <- function(obs, sim, distr, param, add_one = F) {
     } else {
         stop("Invalid stat specified")
     }
-    
+
     return(rc)
 }
 
@@ -227,9 +229,9 @@ calc_hierarchical_likadj <- function (stat,
                                       stat_col="value",
                                       transform = "none",
                                       min_sd=.1) {
-    
+
     require(dplyr)
-    
+
     if (transform == "logit") {
         infer_frame <- infer_frame  %>%
             #mutate(value = value)
@@ -239,12 +241,12 @@ calc_hierarchical_likadj <- function (stat,
     } else if (transform!="none") {
         stop("specified transform not yet supported")
     }
-    
+
     ##print(stat)
     ##cat("sd=",max(sd(infer_frame[[stat_col]]), min_sd,na.rm=T),"\n")
     ##cat("mean=",mean(infer_frame[[stat_col]]),"\n")
     ##print(range(infer_frame[[stat_col]]))
-    
+
     rc <- infer_frame%>%
         filter(!!sym(stat_name_col)==stat)%>%
         inner_join(geodata)%>%
@@ -254,7 +256,7 @@ calc_hierarchical_likadj <- function (stat,
                               max(sd(!!sym(stat_col)), min_sd, na.rm=T), log=TRUE))%>%
         ungroup()%>%
         select(subpop, likadj)
-    
+
     return(rc)
 }
 
@@ -274,7 +276,7 @@ calc_hierarchical_likadj <- function (stat,
 calc_prior_likadj  <- function(params,
                                dist,
                                dist_pars) {
-    
+
     if (dist=="normal") {
         rc <- dnorm(params, dist_pars[[1]], dist_pars[[2]], log=TRUE)
     } else  if (dist=="logit_normal") {
@@ -284,7 +286,7 @@ calc_prior_likadj  <- function(params,
     } else {
         stop("This distribution is unsupported")
     }
-    
+
     return(rc)
 }
 
@@ -307,7 +309,7 @@ compute_cumulative_counts <- function(sim_hosp) {
         ungroup() %>%
         pivot_wider(names_from = "var", values_from = c("value", "cumul")) %>%
         select(-(contains("cumul") & contains("curr")))
-    
+
     colnames(res) <- str_replace_all(colnames(res), c("value_" = "", "cumul_incid" = "cumul"))
     return(res)
 }
@@ -346,13 +348,13 @@ compute_totals <- function(sim_hosp) {
 ##'
 ##' @export
 perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, continuous = FALSE) {
-    
+
     if (!("no_perturb" %in% colnames(seeding))){
         perturb <- !logical(nrow(seeding))
     } else {
         perturb <- !seeding$no_perturb
     }
-    
+
     if (date_sd > 0) {
         seeding$date[perturb] <- pmin(pmax(seeding$date + round(rnorm(nrow(seeding),0,date_sd)), date_bounds[1]), date_bounds[2])[perturb]
     }
@@ -360,9 +362,9 @@ perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, contin
         round_func <- ifelse(continuous, function(x){return(x)}, round)
         seeding$amount[perturb] <- round_func(pmax(rnorm(nrow(seeding),seeding$amount, amount_sd),0))[perturb]
     }
-    
+
     return(seeding)
-    
+
 }
 
 
@@ -380,30 +382,30 @@ perturb_seeding <- function(seeding, date_sd, date_bounds, amount_sd = 1, contin
 perturb_snpi <- function(snpi, intervention_settings) {
     ##Loop over all interventions
     for (intervention in names(intervention_settings)) { # consider doing unique(npis$modifier_name) instead
-        
+
         ##Only perform perturbations on interventions where it is specified to do so.
-        
+
         if ('perturbation' %in% names(intervention_settings[[intervention]])){
-            
+
             ##get the random distribution from flepicommon package
             pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
-            
+
             ##get the npi values for this distribution
             ind <- (snpi[["modifier_name"]] == intervention)
             if(!any(ind)){
                 next
             }
-            
+
             ##add the perturbation...for now always parameterized in terms of a "value"
             snpi_new <- snpi[["value"]][ind] + pert_dist(sum(ind))
-            
+
             ##check that this is in bounds (equivalent to having a positive probability)
             # in_bounds_index <- flepicommon::as_density_distribution(
             #   intervention_settings[[intervention]][['value']]
             # )(snpi_new) > 0
             # Above version fails for some use case: https://iddynamicsjhu.slack.com/archives/C04UYU4V7SN/p1686000150041659
             in_bounds_index <- flepicommon::check_within_bounds(snpi_new, intervention_settings[[intervention]][['value']])
-            
+
             ##return all in bounds proposals
             snpi$value[ind][in_bounds_index] <- snpi_new[in_bounds_index]
         }
@@ -412,12 +414,12 @@ perturb_snpi <- function(snpi, intervention_settings) {
 }
 
 perturb_init <- function(init, perturbation) {
-    
+
     pert_dist <- flepicommon::as_random_distribution(perturbation)
     perturb <- init$perturb
-    
+
     init$amount[perturb] <- init$amount[perturb] + pert_dist(nrow(perturb))
-    
+
     clip_to_bounds <- function(value) {
         if (value < 0) {
             return(0)
@@ -427,10 +429,10 @@ perturb_init <- function(init, perturbation) {
             return(value)
         }
     }
-    
+
     # Apply the clip_to_bounds function to elements outside the bounds
     init$amount[perturb] <- sapply(init$amount[perturb], clip_to_bounds)
-    
+
     return(init)
 }
 
@@ -447,29 +449,29 @@ perturb_init <- function(init, perturbation) {
 perturb_hnpi <- function(hnpi, intervention_settings) {
     ##Loop over all interventions
     for (intervention in names(intervention_settings)) { # consider doing unique(npis$modifier_name) instead
-        
+
         ##Only perform perturbations on interventions where it is specified to do so.
-        
+
         if ('perturbation' %in% names(intervention_settings[[intervention]])){
-            
+
             ##get the random distribution from flepicommon package
             pert_dist <- flepicommon::as_random_distribution(intervention_settings[[intervention]][['perturbation']])
-            
+
             ##get the npi values for this distribution
             ind <- (hnpi[["modifier_name"]] == intervention)
             if(!any(ind)){
                 next
             }
-            
+
             ##add the perturbation...for now always parameterized in terms of a "value"
             hnpi_new <- hnpi[["value"]][ind] + pert_dist(sum(ind))
-            
+
             ##check that this is in bounds (equivalent to having a positive probability)
             # in_bounds_index <- flepicommon::as_density_distribution(
             #   intervention_settings[[intervention]][['value']]
             # )(hnpi_new) > 0
             in_bounds_index <- flepicommon::check_within_bounds(hnpi_new, intervention_settings[[intervention]][['value']])
-            
+
             ##return all in bounds proposals
             hnpi$value[ind][in_bounds_index] <- hnpi_new[in_bounds_index]
         }
@@ -488,20 +490,20 @@ perturb_hnpi <- function(hnpi, intervention_settings) {
 ##' @export
 perturb_hpar <- function(hpar, intervention_settings) {
     ##Loop over all interventions
-    
+
     for(intervention in names(intervention_settings)){
         for(quantity in names(intervention_settings[[intervention]])){
             if('perturbation' %in% names(intervention_settings[[intervention]][[quantity]])){
                 intervention_quantity <- intervention_settings[[intervention]][[quantity]]
                 ## get the random distribution from flepicommon package
                 pert_dist <- flepicommon::as_random_distribution(intervention_quantity[['perturbation']])
-                
+
                 ##get the hpar values for this distribution
                 ind <- (hpar[["outcome"]] == intervention) & (hpar[["quantity"]] == quantity) # & (hpar[['source']] == intervention_settings[[intervention]][['source']])
                 if(!any(ind)){
                     next
                 }
-                
+
                 ## add the perturbation...
                 if (!is.null(intervention_quantity[['perturbation']][["transform"]])) {
                     if (intervention_quantity[['perturbation']][["transform"]] == "logit") {
@@ -517,7 +519,7 @@ perturb_hpar <- function(hpar, intervention_settings) {
                 } else {
                     hpar_new <- hpar[["value"]][ind] + pert_dist(sum(ind))
                 }
-                
+
                 ## Check that this is in the support of the original distribution
                 # in_bounds_index <- flepicommon::as_density_distribution(intervention_quantity[['value']])(hpar_new) > 0
                 in_bounds_index <- flepicommon::check_within_bounds(hpar_new, intervention_quantity[['value']])
@@ -525,7 +527,7 @@ perturb_hpar <- function(hpar, intervention_settings) {
             }
         }
     }
-    
+
     return(hpar)
 }
 ##' Function to go through to accept or reject proposed parameters for each subpop based
@@ -560,20 +562,20 @@ accept_reject_proposals <- function(
     rc_snpi <- snpi_orig
     rc_hnpi <- hnpi_orig
     rc_hpar <- hpar_orig
-    
+
     if (!all(orig_lls$subpop == prop_lls$subpop)) {
         stop("subpop must match")
     }
-    
+
     ##draw accepts/rejects
     ratio <- exp(prop_lls$ll - orig_lls$ll)
     accept <- ratio > runif(length(ratio), 0, 1)
-    
+
     orig_lls$ll[accept] <- prop_lls$ll[accept]
-    
+
     orig_lls$accept <- as.numeric(accept) # added column for acceptance decision
     orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
-    
+
     for (subpop in orig_lls$subpop[accept]) {
         rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop == subpop, ]
         if("subpop" %in% colnames(rc_init)){ # ie if initial_conditions$method is FromFile or InitialConditionsFolderDraw
@@ -583,7 +585,7 @@ accept_reject_proposals <- function(
         rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
         rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
     }
-    
+
     return(list(
         seeding = rc_seeding,
         init = rc_init,
@@ -606,14 +608,14 @@ iterateAccept <- function(ll_ref, ll_new) {
     if (length(ll_ref) != 1 | length(ll_new) !=1) {
         stop("Iterate accept currently on works with single row data frames")
     }
-    
-    
+
     ll_ratio <- exp(min(c(0, ll_new - ll_ref)))
     if (ll_ratio >= runif(1)) {
         return(TRUE)
     }
     return(FALSE)
 }
+
 
 # Extra functions for MCMC diagnostics and adaptation ------------------
 
@@ -626,33 +628,33 @@ iterateAccept <- function(ll_ref, ll_new) {
 ##' @return data frame with perturb_sd column added
 ##' @export
 add_perturb_column_snpi <- function(snpi, intervention_settings) {
-    
+
     snpi$perturb_sd <- 0 # create a column in the parameter data frame to hold the perturbation sd
-    
+
     ##Loop over all interventions
     for (intervention in names(intervention_settings)) {
         ##Only perform perturbations on interventions where it is specified to do so.
-        
+
         if ('perturbation' %in% names(intervention_settings[[intervention]])){
-            
+
             ##find the npi with this name
             ind <- (snpi[["modifier_name"]] == intervention)
             if(!any(ind)){
                 next
             }
-            
+
             if(!'sd' %in% names(intervention_settings[[intervention]][['perturbation']])){
                 stop("Cannot add perturbation sd to column unless 'sd' values exists in config$interventions$settings$this_intervention$perturbation")
             }
-            
+
             pert_sd <-intervention_settings[[intervention]][['perturbation']][['sd']]
             #print(paste0(intervention," initial perturbation sd is ",pert_sd))
-            
+
             snpi$perturb_sd[ind] <- pert_sd # update perturbation
-            
+
         }
     }
-    
+
     return(snpi)
 }
 
@@ -668,48 +670,48 @@ add_perturb_column_snpi <- function(snpi, intervention_settings) {
 ##' @return a perturbed data frame
 ##' @export
 perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
-    
-    
+
+
     ##Loop over all interventions
     for (intervention in names(intervention_settings)) {
-        
+
         ##Only perform perturbations on interventions where it is specified to do so.
-        
+
         if ('perturbation' %in% names(intervention_settings[[intervention]])){
-            
+
             ##find all the npi with this name (might be one for each geoID)
             ind <- (snpi[["modifier_name"]] == intervention)
             if(!any(ind)){
                 next
             }
-            
+
             ## for each of them generate the perturbation and update their value
             for (this_npi_ind in which(ind)){ # for each subpop that has this interventions
-                
+
                 this_subpop <- snpi[["subpop"]][this_npi_ind]
                 this_accept_avg <- llik$accept_avg[llik$subpop==this_subpop]
                 his_accept_prob <- llik$accept_prob[llik$subpop==this_subpop]
                 this_intervention_setting<- intervention_settings[[intervention]]
-                
+
                 ##get the random distribution from flepicommon package
                 pert_dist <- flepicommon::as_random_distribution(this_intervention_setting$perturbation)
-                
+
                 ##add the perturbation...for now always parameterized in terms of a "value"
                 snpi_new <- snpi[["value"]][this_npi_ind] + pert_dist(1)
-                
+
                 ##check that this is in bounds (equivalent to having a positive probability)
                 # in_bounds_index <- flepicommon::as_density_distribution(
                 #   intervention_settings[[intervention]][['value']]
                 # )(snpi_new) > 0
                 in_bounds_index <- flepicommon::check_within_bounds(snpi_new, intervention_settings[[intervention]][['value']])
-                
+
                 ## include this perturbed parameter if it is in bounds
                 snpi$value[this_npi_ind][in_bounds_index] <- snpi_new[in_bounds_index]
-                
+
             }
         }
     }
-    
+
     return(snpi)
 }
 
@@ -722,33 +724,33 @@ perturb_snpi_from_file  <- function(snpi, intervention_settings, llik){
 ##' @return data frame with perturb_sd column added
 ##' @export
 add_perturb_column_hnpi <- function(hnpi, intervention_settings) {
-    
+
     hnpi$perturb_sd <- 0 # create a column in the parameter data frame to hold the perturbation sd
-    
+
     ##Loop over all interventions
     for (intervention in names(intervention_settings)) {
         ##Only perform perturbations on interventions where it is specified to do so.
-        
+
         if ('perturbation' %in% names(intervention_settings[[intervention]])){
-            
+
             ##find the npi with this name
             ind <- (hnpi[["modifier_name"]] == intervention)
             if(!any(ind)){
                 next
             }
-            
+
             if(!'sd' %in% names(intervention_settings[[intervention]][['perturbation']])){
                 stop("Cannot add perturbation sd to column unless 'sd' values exists in config$interventions$settings$this_intervention$perturbation")
             }
-            
+
             pert_sd <-intervention_settings[[intervention]][['perturbation']][['sd']]
             #print(paste0(intervention," initial perturbation sd is ",pert_sd))
-            
+
             hnpi$perturb_sd[ind] <- pert_sd # update perturbation
-            
+
         }
     }
-    
+
     return(hnpi)
 }
 
@@ -764,47 +766,47 @@ add_perturb_column_hnpi <- function(hnpi, intervention_settings) {
 ##' @return a perturbed data frame
 ##' @export
 perturb_hnpi_from_file  <- function(hnpi, intervention_settings, llik){
-    
-    
+
+
     ##Loop over all interventions
     for (intervention in names(intervention_settings)) {
-        
+
         ##Only perform perturbations on interventions where it is specified to do so.
-        
+
         if ('perturbation' %in% names(intervention_settings[[intervention]])){
-            
+
             ##find all the npi with this name (might be one for each geoID)
             ind <- (hnpi[["modifier_name"]] == intervention)
             if(!any(ind)){
                 next
             }
-            
+
             ## for each of them generate the perturbation and update their value
             for (this_npi_ind in which(ind)){ # for each subpop that has this interventions
-                
+
                 this_subpop <- hnpi[["subpop"]][this_npi_ind]
                 this_accept_avg <- llik$accept_avg[llik$subpop==this_subpop]
                 this_intervention_setting<- intervention_settings[[intervention]]
-                
+
                 ##get the random distribution from flepicommon package
                 pert_dist <- flepicommon::as_random_distribution(this_intervention_setting$perturbation)
-                
+
                 ##add the perturbation...for now always parameterized in terms of a "value"
                 hnpi_new <- hnpi[["value"]][this_npi_ind] + pert_dist(1)
-                
+
                 ##check that this is in bounds (equivalent to having a positive probability)
                 # in_bounds_index <- flepicommon::as_density_distribution(
                 #   intervention_settings[[intervention]][['value']]
                 # )(hnpi_new) > 0
                 in_bounds_index <- flepicommon::check_within_bounds(hnpi_new, intervention_settings[[intervention]][['value']])
-                
+
                 ## include this perturbed parameter if it is in bounds
                 hnpi$value[this_npi_ind][in_bounds_index] <- hnpi_new[in_bounds_index]
-                
+
             }
         }
     }
-    
+
     return(hnpi)
 }
 
