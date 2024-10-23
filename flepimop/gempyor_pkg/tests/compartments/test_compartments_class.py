@@ -7,6 +7,7 @@ from typing import Any, Callable
 import confuse
 import pandas as pd
 from pandas.testing import assert_frame_equal
+import pyarrow.parquet as pq
 import pytest
 
 from gempyor.compartments import Compartments, NestedListOfStr
@@ -380,6 +381,7 @@ class TestCompartments:
         ),
     )
     def test_get_comp_idx_ambiguous_filter_value_error(
+        self,
         tmp_path: Path,
         factory: Callable[[Path], MockCompartmentsInput],
         comp_dict: dict[str, NestedListOfStr],
@@ -405,7 +407,8 @@ class TestCompartments:
             (seir_from_config_inputs_factory, {"infection_stage": "E"}),
         ),
     )
-    def test_get_comp_idx_ambiguous_filter_value_error(
+    def test_get_comp_idx_output_validation(
+        self,
         tmp_path: Path,
         factory: Callable[[Path], MockCompartmentsInput],
         comp_dict: dict[str, NestedListOfStr],
@@ -424,3 +427,50 @@ class TestCompartments:
         ][0]
 
         assert idx == expected_idx
+
+    @pytest.mark.parametrize("factory", valid_input_factories)
+    @pytest.mark.parametrize(
+        ("compartments_file", "transitions_file"),
+        (
+            ("compartments.parquet", "transitions.parquet"),
+            ("compartments.csv", "transitions.csv"),
+        ),
+    )
+    @pytest.mark.parametrize("write_parquet", (True, False))
+    def test_to_file_output_validation(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        factory: Callable[[Path], MockCompartmentsInput],
+        compartments_file: PathLike,
+        transitions_file: PathLike,
+        write_parquet: bool,
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        mock_inputs = factory(tmp_path)
+        compartments = mock_inputs.compartments_instance()
+
+        compartments_path = Path(compartments_file).absolute()
+        transitions_path = Path(transitions_file).absolute()
+        assert not compartments_path.exists()
+        assert not transitions_path.exists()
+
+        assert (
+            compartments.toFile(
+                compartments_file=compartments_file,
+                transitions_file=transitions_file,
+                write_parquet=write_parquet,
+            )
+            is None
+        )
+
+        assert compartments_path.exists()
+        assert transitions_path.exists()
+
+        reader = lambda x: (
+            pq.read_table(x).to_pandas() if write_parquet else pd.read_csv(x)
+        )
+        compartments_df = reader(compartments_path)
+        transitions_df = reader(transitions_path)
+        assert isinstance(compartments_df, pd.DataFrame)
+        assert isinstance(transitions_df, pd.DataFrame)

@@ -612,10 +612,19 @@ class Compartments:
 
     def toFile(
         self,
-        compartments_file="compartments.parquet",
-        transitions_file="transitions.parquet",
-        write_parquet=True,
-    ):
+        compartments_file: PathLike = "compartments.parquet",
+        transitions_file: PathLike = "transitions.parquet",
+        write_parquet: bool = True,
+    ) -> None:
+        """
+        Save compartments and transitions to files.
+
+        Args:
+            compartments_file: The file to save the compartments to.
+            transitions_file: The file to save the transitions to.
+            write_parquet: A boolean indicating the output file type, `True` for
+                parquet and `False` for csv.
+        """
         out_df = self.compartments.copy()
         if write_parquet:
             pa_df = pa.Table.from_pandas(out_df, preserve_index=False)
@@ -638,7 +647,6 @@ class Compartments:
             pa.parquet.write_table(pa_df, transitions_file)
         else:
             out_df.to_csv(transitions_file, index=False)
-        return
 
     def fromFile(self, compartments_file, transitions_file):
         self.compartments = pq.read_table(compartments_file).to_pandas()
