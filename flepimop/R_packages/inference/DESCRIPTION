@@ -20,7 +20,8 @@ Imports:
   xts,
   reticulate,
   truncnorm,
-  arrow
+  arrow,
+  optparse
 RoxygenNote: 7.3.2
 Suggests: 
     testthat

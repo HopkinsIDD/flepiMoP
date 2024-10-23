@@ -1,0 +1,37 @@
+name: Generate Conda Environment
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - build/create_environment_yml.R
+      - flepimop/R_packages/*/DESCRIPTION
+    branches:
+      - main
+  pull_request:
+    paths:
+      - build/create_environment_yml.R
+      - flepimop/R_packages/*/DESCRIPTION
+    branches:
+      - main
+
+jobs:
+  generate-environment-yml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: r-lib/actions/setup-r@v2
+      - name: Generate Environment YAML
+        run: Rscript build/create_environment_yml.R
+      - name: Check For Environment Change
+        run: |
+          if [[ -n "$(git status -s -- environment.yml)" ]]; then
+            git config --global user.name "${{ github.actor }}"
+            git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+            git add environment.yml
+            git commit -m 'Update `environment.yml` via GitHub action'
+            git push origin ${{ github.event.pull_request.head.ref }}
+          fi
