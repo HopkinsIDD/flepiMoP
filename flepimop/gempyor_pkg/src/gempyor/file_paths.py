@@ -13,7 +13,6 @@ Functions:
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import List
 
 
 def create_file_name(
@@ -190,7 +189,7 @@ def create_dir_name(
 
 def create_file_name_for_push(
     flepi_run_index: str, prefix: str, flepi_slot_index: str, flepi_block_index: str
-) -> List[str]:
+) -> list[str]:
     """
     Generate a list of file names for different types of inference results.
     
@@ -199,28 +198,26 @@ def create_file_name_for_push(
     "seir", "hosp", "llik", etc. The file names are generated using the `create_file_name` function, 
     with specific extensions based on the type: "csv" for "seed" and "parquet" for all other types.
 
-    Parameters:
-    ----------
-    flepi_run_index : str
-        The index of the run. This is used to uniquely identify the run.
-    
-    prefix : str
-        A prefix string to be included in the file names. This is typically used to categorize or 
-        identify the files.
-    
-    flepi_slot_index : str
-        The slot index used in the filename. This is formatted as a zero-padded nine-digit number.
-    
-    flepi_block_index : str
-        The block index used in the filename. This typically indicates a specific block or segment 
-        of the data being processed.
+    Args:
+        flepi_run_index :
+            The index of the run. This is used to uniquely identify the run.
+        
+        prefix :
+            A prefix string to be included in the file names. This is typically used to categorize or 
+            identify the files.
+        
+        flepi_slot_index :
+            The slot index used in the filename. This is formatted as a zero-padded nine-digit number.
+        
+        flepi_block_index :
+            The block index used in the filename. This typically indicates a specific block or segment 
+            of the data being processed.
 
     Returns:
-    -------
-    List[str]
-        A list of generated file names, each corresponding to a different type of inference result. 
-        The file names include the provided prefix, run index, slot index, block index, type, and 
-        the appropriate file extension (either "csv" or "parquet").
+        list[str]
+            A list of generated file names, each corresponding to a different type of inference result. 
+            The file names include the provided prefix, run index, slot index, block index, type, and 
+            the appropriate file extension (either "csv" or "parquet").
     """
     type_list = ["seir", "hosp", "llik", "spar", "snpi", "hnpi", "hpar", "init", "seed"]
     name_list = []
