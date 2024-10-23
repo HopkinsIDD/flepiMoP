@@ -1,0 +1,146 @@
+name: create-docs-pr
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '1 10 * * 1-5'
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    env:
+      DOCS_BRANCH: documentation-gitbook
+      PR_LABELS: 'documentation,high priority'
+      PR_ASSIGNEES: 'emprzy,jcblemai,pearsonca,saraloo,TimothyWillard'
+      OWNER: 'HopkinsIDD'
+      REPO: 'flepiMoP'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Determine Commits Ahead/Behind
+        run: |
+          git fetch --all
+          DOCS_AHEAD_MAIN=$( eval "git rev-list --count origin/main..origin/$DOCS_BRANCH -- documentation/" )
+          DOCS_BEHIND_MAIN=$( eval "git rev-list --count origin/$DOCS_BRANCH..origin/main -- documentation/" )
+          echo "DOCS_AHEAD_MAIN=$DOCS_AHEAD_MAIN" >> $GITHUB_ENV
+          echo "DOCS_BEHIND_MAIN=$DOCS_BEHIND_MAIN" >> $GITHUB_ENV
+      - name: Create PR If Needed
+        uses: actions/github-script@v7
+        id: create-pr
+        with:
+          result-encoding: string
+          retries: 2
+          script: |
+            const { DOCS_AHEAD_MAIN, DOCS_BEHIND_MAIN, DOCS_BRANCH, PR_LABELS, PR_ASSIGNEES, OWNER, REPO } = process.env
+            const prLabels = PR_LABELS.split(",")
+            const prAssignees = PR_ASSIGNEES.split(",")
+            const cc = prAssignees.map(x => "@" + x).join(", ")
+            const docsAheadMain = parseInt(DOCS_AHEAD_MAIN, 10)
+            const docsBehindMain = parseInt(DOCS_BEHIND_MAIN, 10)
+            if (isNaN(docsAheadMain) || isNaN(docsBehindMain)) {
+              throw new Error(`Cannot convert either "${DOCS_AHEAD_MAIN}" or "${DOCS_BEHIND_MAIN}" to integers.`)
+            }
+            const initialResults = await github.rest.search.issuesAndPullRequests({ 
+              q: `owner:${OWNER} repo:${REPO} is:open is:pr in:title 'Sync GitBook'`
+            })
+            let count = initialResults.data.total_count
+            console.log(`${DOCS_BRANCH} is ${docsAheadMain} ahead, ${docsBehindMain} behind main. The open PR count is ${count}.`)
+            async function deletePRs() {
+              initialResults.data.items.forEach((item) => {
+                github.rest.pulls.update({
+                  owner: OWNER,
+                  repo: REPO,
+                  pull_number: item.number,
+                  state: "closed"
+                })
+              })
+            }
+            async function createPR({ from, to, body }) {
+              let prBody = `cc: ${cc}.`
+              if (body !== null) {
+                prBody = `${body} ${prBody}`
+              }
+              const today = (new Date()).toLocaleDateString()
+              const pr = await github.rest.pulls.create({
+                owner: OWNER,
+                repo: REPO,
+                head: from,
+                base: to,
+                title: `${today} Sync GitBook From ${from} Into ${to}`,
+                body: prBody
+              })
+              const labels = await github.rest.issues.addLabels({
+                owner: OWNER,
+                repo: REPO,
+                issue_number: pr.data.number,
+                labels: prLabels
+              })
+              const assignees = await github.rest.issues.addAssignees({
+                owner: OWNER,
+                repo: REPO,
+                issue_number: pr.data.number,
+                assignees: prAssignees
+              })
+              return pr.data.number
+            }
+            if (docsAheadMain > 0 && docsBehindMain > 0) {
+              if (count !== 2 && count > 0) {
+                // need to close this PR
+                deletePRs()
+                count = 0;
+              }
+              if (count !== 2) {
+                const docsIntoMainPrNumber = await createPR({
+                  from: DOCS_BRANCH,
+                  to: "main",
+                  body: null
+                })
+                const mainIntoDocsPrNumber = await createPR({
+                  from: "main",
+                  to: DOCS_BRANCH,
+                  body: `Blocked by GH-${docsIntoMainPrNumber}.`
+                })
+              }
+            } else if (docsAheadMain > 0) {
+              // need a PR from docs to main
+              if (count !== 1 && count > 0) {
+                deletePRs()
+                count = 0;
+              } else if (count === 1) {
+                if (!initialResults.data.items[0].title.includes(`Sync GitBook From ${DOCS_BRANCH} Into main`)) {
+                  deletePRs()
+                  count = 0;
+                }
+              }
+              if (count !== 1) {
+                const docsIntoMainPrNumber = await createPR({
+                  from: DOCS_BRANCH,
+                  to: "main",
+                  body: null
+                })
+              }
+            } else if (docsBehindMain > 0) {
+              // need a PR from main to docs
+              if (count !== 1 && count > 0) {
+                deletePRs()
+                count = 0
+              } else if (count === 1) {
+                if (!initialResults.data.items[0].title.includes(`Sync GitBook From main Into ${DOCS_BRANCH}`)) {
+                  deletePRs()
+                  count = 0
+                }
+              }
+              if (count !== 1) {
+                const mainIntoDocsPrNumber = await createPR({
+                  from: "main",
+                  to: DOCS_BRANCH,
+                  body: null
+                })
+              }
+            } else if (count > 0) {
+              // need to close PRs
+              deletePRs()
+            }
