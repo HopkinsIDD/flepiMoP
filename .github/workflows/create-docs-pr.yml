@@ -12,6 +12,7 @@ jobs:
       DOCS_BRANCH: documentation-gitbook
       PR_LABELS: 'documentation,high priority'
       PR_ASSIGNEES: 'emprzy,jcblemai,pearsonca,saraloo,TimothyWillard'
+      PR_TITLE: 'Sync GitBook'
       OWNER: 'HopkinsIDD'
       REPO: 'flepiMoP'
     steps:
@@ -34,7 +35,7 @@ jobs:
           result-encoding: string
           retries: 2
           script: |
-            const { DOCS_AHEAD_MAIN, DOCS_BEHIND_MAIN, DOCS_BRANCH, PR_LABELS, PR_ASSIGNEES, OWNER, REPO } = process.env
+            const { DOCS_AHEAD_MAIN, DOCS_BEHIND_MAIN, DOCS_BRANCH, PR_LABELS, PR_ASSIGNEES, PR_TITLE, OWNER, REPO } = process.env
             const prLabels = PR_LABELS.split(",")
             const prAssignees = PR_ASSIGNEES.split(",")
             const cc = prAssignees.map(x => "@" + x).join(", ")
@@ -44,7 +45,7 @@ jobs:
               throw new Error(`Cannot convert either "${DOCS_AHEAD_MAIN}" or "${DOCS_BEHIND_MAIN}" to integers.`)
             }
             const initialResults = await github.rest.search.issuesAndPullRequests({ 
-              q: `owner:${OWNER} repo:${REPO} is:open is:pr in:title 'Sync GitBook'`
+              q: `owner:${OWNER} repo:${REPO} is:open is:pr in:title '${PR_TITLE}'`
             })
             let count = initialResults.data.total_count
             console.log(`${DOCS_BRANCH} is ${docsAheadMain} ahead, ${docsBehindMain} behind main. The open PR count is ${count}.`)
@@ -69,7 +70,7 @@ jobs:
                 repo: REPO,
                 head: from,
                 base: to,
-                title: `${today} Sync GitBook From ${from} Into ${to}`,
+                title: `${today} ${PR_TITLE} From ${from} Into ${to}`,
                 body: prBody
               })
               const labels = await github.rest.issues.addLabels({
@@ -114,7 +115,7 @@ jobs:
                 count = 0;
               } else if (count === 1) {
                 let title = initialResults.data.items[0].title
-                if (!title.includes(`Sync GitBook From ${DOCS_BRANCH} Into main`)) {
+                if (!title.includes(`${PR_TITLE} From ${DOCS_BRANCH} Into main`)) {
                   // A PR that does not match the expected direction, stale
                   deletePRs()
                   count = 0;
@@ -136,7 +137,7 @@ jobs:
                 count = 0
               } else if (count === 1) {
                 let title = initialResults.data.items[0].title
-                if (!title.includes(`Sync GitBook From main Into ${DOCS_BRANCH}`)) {
+                if (!title.includes(`${PR_TITLE} From main Into ${DOCS_BRANCH}`)) {
                   // A PR that does not match the expected direction, stale
                   deletePRs()
                   count = 0
