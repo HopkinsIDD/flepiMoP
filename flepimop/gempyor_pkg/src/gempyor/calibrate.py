@@ -158,7 +158,9 @@ def calibrate(
 
     # TODO here for resume
     if resume or resume_location is not None:
-        print("Doing a resume, this only work with the same number of slot and parameters right now")
+        print(
+            "Doing a resume, this only work with the same number of slot and parameters right now"
+        )
         p0 = None
         if resume_location is not None:
             backend = emcee.backends.HDFBackend(resume_location)
@@ -195,7 +197,10 @@ def calibrate(
     # plotting the chain
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
     gempyor.postprocess_inference.plot_chains(
-        inferpar=gempyor_inference.inferpar, sampler_output=sampler, sampled_slots=None, save_to=f"{run_id}_chains.pdf"
+        inferpar=gempyor_inference.inferpar,
+        sampler_output=sampler,
+        sampled_slots=None,
+        save_to=f"{run_id}_chains.pdf",
     )
     print("EMCEE Run done, doing sampling")
 
@@ -203,11 +208,14 @@ def calibrate(
     shutil.rmtree(project_path + "model_output/", ignore_errors=True)
 
     max_indices = np.argsort(sampler.get_log_prob()[-1, :])[-nsamples:]
-    samples = sampler.get_chain()[-1, max_indices, :]  # the last iteration, for selected slots
+    samples = sampler.get_chain()[
+        -1, max_indices, :
+    ]  # the last iteration, for selected slots
     gempyor_inference.set_save(True)
     with multiprocessing.Pool(ncpu) as pool:
         results = pool.starmap(
-            gempyor_inference.get_logloss_as_single_number, [(samples[i, :],) for i in range(len(max_indices))]
+            gempyor_inference.get_logloss_as_single_number,
+            [(samples[i, :],) for i in range(len(max_indices))],
         )
     # results = []
     # for fn in gempyor.utils.list_filenames(folder="model_output/", filters=[run_id, "hosp.parquet"]):

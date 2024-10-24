@@ -43,16 +43,22 @@ def get_spatial_groups(grp_config, affected_subpops: list) -> dict:
         else:
             spatial_groups["grouped"] = grp_config["subpop_groups"].get()
             spatial_groups["ungrouped"] = list(
-                set(affected_subpops) - set(flatten_list_of_lists(spatial_groups["grouped"]))
+                set(affected_subpops)
+                - set(flatten_list_of_lists(spatial_groups["grouped"]))
             )
 
     # flatten the list of lists of grouped subpops, so we can do some checks
     flat_grouped_list = flatten_list_of_lists(spatial_groups["grouped"])
     # check that all subpops are either grouped or ungrouped
     if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(affected_subpops):
-        print("set of grouped and ungrouped subpops", set(flat_grouped_list + spatial_groups["ungrouped"]))
+        print(
+            "set of grouped and ungrouped subpops",
+            set(flat_grouped_list + spatial_groups["ungrouped"]),
+        )
         print("set of affected subpops             ", set(affected_subpops))
-        raise ValueError(f"The two above sets are differs for for intervention with config \n {grp_config}")
+        raise ValueError(
+            f"The two above sets are differs for for intervention with config \n {grp_config}"
+        )
     if len(set(flat_grouped_list + spatial_groups["ungrouped"])) != len(
         flat_grouped_list + spatial_groups["ungrouped"]
     ):

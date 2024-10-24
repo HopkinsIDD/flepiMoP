@@ -40,87 +40,140 @@ def test_outcome():
         stoch_traj_flag=False,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False
+    )
 
-    hosp = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.1.hosp.parquet").to_pandas()
+    hosp = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.1.hosp.parquet"
+    ).to_pandas()
     hosp.set_index("date", drop=True, inplace=True)
     for i, place in enumerate(subpop):
         for dt in hosp.index:
             if dt.date() == date_data:
                 assert hosp[hosp["subpop"] == place]["incidI"][dt] == diffI[i]
-                assert hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
-                assert hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
-                assert hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)] == diffI[i] * 0.1 * 0.4
+                assert (
+                    hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)]
+                    == diffI[i] * 0.1
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)]
+                    == diffI[i] * 0.01
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)]
+                    == diffI[i] * 0.1 * 0.4
+                )
                 for j in range(7):
-                    assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
-                assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place]["hosp_curr"][
+                            dt + datetime.timedelta(7 + j)
+                        ]
+                        == diffI[i] * 0.1
+                    )
+                assert (
+                    hosp[hosp["subpop"] == place]["hosp_curr"][
+                        dt + datetime.timedelta(7 + 8)
+                    ]
+                    == 0
+                )
 
             elif dt.date() < date_data:
-                assert hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
+                )
                 assert hosp[hosp["subpop"] == place]["incidI"][dt] == 0
-                assert hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
-                assert hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
-                assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)]
+                    == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7)]
+                    == 0
+                )
             elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["subpop"] == place]["incidH"][dt] == 0
-                assert hosp[hosp["subpop"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
-                assert hosp[hosp["subpop"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
+                )
                 assert hosp[hosp["subpop"] == place]["incidICU"][dt] == 0
-    hpar = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.1.hpar.parquet").to_pandas()
+    hpar = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.1.hpar.parquet"
+    ).to_pandas()
     for i, place in enumerate(subpop):
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.1
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 7
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "duration")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "duration")
+                ]["value"].iloc[0]
             )
             == 7
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidD")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.01
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidD")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidICU")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.4
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidICU")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 0
         )
@@ -136,10 +189,16 @@ def test_outcome_modifiers_scenario_with_load():
         stoch_traj_flag=False,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False
+    )
 
-    hpar_config = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.1.hpar.parquet").to_pandas()
-    hpar_rel = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.2.hpar.parquet").to_pandas()
+    hpar_config = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.1.hpar.parquet"
+    ).to_pandas()
+    hpar_rel = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.2.hpar.parquet"
+    ).to_pandas()
 
     for out in ["incidH", "incidD", "incidICU"]:
         for i, place in enumerate(subpop):
@@ -171,16 +230,30 @@ def test_outcomes_read_write_hpar():
         stoch_traj_flag=False,
         out_run_id=3,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hpar_read = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.2.hpar.parquet").to_pandas()
-    hpar_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.3.hpar.parquet").to_pandas()
+    hpar_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.2.hpar.parquet"
+    ).to_pandas()
+    hpar_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.3.hpar.parquet"
+    ).to_pandas()
     assert (hpar_read == hpar_wrote).all().all()
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.2.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.3.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.2.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.3.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
-    hosp_read = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.2.hosp.parquet").to_pandas()
-    hosp_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.3.hosp.parquet").to_pandas()
+    hosp_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.2.hosp.parquet"
+    ).to_pandas()
+    hosp_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.3.hosp.parquet"
+    ).to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
 
 
@@ -201,7 +274,9 @@ def test_multishift_notstochdelays():
             [36, 29],
         ]
     )
-    shifts = np.array([[1, 0], [2, 1], [1, 0], [2, 2], [1, 2], [0, 1], [1, 1], [1, 2], [1, 2], [1, 0]])
+    shifts = np.array(
+        [[1, 0], [2, 1], [1, 0], [2, 2], [1, 2], [0, 1], [1, 1], [1, 2], [1, 2], [1, 0]]
+    )
     expected = np.array(
         [
             [0, 39],
@@ -232,87 +307,138 @@ def test_outcomes_npi():
     )
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf)
 
-    hosp = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
+    hosp = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet"
+    ).to_pandas()
     hosp.set_index("date", drop=True, inplace=True)
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(subpop):
         for dt in hosp.index:
             if dt.date() == date_data:
                 assert hosp[hosp["subpop"] == place]["incidI"][dt] == diffI[i]
-                assert hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
-                assert hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
-                assert hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)] == diffI[i] * 0.1 * 0.4
+                assert (
+                    hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)]
+                    == diffI[i] * 0.1
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)]
+                    == diffI[i] * 0.01
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)]
+                    == diffI[i] * 0.1 * 0.4
+                )
                 for j in range(7):
-                    assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
-                assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place]["hosp_curr"][
+                            dt + datetime.timedelta(7 + j)
+                        ]
+                        == diffI[i] * 0.1
+                    )
+                assert (
+                    hosp[hosp["subpop"] == place]["hosp_curr"][
+                        dt + datetime.timedelta(7 + 8)
+                    ]
+                    == 0
+                )
 
             elif dt.date() < date_data:
-                assert hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
+                )
                 assert hosp[hosp["subpop"] == place]["incidI"][dt] == 0
-                assert hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
-                assert hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
-                assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)]
+                    == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7)]
+                    == 0
+                )
             elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["subpop"] == place]["incidH"][dt] == 0
-                assert hosp[hosp["subpop"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
-                assert hosp[hosp["subpop"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
+                )
                 assert hosp[hosp["subpop"] == place]["incidICU"][dt] == 0
-    hpar = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet").to_pandas()
+    hpar = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet"
+    ).to_pandas()
     # Doubled everything from previous config.yaml
     for i, place in enumerate(subpop):
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.1 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 7 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "duration")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "duration")
+                ]["value"].iloc[0]
             )
             == 7 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidD")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.01 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidD")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 2 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidICU")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.4 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidICU")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 0 * 2
         )
@@ -330,17 +456,31 @@ def test_outcomes_read_write_hnpi():
         out_run_id=106,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hpar_read = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet").to_pandas()
-    hpar_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
+    hpar_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet"
+    ).to_pandas()
+    hpar_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet"
+    ).to_pandas()
     assert (hpar_read == hpar_wrote).all().all()
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet"
+    ).to_pandas()
 
     assert (hnpi_read == hnpi_wrote).all().all()
-    hosp_read = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
-    hosp_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet").to_pandas()
+    hosp_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet"
+    ).to_pandas()
+    hosp_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet"
+    ).to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
 
 
@@ -356,17 +496,27 @@ def test_outcomes_read_write_hnpi2():
         out_run_id=106,
     )
 
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet"
+    ).to_pandas()
     hnpi_read["value"] = np.random.random(len(hnpi_read)) * 2 - 1
     out_hnpi = pa.Table.from_pandas(hnpi_read, preserve_index=False)
-    pa.parquet.write_table(out_hnpi, file_paths.create_file_name(105, "", 1, "hnpi", "parquet"))
+    pa.parquet.write_table(
+        out_hnpi, file_paths.create_file_name(105, "", 1, "hnpi", "parquet")
+    )
     import random
 
     random.seed(10)
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
@@ -378,16 +528,30 @@ def test_outcomes_read_write_hnpi2():
         stoch_traj_flag=False,
         out_run_id=107,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hpar_read = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
-    hpar_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.107.hpar.parquet").to_pandas()
+    hpar_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet"
+    ).to_pandas()
+    hpar_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.107.hpar.parquet"
+    ).to_pandas()
     assert (hpar_read == hpar_wrote).all().all()
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.107.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.107.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
-    hosp_read = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet").to_pandas()
-    hosp_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.107.hosp.parquet").to_pandas()
+    hosp_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet"
+    ).to_pandas()
+    hosp_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.107.hosp.parquet"
+    ).to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
 
 
@@ -402,89 +566,142 @@ def test_outcomes_npi_custom_pname():
         stoch_traj_flag=False,
         out_run_id=105,
     )
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False, sim_id2load=1
+    )
 
-    hosp = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
+    hosp = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet"
+    ).to_pandas()
     hosp.set_index("date", drop=True, inplace=True)
     # same as config.yaml (doubled, then NPI halve it)
     for i, place in enumerate(subpop):
         for dt in hosp.index:
             if dt.date() == date_data:
                 assert hosp[hosp["subpop"] == place]["incidI"][dt] == diffI[i]
-                assert hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == diffI[i] * 0.1
-                assert hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == diffI[i] * 0.01
-                assert hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)] == diffI[i] * 0.1 * 0.4
+                assert (
+                    hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)]
+                    == diffI[i] * 0.1
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)]
+                    == diffI[i] * 0.01
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)]
+                    == diffI[i] * 0.1 * 0.4
+                )
                 for j in range(7):
-                    assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7 + j)] == diffI[i] * 0.1
-                assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7 + 8)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place]["hosp_curr"][
+                            dt + datetime.timedelta(7 + j)
+                        ]
+                        == diffI[i] * 0.1
+                    )
+                assert (
+                    hosp[hosp["subpop"] == place]["hosp_curr"][
+                        dt + datetime.timedelta(7 + 8)
+                    ]
+                    == 0
+                )
 
             elif dt.date() < date_data:
-                assert hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidH"][dt + datetime.timedelta(7)] == 0
+                )
                 assert hosp[hosp["subpop"] == place]["incidI"][dt] == 0
-                assert hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
-                assert hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)] == 0
-                assert hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt + datetime.timedelta(2)] == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidICU"][dt + datetime.timedelta(7)]
+                    == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["hosp_curr"][dt + datetime.timedelta(7)]
+                    == 0
+                )
             elif dt.date() > (date_data + datetime.timedelta(7)):
                 assert hosp[hosp["subpop"] == place]["incidH"][dt] == 0
-                assert hosp[hosp["subpop"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
-                assert hosp[hosp["subpop"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
+                assert (
+                    hosp[hosp["subpop"] == place]["incidI"][dt - datetime.timedelta(7)] == 0
+                )
+                assert (
+                    hosp[hosp["subpop"] == place]["incidD"][dt - datetime.timedelta(4)] == 0
+                )
                 assert hosp[hosp["subpop"] == place]["incidICU"][dt] == 0
-    hpar = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet").to_pandas()
+    hpar = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet"
+    ).to_pandas()
     # Doubled everything from previous config.yaml
     for i, place in enumerate(subpop):
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.1 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 7 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidH") & (hpar["quantity"] == "duration")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidH")
+                    & (hpar["quantity"] == "duration")
+                ]["value"].iloc[0]
             )
             == 7 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidD")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.01 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidD") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidD")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 2 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "probability")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidICU")
+                    & (hpar["quantity"] == "probability")
+                ]["value"].iloc[0]
             )
             == 0.4 * 2
         )
         assert (
             float(
-                hpar[(hpar["subpop"] == place) & (hpar["outcome"] == "incidICU") & (hpar["quantity"] == "delay")][
-                    "value"
-                ].iloc[0]
+                hpar[
+                    (hpar["subpop"] == place)
+                    & (hpar["outcome"] == "incidICU")
+                    & (hpar["quantity"] == "delay")
+                ]["value"].iloc[0]
             )
             == 0 * 2
         )
@@ -502,16 +719,30 @@ def test_outcomes_read_write_hnpi_custom_pname():
         out_run_id=106,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hpar_read = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet").to_pandas()
-    hpar_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
+    hpar_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.105.hpar.parquet"
+    ).to_pandas()
+    hpar_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet"
+    ).to_pandas()
     assert (hpar_read == hpar_wrote).all().all()
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
-    hosp_read = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet").to_pandas()
-    hosp_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet").to_pandas()
+    hosp_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.105.hosp.parquet"
+    ).to_pandas()
+    hosp_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet"
+    ).to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
 
 
@@ -520,10 +751,14 @@ def test_outcomes_read_write_hnpi2_custom_pname():
 
     prefix = ""
 
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet"
+    ).to_pandas()
     hnpi_read["value"] = np.random.random(len(hnpi_read)) * 2 - 1
     out_hnpi = pa.Table.from_pandas(hnpi_read, preserve_index=False)
-    pa.parquet.write_table(out_hnpi, file_paths.create_file_name(105, prefix, 1, "hnpi", "parquet"))
+    pa.parquet.write_table(
+        out_hnpi, file_paths.create_file_name(105, prefix, 1, "hnpi", "parquet")
+    )
     import random
 
     random.seed(10)
@@ -537,10 +772,16 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         out_run_id=106,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.105.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
 
     # runs with the new, random NPI
@@ -553,16 +794,30 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         out_run_id=107,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hpar_read = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet").to_pandas()
-    hpar_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.107.hpar.parquet").to_pandas()
+    hpar_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.106.hpar.parquet"
+    ).to_pandas()
+    hpar_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.107.hpar.parquet"
+    ).to_pandas()
     assert (hpar_read == hpar_wrote).all().all()
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.107.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.106.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.107.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
-    hosp_read = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet").to_pandas()
-    hosp_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.107.hosp.parquet").to_pandas()
+    hosp_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.106.hosp.parquet"
+    ).to_pandas()
+    hosp_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.107.hosp.parquet"
+    ).to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
 
 
@@ -580,7 +835,9 @@ def test_outcomes_pcomp():
     )
     p_compmult = [1, 3]
 
-    seir = pq.read_table(f"{config_filepath_prefix}model_output/seir/000000001.105.seir.parquet").to_pandas()
+    seir = pq.read_table(
+        f"{config_filepath_prefix}model_output/seir/000000001.105.seir.parquet"
+    ).to_pandas()
     seir2 = seir.copy()
     seir2["mc_vaccination_stage"] = "first_dose"
 
@@ -591,10 +848,16 @@ def test_outcomes_pcomp():
         seir2[pl] = seir2[pl] * p_compmult[1]
     new_seir = pd.concat([seir, seir2])
     out_df = pa.Table.from_pandas(new_seir, preserve_index=False)
-    pa.parquet.write_table(out_df, file_paths.create_file_name(110, prefix, 1, "seir", "parquet"))
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False)
+    pa.parquet.write_table(
+        out_df, file_paths.create_file_name(110, prefix, 1, "seir", "parquet")
+    )
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=False
+    )
 
-    hosp_f = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.111.hosp.parquet").to_pandas()
+    hosp_f = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.111.hosp.parquet"
+    ).to_pandas()
     hosp_f.set_index("date", drop=True, inplace=True)
     # same as config.yaml (doubled, then NPI halve it)
     for k, p_comp in enumerate(["0dose", "1dose"]):
@@ -602,42 +865,90 @@ def test_outcomes_pcomp():
         for i, place in enumerate(subpop):
             for dt in hosp.index:
                 if dt.date() == date_data:
-                    assert hosp[hosp["subpop"] == place][f"incidI_{p_comp}"][dt] == diffI[i] * p_compmult[k]
                     assert (
-                        hosp[hosp["subpop"] == place][f"incidH_{p_comp}"][dt + datetime.timedelta(7)]
+                        hosp[hosp["subpop"] == place][f"incidI_{p_comp}"][dt]
+                        == diffI[i] * p_compmult[k]
+                    )
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidH_{p_comp}"][
+                            dt + datetime.timedelta(7)
+                        ]
                         - diffI[i] * 0.1 * p_compmult[k]
                         < 1e-8
                     )
                     assert (
-                        hosp[hosp["subpop"] == place][f"incidD_{p_comp}"][dt + datetime.timedelta(2)]
+                        hosp[hosp["subpop"] == place][f"incidD_{p_comp}"][
+                            dt + datetime.timedelta(2)
+                        ]
                         - diffI[i] * 0.01 * p_compmult[k]
                         < 1e-8
                     )
                     assert (
-                        hosp[hosp["subpop"] == place][f"incidICU_{p_comp}"][dt + datetime.timedelta(7)]
+                        hosp[hosp["subpop"] == place][f"incidICU_{p_comp}"][
+                            dt + datetime.timedelta(7)
+                        ]
                         - diffI[i] * 0.1 * 0.4 * p_compmult[k]
                         < 1e-8
                     )
                     for j in range(7):
                         assert (
-                            hosp[hosp["subpop"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7 + j)]
+                            hosp[hosp["subpop"] == place][f"incidH_{p_comp}_curr"][
+                                dt + datetime.timedelta(7 + j)
+                            ]
                             - diffI[i] * 0.1 * p_compmult[k]
                             < 1e-8
                         )
-                    assert hosp[hosp["subpop"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7 + 8)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidH_{p_comp}_curr"][
+                            dt + datetime.timedelta(7 + 8)
+                        ]
+                        == 0
+                    )
 
                 elif dt.date() < date_data:
-                    assert hosp[hosp["subpop"] == place][f"incidH_{p_comp}"][dt + datetime.timedelta(7)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidH_{p_comp}"][
+                            dt + datetime.timedelta(7)
+                        ]
+                        == 0
+                    )
                     assert hosp[hosp["subpop"] == place][f"incidI_{p_comp}"][dt] == 0
-                    assert hosp[hosp["subpop"] == place][f"incidD_{p_comp}"][dt + datetime.timedelta(2)] == 0
-                    assert hosp[hosp["subpop"] == place][f"incidICU_{p_comp}"][dt + datetime.timedelta(7)] == 0
-                    assert hosp[hosp["subpop"] == place][f"incidH_{p_comp}_curr"][dt + datetime.timedelta(7)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidD_{p_comp}"][
+                            dt + datetime.timedelta(2)
+                        ]
+                        == 0
+                    )
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidICU_{p_comp}"][
+                            dt + datetime.timedelta(7)
+                        ]
+                        == 0
+                    )
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidH_{p_comp}_curr"][
+                            dt + datetime.timedelta(7)
+                        ]
+                        == 0
+                    )
                 elif dt.date() > (date_data + datetime.timedelta(7)):
                     assert hosp[hosp["subpop"] == place][f"incidH_{p_comp}"][dt] == 0
-                    assert hosp[hosp["subpop"] == place][f"incidI_{p_comp}"][dt - datetime.timedelta(7)] == 0
-                    assert hosp[hosp["subpop"] == place][f"incidD_{p_comp}"][dt - datetime.timedelta(4)] == 0
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidI_{p_comp}"][
+                            dt - datetime.timedelta(7)
+                        ]
+                        == 0
+                    )
+                    assert (
+                        hosp[hosp["subpop"] == place][f"incidD_{p_comp}"][
+                            dt - datetime.timedelta(4)
+                        ]
+                        == 0
+                    )
                     assert hosp[hosp["subpop"] == place][f"incidICU_{p_comp}"][dt] == 0
-    hpar_f = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.111.hpar.parquet").to_pandas()
+    hpar_f = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.111.hpar.parquet"
+    ).to_pandas()
     # Doubled everything from previous config.yaml
     # for k, p_comp in enumerate(["unvaccinated", "first_dose"]):
     for k, p_comp in enumerate(["0dose", "1dose"]):
@@ -727,16 +1038,30 @@ def test_outcomes_pcomp_read_write():
         out_run_id=112,
     )
 
-    outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1)
+    outcomes.onerun_delayframe_outcomes(
+        sim_id2write=1, modinf=inference_simulator.modinf, load_ID=True, sim_id2load=1
+    )
 
-    hpar_read = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.111.hpar.parquet").to_pandas()
-    hpar_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hpar/000000001.112.hpar.parquet").to_pandas()
+    hpar_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.111.hpar.parquet"
+    ).to_pandas()
+    hpar_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hpar/000000001.112.hpar.parquet"
+    ).to_pandas()
     assert (hpar_read == hpar_wrote).all().all()
-    hnpi_read = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.111.hnpi.parquet").to_pandas()
-    hnpi_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hnpi/000000001.112.hnpi.parquet").to_pandas()
+    hnpi_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.111.hnpi.parquet"
+    ).to_pandas()
+    hnpi_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hnpi/000000001.112.hnpi.parquet"
+    ).to_pandas()
     assert (hnpi_read == hnpi_wrote).all().all()
-    hosp_read = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.111.hosp.parquet").to_pandas()
-    hosp_wrote = pq.read_table(f"{config_filepath_prefix}model_output/hosp/000000001.112.hosp.parquet").to_pandas()
+    hosp_read = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.111.hosp.parquet"
+    ).to_pandas()
+    hosp_wrote = pq.read_table(
+        f"{config_filepath_prefix}model_output/hosp/000000001.112.hosp.parquet"
+    ).to_pandas()
     assert (hosp_read == hosp_wrote).all().all()
 
 

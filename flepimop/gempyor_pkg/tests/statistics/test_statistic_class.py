@@ -445,9 +445,7 @@ class TestStatistic:
             )
         if (scale_func := mock_inputs.config.get("scale")) is not None:
             # Scale config
-            expected_transformed_data = getattr(np, scale_func)(
-                expected_transformed_data
-            )
+            expected_transformed_data = getattr(np, scale_func)(expected_transformed_data)
         assert transformed_data.identical(expected_transformed_data)
 
     @pytest.mark.parametrize("factory", all_valid_factories)
@@ -464,8 +462,7 @@ class TestStatistic:
 
         assert isinstance(log_likelihood, xr.DataArray)
         assert (
-            log_likelihood.dims
-            == mock_inputs.gt_data[mock_inputs.config["data_var"]].dims
+            log_likelihood.dims == mock_inputs.gt_data[mock_inputs.config["data_var"]].dims
         )
         assert log_likelihood.coords.identical(
             mock_inputs.gt_data[mock_inputs.config["data_var"]].coords
@@ -523,9 +520,7 @@ class TestStatistic:
         mock_inputs = factory()
         statistic = mock_inputs.create_statistic_instance()
 
-        model_rows, model_cols = mock_inputs.model_data[
-            mock_inputs.config["sim_var"]
-        ].shape
+        model_rows, model_cols = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
         gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
         expected_match = (
             rf"^{mock_inputs.name} Statistic error\: data and groundtruth do not have "

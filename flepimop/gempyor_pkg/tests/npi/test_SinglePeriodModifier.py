@@ -49,7 +49,9 @@ class Test_SinglePeriodModifier:
         config.clear()
         config.read(user=False)
         config.set_file(f"{DATA_DIR}/config_test.yml")
-        with pytest.raises(ValueError, match=r".*at least one period start or end date is not between.*"):
+        with pytest.raises(
+            ValueError, match=r".*at least one period start or end date is not between.*"
+        ):
             s = model_info.ModelInfo(
                 setup_name="test_seir",
                 config=config,
@@ -72,7 +74,9 @@ class Test_SinglePeriodModifier:
         config.clear()
         config.read(user=False)
         config.set_file(f"{DATA_DIR}/config_test.yml")
-        with pytest.raises(ValueError, match=r".*at least one period start or end date is not between.*"):
+        with pytest.raises(
+            ValueError, match=r".*at least one period start or end date is not between.*"
+        ):
             s = model_info.ModelInfo(
                 setup_name="test_seir",
                 config=config,

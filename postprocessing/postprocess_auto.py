@@ -26,7 +26,9 @@ class RunInfo:
         self.folder_path = folder_path
 
 
-def get_all_filenames(file_type, all_runs, finals_only=False, intermediates_only=False, ignore_chimeric=True) -> dict:
+def get_all_filenames(
+    file_type, all_runs, finals_only=False, intermediates_only=False, ignore_chimeric=True
+) -> dict:
     """
     return dictionanary for each run name
     """
@@ -159,7 +161,14 @@ def slack_multiple_files_v2(slack_token, message, file_list, channel):
     help="Maximum number of files to load for in depth plot and individual sim plot",
 )
 def generate_pdf(
-    config_filepath, run_id, job_name, fs_results_path, slack_token, slack_channel, max_files, max_files_deep
+    config_filepath,
+    run_id,
+    job_name,
+    fs_results_path,
+    slack_token,
+    slack_channel,
+    max_files,
+    max_files_deep,
 ):
     print("Generating plots")
     print(f">> config {config_filepath} for run_id {run_id}")
@@ -217,7 +226,9 @@ def generate_pdf(
             for filename in file_list:
                 slot = int(filename.split("/")[-1].split(".")[0])
                 block = int(filename.split("/")[-1].split(".")[1])
-                sim_str = filename.split("/")[-1].split(".")[2]  # not necessarily a sim number now
+                sim_str = filename.split("/")[-1].split(".")[
+                    2
+                ]  # not necessarily a sim number now
                 if sim_str.isdigit():
                     sim = int(sim_str)
                     if block == 1 and (sim == 1 or sim % 5 == 0):  ## first block, only one
@@ -238,7 +249,9 @@ def generate_pdf(
 
         # In[23]:
 
-        fig, axes = plt.subplots(len(node_names) + 1, 4, figsize=(4 * 4, len(node_names) * 3), sharex=True)
+        fig, axes = plt.subplots(
+            len(node_names) + 1, 4, figsize=(4 * 4, len(node_names) * 3), sharex=True
+        )
 
         colors = ["b", "r", "y", "c"]
         icl = 0
@@ -255,32 +268,60 @@ def generate_pdf(
                 lls = lls.cumsum()
                 feature = "accepts, cumulative"
             axes[idp, ift].fill_between(
-                lls.index, lls.quantile(0.025, axis=1), lls.quantile(0.975, axis=1), alpha=0.1, color=colors[icl]
+                lls.index,
+                lls.quantile(0.025, axis=1),
+                lls.quantile(0.975, axis=1),
+                alpha=0.1,
+                color=colors[icl],
             )
             axes[idp, ift].fill_between(
-                lls.index, lls.quantile(0.25, axis=1), lls.quantile(0.75, axis=1), alpha=0.1, color=colors[icl]
+                lls.index,
+                lls.quantile(0.25, axis=1),
+                lls.quantile(0.75, axis=1),
+                alpha=0.1,
+                color=colors[icl],
             )
-            axes[idp, ift].plot(lls.index, lls.median(axis=1), marker="o", label=run_id, color=colors[icl])
+            axes[idp, ift].plot(
+                lls.index, lls.median(axis=1), marker="o", label=run_id, color=colors[icl]
+            )
             axes[idp, ift].plot(lls.index, lls.iloc[:, 0:max_files_deep], color="k", lw=0.3)
             axes[idp, ift].set_title(f"National, {feature}")
             axes[idp, ift].grid()
 
         for idp, nn in enumerate(node_names):
             idp = idp + 1
-            all_nn = full_df[full_df["subpop"] == nn][["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]]
+            all_nn = full_df[full_df["subpop"] == nn][
+                ["sim", "slot", "ll", "accept", "accept_avg", "accept_prob"]
+            ]
             for ift, feature in enumerate(["ll", "accept", "accept_avg", "accept_prob"]):
                 lls = all_nn.pivot(index="sim", columns="slot", values=feature)
                 if feature == "accept":
                     lls = lls.cumsum()
                     feature = "accepts, cumulative"
                 axes[idp, ift].fill_between(
-                    lls.index, lls.quantile(0.025, axis=1), lls.quantile(0.975, axis=1), alpha=0.1, color=colors[icl]
+                    lls.index,
+                    lls.quantile(0.025, axis=1),
+                    lls.quantile(0.975, axis=1),
+                    alpha=0.1,
+                    color=colors[icl],
                 )
                 axes[idp, ift].fill_between(
-                    lls.index, lls.quantile(0.25, axis=1), lls.quantile(0.75, axis=1), alpha=0.1, color=colors[icl]
+                    lls.index,
+                    lls.quantile(0.25, axis=1),
+                    lls.quantile(0.75, axis=1),
+                    alpha=0.1,
+                    color=colors[icl],
                 )
-                axes[idp, ift].plot(lls.index, lls.median(axis=1), marker="o", label=run_id, color=colors[icl])
-                axes[idp, ift].plot(lls.index, lls.iloc[:, 0:max_files_deep], color="k", lw=0.3)
+                axes[idp, ift].plot(
+                    lls.index,
+                    lls.median(axis=1),
+                    marker="o",
+                    label=run_id,
+                    color=colors[icl],
+                )
+                axes[idp, ift].plot(
+                    lls.index, lls.iloc[:, 0:max_files_deep], color="k", lw=0.3
+                )
                 axes[idp, ift].set_title(f"{nn}, {feature}")
                 axes[idp, ift].grid()
                 if idp == len(node_names) - 1:
@@ -292,8 +333,11 @@ def generate_pdf(
         pass
 
     import gempyor.utils
-    llik_filenames = gempyor.utils.list_filenames(folder="model_output/", filters=["final", "llik" , ".parquet"])
-    #get_all_filenames("llik", fs_results_path, finals_only=True, intermediates_only=False)
+
+    llik_filenames = gempyor.utils.list_filenames(
+        folder="model_output/", filters=["final", "llik", ".parquet"]
+    )
+    # get_all_filenames("llik", fs_results_path, finals_only=True, intermediates_only=False)
     # In[7]:
     resultST = []
     for filename in llik_filenames:

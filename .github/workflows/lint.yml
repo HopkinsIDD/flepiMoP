@@ -1,0 +1,35 @@
+name: Lint
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**/*.py'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - '**/*.py'
+    branches:
+      - main
+
+jobs:
+  black-for-python:
+    runs-on: ubuntu-latest
+    env:
+      BLACK_LINE_LENGTH: 92
+      BLACK_EXTEND_EXCLUDE: 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            *
+            !documentation/
+          sparse-checkout-cone-mode: false
+      - name: Black Formatter Check
+        uses: psf/black@stable
+        with:
+          src: '.'
+          options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"
