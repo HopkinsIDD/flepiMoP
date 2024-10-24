@@ -149,6 +149,21 @@ class TestParseConfigFiles:
             str(tmpconfigfile2),
         ]
 
+    def test_multifile_config_collision(
+        self,
+        tmp_path: pathlib.Path,
+    ) -> None:
+        """Check that multiple config overlapping keys are warned."""
+        testdict1 = {"foo": "notthis", "test": 123}
+        testdict2 = {"foo": "this"}
+        tmpconfigfile1 = config_file(tmp_path, testdict1, "config1.yaml")
+        tmpconfigfile2 = config_file(tmp_path, testdict2, "config2.yaml")
+        mockconfig = mock_empty_config()
+        with pytest.warns(UserWarning, match=r'foo'):
+            parse_config_files(mockconfig, config_files=[tmpconfigfile1, tmpconfigfile2])
+        for k, v in (testdict1 | testdict2).items():
+            assert mockconfig[k].get(v) == v
+
     @pytest.mark.parametrize("opt", [(k) for k in other_single_opt_args])
     def test_other_opts(self, tmp_path: pathlib.Path, opt: str) -> None:
         """for the non-scenario modifier parameters, test default, envvar, invalid values, valid values, override"""
