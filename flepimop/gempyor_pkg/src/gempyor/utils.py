@@ -99,7 +99,9 @@ def read_df(
     )
 
 
-def command_safe_run(command: str, command_name: str="mycommand", fail_on_fail: bool=True) -> tuple[int, str, str]:
+def command_safe_run(
+    command: str, command_name: str = "mycommand", fail_on_fail: bool = True
+) -> tuple[int, str, str]:
     """
     Runs a shell command and prints diagnostics if command fails.
 
@@ -110,14 +112,16 @@ def command_safe_run(command: str, command_name: str="mycommand", fail_on_fail: 
 
     Returns:
         As a tuple; the return code, the standard output, and standard error from running the command.
-    
+
     Raises:
         Exception: If fail_on_fail=True and the command fails, an exception will be thrown.
     """
     import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
 
-    sr = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    sr = subprocess.Popen(
+        shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     (stdout, stderr) = sr.communicate()
     if sr.returncode != 0:
         print(f"{command_name} failed failed with returncode {sr.returncode}")
@@ -143,7 +147,7 @@ def add_method(cls):
 
     Args:
         cls: The class you want to add a method to.
-    
+
     Returns:
         decorator: The decorator.
     """
@@ -159,7 +163,9 @@ def add_method(cls):
     return decorator
 
 
-def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, class_name: str, **kwargs: dict[str, Any]) -> Any:
+def search_and_import_plugins_class(
+    plugin_file_path: str, path_prefix: str, class_name: str, **kwargs: dict[str, Any]
+) -> Any:
     """
     Function serving to create a class that finds and imports the necessary modules.
 
@@ -174,11 +180,11 @@ def search_and_import_plugins_class(plugin_file_path: str, path_prefix: str, cla
 
     Examples:
         Suppose there is a module called `my_plugin.py with a class `MyClass` located at `/path/to/plugin/`.
-        
+
         Dynamically import and instantiate the class:
 
         >>> instance = search_and_import_plugins_class('/path/to/plugin', path_prefix, 'MyClass', **params)
-      
+
         View the instance:
 
         >>> print(instance)
@@ -206,28 +212,33 @@ import pstats
 from functools import wraps
 
 
-def profile(output_file: str = None, sort_by: str = "cumulative", lines_to_print: int = None, strip_dirs: bool = False):
+def profile(
+    output_file: str = None,
+    sort_by: str = "cumulative",
+    lines_to_print: int = None,
+    strip_dirs: bool = False,
+):
     """
     A time profiler decorator.
     Inspired by and modified the profile decorator of Giampaolo Rodola:
     http://code.activestate.com/recipes/577817-profile-decorator/
 
     Args:
-        output_file: 
+        output_file:
             Path of the output file. If only name of the file is given, it's
             saved in the current directory.
             If it's None, the name of the decorated function is used.
-        sort_by: 
+        sort_by:
             Sorting criteria for the Stats object.
             For a list of valid string and SortKey refer to:
             https://docs.python.org/3/library/profile.html#pstats.Stats.sort_stats
-        lines_to_print: 
+        lines_to_print:
             Number of lines to print. Default (None) is for all the lines.
             This is useful in reducing the size of the printout, especially
             that sorting by 'cumulative', the time consuming operations
             are printed toward the top of the file.
-        strip_dirs: 
-            Whether to remove the leading path info from file names. 
+        strip_dirs:
+            Whether to remove the leading path info from file names.
 
     Returns:
         Profile of the decorated function.
@@ -238,7 +249,7 @@ def profile(output_file: str = None, sort_by: str = "cumulative", lines_to_print
             # Function body content
             pass
         >>> my_function()
-        After running ``my_function``, a file named ``my_function.prof`` will be created in the current WD. 
+        After running ``my_function``, a file named ``my_function.prof`` will be created in the current WD.
         This file contains the profiling data.
     """
 
@@ -282,6 +293,7 @@ class Timer(object):
         name: Name of event.
         tstart: Time start.
     """
+
     def __init__(self, name):
         self.name = name
 
@@ -297,6 +309,7 @@ class ISO8601Date(confuse.Template):
     """
     Reads in config dates into datetimes.dates.
     """
+
     def convert(self, value: any, view: confuse.ConfigView):
         """
         Converts the given value to a datetime.date object.
@@ -331,7 +344,7 @@ def as_date(self) -> datetime.date:
 @add_method(confuse.ConfigView)
 def as_evaled_expression(self):
     """
-    Evaluates an expression string, returning a float. 
+    Evaluates an expression string, returning a float.
 
     Returns:
         A float data type of the value associated with the object.
@@ -373,7 +386,7 @@ def get_truncated_normal(
 
     Returns:
         rv_frozen: A frozen instance of the truncated normal distribution with the specified parameters.
-    
+
     Examples:
         Create a truncated normal distribution with specified parameters (truncated between 1 and 10):
         >>> truncated_normal_dist = get_truncated_normal(mean=5, sd=2, a=1, b=10)
@@ -402,7 +415,7 @@ def get_log_normal(
     Returns:
         rv_frozen: A frozen instance of the log normal distribution with the
         specified parameters.
-    
+
     Examples:
         Create a log-normal distribution with specified parameters:
         >>> log_normal_dist = get_log_normal(meanlog=1, sdlog=0.5)
@@ -415,17 +428,17 @@ def get_log_normal(
 def random_distribution_sampler(
     distribution: Literal[
         "fixed", "uniform", "poisson", "binomial", "truncnorm", "lognorm"
-    ], 
-    **kwargs: dict[str, Any]
+    ],
+    **kwargs: dict[str, Any],
 ) -> Callable[[], float | int]:
     """
     Create function to sample from a random distribution.
-    
+
     Args:
         distribution: The type of distribution to generate a sampling function for.
         **kwargs: Further parameters that are passed to the underlying function for the
             given distribution.
-    
+
     Notes:
         The further args expected by each distribution type are:
         - fixed: value,
@@ -434,14 +447,14 @@ def random_distribution_sampler(
         - binomial: n, p,
         - truncnorm: mean, sd, a, b,
         - lognorm: meanlog, sdlog.
-    
+
     Returns:
         A function that can be called to sample from that distribution.
-    
+
     Raises:
         ValueError: If `distribution` is 'binomial' the given `p` must be in (0,1).
         NotImplementedError: If `distribution` is not one of the type hinted options.
-        
+
     Examples:
         >>> import numpy as np
         >>> np.random.seed(123)
@@ -454,15 +467,15 @@ def random_distribution_sampler(
     if distribution == "fixed":
         # Fixed value is the same as uniform on [a, a)
         return functools.partial(
-            np.random.uniform, 
-            kwargs.get("value"), 
+            np.random.uniform,
+            kwargs.get("value"),
             kwargs.get("value"),
         )
     elif distribution == "uniform":
         # Uniform on [low, high)
         return functools.partial(
-            np.random.uniform, 
-            kwargs.get("low"), 
+            np.random.uniform,
+            kwargs.get("low"),
             kwargs.get("high"),
         )
     elif distribution == "poisson":
@@ -476,9 +489,9 @@ def random_distribution_sampler(
     elif distribution == "truncnorm":
         # Truncated normal with mean, sd on interval [a, b]
         return get_truncated_normal(
-            mean=kwargs.get("mean"), 
-            sd=kwargs.get("sd"), 
-            a=kwargs.get("a"), 
+            mean=kwargs.get("mean"),
+            sd=kwargs.get("sd"),
+            a=kwargs.get("a"),
             b=kwargs.get("b"),
         ).rvs
     elif distribution == "lognorm":
@@ -497,8 +510,8 @@ def as_random_distribution(self):
 
     Returns:
         A partial object containing the random distribution.
-    
-    Raises: 
+
+    Raises:
         ValueError: When values are out of range.
         NotImplementedError: If an unknown distribution is found.
 
@@ -515,7 +528,7 @@ def as_random_distribution(self):
             "distribution": "truncnorm",
             "mean": 0
             "sd": 1,
-            "a": -1, 
+            "a": -1,
             "b": 1
             })
         >>> truncnorm_dist_function = config_truncnorm.as_random_distribution()
@@ -528,11 +541,15 @@ def as_random_distribution(self):
         dist = self["distribution"].get()
         if dist == "fixed":
             return functools.partial(
-                np.random.uniform, self["value"].as_evaled_expression(), self["value"].as_evaled_expression(),
+                np.random.uniform,
+                self["value"].as_evaled_expression(),
+                self["value"].as_evaled_expression(),
             )
         elif dist == "uniform":
             return functools.partial(
-                np.random.uniform, self["low"].as_evaled_expression(), self["high"].as_evaled_expression(),
+                np.random.uniform,
+                self["low"].as_evaled_expression(),
+                self["high"].as_evaled_expression(),
             )
         elif dist == "poisson":
             return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
@@ -557,13 +574,18 @@ def as_random_distribution(self):
             ).rvs
         elif dist == "lognorm":
             return get_log_normal(
-                meanlog=self["meanlog"].as_evaled_expression(), sdlog=self["sdlog"].as_evaled_expression(),
+                meanlog=self["meanlog"].as_evaled_expression(),
+                sdlog=self["sdlog"].as_evaled_expression(),
             ).rvs
         else:
             raise NotImplementedError(f"unknown distribution [got: {dist}]")
     else:
         # we allow a fixed value specified directly:
-        return functools.partial(np.random.uniform, self.as_evaled_expression(), self.as_evaled_expression(),)
+        return functools.partial(
+            np.random.uniform,
+            self.as_evaled_expression(),
+            self.as_evaled_expression(),
+        )
 
 
 def list_filenames(
@@ -578,9 +600,9 @@ def list_filenames(
     in the filters will be returned.
 
     Args:
-        folder: 
+        folder:
             The directory to search for files. Defaults to the current directory.
-        filters: 
+        filters:
             A string or a list of strings to filter filenames. Only files
             containing all the provided substrings will be returned. Defaults to an
             empty list.
@@ -652,14 +674,14 @@ def rolling_mean_pad(
             [22.6, 23.6, 24.6, 25.6]])
         ```
     """
-    weights = (1. / window) * np.ones(window)
+    weights = (1.0 / window) * np.ones(window)
     output = scipy.ndimage.convolve1d(data, weights, axis=0, mode="nearest")
     if window % 2 == 0:
         rows, cols = data.shape
         i = rows - 1
-        output[i, :] = 0.
+        output[i, :] = 0.0
         window -= 1
-        weight = 1. / window
+        weight = 1.0 / window
         for l in range(-((window - 1) // 2), 1 + (window // 2)):
             i_star = min(max(i + l, 0), i)
             for j in range(cols):
@@ -705,7 +727,12 @@ def print_disk_diagnosis():
 
 
 def create_resume_out_filename(
-    flepi_run_index: str, flepi_prefix: str, flepi_slot_index: str, flepi_block_index: str, filetype: str, liketype: str
+    flepi_run_index: str,
+    flepi_prefix: str,
+    flepi_slot_index: str,
+    flepi_block_index: str,
+    filetype: str,
+    liketype: str,
 ) -> str:
     """
     Compiles run output information.
@@ -717,10 +744,10 @@ def create_resume_out_filename(
         flepi_block_index: Index of the block.
         filetype: File type.
         liketype: Chimeric or global.
-    
+
     Returns:
         The path to a corresponding output file.
-    
+
     Examples:
         Generate an output file with specified parameters:
         >>> filename = create_resume_out_filename(
@@ -753,7 +780,11 @@ def create_resume_out_filename(
 
 
 def create_resume_input_filename(
-    resume_run_index: str, flepi_prefix: str, flepi_slot_index: str, filetype: str, liketype: str
+    resume_run_index: str,
+    flepi_prefix: str,
+    flepi_slot_index: str,
+    filetype: str,
+    liketype: str,
 ) -> str:
     """
     Compiles run input information.
@@ -764,10 +795,10 @@ def create_resume_input_filename(
         flepi_slot_index: Index of the slot.
         filetype: File type.
         liketype: Chimeric or global.
-    
+
     Returns:
         The path to the a corresponding input file.
-    
+
     Examples:
         Generate an input file with specified parameters:
         >>> filename = create_resume_input_filename(
@@ -796,10 +827,12 @@ def create_resume_input_filename(
     )
 
 
-def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str) -> list[str]:
+def get_filetype_for_resume(
+    resume_discard_seeding: str, flepi_block_index: str
+) -> list[str]:
     """
     Retrieves a list of parquet file types that are relevant for resuming a process based on
-    specific environment variable settings. 
+    specific environment variable settings.
     This function dynamically determines the list
     based on the current operational context given by the environment.
 
@@ -809,7 +842,7 @@ def get_filetype_for_resume(resume_discard_seeding: str, flepi_block_index: str)
 
     Returns:
         List of file types.
-    
+
     Examples:
         Determine file types for block index 1 with seeding data NOT discarded:
         >>> filetypes = get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1")
@@ -855,7 +888,7 @@ def create_resume_file_names_map(
 
     Returns:
         A dictionary where keys are input file paths and values are corresponding
-        output file paths. 
+        output file paths.
 
     The mappings depend on:
     - Parquet file types appropriate for resuming a process, as determined by the environment.
@@ -870,7 +903,7 @@ def create_resume_file_names_map(
         No explicit exceptions are raised within the function, but it relies heavily on external
         functions and environment variables which if improperly configured could lead to unexpected
         behavior.
-    
+
     Examples:
         Generate a mapping of file names for a given resume process:
         >>> file_names_map = create_resume_file_names_map(
@@ -935,7 +968,7 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
     local path, and handles errors if the S3 URI format is incorrect or if the download fails.
 
     Args:
-        name_map: 
+        name_map:
             A dictionary where keys are S3 URIs (strings) and values
             are the local file paths (strings) where the files should
             be saved.
@@ -969,10 +1002,12 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
         import boto3
         from botocore.exceptions import ClientError
     except ModuleNotFoundError:
-        raise ModuleNotFoundError((
-            "No module named 'boto3', which is required for "
-            "gempyor.utils.download_file_from_s3. Please install the aws target."
-        ))
+        raise ModuleNotFoundError(
+            (
+                "No module named 'boto3', which is required for "
+                "gempyor.utils.download_file_from_s3. Please install the aws target."
+            )
+        )
     s3 = boto3.client("s3")
     first_output_filename = next(iter(name_map.values()))
     output_dir = os.path.dirname(first_output_filename)
@@ -994,9 +1029,9 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
 def move_file_at_local(name_map: dict[str, str]) -> None:
     """
     Moves files locally according to a given mapping.
-    This function takes a dictionary where the keys are source file paths and 
-    the values are destination file paths. It ensures that the destination 
-    directories exist and then copies the files from the source paths to the 
+    This function takes a dictionary where the keys are source file paths and
+    the values are destination file paths. It ensures that the destination
+    directories exist and then copies the files from the source paths to the
     destination paths.
 
     Args:

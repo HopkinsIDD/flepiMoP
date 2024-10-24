@@ -7,7 +7,7 @@ from gempyor.utils import get_truncated_normal
 
 class TestGetTruncatedNormal:
     """Unit tests for the `gempyor.utils.get_truncated_normal` function."""
-    
+
     @pytest.mark.parametrize(
         "mean,sd,a,b",
         [
@@ -21,10 +21,10 @@ class TestGetTruncatedNormal:
         ],
     )
     def test_construct_distribution(
-        self, 
-        mean: float | int, 
-        sd: float | int, 
-        a: float | int, 
+        self,
+        mean: float | int,
+        sd: float | int,
+        a: float | int,
         b: float | int,
     ) -> None:
         """Test the construction of a truncated normal distribution.

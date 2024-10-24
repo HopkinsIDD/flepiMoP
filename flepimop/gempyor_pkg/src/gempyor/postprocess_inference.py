@@ -21,7 +21,15 @@ import multiprocessing as mp
 import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
-from gempyor import config, model_info, outcomes, seir, inference_parameter, logloss, inference
+from gempyor import (
+    config,
+    model_info,
+    outcomes,
+    seir,
+    inference_parameter,
+    logloss,
+    inference,
+)
 from gempyor.inference import GempyorInference
 import tqdm
 import os
@@ -37,7 +45,9 @@ def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
 
     last_llik = sampler_output.get_log_prob()[-1, :]
     sampled_slots = last_llik > (last_llik.mean() - 1 * last_llik.std())
-    print(f"there are {sampled_slots.sum()}/{len(sampled_slots)} good walkers... keeping these")
+    print(
+        f"there are {sampled_slots.sum()}/{len(sampled_slots)} good walkers... keeping these"
+    )
     # TODO this function give back
 
     good_samples = sampler.get_chain()[:, sampled_slots, :]
@@ -50,9 +60,9 @@ def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
         ]  # parentesis around i//(sampled_slots.sum() are very important
 
 
-
-
-def plot_chains(inferpar, chains, llik, save_to, sampled_slots=None, param_gt=None, llik_gt=None):
+def plot_chains(
+    inferpar, chains, llik, save_to, sampled_slots=None, param_gt=None, llik_gt=None
+):
     """
     Plot the chains of the inference
     :param inferpar: the inference parameter object
@@ -113,24 +123,44 @@ def plot_chains(inferpar, chains, llik, save_to, sampled_slots=None, param_gt=No
 
         for sp in tqdm.tqdm(set(inferpar.subpops)):  # find unique supopulation
             these_pars = inferpar.get_parameters_for_subpop(sp)
-            fig, axes = plt.subplots(max(len(these_pars), 2), 2, figsize=(6, (len(these_pars) + 1) * 2))
+            fig, axes = plt.subplots(
+                max(len(these_pars), 2), 2, figsize=(6, (len(these_pars) + 1) * 2)
+            )
             for idx, par_id in enumerate(these_pars):
-                plot_single_chain(first_thresh, axes[idx, 0], chains[:, :, par_id], labels[par_id], gt=param_gt[par_id] if param_gt is not None else None)
-                plot_single_chain(second_thresh, axes[idx, 1], chains[:, :, par_id], labels[par_id], gt=param_gt[par_id] if param_gt is not None else None)
+                plot_single_chain(
+                    first_thresh,
+                    axes[idx, 0],
+                    chains[:, :, par_id],
+                    labels[par_id],
+                    gt=param_gt[par_id] if param_gt is not None else None,
+                )
+                plot_single_chain(
+                    second_thresh,
+                    axes[idx, 1],
+                    chains[:, :, par_id],
+                    labels[par_id],
+                    gt=param_gt[par_id] if param_gt is not None else None,
+                )
             fig.tight_layout()
             pdf.savefig(fig)
             plt.close(fig)
 
+
 def plot_fit(modinf, loss):
     subpop_names = modinf.subpop_struct.subpop_names
     fig, axes = plt.subplots(
-        len(subpop_names), len(loss.statistics), figsize=(3 * len(loss.statistics), 3 * len(subpop_names)), sharex=True
+        len(subpop_names),
+        len(loss.statistics),
+        figsize=(3 * len(loss.statistics), 3 * len(subpop_names)),
+        sharex=True,
     )
     for j, subpop in enumerate(modinf.subpop_struct.subpop_names):
         gt_s = loss.gt[loss.gt["subpop"] == subpop].sort_index()
         first_date = max(gt_s.index.min(), results[0].index.min())
         last_date = min(gt_s.index.max(), results[0].index.max())
-        gt_s = gt_s.loc[first_date:last_date].drop(["subpop"], axis=1).resample("W-SAT").sum()
+        gt_s = (
+            gt_s.loc[first_date:last_date].drop(["subpop"], axis=1).resample("W-SAT").sum()
+        )
 
         for i, (stat_name, stat) in enumerate(loss.statistics.items()):
             ax = axes[j, i]

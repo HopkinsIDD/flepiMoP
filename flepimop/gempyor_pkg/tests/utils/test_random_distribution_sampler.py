@@ -51,9 +51,7 @@ class TestRandomDistributionSampler:
     def test_output_validation(self, distribution: str, kwargs: dict[str, Any]) -> None:
         actual = random_distribution_sampler(distribution, **kwargs)
         if distribution == "fixed":
-            expected = partial(
-                np.random.uniform, kwargs.get("value"), kwargs.get("value")
-            )
+            expected = partial(np.random.uniform, kwargs.get("value"), kwargs.get("value"))
             assert partials_are_similar(actual, expected)
         elif distribution == "uniform":
             expected = partial(np.random.uniform, kwargs.get("low"), kwargs.get("high"))
@@ -68,12 +66,12 @@ class TestRandomDistributionSampler:
             assert inspect.ismethod(actual)
             assert actual.__self__.kwds.get("loc") == kwargs.get("mean")
             assert actual.__self__.kwds.get("scale") == kwargs.get("sd")
-            assert actual.__self__.a == (
-                kwargs.get("a") - kwargs.get("mean")
-            ) / kwargs.get("sd")
-            assert actual.__self__.b == (
-                kwargs.get("b") - kwargs.get("mean")
-            ) / kwargs.get("sd")
+            assert actual.__self__.a == (kwargs.get("a") - kwargs.get("mean")) / kwargs.get(
+                "sd"
+            )
+            assert actual.__self__.b == (kwargs.get("b") - kwargs.get("mean")) / kwargs.get(
+                "sd"
+            )
         elif distribution == "lognorm":
             assert inspect.ismethod(actual)
             assert actual.__self__.kwds.get("s") == kwargs.get("sdlog")

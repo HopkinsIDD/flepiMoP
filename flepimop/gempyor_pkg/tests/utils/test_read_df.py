@@ -137,8 +137,7 @@ class TestReadDf:
             temp_path = Path(temp_file.name)
             assert temp_path.stat().st_size == 0
             assert (
-                self.subpop_df.to_parquet(temp_path, engine="pyarrow", index=False)
-                is None
+                self.subpop_df.to_parquet(temp_path, engine="pyarrow", index=False) is None
             )
             assert temp_path.stat().st_size > 0
             test_df = read_df(fname=temp_path)

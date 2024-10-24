@@ -65,7 +65,9 @@ def test_parameters_from_config_plus_read_write():
         tf=s.tf,
         subpop_names=s.subpop_struct.subpop_names,
     )
-    p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nsubpops=nsubpops)
+    p_load = rhs.parameters_load(
+        param_df=read_df("test_pwrite.parquet"), n_days=n_days, nsubpops=nsubpops
+    )
 
     assert (p_draw == p_load).all()
 
@@ -122,7 +124,10 @@ def test_parameters_quick_draw_old():
     assert ((2 <= R0s) & (R0s <= 3)).all()
 
     assert sigma.shape == (modinf.n_days, modinf.nsubpops)
-    assert (sigma == config["seir"]["parameters"]["sigma"]["value"]["value"].as_evaled_expression()).all()
+    assert (
+        sigma
+        == config["seir"]["parameters"]["sigma"]["value"]["value"].as_evaled_expression()
+    ).all()
 
     assert gamma.shape == (modinf.n_days, modinf.nsubpops)
     assert len(np.unique(gamma)) == 1
@@ -174,6 +179,8 @@ def test_parameters_from_timeseries_file():
         tf=s.tf,
         subpop_names=s.subpop_struct.subpop_names,
     )
-    p_load = rhs.parameters_load(param_df=read_df("test_pwrite.parquet"), n_days=n_days, nsubpops=nsubpops)
+    p_load = rhs.parameters_load(
+        param_df=read_df("test_pwrite.parquet"), n_days=n_days, nsubpops=nsubpops
+    )
 
     assert (p_draw == p_load).all()
