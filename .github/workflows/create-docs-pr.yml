@@ -1,3 +1,10 @@
+#                    Commits                                        0 Open PRs                                                                     1 Open PR                                                                       2 Open PRs                         
+#  ------------------------------------------- ---------------------------------------------------- ------------------------------------------------------------------------------------------------------- --------------------------------------------------------- 
+#   Neither ahead or behind                     Nothing                                              Dismiss PRs                                                                                             Dismiss PRs                                              
+#   `documentation-gitbook` is behind           Open A PR from `main` into `documentation-gitbook`   Determine the directionality, if wrong dismiss and open a PR from `main` into `documentation-gitbook`   Dismiss the PR from `documentation-gitbook` into `main`  
+#   `documentation-gitbook` is behind           Open A PR from `documentation-gitbook` into `main`   Determine the directionality, if wrong dismiss and open a PR from `documentation-gitbook` into `main`   Dismiss the PR from `main` into `documentation-gitbook`  
+#   `documentation-gitbook` is ahead & behind   Open 2 PRs                                           Determine the directionality of the missing one and open that                                           Nothing                                                  
+
 name: create-docs-pr
 
 on:
@@ -33,7 +40,7 @@ jobs:
         id: create-pr
         with:
           result-encoding: string
-          retries: 2
+          retries: 5
           script: |
             const { DOCS_AHEAD_MAIN, DOCS_BEHIND_MAIN, DOCS_BRANCH, PR_LABELS, PR_ASSIGNEES, PR_TITLE, OWNER, REPO } = process.env
             const prLabels = PR_LABELS.split(",")
@@ -47,9 +54,12 @@ jobs:
             const initialResults = await github.rest.search.issuesAndPullRequests({ 
               q: `owner:${OWNER} repo:${REPO} is:open is:pr in:title '${PR_TITLE}'`
             })
-            let count = initialResults.data.total_count
+            const count = initialResults.data.total_count
+            if (count > 2) {
+              throw new Error(`There are ${count} open PRs containing '${PR_TITLE}', but this action can only handle 0, 1, or 2 open PRs.`)
+            }
             console.log(`${DOCS_BRANCH} is ${docsAheadMain} ahead, ${docsBehindMain} behind main. The open PR count is ${count}.`)
-            async function deletePRs() {
+            async function dismissAllPRs() {
               initialResults.data.items.forEach((item) => {
                 github.rest.pulls.update({
                   owner: OWNER,
@@ -73,13 +83,13 @@ jobs:
                 title: `${today} ${PR_TITLE} From ${from} Into ${to}`,
                 body: prBody
               })
-              const labels = await github.rest.issues.addLabels({
+              github.rest.issues.addLabels({
                 owner: OWNER,
                 repo: REPO,
                 issue_number: pr.data.number,
                 labels: prLabels
               })
-              const assignees = await github.rest.issues.addAssignees({
+              github.rest.issues.addAssignees({
                 owner: OWNER,
                 repo: REPO,
                 issue_number: pr.data.number,
@@ -87,71 +97,93 @@ jobs:
               })
               return pr.data.number
             }
+            async function handleSingleDirection({ from, to }) {
+              if (count === 0) {
+                // There isn't the 1 expected PR, open it
+                createPR({
+                  from: from,
+                  to: to,
+                  body: null
+                })
+              } else if (count === 1) {
+                // There is a PR open, determine direction
+                let title = initialResults.data.items[0].title
+                if (!title.includes(`${PR_TITLE} From ${from} Into ${to}`)) {
+                  // Wrong direction, close & recreate
+                  dismissAllPRs()
+                  createPR({
+                    from: from,
+                    to: to,
+                    body: null
+                  }) 
+                }
+              } else {
+                // There are two PRs open, close the wrong direction
+                initialResults.data.items.forEach((item) => {
+                  if (!title.includes(`${PR_TITLE} From ${from} Into ${to}`)) {
+                    github.rest.pulls.update({
+                      owner: OWNER,
+                      repo: REPO,
+                      pull_number: item.number,
+                      state: "closed"
+                    })
+                  }
+                })
+              }
+            }
             if (docsAheadMain > 0 && docsBehindMain > 0) {
               // Need PRs both ways
-              if (count !== 2 && count > 0) {
-                // Previously opened PRs (i.e. only going one way) to be closed
-                deletePRs()
-                count = 0;
-              }
-              if (count !== 2) {
-                // There aren't the 2 expected PRs open, open them
+              if (count === 0) {
+                // There are 0 PRs open, open both of them
                 const docsIntoMainPrNumber = await createPR({
                   from: DOCS_BRANCH,
                   to: "main",
                   body: null
                 })
-                const mainIntoDocsPrNumber = await createPR({
+                createPR({
                   from: "main",
                   to: DOCS_BRANCH,
-                  body: `Blocked by GH-${docsIntoMainPrNumber}.`
+                  body: `Please merge GH-${docsIntoMainPrNumber} first.`
                 })
+              } else if (count === 1) {
+                // There is already a PR open in one direction, open the other direction
+                let title = initialResults.data.items[0].title 
+                let number = initialResults.data.items[0].number
+                if (title.includes(`${PR_TITLE} From ${DOCS_BRANCH} Into main`)) {
+                  // From docs into main already exists, create main into docs
+                  createPR({
+                    from: "main",
+                    to: DOCS_BRANCH,
+                    body: `Please merge GH-${number} first.`
+                  })
+                } else {
+                  // From main into docs already exists, create docs into main
+                  const docsIntoMainPrNumber = await createPR({
+                    from: DOCS_BRANCH,
+                    to: "main",
+                    body: null
+                  })
+                  github.rest.issues.createComment({
+                    owner: OWNER,
+                    repo: REPO,
+                    issue_number: number,
+                    body: `Please merge GH-${docsIntoMainPrNumber} first.`
+                  })
+                }
               }
             } else if (docsAheadMain > 0) {
               // Need a PR from docs to main
-              if (count > 1) {
-                // 2 or more PRs, likely stale
-                deletePRs()
-                count = 0;
-              } else if (count === 1) {
-                let title = initialResults.data.items[0].title
-                if (!title.includes(`${PR_TITLE} From ${DOCS_BRANCH} Into main`)) {
-                  // A PR that does not match the expected direction, stale
-                  deletePRs()
-                  count = 0;
-                }
-              }
-              if (count !== 1) {
-                // There isn't the 1 expected PR, open it
-                const docsIntoMainPrNumber = await createPR({
-                  from: DOCS_BRANCH,
-                  to: "main",
-                  body: null
-                })
-              }
+              handleSingleDirection({
+                from: DOCS_BRANCH,
+                to: "main"
+              })
             } else if (docsBehindMain > 0) {
               // Need a PR from main to docs
-              if (count > 1) {
-                // 2 or more PRs, likely stale
-                deletePRs()
-                count = 0
-              } else if (count === 1) {
-                let title = initialResults.data.items[0].title
-                if (!title.includes(`${PR_TITLE} From main Into ${DOCS_BRANCH}`)) {
-                  // A PR that does not match the expected direction, stale
-                  deletePRs()
-                  count = 0
-                }
-              }
-              if (count !== 1) {
-                // There isn't the 1 expected PR, open it
-                const mainIntoDocsPrNumber = await createPR({
-                  from: "main",
-                  to: DOCS_BRANCH,
-                  body: null
-                })
-              }
+              handleSingleDirection({
+                from: "main",
+                to: DOCS_BRANCH
+              })
             } else if (count > 0) {
               // Ahead/behind commits is 0 but there are stale PRs to close
-              deletePRs()
+              dismissAllPRs()
             }
