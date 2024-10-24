@@ -158,82 +158,125 @@
 
 import time, warnings, sys
 
+from pathlib import Path
+from collections.abc import Iterable
+
+from confuse import Configuration
 from click import Context, pass_context
 
-from . import seir, outcomes, model_info
-from .utils import config #, profile
+from . import seir, outcomes, model_info, utils
 from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli, click_helpstring, mock_context
 
 # from .profile import profile_options
 
 # @profile_options
 # @profile()
-@click_helpstring([config_files_argument] + list(config_file_options.values()))
-def simulate(ctx : Context = mock_context, **kwargs) -> int:
+def simulate(
+    config_filepath: Configuration | Path | Iterable[Path],
+    id_run_id: str = None,
+    out_run_id: str = None,
+    seir_modifiers_scenarios: str | Iterable[str] = [],
+    outcome_modifiers_scenarios: str | Iterable[str] = [],
+    in_prefix: str = None,
+    nslots: int = None,
+    jobs: int = None,
+    write_csv: bool = False,
+    write_parquet: bool = True,
+    first_sim_index: int = 1,
+    stoch_traj_flag: bool = False,
+    verbose : bool = True,
+) -> int:
     """
     Forward simulate a model using gempyor.
 
-    Args: (see auto generated CLI items below)
+    Args:
+        config_filepath: Either a Configuration (in which case: ALL other arguments will be silently ignored) OR
+            file path(s) for configuration file(s) (in which case other arguments will be used to override the configuration)
+        id_run_id: run_id for the simulation
+        out_run_id: run_id for the output
+        seir_modifiers_scenarios: scenarios for the SEIR model - if present, used to subset the scenarios in the configuration
+        outcome_modifiers_scenarios: scenarios for the outcomes model - if present, used to subset the scenarios in the configuration
+        in_prefix: prefix for the input files
+        nslots: number of simulation chains
+        jobs: amount of parallelization
+        write_csv: write output to csv?
+        write_parquet: write output to parquet?
+        first_sim_index: index of the first simulation
+        stoch_traj_flag: stochastic trajectories?
+        verbose: print output to console?
 
     Returns: exit code (side effect: writes output to disk)
     """
-    parse_config_files(config, ctx, **kwargs)
+    if not isinstance(config_filepath, Configuration):
+        largs = locals()
+        cfg = parse_config_files(**largs)
+    else:
+        cfg = config_filepath
 
     scenarios_combinations = [
-        [s, d] for s in (config["seir_modifiers"]["scenarios"].as_str_seq() if config["seir_modifiers"].exists() else [None])
-        for d in (config["outcome_modifiers"]["scenarios"].as_str_seq() if config["outcome_modifiers"].exists() else [None])]
+        [s, d] for s in (cfg["seir_modifiers"]["scenarios"].as_str_seq() if cfg["seir_modifiers"].exists() else [None])
+        for d in (cfg["outcome_modifiers"]["scenarios"].as_str_seq() if cfg["outcome_modifiers"].exists() else [None])]
     
-    print("Combination of modifiers scenarios to be run: ")
-    print(scenarios_combinations)
-    for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-        print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcome_modifiers_scenario}")
+    if verbose:
+        print("Combination of modifiers scenarios to be run: ")
+        print(scenarios_combinations)
+        for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
+            print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier: {outcome_modifiers_scenario}")
 
-    nslots = config["nslots"].as_number()
-    print(f"Simulations to be run: {nslots}")
+    nchains = cfg["nslots"].as_number()
+    
+    if verbose:
+        print(f"Simulations to be run: {nchains}")
 
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
         start = time.monotonic()
-        print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
+        if verbose:
+            print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
 
         modinf = model_info.ModelInfo(
-            config=config,
-            nslots=nslots,
+            config=cfg,
+            nslots=nchains,
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
-            write_csv=config["write_csv"].get(bool),
-            write_parquet=config["write_parquet"].get(bool),
-            first_sim_index=config["first_sim_index"].get(int),
-            in_run_id=config["in_run_id"].get(str) if config["in_run_id"].exists() else None,
+            write_csv=cfg["write_csv"].get(bool),
+            write_parquet=cfg["write_parquet"].get(bool),
+            first_sim_index=cfg["first_sim_index"].get(int),
+            in_run_id=cfg["in_run_id"].get(str) if cfg["in_run_id"].exists() else None,
             # in_prefix=config["name"].get() + "/",
-            out_run_id=config["out_run_id"].get(str) if config["out_run_id"].exists() else None,
+            out_run_id=cfg["out_run_id"].get(str) if cfg["out_run_id"].exists() else None,
             # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
-            stoch_traj_flag=config["stoch_traj_flag"].get(bool),
-            config_filepath=config["config_src"].as_str_seq(),
+            stoch_traj_flag=cfg["stoch_traj_flag"].get(bool),
+            config_filepath=cfg["config_src"].as_str_seq(),
         )
 
-        print(
-            f"""
-    >> Running from config {config["config_src"].as_str_seq()}
-    >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {config["jobs"].get(int)} processes
-    >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
-    >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-    >> running ***{'STOCHASTIC' if config["stoch_traj_flag"].get(bool) else 'DETERMINISTIC'}*** trajectories
-    """
-        )
+        if verbose:
+            print(
+                f"""
+        >> Running from config {cfg["config_src"].as_str_seq()}
+        >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {cfg["jobs"].get(int)} processes
+        >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
+        >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
+        >> running ***{'STOCHASTIC' if cfg["stoch_traj_flag"].get(bool) else 'DETERMINISTIC'}*** trajectories
+        """
+            )
         # (there should be a run function)
-        if config["seir"].exists():
-            seir.run_parallel_SEIR(modinf, config=config, n_jobs=config["jobs"].get(int))
-        if config["outcomes"].exists():
-            outcomes.run_parallel_outcomes(sim_id2write=config["first_sim_index"].get(int), modinf=modinf, nslots=nslots, n_jobs=config["jobs"].get(int))
-        print(
-            f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
-        )
-        return 0
+        if cfg["seir"].exists():
+            seir.run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int))
+        if cfg["outcomes"].exists():
+            outcomes.run_parallel_outcomes(sim_id2write=cfg["first_sim_index"].get(int), modinf=modinf, nslots=nchains, n_jobs=cfg["jobs"].get(int))
+        if verbose:
+            print(
+                f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
+            )
+        
+    return 0
 
 @cli.command(name="simulate", params=[config_files_argument] + list(config_file_options.values()))
 @pass_context
 def _click_simulate(ctx : Context, **kwargs) -> int:
-    return simulate(ctx, **kwargs)
+    """Forward simulate a model using gempyor."""
+    cfg = parse_config_files(utils.config, ctx, **kwargs)
+    return simulate(cfg)
 
 
 # will all be removed upon deprecated endpoint removal
@@ -246,8 +289,6 @@ def _deprecated_simulate(argv : list[str] = []) -> int:
     clickcmd = ' '.join(['flepimop', 'simulate'] + argv)
     warnings.warn(f"This command is deprecated, use the CLI instead: `{clickcmd}`", DeprecationWarning)
     return subprocess.run(clickcmd, shell=True).returncode
-
-_deprecated_simulate.__doc__ = simulate.__doc__
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
