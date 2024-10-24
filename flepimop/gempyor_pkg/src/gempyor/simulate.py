@@ -209,6 +209,8 @@ def simulate(
     """
     if not isinstance(config_filepath, Configuration):
         largs = locals()
+        largs.pop("verbose")
+        largs["config_files"] = largs.pop("config_filepath")
         cfg = parse_config_files(**largs)
     else:
         cfg = config_filepath
