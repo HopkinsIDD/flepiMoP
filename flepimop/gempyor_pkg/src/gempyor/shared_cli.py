@@ -217,11 +217,11 @@ def parse_config_files(
     Parse configuration file(s) and override with command line arguments
 
     Args:
-        cfg: the configuration object to update; defaults to global `.utils.config`
+        cfg: the configuration object to update; defaults to global `utils.config`
         ctx: the click context (used for type casting); defaults to a mock context for non-click use; pass actual context if using in a click command
         **kwargs: see auto generated CLI items below. Unmatched keys will be ignored + a warning will be issued
 
-    Returns: None; side effect: updates the `cfg` argument
+    Returns: returns the object passed via `cfg`; n.b. this object is also side-effected
     """
 
     def _parse_option(param: click.Parameter, value: Any) -> Any:
