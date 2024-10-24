@@ -87,12 +87,14 @@ jobs:
               return pr.data.number
             }
             if (docsAheadMain > 0 && docsBehindMain > 0) {
+              // Need PRs both ways
               if (count !== 2 && count > 0) {
-                // need to close this PR
+                // Previously opened PRs (i.e. only going one way) to be closed
                 deletePRs()
                 count = 0;
               }
               if (count !== 2) {
+                // There aren't the 2 expected PRs open, open them
                 const docsIntoMainPrNumber = await createPR({
                   from: DOCS_BRANCH,
                   to: "main",
@@ -105,17 +107,21 @@ jobs:
                 })
               }
             } else if (docsAheadMain > 0) {
-              // need a PR from docs to main
-              if (count !== 1 && count > 0) {
+              // Need a PR from docs to main
+              if (count > 1) {
+                // 2 or more PRs, likely stale
                 deletePRs()
                 count = 0;
               } else if (count === 1) {
-                if (!initialResults.data.items[0].title.includes(`Sync GitBook From ${DOCS_BRANCH} Into main`)) {
+                let title = initialResults.data.items[0].title
+                if (!title.includes(`Sync GitBook From ${DOCS_BRANCH} Into main`)) {
+                  // A PR that does not match the expected direction, stale
                   deletePRs()
                   count = 0;
                 }
               }
               if (count !== 1) {
+                // There isn't the 1 expected PR, open it
                 const docsIntoMainPrNumber = await createPR({
                   from: DOCS_BRANCH,
                   to: "main",
@@ -123,17 +129,21 @@ jobs:
                 })
               }
             } else if (docsBehindMain > 0) {
-              // need a PR from main to docs
-              if (count !== 1 && count > 0) {
+              // Need a PR from main to docs
+              if (count > 1) {
+                // 2 or more PRs, likely stale
                 deletePRs()
                 count = 0
               } else if (count === 1) {
-                if (!initialResults.data.items[0].title.includes(`Sync GitBook From main Into ${DOCS_BRANCH}`)) {
+                let title = initialResults.data.items[0].title
+                if (!title.includes(`Sync GitBook From main Into ${DOCS_BRANCH}`)) {
+                  // A PR that does not match the expected direction, stale
                   deletePRs()
                   count = 0
                 }
               }
               if (count !== 1) {
+                // There isn't the 1 expected PR, open it
                 const mainIntoDocsPrNumber = await createPR({
                   from: "main",
                   to: DOCS_BRANCH,
@@ -141,6 +151,6 @@ jobs:
                 })
               }
             } else if (count > 0) {
-              // need to close PRs
+              // Ahead/behind commits is 0 but there are stale PRs to close
               deletePRs()
             }
