@@ -216,7 +216,7 @@ The last few lines visible on the command prompt should be:
 If you want to quickly do runs with options different from those encoded in the configuration file, you can do that from the command line, for example
 
 ```bash
-flepimop-inference-main.R -j 1 -n 1 -k 1 -c config_inference.yml
+flepimop-inference-main -j 1 -n 1 -k 1 -c config_inference.yml
 ```
 
 where:
@@ -249,9 +249,7 @@ Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_inference_n
 
 ## 📈 Examining model output
 
-If your run is successful, you should see your output files in the model\_output folder. The structure of the files in this folder is described in the [Model Output](../gempyor/output-files.md) section. By default, all the output files are .parquet format (a compressed format which can be imported as dataframes using R's arrow package `arrow::read_parquet` or using the free desktop application [Tad ](https://www.tadviewer.com/)for quick viewing). However, you can add the option `--write-csv` to the end of the commands to run the code (e.g.,  `> gempyor-simulate -c config.yml --write-csv)` to have everything saved as .csv files instead ;
-
-
+If your run is successful, you should see your output files in the model\_output folder. The structure of the files in this folder is described in the [Model Output](../gempyor/output-files.md) section. By default, all the output files are .parquet format (a compressed format which can be imported as dataframes using R's arrow package `arrow::read_parquet` or using the free desktop application [Tad ](https://www.tadviewer.com/)for quick viewing). However, you can add the option `--write-csv` to the end of the commands to run the code (e.g., `> gempyor-simulate -c config.yml --write-csv)` to have everything saved as .csv files instead ;
 
 ## 🪜 Next steps
 
