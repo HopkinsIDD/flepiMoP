@@ -27,6 +27,7 @@
   * [(OLD) Configuration setup](model-inference/inference-implementation/old-configuration-setup.md)
   * [Code structure](model-inference/inference-implementation/code-structure.md)
 * [Inference Model Output](model-inference/inference-model-output.md)
+* [Inference with EMCEE](model-inference/inference-with-emcee.md)
 
 ## 🖥️ More
 
