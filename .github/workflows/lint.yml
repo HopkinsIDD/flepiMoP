@@ -4,9 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '**/*.py'
-    branches:
-      - main
+      - 'flepimop/gempyor_pkg/**/*.py'
   pull_request:
     paths:
       - '**/*.py'
@@ -28,8 +26,15 @@ jobs:
             *
             !documentation/
           sparse-checkout-cone-mode: false
+      - name: Determine Source
+        run: |
+          if [ ${{ github.event_name }} == "push" ]; then
+            echo "BLACK_SRC=flepimop/gempyor_pkg/" >> $GITHUB_ENV
+          else
+            echo "BLACK_SRC=." >> $GITHUB_ENV
+          fi
       - name: Black Formatter Check
         uses: psf/black@stable
         with:
-          src: '.'
+          src: ${{ env.BLACK_SRC }}
           options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"
