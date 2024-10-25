@@ -128,6 +128,14 @@ Rscript build/local_install.R  # Install R packages
 ```
 {% endcode %}
 
+After installing the _flepiMoP_ R packages then run the following in an R terminal:
+```R
+> library(inference)
+> inference::install_cli()
+```
+
+To install the inference package's CLI tools.
+
 Each installation step may take a few minutes to run.
 
 {% hint style="info" %}
