@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+if which black > /dev/null 2>&1; then
+    black --line-length 92 \
+        --extend-exclude 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py' \
+        --check --verbose .
+else
+    echo "'black' is not available so python files will not be checked."
+fi
