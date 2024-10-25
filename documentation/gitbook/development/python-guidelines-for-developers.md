@@ -61,21 +61,23 @@ and to run just some subset of the tests (e.g here just the outcome tests), use:
 pytest -vvvv -k outcomes
 ```
 
-{% hint style="danger" %}
-Before committing, make sure you **format your code** using black (see below) and that the **test passes** (see above).
-{% endhint %}
+For more details on how to use `pytest` please refer to their [usage guide](https://docs.pytest.org/en/latest/how-to/usage.html).
 
 ### Formatting
 
-We try to remain close to Python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull requests. It provides a consistent style, which is useful when diffing. We use a custom length of 120 characters as the baseline is short for scientific code. Here is the line to use to format your code:
+We try to remain close to Python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull requests. It provides a consistent style, which is useful when diffing. We use a custom length of 92 characters as the baseline is short for scientific code. Here is the line to use to format your code:
 
 ```bash
-black --line-length 120 . --exclude renv*
+black --line-length 92 \
+    --extend-exclude 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py' \
+    --verbose .
 ```
 
-{% hint style="warning" %}
-Please use type-hints as much as possible, as we are trying to move towards static checks.
-{% endhint %}
+For those using a Mac or Linux system for development you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
+
+```bash
+cp -f bin/pre-commit .git/hooks/
+```
 
 #### Structure of the main classes
 
