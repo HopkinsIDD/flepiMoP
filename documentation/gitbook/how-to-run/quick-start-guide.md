@@ -109,7 +109,7 @@ If you just want to [run a forward simulation](quick-start-guide.md#non-inferenc
 To [run an inference run](quick-start-guide.md#inference-run) and to explore your model outputs using provided post-processing functionality, there are some packages you'll need to **install in R**. Open your **R terminal** (at the bottom of RStudio, or in the R IDE), and run the following command to install the necessary R packages:
 
 <pre class="language-r" data-overflow="wrap"><code class="lang-r"><strong># while in R
-</strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph","data.table"))
+</strong><strong>>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph","data.table"))
 </strong></code></pre>
 
 {% hint style="info" %}
@@ -128,10 +128,18 @@ Rscript build/local_install.R  # Install R packages
 ```
 {% endcode %}
 
-After installing the _flepiMoP_ R packages then run the following in an R terminal:
-```R
-> library(inference)
-> inference::install_cli()
+After installing the _flepiMoP_ R packages, we need to do one more step to install the command line tools for the inference package. If you are not running in a conda environment, you need to point this installation step to a location that is on your executable search path (i.e., whenever you call a command from the terminal, the places that are searched to find that executable). To find a consistent location, type
+
+```
+>which gempyor-simulate
+```
+
+The location that is returned will be of the form `EXECUTABLE_SEARCH_PATH/gempyor-simulate`. Then run the following in an R terminal:
+
+```r
+# While in R
+>library(inference)
+>inference::install_cli("EXECUTABLE_SEARCH_PATH")
 ```
 
 To install the inference package's CLI tools.
@@ -197,7 +205,7 @@ An inference run requires a configuration file that has the `inference` section.
 
 {% code overflow="wrap" %}
 ```bash
-flepimop-inference-main.R -c config_sample_2pop_inference.yml
+flepimop-inference-main -c config_sample_2pop_inference.yml
 ```
 {% endcode %}
 
