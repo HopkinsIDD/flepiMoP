@@ -109,7 +109,7 @@ If you just want to [run a forward simulation](quick-start-guide.md#non-inferenc
 To [run an inference run](quick-start-guide.md#inference-run) and to explore your model outputs using provided post-processing functionality, there are some packages you'll need to **install in R**. Open your **R terminal** (at the bottom of RStudio, or in the R IDE), and run the following command to install the necessary R packages:
 
 <pre class="language-r" data-overflow="wrap"><code class="lang-r"><strong># while in R
-</strong><strong>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph","data.table"))
+</strong><strong>>install.packages(c("readr","sf","lubridate","tidyverse","gridExtra","reticulate","truncnorm","xts","ggfortify","flextable","doParallel","foreach","optparse","arrow","devtools","cowplot","ggraph","data.table"))
 </strong></code></pre>
 
 {% hint style="info" %}
@@ -127,6 +127,22 @@ Now return to your system terminal. To install _flepiMop_-internal R packages, r
 Rscript build/local_install.R  # Install R packages
 ```
 {% endcode %}
+
+After installing the _flepiMoP_ R packages, we need to do one more step to install the command line tools for the inference package. If you are not running in a conda environment, you need to point this installation step to a location that is on your executable search path (i.e., whenever you call a command from the terminal, the places that are searched to find that executable). To find a consistent location, type
+
+```
+>which gempyor-simulate
+```
+
+The location that is returned will be of the form `EXECUTABLE_SEARCH_PATH/gempyor-simulate`. Then run the following in an R terminal:
+
+```r
+# While in R
+>library(inference)
+>inference::install_cli("EXECUTABLE_SEARCH_PATH")
+```
+
+To install the inference package's CLI tools.
 
 Each installation step may take a few minutes to run.
 
@@ -189,7 +205,7 @@ An inference run requires a configuration file that has the `inference` section.
 
 {% code overflow="wrap" %}
 ```bash
-flepimop-inference-main.R -c config_sample_2pop_inference.yml
+flepimop-inference-main -c config_sample_2pop_inference.yml
 ```
 {% endcode %}
 
@@ -208,7 +224,7 @@ The last few lines visible on the command prompt should be:
 If you want to quickly do runs with options different from those encoded in the configuration file, you can do that from the command line, for example
 
 ```bash
-flepimop-inference-main.R -j 1 -n 1 -k 1 -c config_inference.yml
+flepimop-inference-main -j 1 -n 1 -k 1 -c config_inference.yml
 ```
 
 where:
@@ -241,9 +257,7 @@ Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_inference_n
 
 ## 📈 Examining model output
 
-If your run is successful, you should see your output files in the model\_output folder. The structure of the files in this folder is described in the [Model Output](../gempyor/output-files.md) section. By default, all the output files are .parquet format (a compressed format which can be imported as dataframes using R's arrow package `arrow::read_parquet` or using the free desktop application [Tad ](https://www.tadviewer.com/)for quick viewing). However, you can add the option `--write-csv` to the end of the commands to run the code (e.g.,  `> gempyor-simulate -c config.yml --write-csv)` to have everything saved as .csv files instead ;
-
-
+If your run is successful, you should see your output files in the model\_output folder. The structure of the files in this folder is described in the [Model Output](../gempyor/output-files.md) section. By default, all the output files are .parquet format (a compressed format which can be imported as dataframes using R's arrow package `arrow::read_parquet` or using the free desktop application [Tad ](https://www.tadviewer.com/)for quick viewing). However, you can add the option `--write-csv` to the end of the commands to run the code (e.g., `> gempyor-simulate -c config.yml --write-csv)` to have everything saved as .csv files instead ;
 
 ## 🪜 Next steps
 
