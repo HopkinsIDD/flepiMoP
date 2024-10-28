@@ -23,29 +23,6 @@ def cli(ctx: click.Context) -> None:
     """Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface"""
     pass
 
-
-class AlphanumericParamType(click.ParamType):
-    """A custom click parameter type for alphanumeric strings"""
-
-    name = "alphanumeric"
-    an_pattern = re.compile("^[a-zA-Z0-9_]+$")
-
-    def convert(self, value, param, ctx):
-        if not isinstance(value, str):
-            value = str(value)
-        if not self.an_pattern.match(value):
-            self.fail(
-                f"{value!r} is not a valid alphanumeric value; must only have [a-zA-Z0-9_] elements.",
-                param,
-                ctx,
-            )
-        else:
-            return value
-
-
-AN_STR = AlphanumericParamType()
-
-
 # click decorator to handle configuration file(s) as arguments
 # use as `@argument_config_files` before a cli command definition
 config_files_argument = click.Argument(
@@ -68,7 +45,7 @@ config_file_options = {
     "seir_modifiers_scenarios": click.Option(
         ["-s", "--seir_modifiers_scenarios"],
         envvar="FLEPI_SEIR_SCENARIO",
-        type=AN_STR,
+        type=click.STRING,
         default=[],
         multiple=True,
         help="override/select the transmission scenario(s) to run",
@@ -76,7 +53,7 @@ config_file_options = {
     "outcome_modifiers_scenarios": click.Option(
         ["-d", "--outcome_modifiers_scenarios"],
         envvar="FLEPI_OUTCOME_SCENARIO",
-        type=AN_STR,
+        type=click.STRING,
         default=[],
         multiple=True,
         help="override/select the outcome scenario(s) to run",
@@ -98,21 +75,21 @@ config_file_options = {
     "in_run_id": click.Option(
         ["--in-id", "in_run_id"],
         envvar="FLEPI_RUN_INDEX",
-        type=AN_STR,
+        type=click.STRING,
         show_default=True,
         help="Unique identifier for the run",
     ),
     "out_run_id": click.Option(
         ["--out-id", "out_run_id"],
         envvar="FLEPI_RUN_INDEX",
-        type=AN_STR,
+        type=click.STRING,
         show_default=True,
         help="Unique identifier for the run",
     ),
     "in_prefix": click.Option(
         ["--in-prefix"],
         envvar="FLEPI_PREFIX",
-        type=AN_STR,
+        type=click.STRING,
         default=None,
         show_default=True,
         help="unique identifier for the run",
