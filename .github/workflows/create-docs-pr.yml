@@ -25,7 +25,7 @@ jobs:
     env:
       DOCS_BRANCH: documentation-gitbook
       PR_LABELS: 'documentation,high priority'
-      PR_REVIEWERS: 'emprzy,jcblemai,pearsonca,saraloo,TimothyWillard'
+      PR_REVIEWERS: 'alsnhll,jcblemai,MacdonaldJoshuaCaleb,saraloo,shauntruelove,twallema'
       PR_TITLE: 'Sync GitBook'
       OWNER: 'HopkinsIDD'
       REPO: 'flepiMoP'
