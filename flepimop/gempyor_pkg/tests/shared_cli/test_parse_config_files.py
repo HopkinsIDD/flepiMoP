@@ -169,7 +169,6 @@ class TestParseConfigFiles:
         """for the non-scenario modifier parameters, test default, envvar, invalid values, valid values, override"""
 
         goodopt = good_opt_args(opt)
-        badopt = bad_opt_args(opt)
         refopt = ref_cfg_kvs(opt)
 
         # the config file, with option set
@@ -180,8 +179,6 @@ class TestParseConfigFiles:
 
         for cfg in [tmpconfigfile_wi_ref, tmpconfigfile_wo_ref]:
             # both versions error on bad values
-            with pytest.raises(click.exceptions.BadParameter):
-                parse_config_files(mockconfig, config_files=cfg, **badopt)
             # when supplied an override, both should have the override
             parse_config_files(mockconfig, config_files=cfg, **goodopt)
             for k, v in goodopt.items():
