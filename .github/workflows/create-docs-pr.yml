@@ -5,20 +5,27 @@
 #   `documentation-gitbook` is behind           Open A PR from `documentation-gitbook` into `main`   Determine the directionality, if wrong dismiss and open a PR from `documentation-gitbook` into `main`   Dismiss the PR from `main` into `documentation-gitbook`  
 #   `documentation-gitbook` is ahead & behind   Open 2 PRs                                           Determine the directionality of the missing one and open that                                           Nothing                                                  
 
-name: create-docs-pr
+name: Create GitBook Sync PRs
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '1 10 * * 1-5'
+  pull_request:
+    types:
+      - closed
+  push:
+    branches:
+      - documentation-gitbook
+    paths:
+      - documentation/**
 
 jobs:
-  create-pr:
+  create-prs:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || (github.event.pull_request.merged == true && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'documentation-gitbook'))
     env:
       DOCS_BRANCH: documentation-gitbook
       PR_LABELS: 'documentation,high priority'
-      PR_ASSIGNEES: 'emprzy,jcblemai,pearsonca,saraloo,TimothyWillard'
+      PR_REVIEWERS: 'emprzy,jcblemai,pearsonca,saraloo,TimothyWillard'
       PR_TITLE: 'Sync GitBook'
       OWNER: 'HopkinsIDD'
       REPO: 'flepiMoP'
@@ -42,17 +49,17 @@ jobs:
           result-encoding: string
           retries: 5
           script: |
-            const { DOCS_AHEAD_MAIN, DOCS_BEHIND_MAIN, DOCS_BRANCH, PR_LABELS, PR_ASSIGNEES, PR_TITLE, OWNER, REPO } = process.env
+            const { DOCS_AHEAD_MAIN, DOCS_BEHIND_MAIN, DOCS_BRANCH, PR_LABELS, PR_REVIEWERS, PR_TITLE, OWNER, REPO } = process.env
             const prLabels = PR_LABELS.split(",")
-            const prAssignees = PR_ASSIGNEES.split(",")
-            const cc = prAssignees.map(x => "@" + x).join(", ")
+            const prReviewers = PR_REVIEWERS.split(",")
+            const cc = prReviewers.map(x => "@" + x).join(", ")
             const docsAheadMain = parseInt(DOCS_AHEAD_MAIN, 10)
             const docsBehindMain = parseInt(DOCS_BEHIND_MAIN, 10)
             if (isNaN(docsAheadMain) || isNaN(docsBehindMain)) {
               throw new Error(`Cannot convert either "${DOCS_AHEAD_MAIN}" or "${DOCS_BEHIND_MAIN}" to integers.`)
             }
             const initialResults = await github.rest.search.issuesAndPullRequests({ 
-              q: `owner:${OWNER} repo:${REPO} is:open is:pr in:title '${PR_TITLE}'`
+              q: `repo:${OWNER}/${REPO} is:open is:pr in:title '${PR_TITLE}'`
             })
             const count = initialResults.data.total_count
             if (count > 2) {
@@ -89,11 +96,11 @@ jobs:
                 issue_number: pr.data.number,
                 labels: prLabels
               })
-              github.rest.issues.addAssignees({
+              github.rest.pulls.requestReviewers({
                 owner: OWNER,
                 repo: REPO,
-                issue_number: pr.data.number,
-                assignees: prAssignees
+                pull_number: pr.data.number,
+                reviewers: prReviewers
               })
               return pr.data.number
             }
