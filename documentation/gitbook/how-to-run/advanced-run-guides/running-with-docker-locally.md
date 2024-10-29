@@ -192,10 +192,10 @@ flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
 
 ### Non-inference run
 
-Stay in the `$DATA_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor,`call `gempyor-simulate` providing the name of the configuration file you want to run (ex. `config.yml` ;
+Stay in the `$DATA_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor,`call `flepimop simulate` providing the name of the configuration file you want to run (ex. `config.yml`):
 
 ```
-gempyor-simulate -c config.yml
+flepimop simulate config.yml
 ```
 
 {% hint style="warning" %}
@@ -216,7 +216,7 @@ Rscript build/local_install.R
 pip install --no-deps -e flepimop/gempyor_pkg/
 cd $DATA_PATH
 rm -rf model_output
-gempyor-simulate -c config.yml
+flepimop simulate config.yml
 </code></pre>
 
 ## Finishing up
