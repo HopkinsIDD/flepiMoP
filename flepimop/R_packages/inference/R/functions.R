@@ -568,7 +568,7 @@ accept_reject_proposals <- function(
     }
 
     ##draw accepts/rejects
-    accept_reject <- iterateAccept(ll_ref = orig_lls$ll, ll_new = prop_lls$ll)
+    accept_reject <- inference::iterateAccept(ll_ref = orig_lls$ll, ll_new = prop_lls$ll)
 
     orig_lls$ll[accept_reject$accept] <- prop_lls$ll[accept_reject$accept] # update the likelihoods
     orig_lls$accept <- as.numeric(accept_reject$accept) # added column for acceptance decision
