@@ -555,8 +555,8 @@ accept_reject_proposals <- function(
         hpar_orig,
         hpar_prop,
         orig_lls,
-        prop_lls
-) {
+        prop_lls) {
+
     rc_seeding <- seeding_orig
     rc_init <- init_orig
     rc_snpi <- snpi_orig
@@ -568,22 +568,31 @@ accept_reject_proposals <- function(
     }
 
     ##draw accepts/rejects
-    ratio <- exp(prop_lls$ll - orig_lls$ll)
-    accept <- ratio > runif(length(ratio), 0, 1)
+    accept_reject <- iterateAccept(ll_ref = orig_lls$ll, ll_new = prop_lls$ll)
 
-    orig_lls$ll[accept] <- prop_lls$ll[accept]
+    orig_lls$ll[accept_reject$accept] <- prop_lls$ll[accept_reject$accept] # update the likelihoods
+    orig_lls$accept <- as.numeric(accept_reject$accept) # added column for acceptance decision
+    orig_lls$accept_prob <- accept_reject$ratio         # added column for acceptance probability
 
-    orig_lls$accept <- as.numeric(accept) # added column for acceptance decision
-    orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
+    ##Loop through subpops and update parameters
+    for (subpop_tmp in orig_lls$subpop[accept_reject$accept]) {
 
-    for (subpop in orig_lls$subpop[accept]) {
-        rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop == subpop, ]
-        if("subpop" %in% colnames(rc_init)){ # ie if initial_conditions$method is FromFile or InitialConditionsFolderDraw
-          rc_init[rc_init$subpop == subpop, ] <- init_prop[init_prop$subpop == subpop, ]
-        }else{rc_init <- init_prop}
-        rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
-        rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
-        rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
+        ## Update Seeding
+        rc_seeding[rc_seeding$subpop == subpop_tmp, ] <- seeding_prop[seeding_prop$subpop == subpop_tmp, ]
+
+        ## Update Initial Conditions
+        if ("subpop" %in% colnames(rc_init)) {
+            rc_init[rc_init$subpop == subpop_tmp, ] <- init_prop[init_prop$subpop == subpop_tmp, ]
+        } else if (subpop_tmp %in% colnames(rc_init)){
+            rc_init[[subpop_tmp]] <- init_prop[[subpop_tmp]]
+        } else {
+            rc_init <- init_prop
+        }
+
+        ## Update NPIs
+        rc_snpi[rc_snpi$subpop == subpop_tmp, ] <- snpi_prop[snpi_prop$subpop == subpop_tmp, ]
+        rc_hnpi[rc_hnpi$subpop == subpop_tmp, ] <- hnpi_prop[hnpi_prop$subpop == subpop_tmp, ]
+        rc_hpar[rc_hpar$subpop == subpop_tmp, ] <- hpar_prop[hpar_prop$subpop == subpop_tmp, ]
     }
 
     return(list(
@@ -599,21 +608,15 @@ accept_reject_proposals <- function(
 
 ##' Function accept proposals
 ##'
-##'
-##' @param ll_ref current accepted likelihood
-##' @param ll_new likelihood of proposal
+##' @param ll_ref current accepted likelihood(s)
+##' @param ll_new likelihood of proposal(s)
 ##' @return boolean whether to accept the likelihood
+##' @note This function can accept single values or vectors
+##'
 ##' @export
-iterateAccept <- function(ll_ref, ll_new) {
-    if (length(ll_ref) != 1 | length(ll_new) !=1) {
-        stop("Iterate accept currently on works with single row data frames")
-    }
-
-    ll_ratio <- exp(min(c(0, ll_new - ll_ref)))
-    if (ll_ratio >= runif(1)) {
-        return(TRUE)
-    }
-    return(FALSE)
+iterateAccept <- function(ll_ref, ll_new){
+    ll_ratio <- exp(pmin(ll_new - ll_ref, 0))
+    return(list(accept = ll_ratio >= runif(1), ratio = ll_ratio))
 }
 
 
