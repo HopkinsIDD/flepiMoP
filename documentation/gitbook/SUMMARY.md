@@ -48,6 +48,7 @@
 
 * [Before any run](how-to-run/before-any-run.md)
 * [Quick Start Guide](how-to-run/quick-start-guide.md)
+* [Multiple Configuration Files](multi-configs.md)
 * [Advanced run guides](how-to-run/advanced-run-guides/README.md)
   * [Running with Docker locally 🛳](how-to-run/advanced-run-guides/running-with-docker-locally.md)
   * [Running locally in a conda environment 🐍](how-to-run/advanced-run-guides/quick-start-guide-conda.md)
