@@ -58,8 +58,9 @@
 * [Useful commands](how-to-run/useful-commands.md)
 * [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)
 
-## 🗜️ Development
+## [Development](./development/README.md)
 
+* [Git and GitHub Usage](./development/git-and-github-usage.md)
 * [Guidelines for contributors](development/python-guidelines-for-developers.md)
 
 ## Deprecated pages
