@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 import datetime
 import functools
 import logging
@@ -1111,3 +1112,52 @@ def _dump_formatted_yaml(cfg: confuse.Configuration) -> str:
     return yaml.dump(
         yaml.safe_load(cfg.dump()), Dumper=CustomDumper, indent=4, sort_keys=False
     )
+
+
+def _shutil_which(
+    cmd: str,
+    mode: int = os.F_OK | os.X_OK,
+    path: str | bytes | os.PathLike | None = None,
+    check: bool = True,
+) -> str | None:
+    """
+    A thin wrapper around `shutil.which` with extra validation.
+
+    Args:
+        cmd: The name of the command to search for.
+        mode: The permission mask required of possible files.
+        path: A path describing the locations to search, or `None` to use
+            the PATH environment variable.
+        check: If `True` an `OSError` will be raised if a `cmd` is not found.
+            Similar in spirit to the `check` arg of `subprocess.run`.
+
+    Returns:
+        Either the full path to the `cmd` found, or `None` if `cmd` is not
+        found and `check` is `False`.
+
+    Raises:
+        OSError: If `cmd` is not found and `check` is `True`.
+
+    Examples:
+        >>> import os
+        >>> from shutil import which
+        >>> _shutil_which("python") == which("python")
+        True
+        >>> _shutil_which("does_not_exist", check=False)
+        >>> try:
+        ...     _shutil_which("does_not_exist", check=True)
+        ... except Exception as e:
+        ...     print(type(e))
+        ...     print(str(e).replace(os.environ.get("PATH"), "..."))
+        ...
+        <class 'OSError'>
+        Did not find 'does_not_exist' on path '...'.
+
+    See Also:
+        [`shutil.which`](https://docs.python.org/3/library/shutil.html#shutil.which)
+    """
+    result = shutil.which(cmd, mode=mode, path=path)
+    if check and result is None:
+        path = os.environ.get("PATH") if path is None else path
+        raise OSError(f"Did not find '{cmd}' on path '{path}'.")
+    return result
