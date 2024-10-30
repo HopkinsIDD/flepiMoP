@@ -41,9 +41,6 @@ def test_get_script_logger(
             name, verbosity, handler=handler, log_format=log_format
         )
 
-    # pytest-dev/pytest#3697
-    logger.propagate = True
-
     assert isinstance(logger, logging.Logger)
     assert logger.name == name
     assert logger.level == _get_logging_level(verbosity)
