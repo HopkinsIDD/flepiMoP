@@ -13,6 +13,8 @@ __all__ = ["ClickHandler", "get_script_logger"]
 
 
 import logging
+import os
+import sys
 from typing import Any, IO
 
 import click
@@ -119,7 +121,8 @@ def get_script_logger(
         logger.removeHandler(old_handler)
     handler.setFormatter(log_formatter)
     logger.addHandler(handler)
-    logger.propagate = False
+    # pytest-dev/pytest#3697
+    logger.propagate = os.path.basename(sys.argv[0]) == "pytest" if sys.argv else False
     return logger
 
 
