@@ -14,6 +14,7 @@ on:
 jobs:
   black-for-python:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env:
       BLACK_LINE_LENGTH: 92
       BLACK_EXTEND_EXCLUDE: 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py'
