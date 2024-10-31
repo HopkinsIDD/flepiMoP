@@ -58,6 +58,7 @@ def get_spatial_groups(grp_config, affected_subpops: list) -> dict:
     ):
         raise ValueError(
             f"subpop_groups error. For intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped subpops"
+            f" {flat_grouped_list + spatial_groups['ungrouped']} vs {set(flat_grouped_list + spatial_groups['ungrouped'])}"
         )
 
     spatial_groups["grouped"] = make_list_of_list(spatial_groups["grouped"])
