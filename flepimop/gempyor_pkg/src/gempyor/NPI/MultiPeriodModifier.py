@@ -278,7 +278,6 @@ class MultiPeriodModifier(NPIBase):
     def getReductionToWrite(self):
         df_list = []
         # self.parameters.index is a list of subpops
-        print(self.spatial_groups)
         for this_spatial_groups in self.spatial_groups:
             # spatially ungrouped dataframe
             df_ungroup = self.parameters[self.parameters.index.isin(this_spatial_groups["ungrouped"])].copy()
