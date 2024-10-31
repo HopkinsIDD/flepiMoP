@@ -49,23 +49,27 @@ def get_spatial_groups(grp_config, affected_subpops: list) -> dict:
     # flatten the list of lists of grouped subpops, so we can do some checks
     flat_grouped_list = flatten_list_of_lists(spatial_groups["grouped"])
     # check that all subpops are either grouped or ungrouped
-    if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(affected_subpops):
-        print("set of grouped and ungrouped subpops", set(flat_grouped_list + spatial_groups["ungrouped"]))
-        print("set of affected subpops             ", set(affected_subpops))
-        raise ValueError(f"The two above sets are differs for for intervention with config \n {grp_config}")
-    if len(set(flat_grouped_list + spatial_groups["ungrouped"])) != len(
-        flat_grouped_list + spatial_groups["ungrouped"]
-    ):
-        raise ValueError(
-            f"subpop_groups error. For intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped subpops"
-            f" {flat_grouped_list + spatial_groups['ungrouped']} vs {set(flat_grouped_list + spatial_groups['ungrouped'])}"
-        )
+
+    #if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(affected_subpops):
+    #    print("set of grouped and ungrouped subpops", set(flat_grouped_list + spatial_groups["ungrouped"]))
+    #    print("set of affected subpops             ", set(affected_subpops))
+    #    raise ValueError(f"The two above sets are differs for for intervention with config \n {grp_config}")
+    #if len(set(flat_grouped_list + spatial_groups["ungrouped"])) != len(
+    #    flat_grouped_list + spatial_groups["ungrouped"]
+    #):
+    #    raise ValueError(
+    #        f"subpop_groups error. For intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped subpops"
+    #        f" {flat_grouped_list + spatial_groups['ungrouped']} vs {set(flat_grouped_list + spatial_groups['ungrouped'])}"
+    #    )
 
     spatial_groups["grouped"] = make_list_of_list(spatial_groups["grouped"])
 
     # sort the lists
-    spatial_groups["grouped"] = [sorted(x) for x in spatial_groups["grouped"]]
-    spatial_groups["ungrouped"] = sorted(spatial_groups["ungrouped"])
+    spatial_groups["grouped"] = [sorted(list(set(x).intersection(affected_subpops))) for x in spatial_groups["grouped"]]
+    spatial_groups["ungrouped"] = sorted(list(set(spatial_groups["ungrouped"]).intersection(affected_subpops)))
+
+    # remove empty sublist in grp{'grouped': [[], ['01000_14to15', '01000_17to18', '01000_22to23'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
+    spatial_groups["grouped"] = [x for x in spatial_groups["grouped"] if x]
 
     return spatial_groups
 

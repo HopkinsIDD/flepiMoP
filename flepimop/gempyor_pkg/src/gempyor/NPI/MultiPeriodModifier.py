@@ -175,6 +175,8 @@ class MultiPeriodModifier(NPIBase):
             affected_subpops_grp = self.subpops
         else:
             affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
+            affected_subpops_grp  = list(set(affected_subpops_grp).intersection(self.subpops))
+
         return affected_subpops_grp
 
     def __createFromDf(self, loaded_df, npi_config):
