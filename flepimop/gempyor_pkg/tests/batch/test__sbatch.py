@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 import pytest
 
-from gempyor._slurm import _sbatch
+from gempyor.batch import _sbatch
 from gempyor.logging import _get_logging_level
 from gempyor.utils import _shutil_which
 
@@ -91,10 +91,10 @@ def test_output_validation(
         return subprocess.run(args, **kwargs)
 
     with patch(
-        "gempyor._slurm._shutil_which", wraps=shutil_which_wraps
+        "gempyor.batch._shutil_which", wraps=shutil_which_wraps
     ) as shutil_which_patch:
         with patch(
-            "gempyor._slurm.subprocess.run", wraps=subprocess_run_wraps
+            "gempyor.batch.subprocess.run", wraps=subprocess_run_wraps
         ) as subprocess_run_patch:
             assert (
                 _sbatch(

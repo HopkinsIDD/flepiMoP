@@ -43,7 +43,7 @@ def test_output_validation(repository: Path, sha: str) -> None:
         "gempyor.utils._shutil_which", wraps=shutil_which_wraps
     ) as shutil_which_patch:
         with patch(
-            "gempyor._slurm.subprocess.run", wraps=subprocess_run_wraps
+            "gempyor.batch.subprocess.run", wraps=subprocess_run_wraps
         ) as subprocess_run_patch:
             assert _git_head(repository) == sha
             shutil_which_patch.assert_called_once_with("git")
