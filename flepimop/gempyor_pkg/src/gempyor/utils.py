@@ -1161,3 +1161,28 @@ def _shutil_which(
         path = os.environ.get("PATH") if path is None else path
         raise OSError(f"Did not find '{cmd}' on path '{path}'.")
     return result
+
+
+def _git_head(repository: Path) -> str:
+    """
+    Get the sha commit has for the head of a git repository.
+
+    Args:
+        repository: A directory under version control with git to get the sha commit of.
+
+    Returns:
+        The sha commit of head for `repository`.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> _git_head(Path("~/Desktop/GitHub/HopkinsIDD/flepiMoP"))
+        'efe896b1a5e4f8e33667c170cd5319d6ef1e3db5'
+    """
+    git_cmd = _shutil_which("git")
+    proc = subprocess.run(
+        [git_cmd, "rev-parse", "HEAD"],
+        cwd=repository.expanduser().absolute(),
+        capture_output=True,
+        check=True,
+    )
+    return proc.stdout.decode().strip()
