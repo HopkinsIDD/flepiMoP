@@ -52,11 +52,7 @@ def test_output_validation(
 
     with patch("gempyor.batch._git_head", wraps=git_head_wraps) as git_head_patch:
         manifest_file = write_manifest(
-            job_name,
-            flepi_path,
-            project_path,
-            destination=destination,
-            **additional_meta
+            job_name, flepi_path, project_path, destination=destination, **additional_meta
         )
         assert (
             manifest_file == Path("manifest.json").absolute()

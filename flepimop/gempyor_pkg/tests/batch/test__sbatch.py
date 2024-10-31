@@ -57,9 +57,7 @@ def test_export_option_causes_value_error(sample_sbatch_script: Path) -> None:
         ),
     ),
 )
-@pytest.mark.parametrize(
-    "verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING)
-)
+@pytest.mark.parametrize("verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING))
 @pytest.mark.parametrize("dry_run", (True, False))
 def test_output_validation(
     caplog: pytest.LogCaptureFixture,
@@ -128,9 +126,7 @@ def test_output_validation(
 
             if not dry_run:
                 args: list[str] = subprocess_run_patch.call_args.args[0]
-                assert len(args) == 2 + len(options) + min(
-                    len(environment_variables), 1
-                )
+                assert len(args) == 2 + len(options) + min(len(environment_variables), 1)
                 assert Path(args[-1]) == sample_sbatch_script
                 if environment_variables:
                     assert args[1].startswith("--export=")

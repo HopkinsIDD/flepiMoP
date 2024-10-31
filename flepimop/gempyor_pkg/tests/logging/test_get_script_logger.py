@@ -37,9 +37,7 @@ def test_get_script_logger(
     if log_format is None:
         logger = get_script_logger(name, verbosity, handler=handler)
     else:
-        logger = get_script_logger(
-            name, verbosity, handler=handler, log_format=log_format
-        )
+        logger = get_script_logger(name, verbosity, handler=handler, log_format=log_format)
 
     assert isinstance(logger, logging.Logger)
     assert logger.name == name
