@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from gempyor.manifest import write_manifest
+from gempyor.batch import write_manifest
 from gempyor.utils import _git_head
 
 
@@ -50,7 +50,7 @@ def test_output_validation(
             else _git_head(repository)
         )
 
-    with patch("gempyor.manifest._git_head", wraps=git_head_wraps) as git_head_patch:
+    with patch("gempyor.batch._git_head", wraps=git_head_wraps) as git_head_patch:
         manifest_file = write_manifest(
             job_name,
             flepi_path,

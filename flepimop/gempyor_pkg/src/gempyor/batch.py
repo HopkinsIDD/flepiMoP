@@ -1,9 +1,8 @@
 """
-Generate manifest files containing batch run metadata.
+Functionality for creating and submitting batch jobs.
 
-This module provides functionality for generating manifest json files which contain
-batch run metadata. Currently exported are:
-- `write_manifest`: The main interface to this module for writing manifest json files.
+This module provides functionality for required for batch jobs, including creating 
+metadata and job size calculations for example.
 """
 
 __all__ = ["write_manifest"]
