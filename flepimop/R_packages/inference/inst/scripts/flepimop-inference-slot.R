@@ -713,7 +713,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # Accept if MCMC acceptance decision = 1 or it's the first iteration of the first block
       # note - we already have a catch for the first block thing earlier (we set proposed = initial likelihood) - shouldn't need 2!
       global_accept <- ifelse(  #same value for all subpopulations
-        inference::iterateAccept(global_current_likelihood_total, proposed_likelihood_total) ||
+        inference::iterateAccept(ll_ref = global_current_likelihood_total, 
+		                         ll_new = proposed_likelihood_total)$accept ||
           ((last_accepted_index == 0) && (opt$this_block == 1)) ||
           ((this_index == opt$iterations_per_slot && !opt$reset_chimeric_on_accept))
         ,1,0
@@ -814,7 +815,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
       ## Chimeric likelihood acceptance or rejection decisions (one round) ---------------------------------------------------------------------------
 
-      if (!reset_chimeric_files) { # will make separate acceptance decision for each subpop
+      ## if (!reset_chimeric_files) { # will make separate acceptance decision for each subpop - ACCEPT ONLY CHIMERIC
 
         #  "Chimeric" means GeoID-specific
         print("Making chimeric acceptance decision")
@@ -856,25 +857,25 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         new_hnpi <- chimeric_acceptance_list$hnpi
         chimeric_current_likelihood_data <- chimeric_acceptance_list$ll
 
-      } else { # Proposed values were globally accepted and will be copied to chimeric
-
-        print("Resetting chimeric values to global due to global acceptance")
-        if (!is.null(config$initial_conditions)){
-          new_init <- proposed_init
-        }
-        if (!is.null(config$seeding)){
-          new_seeding <- proposed_seeding
-        }
-        new_spar <- initial_spar
-        new_hpar <- proposed_hpar
-        new_snpi <- proposed_snpi
-        new_hnpi <- proposed_hnpi
-        chimeric_current_likelihood_data <- proposed_likelihood_data
-
-        reset_chimeric_files <- FALSE
-
-        chimeric_current_likelihood_data$accept <- 1
-      }
+      # } else { # Proposed values were globally accepted and will be copied to chimeric
+      #
+      #   print("Resetting chimeric values to global due to global acceptance")
+      #   if (!is.null(config$initial_conditions)){
+      #     new_init <- proposed_init
+      #   }
+      #   if (!is.null(config$seeding)){
+      #     new_seeding <- proposed_seeding
+      #   }
+      #   new_spar <- initial_spar
+      #   new_hpar <- proposed_hpar
+      #   new_snpi <- proposed_snpi
+      #   new_hnpi <- proposed_hnpi
+      #   chimeric_current_likelihood_data <- proposed_likelihood_data
+      #
+      #   reset_chimeric_files <- FALSE
+      #
+      #   chimeric_current_likelihood_data$accept <- 1
+      # }
 
       # Calculate acceptance statistics of the chimeric chain
 
