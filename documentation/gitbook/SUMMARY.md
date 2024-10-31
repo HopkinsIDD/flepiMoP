@@ -27,6 +27,7 @@
   * [(OLD) Configuration setup](model-inference/inference-implementation/old-configuration-setup.md)
   * [Code structure](model-inference/inference-implementation/code-structure.md)
 * [Inference Model Output](model-inference/inference-model-output.md)
+* [Inference with EMCEE](model-inference/inference-with-emcee.md)
 
 ## 🖥️ More
 
@@ -50,8 +51,8 @@
 * [Advanced run guides](how-to-run/advanced-run-guides/README.md)
   * [Running with Docker locally 🛳](how-to-run/advanced-run-guides/running-with-docker-locally.md)
   * [Running locally in a conda environment 🐍](how-to-run/advanced-run-guides/quick-start-guide-conda.md)
-  * [Running on SLURM HPC](how-to-run/advanced-run-guides/slurm-submission-on-marcc.md)
   * [Running on AWS 🌳](how-to-run/advanced-run-guides/running-on-aws.md)
+  * [Running On A HPC With Slurm](how-to-run/advanced-run-guides/running-on-a-hpc-with-slurm.md)
 * [Common errors](how-to-run/common-errors.md)
 * [Useful commands](how-to-run/useful-commands.md)
 * [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)

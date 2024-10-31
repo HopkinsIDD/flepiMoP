@@ -16,10 +16,11 @@ For longer inference runs across multiple slots, we provide instructions and scr
 
 ## Running longer inference runs across multiple slots
 
-{% content-ref url="slurm-submission-on-marcc.md" %}
-[slurm-submission-on-marcc.md](slurm-submission-on-marcc.md)
-{% endcontent-ref %}
-
 {% content-ref url="running-on-aws.md" %}
 [running-on-aws.md](running-on-aws.md)
 {% endcontent-ref %}
+
+{% content-ref url="running-on-a-hpc-with-slurm.md" %}
+[running-on-a-hpc-with-slurm.md](running-on-a-hpc-with-slurm.md)
+{% endcontent-ref %}
+
