@@ -73,7 +73,7 @@ black --line-length 92 \
     --verbose .
 ```
 
-For those using a Mac or Linux system for development you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
+For those using a Mac or Linux system for development this command is also available for use by calling `./dev/lint`. Similarly, you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
 
 ```bash
 cp -f bin/pre-commit .git/hooks/
