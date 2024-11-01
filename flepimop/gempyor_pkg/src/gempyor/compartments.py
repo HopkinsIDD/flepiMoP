@@ -610,7 +610,7 @@ class Compartments:
 
         return rc
 
-    def toFile(
+    def to_file(
         self,
         compartments_file: PathLike = "compartments.parquet",
         transitions_file: PathLike = "transitions.parquet",
@@ -647,6 +647,28 @@ class Compartments:
             pa.parquet.write_table(pa_df, transitions_file)
         else:
             out_df.to_csv(transitions_file, index=False)
+
+    def toFile(
+        self,
+        compartments_file: PathLike = "compartments.parquet",
+        transitions_file: PathLike = "transitions.parquet",
+        write_parquet: bool = True,
+    ) -> None:
+        """
+        See Also:
+            `Compartments.to_file` is now preferred and this method will
+            be removed in the future.
+        """
+        warnings.warn(
+            "`Compartments.toFile` will be removed in the "
+            "future, please use `Compartments.to_file`.",
+            DeprecationWarning,
+        )
+        self.to_file(
+            compartments_file=compartments_file,
+            transitions_file=transitions_file,
+            write_parquet=write_parquet,
+        )
 
     def fromFile(self, compartments_file, transitions_file):
         self.compartments = pq.read_table(compartments_file).to_pandas()
@@ -1290,5 +1312,5 @@ def export():
         proportion_array,
         proportion_info,
     ) = comp.get_transition_array()
-    comp.toFile("compartments_file.csv", "transitions_file.csv", write_parquet=False)
+    comp.to_file("compartments_file.csv", "transitions_file.csv", write_parquet=False)
     print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")

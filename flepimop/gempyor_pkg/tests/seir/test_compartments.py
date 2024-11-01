@@ -57,7 +57,7 @@ def test_check_transitions_parquet_writing_and_loading():
     )
     temp_compartments_file = f"{DATA_DIR}/parsed_compartment_compartments.test.parquet"
     temp_transitions_file = f"{DATA_DIR}/parsed_compartment_transitions.test.parquet"
-    lhs.toFile(
+    lhs.to_file(
         compartments_file=temp_compartments_file,
         transitions_file=temp_transitions_file,
         write_parquet=True,

@@ -456,7 +456,7 @@ class TestCompartments:
         assert not transitions_path.exists()
 
         assert (
-            compartments.toFile(
+            compartments.to_file(
                 compartments_file=compartments_file,
                 transitions_file=transitions_file,
                 write_parquet=write_parquet,
