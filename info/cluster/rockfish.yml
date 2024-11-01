@@ -1,0 +1,9 @@
+name: rockfish
+modules:
+  - name: gcc
+    version: 9.3.0
+  - name: anaconda
+    version: "2020.07"
+  - name: git
+    version: 2.42.0
+  - name: slurm

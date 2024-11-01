@@ -1,0 +1,25 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://example.com/product.schema.json
+title: Cluster
+description: A generic description of an HPC cluster and its properties.
+type: object
+required:
+  - name
+properties:
+  name:
+    description: A short hand human readable unique name.
+    type: string
+  modules:
+    description: The modules to load when setting up this cluster.
+    type: array
+    items:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: The name of the module.
+          type: string
+        version:
+          description: The preferred version of the module if there is one.
+          type: string
