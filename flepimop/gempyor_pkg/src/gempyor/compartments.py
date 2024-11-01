@@ -172,7 +172,7 @@ class Compartments:
 
         ## Something like this is needed for check script:
         if (not compartments_file is None) and (not transitions_file is None):
-            self.fromFile(compartments_file, transitions_file)
+            self.from_file(compartments_file, transitions_file)
             self.times_set += 1
         if (self.times_set == 0) and (compartments_config is not None):
             self.construct_from_config(seir_config, compartments_config)
@@ -670,7 +670,9 @@ class Compartments:
             write_parquet=write_parquet,
         )
 
-    def fromFile(self, compartments_file: PathLike, transitions_file: PathLike) -> None:
+    def from_file(
+        self, compartments_file: PathLike, transitions_file: PathLike
+    ) -> None:
         """
         Read compartments and transitions files.
 
@@ -699,6 +701,22 @@ class Compartments:
         )
         self.transitions["proportion_exponent"] = self.unformat_proportion_exponent(
             self.transitions["proportion_exponent"], compartment_dimension
+        )
+
+    def fromFile(self, compartments_file: PathLike, transitions_file: PathLike) -> None:
+        """
+        See Also:
+            `Compartments.from_file` is now preferred and this method will
+            be removed in the future.
+        """
+        warnings.warn(
+            "`Compartments.fromFile` will be removed in the "
+            "future, please use `Compartments.from_file`.",
+            DeprecationWarning,
+        )
+        self.from_file(
+            compartments_file=compartments_file,
+            transitions_file=transitions_file,
         )
 
     def get_comp_idx(
