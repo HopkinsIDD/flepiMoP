@@ -1,0 +1,40 @@
+#!/usr/bin/env {{ interpreter }}
+{% for opt in options -%}
+#SBATCH {{ opt }}
+{%- endfor %}
+
+{% if sbatch_debug %}
+# Debugging
+set -x
+{% endif %}
+
+# Load modules
+module purge
+{% if load_slurm -%}
+{% if slurm_version is defined and slurm_version is not none -%}
+module load slurm/{{ slurm_version }}
+{%- else -%}
+module load slurm
+{%- endif %}
+{%- endif %}
+{% if load_gcc -%}
+{% if gcc_version is defined and gcc_version is not none -%}
+module load gcc/{{ gcc_version }}
+{%- else -%}
+module load gcc
+{%- endif %}
+{%- endif %}
+{% if load_anaconda -%}
+{% if anaconda_version is defined and anaconda_version is not none -%}
+module load anaconda/{{ anaconda_version }}
+{%- else -%}
+module load anaconda
+{%- endif %}
+{%- endif %}
+{% if load_git -%}
+{% if git_version is defined and git_version is not none -%}
+module load git/{{ git_version }}
+{%- else -%}
+module load git
+{%- endif %}
+{%- endif %}
