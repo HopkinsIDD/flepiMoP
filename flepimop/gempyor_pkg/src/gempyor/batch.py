@@ -17,8 +17,9 @@ import subprocess
 import sys
 from typing import Any, Literal
 
+from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .logging import get_script_logger
-from .utils import _git_head, _shutil_which
+from .utils import _format_cli_options, _git_head, _shutil_which
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,9 +259,7 @@ def _sbatch(
         export = "--export=" + ",".join(env_vars)
     else:
         export = f"--export={environment_variables.upper()}"
-    options = [
-        f"{'-' if len(k) == 1 else '--'}{k}={quote(str(v))}" for k, v in options.items()
-    ]
+    options = _format_cli_options(options)
     sbatch_cmd = _shutil_which("sbatch")
     if len(export) > 9:
         cmd_args = [sbatch_cmd, export] + options + [str(script.absolute())]
@@ -287,3 +286,53 @@ def _sbatch(
             logger.error(
                 "Captured stderr from sbatch submission: %s", process.stderr.decode()
             )
+
+
+def _sbatch_template(
+    template: str,
+    script: Path | None,
+    template_data: dict[str, Any],
+    environment_variables: dict[str, Any] | Literal["all", "nil", "none"],
+    options: dict[str, Any],
+    verbosity: int | None,
+    dry_run: bool,
+) -> Path:
+    """
+    Submit a job from a template to slurm via the `sbatch` command.
+
+    Args:
+        template: The name of the template to use for rendering the sbatch script.
+        script: Either the path of where to save the rendered sbatch script to or `None`
+            for a tmp file.
+        template_data: Data accessible to the template when rendering.
+        environment_variables: Environment variables to pass to the job via the
+            '--export' option. Keys correspond to the variable name and the value is
+            the variable value. All values are coerced to a string and then escaped.
+            Or can be a literal for one of the '--export' option's special values.
+        options: Options to pass when calling sbatch. Keys correspond to the option
+            name and the value is the option value. Options can be provided as either
+            the long or short name, but this function will not be able to determine that
+            these are duplicates so only using long names is recommended.
+        verbosity: A integer verbosity level to enable logging or `None` for no logging.
+        dry_run: A boolean indicating if this is a dry run or not, if set to `True` this
+            function will not actually submit a job to slurm.
+
+    Returns:
+        The rendered sbatch script, either a tmp file if `script` is None otherwise
+        `script` is returned.
+
+    Raises:
+        ValueError: If 'options' is found in `template_data` and `options` is not empty.
+    """
+    template_data["interpreter"] = template_data.get("interpreter", "bash")
+    if "options" in template_data and options:
+        raise ValueError(
+            "Found 'options' in `template_data` but `options` is not empty, can only one."
+        )
+    template_data["options"] = _format_cli_options(template_data.get("options", options))
+    if script is None:
+        script = _render_template_to_temp_file(template, template_data, suffix=".sbatch")
+    else:
+        _render_template_to_file(template, template_data, script)
+    _sbatch(script, environment_variables, {}, verbosity, dry_run)
+    return script
