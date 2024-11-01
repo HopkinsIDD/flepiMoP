@@ -474,3 +474,35 @@ class TestCompartments:
         transitions_df = reader(transitions_path)
         assert isinstance(compartments_df, pd.DataFrame)
         assert isinstance(transitions_df, pd.DataFrame)
+
+    @pytest.mark.parametrize("factory", valid_input_factories)
+    @pytest.mark.parametrize(
+        ("compartments_file", "transitions_file"),
+        (("compartments.parquet", "transitions.parquet"),),
+    )
+    def test_from_file_output_validation(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        factory: Callable[[Path], MockCompartmentsInput],
+        compartments_file: PathLike,
+        transitions_file: PathLike,
+    ) -> None:
+        # This is a bit of a copout, `Compartments.__init__` calls `fromFile`
+        # under the hood. Should really make `fromFile` a class method.
+        monkeypatch.chdir(tmp_path)
+        mock_inputs = factory(tmp_path)
+        compartments = mock_inputs.compartments_instance()
+
+        assert (
+            compartments.to_file(
+                compartments_file=compartments_file,
+                transitions_file=transitions_file,
+                write_parquet=True,
+            )
+            is None
+        )
+        compartments2 = Compartments(
+            compartments_file=compartments_file, transitions_file=transitions_file
+        )
+        assert compartments2 == compartments

@@ -670,7 +670,18 @@ class Compartments:
             write_parquet=write_parquet,
         )
 
-    def fromFile(self, compartments_file, transitions_file):
+    def fromFile(self, compartments_file: PathLike, transitions_file: PathLike) -> None:
+        """
+        Read compartments and transitions files.
+
+        Args:
+            compartments_file: The file to read the compartments from.
+            transitions_file: The file to read the transitions from.
+
+        Notes:
+            This function does not return the read and parsed files, but instead assigns
+            them to the instance.
+        """
         self.compartments = pq.read_table(compartments_file).to_pandas()
         self.transitions = pq.read_table(transitions_file).to_pandas()
         compartment_dimension = self.compartments.shape[1] - 1
@@ -689,8 +700,6 @@ class Compartments:
         self.transitions["proportion_exponent"] = self.unformat_proportion_exponent(
             self.transitions["proportion_exponent"], compartment_dimension
         )
-
-        return
 
     def get_comp_idx(
         self, comp_dict: dict[str, Any], error_info: str = "no information"
