@@ -27,9 +27,7 @@ def test_output_validation(repository: Path, sha: str) -> None:
         check: bool = True,
     ) -> str | None:
         return (
-            "git"
-            if cmd == "git"
-            else _shutil_which(cmd, mode=mode, path=path, check=check)
+            "git" if cmd == "git" else _shutil_which(cmd, mode=mode, path=path, check=check)
         )
 
     def subprocess_run_wraps(args, **kwargs):
