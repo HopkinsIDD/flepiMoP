@@ -7,3 +7,5 @@ modules:
   - name: git
     version: 2.42.0
   - name: slurm
+path_exports:
+  - path: ~/aws-cli/bin
