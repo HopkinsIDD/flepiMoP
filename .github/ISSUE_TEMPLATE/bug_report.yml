@@ -13,11 +13,13 @@ body:
         - bug
         - batch
         - config
-        - flepiconfig
+        - dependency
         - documentation
         - docstring
         - duplicate
         - enhancement
+        - flepicommon
+        - flepiconfig
         - gempyor
         - good first issue
         - inference
@@ -25,6 +27,7 @@ body:
         - meta/workflow
         - operations
         - performance
+        - plotting
         - post-processing
         - quick issue
         - seeding
