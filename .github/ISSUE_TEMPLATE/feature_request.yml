@@ -18,8 +18,6 @@ body:
         - docstring
         - duplicate
         - enhancement
-        - flepicommon
-        - flepiconfig
         - gempyor
         - good first issue
         - inference
@@ -30,6 +28,9 @@ body:
         - plotting
         - post-processing
         - quick issue
+        - r-flepicommon
+        - r-flepiconfig
+        - r-inference
         - seeding
         - submission
         - wontfix
