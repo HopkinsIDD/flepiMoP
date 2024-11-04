@@ -10,7 +10,7 @@ Comments can be added to the config file by starting with the hash key (`#`) the
 
 ## Example
 
-_(give a simple configuration for a toy model with two subpopulations, SEIR, single "cases" outcome, single seeded infection, single NPI that starts after some time? this page is currently under development, please see our_ [_example repo_](https://github.com/HopkinsIDD/flepimop\_sample) _for some simple configurations)_&#x20;
+_(give a simple configuration for a toy model with two subpopulations, SEIR, single "cases" outcome, single seeded infection, single NPI that starts after some time? this page is currently under development, please see our_ [_example repo_](https://github.com/HopkinsIDD/flepimop\_sample) _for some simple configurations) ;
 
 When referring to config items (individual parameters), we use their full position in the outline. For example, in the sample config file above, we denote
 
@@ -30,11 +30,7 @@ Parameters and other options specified in the configuration files can take on a 
 * **boolean** values are either "TRUE" or "FALSE"
 * **files** names are strings
 * **probability** is a float between 0 and 1
-* **distribution** is a probability distribution from which a random value for the parameter is drawn each time a new simulation is run (or chain, if doing inference), and is specified with the following config structure:
-
-### Distributions
-
-<table><thead><tr><th width="165">Distribution</th><th width="135">Parameters</th><th width="185">Type/Format</th><th>Description</th></tr></thead><tbody><tr><td><code>fixed</code></td><td><code>value</code></td><td>Any real number</td><td>Draws all values exactly equal to <code>value</code></td></tr><tr><td><code>uniform</code></td><td><code>low</code></td><td>Any real number</td><td>Draws all values randomly from a uniform distribution with range <code>[low, high]</code></td></tr><tr><td></td><td><code>high</code></td><td>Any real number greater than <code>low</code></td><td></td></tr><tr><td><code>poisson</code></td><td><code>lam</code></td><td>Any positive real number</td><td>Draws all values randomly from a Poisson distribution with rate parameter  (mean) <code>lam</code> (lambda)</td></tr><tr><td><code>binomial</code></td><td><code>size</code></td><td>Any non-negative integer</td><td>Draws all values randomly from a binomial distribution with number of trials (n) = <code>size</code> and probability of success on each trial (p) = <code>prob</code></td></tr><tr><td></td><td><code>prob</code></td><td>Any number in [0,1]</td><td></td></tr><tr><td><code>lognormal</code></td><td><code>meanlog</code></td><td>Any real number</td><td>Draws all values randomly from a lognormal distribution (natural log, base <em>e</em>) with mean on a log scale of <code>meanlog</code> and standard deviation on a log scale of <code>sdlog</code></td></tr><tr><td></td><td><code>sdlog</code></td><td>Any non-negative real number</td><td></td></tr><tr><td><code>truncnorm</code></td><td><code>mean</code></td><td>Any real number</td><td>Draws all values randomly from a truncated normal distribution with mean <code>mean</code> and standard deviation <code>sd</code>, truncated to have a maximum value of <code>a</code> and a minimum value of <code>b</code></td></tr><tr><td></td><td><code>sd</code></td><td>Any non-negative real number</td><td></td></tr><tr><td></td><td><code>a</code></td><td>Any real number, or <code>-Inf</code></td><td></td></tr><tr><td></td><td><code>b</code></td><td>Any real number greater than <code>a</code>, or <code>Inf</code></td><td></td></tr></tbody></table>
+* **distribution** is a probability distribution from which a random value for the parameter is drawn each time a new simulation is run (or chain, if doing inference). See [here](distributions.md) for the require schema.
 
 ## Configuration files sections
 
@@ -60,13 +56,13 @@ end_date_groundtruth: 2020-12-31
 nslots: 1000
 ```
 
-### `spatial_setup` section
+### `subpop_setup` section
 
 {% hint style="success" %}
 Required section
 {% endhint %}
 
-This section specifies the population structure on which the model will be simulated, including the names and sizes of each subpopulation and the connectivity between them. More details [here](broken-reference).
+This section specifies the population structure on which the model will be simulated, including the names and sizes of each subpopulation and the connectivity between them. More details [here](specifying-population-structure.md).
 
 ### `compartments` section
 
@@ -74,7 +70,7 @@ This section specifies the population structure on which the model will be simul
 Required section
 {% endhint %}
 
-This section is where users can specify the variables (infection states) that will be tracked in the infectious disease transmission model. More details can be found [here](compartmental-model-structure.md). The other details of the model are specified in the `seir` section, including transitions between these compartments (`seir::transitions`), the names of the parameters governing the transitions (`seir::parameters`), and the numerical method used to simulate the equations over time (`seir::integration`). The initial conditions of the model can be specified in the `initial_conditions` section, and any other inputs into the model from external populations or instantaneous transitions between states that occur at later times can be specified in the `seeding` section. &#x20;
+This section is where users can specify the variables (infection states) that will be tracked in the infectious disease transmission model. More details can be found [here](compartmental-model-structure.md). The other details of the model are specified in the `seir` section, including transitions between these compartments (`seir::transitions`), the names of the parameters governing the transitions (`seir::parameters`), and the numerical method used to simulate the equations over time (`seir::integration`). The initial conditions of the model can be specified in the `initial_conditions` section, and any other inputs into the model from external populations or instantaneous transitions between states that occur at later times can be specified in the `seeding` section. ;
 
 ### `seir` section
 
@@ -82,7 +78,7 @@ This section is where users can specify the variables (infection states) that wi
 Required section
 {% endhint %}
 
-This section is where users can specify the details of the infectious disease transmission model they wish to simulate (e.g., SEIR). This model describes the allowed transitions (`seir::transitions`) between the compartments that were specified in the `compartments` section, the values of the parameters involved in these transitions (`seir::parameters`), and the numerical method used to simulate the equations over time (`seir::integration`).  More details [here](compartmental-model-structure.md).  The initial conditions of the model can be specified in the separate `initial_conditions` section, and any other inputs into the model from external populations or instantaneous transitions between states that occur at later times can be specified in the `seeding` section. &#x20;
+This section is where users can specify the details of the infectious disease transmission model they wish to simulate (e.g., SEIR). This model describes the allowed transitions (`seir::transitions`) between the compartments that were specified in the `compartments` section, the values of the parameters involved in these transitions (`seir::parameters`), and the numerical method used to simulate the equations over time (`seir::integration`).  More details [here](compartmental-model-structure.md).  The initial conditions of the model can be specified in the separate `initial_conditions` section, and any other inputs into the model from external populations or instantaneous transitions between states that occur at later times can be specified in the `seeding` section. ;
 
 ### `initial_conditions` section
 
@@ -90,7 +86,7 @@ This section is where users can specify the details of the infectious disease tr
 Optional section
 {% endhint %}
 
-This section is used to specify the initial conditions of the model, which define how individuals are distributed between the model compartments at the time the model simulation begins. Importantly, the initial conditions specify the time and location where infection is first introduced. If this section is omitted, default values are used. If users want to add infections to the population at later times, or add or remove individuals from compartments separately from the model rules, they can do so via the related `seeding` section. More details [here](specifying-initial-conditions-and-seeding.md).&#x20;
+This section is used to specify the initial conditions of the model, which define how individuals are distributed between the model compartments at the time the model simulation begins. Importantly, the initial conditions specify the time and location where infection is first introduced. If this section is omitted, default values are used. If users want to add infections to the population at later times, or add or remove individuals from compartments separately from the model rules, they can do so via the related `seeding` section. More details [here](specifying-initial-conditions.md) ;
 
 ### `seeding` section
 
@@ -98,7 +94,7 @@ This section is used to specify the initial conditions of the model, which defin
 Optional section
 {% endhint %}
 
-This section is used to specify how individuals are instantaneously "seeded" from one compartment to another, where they then continue to be governed by the model equations. For example, this seeding could be used to represent importations of infected individuals from an outside population, mutation events that create new strains, or vaccinations that alter disease susceptibility. Seeding events can occur at any time in the simulation. The seeding section specifies the numeric values added to or removed from any compartment of the model. More details [here](specifying-initial-conditions-and-seeding.md).&#x20;
+This section is used to specify how individuals are instantaneously "seeded" from one compartment to another, where they then continue to be governed by the model equations. For example, this seeding could be used to represent importations of infected individuals from an outside population, mutation events that create new strains, or vaccinations that alter disease susceptibility. Seeding events can occur at any time in the simulation. The seeding section specifies the numeric values added to or removed from any compartment of the model. More details [here](specifying-initial-conditions.md) ;
 
 ### `outcomes` section
 
@@ -106,7 +102,7 @@ This section is used to specify how individuals are instantaneously "seeded" fro
 Optional section
 {% endhint %}
 
-This section is where users can define new variables representing the observed quantities and how they are related to the underlying state variables in the model (e.g., the fraction of infections that are detected as cases). More details [here](outcomes-for-compartments.md).&#x20;
+This section is where users can define new variables representing the observed quantities and how they are related to the underlying state variables in the model (e.g., the fraction of infections that are detected as cases). More details [here](outcomes-for-compartments.md) ;
 
 ### `interventions` section
 
@@ -114,7 +110,7 @@ This section is where users can define new variables representing the observed q
 Required section
 {% endhint %}
 
-This section is where users can specify time-varying changes to parameters governing either the infectious disease model or the observational model. More details [here](intervention-templates.md).&#x20;
+This section is where users can specify time-varying changes to parameters governing either the infectious disease model or the observational model. More details [here](intervention-templates.md) ;
 
 ### `inference` section
 
@@ -122,4 +118,4 @@ This section is where users can specify time-varying changes to parameters gover
 Optional section
 {% endhint %}
 
-This section is where users can specify the details of how the model is fit to data, including what data streams they will be included and which outcome variables they represent and the likelihood functions describing the probability of the data given the model. More details [here](../../model-inference/inference-implementation/). &#x20;
+This section is where users can specify the details of how the model is fit to data, including what data streams they will be included and which outcome variables they represent and the likelihood functions describing the probability of the data given the model. More details [here](../../model-inference/inference-implementation/). ;

@@ -22,7 +22,7 @@ The first iteration of an MCMC algorithm is a special case, because we need to p
 
 #### Resume from previous run
 
-We can, instead of bootstrapping our first iteration, read in final values of a previous iteration. This allows us to resume from runs to save computational time and effectively continue iterating on the same chain. We call these **resumes**: inferred parameters are taken from a previous run and allowed to continue being inferred.&#x20;
+We can, instead of bootstrapping our first iteration, read in final values of a previous iteration. This allows us to resume from runs to save computational time and effectively continue iterating on the same chain. We call these **resumes**: inferred parameters are taken from a previous run and allowed to continue being inferred ;
 
 Resumes take the following files (if they exist) from previous runs and uses them as the starting point of a new run:
 
@@ -32,4 +32,4 @@ Resumes take the following files (if they exist) from previous runs and uses the
 
 #### Continue from previous run
 
-In addition to resuming parameters (above), we can also perform a **continuation resume**. In addition to resuming parameters and seeding, continuations also use the compartmental fits from previous runs. For a config starting at time $$t_s$$ continuing and resuming from a previous run, the compartmental states of the previous run at time $$t_s$$are used as the initial conditions of the continuation resume.&#x20;
+In addition to resuming parameters (above), we can also perform a **continuation resume**. In addition to resuming parameters and seeding, continuations also use the compartmental fits from previous runs. For a config starting at time $$t_s$$ continuing and resuming from a previous run, the compartmental states of the previous run at time $$t_s$$are used as the initial conditions of the continuation resume ;

@@ -26,9 +26,9 @@ aggregate_and_calc_loc_likelihoods <- function(
         modeled_outcome,
         obs_subpop,
         targets_config,
-        obs,
+        obs, # should remove this, it's not used
         ground_truth_data,
-        hosp_file,
+        hosp_file, # should remove this, it's not used
         hierarchical_stats,
         defined_priors,
         geodata,
@@ -51,7 +51,7 @@ aggregate_and_calc_loc_likelihoods <- function(
             ## Filter to this location
             dplyr::filter(
                 modeled_outcome,
-                !!rlang::sym(obs_subpop) == location 
+                !!rlang::sym(obs_subpop) == location
             ) %>%
             ## Reformat into form the algorithm is looking for
             inference::getStats(
@@ -69,11 +69,11 @@ aggregate_and_calc_loc_likelihoods <- function(
 
           obs_tmp1 <- ground_truth_data[[location]][[var]]
           obs_tmp <- obs_tmp1[!is.na(obs_tmp1$data_var) & !is.na(obs_tmp1$date),]
-          sim_tmp1 <- this_location_modeled_outcome[[var]] 
-          sim_tmp <- sim_tmp1[match(lubridate::as_date(sim_tmp1$date), 
+          sim_tmp1 <- this_location_modeled_outcome[[var]]
+          sim_tmp <- sim_tmp1[match(lubridate::as_date(sim_tmp1$date),
                                     lubridate::as_date(obs_tmp$date)),] %>% na.omit()
-          
-          
+
+
             this_location_log_likelihood <- this_location_log_likelihood +
                 ## Actually compute likelihood for this location and statistic here:
                 sum(inference::logLikStat(
@@ -121,7 +121,7 @@ aggregate_and_calc_loc_likelihoods <- function(
                 transform = hierarchical_stats[[stat]]$transform
             )
 
-        } else  if (hierarchical_stats[[stat]]$module %in% c("hospitalization", "outcomes_parameters")) {
+        } else if (hierarchical_stats[[stat]]$module %in% c("hospitalization", "outcomes_parameters")) {
 
             ll_adjs <- inference::calc_hierarchical_likadj(
                 stat = hierarchical_stats[[stat]]$name,
@@ -133,14 +133,11 @@ aggregate_and_calc_loc_likelihoods <- function(
                 stat_name_col = "parameter"
             )
 
-        } else  if (hierarchical_stats[[stat]]$module == "seir_parameters") {
+        } else if (hierarchical_stats[[stat]]$module == "seir_parameters") {
             stop("We currently do not support hierarchies on seir parameters, since we don't do inference on them except via npis.")
         } else {
             stop("unsupported hierarchical stat module")
         }
-
-
-
 
         ##probably a more efficient what to do this, but unclear...
         likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
@@ -182,14 +179,14 @@ aggregate_and_calc_loc_likelihoods <- function(
                 )) %>%
                 dplyr::select(subpop, likadj)
 
-        } else  if (hierarchical_stats[[stat]]$module == "seir_parameters") {
+        } else if (hierarchical_stats[[stat]]$module == "seir_parameters") {
             stop("We currently do not support priors on seir parameters, since we don't do inference on them except via npis.")
         } else {
             stop("unsupported prior module")
         }
 
         ##probably a more efficient what to do this, but unclear...
-        likelihood_data<- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
+        likelihood_data <- dplyr::left_join(likelihood_data, ll_adjs, by = obs_subpop) %>%
             dplyr::mutate(ll = ll + likadj) %>%
             dplyr::select(-likadj)
     }
@@ -622,71 +619,71 @@ initialize_mcmc_first_block <- function(
 
     if (!is.null(config$initial_conditions)){
       if(config$initial_conditions$method  != "plugin"){
-        
+
         if ("init_filename" %in% global_file_names) {
-          
+
           if (config$initial_conditions$method %in% c("FromFile", "SetInitialConditions")){
-            
+
             if (is.null(config$initial_conditions$initial_conditions_file)) {
               stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
             }
             initial_init_file <- config$initial_conditions$initial_conditions_file
-            
+
           } else if (config$initial_conditions$method %in% c("InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw")) {
             print("Initial conditions in inference has not been fully implemented yet for the 'folder draw' methods,
                       and no copying to global or chimeric files is being done.")
-            
+
             if (is.null(config$initial_conditions$initial_file_type)) {
               stop("ERROR: Initial conditions file needs to be specified in the config under `initial_conditions:initial_conditions_file`")
             }
             initial_init_file <- global_files[[paste0(config$initial_conditions$initial_file_type, "_filename")]]
           }
-          
-          
+
+
           if (!file.exists(initial_init_file)) {
             stop("ERROR: Initial conditions file specified but does not exist.")
           }
-          
+
           if (grepl(".csv", initial_init_file)){
             initial_init <- readr::read_csv(initial_init_file,show_col_types = FALSE)
           }else{
             initial_init <- arrow::read_parquet(initial_init_file)
           }
-          
+
           # if the initial conditions file contains a 'date' column, filter for config$start_date
-          
+
           if("date" %in% colnames(initial_init)){
-            
+
             initial_init <- initial_init %>%
               dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
               dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
-            
+
             if (nrow(initial_init) == 0) {
               stop("ERROR: Initial conditions file specified but does not contain the start date.")
-            }  
-            
+            }
+
           }
-          
+
           arrow::write_parquet(initial_init, global_files[["init_filename"]])
         }
-        
+
         # if the initial conditions file contains a 'date' column, filter for config$start_date
         if (grepl(".csv", global_files[["init_filename"]])){
           initial_init <- readr::read_csv(global_files[["init_filename"]],show_col_types = FALSE)
         }else{
           initial_init <- arrow::read_parquet(global_files[["init_filename"]])
         }
-        
+
         if("date" %in% colnames(initial_init)){
-          
+
           initial_init <- initial_init %>%
             dplyr::mutate(date = as.POSIXct(date, tz="UTC")) %>%
             dplyr::filter(date == as.POSIXct(paste0(config$start_date, " 00:00:00"), tz="UTC"))
-          
+
           if (nrow(initial_init) == 0) {
             stop("ERROR: Initial conditions file specified but does not contain the start date.")
-          }  
-          
+          }
+
         }
         arrow::write_parquet(initial_init, global_files[["init_filename"]])
       }else if(config$initial_conditions$method  == "plugin"){

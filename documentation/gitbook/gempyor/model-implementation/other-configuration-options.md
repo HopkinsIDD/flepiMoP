@@ -30,7 +30,7 @@ end_date: 2020-05-31
 data_path: data
 nslots: 1
 
-spatial_setup:
+subpop_setup:
   geodata: geodata_sample_1pop.csv
   mobility: mobility_sample_1pop.csv
   popnodes: population
