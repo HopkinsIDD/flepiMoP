@@ -375,9 +375,9 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow an isolated compartment: '{comp_dict}' "
+                f"The provided dictionary does not allow an isolated compartment: '{comp_dict}'. "
                 f"Isolate '{self.compartments[mask]}'. "
-                f"The get_comp_idx function was called by '{error_info}'."
+                f"The `get_comp_idx` function was called by '{error_info}'."
             )
         return comp_idx[0]
 
@@ -496,8 +496,8 @@ class Compartments:
                                 rc = compartment
                         if rc == -1:
                             raise ValueError(
-                                f"Could not find proportional_to {elem3} in compartments. "
-                                f"Available compartments: {self.compartments}."
+                                f"Could not find `proportional_to` '{elem3}' in compartments. "
+                                f"Available compartments: '{self.compartments}'."
                             )
 
                         proportion_array[proportion_index] = rc
@@ -611,8 +611,8 @@ class Compartments:
         ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
             raise ValueError(
                 f"Could not parse string '{string_list}'. " 
-                f"This usually mean that '{string_list[0]}' is a parameter name that is not defined "
-                f"or that it contains an operator that is not in the list of supported operators: ^,*,/,+,-. "
+                f"This usually means that '{string_list[0]}' is a parameter name that is not defined "
+                f"or that it contains an operator that is not in the list of supported operators: '{operators}'. "
                 f"The defined parameters are '{parameter_names}'."
             )
 

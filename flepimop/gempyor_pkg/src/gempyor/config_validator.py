@@ -70,20 +70,11 @@ class SeedingConfig(BaseModel):
         seeding_file_type = values.get('seeding_file_type')        
         seeding_file = values.get('seeding_file')        
         if method == 'PoissonDistributed' and not lambda_file:
-            raise ValueError(
-                f"A `lambda_file` is required when method is '{method}', "
-                f"was given '{lambda_file}'."
-            )
+            raise ValueError("A `lambda_file` is required when method is 'PoissonDistributed'.")
         if method == 'FolderDraw' and not seeding_file_type:
-            raise ValueError(
-                f"A `seeding_file_type` is required when method is 'FolderDraw', "
-                f"was given '{seeding_file_type}'."
-            )
+            raise ValueError("A `seeding_file_type` is required when method is 'FolderDraw'.")
         if method == 'FromFile' and not seeding_file:
-            raise ValueError(
-                f"A `seeding_file` is required when method is 'FromFile', "
-                f"was given '{seeding_file}'."
-            )
+            raise ValueError("A `seeding_file` is required when method is 'FromFile'.")
         return values
     
     @model_validator(mode='before')
@@ -358,7 +349,7 @@ class CheckConfig(BaseModel):
     def init_or_seed(cls, values):
         init = values.get('initial_conditions')
         seed = values.get('seeding')
-        if not init or seed:
+        if not (init or seed):
             raise ValueError(
                 f"At least one of `initial_conditions` or `seeding` must be provided."
                 )
