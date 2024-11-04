@@ -22,7 +22,9 @@ def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
 
     loaded_values = None
-    if (n_jobs == 1) or (modinf.nslots == 1):  # run single process for debugging/profiling purposes
+    if (n_jobs == 1) or (
+        modinf.nslots == 1
+    ):  # run single process for debugging/profiling purposes
         for sim_offset in np.arange(nslots):
             onerun_delayframe_outcomes(
                 sim_id2write=sim_id2writes[sim_offset],
@@ -100,7 +102,9 @@ def onerun_delayframe_outcomes(
 
     npi_outcomes = None
     if modinf.npi_config_outcomes:
-        npi_outcomes = build_outcome_modifiers(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi_outcomes = build_outcome_modifiers(
+            modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+        )
 
     loaded_values = None
     if load_ID:
@@ -117,7 +121,13 @@ def onerun_delayframe_outcomes(
         )
 
     with Timer("onerun_delayframe_outcomes.postprocess"):
-        postprocess_and_write(sim_id=sim_id2write, modinf=modinf, outcomes_df=outcomes_df, hpar=hpar, npi=npi_outcomes)
+        postprocess_and_write(
+            sim_id=sim_id2write,
+            modinf=modinf,
+            outcomes_df=outcomes_df,
+            hpar=hpar,
+            npi=npi_outcomes,
+        )
 
 
 def read_parameters_from_config(modinf: model_info.ModelInfo):
@@ -129,7 +139,10 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         if modinf.outcomes_config["param_from_file"].exists():
             if modinf.outcomes_config["param_from_file"].get():
                 # Load the actual csv file
-                branching_file = modinf.path_prefix / modinf.outcomes_config["param_subpop_file"].as_str()
+                branching_file = (
+                    modinf.path_prefix
+                    / modinf.outcomes_config["param_subpop_file"].as_str()
+                )
                 branching_data = pa.parquet.read_table(branching_file).to_pandas()
                 if "relative_probability" not in list(branching_data["quantity"]):
                     raise ValueError(
@@ -142,14 +155,18 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                     "",
                     end="",
                 )
-                branching_data = branching_data[branching_data["subpop"].isin(modinf.subpop_struct.subpop_names)]
+                branching_data = branching_data[
+                    branching_data["subpop"].isin(modinf.subpop_struct.subpop_names)
+                ]
                 print(
                     "Intersect with seir simulation: ",
                     len(branching_data.subpop.unique()),
                     "kept",
                 )
 
-                if len(branching_data.subpop.unique()) != len(modinf.subpop_struct.subpop_names):
+                if len(branching_data.subpop.unique()) != len(
+                    modinf.subpop_struct.subpop_names
+                ):
                     raise ValueError(
                         f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
                     )
@@ -170,10 +187,14 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         f"unsure how to read outcome {new_comp}: not a str, nor an incidence or prevalence: {src_name}"
                     )
 
-                parameters[new_comp]["probability"] = outcomes_config[new_comp]["probability"]["value"]
+                parameters[new_comp]["probability"] = outcomes_config[new_comp][
+                    "probability"
+                ]["value"]
                 if outcomes_config[new_comp]["probability"]["modifier_parameter"].exists():
                     parameters[new_comp]["probability::npi_param_name"] = (
-                        outcomes_config[new_comp]["probability"]["modifier_parameter"].as_str().lower()
+                        outcomes_config[new_comp]["probability"]["modifier_parameter"]
+                        .as_str()
+                        .lower()
                     )
                     logging.debug(
                         f"probability of outcome {new_comp} is affected by intervention "
@@ -181,13 +202,19 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         f"instead of {new_comp}::probability"
                     )
                 else:
-                    parameters[new_comp]["probability::npi_param_name"] = f"{new_comp}::probability".lower()
+                    parameters[new_comp][
+                        "probability::npi_param_name"
+                    ] = f"{new_comp}::probability".lower()
 
                 if outcomes_config[new_comp]["delay"].exists():
-                    parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
+                    parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"][
+                        "value"
+                    ]
                     if outcomes_config[new_comp]["delay"]["modifier_parameter"].exists():
                         parameters[new_comp]["delay::npi_param_name"] = (
-                            outcomes_config[new_comp]["delay"]["modifier_parameter"].as_str().lower()
+                            outcomes_config[new_comp]["delay"]["modifier_parameter"]
+                            .as_str()
+                            .lower()
                         )
                         logging.debug(
                             f"delay of outcome {new_comp} is affected by intervention "
@@ -195,18 +222,28 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             f"instead of {new_comp}::delay"
                         )
                     else:
-                        parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
+                        parameters[new_comp][
+                            "delay::npi_param_name"
+                        ] = f"{new_comp}::delay".lower()
                 else:
                     logging.critical(f"No delay for outcome {new_comp}, using a 0 delay")
                     outcomes_config[new_comp]["delay"] = {"value": 0}
-                    parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
-                    parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
+                    parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"][
+                        "value"
+                    ]
+                    parameters[new_comp][
+                        "delay::npi_param_name"
+                    ] = f"{new_comp}::delay".lower()
 
                 if outcomes_config[new_comp]["duration"].exists():
-                    parameters[new_comp]["duration"] = outcomes_config[new_comp]["duration"]["value"]
+                    parameters[new_comp]["duration"] = outcomes_config[new_comp][
+                        "duration"
+                    ]["value"]
                     if outcomes_config[new_comp]["duration"]["modifier_parameter"].exists():
                         parameters[new_comp]["duration::npi_param_name"] = (
-                            outcomes_config[new_comp]["duration"]["modifier_parameter"].as_str().lower()
+                            outcomes_config[new_comp]["duration"]["modifier_parameter"]
+                            .as_str()
+                            .lower()
                         )
                         logging.debug(
                             f"duration of outcome {new_comp} is affected by intervention "
@@ -214,7 +251,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             f"instead of {new_comp}::duration"
                         )
                     else:
-                        parameters[new_comp]["duration::npi_param_name"] = f"{new_comp}::duration".lower()
+                        parameters[new_comp][
+                            "duration::npi_param_name"
+                        ] = f"{new_comp}::duration".lower()
 
                     if outcomes_config[new_comp]["duration"]["name"].exists():
                         parameters[new_comp]["outcome_prevalence_name"] = (
@@ -231,14 +270,22 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                             & (branching_data["quantity"] == "relative_probability")
                         ].copy(deep=True)
                         if len(rel_probability) > 0:
-                            logging.debug(f"Using 'param_from_file' for relative probability in outcome {new_comp}")
+                            logging.debug(
+                                f"Using 'param_from_file' for relative probability in outcome {new_comp}"
+                            )
                             # Sort it in case the relative probablity file is mispecified
-                            rel_probability.subpop = rel_probability.subpop.astype("category")
-                            rel_probability.subpop = rel_probability.subpop.cat.set_categories(
-                                modinf.subpop_struct.subpop_names
+                            rel_probability.subpop = rel_probability.subpop.astype(
+                                "category"
+                            )
+                            rel_probability.subpop = (
+                                rel_probability.subpop.cat.set_categories(
+                                    modinf.subpop_struct.subpop_names
+                                )
                             )
                             rel_probability = rel_probability.sort_values(["subpop"])
-                            parameters[new_comp]["rel_probability"] = rel_probability["value"].to_numpy()
+                            parameters[new_comp]["rel_probability"] = rel_probability[
+                                "value"
+                            ].to_numpy()
                         else:
                             logging.debug(
                                 f"*NOT* Using 'param_from_file' for relative probability in outcome  {new_comp}"
@@ -348,7 +395,9 @@ def compute_all_multioutcomes(
                         outcome_name=new_comp,
                     )
                 else:
-                    raise ValueError(f"Unknown type for seir simulation provided, got f{type(seir_sim)}")
+                    raise ValueError(
+                        f"Unknown type for seir simulation provided, got f{type(seir_sim)}"
+                    )
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 if source_name in all_data:
@@ -358,16 +407,22 @@ def compute_all_multioutcomes(
                         f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes."
                     )
 
-            if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
+            if (loaded_values is not None) and (
+                new_comp in loaded_values["outcome"].values
+            ):
                 ## This may be unnecessary
                 probabilities = loaded_values[
-                    (loaded_values["quantity"] == "probability") & (loaded_values["outcome"] == new_comp)
+                    (loaded_values["quantity"] == "probability")
+                    & (loaded_values["outcome"] == new_comp)
                 ]["value"].to_numpy()
-                delays = loaded_values[(loaded_values["quantity"] == "delay") & (loaded_values["outcome"] == new_comp)][
-                    "value"
-                ].to_numpy()
+                delays = loaded_values[
+                    (loaded_values["quantity"] == "delay")
+                    & (loaded_values["outcome"] == new_comp)
+                ]["value"].to_numpy()
             else:
-                probabilities = parameters[new_comp]["probability"].as_random_distribution()(
+                probabilities = parameters[new_comp][
+                    "probability"
+                ].as_random_distribution()(
                     size=len(modinf.subpop_struct.subpop_names)
                 )  # one draw per subpop
                 if "rel_probability" in parameters[new_comp]:
@@ -378,8 +433,12 @@ def compute_all_multioutcomes(
                 )  # one draw per subpop
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
-            probabilities = np.repeat(probabilities[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
-            delays = np.repeat(delays[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
+            probabilities = np.repeat(
+                probabilities[:, np.newaxis], len(dates), axis=1
+            ).T  # duplicate in time
+            delays = np.repeat(
+                delays[:, np.newaxis], len(dates), axis=1
+            ).T  # duplicate in time
             delays = np.round(delays).astype(int)
             # Write hpar before NPI
             subpop_names_len = len(modinf.subpop_struct.subpop_names)
@@ -387,7 +446,7 @@ def compute_all_multioutcomes(
                 {
                     "subpop": 2 * modinf.subpop_struct.subpop_names,
                     "quantity": (subpop_names_len * ["probability"])
-                        + (subpop_names_len * ["delay"]),
+                    + (subpop_names_len * ["delay"]),
                     "outcome": 2 * subpop_names_len * [new_comp],
                     "value": np.concatenate(
                         (
@@ -402,42 +461,59 @@ def compute_all_multioutcomes(
             if npi is not None:
                 delays = NPI.reduce_parameter(
                     parameter=delays,
-                    modification=npi.getReduction(parameters[new_comp]["delay::npi_param_name"].lower()),
+                    modification=npi.getReduction(
+                        parameters[new_comp]["delay::npi_param_name"].lower()
+                    ),
                 )
 
                 delays = np.round(delays).astype(int)
                 probabilities = NPI.reduce_parameter(
                     parameter=probabilities,
-                    modification=npi.getReduction(parameters[new_comp]["probability::npi_param_name"].lower()),
+                    modification=npi.getReduction(
+                        parameters[new_comp]["probability::npi_param_name"].lower()
+                    ),
                 )
 
             # Create new compartment incidence:
             all_data[new_comp] = np.empty_like(source_array)
             # Draw with from source compartment
             if modinf.stoch_traj_flag:
-                all_data[new_comp] = np.random.binomial(source_array.astype(np.int32), probabilities)
+                all_data[new_comp] = np.random.binomial(
+                    source_array.astype(np.int32), probabilities
+                )
             else:
-                all_data[new_comp] = source_array * (probabilities * np.ones_like(source_array))
+                all_data[new_comp] = source_array * (
+                    probabilities * np.ones_like(source_array)
+                )
 
             # Shift to account for the delay
             ## stoch_delay_flag is whether to use stochastic delays or not
             stoch_delay_flag = False
-            all_data[new_comp] = multishift(all_data[new_comp], delays, stoch_delay_flag=stoch_delay_flag)
+            all_data[new_comp] = multishift(
+                all_data[new_comp], delays, stoch_delay_flag=stoch_delay_flag
+            )
             # Produce a dataframe an merge it
-            df_p = dataframe_from_array(all_data[new_comp], modinf.subpop_struct.subpop_names, dates, new_comp)
+            df_p = dataframe_from_array(
+                all_data[new_comp], modinf.subpop_struct.subpop_names, dates, new_comp
+            )
             outcomes = pd.merge(outcomes, df_p)
 
             # Make duration
             if "duration" in parameters[new_comp]:
-                if (loaded_values is not None) and (new_comp in loaded_values["outcome"].values):
+                if (loaded_values is not None) and (
+                    new_comp in loaded_values["outcome"].values
+                ):
                     durations = loaded_values[
-                        (loaded_values["quantity"] == "duration") & (loaded_values["outcome"] == new_comp)
+                        (loaded_values["quantity"] == "duration")
+                        & (loaded_values["outcome"] == new_comp)
                     ]["value"].to_numpy()
                 else:
                     durations = parameters[new_comp]["duration"].as_random_distribution()(
                         size=len(modinf.subpop_struct.subpop_names)
                     )  # one draw per subpop
-                durations = np.repeat(durations[:, np.newaxis], len(dates), axis=1).T  # duplicate in time
+                durations = np.repeat(
+                    durations[:, np.newaxis], len(dates), axis=1
+                ).T  # duplicate in time
                 durations = np.round(durations).astype(int)
                 hpar = pd.DataFrame(
                     data={
@@ -458,7 +534,9 @@ def compute_all_multioutcomes(
                     # print(f"{new_comp}-duration".lower(), npi.getReduction(f"{new_comp}-duration".lower()))
                     durations = NPI.reduce_parameter(
                         parameter=durations,
-                        modification=npi.getReduction(parameters[new_comp]["duration::npi_param_name"].lower()),
+                        modification=npi.getReduction(
+                            parameters[new_comp]["duration::npi_param_name"].lower()
+                        ),
                     )  # npi.getReduction(f"{new_comp}::duration".lower()))
                     durations = np.round(durations).astype(int)
                     # plt.imshow(durations)
@@ -492,7 +570,9 @@ def compute_all_multioutcomes(
             for cmp in parameters[new_comp]["sum"]:
                 sum_outcome += all_data[cmp]
             all_data[new_comp] = sum_outcome
-            df_p = dataframe_from_array(sum_outcome, modinf.subpop_struct.subpop_names, dates, new_comp)
+            df_p = dataframe_from_array(
+                sum_outcome, modinf.subpop_struct.subpop_names, dates, new_comp
+            )
             outcomes = pd.merge(outcomes, df_p)
     # Concat our hpar dataframes
     hpar = (
@@ -554,7 +634,9 @@ def filter_seir_xr(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
         if isinstance(mc_value, str):
             mc_value = [mc_value]
         # Filter data along the specified mc_type dimension
-        diffI_filtered = diffI_filtered.where(diffI_filtered[f"mc_{mc_type}"].isin(mc_value), drop=True)
+        diffI_filtered = diffI_filtered.where(
+            diffI_filtered[f"mc_{mc_type}"].isin(mc_value), drop=True
+        )
     # Sum along the compartment dimension
     incidI_arr += diffI_filtered[vtype].sum(dim="compartment")
 
@@ -626,7 +708,9 @@ def multishift(arr, shifts, stoch_delay_flag=True):
         #        for k,case in enumerate(cases):
         #            results[i+k][j] = cases[k]
     else:
-        for i in range(arr.shape[0]):  # numba nopython does not allow iterating over 2D array
+        for i in range(
+            arr.shape[0]
+        ):  # numba nopython does not allow iterating over 2D array
             for j in range(arr.shape[1]):
                 if i + shifts[i, j] < arr.shape[0]:
                     result[i + shifts[i, j], j] += arr[i, j]

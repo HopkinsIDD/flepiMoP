@@ -95,20 +95,14 @@ class Parameters:
 
             # Parameter characterized by it's distribution
             if self.pconfig[pn]["value"].exists():
-                self.pdata[pn]["dist"] = self.pconfig[pn][
-                    "value"
-                ].as_random_distribution()
+                self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
 
             # Parameter given as a file
             elif self.pconfig[pn]["timeseries"].exists():
-                fn_name = os.path.join(
-                    path_prefix, self.pconfig[pn]["timeseries"].get()
-                )
+                fn_name = os.path.join(path_prefix, self.pconfig[pn]["timeseries"].get())
                 df = utils.read_df(fn_name).set_index("date")
                 df.index = pd.to_datetime(df.index)
-                if (
-                    len(df.columns) == 1
-                ):  # if only one ts, assume it applies to all subpops
+                if len(df.columns) == 1:  # if only one ts, assume it applies to all subpops
                     df = pd.DataFrame(
                         pd.concat([df] * len(subpop_names), axis=1).values,
                         index=df.index,
@@ -165,9 +159,9 @@ class Parameters:
                     "rolling_mean_windows"
                 ].get()
 
-            self.stacked_modifier_method[
-                self.pdata[pn]["stacked_modifier_method"]
-            ].append(pn.lower())
+            self.stacked_modifier_method[self.pdata[pn]["stacked_modifier_method"]].append(
+                pn.lower()
+            )
 
         logging.debug(f"We have {self.npar} parameter: {self.pnames}")
         logging.debug(f"Data to sample is: {self.pdata}")
@@ -315,9 +309,7 @@ class Parameters:
                 if "dist" in self.pdata[pn]
             ],
             columns=["value"],
-            index=[
-                pn for idx, pn in enumerate(self.pnames) if "dist" in self.pdata[pn]
-            ],
+            index=[pn for idx, pn in enumerate(self.pnames) if "dist" in self.pdata[pn]],
         )
         out_df["parameter"] = out_df.index
         return out_df

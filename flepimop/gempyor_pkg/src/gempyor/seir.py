@@ -41,7 +41,9 @@ def build_step_source_arg(
     else:
         integration_method = "rk4.jit"
         dt = 2.0
-        logging.info(f"Integration method not provided, assuming type {integration_method} with dt=2")
+        logging.info(
+            f"Integration method not provided, assuming type {integration_method} with dt=2"
+        )
 
     ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
     ## result in serious error. Note that "In Microsoft C, even on a 64 bit system, the size of the long int data type
@@ -58,7 +60,10 @@ def build_step_source_arg(
     assert type(transition_array[0][0]) == np.int64
     assert type(proportion_array[0]) == np.int64
     assert type(proportion_info[0][0]) == np.int64
-    assert initial_conditions.shape == (modinf.compartments.compartments.shape[0], modinf.nsubpops)
+    assert initial_conditions.shape == (
+        modinf.compartments.compartments.shape[0],
+        modinf.nsubpops,
+    )
     assert type(initial_conditions[0][0]) == np.float64
     # Test of empty seeding:
     assert len(seeding_data.keys()) == 4
@@ -162,7 +167,9 @@ def steps_SEIR(
                     f"with method {integration_method}, only deterministic "
                     f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
                 )
-            seir_sim = steps_experimental.ode_integration(**fnct_args, integration_method=integration_method)
+            seir_sim = steps_experimental.ode_integration(
+                **fnct_args, integration_method=integration_method
+            )
         elif integration_method == "rk4.jit1":
             seir_sim = steps_experimental.rk4_integration1(**fnct_args)
         elif integration_method == "rk4.jit2":
@@ -200,7 +207,9 @@ def steps_SEIR(
             **compartment_coords,
             subpop=modinf.subpop_struct.subpop_names,
         ),
-        attrs=dict(description="Dynamical simulation results", run_id=modinf.in_run_id),  # TODO add more information
+        attrs=dict(
+            description="Dynamical simulation results", run_id=modinf.in_run_id
+        ),  # TODO add more information
     )
 
     return states
@@ -223,8 +232,12 @@ def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_
                 modifiers_library=modinf.seir_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
                 loaded_df=loaded_df,
-                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
+                    "sum"
+                ],
+                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+                    "reduction_product"
+                ],
             )
         else:
             npi = NPI.NPIBase.execute(
@@ -232,8 +245,12 @@ def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_
                 modinf=modinf,
                 modifiers_library=modinf.seir_modifiers_library,
                 subpops=modinf.subpop_struct.subpop_names,
-                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
+                    "sum"
+                ],
+                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+                    "reduction_product"
+                ],
             )
     return npi
 
@@ -248,7 +265,9 @@ def onerun_SEIR(
     np.random.seed()
     npi = None
     if modinf.npi_config_seir:
-        npi = build_npi_SEIR(modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config)
+        npi = build_npi_SEIR(
+            modinf=modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+        )
 
     with Timer("onerun_SEIR.compartments"):
         (
@@ -260,11 +279,19 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(sim_id2load, modinf=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id2load, modinf=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_file(
+                sim_id2load, modinf=modinf
+            )
+            seeding_data, seeding_amounts = modinf.seeding.get_from_file(
+                sim_id2load, modinf=modinf
+            )
         else:
-            initial_conditions = modinf.initial_conditions.get_from_config(sim_id2write, modinf=modinf)
-            seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id2write, modinf=modinf)
+            initial_conditions = modinf.initial_conditions.get_from_config(
+                sim_id2write, modinf=modinf
+            )
+            seeding_data, seeding_amounts = modinf.seeding.get_from_config(
+                sim_id2write, modinf=modinf
+            )
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
@@ -275,14 +302,18 @@ def onerun_SEIR(
                 nsubpops=modinf.nsubpops,
             )
         else:
-            p_draw = modinf.parameters.parameters_quick_draw(n_days=modinf.n_days, nsubpops=modinf.nsubpops)
+            p_draw = modinf.parameters.parameters_quick_draw(
+                n_days=modinf.n_days, nsubpops=modinf.nsubpops
+            )
         # reduce them
         parameters = modinf.parameters.parameters_reduce(p_draw, npi)
         log_debug_parameters(p_draw, "Parameters without seir_modifiers")
         log_debug_parameters(parameters, "Parameters with seir_modifiers")
 
         # Parse them
-        parsed_parameters = modinf.compartments.parse_parameters(parameters, modinf.parameters.pnames, unique_strings)
+        parsed_parameters = modinf.compartments.parse_parameters(
+            parameters, modinf.parameters.pnames, unique_strings
+        )
         log_debug_parameters(parsed_parameters, "Unique Parameters used by transitions")
 
     with Timer("onerun_SEIR.compute"):
@@ -310,7 +341,13 @@ def run_parallel_SEIR(modinf, config, *, n_jobs=1):
 
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
-            onerun_SEIR(sim_id2write=sim_id, modinf=modinf, load_ID=False, sim_id2load=None, config=config)
+            onerun_SEIR(
+                sim_id2write=sim_id,
+                modinf=modinf,
+                load_ID=False,
+                sim_id2load=None,
+                config=config,
+            )
     else:
         tqdm.contrib.concurrent.process_map(
             onerun_SEIR,
@@ -322,7 +359,9 @@ def run_parallel_SEIR(modinf, config, *, n_jobs=1):
             max_workers=n_jobs,
         )
 
-    logging.info(f""">> {modinf.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds""")
+    logging.info(
+        f""">> {modinf.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds"""
+    )
 
 
 def states2Df(modinf, states):
@@ -337,12 +376,17 @@ def states2Df(modinf, states):
     # states_diff = np.diff(states_diff, axis=0)
 
     ts_index = pd.MultiIndex.from_product(
-        [pd.date_range(modinf.ti, modinf.tf, freq="D"), modinf.compartments.compartments["name"]],
+        [
+            pd.date_range(modinf.ti, modinf.tf, freq="D"),
+            modinf.compartments.compartments["name"],
+        ],
         names=["date", "mc_name"],
     )
     # prevalence data, we use multi.index dataframe, sparring us the array manipulation we use to do
     prev_df = pd.DataFrame(
-        data=states["prevalence"].to_numpy().reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
+        data=states["prevalence"]
+        .to_numpy()
+        .reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
         columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
@@ -355,12 +399,17 @@ def states2Df(modinf, states):
     prev_df.insert(loc=0, column="mc_value_type", value="prevalence")
 
     ts_index = pd.MultiIndex.from_product(
-        [pd.date_range(modinf.ti, modinf.tf, freq="D"), modinf.compartments.compartments["name"]],
+        [
+            pd.date_range(modinf.ti, modinf.tf, freq="D"),
+            modinf.compartments.compartments["name"],
+        ],
         names=["date", "mc_name"],
     )
 
     incid_df = pd.DataFrame(
-        data=states["incidence"].to_numpy().reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
+        data=states["incidence"]
+        .to_numpy()
+        .reshape(modinf.n_days * modinf.compartments.get_ncomp(), modinf.nsubpops),
         index=ts_index,
         columns=modinf.subpop_struct.subpop_names,
     ).reset_index()
@@ -384,7 +433,9 @@ def write_spar_snpi(sim_id, modinf, p_draw, npi):
     if npi is not None:
         modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
     # Parameters
-    modinf.write_simID(ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw))
+    modinf.write_simID(
+        ftype="spar", sim_id=sim_id, df=modinf.parameters.getParameterDF(p_draw=p_draw)
+    )
 
 
 def write_seir(sim_id, modinf, states):

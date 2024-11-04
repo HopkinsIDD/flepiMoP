@@ -299,23 +299,31 @@ def simulate(
         seir_modifiers_scenarios = None
         if config["seir_modifiers"].exists():
             if config["seir_modifiers"]["scenarios"].exists():
-                seir_modifiers_scenarios = config["seir_modifiers"]["scenarios"].as_str_seq()
+                seir_modifiers_scenarios = config["seir_modifiers"][
+                    "scenarios"
+                ].as_str_seq()
         # Model Info handles the case of the default scneario
     if not outcome_modifiers_scenarios:
         outcome_modifiers_scenarios = None
         if config["outcomes"].exists() and config["outcome_modifiers"].exists():
             if config["outcome_modifiers"]["scenarios"].exists():
-                outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"].as_str_seq()
+                outcome_modifiers_scenarios = config["outcome_modifiers"][
+                    "scenarios"
+                ].as_str_seq()
 
     outcome_modifiers_scenarios = as_list(outcome_modifiers_scenarios)
     seir_modifiers_scenarios = as_list(seir_modifiers_scenarios)
     print(outcome_modifiers_scenarios, seir_modifiers_scenarios)
 
-    scenarios_combinations = [[s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios]
+    scenarios_combinations = [
+        [s, d] for s in seir_modifiers_scenarios for d in outcome_modifiers_scenarios
+    ]
     print("Combination of modifiers scenarios to be run: ")
     print(scenarios_combinations)
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-        print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcome_modifiers_scenario}")
+        print(
+            f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier:{outcome_modifiers_scenario}"
+        )
 
     if not nslots:
         nslots = config["nslots"].as_number()
@@ -354,7 +362,9 @@ def simulate(
         if config["seir"].exists():
             seir.run_parallel_SEIR(modinf, config=config, n_jobs=jobs)
         if config["outcomes"].exists():
-            outcomes.run_parallel_outcomes(sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs)
+            outcomes.run_parallel_outcomes(
+                sim_id2write=first_sim_index, modinf=modinf, nslots=nslots, n_jobs=jobs
+            )
         print(
             f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
         )

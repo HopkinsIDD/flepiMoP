@@ -48,7 +48,9 @@ npi = NPI.NPIBase.execute(
     modifiers_library=modinf.seir_modifiers_library,
     subpops=modinf.subpop_struct.subpop_names,
     pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-    pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method["reduction_product"],
+    pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+        "reduction_product"
+    ],
 )
 
 params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
@@ -81,7 +83,12 @@ states = seir.steps_SEIR_nb(
     True,
 )
 df = seir.states2Df(modinf, states)
-assert df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[str(modinf.tf), "20002"] > 1
+assert (
+    df[(df["mc_value_type"] == "prevalence") & (df["mc_infection_stage"] == "R")].loc[
+        str(modinf.tf), "20002"
+    ]
+    > 1
+)
 print(df)
 ts = df
 cp = "R"
