@@ -892,20 +892,24 @@ def list_recursive_convert_to_string(thing):
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
 
+
 @cli.group()
 @pass_context
 def compartments(ctx: Context):
     """Commands for working with FlepiMoP compartments"""
     pass
 
+
 @compartments.command(params=[config_files_argument] + list(config_file_options.values()))
 @pass_context
-def plot(ctx : Context, **kwargs):
+def plot(ctx: Context, **kwargs):
     """Plot compartments"""
     parse_config_files(config, ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
-    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+    comp = Compartments(
+        seir_config=config["seir"], compartments_config=config["compartments"]
+    )
 
     # TODO: this should be a command like build compartments.
     (
@@ -920,12 +924,14 @@ def plot(ctx : Context, **kwargs):
 
 @compartments.command(params=[config_files_argument] + list(config_file_options.values()))
 @pass_context
-def export(ctx : Context, **kwargs):
+def export(ctx: Context, **kwargs):
     """Export compartments"""
     parse_config_files(config, ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
-    comp = Compartments(seir_config=config["seir"], compartments_config=config["compartments"])
+    comp = Compartments(
+        seir_config=config["seir"], compartments_config=config["compartments"]
+    )
     (
         unique_strings,
         transition_array,
@@ -934,5 +940,6 @@ def export(ctx : Context, **kwargs):
     ) = comp.get_transition_array()
     comp.toFile("compartments_file.csv", "transitions_file.csv", write_parquet=False)
     print("wrote files 'compartments_file.csv', 'transitions_file.csv' ")
+
 
 cli.add_command(compartments)

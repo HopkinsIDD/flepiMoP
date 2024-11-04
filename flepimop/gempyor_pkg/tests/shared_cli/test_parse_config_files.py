@@ -1,4 +1,3 @@
-
 import pathlib
 from typing import Any
 
@@ -159,7 +158,7 @@ class TestParseConfigFiles:
         tmpconfigfile1 = config_file(tmp_path, testdict1, "config1.yaml")
         tmpconfigfile2 = config_file(tmp_path, testdict2, "config2.yaml")
         mockconfig = mock_empty_config()
-        with pytest.warns(UserWarning, match=r'foo'):
+        with pytest.warns(UserWarning, match=r"foo"):
             parse_config_files(mockconfig, config_files=[tmpconfigfile1, tmpconfigfile2])
         for k, v in (testdict1 | testdict2).items():
             assert mockconfig[k].get(v) == v

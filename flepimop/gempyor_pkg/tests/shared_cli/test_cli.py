@@ -21,6 +21,7 @@ def test_config_sample_2pop():
     result = runner.invoke(_click_simulate, ["config_sample_2pop.yml"])
     assert result.exit_code == 0
 
+
 def test_config_sample_2pop_deprecated():
     os.chdir(tutorialpath)
     runner = CliRunner()
@@ -42,29 +43,36 @@ def test_sample_2pop_modifiers():
     assert result.exit_code == 0
 
 
-def test_sample_2pop_modifiers_combined(tmp_path : Path):
+def test_sample_2pop_modifiers_combined(tmp_path: Path):
     os.chdir(tutorialpath)
     tmp_cfg1 = tmp_path / "patch_modifiers.yml"
     tmp_cfg2 = tmp_path / "nopatch_modifiers.yml"
     runner = CliRunner()
-    
-    result = runner.invoke(patch, ["config_sample_2pop.yml",
+
+    result = runner.invoke(
+        patch,
+        [
+            "config_sample_2pop.yml",
             "config_sample_2pop_outcomes_part.yml",
-            "config_sample_2pop_modifiers_part.yml"])
+            "config_sample_2pop_modifiers_part.yml",
+        ],
+    )
     assert result.exit_code == 0
     with open(tmp_cfg1, "w") as f:
         f.write(result.output)
-    
+
     result = runner.invoke(patch, ["config_sample_2pop_modifiers.yml"])
     assert result.exit_code == 0
     with open(tmp_cfg2, "w") as f:
         f.write(result.output)
-    
-                                   
+
     tmpconfig1 = create_confuse_config_from_file(str(tmp_cfg1)).flatten()
     tmpconfig2 = create_confuse_config_from_file(str(tmp_cfg2)).flatten()
 
-    assert { k: v for k, v in tmpconfig1.items() if k != "config_src" } == { k: v for k, v in tmpconfig2.items() if k != "config_src" }
+    assert {k: v for k, v in tmpconfig1.items() if k != "config_src"} == {
+        k: v for k, v in tmpconfig2.items() if k != "config_src"
+    }
+
 
 def test_simple_usa_statelevel_more_deprecated():
     os.chdir(tutorialpath + "/../simple_usa_statelevel")

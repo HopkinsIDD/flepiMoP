@@ -23,6 +23,7 @@ def cli(ctx: click.Context) -> None:
     """Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface"""
     pass
 
+
 # click decorator to handle configuration file(s) as arguments
 # use as `@argument_config_files` before a cli command definition
 config_files_argument = click.Argument(
@@ -162,9 +163,7 @@ def click_helpstring(
         additional_doc = "\n\tCommand Line Interface arguments:\n"
         for param in params:
             paraminfo = param.to_info_dict()
-            additional_doc += (
-                f"\n\t{paraminfo['name']}: {paraminfo['type']['param_type']}"
-            )
+            additional_doc += f"\n\t{paraminfo['name']}: {paraminfo['type']['param_type']}"
 
         if func.__doc__ is None:
             func.__doc__ = ""
@@ -203,9 +202,7 @@ def parse_config_files(
 
     def _parse_option(param: click.Parameter, value: Any) -> Any:
         """internal parser to autobox values"""
-        if (param.multiple or param.nargs == -1) and not isinstance(
-            value, (list, tuple)
-        ):
+        if (param.multiple or param.nargs == -1) and not isinstance(value, (list, tuple)):
             value = [value]
         return param.type_cast_value(ctx, value)
 
@@ -244,9 +241,7 @@ def parse_config_files(
             tmp = confuse.Configuration("tmp")
             tmp.set_file(config_file)
             if intersect := set(tmp.keys()) & set(cfg.keys()):
-                warnings.warn(
-                    f"Configuration files contain overlapping keys: {intersect}."
-                )
+                warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
             cfg.set_file(config_file)
         cfg["config_src"] = [str(k) for k in config_src]
 
@@ -268,5 +263,5 @@ def parse_config_files(
         if (value := kwargs.get(option)) is not None:
             # auto box the value if the option expects a multiple
             cfg[option] = _parse_option(config_file_options[option], value)
-    
+
     return cfg

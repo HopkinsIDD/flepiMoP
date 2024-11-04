@@ -12,6 +12,7 @@ from typing import Dict, List, Union, Literal, Optional, Annotated, Any
 from functools import partial
 from gempyor import compartments
 
+
 def read_yaml(file_path: str) -> dict:
     with open(file_path, "r") as stream:
         config = yaml.safe_load(stream)
@@ -23,11 +24,13 @@ def allowed_values(v, values):
     assert v in values
     return v
 
+
 # def parse_value(cls, values):
 #     value = values.get('value')
 #     parsed_val = compartments.Compartments.parse_parameter_strings_to_numpy_arrays_v2(value)
 #     return parsed_val
-    
+
+
 class SubpopSetupConfig(BaseModel):
     geodata: str
     mobility: Optional[str]
