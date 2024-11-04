@@ -47,7 +47,9 @@ class StackedModifier(NPIBase):
             if isinstance(scenario, str):
                 settings = modifiers_library.get(scenario)
                 if settings is None:
-                    raise RuntimeError(f"couldn't find scenario in config file [got: {scenario}]")
+                    raise RuntimeError(
+                        f"couldn't find scenario in config file [got: {scenario}]"
+                    )
                 # via profiling: faster to recreate the confuse view than to fetch+resolve due to confuse isinstance
                 # checks
                 scenario_npi_config = confuse.RootView([settings])
@@ -68,12 +70,16 @@ class StackedModifier(NPIBase):
             )
 
             new_params = sub_npi.param_name  # either a list (if stacked) or a string
-            new_params = [new_params] if isinstance(new_params, str) else new_params  # convert to list
+            new_params = (
+                [new_params] if isinstance(new_params, str) else new_params
+            )  # convert to list
             # Add each parameter at first encounter, with a neutral start
             for new_p in new_params:
                 if new_p not in self.param_name:
                     self.param_name.append(new_p)
-                    if new_p in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",new_p):
+                    if (
+                        new_p in pnames_overlap_operation_sum
+                    ):  # re.match("^transition_rate [1234567890]+$",new_p):
                         self.reductions[new_p] = 0
                     else:  # for the reductionprod and product method, the initial neutral is 1 )
                         self.reductions[new_p] = 1
@@ -81,7 +87,9 @@ class StackedModifier(NPIBase):
             for param in self.param_name:
                 # Get reduction return a neutral value for this overlap operation if no parameeter exists
                 reduction = sub_npi.getReduction(param)
-                if param in pnames_overlap_operation_sum:  # re.match("^transition_rate [1234567890]+$",param):
+                if (
+                    param in pnames_overlap_operation_sum
+                ):  # re.match("^transition_rate [1234567890]+$",param):
                     self.reductions[param] += reduction
                 elif param in pnames_overlap_operation_reductionprod:
                     self.reductions[param] *= 1 - reduction
@@ -104,7 +112,9 @@ class StackedModifier(NPIBase):
                     self.reduction_params.clear()
 
         for param in self.param_name:
-            if param in pnames_overlap_operation_reductionprod:  # re.match("^transition_rate \d+$",param):
+            if (
+                param in pnames_overlap_operation_reductionprod
+            ):  # re.match("^transition_rate \d+$",param):
                 self.reductions[param] = 1 - self.reductions[param]
 
         # check that no NPI is called several times, and retourn them
@@ -124,7 +134,10 @@ class StackedModifier(NPIBase):
         #         )
 
     def get_default(self, param):
-        if param in self.pnames_overlap_operation_sum or param in self.pnames_overlap_operation_reductionprod:
+        if (
+            param in self.pnames_overlap_operation_sum
+            or param in self.pnames_overlap_operation_reductionprod
+        ):
             return 0.0
         else:
             return 1.0

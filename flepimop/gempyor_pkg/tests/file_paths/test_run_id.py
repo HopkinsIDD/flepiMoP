@@ -37,9 +37,7 @@ class TestRunId:
             datetime(2023, 8, 9, 16, 0, 0),
         ],
     )
-    def test_get_run_id_user_provided_timestamp(
-        self, timestamp: None | datetime
-    ) -> None:
+    def test_get_run_id_user_provided_timestamp(self, timestamp: None | datetime) -> None:
         # Setup
         rid = run_id(timestamp=timestamp)
 
