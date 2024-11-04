@@ -165,9 +165,17 @@ from confuse import Configuration
 from click import Context, pass_context
 
 from . import seir, outcomes, model_info, utils
-from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli, click_helpstring, mock_context
+from .shared_cli import (
+    config_files_argument,
+    config_file_options,
+    parse_config_files,
+    cli,
+    click_helpstring,
+    mock_context,
+)
 
 # from .profile import profile_options
+
 
 # @profile_options
 # @profile()
@@ -184,7 +192,7 @@ def simulate(
     write_parquet: bool = True,
     first_sim_index: int = 1,
     stoch_traj_flag: bool = False,
-    verbose : bool = True,
+    verbose: bool = True,
 ) -> int:
     """
     Forward simulate a model using gempyor.
@@ -216,14 +224,26 @@ def simulate(
         cfg = config_filepath
 
     scenarios_combinations = [
-        [s, d] for s in (cfg["seir_modifiers"]["scenarios"].as_str_seq() if cfg["seir_modifiers"].exists() else [None])
-        for d in (cfg["outcome_modifiers"]["scenarios"].as_str_seq() if cfg["outcome_modifiers"].exists() else [None])]
-    
+        [s, d]
+        for s in (
+            cfg["seir_modifiers"]["scenarios"].as_str_seq()
+            if cfg["seir_modifiers"].exists()
+            else [None]
+        )
+        for d in (
+            cfg["outcome_modifiers"]["scenarios"].as_str_seq()
+            if cfg["outcome_modifiers"].exists()
+            else [None]
+        )
+    ]
+
     if verbose:
         print("Combination of modifiers scenarios to be run: ")
         print(scenarios_combinations)
         for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
-            print(f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier: {outcome_modifiers_scenario}")
+            print(
+                f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier: {outcome_modifiers_scenario}"
+            )
 
     nchains = cfg["nslots"].as_number()
 
@@ -265,7 +285,12 @@ def simulate(
         if cfg["seir"].exists():
             seir.run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int))
         if cfg["outcomes"].exists():
-            outcomes.run_parallel_outcomes(sim_id2write=cfg["first_sim_index"].get(int), modinf=modinf, nslots=nchains, n_jobs=cfg["jobs"].get(int))
+            outcomes.run_parallel_outcomes(
+                sim_id2write=cfg["first_sim_index"].get(int),
+                modinf=modinf,
+                nslots=nchains,
+                n_jobs=cfg["jobs"].get(int),
+            )
         if verbose:
             print(
                 f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
@@ -273,9 +298,12 @@ def simulate(
 
     return 0
 
-@cli.command(name="simulate", params=[config_files_argument] + list(config_file_options.values()))
+
+@cli.command(
+    name="simulate", params=[config_files_argument] + list(config_file_options.values())
+)
 @pass_context
-def _click_simulate(ctx : Context, **kwargs) -> int:
+def _click_simulate(ctx: Context, **kwargs) -> int:
     """Forward simulate a model using gempyor."""
     cfg = parse_config_files(utils.config, ctx, **kwargs)
     return simulate(cfg)
@@ -285,16 +313,20 @@ def _click_simulate(ctx : Context, **kwargs) -> int:
 
 import subprocess
 
-def _deprecated_simulate(argv : list[str] = []) -> int:
+
+def _deprecated_simulate(argv: list[str] = []) -> int:
     if not argv:
         argv = sys.argv[1:]
-    clickcmd = ' '.join(['flepimop', 'simulate'] + argv)
-    warnings.warn(f"This command is deprecated, use the CLI instead: `{clickcmd}`", DeprecationWarning)
+    clickcmd = " ".join(["flepimop", "simulate"] + argv)
+    warnings.warn(
+        f"This command is deprecated, use the CLI instead: `{clickcmd}`", DeprecationWarning
+    )
     return subprocess.run(clickcmd, shell=True).returncode
+
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
-    clickcmd = ' '.join(['flepimop', 'simulate'] + argv)
+    clickcmd = " ".join(["flepimop", "simulate"] + argv)
     warnings.warn(f"Use the CLI instead: `{clickcmd}`", DeprecationWarning)
     _deprecated_simulate(argv)
 

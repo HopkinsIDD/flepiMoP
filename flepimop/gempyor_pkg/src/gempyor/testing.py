@@ -57,6 +57,7 @@ def mock_empty_config() -> confuse.Configuration:
     """
     return confuse.Configuration("flepiMoPMock", read=False)
 
+
 def create_confuse_config_from_file(
     data_file: Path,
 ) -> confuse.Configuration:
@@ -73,6 +74,7 @@ def create_confuse_config_from_file(
     cv = mock_empty_config()
     cv.set_file(data_file)
     return cv
+
 
 def create_confuse_configview_from_dict(
     data: dict[str, Any], name: None | str = None
@@ -133,9 +135,8 @@ def create_confuse_configview_from_dict(
     cv = cv[name] if name is not None else cv
     return cv
 
-def create_confuse_config_from_dict(
-    data: dict[str, Any]
-) -> confuse.Configuration:
+
+def create_confuse_config_from_dict(data: dict[str, Any]) -> confuse.Configuration:
     """
     Create a Configuration from a dictionary for unit testing confuse parameters.
 

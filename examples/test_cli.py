@@ -74,9 +74,7 @@ def test_sample_2pop_modifiers_combined_deprecated():
 def test_simple_usa_statelevel_deprecated():
     os.chdir(os.path.dirname(__file__) + "/simple_usa_statelevel")
     runner = CliRunner()
-    result = runner.invoke(
-        _click_simulate, ["-n", "1", "-c", "simple_usa_statelevel.yml"]
-    )
+    result = runner.invoke(_click_simulate, ["-n", "1", "-c", "simple_usa_statelevel.yml"])
     print(result.output)  # useful for debug
     print(result.exit_code)  # useful for debug
     print(result.exception)  # useful for debug
