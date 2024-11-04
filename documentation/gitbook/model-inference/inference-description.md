@@ -11,7 +11,7 @@ _flepiMoP_ can be used to conduct forward simulations of a model with user-defin
 * $$\Theta$$ – A set of unknown **model parameters** to be estimated by fitting the model output to data. For a model with $$i$$ subpopulations each with their own parameters, this set includes all location-specific parameters $$\Theta_i$$.
 * $$Z(\Theta)$$ – The timeseries output of one or more of the state **variables of the model** under parameters $$\Theta.$$ For simplicity, we will often just use the notation $$Z$$. The value at a timepoint $$t$$is $$Z_t$$. For a model with $$i$$ subpopulations for which there are $$j$$ different state variables, this becomes $$Z_{i,j,t}(\Theta)$$. (Note that for the general case when the dynamics in one location can effect the dynamics in another, the model state in one location depends on the full set of parameters, not just the location-specific parameters.)
 * $$D_t$$ – The timeseries for the **observed data** (also referred to as "ground truth") that the model attempts to recreate. For a model with $$i$$ subpopulations each with their own observed data for variable $$j$$, this becomes $$D_{i,j,t}$$.
-* $$\mathcal{L}(D|\Theta)$$ – The **likelihood** of the observed data $$D$$being produced by the model for an input parameter set $$\Theta$$. This is a probability density function over all possible values of the data being produced by the model, conditional on a fixed model parameter value.&#x20;
+* $$\mathcal{L}(D|\Theta)$$ – The **likelihood** of the observed data $$D$$being produced by the model for an input parameter set $$\Theta$$. This is a probability density function over all possible values of the data being produced by the model, conditional on a fixed model parameter value ;
 * $$p(\Theta)$$ – The **prior probability** distribution, which in Bayesian inference encodes beliefs about the possible values of the unknown parameter $$\Theta$$ before any observed data is formally compared to the model.
 * $$P(\Theta|D)$$ – The **posterior probability** distribution, which in Bayesian inference describes the updated probability of the parameters $$\Theta$$ conditional on the observed data $$D$$.
 * $$g(\Theta^*|\Theta)$$ – The **proposal density**, used in Metropolis-Hastings algorithms for Markov Chain Monte Carlo (MCMC) techniques for sampling the posterior distribution, describes the probability of proposing a new parameter set $$\Theta^*$$ from a current accepted parameter set $$\Theta$$.
@@ -30,9 +30,9 @@ $$
 P(\Theta|D) = \frac{\mathcal{L}(D|\Theta)p(\Theta)}{P(D)}
 $$
 
-where the denominator  $$P(D) = \int_\Theta \mathcal{L}(D|\Theta)p(\Theta) d\Theta$$ is a constant factor – independent of $$\Theta$$ – that only serves to normalize the posterior and thus can be ignored.&#x20;
+where the denominator  $$P(D) = \int_\Theta \mathcal{L}(D|\Theta)p(\Theta) d\Theta$$ is a constant factor – independent of $$\Theta$$ – that only serves to normalize the posterior and thus can be ignored ;
 
-The likelihood function can be defined for a model/data combination based on an understanding of both a) the distribution of model outcomes for a given set of input parameters (if output is stochastic), and b) the nature of the measurement error in observing the data (if relevant).&#x20;
+The likelihood function can be defined for a model/data combination based on an understanding of both a) the distribution of model outcomes for a given set of input parameters (if output is stochastic), and b) the nature of the measurement error in observing the data (if relevant) ;
 
 For complex models with many parameters like those used to simulate epidemic spread, it is generally impossible to construct the full posterior distribution either analytically or numerically. Instead, we rely on a class of methods called "Markov Chain Monte Carlo" (MCMC) that allows us to draw a random sample of parameters from the posterior distribution. Ideally, the statistics of the parameters drawn from this sample should be an unbiased estimate of those from the complete posterior.
 
@@ -49,14 +49,14 @@ The full algorithm for Metropolis-Hastings Markov Chain Monte Carlo is:
   * Evaluate the likelihood and prior at the proposed parameter set
   * Generate a uniform random number $$u \sim \mathcal{U}[0,1]$$
   * Calculate the acceptance ratio $$\alpha=\frac{\mathcal{L}(D|\Theta^*) p(\Theta^*) g(\Theta_{k-1}|\Theta^*)}{\mathcal{L}(D|\Theta_{k-1})) p(\Theta_{k-1}) g(\Theta^*|\Theta_{k-1})}$$
-  * `If` $$\alpha> u$$, ACCEPT the proposed parameters to the parameter chain. Set $$\Theta_k=\Theta^*$$.&#x20;
+  * `If` $$\alpha> u$$, ACCEPT the proposed parameters to the parameter chain. Set $$\Theta_k=\Theta^*$$ ;
   * `Else,` REJECT the proposed parameters for the chimeric parameter chain. Set $$\Theta_k = \Theta_{k-1}$$
 
 ## Inference algorithm
 
 ### Likelihood
 
-In our algorithm, model fitting involves comparing timeseries of variables produced by the model (either transmission model state variables or observable outcomes constructed from those variables) to timeseries of observed "ground truth" data with the same time points. For timeseries data that arises from a deterministic, dynamic model, then the overall likelihood can be calculated as the product of the likelihood of the model output at each timepoint (since we assume the data at each timepoint was measured independently). If there are multiple observed datastreams corresponding to multiple model outputs (e.g., cases and deaths),&#x20;
+In our algorithm, model fitting involves comparing timeseries of variables produced by the model (either transmission model state variables or observable outcomes constructed from those variables) to timeseries of observed "ground truth" data with the same time points. For timeseries data that arises from a deterministic, dynamic model, then the overall likelihood can be calculated as the product of the likelihood of the model output at each timepoint (since we assume the data at each timepoint was measured independently). If there are multiple observed datastreams corresponding to multiple model outputs (e.g., cases and deaths) ;
 
 For each subpopulation in the model, the likelihood of observing the "ground truth" data given the model parameters $$\Theta$$ is
 
@@ -64,7 +64,7 @@ $$
 \mathcal{L}_i(D_i|\Theta) = \mathcal{L}(D_i|Z_i(\Theta)) = \prod_j \prod_t p^{\text{obs}}_j(D_{i,j,t}|Z_{i,j,t}(\Theta))
 $$
 
-where $$p^{\text{obs}}(D|Z)$$ describes the process by which the data is assumed to be observed/measured from the underlying true vales. For example, observations may be assumed to be normally distributed around the truth with a known variance, or, count data may be assumed to be generated by a Poisson process.&#x20;
+where $$p^{\text{obs}}(D|Z)$$ describes the process by which the data is assumed to be observed/measured from the underlying true vales. For example, observations may be assumed to be normally distributed around the truth with a known variance, or, count data may be assumed to be generated by a Poisson process ;
 
 And the overall likelihood taking into account all subpopulations, is the product of the individual likelihoods
 
@@ -76,7 +76,7 @@ Note that the likelihood for each subpopulation depends not only on the paramete
 
 ### Fitting algorithm
 
-The method we use for estimating model parameters is based on the Metropolis-Hastings algorithm, which is a class of Markov Chain Monte Carlo (MCMC) methods for obtaining samples from a posterior probability distribution. We developed a custom version of this algorithm to deal with some of the particular mathematical properties and computational challenges of fitting large disease transmission models.&#x20;
+The method we use for estimating model parameters is based on the Metropolis-Hastings algorithm, which is a class of Markov Chain Monte Carlo (MCMC) methods for obtaining samples from a posterior probability distribution. We developed a custom version of this algorithm to deal with some of the particular mathematical properties and computational challenges of fitting large disease transmission models ;
 
 There are to major unique features of our adapted algorithm:
 
@@ -87,11 +87,11 @@ Note that while the traditional Metropolis-Hastings algorithm for MCMC will prov
 
 * `For` $$m=1  \dots M$$, where $$M$$is the number of parallel MCMC chains (also known as _slots_)
   * Generate initial state
-    * Generate an initial set of parameters $$\Theta_{m,0}$$, and copy this to both the global ($$\Theta^G_{m,0}$$) and chimeric ($$\Theta^C_{m,0}$$) parameter chain (sequence)&#x20;
+    * Generate an initial set of parameters $$\Theta_{m,0}$$, and copy this to both the global ($$\Theta^G_{m,0}$$) and chimeric ($$\Theta^C_{m,0}$$) parameter chain (sequence ;
     * Generate an initial epidemic trajectory $$Z(\Theta_{m,0})$$
-    * Calculate and record the initial likelihood for each subpopulation, $$\mathcal{L_i}(D_i|Z_i(\Theta_{m,0}))$$&#x20;
+    * Calculate and record the initial likelihood for each subpopulation, $$\mathcal{L_i}(D_i|Z_i(\Theta_{m,0}))$ ;
   * `For` $$k= 1 ... K$$ where $$K$$ is the length of the MCMC chain, add to the sequence of parameter values :
-    * Generate a proposed set of parameters $$\Theta^*$$from the current chimeric parameters using the proposal distribution $$g(\Theta^*|\Theta^C_{m,k-1})$$&#x20;
+    * Generate a proposed set of parameters $$\Theta^*$$from the current chimeric parameters using the proposal distribution $$g(\Theta^*|\Theta^C_{m,k-1})$ ;
     * Generate an epidemic trajectory with these proposed parameters, $$Z(\Theta^*)$$
     * Calculate the likelihood of the data given the proposed parameters for each subpopulation, $$\mathcal{L}_i(D_i|Z_i(\Theta^*))$$
     * Calculate the overall likelihood with the proposed parameters, $$\mathcal{L}(D|Z(\Theta^*))$$
@@ -102,7 +102,7 @@ Note that while the traditional Metropolis-Hastings algorithm for MCMC will prov
       * `If` $$\alpha^G > u^G$$: ACCEPT the proposed parameters to the global and chimeric parameter chains
         * Set $$\Theta^G_{m,k} =$$$$\Theta^*$$
         * Set $$\Theta_{m,k}^C=\Theta^*$$
-        * Update the recorded subpopulation-specific likelihood values (chimeric and global) with the likelihoods calculated using the proposed parameters&#x20;
+        * Update the recorded subpopulation-specific likelihood values (chimeric and global) with the likelihoods calculated using the proposed parameter ;
       * `Else`: REJECT the proposed parameters for the global chain and make subpopulation-specific decisions for the chimeric chain
         * Set $$\Theta^G_{m,k} = \Theta^G_{m,k-1}$$
         * Make "chimeric" decision:
@@ -114,7 +114,7 @@ Note that while the traditional Metropolis-Hastings algorithm for MCMC will prov
               * Update the recorded chimeric likelihood value for subpopulation $$i$$ to that calculated with the proposed parameter​
             * `Else`: REJECT the proposed parameters for the chimeric parameter chain for this location
               * Set $$\Theta_{m,k,i}^C=\Theta_{m,k-1,i}$$​
-            * `End if`&#x20;
+            * `End if ;
           * `End for` $$N$$subpopulations
         * End making chimeric decisions
       * `End if`
@@ -130,11 +130,11 @@ We consider the sequence $$\theta_m$$ to represent a sample from the posterior p
 There are a few important notes/limitations about our method currently:
 
 * All parameters to be fit must be location-specific. There is currently no way to fit a parameter that has the identical value across all locations
-* The pipeline currently does not allow for fitting of the basic parameters of the compartmental epidemic model. Instead, these must be fixed, and the value of location-specific "interventions"  acting to increase/reduce these parameters can be fit. All parameters related to the observational/outcomes model can be fit, as well as "interventions" acting to increase or reduce them.&#x20;
+* The pipeline currently does not allow for fitting of the basic parameters of the compartmental epidemic model. Instead, these must be fixed, and the value of location-specific "interventions"  acting to increase/reduce these parameters can be fit. All parameters related to the observational/outcomes model can be fit, as well as "interventions" acting to increase or reduce them ;
 * At no point is the parameter fitting optimizing the fit of the summed total population data to total population model predictions. The "overall" likelihood function used to make "global" parameter acceptance decisions is the product of the individual subpopulations likelihoods (which are based on comparing location-specific data to location-specific model output), which is not equivalent to likelihood for the total population. For example, if overestimates of the model in some subpopulations were exactly balanced by underestimates in others, the total population estimate could be very accurate and the total population likelihood high, but the overall likelihood we use here would still be low.
 * There is no model simulation run or record that corresponds to the combined parameters recorded in the chimeric parameter chain ($$\Theta^C_{m}$$). For entry $$m$$ in the chain, some of these parameter values were recently accepted from the last proposal and were used in the simulation produced by that proposal, while for other subpopulations, the most recent proposed parameters were rejected so $$\Theta^C_{m}$$ contains parameters accepted – and part of the simulations produced – in a previous iteration.
-* It is currently not possible to infer parameters of the measurement process encoded in the likelihood function. For example, if the likelihood is chosen to be a normal distribution, which implies an assumption that the observed data is generated from the underlying truth according to a normal distribution with mean zero, then the standard deviation must be specified, and cannot be inferred along with the other model parameters.&#x20;
-* There is an option to use a slightly different version of our algorithm, in which globally accepted parameter values are not pushed back into the chimeric likelihood, but the chimeric likelihood is instead allowed to continue to evolve independently. In this variation, the chimeric acceptance decision is always made, not only if a global rejection happens.&#x20;
+* It is currently not possible to infer parameters of the measurement process encoded in the likelihood function. For example, if the likelihood is chosen to be a normal distribution, which implies an assumption that the observed data is generated from the underlying truth according to a normal distribution with mean zero, then the standard deviation must be specified, and cannot be inferred along with the other model parameters ;
+* There is an option to use a slightly different version of our algorithm, in which globally accepted parameter values are not pushed back into the chimeric likelihood, but the chimeric likelihood is instead allowed to continue to evolve independently. In this variation, the chimeric acceptance decision is always made, not only if a global rejection happens ;
 * The proposal distribution $$g(\Theta^*|\Theta)$$ for generating new parameter sets is currently constrained to be a joint distribution in which the the value of each new proposed parameter is chosen independently of any other parameters.
 * While in general in Metropolis-Hasting algorithms the formula for the the acceptance ratio includes the proposal distribution $$g(\Theta^*|\Theta)$$, those terms cancel out if the proposal distribution is symmetrical. Our algorithm assumes such symmetry and thus does not include $$g$$ in the formula, so the user must be careful to only select symmetric distributions.
 

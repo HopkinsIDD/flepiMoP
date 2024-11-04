@@ -6,12 +6,13 @@ local({r <- getOption("repos")
 
 # Installs the custom-made packages in this repository
 
-library(devtools)
 
-install.packages(c("covidcast","data.table","vroom","dplyr"), quiet=TRUE)
+install.packages(c("data.table","vroom","dplyr"), quiet=TRUE) # removed "covidcast"
 # devtools::install_github("hrbrmstr/cdcfluview")
 
 # To run if operating in the container -----
+
+# library(devtools)
 
 initial.options <- commandArgs(trailingOnly = FALSE)
 file.arg.name <- "--file="

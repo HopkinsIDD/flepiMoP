@@ -12,21 +12,21 @@ body:
       options:
         - bug
         - batch
-        - config.writer
+        - config
+        - flepiconfig
         - documentation
+        - docstring
+        - duplicate
         - enhancement
         - gempyor
         - good first issue
-        - help wanted
         - inference
-        - invalid
+        - installation
         - meta/workflow
         - operations
         - performance
         - post-processing
-        - question
         - quick issue
-        - revisit ASAP
         - seeding
         - submission
         - wontfix
