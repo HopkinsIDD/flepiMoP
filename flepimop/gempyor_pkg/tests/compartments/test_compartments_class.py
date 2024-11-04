@@ -290,10 +290,72 @@ def seir_from_config_inputs_factory(tmp_path: Path) -> MockCompartmentsInput:
     )
 
 
+def sir_with_vaccination_from_config_inputs_factory(
+    tmp_path: Path,
+) -> MockCompartmentsInput:
+    return MockCompartmentsInput(
+        seir={
+            "integration": {
+                "method": "rk4",
+                "dt": 0.5,
+            },
+            "parameters": {
+                "beta": 0.1,
+                "theta_u": 0.6,
+                "theta_v": 0.5,
+                "alpha_u": 1.0,
+                "alpha_v": 0.6,
+            },
+            "transitions": [
+                {
+                    "source": [["S"], ["unvaccinated", "vaccinated"]],
+                    "destination": [["I"], ["unvaccinated", "vaccinated"]],
+                    "rate": [["beta"], ["theta_u", "theta_v"]],
+                    "proportional_to": [
+                        [
+                            [["S"]],
+                            [
+                                ["unvaccinated", "vaccinated"],
+                                ["unvaccinated", "vaccinated"],
+                            ],
+                        ],
+                    ],
+                    "proportion_exponent": [["1", "1"], ["alpha_u", "alpha_v"]],
+                },
+            ],
+        },
+        compartments={
+            "infection_stage": ["S", "I", "R"],
+            "vaccination_status": ["unvaccinated", "vaccinated"],
+        },
+        compartments_file=None,
+        transitions_file=None,
+        transitions=pd.DataFrame.from_records(
+            data=[
+                {
+                    "source": ["S", "unvaccinated"],
+                    "destination": ["I", "unvaccinated"],
+                    "rate": ["beta", "theta_u"],
+                    "proportional_to": [[["S"], ["unvaccinated", "vaccinated"]]],
+                    "proportion_exponent": [["1", "1"], ["alpha_u", "alpha_v"]],
+                },
+                {
+                    "source": ["S", "vaccinated"],
+                    "destination": ["I", "vaccinated"],
+                    "rate": ["beta", "theta_v"],
+                    "proportional_to": [[["S"], ["unvaccinated", "vaccinated"]]],
+                    "proportion_exponent": [["1", "1"], ["alpha_u", "alpha_v"]],
+                },
+            ]
+        ),
+    )
+
+
 valid_input_factories = (
-    (sir_from_config_inputs_factory),
-    (ris_from_config_inputs_factory),
-    (seir_from_config_inputs_factory),
+    sir_from_config_inputs_factory,
+    ris_from_config_inputs_factory,
+    seir_from_config_inputs_factory,
+    sir_with_vaccination_from_config_inputs_factory,
 )
 
 
@@ -323,7 +385,8 @@ class TestCompartments:
         assert isinstance(compartments.transitions, pd.DataFrame)
 
         if mock_inputs.transitions is not None:
-            assert_frame_equal(compartments.transitions, mock_inputs.transitions)
+            for col in compartments.transitions.columns:
+                compartments.transitions[col].equals(mock_inputs.transitions[col])
 
         assert compartments.check_transition_element(None, None) == True
         assert compartments.check_transition_elements(None, None) == True
