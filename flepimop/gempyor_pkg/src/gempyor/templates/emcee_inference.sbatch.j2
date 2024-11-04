@@ -8,33 +8,40 @@
 set -x
 {% endif %}
 
+# Set script variables
+FLEPI_SLOT_INDEX=${SLURM_ARRAY_TASK_ID}
+
 # Load modules
 module purge
-{% if load_slurm -%}
-{% if slurm_version is defined and slurm_version is not none -%}
-module load slurm/{{ slurm_version }}
+{% for module in cluster.modules -%}
+{% if module.version is defined and module.version is not none -%}
+module load {{ module.name }}/{{ module.version }}
 {%- else -%}
-module load slurm
+module load {{ module.name }}
 {%- endif %}
-{%- endif %}
-{% if load_gcc -%}
-{% if gcc_version is defined and gcc_version is not none -%}
-module load gcc/{{ gcc_version }}
-{%- else -%}
-module load gcc
-{%- endif %}
-{%- endif %}
-{% if load_anaconda -%}
-{% if anaconda_version is defined and anaconda_version is not none -%}
-module load anaconda/{{ anaconda_version }}
-{%- else -%}
-module load anaconda
-{%- endif %}
-{%- endif %}
-{% if load_git -%}
-{% if git_version is defined and git_version is not none -%}
-module load git/{{ git_version }}
-{%- else -%}
-module load git
-{%- endif %}
-{%- endif %}
+{%- endfor %}
+
+# Path modifications
+{% for path_export in cluster.path_exports -%}
+if [ -r "{{ path_export.path }}" ]; then
+    {% if path_export.prepend -%}
+    export PATH={{ path_export.path }}:$PATH
+    {%- else -%}
+    export PATH=$PATH:{{ path_export.path }}
+    {%- endif %}
+elif [ "{{ path_export.error_if_missing }}" = "True" ]; then
+    echo "The path '{{ path_export.path }}' does not exist but is required."
+    exit 1
+fi
+{%- endfor %}
+
+# Load conda env
+conda activate {{ conda_env }}
+
+# AWS setup
+
+# Fetch/setup resume files
+
+# Run inference
+
+# Upload/move results
