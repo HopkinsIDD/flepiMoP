@@ -1,4 +1,4 @@
-__all__ = ["Cluster", "Module", "get_cluster_info"]
+__all__ = ["Cluster", "Module", "PathExport", "get_cluster_info"]
 
 
 import os
@@ -13,10 +13,15 @@ class Module(BaseModel):
     name: str
     version: str | None = None
 
+class PathExport(BaseModel):
+    path: Path
+    prepend: bool = True
+    error_if_missing: bool = False
 
 class Cluster(BaseModel):
     name: str
-    modules: list[Module]
+    modules: list[Module] = []
+    path_exports: list[PathExport] = []
 
 
 T = TypeVar("T", bound=BaseModel)

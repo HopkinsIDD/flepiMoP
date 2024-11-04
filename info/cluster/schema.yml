@@ -23,3 +23,20 @@ properties:
         version:
           description: The preferred version of the module if there is one.
           type: string
+  path_exports:
+    description: Modifications to the $PATH environment variable in cluster setup.
+    type: array
+    items:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          description: The path to add to the $PATH environment variable.
+          type: string
+        prepend:
+          description: If true the path will prepended and appended if false.
+          type: boolean
+        error_if_missing:
+          description: If true an error will be thrown if the path is missing and if false will be ignored if missing.
+          type: boolean

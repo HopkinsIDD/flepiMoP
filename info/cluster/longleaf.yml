@@ -5,3 +5,4 @@ modules:
   - name: anaconda
     version: "2023.03"
   - name: git
+  - name: aws
