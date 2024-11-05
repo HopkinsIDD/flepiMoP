@@ -426,3 +426,102 @@ def _resolve_batch_system(
             batch_system = "slurm"
     return batch_system
 
+
+@cli.command(
+    name="batch",
+    params=[config_files_argument]
+    + list(config_file_options.values())
+    + [
+        Option(
+            ["--simulations"],
+            "simulations",
+            default=None,
+            type=IntRange(min=1),
+            help="The number of simulations per a job.",
+        ),
+        Option(
+            ["--blocks"],
+            "blocks",
+            default=None,
+            type=IntRange(min=1),
+            help="The number of sequential blocks to run per a job.",
+        ),
+        Option(
+            ["--batch-system"],
+            "batch_system",
+            default=None,
+            type=Choice(("aws", "local", "slurm"), case_sensitive=False),
+            help="The name of the batch system being used.",
+        ),
+        Option(
+            ["--aws"],
+            "aws",
+            default=False,
+            type=bool,
+            is_flag=True,
+            help="A flag indicating this is being run on AWS.",
+        ),
+        Option(
+            ["--local"],
+            "local",
+            default=False,
+            type=bool,
+            is_flag=True,
+            help="A flag indicating this is being run local.",
+        ),
+        Option(
+            ["--slurm"],
+            "slurm",
+            default=False,
+            type=bool,
+            is_flag=True,
+            help="A flag indicating this is being run on slurm.",
+        ),
+    ]
+    + list(verbosity_options.values()),
+)
+@pass_context
+def _click_batch(ctx: Context = mock_context, **kwargs) -> None:
+    """Submit batch jobs"""
+    logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
+    log_cli_inputs(kwargs)
+    cfg = parse_config_files(config, ctx, **kwargs)
+
+    if (
+        not cfg["inference"].exists()
+        or not cfg["inference"]["method"].exists()
+        or cfg["inference"]["method"].as_str() != "emcee"
+    ):
+        raise NotImplementedError(
+            "The `flepimop batch` CLI only supports EMCEE inference jobs."
+        )
+
+    name = cfg["name"].get(str) if cfg["name"].exists() else None
+    job_name = _job_name(name, None)
+    logger.info("Assigning job name of '%s'", job_name)
+
+    batch_system = _resolve_batch_system(
+        kwargs["batch_system"], kwargs["aws"], kwargs["local"], kwargs["slurm"]
+    )
+    if batch_system != "slurm":
+        raise NotImplementedError(
+            "The `flepimop batch` CLI only supports batch submission to slurm."
+        )
+    logger.info("Constructing a job to submit to %s", batch_system)
+
+    iterations_per_slot = (
+        cfg["inference"]["iterations_per_slot"].get(int)
+        if cfg["inference"].exists() and cfg["inference"]["iterations_per_slot"].exists()
+        else None
+    )
+    nslots = cfg["nslots"].get(int) if cfg["nslots"].exists() else None
+    job_size = JobSize.size_from_jobs_sims_blocks(
+        kwargs["jobs"],
+        kwargs["simulations"],
+        kwargs["blocks"],
+        iterations_per_slot,
+        nslots,
+        None,
+        "slurm",
+    )
+    logger.info("Preparing a job with size %s", job_size)

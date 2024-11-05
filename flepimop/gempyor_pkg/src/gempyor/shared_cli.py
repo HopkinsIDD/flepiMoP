@@ -124,6 +124,21 @@ config_file_options = {
     ),
 }
 
+verbosity_options = {
+    "verbosity": click.Option(
+        ["-v", "--verbose"],
+        count=True,
+        help="The verbosity level to use for this command.",
+    ),
+    "dry_run": click.Option(
+        ["--dry-run"],
+        type=bool,
+        default=False,
+        is_flag=True,
+        help="Should this command be run using dry run?",
+    ),
+}
+
 
 def click_helpstring(
     params: click.Parameter | list[click.Parameter],
