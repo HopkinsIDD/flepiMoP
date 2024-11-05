@@ -5,12 +5,12 @@ This module provides functionality for required for batch jobs, including creati
 metadata and job size calculations for example.
 """
 
-__all__ = ["JobSize", "write_manifest"]
+__all__ = ["JobSize", "JobTimeLimit", "write_manifest"]
 
 
 import click
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import math
 from pathlib import Path
@@ -147,6 +147,60 @@ class JobSize:
             blocks = math.ceil(iterations_per_slot / simulations)
 
         return cls(jobs=jobs, simulations=simulations, blocks=blocks)
+
+
+@dataclass(frozen=True, slots=True)
+class JobTimeLimit:
+    """
+    A batch submission job time limit.
+
+    Attributes:
+        time_limit: The time limit of the batch job.
+
+    Raises:
+        ValueError: If the `time_limit` attribute is not positive.
+    """
+
+    time_limit: timedelta
+
+    def __post_init__(self) -> None:
+        if (total_seconds := self.time_limit.total_seconds()) <= 0.0:
+            raise ValueError(
+                f"The `time_limit` attribute has {math.floor(total_seconds):,} "
+                "seconds, which is less than or equal to 0."
+            )
+
+    def __str__(self) -> str:
+        return self.format()
+
+    def format(self, batch_system: Literal["aws", "local", "slurm"] | None = None) -> str:
+        """
+        Format the job time limit as a string appropriate for a given batch system.
+
+        Args:
+            batch_system: The batch system the format should be formatted for.
+
+        Returns:
+            The time limit formatted for the batch system.
+
+        Examples:
+            >>> from datetime import timedelta
+            >>> job_time_limit = JobTimeLimit(
+            ...     time_limit=timedelta(days=1, hours=2, minutes=34, seconds=5)
+            ... )
+            >>> job_time_limit.format()
+            '1595'
+            >>> job_time_limit.format(batch_system="slurm")
+            '26:34:05'
+        """
+        if batch_system == "slurm":
+            total_seconds = self.time_limit.total_seconds()
+            hours = math.floor(total_seconds / (60.0 * 60.0))
+            minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
+            seconds = math.ceil(total_seconds - (60.0 * minutes) - (60.0 * 60.0 * hours))
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        limit_in_mins = math.ceil(self.time_limit.total_seconds() / 60.0)
+        return str(limit_in_mins)
 
 
 def write_manifest(
