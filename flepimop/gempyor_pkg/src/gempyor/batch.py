@@ -8,7 +8,7 @@ metadata and job size calculations for example.
 __all__ = ["JobSize", "write_manifest"]
 
 
-from click import Choice, Context, IntRange, Option, pass_context
+import click
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
@@ -432,28 +432,28 @@ def _resolve_batch_system(
     params=[config_files_argument]
     + list(config_file_options.values())
     + [
-        Option(
+        click.Option(
             ["--simulations"],
             "simulations",
             default=None,
-            type=IntRange(min=1),
+            type=click.IntRange(min=1),
             help="The number of simulations per a job.",
         ),
-        Option(
+        click.Option(
             ["--blocks"],
             "blocks",
             default=None,
-            type=IntRange(min=1),
+            type=click.IntRange(min=1),
             help="The number of sequential blocks to run per a job.",
         ),
-        Option(
+        click.Option(
             ["--batch-system"],
             "batch_system",
             default=None,
-            type=Choice(("aws", "local", "slurm"), case_sensitive=False),
+            type=click.Choice(("aws", "local", "slurm"), case_sensitive=False),
             help="The name of the batch system being used.",
         ),
-        Option(
+        click.Option(
             ["--aws"],
             "aws",
             default=False,
@@ -461,7 +461,7 @@ def _resolve_batch_system(
             is_flag=True,
             help="A flag indicating this is being run on AWS.",
         ),
-        Option(
+        click.Option(
             ["--local"],
             "local",
             default=False,
@@ -469,7 +469,7 @@ def _resolve_batch_system(
             is_flag=True,
             help="A flag indicating this is being run local.",
         ),
-        Option(
+        click.Option(
             ["--slurm"],
             "slurm",
             default=False,
@@ -477,11 +477,27 @@ def _resolve_batch_system(
             is_flag=True,
             help="A flag indicating this is being run on slurm.",
         ),
+        click.Option(
+            ["--flepi-path"],
+            "flepi_path",
+            envvar="FLEPI_PATH",
+            type=click.Path(exists=True),
+            required=True,
+            help="Path to the flepiMoP directory being used.",
+        ),
+        click.Option(
+            ["--project-path"],
+            "project_path",
+            envvar="PROJECT_PATH",
+            type=click.Path(exists=True),
+            required=True,
+            help="Path to the project directory being used.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
-@pass_context
-def _click_batch(ctx: Context = mock_context, **kwargs) -> None:
+@click.pass_context
+def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Submit batch jobs"""
     logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
     log_cli_inputs(kwargs)
@@ -515,13 +531,29 @@ def _click_batch(ctx: Context = mock_context, **kwargs) -> None:
         else None
     )
     nslots = cfg["nslots"].get(int) if cfg["nslots"].exists() else None
+    subpops: int | None = None
+    if (
+        cfg["subpop_setup"].exists()
+        and cfg["subpop_setup"]["geodata"].exists()
+        and (geodata := cfg["subpop_setup"]["geodata"].as_path()).exists()
+    ):
+        with geodata.open() as f:
+            subpops = sum(1 for _ in f)
+        subpops -= 1
     job_size = JobSize.size_from_jobs_sims_blocks(
         kwargs["jobs"],
         kwargs["simulations"],
         kwargs["blocks"],
         iterations_per_slot,
         nslots,
-        None,
-        "slurm",
+        subpops,
+        batch_system,
     )
     logger.info("Preparing a job with size %s", job_size)
+
+    # Restart/continuation location
+    # TODO: Implement this
+
+    # Manifest
+    manifest = write_manifest(job_name, kwargs["flepi_path"], kwargs["project_path"])
+    logger.info("Writing manifest metadata to '%s'", manifest.absolute())
