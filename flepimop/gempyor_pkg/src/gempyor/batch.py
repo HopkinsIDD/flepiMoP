@@ -8,7 +8,7 @@ metadata and job size calculations for example.
 __all__ = ["JobSize", "write_manifest"]
 
 
-from click import Context, pass_context
+from click import Choice, Context, IntRange, Option, pass_context
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
@@ -384,4 +384,45 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
     if name is not None and not _JOB_NAME_REGEX.match(name):
         raise ValueError(f"The given `name`, '{name}', is not a valid safe name.")
     return f"{name}-{timestamp}" if name else timestamp
+
+
+def _resolve_batch_system(
+    batch_system: Literal["aws", "local", "slurm"] | None,
+    aws: bool,
+    local: bool,
+    slurm: bool,
+) -> Literal["aws", "local", "slurm"]:
+    """
+    Resolve the batch system options.
+
+    Args:
+        batch_system: The name of the batch system to use if provided explicitly by
+            name or `None` to rely on the other flags.
+        aws: A flag indicating if the batch system should be AWS.
+        local: A flag indicating if the batch system should be local.
+        slurm: A flag indicating if the batch system should be slurm.
+
+    Returns:
+        The name of the batch system to use given the user options.
+    """
+    batch_system = batch_system.lower() if batch_system is not None else batch_system
+    if (boolean_flags := sum((aws, local, slurm))) > 1:
+        raise ValueError(
+            f"There were {boolean_flags} boolean flags given, expected either 0 or 1."
+        )
+    if batch_system is not None:
+        for name, flag in zip(("aws", "local", "slurm"), (aws, local, slurm)):
+            if flag and batch_system != name:
+                raise ValueError(
+                    "Conflicting batch systems given. The batch system name "
+                    f"is '{batch_system}' and the flags indicate '{name}'."
+                )
+    if batch_system is None:
+        if aws:
+            batch_system = "aws"
+        elif local:
+            batch_system = "local"
+        else:
+            batch_system = "slurm"
+    return batch_system
 
