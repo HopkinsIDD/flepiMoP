@@ -8,10 +8,13 @@ metadata and job size calculations for example.
 __all__ = ["JobSize", "write_manifest"]
 
 
+from click import Context, pass_context
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+import re
 from shlex import quote
 import subprocess
 import sys
@@ -19,7 +22,19 @@ from typing import Any, Literal
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .logging import get_script_logger
-from .utils import _format_cli_options, _git_head, _shutil_which
+from .utils import _format_cli_options, _git_head, _shutil_which, config
+from .shared_cli import (
+    cli,
+    config_files_argument,
+    config_file_options,
+    log_cli_inputs,
+    mock_context,
+    parse_config_files,
+    verbosity_options,
+)
+
+
+_JOB_NAME_REGEX = re.compile(r"^[a-z]{1}([a-z0-9\_\-]+)?$", flags=re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,3 +351,37 @@ def _sbatch_template(
         _render_template_to_file(template, template_data, script)
     _sbatch(script, environment_variables, {}, verbosity, dry_run)
     return script
+
+
+def _job_name(name: str | None, timestamp: datetime | None) -> str:
+    """
+    Generate a unique human readable job name.
+
+    Args:
+        name: The config name used as a prefix or `None` for no prefix.
+        timestamp: The timestamp used to make the job name unique or `None` to use the
+            current UTC timestamp.
+
+    Returns:
+        A job name that is unique and intended for use when submitting to slurm.
+
+    Raises:
+        ValueError: If `name` does not start with a letter and contains characters other
+            than the alphabet, numbers, underscores or dashes.
+
+    Examples:
+        >>> from gempyor.batch import _job_name
+        >>> _job_name(None, None)
+        '20241105T153818'
+        >>> _job_name("foobar", None)
+        'foobar-20241105T153831'
+        >>> from datetime import datetime, timezone
+        >>> _job_name(None, datetime(2024, 1, 1, tzinfo=timezone.utc))
+        '20240101T000000'
+    """
+    timestamp = datetime.now(timezone.utc) if timestamp is None else timestamp
+    timestamp = timestamp.strftime("%Y%m%dT%H%M%S")
+    if name is not None and not _JOB_NAME_REGEX.match(name):
+        raise ValueError(f"The given `name`, '{name}', is not a valid safe name.")
+    return f"{name}-{timestamp}" if name else timestamp
+
