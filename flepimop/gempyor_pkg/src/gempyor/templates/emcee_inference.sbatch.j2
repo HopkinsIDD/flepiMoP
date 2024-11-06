@@ -3,7 +3,7 @@
 #SBATCH {{ opt }}
 {%- endfor %}
 
-{% if sbatch_debug %}
+{% if debug %}
 # Debugging
 set -x
 {% endif %}
@@ -14,6 +14,9 @@ if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
 else
     FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID
 fi
+export FLEPI_PATH={{ flepi_path }}
+export PROJECT_PATH={{ project_path }}
+export CONFIG_PATH={{ config_out }}
 
 # Load modules
 module purge
@@ -47,5 +50,15 @@ conda activate {{ conda_env }}
 # Fetch/setup resume files
 
 # Run inference
+flepimop-calibrate --config $CONFIG_PATH \
+    --project_path $PROJECT_PATH \
+    --nslots {{ nslots }} \
+    --niterations {{ niterations }} \
+    --nthin {{ nthin }} \
+    --jobs {{ jobs }} \
+    --id {{ id }} \
+    --prefix {{ prefix}} \
+    --no-resume \
+    --resume_location {{ resume_location }} > out.out 2>&1
 
 # Upload/move results

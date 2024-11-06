@@ -8,7 +8,6 @@ metadata and job size calculations for example.
 __all__ = ["JobSize", "JobTimeLimit", "write_manifest"]
 
 
-import click
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from getpass import getuser
@@ -19,7 +18,11 @@ import re
 from shlex import quote
 import subprocess
 import sys
+from tempfile import mkstemp
 from typing import Any, Literal, Self
+
+import click
+import yaml
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .info import Cluster, get_cluster_info
@@ -606,7 +609,7 @@ def _resolve_batch_system(
             ["--flepi-path"],
             "flepi_path",
             envvar="FLEPI_PATH",
-            type=click.Path(exists=True),
+            type=click.Path(exists=True, path_type=Path),
             required=True,
             help="Path to the flepiMoP directory being used.",
         ),
@@ -614,7 +617,7 @@ def _resolve_batch_system(
             ["--project-path"],
             "project_path",
             envvar="PROJECT_PATH",
-            type=click.Path(exists=True),
+            type=click.Path(exists=True, path_type=Path),
             required=True,
             help="Path to the project directory being used.",
         ),
@@ -647,6 +650,31 @@ def _resolve_batch_system(
             help=(
                 "The name of the cluster this job is being launched on. "
                 "Only applicable to slurm submissions."
+            ),
+        ),
+        click.Option(
+            ["--conda-env"],
+            "conda_env",
+            type=str,
+            default="flepimop-env",
+            help="The name of the conda environment being used for this batch run.",
+        ),
+        click.Option(
+            ["--debug"],
+            "debug",
+            type=bool,
+            default=False,
+            is_flag=True,
+            help="Flag to enable debugging in batch submission scripts.",
+        ),
+        click.Option(
+            ["--config-out"],
+            "config_out",
+            type=click.Path(path_type=Path),
+            default=None,
+            help=(
+                "The location to dump the final parsed config file. "
+                "If not provided a temporary file will be used."
             ),
         ),
     ]
@@ -726,6 +754,10 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
         if kwargs["cluster"] is None:
             raise ValueError("When submitting a batch job to slurm a cluster is required.")
         cluster = get_cluster_info(kwargs["cluster"])
+    logger.info("Utilizing info for the '%s' cluster to construct this job", cluster.name)
+    logger.debug(
+        "The full settings for cluster '%s' are %s", cluster.name, cluster.model_dump()
+    )
 
     # Restart/continuation location
     # TODO: Implement this
@@ -734,9 +766,25 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     manifest = write_manifest(job_name, kwargs["flepi_path"], kwargs["project_path"])
     logger.info("Writing manifest metadata to '%s'", manifest.absolute())
 
+    # Config out
+    if (config_out := kwargs["config_out"]) is None:
+        _, tmp = mkstemp(suffix=".yml", prefix="config", text=True)
+        config_out = Path(tmp)
+    with config_out.open(mode="w") as f:
+        f.write(cfg.dump())
+    logger.info(
+        "Dumped the final config for this batch submission to %s", config_out.absolute()
+    )
+
     # Construct the sbatch call
     template_data = {
+        "conda_env": kwargs["conda_env"],
+        "config_out": config_out.absolute(),
         "cluster": cluster if cluster is None else cluster.model_dump(),
+        "debug": kwargs["debug"],
+        "flepi_path": kwargs["flepi_path"].absolute(),
+        "jobs": job_size.jobs,
+        "project_path": kwargs["project_path"].absolute(),
     }
     options = {
         "chdir": kwargs["project_path"].absolute(),
@@ -753,8 +801,8 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
         options["partition"] = kwargs["partition"]
     _sbatch_template(
         "emcee_inference.sbatch.j2",
-        None,  # Script
-        template_data,  # Template data
+        None,
+        template_data,
         "all",
         options,
         kwargs["verbosity"],
