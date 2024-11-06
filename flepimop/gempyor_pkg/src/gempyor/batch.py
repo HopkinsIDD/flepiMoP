@@ -700,6 +700,13 @@ def _resolve_batch_system(
             default=None,
             help="Unique prefix for this run.",
         ),
+        click.Option(
+            ["--email"],
+            "email",
+            type=str,
+            default=None,
+            help="Optionally an email that can be notified on job begin and end.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
@@ -741,6 +748,13 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
             "The `flepimop batch` CLI only supports batch submission to slurm."
         )
     logger.info("Constructing a job to submit to %s", batch_system)
+    if batch_system != "slurm" and kwargs["email"] is not None:
+        logger.warning(
+            "The email option, given '%s', is only used when "
+            "the batch system is slurm, but is instead %s.",
+            kwargs["email"],
+            batch_system,
+        )
 
     # Job size
     iterations_per_slot = (
@@ -837,6 +851,9 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     }
     if kwargs["partition"] is not None:
         options["partition"] = kwargs["partition"]
+    if kwargs["email"] is not None:
+        options["mail-type"] = "BEGIN,END"
+        options["mail-user"] = kwargs["email"]
     _sbatch_template(
         "emcee_inference.sbatch.j2",
         None,
