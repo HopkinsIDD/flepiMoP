@@ -13,7 +13,7 @@ body:
         - bug
         - batch
         - config
-        - flepiconfig
+        - dependency
         - documentation
         - docstring
         - duplicate
@@ -25,8 +25,12 @@ body:
         - meta/workflow
         - operations
         - performance
+        - plotting
         - post-processing
         - quick issue
+        - r-flepicommon
+        - r-flepiconfig
+        - r-inference
         - seeding
         - submission
         - wontfix
