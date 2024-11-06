@@ -115,7 +115,6 @@ def test_create_resume_out_filename():
 
 
 def test_create_resume_input_filename():
-
     result = utils.create_resume_input_filename(
         flepi_slot_index="2",
         resume_run_index="321",

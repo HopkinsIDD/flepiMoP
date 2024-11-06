@@ -353,9 +353,10 @@ class GempyorInference:
 
         config.set_file(os.path.join(path_prefix, config_filepath))
 
-        self.seir_modifiers_scenario, self.outcome_modifiers_scenario = (
-            autodetect_scenarios(config)
-        )
+        (
+            self.seir_modifiers_scenario,
+            self.outcome_modifiers_scenario,
+        ) = autodetect_scenarios(config)
 
         if run_id is None:
             run_id = file_paths.run_id()

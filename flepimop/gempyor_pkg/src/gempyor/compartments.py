@@ -143,50 +143,68 @@ class Compartments:
         )  # it is an iterator that will go through all the indexes of the array
         for x in it:
             try:
-                new_transition_config["source"][it.multi_index] = (
-                    list_recursive_convert_to_string(
-                        self.access_original_config_by_multi_index(
-                            single_transition_config["source"], it.multi_index
-                        )
+                new_transition_config["source"][
+                    it.multi_index
+                ] = list_recursive_convert_to_string(
+                    self.access_original_config_by_multi_index(
+                        single_transition_config["source"], it.multi_index
                     )
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `source:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `source:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
             try:
-                new_transition_config["destination"][it.multi_index] = (
-                    list_recursive_convert_to_string(
-                        self.access_original_config_by_multi_index(
-                            single_transition_config["destination"], it.multi_index
-                        )
+                new_transition_config["destination"][
+                    it.multi_index
+                ] = list_recursive_convert_to_string(
+                    self.access_original_config_by_multi_index(
+                        single_transition_config["destination"], it.multi_index
                     )
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `destination:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `destination:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
             try:
-                new_transition_config["rate"][it.multi_index] = (
-                    list_recursive_convert_to_string(
-                        self.access_original_config_by_multi_index(
-                            single_transition_config["rate"], it.multi_index
-                        )
+                new_transition_config["rate"][
+                    it.multi_index
+                ] = list_recursive_convert_to_string(
+                    self.access_original_config_by_multi_index(
+                        single_transition_config["rate"], it.multi_index
                     )
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `rate:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `rate:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
@@ -206,9 +224,15 @@ class Compartments:
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `proportional_to:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `proportional_to:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
@@ -221,23 +245,29 @@ class Compartments:
                         it.multi_index,
                         problem_dimension,
                     )
-                    new_transition_config["proportion_exponent"][it.multi_index] = (
-                        list_recursive_convert_to_string(
-                            [
-                                self.access_original_config_by_multi_index(
-                                    single_transition_config["proportion_exponent"][p_idx],
-                                    it.multi_index,
-                                    problem_dimension,
-                                )
-                                for p_idx in range(proportion_size)
-                            ]
-                        )
+                    new_transition_config["proportion_exponent"][
+                        it.multi_index
+                    ] = list_recursive_convert_to_string(
+                        [
+                            self.access_original_config_by_multi_index(
+                                single_transition_config["proportion_exponent"][p_idx],
+                                it.multi_index,
+                                problem_dimension,
+                            )
+                            for p_idx in range(proportion_size)
+                        ]
                     )
                 except Exception as e:
                     print(f"Error {e}:")
-                    print(f">>> in expand_transition_elements for `proportion_exponent:` at index '{it.multi_index}'")
-                    print(f">>> this transition source is: '{single_transition_config['source']}'")
-                    print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                    print(
+                        f">>> in expand_transition_elements for `proportion_exponent:` at index '{it.multi_index}'"
+                    )
+                    print(
+                        f">>> this transition source is: '{single_transition_config['source']}'"
+                    )
+                    print(
+                        f">>> this transition destination is: '{single_transition_config['destination']}'"
+                    )
                     print(f"transition_dimension: '{problem_dimension}'")
                     raise e
             else:
@@ -349,7 +379,6 @@ class Compartments:
     def parse_single_transition(
         self, seir_config, single_transition_config, fake_config=False
     ):
-
         ## This method relies on having run parse_compartments
         if not fake_config:
             single_transition_config = single_transition_config.get()
@@ -475,7 +504,9 @@ class Compartments:
                         if self.compartments["name"][compartment] == elem:
                             rc = compartment
                     if rc == -1:
-                        raise ValueError(f"Could not find '{colname}' defined by '{elem}' in '{self.compartments}'.")
+                        raise ValueError(
+                            f"Could not find '{colname}' defined by '{elem}' in '{self.compartments}'."
+                        )
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -543,9 +574,9 @@ class Compartments:
                     proportion_info[0][
                         current_proportion_sum_it
                     ] = current_proportion_sum_start
-                    proportion_info[1][current_proportion_sum_it] = (
-                        current_proportion_sum_start + len(elem_tmp)
-                    )
+                    proportion_info[1][
+                        current_proportion_sum_it
+                    ] = current_proportion_sum_start + len(elem_tmp)
                     current_proportion_sum_it += 1
                     current_proportion_sum_start += len(elem_tmp)
             proportion_compartment_index = 0
@@ -557,7 +588,7 @@ class Compartments:
                     if candidate not in unique_strings:
                         raise ValueError(
                             f"Proportion exponent '{candidate}' is not found in the list of unique strings: '{unique_strings}'."
-                            )
+                        )
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                     proportion_info[2][proportion_compartment_index] = rc
                     proportion_compartment_index += 1
@@ -707,7 +738,7 @@ class Compartments:
             not operators
         ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
             raise ValueError(
-                f"Could not parse string '{string_list}'. " 
+                f"Could not parse string '{string_list}'. "
                 f"This usually means that '{string_list[0]}' is a parameter name that is not defined "
                 f"or that it contains an operator that is not in the list of supported operators: '{operators}'. "
                 f"The defined parameters are '{parameter_names}'."
@@ -730,14 +761,14 @@ class Compartments:
             if not is_totally_resolvable:
                 not_resolvable_indices = [it for it, x in enumerate(is_resolvable) if not x]
 
-                tmp_rc[not_resolvable_indices] = (
-                    self.parse_parameter_strings_to_numpy_arrays(
-                        parameters,
-                        parameter_names,
-                        [string[not is_resolvable]],
-                        operator_reduce_lambdas,
-                        operators[1:],
-                    )
+                tmp_rc[
+                    not_resolvable_indices
+                ] = self.parse_parameter_strings_to_numpy_arrays(
+                    parameters,
+                    parameter_names,
+                    [string[not is_resolvable]],
+                    operator_reduce_lambdas,
+                    operators[1:],
                 )
             for numeric_index in [x for x in range(len(is_numeric)) if is_numeric[x]]:
                 tmp_rc[numeric_index] = parameters[0] * 0 + float(string[numeric_index])

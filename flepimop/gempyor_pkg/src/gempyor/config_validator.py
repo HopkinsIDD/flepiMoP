@@ -65,20 +65,27 @@ class InitialConditionsConfig(BaseModel):
 
     @model_validator(mode="before")
     def validate_initial_file_check(cls, values):
-        method = values.get('method')
-        initial_conditions_file = values.get('initial_conditions_file')
-        initial_file_type = values.get('initial_file_type')        
-        if method in {'FromFile', 'SetInitialConditions'} and not initial_conditions_file:
-            raise ValueError(f"An `initial_conditions_file` is required when method is '{method}'.")
-        if method in {'InitialConditionsFolderDraw','SetInitialConditionsFolderDraw'} and not initial_file_type:
-            raise ValueError(f"An `initial_file_type` is required when method is '{method}'.")
+        method = values.get("method")
+        initial_conditions_file = values.get("initial_conditions_file")
+        initial_file_type = values.get("initial_file_type")
+        if method in {"FromFile", "SetInitialConditions"} and not initial_conditions_file:
+            raise ValueError(
+                f"An `initial_conditions_file` is required when method is '{method}'."
+            )
+        if (
+            method in {"InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw"}
+            and not initial_file_type
+        ):
+            raise ValueError(
+                f"An `initial_file_type` is required when method is '{method}'."
+            )
         return values
 
     @model_validator(mode="before")
     def plugin_filecheck(cls, values):
-        method = values.get('method')
-        plugin_file_path = values.get('plugin_file_path')   
-        if method == 'plugin' and not plugin_file_path:
+        method = values.get("method")
+        plugin_file_path = values.get("plugin_file_path")
+        if method == "plugin" and not plugin_file_path:
             raise ValueError("A plugin file path is required when method is plugin.")
         return values
 
@@ -106,23 +113,27 @@ class SeedingConfig(BaseModel):
 
     @model_validator(mode="before")
     def validate_seedingfile(cls, values):
-        method = values.get('method')
-        lambda_file = values.get('lambda_file')
-        seeding_file_type = values.get('seeding_file_type')        
-        seeding_file = values.get('seeding_file')        
-        if method == 'PoissonDistributed' and not lambda_file:
-            raise ValueError("A `lambda_file` is required when method is 'PoissonDistributed'.")
-        if method == 'FolderDraw' and not seeding_file_type:
-            raise ValueError("A `seeding_file_type` is required when method is 'FolderDraw'.")
-        if method == 'FromFile' and not seeding_file:
+        method = values.get("method")
+        lambda_file = values.get("lambda_file")
+        seeding_file_type = values.get("seeding_file_type")
+        seeding_file = values.get("seeding_file")
+        if method == "PoissonDistributed" and not lambda_file:
+            raise ValueError(
+                "A `lambda_file` is required when method is 'PoissonDistributed'."
+            )
+        if method == "FolderDraw" and not seeding_file_type:
+            raise ValueError(
+                "A `seeding_file_type` is required when method is 'FolderDraw'."
+            )
+        if method == "FromFile" and not seeding_file:
             raise ValueError("A `seeding_file` is required when method is 'FromFile'.")
         return values
 
     @model_validator(mode="before")
     def plugin_filecheck(cls, values):
-        method = values.get('method')
-        plugin_file_path = values.get('plugin_file_path')   
-        if method == 'plugin' and not plugin_file_path:
+        method = values.get("method")
+        plugin_file_path = values.get("plugin_file_path")
+        if method == "plugin" and not plugin_file_path:
             raise ValueError(
                 f"A plugin file path is required when method is 'plugin', "
                 f"was given '{plugin_file_path!r}'."
@@ -158,10 +169,14 @@ class ValueConfig(BaseModel):
         b = values.get("b")
         if distr != "fixed":
             if not mean and not sd:
-                raise ValueError("Mean and sd must be provided for non-fixed distributions.")
-            if distr == 'truncnorm' and not a and not b:
-                raise ValueError("a and b must be provided for truncated normal distributions.")
-        if distr == 'fixed' and not value:
+                raise ValueError(
+                    "Mean and sd must be provided for non-fixed distributions."
+                )
+            if distr == "truncnorm" and not a and not b:
+                raise ValueError(
+                    "a and b must be provided for truncated normal distributions."
+                )
+        if distr == "fixed" and not value:
             raise ValueError("Value must be provided for fixed distributions.")
         return values
 
@@ -169,9 +184,9 @@ class ValueConfig(BaseModel):
 class BaseParameterConfig(BaseModel):
     value: Optional[ValueConfig] = None
     modifier_parameter: Optional[str] = None
-    name: Optional[str] = (
-        None  # this is only for outcomes, to build outcome_prevalence_name (how to restrict this?)
-    )
+    name: Optional[
+        str
+    ] = None  # this is only for outcomes, to build outcome_prevalence_name (how to restrict this?)
 
 
 class SeirParameterConfig(BaseParameterConfig):
@@ -282,7 +297,7 @@ class SourceConfig(
         if incidence and prevalence:
             raise ValueError(
                 f"Parsed a source with both an incidence, '{values.get('incidence')!r}', and prevalence, '{values.get('prevalence')!r}', please choose one."
-                )
+            )
         return values
 
     # @model_validator(mode='before') # DOES NOT WORK
@@ -339,7 +354,9 @@ class OutcomesConfig(BaseModel):
         param_subpop_file = values.get("param_subpop_file") is not None
 
         if param_from_file and not param_subpop_file:
-            raise ValueError("A `param_subpop_file` is required when `param_from_file` is 'True'.")
+            raise ValueError(
+                "A `param_subpop_file` is required when `param_from_file` is 'True'."
+            )
         return values
 
 
@@ -423,7 +440,9 @@ class CheckConfig(BaseModel):
         inference_present = values.get("inference") is not None
         start_date_groundtruth = values.get("start_date_groundtruth") is not None
         if inference_present and not start_date_groundtruth:
-            raise ValueError("Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates.")
+            raise ValueError(
+                "Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates."
+            )
         elif start_date_groundtruth and not inference_present:
             raise ValueError(
                 "Groundtruth dates are provided, but inference mode is not enabled. Please enable inference mode."
@@ -443,10 +462,10 @@ class CheckConfig(BaseModel):
 
     @model_validator(mode="before")
     def init_or_seed(cls, values):
-        init = values.get('initial_conditions')
-        seed = values.get('seeding')
+        init = values.get("initial_conditions")
+        seed = values.get("seeding")
         if not (init or seed):
             raise ValueError(
                 f"At least one of `initial_conditions` or `seeding` must be provided."
-                )
+            )
         return values

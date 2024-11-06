@@ -1693,9 +1693,7 @@ cc.verbose = True
     ## Return
     "UniTuple(float64[:, :, :], 2) ("  ## return states and cumlative states, both [ ndays x ncompartments x nspatial_nodes ]
     ## Dimensions
-    "int32,"
-    "int32,"
-    "int32,"  ## ncompartments  ## nspatial_nodes  ## Number of days
+    "int32," "int32," "int32,"  ## ncompartments  ## nspatial_nodes  ## Number of days
     ## Parameters
     "float64[:, :, :],"
     "float64,"  ## Parameters [ nparameters x ndays x nspatial_nodes]  ## dt

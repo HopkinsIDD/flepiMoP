@@ -237,8 +237,8 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                rf"^Issue loading file '{tmp_file}' for parameter 'sigma': " 
-                rf"the number of non-'date' columns is '{actual_columns}', expected '{mock_inputs.number_of_subpops()}' " 
+                rf"^Issue loading file '{tmp_file}' for parameter 'sigma': "
+                rf"the number of non-'date' columns is '{actual_columns}', expected '{mock_inputs.number_of_subpops()}' "
                 rf"\(number of subpopulations\) or one\.$"
             ),
         ):

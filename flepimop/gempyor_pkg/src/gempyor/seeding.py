@@ -59,15 +59,15 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
                     source_dict,
                     error_info=f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)",
                 )
-                seeding_dict["seeding_destinations"][idx] = (
-                    modinf.compartments.get_comp_idx(
-                        destination_dict,
-                        error_info=f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)",
-                    )
+                seeding_dict["seeding_destinations"][
+                    idx
+                ] = modinf.compartments.get_comp_idx(
+                    destination_dict,
+                    error_info=f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)",
                 )
-                seeding_dict["seeding_subpops"][idx] = (
-                    modinf.subpop_struct.subpop_names.index(row["subpop"])
-                )
+                seeding_dict["seeding_subpops"][
+                    idx
+                ] = modinf.subpop_struct.subpop_names.index(row["subpop"])
                 seeding_amounts[idx] = amounts[idx]
                 # id_seed+=1
             else:
