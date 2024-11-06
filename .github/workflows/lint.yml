@@ -1,0 +1,41 @@
+name: Lint
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'flepimop/gempyor_pkg/**/*.py'
+  pull_request:
+    paths:
+      - '**/*.py'
+    branches:
+      - main
+
+jobs:
+  black-for-python:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    env:
+      BLACK_LINE_LENGTH: 92
+      BLACK_EXTEND_EXCLUDE: 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            *
+            !documentation/
+          sparse-checkout-cone-mode: false
+      - name: Determine Source
+        run: |
+          if [ ${{ github.event_name }} == "push" ]; then
+            echo "BLACK_SRC=flepimop/gempyor_pkg/" >> $GITHUB_ENV
+          else
+            echo "BLACK_SRC=." >> $GITHUB_ENV
+          fi
+      - name: Black Formatter Check
+        uses: psf/black@stable
+        with:
+          src: ${{ env.BLACK_SRC }}
+          options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"

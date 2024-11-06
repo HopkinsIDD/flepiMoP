@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+black --line-length 92 \
+    --extend-exclude 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py' \
+    --verbose .

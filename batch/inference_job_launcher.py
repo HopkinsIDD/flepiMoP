@@ -403,23 +403,37 @@ def launch_batch(
         if "scenarios" in config["outcome_modifiers"]:
             outcome_modifiers_scenarios = config["outcome_modifiers"]["scenarios"]
 
-    handler.launch(job_name, config_filepath, seir_modifiers_scenarios, outcome_modifiers_scenarios)
+    handler.launch(
+        job_name, config_filepath, seir_modifiers_scenarios, outcome_modifiers_scenarios
+    )
 
     # Set job_name as environmental variable so it can be pulled for pushing to git
     os.environ["job_name"] = job_name
     # Set run_id as environmental variable so it can be pulled for pushing to git TODO
 
-    (rc, txt) = subprocess.getstatusoutput(f"git checkout -b run_{job_name}")  # TODO: cd ...
+    (rc, txt) = subprocess.getstatusoutput(
+        f"git checkout -b run_{job_name}"
+    )  # TODO: cd ...
     print(txt)
     return rc
 
 
-def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, num_blocks=None, batch_system=None):
+def autodetect_params(
+    config,
+    data_path,
+    *,
+    num_jobs=None,
+    sims_per_job=None,
+    num_blocks=None,
+    batch_system=None,
+):
     if num_jobs and sims_per_job and num_blocks:
         return (num_jobs, sims_per_job, num_blocks)
 
     if "inference" not in config or "iterations_per_slot" not in config["inference"]:
-        raise click.UsageError("inference::iterations_per_slot undefined in config, can't autodetect parameters")
+        raise click.UsageError(
+            "inference::iterations_per_slot undefined in config, can't autodetect parameters"
+        )
     iterations_per_slot = int(config["inference"]["iterations_per_slot"])
 
     if num_jobs is None:
@@ -429,11 +443,17 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
     if sims_per_job is None:
         if num_blocks is not None:
             sims_per_job = int(math.ceil(iterations_per_slot / num_blocks))
-            print(f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]")
-            print(f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]")
+            print(
+                f"Setting number of blocks to {num_blocks} [via num_blocks (-k) argument]"
+            )
+            print(
+                f"Setting sims per job to {sims_per_job} [via {iterations_per_slot} iterations_per_slot in config]"
+            )
         else:
             if "data_path" in config:
-                raise ValueError("The config has a data_path section. This is no longer supported.")
+                raise ValueError(
+                    "The config has a data_path section. This is no longer supported."
+                )
             geodata_fname = pathlib.Path(data_path) / config["subpop_setup"]["geodata"]
             with open(geodata_fname) as geodata_fp:
                 num_subpops = sum(1 for line in geodata_fp)
@@ -458,7 +478,9 @@ def autodetect_params(config, data_path, *, num_jobs=None, sims_per_job=None, nu
 
     if num_blocks is None:
         num_blocks = int(math.ceil(iterations_per_slot / sims_per_job))
-        print(f"Setting number of blocks to {num_blocks} [via {iterations_per_slot} iterations_per_slot in config]")
+        print(
+            f"Setting number of blocks to {num_blocks} [via {iterations_per_slot} iterations_per_slot in config]"
+        )
 
     return (num_jobs, sims_per_job, num_blocks)
 
@@ -478,7 +500,9 @@ def get_aws_job_queues(job_queue_prefix):
     return sorted(queues_with_jobs, key=queues_with_jobs.get)
 
 
-def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_from_run_id, num_jobs, strict=False):
+def aws_countfiles_autodetect_runid(
+    s3_bucket, restart_from_location, restart_from_run_id, num_jobs, strict=False
+):
     import boto3
 
     s3 = boto3.resource("s3")
@@ -487,15 +511,21 @@ def aws_countfiles_autodetect_runid(s3_bucket, restart_from_location, restart_fr
     all_files = list(bucket.objects.filter(Prefix=prefix))
     all_files = [f.key for f in all_files]
     if restart_from_run_id is None:
-        print("WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎...")
+        print(
+            "WARNING: no --restart_from_run_id specified, autodetecting... please wait querying S3 👀🔎..."
+        )
         restart_from_run_id = all_files[0].split("/")[3]
-        if user_confirmation(question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True):
+        if user_confirmation(
+            question=f"Auto-detected run_id {restart_from_run_id}. Correct ?", default=True
+        ):
             print(f"great, continuing with run_id {restart_from_run_id}...")
         else:
             raise ValueError(f"Abording, please specify --restart_from_run_id manually.")
 
     final_llik = [f for f in all_files if ("llik" in f) and ("final" in f)]
-    if len(final_llik) == 0:  # hacky: there might be a bucket with no llik files, e.g if init.
+    if (
+        len(final_llik) == 0
+    ):  # hacky: there might be a bucket with no llik files, e.g if init.
         final_llik = [f for f in all_files if ("init" in f) and ("final" in f)]
 
     if len(final_llik) != num_jobs:
@@ -583,8 +613,12 @@ class BatchJobHandler(object):
         manifest = {}
         manifest["cmd"] = " ".join(sys.argv[:])
         manifest["job_name"] = job_name
-        manifest["data_sha"] = subprocess.getoutput("cd {self.data_path}; git rev-parse HEAD")
-        manifest["flepimop_sha"] = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
+        manifest["data_sha"] = subprocess.getoutput(
+            "cd {self.data_path}; git rev-parse HEAD"
+        )
+        manifest["flepimop_sha"] = subprocess.getoutput(
+            f"cd {self.flepi_path}; git rev-parse HEAD"
+        )
 
         # Save the manifest file to S3
         with open("manifest.json", "w") as f:
@@ -594,17 +628,25 @@ class BatchJobHandler(object):
             # need these to be uploaded so they can be executed.
             this_file_path = os.path.dirname(os.path.realpath(__file__))
             self.save_file(
-                source=os.path.join(this_file_path, "AWS_inference_runner.sh"), destination=f"{job_name}-runner.sh"
+                source=os.path.join(this_file_path, "AWS_inference_runner.sh"),
+                destination=f"{job_name}-runner.sh",
             )
             self.save_file(
-                source=os.path.join(this_file_path, "AWS_inference_copy.sh"), destination=f"{job_name}-copy.sh"
+                source=os.path.join(this_file_path, "AWS_inference_copy.sh"),
+                destination=f"{job_name}-copy.sh",
             )
 
             tarfile_name = f"{job_name}.tar.gz"
             self.tar_working_dir(tarfile_name=tarfile_name)
-            self.save_file(source=tarfile_name, destination=f"{job_name}.tar.gz", remove_source=True)
+            self.save_file(
+                source=tarfile_name, destination=f"{job_name}.tar.gz", remove_source=True
+            )
 
-        self.save_file(source="manifest.json", destination=f"{job_name}/manifest.json", remove_source=True)
+        self.save_file(
+            source="manifest.json",
+            destination=f"{job_name}/manifest.json",
+            remove_source=True,
+        )
 
     def tar_working_dir(self, tarfile_name):
         # this tar file always has the structure:
@@ -616,10 +658,13 @@ class BatchJobHandler(object):
                 or q == "covid-dashboard-app"
                 or q == "renv.cache"
                 or q == "sample_data"
-                or q == "renv"  # joseph: I added this to fix a bug, hopefully it doesn't break anything
+                or q
+                == "renv"  # joseph: I added this to fix a bug, hopefully it doesn't break anything
                 or q.startswith(".")
             ):
-                tar.add(os.path.join(self.flepi_path, q), arcname=os.path.join("flepiMoP", q))
+                tar.add(
+                    os.path.join(self.flepi_path, q), arcname=os.path.join("flepiMoP", q)
+                )
             elif q == "sample_data":
                 for r in os.listdir(os.path.join(self.flepi_path, "sample_data")):
                     if r != "united-states-commutes":
@@ -629,10 +674,17 @@ class BatchJobHandler(object):
                         )
                         # tar.add(os.path.join("flepiMoP", "sample_data", r))
         for p in os.listdir(self.data_path):
-            if not (p.startswith(".") or p.endswith("tar.gz") or p in self.outputs or p == "flepiMoP"):
+            if not (
+                p.startswith(".")
+                or p.endswith("tar.gz")
+                or p in self.outputs
+                or p == "flepiMoP"
+            ):
                 tar.add(
                     p,
-                    filter=lambda x: None if os.path.basename(x.name).startswith(".") else x,
+                    filter=lambda x: (
+                        None if os.path.basename(x.name).startswith(".") else x
+                    ),
                 )
         tar.close()
 
@@ -656,7 +708,13 @@ class BatchJobHandler(object):
         if remove_source:
             os.remove(source)
 
-    def launch(self, job_name, config_filepath, seir_modifiers_scenarios, outcome_modifiers_scenarios):
+    def launch(
+        self,
+        job_name,
+        config_filepath,
+        seir_modifiers_scenarios,
+        outcome_modifiers_scenarios,
+    ):
         s3_results_path = f"s3://{self.s3_bucket}/{job_name}"
 
         if self.batch_system == "slurm":
@@ -676,7 +734,10 @@ class BatchJobHandler(object):
         ## TODO: check how each of these variables are used downstream
         base_env_vars = [
             {"name": "BATCH_SYSTEM", "value": self.batch_system},
-            {"name": "S3_MODEL_PROJECT_PATH", "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz"},
+            {
+                "name": "S3_MODEL_PROJECT_PATH",
+                "value": f"s3://{self.s3_bucket}/{job_name}.tar.gz",
+            },
             {"name": "DVC_OUTPUTS", "value": " ".join(self.outputs)},
             {"name": "S3_RESULTS_PATH", "value": s3_results_path},
             {"name": "FS_RESULTS_PATH", "value": fs_results_path},
@@ -700,14 +761,22 @@ class BatchJobHandler(object):
             },
             {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
-            {"name": "FLEPI_MEM_PROFILE", "value": str(os.getenv("FLEPI_MEM_PROFILE", default="FALSE"))},
-            {"name": "FLEPI_MEM_PROF_ITERS", "value": str(os.getenv("FLEPI_MEM_PROF_ITERS", default="50"))},
+            {
+                "name": "FLEPI_MEM_PROFILE",
+                "value": str(os.getenv("FLEPI_MEM_PROFILE", default="FALSE")),
+            },
+            {
+                "name": "FLEPI_MEM_PROF_ITERS",
+                "value": str(os.getenv("FLEPI_MEM_PROF_ITERS", default="50")),
+            },
             {"name": "SLACK_CHANNEL", "value": str(self.slack_channel)},
         ]
         with open(config_filepath) as f:
             config = yaml.full_load(f)
 
-        for ctr, (s, d) in enumerate(itertools.product(seir_modifiers_scenarios, outcome_modifiers_scenarios)):
+        for ctr, (s, d) in enumerate(
+            itertools.product(seir_modifiers_scenarios, outcome_modifiers_scenarios)
+        ):
             cur_job_name = f"{job_name}_{s}_{d}"
             # Create first job
             cur_env_vars = base_env_vars.copy()
@@ -719,7 +788,9 @@ class BatchJobHandler(object):
             cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": "1"})
             cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
             if not (self.restart_from_location is None):
-                cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{self.restart_from_location}"})
+                cur_env_vars.append(
+                    {"name": "LAST_JOB_OUTPUT", "value": f"{self.restart_from_location}"}
+                )
                 cur_env_vars.append(
                     {
                         "name": "OLD_FLEPI_RUN_INDEX",
@@ -732,8 +803,18 @@ class BatchJobHandler(object):
 
             if self.continuation:
                 cur_env_vars.append({"name": "FLEPI_CONTINUATION", "value": f"TRUE"})
-                cur_env_vars.append({"name": "FLEPI_CONTINUATION_RUN_ID", "value": f"{self.continuation_run_id}"})
-                cur_env_vars.append({"name": "FLEPI_CONTINUATION_LOCATION", "value": f"{self.continuation_location}"})
+                cur_env_vars.append(
+                    {
+                        "name": "FLEPI_CONTINUATION_RUN_ID",
+                        "value": f"{self.continuation_run_id}",
+                    }
+                )
+                cur_env_vars.append(
+                    {
+                        "name": "FLEPI_CONTINUATION_LOCATION",
+                        "value": f"{self.continuation_location}",
+                    }
+                )
                 cur_env_vars.append(
                     {
                         "name": "FLEPI_CONTINUATION_FTYPE",
@@ -814,7 +895,9 @@ class BatchJobHandler(object):
                     postprod_command, command_name="sbatch postprod", fail_on_fail=True
                 )
                 postprod_job_id = stdout.decode().split(" ")[-1][:-1]
-                print(f">>> SUCCESS SCHEDULING POST-PROCESSING JOB. Slurm job id is {postprod_job_id}")
+                print(
+                    f">>> SUCCESS SCHEDULING POST-PROCESSING JOB. Slurm job id is {postprod_job_id}"
+                )
 
             elif self.batch_system == "local":
                 cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}"})
@@ -831,12 +914,24 @@ class BatchJobHandler(object):
                     cur_env_vars = base_env_vars.copy()
                     cur_env_vars.append({"name": "FLEPI_SEIR_SCENARIOS", "value": s})
                     cur_env_vars.append({"name": "FLEPI_OUTCOME_SCENARIOS", "value": d})
-                    cur_env_vars.append({"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"})
-                    cur_env_vars.append({"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"})
-                    cur_env_vars.append({"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
-                    cur_env_vars.append({"name": "OLD_FLEPI_RUN_INDEX", "value": f"{self.run_id}"})
-                    cur_env_vars.append({"name": "LAST_JOB_OUTPUT", "value": f"{s3_results_path}/"})
-                    cur_env_vars.append({"name": "JOB_NAME", "value": f"{cur_job_name}_block{block_idx}"})
+                    cur_env_vars.append(
+                        {"name": "FLEPI_PREFIX", "value": f"{config['name']}_{s}_{d}"}
+                    )
+                    cur_env_vars.append(
+                        {"name": "FLEPI_BLOCK_INDEX", "value": f"{block_idx+1}"}
+                    )
+                    cur_env_vars.append(
+                        {"name": "FLEPI_RUN_INDEX", "value": f"{self.run_id}"}
+                    )
+                    cur_env_vars.append(
+                        {"name": "OLD_FLEPI_RUN_INDEX", "value": f"{self.run_id}"}
+                    )
+                    cur_env_vars.append(
+                        {"name": "LAST_JOB_OUTPUT", "value": f"{s3_results_path}/"}
+                    )
+                    cur_env_vars.append(
+                        {"name": "JOB_NAME", "value": f"{cur_job_name}_block{block_idx}"}
+                    )
                     cur_job = batch_client.submit_job(
                         jobName=f"{cur_job_name}_block{block_idx}",
                         jobQueue=cur_job_queue,
@@ -895,19 +990,29 @@ class BatchJobHandler(object):
             em = ""
             if self.resume_discard_seeding:
                 em = f", discarding seeding results."
-            print(f" >> Resuming from run id is {self.restart_from_run_id} located in {self.restart_from_location}{em}")
+            print(
+                f" >> Resuming from run id is {self.restart_from_run_id} located in {self.restart_from_location}{em}"
+            )
         if self.batch_system == "aws":
             print(f" >> Final output will be: {s3_results_path}/model_output/")
         elif self.batch_system == "slurm":
             print(f" >> Final output will be: {fs_results_path}/model_output/")
             if self.s3_upload:
-                print(f" >> Final output will be uploaded to {s3_results_path}/model_output/")
+                print(
+                    f" >> Final output will be uploaded to {s3_results_path}/model_output/"
+                )
         if self.continuation:
-            print(f" >> Continuing from run id is {self.continuation_run_id} located in {self.continuation_location}")
+            print(
+                f" >> Continuing from run id is {self.continuation_run_id} located in {self.continuation_location}"
+            )
         print(f" >> Run id is {self.run_id}")
         print(f" >> config is {config_filepath.split('/')[-1]}")
-        flepimop_branch = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD")
-        data_branch = subprocess.getoutput(f"cd {self.data_path}; git rev-parse --abbrev-ref HEAD")
+        flepimop_branch = subprocess.getoutput(
+            f"cd {self.flepi_path}; git rev-parse --abbrev-ref HEAD"
+        )
+        data_branch = subprocess.getoutput(
+            f"cd {self.data_path}; git rev-parse --abbrev-ref HEAD"
+        )
         data_hash = subprocess.getoutput(f"cd {self.data_path}; git rev-parse HEAD")
         flepimop_hash = subprocess.getoutput(f"cd {self.flepi_path}; git rev-parse HEAD")
         print(f""" >> FLEPIMOP branch is {flepimop_branch} with hash {flepimop_hash}""")

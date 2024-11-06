@@ -54,7 +54,9 @@ subpop = ["15005", "15007", "15009", "15001", "15003"]
 diffI = np.arange(5) * 2
 date_data = datetime.date(2020, 4, 15)
 for i in range(5):
-    b.loc[(b["mc_value_type"] == "incidence") & (b["date"] == str(date_data)), subpop[i]] = diffI[i]
+    b.loc[
+        (b["mc_value_type"] == "incidence") & (b["date"] == str(date_data)), subpop[i]
+    ] = diffI[i]
 
 pa_df = pa.Table.from_pandas(b, preserve_index=False)
 pa.parquet.write_table(pa_df, "new_test_no_vacc.parquet")
