@@ -11,6 +11,7 @@ __all__ = ["JobSize", "JobTimeLimit", "write_manifest"]
 import click
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from getpass import getuser
 import json
 import math
 from pathlib import Path
@@ -21,6 +22,7 @@ import sys
 from typing import Any, Literal, Self
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
+from .info import Cluster, get_cluster_info
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_head, _shutil_which, config
 from .shared_cli import (
@@ -627,15 +629,25 @@ def _resolve_batch_system(
             ["--simulation-time"],
             "simulation_time",
             type=NONNEGATIVE_DURATION,
-            default=timedelta(minutes=3.0),
+            default="3min",
             help="The time limit per a simulation.",
         ),
         click.Option(
             ["--initial-time"],
             "initial_time",
             type=NONNEGATIVE_DURATION,
-            default=timedelta(minutes=20.0),
+            default="20min",
             help="The initialization time limit.",
+        ),
+        click.Option(
+            ["--cluster"],
+            "cluster",
+            type=str,
+            default=None,
+            help=(
+                "The name of the cluster this job is being launched on. "
+                "Only applicable to slurm submissions."
+            ),
         ),
     ]
     + list(verbosity_options.values()),
@@ -644,6 +656,7 @@ def _resolve_batch_system(
 def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Submit batch jobs"""
     # Generic setup
+    now = datetime.now(timezone.utc)
     logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
     log_cli_inputs(kwargs)
     cfg = parse_config_files(config, ctx, **kwargs)
@@ -660,7 +673,7 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
 
     # Job name
     name = cfg["name"].get(str) if cfg["name"].exists() else None
-    job_name = _job_name(name, None)
+    job_name = _job_name(name, now)
     logger.info("Assigning job name of '%s'", job_name)
 
     # Batch system
@@ -707,6 +720,13 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     )
     logger.info("Setting a total job time limit of %s minutes", job_time_limit.format())
 
+    # Cluster info
+    cluster: Cluster | None = None
+    if batch_system == "slurm":
+        if kwargs["cluster"] is None:
+            raise ValueError("When submitting a batch job to slurm a cluster is required.")
+        cluster = get_cluster_info(kwargs["cluster"])
+
     # Restart/continuation location
     # TODO: Implement this
 
@@ -715,9 +735,12 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     logger.info("Writing manifest metadata to '%s'", manifest.absolute())
 
     # Construct the sbatch call
-    template_data = {}
+    template_data = {
+        "cluster": cluster if cluster is None else cluster.model_dump(),
+    }
     options = {
         "chdir": kwargs["project_path"].absolute(),
+        "comment": f"Generated on {now:%c %Z} and submitted by {getuser()}.",
         "cpus-per-task": job_size.jobs,
         "job-name": job_name,
         "mem": "100GB",
