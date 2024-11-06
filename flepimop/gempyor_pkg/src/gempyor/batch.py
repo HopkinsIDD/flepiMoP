@@ -24,6 +24,7 @@ from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_head, _shutil_which, config
 from .shared_cli import (
+    NONNEGATIVE_DURATION,
     cli,
     config_files_argument,
     config_file_options,
@@ -625,16 +626,16 @@ def _resolve_batch_system(
         click.Option(
             ["--simulation-time"],
             "simulation_time",
-            type=click.FloatRange(min=0.0),
-            default=3.0,
-            help="The time limit in minutes per a simulation.",
+            type=NONNEGATIVE_DURATION,
+            default=timedelta(minutes=3.0),
+            help="The time limit per a simulation.",
         ),
         click.Option(
             ["--initial-time"],
             "initial_time",
-            type=click.FloatRange(min=0.0),
-            default=20.0,
-            help="The initialization time limit in minutes.",
+            type=NONNEGATIVE_DURATION,
+            default=timedelta(minutes=20.0),
+            help="The initialization time limit.",
         ),
     ]
     + list(verbosity_options.values()),
@@ -702,9 +703,7 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
 
     # Job time limit
     job_time_limit = JobTimeLimit.from_per_simulation_time(
-        job_size,
-        timedelta(minutes=kwargs["simulation_time"]),
-        timedelta(minutes=kwargs["initial_time"]),
+        job_size, kwargs["simulation_time"], kwargs["initial_time"]
     )
     logger.info("Setting a total job time limit of %s minutes", job_time_limit.format())
 

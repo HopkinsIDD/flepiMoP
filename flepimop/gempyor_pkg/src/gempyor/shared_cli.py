@@ -3,19 +3,21 @@ An internal module to share common CLI elements. Defines the overall cli group,
 supported options for config file overrides, and custom click decorators.
 """
 
+__all__ = []
+
+
+from datetime import timedelta
 import multiprocessing
 import pathlib
-import warnings
-from typing import Callable, Any
 import re
+from typing import Any, Callable, Literal
+import warnings
 
 import click
 import confuse
 
 from .logging import get_script_logger
-from .utils import config, as_list
-
-__all__ = []
+from .utils import as_list, config
 
 
 @click.group()
@@ -138,6 +140,63 @@ verbosity_options = {
         help="Should this command be run using dry run?",
     ),
 }
+
+
+class DurationParamType(click.ParamType):
+    name = "duration"
+    _abbreviations = {
+        "s": "seconds",
+        "sec": "seconds",
+        "secs": "seconds",
+        "second": "seconds",
+        "seconds": "seconds",
+        "m": "minutes",
+        "min": "minutes",
+        "mins": "minutes",
+        "minute": "minutes",
+        "minutes": "minutes",
+        "h": "hours",
+        "hr": "hours",
+        "hrs": "hours",
+        "hour": "hours",
+        "hours": "hours",
+        "d": "days",
+        "day": "days",
+        "days": "days",
+        "w": "weeks",
+        "week": "weeks",
+        "weeks": "weeks",
+    }
+
+    def __init__(
+        self,
+        nonnegative: bool,
+        default_unit: Literal["seconds", "minutes", "hours", "days", "weeks"] = "minutes",
+    ) -> None:
+        super().__init__()
+        self._nonnegative = nonnegative
+        self._duration_regex = re.compile(
+            rf"^((-)?([0-9]+)?(\.[0-9]+)?)({'|'.join(self._abbreviations.keys())})?$",
+            flags=re.IGNORECASE,
+        )
+        self._default_unit = default_unit
+
+    def convert(
+        self, value: Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> timedelta:
+        value = str(value).strip()
+        if (m := self._duration_regex.match(value)) is None:
+            self.fail(f"{value!r} is not a valid duration", param, ctx)
+        number, posneg, _, _, unit = m.groups()
+        if self._nonnegative and posneg == "-":
+            self.fail(f"{value!r} is a negative duration", param, ctx)
+        kwargs = {}
+        kwargs[self._abbreviations.get(unit, self._default_unit)] = float(number)
+        return timedelta(**kwargs)
+
+
+DURATION = DurationParamType(nonnegative=False)
+NONNEGATIVE_DURATION = DurationParamType(nonnegative=True)
 
 
 def click_helpstring(
