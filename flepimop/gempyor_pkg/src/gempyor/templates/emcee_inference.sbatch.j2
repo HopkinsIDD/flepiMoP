@@ -9,7 +9,11 @@ set -x
 {% endif %}
 
 # Set script variables
-FLEPI_SLOT_INDEX=${SLURM_ARRAY_TASK_ID}
+if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
+    FLEPI_SLOT_INDEX="1"
+else
+    FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID
+fi
 
 # Load modules
 module purge

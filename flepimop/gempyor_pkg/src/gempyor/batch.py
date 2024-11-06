@@ -615,16 +615,39 @@ def _resolve_batch_system(
             required=True,
             help="Path to the project directory being used.",
         ),
+        click.Option(
+            ["--partition"],
+            "partition",
+            type=str,
+            default=None,
+            help="The slurm partition to submit the job to.",
+        ),
+        click.Option(
+            ["--simulation-time"],
+            "simulation_time",
+            type=click.FloatRange(min=0.0),
+            default=3.0,
+            help="The time limit in minutes per a simulation.",
+        ),
+        click.Option(
+            ["--initial-time"],
+            "initial_time",
+            type=click.FloatRange(min=0.0),
+            default=20.0,
+            help="The initialization time limit in minutes.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
 @click.pass_context
 def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Submit batch jobs"""
+    # Generic setup
     logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
     log_cli_inputs(kwargs)
     cfg = parse_config_files(config, ctx, **kwargs)
 
+    # Temporary limitation
     if (
         not cfg["inference"].exists()
         or not cfg["inference"]["method"].exists()
@@ -634,19 +657,23 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
             "The `flepimop batch` CLI only supports EMCEE inference jobs."
         )
 
+    # Job name
     name = cfg["name"].get(str) if cfg["name"].exists() else None
     job_name = _job_name(name, None)
     logger.info("Assigning job name of '%s'", job_name)
 
+    # Batch system
     batch_system = _resolve_batch_system(
         kwargs["batch_system"], kwargs["aws"], kwargs["local"], kwargs["slurm"]
     )
     if batch_system != "slurm":
+        # Temporary limitation
         raise NotImplementedError(
             "The `flepimop batch` CLI only supports batch submission to slurm."
         )
     logger.info("Constructing a job to submit to %s", batch_system)
 
+    # Job size
     iterations_per_slot = (
         cfg["inference"]["iterations_per_slot"].get(int)
         if cfg["inference"].exists() and cfg["inference"]["iterations_per_slot"].exists()
@@ -673,9 +700,41 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     )
     logger.info("Preparing a job with size %s", job_size)
 
+    # Job time limit
+    job_time_limit = JobTimeLimit.from_per_simulation_time(
+        job_size,
+        timedelta(minutes=kwargs["simulation_time"]),
+        timedelta(minutes=kwargs["initial_time"]),
+    )
+    logger.info("Setting a total job time limit of %s minutes", job_time_limit.format())
+
     # Restart/continuation location
     # TODO: Implement this
 
     # Manifest
     manifest = write_manifest(job_name, kwargs["flepi_path"], kwargs["project_path"])
     logger.info("Writing manifest metadata to '%s'", manifest.absolute())
+
+    # Construct the sbatch call
+    template_data = {}
+    options = {
+        "chdir": kwargs["project_path"].absolute(),
+        "cpus-per-task": job_size.jobs,
+        "job-name": job_name,
+        "mem": "100GB",
+        "nodes": 1,  # EMCEE can only run on one node for now.
+        "ntasks": 1,
+        "partition": "general",
+        "time": job_time_limit.format("slurm"),
+    }
+    if kwargs["partition"] is not None:
+        options["partition"] = kwargs["partition"]
+    _sbatch_template(
+        "emcee_inference.sbatch.j2",
+        None,  # Script
+        template_data,  # Template data
+        "all",
+        options,
+        kwargs["verbosity"],
+        kwargs["dry_run"],
+    )
