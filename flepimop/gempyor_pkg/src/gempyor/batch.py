@@ -22,9 +22,9 @@ from tempfile import mkstemp
 from typing import Any, Literal, Self
 
 import click
-import yaml
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
+from .file_paths import run_id
 from .info import Cluster, get_cluster_info
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_head, _shutil_which, config
@@ -677,6 +677,29 @@ def _resolve_batch_system(
                 "If not provided a temporary file will be used."
             ),
         ),
+        click.Option(
+            ["--nthin"],
+            "nthin",
+            type=click.IntRange(min=5),
+            default=5,
+            help="The number of samples to thin.",
+        ),
+        click.Option(
+            ["--id", "--run-id"],
+            "run_id",
+            envvar="FLEPI_RUN_INDEX",
+            type=str,
+            default=None,
+            help="Unique identifier for this run.",
+        ),
+        click.Option(
+            ["--prefix"],
+            "prefix",
+            envvar="FLEPI_PREFIX",
+            type=str,
+            default=None,
+            help="Unique prefix for this run.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
@@ -698,11 +721,15 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
         raise NotImplementedError(
             "The `flepimop batch` CLI only supports EMCEE inference jobs."
         )
+    inference_method = cfg["inference"]["method"].as_str()
 
-    # Job name
+    # Job name/run id
     name = cfg["name"].get(str) if cfg["name"].exists() else None
     job_name = _job_name(name, now)
     logger.info("Assigning job name of '%s'", job_name)
+    if kwargs["run_id"] is None:
+        kwargs["run_id"] = run_id(now)
+    logger.info("Using a run id of '%s'", kwargs["run_id"])
 
     # Batch system
     batch_system = _resolve_batch_system(
@@ -741,6 +768,11 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
         batch_system,
     )
     logger.info("Preparing a job with size %s", job_size)
+    if inference_method == "emcee" and job_size.blocks != 1:
+        logger.warning(
+            "When using EMCEE for inference the job size blocks is ignored, given %u.",
+            job_size.blocks,
+        )
 
     # Job time limit
     job_time_limit = JobTimeLimit.from_per_simulation_time(
@@ -783,8 +815,14 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
         "cluster": cluster if cluster is None else cluster.model_dump(),
         "debug": kwargs["debug"],
         "flepi_path": kwargs["flepi_path"].absolute(),
+        "job_name": job_name,
         "jobs": job_size.jobs,
+        "nslots": kwargs["nslots"],
+        "nthin": kwargs["nthin"],
+        "prefix": kwargs["prefix"],
         "project_path": kwargs["project_path"].absolute(),
+        "run_id": kwargs["run_id"],
+        "simulations": job_size.simulations,
     }
     options = {
         "chdir": kwargs["project_path"].absolute(),

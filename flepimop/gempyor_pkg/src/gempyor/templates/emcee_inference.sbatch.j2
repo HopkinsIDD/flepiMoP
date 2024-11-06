@@ -53,12 +53,13 @@ conda activate {{ conda_env }}
 flepimop-calibrate --config $CONFIG_PATH \
     --project_path $PROJECT_PATH \
     --nslots {{ nslots }} \
-    --niterations {{ niterations }} \
+    --niterations {{ simulations }} \
     --nthin {{ nthin }} \
     --jobs {{ jobs }} \
-    --id {{ id }} \
+    --id {{ run_id }} \
+{% if prefix is defined and prefix is not none -%}
     --prefix {{ prefix}} \
-    --no-resume \
-    --resume_location {{ resume_location }} > out.out 2>&1
+{%- endif %}
+    > out_{{ job_name }}_$FLEPI_SLOT_INDEX.out 2>&1
 
 # Upload/move results
