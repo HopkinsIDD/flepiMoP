@@ -382,6 +382,8 @@ class GempyorInference:
         self.already_built = False  # whether we have already built the costly objects that need just one build
         self.autowrite_seir = autowrite_seir
 
+        self.static_sim_arguments = get_static_arguments(self.modinf)
+
         ## Inference Stuff
         self.do_inference = False
         if config["inference"].exists():
@@ -399,7 +401,7 @@ class GempyorInference:
                     subpop_struct=self.modinf.subpop_struct,
                     time_setup=self.modinf.time_setup,
                 )
-                self.static_sim_arguments = get_static_arguments(self.modinf)
+                
 
                 print("Running Gempyor Inference")
                 print(self.logloss)

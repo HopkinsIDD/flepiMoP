@@ -1,5 +1,6 @@
 import click
 from .compartments import compartments
+from .NPI.base import modifiers
 from gempyor.utils import config
 
 
@@ -13,13 +14,15 @@ from gempyor.utils import config
     help="configuration file for this simulation",
 )
 def cli(config_filepath):
-    print(config_filepath)
-    config.clear()
-    config.read(user=False)
-    config.set_file(config_filepath)
+    if config_filepath is not None:
+        print(config_filepath)
+        config.clear()
+        config.read(user=False)
+        config.set_file(config_filepath)
 
 
 cli.add_command(compartments)
+cli.add_command(modifiers)
 
 
 if __name__ == "__main__":
