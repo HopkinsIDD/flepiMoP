@@ -121,12 +121,22 @@ def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
         path_prefix=project_path,  # in case the data folder is on another directory
         autowrite_seir=False,
 )
-    npi_seir = gempyor.seir.build_npi_SEIR(
-        modinf=gempyor_inference.modinf, 
-        load_ID=False,
-        sim_id2load=None,
-        config=config
+    if gempyor_inference.modinf.seir_config is not None and gempyor_inference.modinf.npi_config_seir is not None:
+        npi_seir = gempyor.seir.build_npi_SEIR(
+            modinf=gempyor_inference.modinf, 
+            load_ID=False,
+            sim_id2load=None,
+            config=config
+            )
+    if gempyor_inference.modinf.outcomes_config is not None and gempyor_inference.modinf.npi_config_outcomes:
+        npi_outcomes = gempyor.outcomes.build_outcome_modifiers(
+            modinf=gempyor_inference.modinf,
+            load_ID=False,
+            sim_id2load=None,
+            config=config,
         )
+
+
     print("Plotting modifiers activation")
     if subpop is None:
         subpop =  gempyor_inference.modinf.subpop_struct.subpop_names
@@ -134,8 +144,11 @@ def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
         subpop = [subpop]
     for sp in subpop:
         plot_modifers_activation(npi_seir=npi_seir,
-                            filename=f"modifiers_activation_{sp}.pdf",
+                            filename=f"seir_modifiers_activation_{sp}.pdf",
                                 subpop=sp)
+        plot_modifers_activation(npi_seir=npi_outcomes,
+                    filename=f"outcomes_modifiers_activation_{sp}.pdf",
+                    subpop=sp)
     
     all_parsed_params = []
     for sample in range(nsamples):
