@@ -5,11 +5,12 @@ This module provides functionality for required for batch jobs, including creati
 metadata and job size calculations for example.
 """
 
-__all__ = ["JobSize", "JobTimeLimit", "write_manifest"]
+__all__ = ["BatchSystem", "JobSize", "JobTimeLimit", "write_manifest"]
 
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from enum import Enum, auto
 from getpass import getuser
 import json
 import math
@@ -41,6 +42,62 @@ from .shared_cli import (
 
 
 _JOB_NAME_REGEX = re.compile(r"^[a-z]{1}([a-z0-9\_\-]+)?$", flags=re.IGNORECASE)
+
+
+class BatchSystem(Enum):
+    """
+    Enum representing the various batch systems that flepiMoP can run on.
+    """
+
+    AWS = auto()
+    LOCAL = auto()
+    SLURM = auto()
+
+    @classmethod
+    def from_options(
+        cls,
+        batch_system: Literal["aws", "local", "slurm"] | None,
+        aws: bool,
+        local: bool,
+        slurm: bool,
+    ) -> "BatchSystem":
+        """
+        Resolve the batch system options.
+
+        Args:
+            batch_system: The name of the batch system to use if provided explicitly by
+                name or `None` to rely on the other flags.
+            aws: A flag indicating if the batch system should be AWS.
+            local: A flag indicating if the batch system should be local.
+            slurm: A flag indicating if the batch system should be slurm.
+
+        Returns:
+            The name of the batch system to use given the user options.
+        """
+        batch_system = batch_system.lower() if batch_system is not None else batch_system
+        if (boolean_flags := sum((aws, local, slurm))) > 1:
+            raise ValueError(
+                f"There were {boolean_flags} boolean flags given, expected either 0 or 1."
+            )
+        if batch_system is not None:
+            for name, flag in zip(("aws", "local", "slurm"), (aws, local, slurm)):
+                if flag and batch_system != name:
+                    raise ValueError(
+                        "Conflicting batch systems given. The batch system name "
+                        f"is '{batch_system}' and the flags indicate '{name}'."
+                    )
+        if batch_system is None:
+            if aws:
+                batch_system = "aws"
+            elif local:
+                batch_system = "local"
+            else:
+                batch_system = "slurm"
+        if batch_system == "aws":
+            return cls.AWS
+        elif batch_system == "local":
+            return cls.LOCAL
+        return cls.SLURM
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,7 +137,7 @@ class JobSize:
         iterations_per_slot: int | None,
         slots: int | None,
         subpops: int | None,
-        batch_system: Literal["aws", "local", "slurm"],
+        batch_system: BatchSystem,
     ) -> "JobSize":
         """
         Infer a job size from several explicit and implicit parameters.
@@ -142,7 +199,7 @@ class JobSize:
                             "provided, then a subpops must be given."
                         )
                     )
-                if batch_system == "aws":
+                if batch_system == BatchSystem.AWS:
                     simulations = 5 * math.ceil(max(60 - math.sqrt(subpops), 10) / 5)
                 else:
                     simulations = iterations_per_slot
@@ -514,47 +571,6 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
     return f"{name}-{timestamp}" if name else timestamp
 
 
-def _resolve_batch_system(
-    batch_system: Literal["aws", "local", "slurm"] | None,
-    aws: bool,
-    local: bool,
-    slurm: bool,
-) -> Literal["aws", "local", "slurm"]:
-    """
-    Resolve the batch system options.
-
-    Args:
-        batch_system: The name of the batch system to use if provided explicitly by
-            name or `None` to rely on the other flags.
-        aws: A flag indicating if the batch system should be AWS.
-        local: A flag indicating if the batch system should be local.
-        slurm: A flag indicating if the batch system should be slurm.
-
-    Returns:
-        The name of the batch system to use given the user options.
-    """
-    batch_system = batch_system.lower() if batch_system is not None else batch_system
-    if (boolean_flags := sum((aws, local, slurm))) > 1:
-        raise ValueError(
-            f"There were {boolean_flags} boolean flags given, expected either 0 or 1."
-        )
-    if batch_system is not None:
-        for name, flag in zip(("aws", "local", "slurm"), (aws, local, slurm)):
-            if flag and batch_system != name:
-                raise ValueError(
-                    "Conflicting batch systems given. The batch system name "
-                    f"is '{batch_system}' and the flags indicate '{name}'."
-                )
-    if batch_system is None:
-        if aws:
-            batch_system = "aws"
-        elif local:
-            batch_system = "local"
-        else:
-            batch_system = "slurm"
-    return batch_system
-
-
 @cli.command(
     name="batch",
     params=[config_files_argument]
@@ -720,16 +736,16 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     logger.info("Using a run id of '%s'", kwargs["run_id"])
 
     # Batch system
-    batch_system = _resolve_batch_system(
+    batch_system = BatchSystem.from_options(
         kwargs["batch_system"], kwargs["aws"], kwargs["local"], kwargs["slurm"]
     )
-    if batch_system != "slurm":
+    if batch_system != BatchSystem.SLURM:
         # Temporary limitation
         raise NotImplementedError(
             "The `flepimop batch` CLI only supports batch submission to slurm."
         )
     logger.info("Constructing a job to submit to %s", batch_system)
-    if batch_system != "slurm" and kwargs["email"] is not None:
+    if batch_system != BatchSystem.SLURM and kwargs["email"] is not None:
         logger.warning(
             "The email option, given '%s', is only used when "
             "the batch system is slurm, but is instead %s.",
@@ -777,7 +793,7 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
 
     # Cluster info
     cluster: Cluster | None = None
-    if batch_system == "slurm":
+    if batch_system == BatchSystem.SLURM:
         if kwargs["cluster"] is None:
             raise ValueError("When submitting a batch job to slurm a cluster is required.")
         cluster = get_cluster_info(kwargs["cluster"])

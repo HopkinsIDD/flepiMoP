@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +7,15 @@ import pytest
 import yaml
 
 from gempyor.batch import _click_batch
+
+
+@pytest.fixture
+def add_sbatch_to_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    sbatch = tmp_path / "bin" / "sbatch"
+    sbatch.parent.mkdir(parents=True, exist_ok=True)
+    sbatch.touch(mode=0o755)
+    monkeypatch.setenv("PATH", str(sbatch.parent.absolute()), prepend=os.pathsep)
+    return sbatch
 
 
 @pytest.mark.parametrize(
