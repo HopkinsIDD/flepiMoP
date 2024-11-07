@@ -52,7 +52,14 @@ if [ -z "${FLEPI_CONDA}" ]; then
     fi
     echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
 fi
-conda activate $FLEPI_CONDA
+CURRENT_CONDA_ENV=$( conda info | grep "active environment" | awk -F ':' '{print $2}' | xargs )
+if [ "$CURRENT_CONDA_ENV" != "None" ] && [ "$CURRENT_CONDA_ENV" != "$FLEPI_CONDA" ]; then
+    echo "Detected an active conda environment '$CURRENT_CONDA_ENV'. This will be deactivated and the '$FLEPI_CONDA' environment will be activated."
+    conda deactivate
+fi
+if [ "$CURRENT_CONDA_ENV" == "None" ] || [ "$CURRENT_CONDA_ENV" != "$FLEPI_CONDA" ]; then
+    conda activate $FLEPI_CONDA
+fi
 
 # Check the conda environment is valid
 WHICH_PYTHON=$( which python )
