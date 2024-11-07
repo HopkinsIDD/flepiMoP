@@ -337,7 +337,6 @@ def plot_npi_timeseries(npi, gempyor_inference, filename: str, nsamples:int):
                 rd = reduce_parameter(1,
                     modification=npi.getReduction(uniq_pname),
                 )
-                print(rd, rd.shape)
                 df = pd.DataFrame(rd[:,i], index=pd.date_range(gempyor_inference.modinf.ti, 
                                                                                 gempyor_inference.modinf.tf, 
                                                                                 freq="D"))
