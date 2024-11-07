@@ -1,12 +1,12 @@
 #!/usr/bin/env {{ interpreter }}
-{% for opt in options -%}
+{%- for opt in options %}
 #SBATCH {{ opt }}
 {%- endfor %}
 
-{% if debug %}
+{% if debug -%}
 # Debugging
 set -x
-{% endif %}
+{%- endif %}
 
 # Set script variables
 if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
@@ -18,18 +18,19 @@ export FLEPI_PATH={{ flepi_path }}
 export PROJECT_PATH={{ project_path }}
 export CONFIG_PATH={{ config_out }}
 
-# Load modules
+# Purge/load modules
 module purge
-{% for module in cluster.modules -%}
-{% if module.version is defined and module.version is not none -%}
+{%- for module in cluster.modules %}
+{%- if module.version is defined and module.version is not none %}
 module load {{ module.name }}/{{ module.version }}
-{%- else -%}
+{%- else %}
 module load {{ module.name }}
 {%- endif %}
 {%- endfor %}
 
+{% if cluster.path_exports|length -%}
 # Path modifications
-{% for path_export in cluster.path_exports -%}
+{%- for path_export in cluster.path_exports %}
 if [ -r "{{ path_export.path }}" ]; then
     {% if path_export.prepend -%}
     export PATH={{ path_export.path }}:$PATH
@@ -41,6 +42,7 @@ elif [ "{{ path_export.error_if_missing }}" = "True" ]; then
     exit 1
 fi
 {%- endfor %}
+{%- endif %}
 
 # Load conda env
 conda activate {{ conda_env }}
@@ -57,7 +59,7 @@ flepimop-calibrate --config $CONFIG_PATH \
     --nthin {{ nthin }} \
     --jobs {{ jobs }} \
     --id {{ run_id }} \
-{% if prefix is defined and prefix is not none -%}
+{%- if prefix is defined and prefix is not none %}
     --prefix {{ prefix}} \
 {%- endif %}
     > out_{{ job_name }}_$FLEPI_SLOT_INDEX.out 2>&1
