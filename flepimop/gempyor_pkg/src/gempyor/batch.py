@@ -561,90 +561,78 @@ def _resolve_batch_system(
     + list(config_file_options.values())
     + [
         click.Option(
-            ["--simulations"],
-            "simulations",
+            param_decls=["--simulations", "simulations"],
             default=None,
             type=click.IntRange(min=1),
             help="The number of simulations per a job.",
         ),
         click.Option(
-            ["--blocks"],
-            "blocks",
+            param_decls=["--blocks", "blocks"],
             default=None,
             type=click.IntRange(min=1),
             help="The number of sequential blocks to run per a job.",
         ),
         click.Option(
-            ["--batch-system"],
-            "batch_system",
+            param_decls=["--batch-system", "batch_system"],
             default=None,
             type=click.Choice(("aws", "local", "slurm"), case_sensitive=False),
             help="The name of the batch system being used.",
         ),
         click.Option(
-            ["--aws"],
-            "aws",
+            param_decls=["--aws", "aws"],
             default=False,
             type=bool,
             is_flag=True,
             help="A flag indicating this is being run on AWS.",
         ),
         click.Option(
-            ["--local"],
-            "local",
+            param_decls=["--local", "local"],
             default=False,
             type=bool,
             is_flag=True,
             help="A flag indicating this is being run local.",
         ),
         click.Option(
-            ["--slurm"],
-            "slurm",
+            param_decls=["--slurm", "slurm"],
             default=False,
             type=bool,
             is_flag=True,
             help="A flag indicating this is being run on slurm.",
         ),
         click.Option(
-            ["--flepi-path"],
-            "flepi_path",
+            param_decls=["--flepi-path", "flepi_path"],
             envvar="FLEPI_PATH",
             type=click.Path(exists=True, path_type=Path),
             required=True,
             help="Path to the flepiMoP directory being used.",
         ),
         click.Option(
-            ["--project-path"],
-            "project_path",
+            param_decls=["--project-path", "project_path"],
             envvar="PROJECT_PATH",
             type=click.Path(exists=True, path_type=Path),
             required=True,
             help="Path to the project directory being used.",
         ),
         click.Option(
-            ["--partition"],
-            "partition",
+            param_decls=["--partition", "partition"],
             type=str,
             default=None,
             help="The slurm partition to submit the job to.",
         ),
         click.Option(
-            ["--simulation-time"],
-            "simulation_time",
+            param_decls=["--simulation-time", "simulation_time"],
             type=NONNEGATIVE_DURATION,
             default="3min",
             help="The time limit per a simulation.",
         ),
         click.Option(
-            ["--initial-time"],
-            "initial_time",
+            param_decls=["--initial-time", "initial_time"],
             type=NONNEGATIVE_DURATION,
             default="20min",
             help="The initialization time limit.",
         ),
         click.Option(
-            ["--cluster"],
-            "cluster",
+            param_decls=["--cluster", "cluster"],
             type=str,
             default=None,
             help=(
@@ -653,23 +641,20 @@ def _resolve_batch_system(
             ),
         ),
         click.Option(
-            ["--conda-env"],
-            "conda_env",
+            param_decls=["--conda-env", "conda_env"],
             type=str,
             default="flepimop-env",
             help="The name of the conda environment being used for this batch run.",
         ),
         click.Option(
-            ["--debug"],
-            "debug",
+            param_decls=["--debug", "debug"],
             type=bool,
             default=False,
             is_flag=True,
             help="Flag to enable debugging in batch submission scripts.",
         ),
         click.Option(
-            ["--config-out"],
-            "config_out",
+            param_decls=["--config-out", "config_out"],
             type=click.Path(path_type=Path),
             default=None,
             help=(
@@ -678,31 +663,27 @@ def _resolve_batch_system(
             ),
         ),
         click.Option(
-            ["--nthin"],
-            "nthin",
+            param_decls=["--nthin", "nthin"],
             type=click.IntRange(min=5),
             default=5,
             help="The number of samples to thin.",
         ),
         click.Option(
-            ["--id", "--run-id"],
-            "run_id",
+            param_decls=["--id", "--run-id", "run_id"],
             envvar="FLEPI_RUN_INDEX",
             type=str,
             default=None,
             help="Unique identifier for this run.",
         ),
         click.Option(
-            ["--prefix"],
-            "prefix",
+            param_decls=["--prefix", "prefix"],
             envvar="FLEPI_PREFIX",
             type=str,
             default=None,
             help="Unique prefix for this run.",
         ),
         click.Option(
-            ["--email"],
-            "email",
+            param_decls=["--email", "email"],
             type=str,
             default=None,
             help="Optionally an email that can be notified on job begin and end.",
@@ -715,7 +696,7 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Submit batch jobs"""
     # Generic setup
     now = datetime.now(timezone.utc)
-    logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
+    logger = get_script_logger(__name__, kwargs["verbosity"])
     log_cli_inputs(kwargs)
     cfg = parse_config_files(config, ctx, **kwargs)
 

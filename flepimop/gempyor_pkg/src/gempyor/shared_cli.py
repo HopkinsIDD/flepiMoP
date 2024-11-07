@@ -128,12 +128,12 @@ config_file_options = {
 
 verbosity_options = {
     "verbosity": click.Option(
-        ["-v", "--verbose"],
+        param_decls=["-v", "--verbose", "verbosity"],
         count=True,
         help="The verbosity level to use for this command.",
     ),
     "dry_run": click.Option(
-        ["--dry-run"],
+        param_decls=["--dry-run", "dry_run"],
         type=bool,
         default=False,
         is_flag=True,
