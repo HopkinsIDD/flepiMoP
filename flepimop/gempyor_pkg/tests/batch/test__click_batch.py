@@ -53,3 +53,31 @@ def test_only_slurm_batch_system_supported_not_implemented_error(
         str(result.exception)
         == "The `flepimop batch` CLI only supports batch submission to slurm."
     )
+
+
+def test_cluster_required_for_slurm_value_error(tmp_path: Path) -> None:
+    config_file = tmp_path / "config.yml"
+    with config_file.open(mode="w") as f:
+        yaml.dump({"inference": {"method": "emcee"}}, f)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        _click_batch,
+        [
+            "--slurm",
+            "--simulations",
+            "1",
+            "--jobs",
+            "1",
+            "--blocks",
+            "1",
+            str(config_file.absolute()),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ValueError)
+    assert (
+        str(result.exception)
+        == "When submitting a batch job to slurm a cluster is required."
+    )
