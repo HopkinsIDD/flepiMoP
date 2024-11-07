@@ -293,7 +293,10 @@ def plot_parameter_timeseries(all_parsed_params, gempyor_inference, filename: st
             fig.suptitle(uniq_pname, fontsize=22)
             #print(uniq_pname)
             for i, geoid in enumerate(gempyor_inference.modinf.subpop_struct.subpop_names):
-                ax = axes.flat[i]
+                if len(gempyor_inference.modinf.subpop_struct.subpop_names) == 1:
+                    ax = axes
+                else:
+                    ax = axes.flat[i]
                 ax.set_title(geoid)
                 ax.grid()
                 for l in range(len(all_parsed_params)):
@@ -329,7 +332,10 @@ def plot_npi_timeseries(npi, gempyor_inference, filename: str, nsamples:int):
         fig.suptitle(uniq_pname, fontsize=22)
         #print(uniq_pname)
         for i, geoid in enumerate(gempyor_inference.modinf.subpop_struct.subpop_names):
-            ax = axes.flat[i]
+            if len(gempyor_inference.modinf.subpop_struct.subpop_names) == 1:
+                ax = axes
+            else:
+                ax = axes.flat[i]
             ax.set_title(geoid)
             ax.grid()
             for sample in range(nsamples):
