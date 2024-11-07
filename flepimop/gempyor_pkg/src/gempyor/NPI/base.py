@@ -150,7 +150,7 @@ def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
                     filename=f"outcomes_modifiers_activation_{sp}.pdf",
                     subpop=sp)
     
-    all_parsed_params = []
+    all_parsed_params_seir = []
     for sample in range(nsamples):
         if True:
             p_draw = gempyor_inference.modinf.parameters.parameters_quick_draw(
@@ -163,6 +163,13 @@ def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
                 sim_id2load=None,
                 config=config
             )
+            npi_outcomes = gempyor.outcomes.build_outcome_modifiers(
+            modinf=gempyor_inference.modinf,
+            load_ID=False,
+            sim_id2load=None,
+            config=config,
+        )
+
         else:
             p_draw = gempyor_inference.get_seir_parameters(bypass_FN=fn.replace("snpi", "spar"), load_ID=True)
             npi_seir = gempyor.seir.build_npi_SEIR(modinf=gempyor_inference.modinf, load_ID=True, bypass_FN=fn, sim_id2load=None, config=None)
@@ -172,11 +179,23 @@ def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
             gempyor_inference.modinf.parameters.pnames, 
             gempyor_inference.static_sim_arguments["unique_strings"]
         )
-        all_parsed_params.append(parsed_parameters)
+        all_parsed_params_seir.append(parsed_parameters)
+            
+
+        
+
     print("Plotting parameter timeseries from config")
-    plot_parameter_timeseries(all_parsed_params=all_parsed_params, 
+    plot_parameter_timeseries(all_parsed_params=all_parsed_params_seir, 
                             gempyor_inference=gempyor_inference, 
                             filename=f"unique_parsed_parameters_{run_id}.pdf")
+    
+    npi_outcomes = gempyor.outcomes.build_outcome_modifiers(
+            modinf=gempyor_inference.modinf,
+            load_ID=False,
+            sim_id2load=None,
+            config=config,
+        )
+    plot_npi_timeseries(npi_outcomes, gempyor_inference, filename=f"outcomesNPIcaveat.pdf", nsamples=nsamples)
 
 
 
@@ -286,4 +305,45 @@ def plot_parameter_timeseries(all_parsed_params, gempyor_inference, filename: st
             fig.tight_layout()
             pdf.savefig(fig)
             plt.close(fig)
+    pdf.close()
+
+def plot_npi_timeseries(npi, gempyor_inference, filename: str, nsamples:int):
+    # TODO should return axes and all
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+    from datetime import datetime
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from gempyor.NPI.helpers import reduce_parameter
+
+    pdf = PdfPages(filename)
+    d = pdf.infodict()
+    d["Title"] = "parsed parameters"
+    d["Author"] = "jlemaitre"
+    import tqdm
+
+    for k,uniq_pname in tqdm.tqdm(enumerate(npi.getReductionDF()["parameter"].unique())):
+        fig, axes = plt.subplots(len(gempyor_inference.modinf.subpop_struct.subpop_names), 1, 
+                                figsize=(10, len(gempyor_inference.modinf.subpop_struct.subpop_names)*3), 
+                                sharex=True, sharey=True)
+        fig.suptitle(uniq_pname, fontsize=22)
+        #print(uniq_pname)
+        for i, geoid in enumerate(gempyor_inference.modinf.subpop_struct.subpop_names):
+            ax = axes.flat[i]
+            ax.set_title(geoid)
+            ax.grid()
+            for sample in range(nsamples):
+                # todo nothing is correct here
+                rd = reduce_parameter(1,
+                    modification=npi.getReduction(uniq_pname),
+                )
+                print(rd, rd.shape)
+                df = pd.DataFrame(rd[:,i], index=pd.date_range(gempyor_inference.modinf.ti, 
+                                                                                gempyor_inference.modinf.tf, 
+                                                                                freq="D"))
+                ax.plot(df, lw=.5) #df[:'2021-12-31']
+            fig.autofmt_xdate()
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close(fig)
     pdf.close()
