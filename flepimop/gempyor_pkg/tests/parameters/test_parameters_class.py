@@ -237,10 +237,9 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                rf"^ERROR loading file {tmp_file} for parameter sigma\: the number of "
-                rf"non 'date'\s+columns are {actual_columns}, expected "
-                rf"{mock_inputs.number_of_subpops()} \(the number of subpops\) or "
-                rf"one\.$"
+                rf"^Issue loading file '{tmp_file}' for parameter 'sigma': "
+                rf"the number of non-'date' columns is '{actual_columns}', expected '{mock_inputs.number_of_subpops()}' "
+                rf"\(number of subpopulations\) or one\.$"
             ),
         ):
             mock_inputs.create_parameters_instance()
@@ -283,15 +282,9 @@ class TestParameters:
         with pytest.raises(
             ValueError,
             match=(
-                rf"^ERROR loading file {tmp_file} for parameter sigma\:\s+the \'date\' "
-                rf"entries of the provided file do not include all the days specified "
-                rf"to be modeled by\s+the config\. the provided file includes "
-                rf"{(timeseries_end_date - timeseries_start_date).days + 1} days "
-                rf"between {timeseries_start_date}( 00\:00\:00)? to "
-                rf"{timeseries_end_date}( 00\:00\:00)?,\s+while there are "
-                rf"{mock_inputs.number_of_days()} days in the config time span of "
-                rf"{mock_inputs.ti}->{mock_inputs.tf}\. The file must contain entries "
-                rf"for the\s+the exact start and end dates from the config\. $"
+                f"Issue loading file '{tmp_file}' for parameter 'sigma': "
+                f"Provided file dates span '{timeseries_start_date}( 00\:00\:00)?' to '{timeseries_end_date}( 00\:00\:00)?', "
+                f"but the config dates span '{mock_inputs.ti}' to '{mock_inputs.tf}'.$"
             ),
         ):
             mock_inputs.create_parameters_instance()

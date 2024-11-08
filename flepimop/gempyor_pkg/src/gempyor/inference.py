@@ -288,9 +288,9 @@ def autodetect_scenarios(config):
 
     if len(seir_modifiers_scenarios) != 1 or len(outcome_modifiers_scenarios) != 1:
         raise ValueError(
-            f"Inference only support configurations files with one scenario, got"
-            f"seir: {seir_modifiers_scenarios}"
-            f"outcomes: {outcome_modifiers_scenarios}"
+            f"Inference only supports configuration files with one scenario, received "
+            f"SEIR modifiers: '{seir_modifiers_scenarios}', and "
+            f"Outcomes modifiers: '{outcome_modifiers_scenarios}'."
         )
 
     return seir_modifiers_scenarios[0], outcome_modifiers_scenarios[0]
@@ -353,9 +353,10 @@ class GempyorInference:
 
         config.set_file(os.path.join(path_prefix, config_filepath))
 
-        self.seir_modifiers_scenario, self.outcome_modifiers_scenario = (
-            autodetect_scenarios(config)
-        )
+        (
+            self.seir_modifiers_scenario,
+            self.outcome_modifiers_scenario,
+        ) = autodetect_scenarios(config)
 
         if run_id is None:
             run_id = file_paths.run_id()
@@ -453,7 +454,7 @@ class GempyorInference:
     def get_logloss(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):
             if not self.silent:
-                print("OUT OF BOUND!!")
+                print("`llik` is -inf (out of bound proposal)")
             return -np.inf, -np.inf, -np.inf
 
         snpi_df_mod, hnpi_df_mod = self.inferpar.inject_proposal(
@@ -474,7 +475,7 @@ class GempyorInference:
             model_df=outcomes_df, subpop_names=self.modinf.subpop_struct.subpop_names
         )
         if not self.silent:
-            print(f"llik is {ll_total}")
+            print(f"llik is '{ll_total}' ")
 
         return ll_total, logloss, regularizations
 

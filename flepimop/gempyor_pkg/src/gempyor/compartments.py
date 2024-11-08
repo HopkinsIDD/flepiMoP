@@ -31,7 +31,7 @@ class Compartments:
             self.times_set += 1
 
         if self.times_set == 0:
-            raise ValueError("Compartments object not set, no config or file provided")
+            raise ValueError("Compartments object not set, no config or file provided.")
         return
 
     def constructFromConfig(self, seir_config, compartment_config):
@@ -153,15 +153,15 @@ class Compartments:
             except Exception as e:
                 print(f"Error {e}:")
                 print(
-                    f">>> in expand_transition_elements for `source:` at index {it.multi_index}"
+                    f">>> in expand_transition_elements for `source:` at index '{it.multi_index}'"
                 )
                 print(
-                    f">>> this transition source is: {single_transition_config['source']}"
+                    f">>> this transition source is: '{single_transition_config['source']}'"
                 )
                 print(
-                    f">>> this transition destination is: {single_transition_config['destination']}"
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
                 )
-                print(f"transition_dimension: {problem_dimension}")
+                print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
             try:
@@ -175,15 +175,15 @@ class Compartments:
             except Exception as e:
                 print(f"Error {e}:")
                 print(
-                    f">>> in expand_transition_elements for `destination:` at index {it.multi_index}"
+                    f">>> in expand_transition_elements for `destination:` at index '{it.multi_index}'"
                 )
                 print(
-                    f">>> this transition source is: {single_transition_config['source']}"
+                    f">>> this transition source is: '{single_transition_config['source']}'"
                 )
                 print(
-                    f">>> this transition destination is: {single_transition_config['destination']}"
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
                 )
-                print(f"transition_dimension: {problem_dimension}")
+                print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
             try:
@@ -197,15 +197,15 @@ class Compartments:
             except Exception as e:
                 print(f"Error {e}:")
                 print(
-                    f">>> in expand_transition_elements for `rate:` at index {it.multi_index}"
+                    f">>> in expand_transition_elements for `rate:` at index '{it.multi_index}'"
                 )
                 print(
-                    f">>> this transition source is: {single_transition_config['source']}"
+                    f">>> this transition source is: '{single_transition_config['source']}'"
                 )
                 print(
-                    f">>> this transition destination is: {single_transition_config['destination']}"
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
                 )
-                print(f"transition_dimension: {problem_dimension}")
+                print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
             try:
@@ -225,15 +225,15 @@ class Compartments:
             except Exception as e:
                 print(f"Error {e}:")
                 print(
-                    f">>> in expand_transition_elements for `proportional_to:` at index {it.multi_index}"
+                    f">>> in expand_transition_elements for `proportional_to:` at index '{it.multi_index}'"
                 )
                 print(
-                    f">>> this transition source is: {single_transition_config['source']}"
+                    f">>> this transition source is: '{single_transition_config['source']}'"
                 )
                 print(
-                    f">>> this transition destination is: {single_transition_config['destination']}"
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
                 )
-                print(f"transition_dimension: {problem_dimension}")
+                print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
             if (
@@ -260,15 +260,15 @@ class Compartments:
                 except Exception as e:
                     print(f"Error {e}:")
                     print(
-                        f">>> in expand_transition_elements for `proportion_exponent:` at index {it.multi_index}"
+                        f">>> in expand_transition_elements for `proportion_exponent:` at index '{it.multi_index}'"
                     )
                     print(
-                        f">>> this transition source is: {single_transition_config['source']}"
+                        f">>> this transition source is: '{single_transition_config['source']}'"
                     )
                     print(
-                        f">>> this transition destination is: {single_transition_config['destination']}"
+                        f">>> this transition destination is: '{single_transition_config['destination']}'"
                     )
-                    print(f"transition_dimension: {problem_dimension}")
+                    print(f"transition_dimension: '{problem_dimension}'")
                     raise e
             else:
                 new_transition_config["proportion_exponent"][it.multi_index] = [
@@ -379,7 +379,6 @@ class Compartments:
     def parse_single_transition(
         self, seir_config, single_transition_config, fake_config=False
     ):
-
         ## This method relies on having run parse_compartments
         if not fake_config:
             single_transition_config = single_transition_config.get()
@@ -483,7 +482,9 @@ class Compartments:
         comp_idx = self.compartments[mask].index.values
         if len(comp_idx) != 1:
             raise ValueError(
-                f"The provided dictionary does not allow to isolate a compartment: {comp_dict} isolate {self.compartments[mask]} from options {self.compartments}. The get_comp_idx function was called by'{error_info}'."
+                f"The provided dictionary does not allow an isolated compartment: '{comp_dict}'. "
+                f"Isolate '{self.compartments[mask]}'. "
+                f"The `get_comp_idx` function was called by '{error_info}'."
             )
         return comp_idx[0]
 
@@ -503,9 +504,8 @@ class Compartments:
                         if self.compartments["name"][compartment] == elem:
                             rc = compartment
                     if rc == -1:
-                        print(self.compartments)
                         raise ValueError(
-                            f"Could not find {colname} defined by {elem} in compartments"
+                            f"Could not find '{colname}' defined by '{elem}' in '{self.compartments}'."
                         )
                     transition_array[cit, it] = rc
 
@@ -539,8 +539,10 @@ class Compartments:
                 candidate = reduce(lambda a, b: a + "*" + b, elem)
                 candidate = candidate.replace(" ", "")
                 # candidate = candidate.replace("*1", "")
-                if not candidate in unique_strings:
-                    raise ValueError("Something went wrong")
+                if candidate not in unique_strings:
+                    raise ValueError(
+                        f"Candidate '{candidate}' from 'rate' column is not in the list of unique strings: {unique_strings}."
+                    )
                 rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                 transition_array[2][it] = rc
 
@@ -583,8 +585,10 @@ class Compartments:
                     candidate = reduce(lambda a, b: a + "*" + b, y)
                     candidate = candidate.replace(" ", "")
                     # candidate = candidate.replace("*1", "")
-                    if not candidate in unique_strings:
-                        raise ValueError("Something went wrong")
+                    if candidate not in unique_strings:
+                        raise ValueError(
+                            f"Proportion exponent '{candidate}' is not found in the list of unique strings: '{unique_strings}'."
+                        )
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                     proportion_info[2][proportion_compartment_index] = rc
                     proportion_compartment_index += 1
@@ -610,7 +614,8 @@ class Compartments:
                                 rc = compartment
                         if rc == -1:
                             raise ValueError(
-                                f"Could not find proportional_to {elem3} in compartments"
+                                f"Could not find `proportional_to` '{elem3}' in compartments. "
+                                f"Available compartments: '{self.compartments}'."
                             )
 
                         proportion_array[proportion_index] = rc
@@ -682,7 +687,7 @@ class Compartments:
                 parsed_formulas.append(f)
             except Exception as e:
                 print(
-                    f"Cannot parse formula: '{formula}' from parameters {parameter_names}"
+                    f"Cannot parse formula '{formula}' from parameters: '{parameter_names}'."
                 )
                 raise (e)  # Print the error message for debugging
 
@@ -733,10 +738,10 @@ class Compartments:
             not operators
         ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
             raise ValueError(
-                f"""Could not parse string {string_list}. 
-    This usually mean that '{string_list[0]}' is a parameter name that is not defined
-    or that it contains an operator that is not in the list of supported operator: ^,*,/,+,-.
-    The defined parameters are {parameter_names}."""
+                f"Could not parse string '{string_list}'. "
+                f"This usually means that '{string_list[0]}' is a parameter name that is not defined "
+                f"or that it contains an operator that is not in the list of supported operators: '{operators}'. "
+                f"The defined parameters are '{parameter_names}'."
             )
 
         split_strings = [x.split(operators[0]) for x in string_list]
@@ -851,16 +856,13 @@ def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=Fal
     try:
         return list_access_element(thing, idx, dimension, encapsulate_as_list)
     except Exception as e:
-        print(f"Error {e}:")
-        print(f">>> in list_access_element_safe for {thing} at index {idx}")
-        print(
-            ">>> This is often, but not always because the object above is a list (there are brackets around it)."
+        raise Exception(
+            f"Error {e}: "
+            f"in list_access_element_safe for '{thing}' at index '{idx}'. "
+            f"This is often, but not always because the object above is a list (there are brackets around it). "
+            f"and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it. "
+            f"dimension: '{dimension}'."
         )
-        print(
-            ">>> and in this case it is not broadcast, so if you want to it to be broadcasted, you need remove the brackets around it."
-        )
-        print(f"dimension: {dimension}")
-        raise e
 
 
 def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
