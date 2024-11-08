@@ -1,6 +1,57 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+authors = [
+    {name = "Joseph Lemaitre", email = "jo.lemaitresamra@gmail.com"},
+    {name = "Joshua kaminski and others", email = "jkaminsky@jhu.edu"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+]
+description = "Generic epidemic compartmental modeling pipelines with interventions and outcome reporting."
+dependencies = [
+    "click>=8.1.7",
+    "confuse",
+    "dask",
+    "emcee",
+    "graphviz",
+    "matplotlib",
+    "numba>=0.53.1",
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "scipy",
+    "seaborn",
+    "sympy",
+    "tqdm",
+    "xarray",
+]
+name = "gempyor"
+readme = "README.md"
+requires-python = ">=3.10"
+version = "2.1"
+
+[project.optional-dependencies]
+aws = ["boto3", "botocore"]
+test = ["pytest", "mock"]
+
+[project.urls]
+Homepage = "https://github.com/HopkinsIDD/flepiMoP"
+Issues = "https://github.com/HopkinsIDD/flepiMoP/issues"
+
+[project.scripts]
+flepimop = "gempyor.cli:cli"
+flepimop-calibrate = "gempyor.calibrate:calibrate"
+gempyor-simulate = "gempyor.simulate:_deprecated_simulate"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
