@@ -152,9 +152,15 @@ class Compartments:
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `source:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `source:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
@@ -168,9 +174,15 @@ class Compartments:
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `destination:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `destination:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
@@ -184,9 +196,15 @@ class Compartments:
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `rate:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `rate:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
@@ -206,9 +224,15 @@ class Compartments:
                 )
             except Exception as e:
                 print(f"Error {e}:")
-                print(f">>> in expand_transition_elements for `proportional_to:` at index '{it.multi_index}'")
-                print(f">>> this transition source is: '{single_transition_config['source']}'")
-                print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                print(
+                    f">>> in expand_transition_elements for `proportional_to:` at index '{it.multi_index}'"
+                )
+                print(
+                    f">>> this transition source is: '{single_transition_config['source']}'"
+                )
+                print(
+                    f">>> this transition destination is: '{single_transition_config['destination']}'"
+                )
                 print(f"transition_dimension: '{problem_dimension}'")
                 raise e
 
@@ -235,9 +259,15 @@ class Compartments:
                     )
                 except Exception as e:
                     print(f"Error {e}:")
-                    print(f">>> in expand_transition_elements for `proportion_exponent:` at index '{it.multi_index}'")
-                    print(f">>> this transition source is: '{single_transition_config['source']}'")
-                    print(f">>> this transition destination is: '{single_transition_config['destination']}'")
+                    print(
+                        f">>> in expand_transition_elements for `proportion_exponent:` at index '{it.multi_index}'"
+                    )
+                    print(
+                        f">>> this transition source is: '{single_transition_config['source']}'"
+                    )
+                    print(
+                        f">>> this transition destination is: '{single_transition_config['destination']}'"
+                    )
                     print(f"transition_dimension: '{problem_dimension}'")
                     raise e
             else:
@@ -475,7 +505,9 @@ class Compartments:
                         if self.compartments["name"][compartment] == elem:
                             rc = compartment
                     if rc == -1:
-                        raise ValueError(f"Could not find '{colname}' defined by '{elem}' in '{self.compartments}'.")
+                        raise ValueError(
+                            f"Could not find '{colname}' defined by '{elem}' in '{self.compartments}'."
+                        )
                     transition_array[cit, it] = rc
 
             unique_strings = []
@@ -557,7 +589,7 @@ class Compartments:
                     if candidate not in unique_strings:
                         raise ValueError(
                             f"Proportion exponent '{candidate}' is not found in the list of unique strings: '{unique_strings}'."
-                            )
+                        )
                     rc = [it for it, x in enumerate(unique_strings) if x == candidate][0]
                     proportion_info[2][proportion_compartment_index] = rc
                     proportion_compartment_index += 1
@@ -707,7 +739,7 @@ class Compartments:
             not operators
         ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
             raise ValueError(
-                f"Could not parse string '{string_list}'. " 
+                f"Could not parse string '{string_list}'. "
                 f"This usually mean that '{string_list[0]}' is a parameter name that is not defined "
                 f"or that it contains an operator that is not in the list of supported operators: ^,*,/,+,-. "
                 f"The defined parameters are '{parameter_names}'."

@@ -127,7 +127,7 @@ class Parameters:
                     print("config dates:", pd.date_range(ti, tf))
                     print("loaded dates:", df.index)
                     raise ValueError(
-                        f"Issue loading file '{fn_name}' for parameter '{pn}': " 
+                        f"Issue loading file '{fn_name}' for parameter '{pn}': "
                         f"Provided file dates span '{str(df.index[0])}' to '{str(df.index[-1])}', "
                         f"but the config dates span '{ti}' to '{tf}'."
                     )

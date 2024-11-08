@@ -185,8 +185,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                 else:
                     raise ValueError(
                         f"Unable to read outcome '{new_comp}': "
-                        f"expected a string or dictionary containing `incidence` or `prevalence`. " 
-                        f"Recieved: '{src_name}'." 
+                        f"expected a string or dictionary containing `incidence` or `prevalence`. "
+                        f"Recieved: '{src_name}'."
                     )
 
                 parameters[new_comp]["probability"] = outcomes_config[new_comp][
@@ -397,7 +397,9 @@ def compute_all_multioutcomes(
                         outcome_name=new_comp,
                     )
                 else:
-                    raise ValueError(f"Unknown type provided for seir simulation, received '{type(seir_sim)}'.")
+                    raise ValueError(
+                        f"Unknown type provided for seir simulation, received '{type(seir_sim)}'."
+                    )
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 if source_name in all_data:

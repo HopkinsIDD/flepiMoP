@@ -108,7 +108,9 @@ class Seeding(SimulationComponent):
             )
             dupes = seeding[seeding.duplicated(["subpop", "date"])].index + 1
             if not dupes.empty:
-                raise ValueError(f"There are repeating subpop-date in rows '{dupes.tolist()}' of `seeding::lambda_file`.")
+                raise ValueError(
+                    f"There are repeating subpop-date in rows '{dupes.tolist()}' of `seeding::lambda_file`."
+                )
         elif method == "FolderDraw":
             seeding = pd.read_csv(
                 self.path_prefix

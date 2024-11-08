@@ -116,7 +116,9 @@ class InitialConditions(SimulationComponent):
                 allow_missing_subpops=self.allow_missing_subpops,
             )
         else:
-            raise NotImplementedError(f"Unknown initial conditions method [received: '{method}'].")
+            raise NotImplementedError(
+                f"Unknown initial conditions method [received: '{method}']."
+            )
 
         # check that the inputed values sums to the subpop population:
         check_population(
@@ -147,13 +149,14 @@ def check_population(y0, modinf, ignore_population_checks=False):
             )
 
     if error and not ignore_population_checks:
-        raise ValueError("Geodata and initial condition do not agree on population size. Use `ignore_population_checks: True` to ignore."
+        raise ValueError(
+            "Geodata and initial condition do not agree on population size. Use `ignore_population_checks: True` to ignore."
         )
     elif error and ignore_population_checks:
         warnings.warn(
-        "Population mismatch errors ignored because `ignore_population_checks` is set to `True`. "
-        "Execution will continue, but this is not recommended.",
-        UserWarning
+            "Population mismatch errors ignored because `ignore_population_checks` is set to `True`. "
+            "Execution will continue, but this is not recommended.",
+            UserWarning,
         )
 
 
@@ -201,7 +204,9 @@ def read_initial_condition_from_tidydataframe(
             logger.critical(
                 f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartment ({modinf.compartments.compartments['name'].iloc[0]})"
             )
-            raise RuntimeError("There is a bug; report this message. Past implemenation was buggy.")
+            raise RuntimeError(
+                "There is a bug; report this message. Past implemenation was buggy."
+            )
             # TODO: this is probably ok but highlighting for consistency
             if "proportional" in self.initial_conditions_config.keys():
                 if self.initial_conditions_config["proportional"].get():
@@ -258,8 +263,10 @@ def read_initial_condition_from_seir_output(
         (ic_df["date"] == str(modinf.ti)) & (ic_df["mc_value_type"] == "prevalence")
     ]
     if ic_df.empty:
-        raise ValueError(f"No entry provided for initial time `ti` in the `initial_conditions::states_file.` "
-                         f"`ti`: '{modinf.ti}'.")
+        raise ValueError(
+            f"No entry provided for initial time `ti` in the `initial_conditions::states_file.` "
+            f"`ti`: '{modinf.ti}'."
+        )
     y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
 
     for comp_idx, comp_name in modinf.compartments.compartments["name"].items():
@@ -299,7 +306,9 @@ def read_initial_condition_from_seir_output(
             if pl in ic_df.columns:
                 y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
             elif allow_missing_subpops:
-                raise RuntimeError("There is a bug; report this message. Past implemenation was buggy")
+                raise RuntimeError(
+                    "There is a bug; report this message. Past implemenation was buggy"
+                )
                 # TODO this should set the full subpop, not just the 0th commpartment
                 logger.critical(
                     f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartments ({modinf.compartments.compartments['name'].iloc[0]})"
