@@ -4,7 +4,7 @@ from typing import Literal
 
 import pytest
 
-from gempyor.batch import JobSize, JobTimeLimit
+from gempyor.batch import BatchSystem, JobSize, JobTimeLimit
 
 
 NONPOSITIVE_TIMEDELTAS = (timedelta(), timedelta(hours=-1.0), timedelta(days=-3.0))
@@ -31,14 +31,16 @@ def test_time_limit_non_positive_value_error(time_limit: timedelta) -> None:
         timedelta(minutes=12345),
     ),
 )
-@pytest.mark.parametrize("batch_system", (None, "aws", "local", "slurm"))
+@pytest.mark.parametrize(
+    "batch_system", (None, BatchSystem.AWS, BatchSystem.LOCAL, BatchSystem.SLURM)
+)
 def test_format_output_validation(
-    time_limit: timedelta, batch_system: Literal["aws", "local", "slurm"] | None
+    time_limit: timedelta, batch_system: BatchSystem | None
 ) -> None:
     job_time_limit = JobTimeLimit(time_limit=time_limit)
     formatted_time_limit = job_time_limit.format(batch_system=batch_system)
     assert isinstance(formatted_time_limit, str)
-    if batch_system == "slurm":
+    if batch_system == BatchSystem.SLURM:
         assert re.match(r"^[0-9]+\:[0-9]{2}\:[0-9]{2}$", formatted_time_limit)
     else:
         assert formatted_time_limit.isdigit()
@@ -50,15 +52,13 @@ def test_format_output_validation(
         (timedelta(hours=1), None, "60"),
         (timedelta(seconds=20), None, "1"),
         (timedelta(days=2, hours=3, minutes=45), None, "3105"),
-        (timedelta(hours=1), "slurm", "1:00:00"),
-        (timedelta(seconds=20), "slurm", "0:00:20"),
-        (timedelta(days=1, hours=2, minutes=34, seconds=5), "slurm", "26:34:05"),
+        (timedelta(hours=1), BatchSystem.SLURM, "1:00:00"),
+        (timedelta(seconds=20), BatchSystem.SLURM, "0:00:20"),
+        (timedelta(days=1, hours=2, minutes=34, seconds=5), BatchSystem.SLURM, "26:34:05"),
     ),
 )
 def test_format_exact_results(
-    time_limit: timedelta,
-    batch_system: Literal["aws", "local", "slurm"] | None,
-    expected: str,
+    time_limit: timedelta, batch_system: BatchSystem | None, expected: str
 ) -> None:
     job_time_limit = JobTimeLimit(time_limit=time_limit)
     assert job_time_limit.format(batch_system=batch_system) == expected

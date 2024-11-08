@@ -603,7 +603,7 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
 
 
 @cli.command(
-    name="batch",
+    name="submit",
     params=[config_files_argument]
     + list(config_file_options.values())
     + [
@@ -739,7 +739,7 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
     + list(verbosity_options.values()),
 )
 @click.pass_context
-def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
+def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
     """Submit batch jobs"""
     # Generic setup
     now = datetime.now(timezone.utc)
@@ -754,7 +754,7 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
         or cfg["inference"]["method"].as_str() != "emcee"
     ):
         raise NotImplementedError(
-            "The `flepimop batch` CLI only supports EMCEE inference jobs."
+            "The `flepimop submit` CLI only supports EMCEE inference jobs."
         )
     inference_method = cfg["inference"]["method"].as_str()
     inference_method = (
@@ -776,7 +776,7 @@ def _click_batch(ctx: click.Context = mock_context, **kwargs) -> None:
     if batch_system != BatchSystem.SLURM:
         # Temporary limitation
         raise NotImplementedError(
-            "The `flepimop batch` CLI only supports batch submission to slurm."
+            "The `flepimop submit` CLI only supports batch submission to slurm."
         )
     logger.info("Constructing a job to submit to %s", batch_system)
     if batch_system != BatchSystem.SLURM and kwargs["email"] is not None:

@@ -6,7 +6,7 @@ from click.testing import CliRunner
 import pytest
 import yaml
 
-from gempyor.batch import _click_batch
+from gempyor.batch import _click_submit
 
 
 @pytest.fixture
@@ -34,13 +34,13 @@ def test_only_inference_emcee_supported_not_implemented_error(
         yaml.dump(config, f)
 
     runner = CliRunner()
-    result = runner.invoke(_click_batch, [str(config_file.absolute())])
+    result = runner.invoke(_click_submit, [str(config_file.absolute())])
 
     assert result.exit_code == 1
     assert isinstance(result.exception, NotImplementedError)
     assert (
         str(result.exception)
-        == "The `flepimop batch` CLI only supports EMCEE inference jobs."
+        == "The `flepimop submit` CLI only supports EMCEE inference jobs."
     )
 
 
@@ -55,13 +55,13 @@ def test_only_slurm_batch_system_supported_not_implemented_error(
         yaml.dump({"inference": {"method": "emcee"}}, f)
 
     runner = CliRunner()
-    result = runner.invoke(_click_batch, args + [str(config_file.absolute())])
+    result = runner.invoke(_click_submit, args + [str(config_file.absolute())])
 
     assert result.exit_code == 1
     assert isinstance(result.exception, NotImplementedError)
     assert (
         str(result.exception)
-        == "The `flepimop batch` CLI only supports batch submission to slurm."
+        == "The `flepimop submit` CLI only supports batch submission to slurm."
     )
 
 
@@ -72,7 +72,7 @@ def test_cluster_required_for_slurm_value_error(tmp_path: Path) -> None:
 
     runner = CliRunner()
     result = runner.invoke(
-        _click_batch,
+        _click_submit,
         [
             "--slurm",
             "--simulations",
