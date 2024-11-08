@@ -21,7 +21,6 @@ import subprocess
 import sys
 from tempfile import mkstemp
 from typing import Any, Literal, Self
-import warnings
 
 import click
 
