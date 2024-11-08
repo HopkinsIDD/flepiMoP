@@ -19,7 +19,6 @@ import re
 from shlex import quote
 import subprocess
 import sys
-from tempfile import mkstemp
 from typing import Any, Literal, Self
 
 import click
@@ -830,8 +829,7 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
 
     # Config out
     if (config_out := kwargs["config_out"]) is None:
-        _, tmp = mkstemp(suffix=".yml", prefix="config", text=True)
-        config_out = Path(tmp)
+        config_out = kwargs["project_path"] / f"config_{job_name}.yml"
     with config_out.open(mode="w") as f:
         f.write(cfg.dump())
     logger.info(
