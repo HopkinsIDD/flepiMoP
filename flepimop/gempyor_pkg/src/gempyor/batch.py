@@ -709,12 +709,6 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
             ),
         ),
         click.Option(
-            param_decls=["--nthin", "nthin"],
-            type=click.IntRange(min=5),
-            default=5,
-            help="The number of samples to thin.",
-        ),
-        click.Option(
             param_decls=["--id", "--run-id", "run_id"],
             envvar="FLEPI_RUN_INDEX",
             type=str,
@@ -846,7 +840,6 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         "job_name": job_name,
         "jobs": job_size.jobs,
         "nslots": job_size.simulations,
-        "nthin": kwargs["nthin"],
         "prefix": kwargs["prefix"],
         "project_path": kwargs["project_path"].absolute(),
         "run_id": kwargs["run_id"],
