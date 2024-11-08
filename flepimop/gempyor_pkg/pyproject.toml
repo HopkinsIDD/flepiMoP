@@ -16,9 +16,10 @@ description = "Generic epidemic compartmental modeling pipelines with interventi
 dependencies = [
     "click>=8.1.7",
     "confuse",
-    "dask",
+    "dask[dataframe]",
     "emcee",
     "graphviz",
+    "h5py",
     "matplotlib",
     "numba>=0.53.1",
     "numpy",
