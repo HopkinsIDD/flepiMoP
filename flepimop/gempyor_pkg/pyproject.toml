@@ -41,7 +41,7 @@ aws = ["boto3", "botocore"]
 test = ["pytest", "mock"]
 
 [project.urls]
-Homepage = "https://github.com/HopkinsIDD/flepiMoP"
+Homepage = "https://www.flepimop.org/"
 Issues = "https://github.com/HopkinsIDD/flepiMoP/issues"
 
 [project.scripts]
