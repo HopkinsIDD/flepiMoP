@@ -44,7 +44,7 @@ class TestModelInfo:
         config.read(user=False)
         config.set_file(f"{DATA_DIR}/config_test.yml")
         config["start_date"] = "2022-01-02"
-        with pytest.raises(ValueError, match=r"tf.*is less than or equal to ti.*"):
+        with pytest.raises(ValueError, match=r"`tf`\s?\(time to finish\)\s?is less than or equal to\s?`ti`\s?\(time to start\)\."):
             s = ModelInfo(
                 config=config,
                 seir_modifiers_scenario=None,
