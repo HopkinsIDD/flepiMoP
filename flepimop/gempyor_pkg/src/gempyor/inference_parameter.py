@@ -36,9 +36,14 @@ class InferenceParameters:
         """
         # identify spatial group
         affected_subpops = set(subpops)
-        if parameter_config["subpop"].exists() and parameter_config["subpop"].get() != "all":
+        if (
+            parameter_config["subpop"].exists()
+            and parameter_config["subpop"].get() != "all"
+        ):
             affected_subpops = {str(n.get()) for n in parameter_config["subpop"]}
-        spatial_groups = NPI.helpers.get_spatial_groups(parameter_config, list(affected_subpops))
+        spatial_groups = NPI.helpers.get_spatial_groups(
+            parameter_config, list(affected_subpops)
+        )
 
         # ungrouped subpop (all affected subpop by default) have one parameter per subpop
         if spatial_groups["ungrouped"]:
@@ -87,7 +92,9 @@ class InferenceParameters:
         for config_part in ["seir_modifiers", "outcome_modifiers"]:
             if global_config[config_part].exists():
                 for npi in global_config[config_part]["modifiers"].get():
-                    if global_config[config_part]["modifiers"][npi]["perturbation"].exists():
+                    if global_config[config_part]["modifiers"][npi][
+                        "perturbation"
+                    ].exists():
                         self.add_modifier(
                             pname=npi,
                             ptype=config_part,

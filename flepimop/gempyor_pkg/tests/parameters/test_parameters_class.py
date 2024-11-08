@@ -316,9 +316,9 @@ class TestParameters:
         assert set(params.pdata.keys()) == set(mock_inputs.config.keys())
         for param_name, param_conf in mock_inputs.config.items():
             assert params.pdata[param_name]["idx"] == params.pnames2pindex[param_name]
-            assert params.pdata[param_name][
-                "stacked_modifier_method"
-            ] == param_conf.get("stacked_modifier_method", "product")
+            assert params.pdata[param_name]["stacked_modifier_method"] == param_conf.get(
+                "stacked_modifier_method", "product"
+            )
             if "timeseries" in param_conf:
                 assert params.pdata[param_name]["ts"].equals(
                     mock_inputs.get_timeseries_df(param_name)
@@ -348,8 +348,7 @@ class TestParameters:
                     },
                 )
                 assert (
-                    params.pdata[param_name]["dist"].__self__.kwds
-                    == expected.__self__.kwds
+                    params.pdata[param_name]["dist"].__self__.kwds == expected.__self__.kwds
                 )
                 assert (
                     params.pdata[param_name]["dist"].__self__.support()
@@ -446,9 +445,7 @@ class TestParameters:
 
         # Assertions
         assert params.get_pnames2pindex() == params.pnames2pindex
-        assert params.pnames2pindex == {
-            p: params.pnames.index(p) for p in params.pnames
-        }
+        assert params.pnames2pindex == {p: params.pnames.index(p) for p in params.pnames}
 
     @pytest.mark.parametrize(
         "factory,n_days,nsubpops",

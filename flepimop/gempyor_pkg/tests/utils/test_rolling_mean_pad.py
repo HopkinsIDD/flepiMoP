@@ -112,9 +112,7 @@ class TestRollingMeanPad:
         rolling_mean_data = rolling_mean_pad(test_data, window)
         rolling_mean_reference = self._rolling_mean_pad_reference(test_data, window)
         assert rolling_mean_data.shape == expected_shape
-        assert np.isclose(
-            rolling_mean_data, rolling_mean_reference, equal_nan=True
-        ).all()
+        assert np.isclose(rolling_mean_data, rolling_mean_reference, equal_nan=True).all()
 
     def _rolling_mean_pad_reference(
         self, data: npt.NDArray[np.number], window: int

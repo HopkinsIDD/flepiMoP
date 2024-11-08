@@ -46,19 +46,30 @@ class InitialConditions(SimulationComponent):
 
         if self.initial_conditions_config is not None:
             if "ignore_population_checks" in self.initial_conditions_config.keys():
-                self.ignore_population_checks = self.initial_conditions_config["ignore_population_checks"].get(bool)
+                self.ignore_population_checks = self.initial_conditions_config[
+                    "ignore_population_checks"
+                ].get(bool)
             if "allow_missing_subpops" in self.initial_conditions_config.keys():
-                self.allow_missing_subpops = self.initial_conditions_config["allow_missing_subpops"].get(bool)
+                self.allow_missing_subpops = self.initial_conditions_config[
+                    "allow_missing_subpops"
+                ].get(bool)
             if "allow_missing_compartments" in self.initial_conditions_config.keys():
-                self.allow_missing_compartments = self.initial_conditions_config["allow_missing_compartments"].get(bool)
+                self.allow_missing_compartments = self.initial_conditions_config[
+                    "allow_missing_compartments"
+                ].get(bool)
 
             # TODO: add check, this option onlywork with tidy dataframe
             if "proportional" in self.initial_conditions_config.keys():
-                self.proportional_ic = self.initial_conditions_config["proportional"].get(bool)
+                self.proportional_ic = self.initial_conditions_config["proportional"].get(
+                    bool
+                )
 
     def get_from_config(self, sim_id: int, modinf) -> np.ndarray:
         method = "Default"
-        if self.initial_conditions_config is not None and "method" in self.initial_conditions_config.keys():
+        if (
+            self.initial_conditions_config is not None
+            and "method" in self.initial_conditions_config.keys()
+        ):
             method = self.initial_conditions_config["method"].as_str()
 
         if method == "Default":
@@ -70,10 +81,13 @@ class InitialConditions(SimulationComponent):
         if method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
             #  TODO Think about     - Does not support the new way of doing compartment indexing
             if method == "SetInitialConditionsFolderDraw":
-                ic_df = modinf.read_simID(ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id)
+                ic_df = modinf.read_simID(
+                    ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id
+                )
             else:
                 ic_df = read_df(
-                    self.path_prefix / self.initial_conditions_config["initial_conditions_file"].get(),
+                    self.path_prefix
+                    / self.initial_conditions_config["initial_conditions_file"].get(),
                 )
             y0 = read_initial_condition_from_tidydataframe(
                 ic_df=ic_df,
@@ -86,11 +100,13 @@ class InitialConditions(SimulationComponent):
         elif method == "InitialConditionsFolderDraw" or method == "FromFile":
             if method == "InitialConditionsFolderDraw":
                 ic_df = modinf.read_simID(
-                    ftype=self.initial_conditions_config["initial_file_type"].get(), sim_id=sim_id
+                    ftype=self.initial_conditions_config["initial_file_type"].get(),
+                    sim_id=sim_id,
                 )
             elif method == "FromFile":
                 ic_df = read_df(
-                    self.path_prefix / self.initial_conditions_config["initial_conditions_file"].get(),
+                    self.path_prefix
+                    / self.initial_conditions_config["initial_conditions_file"].get(),
                 )
 
             y0 = read_initial_condition_from_seir_output(
@@ -103,7 +119,9 @@ class InitialConditions(SimulationComponent):
             raise NotImplementedError(f"Unknown initial conditions method [received: '{method}'].")
 
         # check that the inputed values sums to the subpop population:
-        check_population(y0=y0, modinf=modinf, ignore_population_checks=self.ignore_population_checks)
+        check_population(
+            y0=y0, modinf=modinf, ignore_population_checks=self.ignore_population_checks
+        )
 
         return y0
 
@@ -149,7 +167,9 @@ def read_initial_condition_from_tidydataframe(
             states_pl = ic_df[ic_df["subpop"] == pl]
             for comp_idx, comp_name in modinf.compartments.compartments["name"].items():
                 if "mc_name" in states_pl.columns:
-                    ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name]["amount"]
+                    ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name][
+                        "amount"
+                    ]
                 else:
                     filters = modinf.compartments.compartments.iloc[comp_idx].drop("name")
                     ic_df_compartment_val = states_pl.copy()
@@ -207,7 +227,9 @@ def read_initial_condition_from_tidydataframe(
     return y0
 
 
-def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops, allow_missing_compartments):
+def read_initial_condition_from_seir_output(
+    ic_df, modinf, allow_missing_subpops, allow_missing_compartments
+):
     """
     Read the initial conditions from the SEIR output.
 
@@ -232,7 +254,9 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
     ic_df["date"] = ic_df["date"].dt.date
     ic_df["date"] = ic_df["date"].astype(str)
 
-    ic_df = ic_df[(ic_df["date"] == str(modinf.ti)) & (ic_df["mc_value_type"] == "prevalence")]
+    ic_df = ic_df[
+        (ic_df["date"] == str(modinf.ti)) & (ic_df["mc_value_type"] == "prevalence")
+    ]
     if ic_df.empty:
         raise ValueError(f"No entry provided for initial time `ti` in the `initial_conditions::states_file.` "
                          f"`ti`: '{modinf.ti}'.")
@@ -245,7 +269,9 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
         filters = modinf.compartments.compartments.iloc[comp_idx].drop("name")
         ic_df_compartment = ic_df.copy()
         for mc_name, mc_value in filters.items():
-            ic_df_compartment = ic_df_compartment[ic_df_compartment["mc_" + mc_name] == mc_value]
+            ic_df_compartment = ic_df_compartment[
+                ic_df_compartment["mc_" + mc_name] == mc_value
+            ]
 
         if len(ic_df_compartment) > 1:
             # ic_df_compartment = ic_df_compartment.iloc[0]
@@ -256,7 +282,9 @@ def read_initial_condition_from_seir_output(ic_df, modinf, allow_missing_subpops
             )
         elif ic_df_compartment.empty:
             if allow_missing_compartments:
-                ic_df_compartment = pd.DataFrame(0, columns=ic_df_compartment.columns, index=[0])
+                ic_df_compartment = pd.DataFrame(
+                    0, columns=ic_df_compartment.columns, index=[0]
+                )
             else:
                 raise ValueError(
                     f"Initial Conditions: could not set compartment '{comp_name}' (id: '{comp_idx}') in subpop '{pl}' (id: '{pl_idx}'). "
