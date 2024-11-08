@@ -183,23 +183,35 @@ class JobResources:
 
     @classmethod
     def from_presets(
-        cls, job_size: JobSize, inference_method: Literal["emcee"] | None
+        cls,
+        job_size: JobSize,
+        inference_method: Literal["emcee"] | None,
+        nodes: int | None = None,
+        cpus: int | None = None,
+        memory: int | None = None,
     ) -> "JobResources":
         """
-        Calculate suggested job resources from presets.
+        Calculate suggested job resources from presets with optional overrides.
 
         Args:
             job_size: The size of the job being ran.
             inference_method: The inference method being used for this job.
+            nodes: Optional manual override for the number of nodes.
+            cpus: Optional manual override for the number of CPUs per node.
+            memory: Optional manual override for the amount of memory per node.
 
         Returns:
             A job resources instances scaled to the job size given.
         """
         if inference_method == "emcee":
-            return cls(
-                nodes=1, cpus=2 * job_size.jobs, memory=2 * 1024 * job_size.simulations
-            )
-        return cls(nodes=job_size.jobs, cpus=2, memory=2 * 1024)
+            nodes = 1 if nodes is None else nodes
+            cpus = 2 * job_size.jobs if cpus is None else cpus
+            memory = 2 * 1024 * job_size.simulations if memory is None else memory
+        else:
+            nodes = job_size.jobs if nodes is None else nodes
+            cpus = 2 if cpus is None else cpus
+            memory = 2 * 1024 if memory is None else memory
+        return cls(nodes=nodes, cpus=cpus, memory=memory)
 
     @property
     def total_cpus(self) -> int:
@@ -728,6 +740,24 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
             default=None,
             help="Optionally an email that can be notified on job begin and end.",
         ),
+        click.Option(
+            param_decls=["--nodes", "nodes"],
+            type=click.IntRange(min=1),
+            default=None,
+            help="Override for the number of nodes to use.",
+        ),
+        click.Option(
+            param_decls=["--cpus", "cpus"],
+            type=click.IntRange(min=1),
+            default=None,
+            help="Override for the number of CPUs per node to use.",
+        ),
+        click.Option(
+            param_decls=["--memory", "memory"],
+            type=click.IntRange(min=1),
+            default=None,
+            help="Override for the amount of memory per node to use in MB.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
@@ -801,7 +831,13 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
     logger.info("Setting a total job time limit of %s minutes", job_time_limit.format())
 
     # Job resources
-    job_resources = JobResources.from_presets(job_size, inference_method)
+    job_resources = JobResources.from_presets(
+        job_size,
+        inference_method,
+        nodes=kwargs["nodes"],
+        cpus=kwargs["cpus"],
+        memory=kwargs["memory"],
+    )
 
     # Cluster info
     cluster: Cluster | None = None
@@ -839,7 +875,7 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         "flepi_path": kwargs["flepi_path"].absolute(),
         "job_name": job_name,
         "jobs": job_size.jobs,
-        "nslots": job_size.simulations,
+        "nslots": job_size.simulations,  # aka nwalkers
         "prefix": kwargs["prefix"],
         "project_path": kwargs["project_path"].absolute(),
         "run_id": kwargs["run_id"],
