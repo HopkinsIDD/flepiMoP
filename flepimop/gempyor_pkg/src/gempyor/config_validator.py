@@ -184,9 +184,9 @@ class ValueConfig(BaseModel):
 class BaseParameterConfig(BaseModel):
     value: Optional[ValueConfig] = None
     modifier_parameter: Optional[str] = None
-    name: Optional[
-        str
-    ] = None  # this is only for outcomes, to build outcome_prevalence_name (how to restrict this?)
+    name: Optional[str] = (
+        None  # this is only for outcomes, to build outcome_prevalence_name (how to restrict this?)
+    )
 
 
 class SeirParameterConfig(BaseParameterConfig):

@@ -143,11 +143,11 @@ class Compartments:
         )  # it is an iterator that will go through all the indexes of the array
         for x in it:
             try:
-                new_transition_config["source"][
-                    it.multi_index
-                ] = list_recursive_convert_to_string(
-                    self.access_original_config_by_multi_index(
-                        single_transition_config["source"], it.multi_index
+                new_transition_config["source"][it.multi_index] = (
+                    list_recursive_convert_to_string(
+                        self.access_original_config_by_multi_index(
+                            single_transition_config["source"], it.multi_index
+                        )
                     )
                 )
             except Exception as e:
@@ -165,11 +165,11 @@ class Compartments:
                 raise e
 
             try:
-                new_transition_config["destination"][
-                    it.multi_index
-                ] = list_recursive_convert_to_string(
-                    self.access_original_config_by_multi_index(
-                        single_transition_config["destination"], it.multi_index
+                new_transition_config["destination"][it.multi_index] = (
+                    list_recursive_convert_to_string(
+                        self.access_original_config_by_multi_index(
+                            single_transition_config["destination"], it.multi_index
+                        )
                     )
                 )
             except Exception as e:
@@ -187,11 +187,11 @@ class Compartments:
                 raise e
 
             try:
-                new_transition_config["rate"][
-                    it.multi_index
-                ] = list_recursive_convert_to_string(
-                    self.access_original_config_by_multi_index(
-                        single_transition_config["rate"], it.multi_index
+                new_transition_config["rate"][it.multi_index] = (
+                    list_recursive_convert_to_string(
+                        self.access_original_config_by_multi_index(
+                            single_transition_config["rate"], it.multi_index
+                        )
                     )
                 )
             except Exception as e:
@@ -245,17 +245,17 @@ class Compartments:
                         it.multi_index,
                         problem_dimension,
                     )
-                    new_transition_config["proportion_exponent"][
-                        it.multi_index
-                    ] = list_recursive_convert_to_string(
-                        [
-                            self.access_original_config_by_multi_index(
-                                single_transition_config["proportion_exponent"][p_idx],
-                                it.multi_index,
-                                problem_dimension,
-                            )
-                            for p_idx in range(proportion_size)
-                        ]
+                    new_transition_config["proportion_exponent"][it.multi_index] = (
+                        list_recursive_convert_to_string(
+                            [
+                                self.access_original_config_by_multi_index(
+                                    single_transition_config["proportion_exponent"][p_idx],
+                                    it.multi_index,
+                                    problem_dimension,
+                                )
+                                for p_idx in range(proportion_size)
+                            ]
+                        )
                     )
                 except Exception as e:
                     print(f"Error {e}:")
@@ -574,9 +574,9 @@ class Compartments:
                     proportion_info[0][
                         current_proportion_sum_it
                     ] = current_proportion_sum_start
-                    proportion_info[1][
-                        current_proportion_sum_it
-                    ] = current_proportion_sum_start + len(elem_tmp)
+                    proportion_info[1][current_proportion_sum_it] = (
+                        current_proportion_sum_start + len(elem_tmp)
+                    )
                     current_proportion_sum_it += 1
                     current_proportion_sum_start += len(elem_tmp)
             proportion_compartment_index = 0
@@ -761,14 +761,14 @@ class Compartments:
             if not is_totally_resolvable:
                 not_resolvable_indices = [it for it, x in enumerate(is_resolvable) if not x]
 
-                tmp_rc[
-                    not_resolvable_indices
-                ] = self.parse_parameter_strings_to_numpy_arrays(
-                    parameters,
-                    parameter_names,
-                    [string[not is_resolvable]],
-                    operator_reduce_lambdas,
-                    operators[1:],
+                tmp_rc[not_resolvable_indices] = (
+                    self.parse_parameter_strings_to_numpy_arrays(
+                        parameters,
+                        parameter_names,
+                        [string[not is_resolvable]],
+                        operator_reduce_lambdas,
+                        operators[1:],
+                    )
                 )
             for numeric_index in [x for x in range(len(is_numeric)) if is_numeric[x]]:
                 tmp_rc[numeric_index] = parameters[0] * 0 + float(string[numeric_index])
