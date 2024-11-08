@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 authors = [
     {name = "Joseph Lemaitre", email = "jo.lemaitresamra@gmail.com"},
-    {name = "Joshua kaminski and others", email = "jkaminsky@jhu.edu"},
+    {name = "Joshua Kaminsky and others"},
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
