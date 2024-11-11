@@ -10,10 +10,11 @@ __all__ = [
 ]
 
 
+from collections.abc import Iterable
 from functools import reduce
 import logging
 from os import PathLike
-from typing import Any, Iterable
+from typing import Any
 import warnings
 
 import click
@@ -28,6 +29,7 @@ from .utils import config, Timer, as_list
 
 NestedListOfAny = Any | list["NestedListOfAny"]
 NestedListOfStr = str | list["NestedListOfStr"]
+NestedIterableOfStr = str | Iterable["NestedIterableOfStr"]
 
 logger = logging.getLogger(__name__)
 
@@ -485,7 +487,18 @@ class Compartments:
 
         return new_transition_config
 
-    def format_proportional_to(self, proportional_to_column):
+    def format_proportional_to(
+        self, proportional_to_column: NestedIterableOfStr
+    ) -> list[str]:
+        """
+        Format a proportional to column as a list of strings for serialization.
+
+        Args:
+            proportional_to_column: The parsed proportional tos to format.
+
+        Returns:
+            A list of formatted proportional to strings.
+        """
         rc = [
             y
             for y in map(
