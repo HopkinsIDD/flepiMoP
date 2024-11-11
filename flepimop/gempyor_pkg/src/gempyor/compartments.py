@@ -150,7 +150,6 @@ def _format_deep_nested_iterables(
         >>> _format_deep_nested_iterables([["a", ["b", "c"]]], "%")
         ["a%['b', 'c']"]
     """
-    x = [x] if isinstance(x, str) else x
     sep = sep[0] if not isinstance(sep, str) and len(sep) == 1 else sep
     if isinstance(sep, str):
         return [
@@ -541,28 +540,7 @@ class Compartments:
         Returns:
             A list of formatted proportional to strings.
         """
-        rc = [
-            y
-            for y in map(
-                lambda x: reduce(
-                    lambda a, b: str(a) + "*" + str(b),
-                    map(
-                        lambda x: reduce(
-                            lambda a, b: str(a) + "_" + str(b),
-                            map(
-                                lambda x: reduce(
-                                    lambda a, b: str(a) + "+" + str(b), as_list(x)
-                                ),
-                                x,
-                            ),
-                        ),
-                        x,
-                    ),
-                ),
-                proportional_to_column,
-            )
-        ]
-        return rc
+        return _format_deep_nested_iterables(proportional_to_column, ("*", "_", "+"))
 
     def unformat_proportional_to(self, proportional_to_column):
         rc = [x.split("*") for x in proportional_to_column]

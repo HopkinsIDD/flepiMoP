@@ -11,7 +11,7 @@ from gempyor.compartments import NestedIterableOfStr, _format_deep_nested_iterab
         (["a", "b", "c"], "_", ["a", "b", "c"]),
         ([["a", "b"], "c", ["d", "e", "f"]], "-", ["a-b", "c", "d-e-f"]),
         ([["a", ["b", "c"]], ["d", ["e"], "f"]], "#", ["a#['b', 'c']", "d#['e']#f"]),
-        ("abc", "*", ["abc"]),
+        ("abc", "*", ["a", "b", "c"]),
         ([["a", "b", ["c", "d"]]], ["_", "*"], ["a_b_c*d"]),
         (
             [[["a", "b"], ["c", "d"]], [["e", "f"], ["g", "h"]]],
