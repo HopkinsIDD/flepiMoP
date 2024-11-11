@@ -46,12 +46,15 @@ fi
 
 # Load conda env
 conda activate {{ conda_env }}
+WHICH_PYTHON=$( which python )
+WHICH_RSCRIPT=$( which Rscript )
 
 # AWS setup
 
 # Fetch/setup resume files
 
 # Run inference
+{%- if inference_method == 'emcee' %}
 flepimop-calibrate --config $CONFIG_PATH \
     --project_path $PROJECT_PATH \
     --nslots {{ nslots }} \
@@ -62,5 +65,24 @@ flepimop-calibrate --config $CONFIG_PATH \
     --prefix {{ prefix}} \
 {%- endif %}
     > out_{{ job_name }}_$FLEPI_SLOT_INDEX.out 2>&1
+{%- else %}
+flepimop-inference-slot --config $CONFIG_PATH \
+    --run_id {{ run_id }} \
+    --seir_modifiers_scenarios $FLEPI_SEIR_SCENARIOS \
+    --outcome_modifiers_scenarios $FLEPI_OUTCOME_SCENARIOS \
+    --jobs 1 \
+    --iterations_per_slot {{ simulations }} \
+    --slots {{ nslots }} \
+    --this_slot $FLEPI_SLOT_INDEX \
+    --this_block 1 \
+    --stoch_traj_flag $FLEPI_STOCHASTIC_RUN \
+    --flepi_path $FLEPI_PATH \
+    --python $WHICH_PYTHON \
+    --rpath $WHICH_RSCRIPT \
+    --is-resume $RESUME_RUN \
+    --is-interactive FALSE \
+    --reset_chimeric_on_accept $FLEPI_RESET_CHIMERICS \
+    > out_{{ job_name }}_$FLEPI_SLOT_INDEX.out 2>&1
+{%- endif %}
 
 # Upload/move results

@@ -873,6 +873,7 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         "cluster": cluster if cluster is None else cluster.model_dump(),
         "debug": kwargs["debug"],
         "flepi_path": kwargs["flepi_path"].absolute(),
+        "inference_method": "" if inference_method is None else inference_method,
         "job_name": job_name,
         "jobs": job_size.jobs,
         "nslots": job_size.simulations,  # aka nwalkers
@@ -897,7 +898,7 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         options["mail-type"] = "BEGIN,END"
         options["mail-user"] = kwargs["email"]
     _sbatch_template(
-        "emcee_inference.sbatch.j2",
+        "inference.sbatch.j2",
         None,
         template_data,
         "all",
