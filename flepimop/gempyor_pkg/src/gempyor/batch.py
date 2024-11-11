@@ -519,15 +519,13 @@ def _sbatch(
     if verbosity is not None:
         logger.info("Submitting to slurm with: %s", " ".join(cmd_args))
     process = subprocess.run(cmd_args, check=True, capture_output=True)
+    stdout = process.stdout.decode().strip()
+    stderr = process.stderr.decode().strip()
     if verbosity is not None:
-        if process.stdout:
-            logger.debug(
-                "Captured stdout from sbatch submission: %s", process.stdout.decode()
-            )
-        if process.stderr:
-            logger.error(
-                "Captured stderr from sbatch submission: %s", process.stderr.decode()
-            )
+        if stdout:
+            logger.debug("Captured stdout from sbatch submission: %s", stdout)
+        if stderr:
+            logger.error("Captured stderr from sbatch submission: %s", stderr)
 
 
 def _sbatch_template(
