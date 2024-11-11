@@ -17,6 +17,7 @@ import math
 from pathlib import Path
 import re
 from shlex import quote
+from stat import S_IXUSR
 import subprocess
 import sys
 from typing import Any, Literal, Self
@@ -442,6 +443,54 @@ def write_manifest(
         json.dump(manifest, f, indent=4)
 
     return destination
+
+
+def _local(script: Path, verbosity: int | None, dry_run: bool) -> None:
+    """
+    Execute a local script.
+
+    Args:
+        script: The script to run.
+        verbosity: A integer verbosity level to enable logging or `None` for no logging.
+        dry_run: A boolean indicating if this is a dry run or not, if set to `True` this
+            function will not actually execute the script given.
+    """
+    if verbosity is not None:
+        logger = get_script_logger(__name__, verbosity)
+        logger.debug("Using script '%s' for local execution", script.absolute())
+
+    if not script.exists() or not script.is_file():
+        raise ValueError(
+            f"The script '{script.absolute()}' either does not exist or is not a file."
+        )
+    if not bool((current_perms := script.stat().st_mode) & S_IXUSR):
+        if verbosity is not None:
+            logger.warning(
+                "The script '%s' is not executable, making it executable.",
+                script.absolute(),
+            )
+        new_perms = current_perms | S_IXUSR
+        script.chmod(new_perms)
+    cmd_args = [str(script.absolute())]
+
+    if dry_run:
+        if verbosity is not None:
+            logger.info(
+                "If not dry mode would have executed script with: %s",
+                " ".join(cmd_args),
+            )
+        return
+
+    if verbosity is not None:
+        logger.info("Executing script with: %s", " ".join(cmd_args))
+    process = subprocess.run(cmd_args, check=True, capture_output=True)
+    stdout = process.stdout.decode().strip()
+    stderr = process.stderr.decode().strip()
+    if verbosity is not None:
+        if stdout:
+            logger.debug("Captured stdout from executed script: %s", stdout)
+        if stderr:
+            logger.error("Captured stderr from executed script: %s", stderr)
 
 
 def _sbatch(
