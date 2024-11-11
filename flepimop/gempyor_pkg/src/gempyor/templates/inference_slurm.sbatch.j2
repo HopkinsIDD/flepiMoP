@@ -44,10 +44,7 @@ fi
 {%- endfor %}
 {%- endif %}
 
-# Load conda env
-conda activate {{ conda_env }}
-WHICH_PYTHON=$( which python )
-WHICH_RSCRIPT=$( which Rscript )
+{% include "conda_activate.bash.j2" with context %}
 
 # AWS setup
 
