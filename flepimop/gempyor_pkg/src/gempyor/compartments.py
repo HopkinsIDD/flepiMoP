@@ -528,20 +528,6 @@ class Compartments:
 
         return new_transition_config
 
-    def format_proportional_to(
-        self, proportional_to_column: NestedIterableOfStr
-    ) -> list[str]:
-        """
-        Format a proportional to column as a list of strings for serialization.
-
-        Args:
-            proportional_to_column: The parsed proportional tos to format.
-
-        Returns:
-            A list of formatted proportional to strings.
-        """
-        return _format_deep_nested_iterables(proportional_to_column, ("*", "_", "+"))
-
     def unformat_proportional_to(self, proportional_to_column):
         rc = [x.split("*") for x in proportional_to_column]
         for row in range(len(rc)):
@@ -669,8 +655,8 @@ class Compartments:
         out_df["source"] = _format_nested_iterables(out_df["source"])
         out_df["destination"] = _format_nested_iterables(out_df["destination"])
         out_df["rate"] = _format_nested_iterables(out_df["rate"], sep="%*%")
-        out_df["proportional_to"] = self.format_proportional_to(
-            out_df["proportional_to"]
+        out_df["proportional_to"] = _format_deep_nested_iterables(
+            out_df["proportional_to"], ("*", "_", "+")
         )
         out_df["proportion_exponent"] = self.format_proportion_exponent(
             out_df["proportion_exponent"]

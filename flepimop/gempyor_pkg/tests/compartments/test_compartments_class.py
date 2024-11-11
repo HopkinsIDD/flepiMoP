@@ -569,28 +569,3 @@ class TestCompartments:
             compartments_file=compartments_file, transitions_file=transitions_file
         )
         assert compartments2 == compartments
-
-    @pytest.mark.parametrize(
-        ("proportional_to_column", "expected"),
-        (
-            (["123"], ["1*2*3"]),
-            ([["123", "45"]], ["1_2_3*4_5"]),
-            (["1"], ["1"]),
-            ([["1"], ["2"]], ["1", "2"]),
-            ([["1", "3"], ["2"]], ["1*3", "2"]),
-            ([[["1", "3"]], ["2"]], ["1_3", "2"]),
-            ([[["1", "2"], ["3", "4"]], ["5", ["6", "7"]]], ["1_2*3_4", "5*6_7"]),
-            ([[["1", ["2", "3"]], "4", ["5", ["6", "7"]]]], ["1_2+3*4*5_6+7"]),
-            (["1", ["2", ["3", ["4", ["5"]]]]], ["1", "2*3_4+['5']"]),
-            ("1", ["1"]),
-        ),
-    )
-    def test_format_proportional_to(
-        self,
-        tmp_path: Path,
-        proportional_to_column: NestedListOfStr,
-        expected: list[str],
-    ) -> None:
-        mock_inputs = sir_from_config_inputs_factory(tmp_path)
-        compartments = mock_inputs.compartments_instance()
-        assert compartments.format_proportional_to(proportional_to_column) == expected
