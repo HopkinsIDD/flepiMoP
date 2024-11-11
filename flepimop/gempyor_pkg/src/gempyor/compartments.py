@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from functools import reduce
 import logging
 from os import PathLike
@@ -123,6 +123,48 @@ def _unformat_nested_iterables(
             if (fill := maxsplit + 1 - len(r)) > 0:
                 r.extend(fill * [1])
     return result
+
+
+def _format_deep_nested_iterables(
+    x: NestedIterableOfStr, sep: str | Sequence[str]
+) -> list[str]:
+    """
+    Format a deep nested iterable of strings.
+
+    Args:
+        x: A nested iterable of strings to format into a list of strings.
+        sep: The separators to use for formatting in order of use.
+
+    Returns:
+        A list of formatted strings that has the same length as `x` if `x` is an
+        iterable otherwise with a length of 1.
+
+    Examples:
+        >>> from gempyor.compartments import _format_deep_nested_iterables
+        >>> _format_deep_nested_iterables([["a", "b"], ["c", "d"]], "_")
+        ['a_b', 'c_d']
+        >>> _format_deep_nested_iterables(
+        ...     ["a", ["c", "d"], ["e", ["f", "g"]]], ["*", "+"]
+        ... )
+        ['a', 'c*d', 'e*f+g']
+        >>> _format_deep_nested_iterables([["a", ["b", "c"]]], "%")
+        ["a%['b', 'c']"]
+    """
+    x = [x] if isinstance(x, str) else x
+    sep = sep[0] if not isinstance(sep, str) and len(sep) == 1 else sep
+    if isinstance(sep, str):
+        return [
+            y
+            for y in map(
+                lambda y: sep.join(
+                    [str(z) for z in ([y] if isinstance(y, str) else y)]
+                ),
+                x,
+            )
+        ]
+    return _format_deep_nested_iterables(
+        [_format_deep_nested_iterables(y, sep[1:]) for y in x], sep[0]
+    )
 
 
 class Compartments:
