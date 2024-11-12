@@ -1,0 +1,9 @@
+# Set environment variables
+if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
+    FLEPI_SLOT_INDEX="1"
+else
+    FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID
+fi
+export FLEPI_PATH={{ flepi_path }}
+export PROJECT_PATH={{ project_path }}
+export CONFIG_PATH={{ config_path }}
