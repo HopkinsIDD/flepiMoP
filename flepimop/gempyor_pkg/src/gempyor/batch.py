@@ -660,7 +660,6 @@ def _sbatch_template(
     Raises:
         ValueError: If 'options' is found in `template_data` and `options` is not empty.
     """
-    template_data["interpreter"] = template_data.get("interpreter", "bash")
     if "options" in template_data and options:
         raise ValueError(
             "Found 'options' in `template_data` but `options` is not empty, can only one."
