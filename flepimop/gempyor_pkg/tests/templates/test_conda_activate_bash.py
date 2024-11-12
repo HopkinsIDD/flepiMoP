@@ -9,3 +9,31 @@ def test_output_validation(conda_env: str) -> None:
     lines = rendered_template.split("\n")
     assert len(lines) == 4
     assert conda_env in lines[1]
+
+
+@pytest.mark.parametrize(
+    ("conda_env", "expected"),
+    (
+        (
+            "flepimop-env",
+            [
+                "# Load conda env",
+                "conda activate flepimop-env",
+                "WHICH_PYTHON=$( which python )",
+                "WHICH_RSCRIPT=$( which Rscript )",
+            ],
+        ),
+        (
+            "/path/to/conda/env",
+            [
+                "# Load conda env",
+                "conda activate /path/to/conda/env",
+                "WHICH_PYTHON=$( which python )",
+                "WHICH_RSCRIPT=$( which Rscript )",
+            ],
+        ),
+    ),
+)
+def test_exact_results_for_select_inputs(conda_env: str, expected: list[str]) -> None:
+    lines = _render_template("conda_activate.bash.j2", {"conda_env": conda_env}).split("\n")
+    assert lines == expected
