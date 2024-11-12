@@ -493,6 +493,39 @@ def _local(script: Path, verbosity: int | None, dry_run: bool) -> None:
             logger.error("Captured stderr from executed script: %s", stderr)
 
 
+def _local_template(
+    template: str,
+    script: Path | None,
+    template_data: dict[str, Any],
+    verbosity: int | None,
+    dry_run: bool,
+) -> Path:
+    """
+    Execute a local script generated from a template.
+
+    Args:
+        template: The name of the template to use for rendering the executable script.
+        script: Either the path of where to save the rendered executable script to or
+            `None` for a tmp file.
+        template_data: Data accessible to the template when rendering.
+        verbosity: A integer verbosity level to enable logging or `None` for no logging.
+        dry_run: A boolean indicating if this is a dry run or not, if set to `True` this
+            function will not actually submit a job to slurm.
+
+    Returns:
+        The rendered executable script, either a tmp file if `script` is None otherwise
+        `script` is returned.
+    """
+    if script is None:
+        script = _render_template_to_temp_file(template, template_data, suffix=".bash")
+        new_perms = script.stat().st_mode | S_IXUSR
+        script.chmod(new_perms)
+    else:
+        _render_template_to_file(template, template_data, script)
+    _local(script, verbosity, dry_run)
+    return script
+
+
 def _sbatch(
     script: Path,
     environment_variables: dict[str, Any] | Literal["all", "nil", "none"],
