@@ -8,15 +8,7 @@
 set -x
 {%- endif %}
 
-# Set script variables
-if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
-    FLEPI_SLOT_INDEX="1"
-else
-    FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID
-fi
-export FLEPI_PATH={{ flepi_path }}
-export PROJECT_PATH={{ project_path }}
-export CONFIG_PATH={{ config_out }}
+{% include "inference_environment_variables.bash.j2" with context %}
 
 {% include "cluster_setup.bash.j2" with context %}
 
@@ -26,36 +18,6 @@ export CONFIG_PATH={{ config_out }}
 
 # Fetch/setup resume files
 
-# Run inference
-{%- if inference_method == 'emcee' %}
-flepimop-calibrate --config $CONFIG_PATH \
-    --project_path $PROJECT_PATH \
-    --nslots {{ nslots }} \
-    --niterations {{ simulations }} \
-    --jobs {{ jobs }} \
-    --id {{ run_id }} \
-{%- if prefix is defined and prefix is not none %}
-    --prefix {{ prefix}} \
-{%- endif %}
-    > out_{{ job_name }}_$FLEPI_SLOT_INDEX.out 2>&1
-{%- else %}
-flepimop-inference-slot --config $CONFIG_PATH \
-    --run_id {{ run_id }} \
-    --seir_modifiers_scenarios $FLEPI_SEIR_SCENARIOS \
-    --outcome_modifiers_scenarios $FLEPI_OUTCOME_SCENARIOS \
-    --jobs 1 \
-    --iterations_per_slot {{ simulations }} \
-    --slots {{ nslots }} \
-    --this_slot $FLEPI_SLOT_INDEX \
-    --this_block 1 \
-    --stoch_traj_flag $FLEPI_STOCHASTIC_RUN \
-    --flepi_path $FLEPI_PATH \
-    --python $WHICH_PYTHON \
-    --rpath $WHICH_RSCRIPT \
-    --is-resume $RESUME_RUN \
-    --is-interactive FALSE \
-    --reset_chimeric_on_accept $FLEPI_RESET_CHIMERICS \
-    > out_{{ job_name }}_$FLEPI_SLOT_INDEX.out 2>&1
-{%- endif %}
+{% include "inference_command.bash.j2" with context %}
 
 # Upload/move results

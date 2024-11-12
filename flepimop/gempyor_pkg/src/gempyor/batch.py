@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum, auto
 from getpass import getuser
+from itertools import product
 import json
 import math
 from pathlib import Path
@@ -151,6 +152,8 @@ class JobSize:
             A job size instance with either the explicit or inferred job sizing.
         """
         if batch_system == BatchSystem.LOCAL:
+            blocks = 11 if blocks is None else blocks
+            simulations = 11 if simulations is None else simulations
             return cls(jobs=1, simulations=min(blocks * simulations, 10), blocks=1)
         if inference_method == "emcee":
             return cls(jobs=jobs, simulations=blocks * simulations, blocks=1)
@@ -486,10 +489,14 @@ def _local(script: Path, verbosity: int | None, dry_run: bool) -> None:
 
     if verbosity is not None:
         logger.info("Executing script with: %s", " ".join(cmd_args))
-    process = subprocess.run(cmd_args, check=True, capture_output=True)
+    process = subprocess.run(cmd_args, capture_output=True)
     stdout = process.stdout.decode().strip()
     stderr = process.stderr.decode().strip()
     if verbosity is not None:
+        if process.returncode != 0:
+            logger.critical(
+                "Received non-zero exit code, %u, from executed script.", process.returncode
+            )
         if stdout:
             logger.debug("Captured stdout from executed script: %s", stdout)
         if stderr:
@@ -603,10 +610,14 @@ def _sbatch(
 
     if verbosity is not None:
         logger.info("Submitting to slurm with: %s", " ".join(cmd_args))
-    process = subprocess.run(cmd_args, check=True, capture_output=True)
+    process = subprocess.run(cmd_args, capture_output=True)
     stdout = process.stdout.decode().strip()
     stderr = process.stderr.decode().strip()
     if verbosity is not None:
+        if process.returncode != 0:
+            logger.critical(
+                "Received non-zero exit code, %u, from executed script.", process.returncode
+            )
         if stdout:
             logger.debug("Captured stdout from sbatch submission: %s", stdout)
         if stderr:
@@ -694,6 +705,126 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
     if name is not None and not _JOB_NAME_REGEX.match(name):
         raise ValueError(f"The given `name`, '{name}', is not a valid safe name.")
     return f"{name}-{timestamp}" if name else timestamp
+
+
+def _submit_scenario_job(
+    outcome_modifiers_scenario: str | None,
+    seir_modifiers_scenario: str | None,
+    name: str,
+    batch_system: BatchSystem,
+    inference_method: Literal["emcee"] | None,
+    config_out: Path,
+    job_name: str,
+    job_size: JobSize,
+    job_time_limit: JobTimeLimit,
+    job_resources: JobResources,
+    kwargs: dict[str, Any],
+    verbosity: int | None,
+    dry_run: bool,
+    now: datetime,
+) -> None:
+    """
+    Submit a job for a scenario.
+
+    Args:
+        ...
+    """
+    # Get logger
+    if verbosity is not None:
+        logger = get_script_logger(__name__, verbosity)
+        if outcome_modifiers_scenario is None:
+            logger.warning(
+                "The outcome modifiers scenario is `None`, may lead to "
+                "unintended consequences in output file/directory names."
+            )
+        if seir_modifiers_scenario is None:
+            logger.warning(
+                "The seir modifiers scenario is `None`, may lead to "
+                "unintended consequences in output file/directory names."
+            )
+
+    # Modify the job for the given scenario info
+    job_name += f"_{seir_modifiers_scenario}_{outcome_modifiers_scenario}"
+    prefix = f"{name}_{seir_modifiers_scenario}_{outcome_modifiers_scenario}"
+    if verbosity is not None:
+        logger.info(
+            "Preparing a job for outcome and seir modifiers scenarios "
+            "'%s' and '%s', respectively, with job name '%s'.",
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+            job_name,
+        )
+
+    # Generically useful template data, regardless of batch system
+    template_data = {
+        "conda_env": kwargs["conda_env"],
+        "config_path": config_out.absolute(),
+        "debug": kwargs["debug"],
+        "flepi_path": kwargs["flepi_path"].absolute(),
+        "inference_method": "" if inference_method is None else inference_method,
+        "job_name": job_name,
+        "jobs": job_size.jobs,
+        "outcome_modifiers_scenario": outcome_modifiers_scenario,
+        "nslots": job_size.simulations,  # aka nwalkers
+        "prefix": prefix,
+        "project_path": kwargs["project_path"].absolute(),
+        "reset_chimerics": kwargs["reset_chimerics"],
+        "run_id": kwargs["run_id"],
+        "seir_modifiers_scenario": seir_modifiers_scenario,
+        "simulations": job_size.simulations,
+        "stoch_traj_flag": kwargs["stoch_traj_flag"],
+    }
+
+    # Branch on the specific batch system
+    if batch_system == BatchSystem.LOCAL:
+        # Construct the local execution
+        _local_template(
+            "inference_local.bash.j2",
+            None,
+            template_data,
+            verbosity,
+            dry_run,
+        )
+    elif batch_system == BatchSystem.SLURM:
+        # Cluster info
+        if kwargs["cluster"] is None:
+            raise ValueError("When submitting a batch job to slurm a cluster is required.")
+        cluster = get_cluster_info(kwargs["cluster"])
+        if verbosity is not None:
+            logger.info(
+                "Utilizing info for the '%s' cluster to construct this job", cluster.name
+            )
+            logger.debug(
+                "The full settings for cluster '%s' are %s",
+                cluster.name,
+                cluster.model_dump(),
+            )
+        template_data["cluster"] = cluster.model_dump()
+        # Construct the sbatch call
+        options = {
+            "chdir": kwargs["project_path"].absolute(),
+            "comment": f"Generated on {now:%c %Z} and submitted by {getuser()}.",
+            "cpus-per-task": job_resources.format_cpus(batch_system),
+            "job-name": job_name,
+            "mem": job_resources.format_memory(batch_system),
+            "nodes": job_resources.format_nodes(batch_system),
+            "ntasks-per-node": 1,
+            "time": job_time_limit.format(batch_system),
+        }
+        if kwargs["partition"] is not None:
+            options["partition"] = kwargs["partition"]
+        if kwargs["email"] is not None:
+            options["mail-type"] = "BEGIN,END"
+            options["mail-user"] = kwargs["email"]
+        _sbatch_template(
+            "inference_slurm.sbatch.j2",
+            None,
+            template_data,
+            "all",
+            options,
+            verbosity,
+            dry_run,
+        )
 
 
 @cli.command(
@@ -811,13 +942,6 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
             help="Unique identifier for this run.",
         ),
         click.Option(
-            param_decls=["--prefix", "prefix"],
-            envvar="FLEPI_PREFIX",
-            type=str,
-            default=None,
-            help="Unique prefix for this run.",
-        ),
-        click.Option(
             param_decls=["--email", "email"],
             type=str,
             default=None,
@@ -841,31 +965,33 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
             default=None,
             help="Override for the amount of memory per node to use in MB.",
         ),
+        click.Option(
+            param_decls=["--skip-manifest", "skip_manifest"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help="Flag to skip writing a 'manifest.json' file to the project path.",
+        ),
+        click.Option(
+            param_decls=[
+                "--reset-chimerics-on-global-accept/--no-reset-chimerics-on-global-accept",
+                "reset_chimerics",
+            ],
+            type=bool,
+            default=False,
+            help="Flag to reset chimerics on global accept.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
 @click.pass_context
-def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
+def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
     """Submit batch jobs"""
     # Generic setup
     now = datetime.now(timezone.utc)
     logger = get_script_logger(__name__, kwargs["verbosity"])
     log_cli_inputs(kwargs)
     cfg = parse_config_files(config, ctx, **kwargs)
-
-    # Temporary limitation
-    if (
-        not cfg["inference"].exists()
-        or not cfg["inference"]["method"].exists()
-        or cfg["inference"]["method"].as_str() != "emcee"
-    ):
-        raise NotImplementedError(
-            "The `flepimop submit` CLI only supports EMCEE inference jobs."
-        )
-    inference_method = cfg["inference"]["method"].as_str()
-    inference_method = (
-        inference_method if inference_method is None else inference_method.lower()
-    )
 
     # Job name/run id
     name = cfg["name"].get(str) if cfg["name"].exists() else None
@@ -875,14 +1001,30 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         kwargs["run_id"] = run_id(now)
     logger.info("Using a run id of '%s'", kwargs["run_id"])
 
+    # Determine inference method
+    inference_method = (
+        cfg["inference"]["method"].as_str()
+        if cfg["inference"].exists() and cfg["inference"]["method"].exists()
+        else None
+    )
+    inference_method = (
+        inference_method if inference_method is None else inference_method.lower()
+    )
+    if kwargs["reset_chimerics"] and inference_method is not None:
+        logger.warning(
+            "The inference method is '%s', which does not support "
+            "the reset chimerics on global accept flag.",
+            inference_method,
+        )
+
     # Batch system
     batch_system = BatchSystem.from_options(
         kwargs["batch_system"], kwargs["aws"], kwargs["local"], kwargs["slurm"]
     )
-    if batch_system != BatchSystem.SLURM:
+    if batch_system == BatchSystem.AWS:
         # Temporary limitation
         raise NotImplementedError(
-            "The `flepimop submit` CLI only supports batch submission to slurm."
+            "The `flepimop submit` CLI does not support batch submission to AWS yet."
         )
     logger.info("Constructing a job to submit to %s", batch_system)
     if batch_system != BatchSystem.SLURM and kwargs["email"] is not None:
@@ -922,24 +1064,35 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         cpus=kwargs["cpus"],
         memory=kwargs["memory"],
     )
+    logger.info("Requesting the resources %s for this job.", job_resources)
 
-    # Cluster info
-    cluster: Cluster | None = None
-    if batch_system == BatchSystem.SLURM:
-        if kwargs["cluster"] is None:
-            raise ValueError("When submitting a batch job to slurm a cluster is required.")
-        cluster = get_cluster_info(kwargs["cluster"])
-    logger.info("Utilizing info for the '%s' cluster to construct this job", cluster.name)
-    logger.debug(
-        "The full settings for cluster '%s' are %s", cluster.name, cluster.model_dump()
+    # Outcome/seir modifier scenarios
+    outcome_modifiers_scenarios = (
+        cfg["outcome_modifiers"]["scenarios"].as_str_seq()
+        if cfg["outcome_modifiers"].exists()
+        and cfg["outcome_modifiers"]["scenarios"].exists()
+        else [None]
+    )
+    seir_modifiers_scenarios = (
+        cfg["seir_modifiers"]["scenarios"].as_str_seq()
+        if cfg["seir_modifiers"].exists() and cfg["seir_modifiers"]["scenarios"].exists()
+        else [None]
     )
 
     # Restart/continuation location
     # TODO: Implement this
 
     # Manifest
-    manifest = write_manifest(job_name, kwargs["flepi_path"], kwargs["project_path"])
-    logger.info("Writing manifest metadata to '%s'", manifest.absolute())
+    if kwargs["skip_manifest"]:
+        manifest = write_manifest(
+            job_name,
+            kwargs["flepi_path"],
+            kwargs["project_path"],
+            destination=kwargs["project_path"] / "manifest.json",
+        )
+        logger.info("Writing manifest metadata to '%s'", manifest.absolute())
+    else:
+        logger.debug("Skipped writing manifest metadata.")
 
     # Config out
     if (config_out := kwargs["config_out"]) is None:
@@ -950,43 +1103,23 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs) -> None:
         "Dumped the final config for this batch submission to %s", config_out.absolute()
     )
 
-    # Construct the sbatch call
-    template_data = {
-        "conda_env": kwargs["conda_env"],
-        "config_out": config_out.absolute(),
-        "cluster": cluster if cluster is None else cluster.model_dump(),
-        "debug": kwargs["debug"],
-        "flepi_path": kwargs["flepi_path"].absolute(),
-        "inference_method": "" if inference_method is None else inference_method,
-        "job_name": job_name,
-        "jobs": job_size.jobs,
-        "nslots": job_size.simulations,  # aka nwalkers
-        "prefix": kwargs["prefix"],
-        "project_path": kwargs["project_path"].absolute(),
-        "run_id": kwargs["run_id"],
-        "simulations": job_size.simulations,
-    }
-    options = {
-        "chdir": kwargs["project_path"].absolute(),
-        "comment": f"Generated on {now:%c %Z} and submitted by {getuser()}.",
-        "cpus-per-task": job_resources.format_cpus(batch_system),
-        "job-name": job_name,
-        "mem": job_resources.format_memory(batch_system),
-        "nodes": job_resources.format_nodes(batch_system),
-        "ntasks-per-node": 1,
-        "time": job_time_limit.format(batch_system),
-    }
-    if kwargs["partition"] is not None:
-        options["partition"] = kwargs["partition"]
-    if kwargs["email"] is not None:
-        options["mail-type"] = "BEGIN,END"
-        options["mail-user"] = kwargs["email"]
-    _sbatch_template(
-        "inference.sbatch.j2",
-        None,
-        template_data,
-        "all",
-        options,
-        kwargs["verbosity"],
-        kwargs["dry_run"],
-    )
+    # Loop over the scenarios
+    for outcome_modifiers_scenario, seir_modifiers_scenario in product(
+        outcome_modifiers_scenarios, seir_modifiers_scenarios
+    ):
+        _submit_scenario_job(
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+            name,
+            batch_system,
+            inference_method,
+            config_out,
+            job_name,
+            job_size,
+            job_time_limit,
+            job_resources,
+            kwargs,
+            kwargs["verbosity"],
+            kwargs["dry_run"],
+            now,
+        )

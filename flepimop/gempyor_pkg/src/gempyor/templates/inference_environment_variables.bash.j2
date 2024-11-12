@@ -4,6 +4,11 @@ if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
 else
     FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID
 fi
-export FLEPI_PATH={{ flepi_path }}
-export PROJECT_PATH={{ project_path }}
-export CONFIG_PATH={{ config_path }}
+export FLEPI_PATH="{{ flepi_path }}"
+export PROJECT_PATH="{{ project_path }}"
+export CONFIG_PATH="{{ config_path }}"
+export FLEPI_STOCHASTIC_RUN="{{ stoch_traj_flag | string | upper }}"
+export FLEPI_OUTCOME_SCENARIOS="{{ outcome_modifiers_scenario }}"
+export FLEPI_SEIR_SCENARIOS="{{ seir_modifiers_scenario }}"
+export FLEPI_RESET_CHIMERICS="{{ reset_chimerics | string | upper }}"
+export LOG_FILE="out_{{ job_name }}_$FLEPI_SLOT_INDEX.out"

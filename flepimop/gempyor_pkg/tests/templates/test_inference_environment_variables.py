@@ -11,9 +11,14 @@ from gempyor._jinja import _render_template
     (
         (
             {
-                "flepi_path": "/home/foobar/flepiMoP",
-                "project_path": "/home/foobar/project",
                 "config_path": "/home/foobar/project/config.yml",
+                "flepi_path": "/home/foobar/flepiMoP",
+                "job_name": "sample_2pop-20240101T0000_None_None",
+                "outcome_modifiers_scenario": None,
+                "project_path": "/home/foobar/project",
+                "reset_chimerics": False,
+                "seir_modifiers_scenario": None,
+                "stoch_traj_flag": True,
             },
             [
                 "# Set environment variables",
@@ -22,18 +27,29 @@ from gempyor._jinja import _render_template
                 "else",
                 "    FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID",
                 "fi",
-                "export FLEPI_PATH=/home/foobar/flepiMoP",
-                "export PROJECT_PATH=/home/foobar/project",
-                "export CONFIG_PATH=/home/foobar/project/config.yml",
+                'export FLEPI_PATH="/home/foobar/flepiMoP"',
+                'export PROJECT_PATH="/home/foobar/project"',
+                'export CONFIG_PATH="/home/foobar/project/config.yml"',
+                'export FLEPI_STOCHASTIC_RUN="TRUE"',
+                'export FLEPI_OUTCOME_SCENARIOS="None"',
+                'export FLEPI_SEIR_SCENARIOS="None"',
+                'export FLEPI_RESET_CHIMERICS="FALSE"',
+                "export LOG_FILE="
+                '"out_sample_2pop-20240101T0000_None_None_$FLEPI_SLOT_INDEX.out"',
             ],
         ),
         (
             {
-                "flepi_path": Path("/users/f/o/foobar/flepiMoP"),
-                "project_path": Path("/users/f/o/foobar/flepimop_sample"),
                 "config_path": Path(
                     "/users/f/o/foobar/flepimop_sample/config_sample_2pop_inference.yml"
                 ),
+                "flepi_path": Path("/users/f/o/foobar/flepiMoP"),
+                "job_name": "sample_2pop-20240101T0000_Ro_all_test_limits",
+                "outcome_modifiers_scenario": "test_limits",
+                "project_path": Path("/users/f/o/foobar/flepimop_sample"),
+                "reset_chimerics": True,
+                "seir_modifiers_scenario": "Ro_all",
+                "stoch_traj_flag": False,
             },
             [
                 "# Set environment variables",
@@ -42,10 +58,16 @@ from gempyor._jinja import _render_template
                 "else",
                 "    FLEPI_SLOT_INDEX=$SLURM_ARRAY_TASK_ID",
                 "fi",
-                "export FLEPI_PATH=/users/f/o/foobar/flepiMoP",
-                "export PROJECT_PATH=/users/f/o/foobar/flepimop_sample",
+                'export FLEPI_PATH="/users/f/o/foobar/flepiMoP"',
+                'export PROJECT_PATH="/users/f/o/foobar/flepimop_sample"',
                 "export CONFIG_PATH="
-                "/users/f/o/foobar/flepimop_sample/config_sample_2pop_inference.yml",
+                '"/users/f/o/foobar/flepimop_sample/config_sample_2pop_inference.yml"',
+                'export FLEPI_STOCHASTIC_RUN="FALSE"',
+                'export FLEPI_OUTCOME_SCENARIOS="test_limits"',
+                'export FLEPI_SEIR_SCENARIOS="Ro_all"',
+                'export FLEPI_RESET_CHIMERICS="TRUE"',
+                "export LOG_FILE="
+                '"out_sample_2pop-20240101T0000_Ro_all_test_limits_$FLEPI_SLOT_INDEX.out"',
             ],
         ),
     ),

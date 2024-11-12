@@ -1,0 +1,27 @@
+# Run inference
+{%- if inference_method == 'emcee' %}
+flepimop-calibrate --config $CONFIG_PATH \
+    --project_path $PROJECT_PATH \
+    --nslots {{ nslots }} \
+    --niterations {{ simulations }} \
+    --jobs {{ jobs }} \
+    --id {{ run_id }} \
+    --prefix {{ prefix}} \
+    > $LOG_FILE 2>&1
+{%- else %}
+flepimop-inference-slot --config $CONFIG_PATH \
+    --run_id {{ run_id }} \
+    --seir_modifiers_scenarios $FLEPI_SEIR_SCENARIOS \
+    --outcome_modifiers_scenarios $FLEPI_OUTCOME_SCENARIOS \
+    --jobs 1 \
+    --iterations_per_slot {{ simulations }} \
+    --this_slot $FLEPI_SLOT_INDEX \
+    --this_block 1 \
+    --stoch_traj_flag $FLEPI_STOCHASTIC_RUN \
+    --flepi_path $FLEPI_PATH \
+    --python $WHICH_PYTHON \
+    --rpath $WHICH_RSCRIPT \
+    --is-interactive FALSE \
+    --reset_chimeric_on_accept $FLEPI_RESET_CHIMERICS \
+    > $LOG_FILE 2>&1
+{%- endif %}
