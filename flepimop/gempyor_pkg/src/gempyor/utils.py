@@ -1118,6 +1118,29 @@ def _git_head(repository: Path) -> str:
     return proc.stdout.decode().strip()
 
 
+def _git_checkout(repository: Path, branch: str) -> None:
+    """
+    Checkout a new branch from a given git repository.
+
+    Args:
+        repository: A directory under version control with git to
+            checkout a new branch in.
+        branch: The name of the new branch to checkout.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> _git_checkout(Path("~/Desktop/GitHub/HopkinsIDD/flepiMoP"), "my-new-branch")
+    """
+    git_cmd = _shutil_which("git")
+    subprocess.run(
+        [git_cmd, "checkout", "-b", branch],
+        cwd=repository.expanduser().absolute(),
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 def _format_cli_options(options: dict[str, Any]) -> list[str]:
     """
     Convert a dictionary of CLI options into a formatted list.

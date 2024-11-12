@@ -29,7 +29,7 @@ from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .file_paths import run_id
 from .info import Cluster, get_cluster_info
 from .logging import get_script_logger
-from .utils import _format_cli_options, _git_head, _shutil_which, config
+from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
 from .shared_cli import (
     NONNEGATIVE_DURATION,
     cli,
@@ -981,6 +981,13 @@ def _submit_scenario_job(
             default=False,
             help="Flag to reset chimerics on global accept.",
         ),
+        click.Option(
+            param_decls=["--skip-checkout", "skip_checkout"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help="Flag to skip checking out a new branch in the project git directory.",
+        ),
     ]
     + list(verbosity_options.values()),
 )
@@ -1122,4 +1129,16 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
             kwargs["verbosity"],
             kwargs["dry_run"],
             now,
+        )
+
+    # Checkout a new branch to preserve run information
+    if kwargs["skip_checkout"]:
+        logger.debug("Skipped checking out a new branch to preserve run.")
+    else:
+        branch = f"run_{job_name}"
+        _git_checkout(kwargs["project_path"], branch)
+        logger.info(
+            "Checked out a new branch, '%s', in the project "
+            "repository to preserve run details.",
+            branch,
         )
