@@ -1084,6 +1084,8 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
 
     # Manifest
     if kwargs["skip_manifest"]:
+        logger.debug("Skipped writing manifest metadata.")
+    else:
         manifest = write_manifest(
             job_name,
             kwargs["flepi_path"],
@@ -1091,8 +1093,6 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
             destination=kwargs["project_path"] / "manifest.json",
         )
         logger.info("Writing manifest metadata to '%s'", manifest.absolute())
-    else:
-        logger.debug("Skipped writing manifest metadata.")
 
     # Config out
     if (config_out := kwargs["config_out"]) is None:
