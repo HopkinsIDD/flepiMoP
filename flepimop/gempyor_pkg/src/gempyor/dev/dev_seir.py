@@ -44,7 +44,7 @@ mobility_data = modinf.mobility.data
 
 npi = NPI.NPIBase.execute(
     npi_config=modinf.npi_config_seir,
-    modinf=modinf,
+    modinf_ti=modinf.ti, modinf_tf=modinf.tf,
     modifiers_library=modinf.seir_modifiers_library,
     subpops=modinf.subpop_struct.subpop_names,
     pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],

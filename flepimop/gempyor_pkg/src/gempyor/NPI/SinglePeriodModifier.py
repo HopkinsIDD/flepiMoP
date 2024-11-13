@@ -1,17 +1,18 @@
+import datetime
+
 import numpy as np
 import pandas as pd
 
 from . import helpers
 from .base import NPIBase
-from ..model_info import ModelInfo
-
 
 class SinglePeriodModifier(NPIBase):
     def __init__(
         self,
         *,
         npi_config,
-        modinf: ModelInfo,
+        modinf_ti: datetime.date,
+        modinf_tf: datetime.date,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -27,8 +28,8 @@ class SinglePeriodModifier(NPIBase):
             )
         )
 
-        self.start_date = modinf.ti
-        self.end_date = modinf.tf
+        self.start_date = modinf_ti
+        self.end_date = modinf_tf
 
         self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
         self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod

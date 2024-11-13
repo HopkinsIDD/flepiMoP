@@ -1,13 +1,12 @@
 import collections
 import os
 import warnings
+import datetime
 
 import confuse
 import pandas as pd
 
 from .base import NPIBase
-from ..model_info import ModelInfo
-
 
 debug_print = False
 
@@ -21,7 +20,8 @@ class StackedModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf: ModelInfo,
+        modinf_ti: datetime.date,
+        modinf_tf: datetime.date,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -30,8 +30,8 @@ class StackedModifier(NPIBase):
     ):
         super().__init__(name=npi_config.name)
 
-        self.start_date = modinf.ti
-        self.end_date = modinf.tf
+        self.start_date = modinf_ti
+        self.end_date = modinf_tf
 
         self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
         self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
@@ -63,7 +63,7 @@ class StackedModifier(NPIBase):
 
             sub_npi = NPIBase.execute(
                 npi_config=scenario_npi_config,
-                modinf=modinf,
+                modinf_ti=modinf_ti, modinf_tf=modinf_tf,
                 modifiers_library=modifiers_library,
                 subpops=subpops,
                 loaded_df=loaded_df,

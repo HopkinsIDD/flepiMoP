@@ -235,33 +235,19 @@ def build_npi_SEIR(
         elif load_ID == True:
             loaded_df = modinf.read_simID(ftype="snpi", sim_id=sim_id2load)
 
-        if loaded_df is not None:
-            npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_seir,
-                modinf=modinf,
-                modifiers_library=modinf.seir_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
-                loaded_df=loaded_df,
-                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
-                    "sum"
-                ],
-                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
-                    "reduction_product"
-                ],
-            )
-        else:
-            npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_seir,
-                modinf=modinf,
-                modifiers_library=modinf.seir_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
-                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
-                    "sum"
-                ],
-                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
-                    "reduction_product"
-                ],
-            )
+        npi = NPI.NPIBase.execute(
+            npi_config=modinf.npi_config_seir,
+            modinf_ti=modinf.ti, modinf_tf=modinf.tf,
+            modifiers_library=modinf.seir_modifiers_library,
+            subpops=modinf.subpop_struct.subpop_names,
+            loaded_df=loaded_df,
+            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
+                "sum"
+            ],
+            pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+                "reduction_product"
+            ],
+        )
     return npi
 
 

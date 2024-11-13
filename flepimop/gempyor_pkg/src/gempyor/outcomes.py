@@ -73,23 +73,14 @@ def build_outcome_modifiers(
         elif load_ID == True:
             loaded_df = modinf.read_simID(ftype="hnpi", sim_id=sim_id2load)
 
-        if loaded_df is not None:
-            npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_outcomes,
-                modinf=modinf,
-                modifiers_library=modinf.outcome_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
-                loaded_df=loaded_df,
-                # TODO: support other operation than product
-            )
-        else:
-            npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_outcomes,
-                modinf=modinf,
-                modifiers_library=modinf.outcome_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
-                # TODO: support other operation than product
-            )
+        npi = NPI.NPIBase.execute(
+            npi_config=modinf.npi_config_outcomes,
+            modinf_ti=modinf.ti, modinf_tf=modinf.tf,
+            modifiers_library=modinf.outcome_modifiers_library,
+            subpops=modinf.subpop_struct.subpop_names,
+            loaded_df=loaded_df,
+            # TODO: support other operation than product
+        )
     return npi
 
 

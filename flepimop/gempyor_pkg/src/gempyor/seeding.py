@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
