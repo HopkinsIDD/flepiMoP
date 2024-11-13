@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     if not df["date"].is_monotonic_increasing:
-        raise ValueError("`_DataFrame2NumbaDict` got an unsorted dataframe.")
+        raise ValueError("The `df` given is not sorted by the 'date' column.")
 
     cmp_grp_names = [
         col for col in modinf.compartments.compartments.columns if col != "name"
@@ -134,7 +134,7 @@ class Seeding(SimulationComponent):
             seeding = pd.DataFrame(columns=["date", "subpop"])
             return _DataFrame2NumbaDict(df=seeding, amounts=[], modinf=modinf)
         else:
-            raise NotImplementedError(f"Unknown seeding method [received: '{method}'].")
+            raise ValueError(f"Unknown seeding method [received: '{method}'].")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
         # print(seeding.shape)

@@ -19,7 +19,7 @@ class TimeSetup:
         self.tf = config["end_date"].as_date()
         if self.tf <= self.ti:
             raise ValueError(
-                "`tf` (time to finish) is less than or equal to `ti` (time to start)."
+                f"Time to finish ('{self.tf}') is less than or equal to ('{self.ti}')."
             )
         self.n_days = (self.tf - self.ti).days + 1
         self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
@@ -76,8 +76,7 @@ class ModelInfo:
         # Auto-detect old config
         if config["interventions"].exists():
             raise ValueError(
-                "This config has an intervention section, which is only compatible with a previous version of flepiMoP/COVIDScenarioPipeline. "
-                "Please use flepiMoP Version 1.1 to run this config."
+                "This config has an intervention section, which is only compatible with a previous version (1.1) of flepiMoP."
             )
 
         # 1. Create a setup name that contains every scenario.
@@ -168,19 +167,19 @@ class ModelInfo:
                     self.seir_modifiers_library = config["seir_modifiers"][
                         "modifiers"
                     ].get()
-                    raise ValueError(
+                    raise NotImplementedError(
                         "This feature has not been implemented yet."
                     )  # TODO create a Stacked from all
             elif self.seir_modifiers_scenario is not None:
                 raise ValueError(
-                    "A seir modifiers scenario was provided to `ModelInfo` but there is no `seir_modifiers` sections in config."
+                    "A seir modifiers scenario was provided to `ModelInfo` but there is no `seir_modifiers` section in the config."
                 )
             else:
                 logging.info("Running `ModelInfo` with seir but without SEIR Modifiers")
 
         elif self.seir_modifiers_scenario is not None:
             raise ValueError(
-                "A seir modifiers scenario was provided to `ModelInfo` but there is no `seir_modifiers` sections in config."
+                "A seir modifiers scenario was provided to `ModelInfo` but there is no `seir_modifiers` section in the config."
             )
         else:
             logging.critical("Running ModelInfo without SEIR")
@@ -201,7 +200,7 @@ class ModelInfo:
                     self.outcome_modifiers_library = config["outcome_modifiers"][
                         "modifiers"
                     ].get()
-                    raise ValueError(
+                    raise NotImplementedError(
                         "This feature has not been implemented yet."
                     )  # TODO create a Stacked from all
 
@@ -209,7 +208,7 @@ class ModelInfo:
             elif self.outcome_modifiers_scenario is not None:
                 if config["outcome_modifiers"].exists():
                     raise ValueError(
-                        "An outcome modifiers scenario was provided to `ModelInfo` but there is no `outcome_modifiers` sections in config."
+                        "An outcome modifiers scenario was provided to `ModelInfo` but there is no `outcome_modifiers` section in the config."
                     )
                 else:
                     self.outcome_modifiers_scenario = None
@@ -219,10 +218,10 @@ class ModelInfo:
                 )
         elif self.outcome_modifiers_scenario is not None:
             raise ValueError(
-                "An outcome modifiers scenario was provided to `ModelInfo` but there is no `outcome_modifiers` sections in config."
+                "An outcome modifiers scenario was provided to `ModelInfo` but there is no `outcome_modifiers` section in the config."
             )
         else:
-            logging.info("Running `ModelInfo` without Outcomes")
+            logging.info("Running `ModelInfo` without outcomes.")
 
         # 6. Inputs and outputs
         if in_run_id is None:

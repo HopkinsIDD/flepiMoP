@@ -184,9 +184,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
 
                 else:
                     raise ValueError(
-                        f"Unable to read outcome '{new_comp}': "
-                        f"expected a string or dictionary containing `incidence` or `prevalence`. "
-                        f"Recieved: '{src_name}'."
+                        f"Expected a `str` or `dict` containing `incidence` or `prevalence`. "
+                        f"Instead given '{src_name}' for outcome '{new_comp}'."
                     )
 
                 parameters[new_comp]["probability"] = outcomes_config[new_comp][
@@ -671,7 +670,7 @@ def multishiftee(arr, shifts, stoch_delay_flag=True):
     result = np.zeros_like(arr)
 
     if stoch_delay_flag:
-        raise ValueError("`stoch_delay_flag` not supported yet.")
+        raise NotImplementedError("`stoch_delay_flag` not supported yet.")
         # for i, row in reversed(enumerate(np.rows(arr))):
         #    for j,elem in reversed(enumerate(row)):
         ## This function takes in :
@@ -697,7 +696,7 @@ def multishift(arr, shifts, stoch_delay_flag=True):
     result = np.zeros_like(arr)
 
     if stoch_delay_flag:
-        raise ValueError("`stoch_delay_flag` not supported yet.")
+        raise NotImplementedError("`stoch_delay_flag` not supported yet.")
         # for i, row in reversed(enumerate(np.rows(arr))):
         #    for j,elem in reversed(enumerate(row)):
         ## This function takes in :
