@@ -6,6 +6,7 @@ import pandas as pd
 from . import helpers
 from .base import NPIBase
 
+
 class MultiPeriodModifier(NPIBase):
     def __init__(
         self,

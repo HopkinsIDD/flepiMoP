@@ -63,7 +63,8 @@ class StackedModifier(NPIBase):
 
             sub_npi = NPIBase.execute(
                 npi_config=scenario_npi_config,
-                modinf_ti=modinf_ti, modinf_tf=modinf_tf,
+                modinf_ti=modinf_ti,
+                modinf_tf=modinf_tf,
                 modifiers_library=modifiers_library,
                 subpops=subpops,
                 loaded_df=loaded_df,
