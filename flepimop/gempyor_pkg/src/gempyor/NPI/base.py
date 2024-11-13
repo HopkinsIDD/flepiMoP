@@ -37,7 +37,8 @@ class NPIBase(abc.ABC):
     ):
         """
         npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI
-        modinf: the ModelInfo class, to inform ti and tf
+        modinf_ti: the initial time from a ModelInfo object,
+        modinf_tf: the final time from a ModelInfo object
         modifiers_library: a config bit that contains the other modifiers that could be called by this Modifier. Note
             that the confuse library's config resolution mechanism makes slicing the configuration object expensive;
             instead give the preloaded settings from .get()
