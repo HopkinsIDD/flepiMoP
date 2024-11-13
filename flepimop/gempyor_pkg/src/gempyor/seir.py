@@ -150,8 +150,7 @@ def steps_SEIR(
     elif integration_method == "rk4.jit":
         if modinf.stoch_traj_flag == True:
             raise ValueError(
-                f"With method '{integration_method}', only deterministic "
-                f"integration is possible (received `stoch_straj_flag` = '{modinf.stoch_traj_flag}')."
+                f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
