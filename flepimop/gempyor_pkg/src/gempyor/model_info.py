@@ -19,7 +19,7 @@ class TimeSetup:
         self.tf = config["end_date"].as_date()
         if self.tf <= self.ti:
             raise ValueError(
-                f"Time to finish ('{self.tf}') is less than or equal to ('{self.ti}')."
+                f"Time to finish ('{self.tf}') is less than or equal to time to start ('{self.ti}')."
             )
         self.n_days = (self.tf - self.ti).days + 1
         self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
