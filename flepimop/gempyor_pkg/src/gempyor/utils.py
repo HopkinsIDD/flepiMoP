@@ -18,7 +18,7 @@ import scipy.ndimage
 import scipy.stats
 import sympy.parsing.sympy_parser
 
-from gempyor import file_paths
+from . import file_paths
 
 
 logger = logging.getLogger(__name__)
@@ -141,7 +141,7 @@ def command_safe_run(
     return sr.returncode, stdout, stderr
 
 
-def add_method(cls):
+def add_method(cls: Any):
     """
     A function which adds a function to a class.
 
@@ -269,7 +269,7 @@ def profile(
     return inner
 
 
-def as_list(thing: any) -> list[any]:
+def as_list(thing: Any) -> list[Any]:
     """
     Returns argument passed as a list.
 
@@ -864,13 +864,13 @@ def get_filetype_for_resume(
 
 
 def create_resume_file_names_map(
-    resume_discard_seeding,
-    flepi_block_index,
-    resume_run_index,
-    flepi_prefix,
-    flepi_slot_index,
-    flepi_run_index,
-    last_job_output,
+    resume_discard_seeding: str,
+    flepi_block_index: str,
+    resume_run_index: str,
+    flepi_prefix: str,
+    flepi_slot_index: str,
+    flepi_run_index: str,
+    last_job_output: str,
 ) -> dict[str, str]:
     """
     Generates a mapping of input file names to output file names for a resume process based on

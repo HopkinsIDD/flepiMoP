@@ -1,22 +1,24 @@
 import itertools
-import time, random
+import logging
+import time
+
 from numba import jit
-import xarray as xr
 import numpy as np
 import pandas as pd
-import tqdm.contrib.concurrent
-from .utils import config, Timer, read_df
 import pyarrow as pa
-import pandas as pd
+import tqdm.contrib.concurrent
+import xarray as xr
+
+from .utils import config, Timer, read_df
 from . import NPI, model_info
 
-
-import logging
 
 logger = logging.getLogger(__name__)
 
 
-def run_parallel_outcomes(modinf, *, sim_id2write, nslots=1, n_jobs=1):
+def run_parallel_outcomes(
+    modinf: model_info.ModelInfo, *, sim_id2write, nslots=1, n_jobs=1
+):
     start = time.monotonic()
 
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
@@ -300,7 +302,9 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
     return parameters
 
 
-def postprocess_and_write(sim_id, modinf, outcomes_df, hpar, npi, write=True):
+def postprocess_and_write(
+    sim_id, modinf: model_info.ModelInfo, outcomes_df, hpar, npi, write=True
+):
     if write:
         modinf.write_simID(ftype="hosp", sim_id=sim_id, df=outcomes_df)
         modinf.write_simID(ftype="hpar", sim_id=sim_id, df=hpar)
@@ -337,7 +341,7 @@ def dataframe_from_array(data, subpops, dates, comp_name):
     return df
 
 
-def read_seir_sim(modinf, sim_id):
+def read_seir_sim(modinf: model_info.ModelInfo, sim_id):
     seir_df = modinf.read_simID(ftype="seir", sim_id=sim_id)
 
     return seir_df
@@ -345,7 +349,7 @@ def read_seir_sim(modinf, sim_id):
 
 def compute_all_multioutcomes(
     *,
-    modinf,
+    modinf: model_info.ModelInfo,
     sim_id2write,
     parameters,
     loaded_values=None,

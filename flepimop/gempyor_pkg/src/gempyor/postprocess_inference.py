@@ -1,39 +1,10 @@
-import gempyor
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from pathlib import Path
-import copy
-
-# import seaborn as sns
-import matplotlib._color_data as mcd
-import pyarrow.parquet as pq
-import subprocess
-import dask.dataframe as dd
-import matplotlib.dates as mdates
-import matplotlib.cbook as cbook
 from matplotlib.backends.backend_pdf import PdfPages
-from gempyor.utils import config, as_list
-import os
-import multiprocessing as mp
-import pandas as pd
-import pyarrow.parquet as pq
-import xarray as xr
-from gempyor import (
-    config,
-    model_info,
-    outcomes,
-    seir,
-    inference_parameter,
-    logloss,
-    inference,
-)
-from gempyor.inference import GempyorInference
-import tqdm
-import os
-from multiprocessing import cpu_count
+import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
+import tqdm
+
+from .model_info import ModelInfo
 
 
 def find_walkers_to_sample(inferpar, sampler_output, nsamples, nwalker, nthin):
@@ -145,7 +116,7 @@ def plot_chains(
             plt.close(fig)
 
 
-def plot_fit(modinf, loss):
+def plot_fit(modinf: ModelInfo, loss):
     subpop_names = modinf.subpop_struct.subpop_names
     fig, axes = plt.subplots(
         len(subpop_names),

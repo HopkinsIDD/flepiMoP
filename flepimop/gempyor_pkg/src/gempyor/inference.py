@@ -9,53 +9,29 @@
 # function terminated successfully
 
 
-from . import seir, model_info
-from . import outcomes, file_paths
-from .utils import config, Timer, read_df, as_list
-import numpy as np
 from concurrent.futures import ProcessPoolExecutor
-
-# Logger configuration
+import copy
 import logging
-import os
 import multiprocessing as mp
+import os
+
+import numba as nb
+import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
-import numba as nb
+
+from . import seir, model_info
+from . import outcomes, file_paths
+from .utils import config, Timer, read_df, as_list
 
 
 logging.basicConfig(level=os.environ.get("FLEPI_LOGLEVEL", "INFO").upper())
 logger = logging.getLogger()
 handler = logging.StreamHandler()
-# '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
-formatter = logging.Formatter(
-    " %(name)s :: %(levelname)-8s :: %(message)s"
-    # "%(asctime)s [%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
-)
-
+formatter = logging.Formatter(" %(name)s :: %(levelname)-8s :: %(message)s")
 handler.setFormatter(formatter)
-# logger.addHandler(handler)
 
-from . import seir, model_info
-from . import outcomes
-from .utils import config, Timer, read_df
-import numpy as np
-from concurrent.futures import ProcessPoolExecutor
-
-# Logger configuration
-import logging
-import os
-import multiprocessing as mp
-import pandas as pd
-import pyarrow.parquet as pq
-import xarray as xr
-import numba as nb
-import copy
-import matplotlib.pyplot as plt
-import seaborn as sns
-import confuse
-from . import inference_parameter, logloss, statistics
 
 # TODO: should be able to draw e.g from an initial condition folder buuut keep the draw as a blob
 # so it is saved by emcee, so I can build a posterio
@@ -66,7 +42,7 @@ def simulation_atomic(
     *,
     snpi_df_in,
     hnpi_df_in,
-    modinf,
+    modinf: model_info.ModelInfo,
     p_draw,
     unique_strings,
     transition_array,
@@ -147,7 +123,7 @@ def simulation_atomic(
     return outcomes_df
 
 
-def get_static_arguments(modinf):
+def get_static_arguments(modinf: model_info.ModelInfo):
     """
     Get the static arguments for the log likelihood function, these are the same for all walkers
     """
