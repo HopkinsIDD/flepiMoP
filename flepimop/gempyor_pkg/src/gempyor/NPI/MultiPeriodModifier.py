@@ -1,17 +1,18 @@
+import datetime
+
 import numpy as np
 import pandas as pd
 
 from . import helpers
 from .base import NPIBase
-from ..model_info import ModelInfo
-
 
 class MultiPeriodModifier(NPIBase):
     def __init__(
         self,
         *,
         npi_config,
-        modinf: ModelInfo,
+        modinf_ti: datetime.date,
+        modinf_tf: datetime.date,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -29,8 +30,8 @@ class MultiPeriodModifier(NPIBase):
         )
 
         self.sanitize = sanitize
-        self.start_date = modinf.ti
-        self.end_date = modinf.tf
+        self.start_date = modinf_ti
+        self.end_date = modinf_tf
 
         self.subpops = subpops
 

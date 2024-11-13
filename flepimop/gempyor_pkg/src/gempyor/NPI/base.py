@@ -1,7 +1,5 @@
 import abc
-
-from ..model_info import ModelInfo
-
+import datetime
 
 class NPIBase(abc.ABC):
     __plugins__ = {}
@@ -28,7 +26,8 @@ class NPIBase(abc.ABC):
     def execute(
         *,
         npi_config,
-        modinf: ModelInfo,
+        modinf_ti: datetime.date,
+        modinf_tf: datetime.date,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -46,7 +45,8 @@ class NPIBase(abc.ABC):
         npi_class = NPIBase.__plugins__[method]
         return npi_class(
             npi_config=npi_config,
-            modinf=modinf,
+            modinf_ti=modinf_ti,
+            modinf_tf=modinf_tf,
             modifiers_library=modifiers_library,
             subpops=subpops,
             loaded_df=loaded_df,
