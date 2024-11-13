@@ -1,6 +1,7 @@
 import abc
 import datetime
 
+
 class NPIBase(abc.ABC):
     __plugins__ = {}
 

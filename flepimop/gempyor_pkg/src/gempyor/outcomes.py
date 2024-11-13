@@ -75,7 +75,8 @@ def build_outcome_modifiers(
 
         npi = NPI.NPIBase.execute(
             npi_config=modinf.npi_config_outcomes,
-            modinf_ti=modinf.ti, modinf_tf=modinf.tf,
+            modinf_ti=modinf.ti,
+            modinf_tf=modinf.tf,
             modifiers_library=modinf.outcome_modifiers_library,
             subpops=modinf.subpop_struct.subpop_names,
             loaded_df=loaded_df,

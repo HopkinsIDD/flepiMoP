@@ -237,13 +237,12 @@ def build_npi_SEIR(
 
         npi = NPI.NPIBase.execute(
             npi_config=modinf.npi_config_seir,
-            modinf_ti=modinf.ti, modinf_tf=modinf.tf,
+            modinf_ti=modinf.ti,
+            modinf_tf=modinf.tf,
             modifiers_library=modinf.seir_modifiers_library,
             subpops=modinf.subpop_struct.subpop_names,
             loaded_df=loaded_df,
-            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
-                "sum"
-            ],
+            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
             pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
                 "reduction_product"
             ],
