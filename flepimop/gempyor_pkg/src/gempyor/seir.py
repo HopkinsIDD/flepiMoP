@@ -32,7 +32,7 @@ def build_step_source_arg(
                 integration_method = "rk4.jit"
             if integration_method not in ["rk4.jit", "legacy"]:
                 raise ValueError(
-                    f"Unknown integration method [received: '{integration_method}']."
+                    f"Unknown integration method given, '{integration_method}'."
                 )
         if "dt" in modinf.seir_config["integration"].keys():
             dt = float(
@@ -188,7 +188,7 @@ def steps_SEIR(
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
             raise ValueError(
-                f"Unknown integration method [received '{integration_method}']."
+                f"Unknown integration method given, '{integration_method}'."
             )
 
     # We return an xarray instead of a ndarray now

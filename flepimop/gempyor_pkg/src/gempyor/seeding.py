@@ -134,7 +134,7 @@ class Seeding(SimulationComponent):
             seeding = pd.DataFrame(columns=["date", "subpop"])
             return _DataFrame2NumbaDict(df=seeding, amounts=[], modinf=modinf)
         else:
-            raise ValueError(f"Unknown seeding method [received: '{method}'].")
+            raise ValueError(f"Unknown seeding method given, '{method}'.")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
         # print(seeding.shape)
@@ -159,7 +159,7 @@ class Seeding(SimulationComponent):
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
         else:
-            raise ValueError(f"Unknown seeding method [received: '{method}'].")
+            raise ValueError(f"Unknown seeding method given, '{method}'.")
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, modinf=modinf)
 
