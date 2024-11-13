@@ -1,5 +1,6 @@
 import abc
-import pyarrow as pa
+
+from ..model_info import ModelInfo
 
 
 class NPIBase(abc.ABC):
@@ -27,7 +28,7 @@ class NPIBase(abc.ABC):
     def execute(
         *,
         npi_config,
-        modinf,
+        modinf: ModelInfo,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -36,7 +37,7 @@ class NPIBase(abc.ABC):
     ):
         """
         npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI
-        modinf: the ModelInfor class, to inform ti and tf
+        modinf: the ModelInfo class, to inform ti and tf
         modifiers_library: a config bit that contains the other modifiers that could be called by this Modifier. Note
             that the confuse library's config resolution mechanism makes slicing the configuration object expensive;
             instead give the preloaded settings from .get()

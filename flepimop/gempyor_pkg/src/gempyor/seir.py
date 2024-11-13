@@ -1,20 +1,23 @@
 import itertools
+import logging
 import time
+
 import numpy as np
 import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
 import xarray as xr
 
-from . import NPI, model_info, steps_rk4
-from .utils import Timer, print_disk_diagnosis, read_df
-import logging
+from . import NPI, steps_rk4
+from .model_info import ModelInfo
+from .utils import Timer, read_df
+
 
 logger = logging.getLogger(__name__)
 
 
 def build_step_source_arg(
-    modinf,
+    modinf: ModelInfo,
     parsed_parameters,
     transition_array,
     proportion_array,
@@ -118,7 +121,7 @@ def build_step_source_arg(
 
 
 def steps_SEIR(
-    modinf,
+    modinf: ModelInfo,
     parsed_parameters,
     transition_array,
     proportion_array,
@@ -215,7 +218,14 @@ def steps_SEIR(
     return states
 
 
-def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
+def build_npi_SEIR(
+    modinf: ModelInfo,
+    load_ID,
+    sim_id2load,
+    config,
+    bypass_DF=None,
+    bypass_FN=None,
+):
     with Timer("SEIR.NPI"):
         loaded_df = None
         if bypass_DF is not None:
@@ -257,7 +267,7 @@ def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_
 
 def onerun_SEIR(
     sim_id2write: int,
-    modinf: model_info.ModelInfo,
+    modinf: ModelInfo,
     load_ID: bool = False,
     sim_id2load: int = None,
     config=None,
@@ -335,7 +345,7 @@ def onerun_SEIR(
     return out_df
 
 
-def run_parallel_SEIR(modinf, config, *, n_jobs=1):
+def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
 
@@ -364,7 +374,7 @@ def run_parallel_SEIR(modinf, config, *, n_jobs=1):
     )
 
 
-def states2Df(modinf, states):
+def states2Df(modinf: ModelInfo, states):
     # Tidyup data for  R, to save it:
     #
     # Write output to .snpi.*, .spar.*, and .seir.* files
@@ -428,7 +438,7 @@ def states2Df(modinf, states):
     return out_df
 
 
-def write_spar_snpi(sim_id, modinf, p_draw, npi):
+def write_spar_snpi(sim_id: int, modinf: ModelInfo, p_draw, npi):
     # NPIs
     if npi is not None:
         modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
@@ -438,7 +448,7 @@ def write_spar_snpi(sim_id, modinf, p_draw, npi):
     )
 
 
-def write_seir(sim_id, modinf, states):
+def write_seir(sim_id, modinf: ModelInfo, states):
     # print_disk_diagnosis()
     out_df = states2Df(modinf, states)
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)

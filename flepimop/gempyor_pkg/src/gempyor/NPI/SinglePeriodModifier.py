@@ -1,8 +1,9 @@
-import pandas as pd
 import numpy as np
-from . import helpers
+import pandas as pd
 
+from . import helpers
 from .base import NPIBase
+from ..model_info import ModelInfo
 
 
 class SinglePeriodModifier(NPIBase):
@@ -10,7 +11,7 @@ class SinglePeriodModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf,
+        modinf: ModelInfo,
         modifiers_library,
         subpops,
         loaded_df=None,

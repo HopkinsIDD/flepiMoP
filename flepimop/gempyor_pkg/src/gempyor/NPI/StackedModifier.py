@@ -1,11 +1,13 @@
 import collections
+import os
 import warnings
 
 import confuse
 import pandas as pd
-import os
 
 from .base import NPIBase
+from ..model_info import ModelInfo
+
 
 debug_print = False
 
@@ -19,7 +21,7 @@ class StackedModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf,
+        modinf: ModelInfo,
         modifiers_library,
         subpops,
         loaded_df=None,

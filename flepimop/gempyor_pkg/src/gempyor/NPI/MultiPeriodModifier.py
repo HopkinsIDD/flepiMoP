@@ -1,7 +1,9 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from . import helpers
 from .base import NPIBase
+from ..model_info import ModelInfo
 
 
 class MultiPeriodModifier(NPIBase):
@@ -9,7 +11,7 @@ class MultiPeriodModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf,
+        modinf: ModelInfo,
         modifiers_library,
         subpops,
         loaded_df=None,
