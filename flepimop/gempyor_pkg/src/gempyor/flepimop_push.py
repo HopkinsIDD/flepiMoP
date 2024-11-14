@@ -1,7 +1,7 @@
 import os
 import click
 import shutil
-from gempyor.file_paths import create_file_name_for_push
+from .file_paths import create_file_name_for_push
 
 
 @click.command()
@@ -158,7 +158,3 @@ def flepimop_push(
     # Success message if no failures
     if not failed_s3_uploads and not failed_fs_copies:
         print("flepimop-push successfully pushed all existing files.")
-
-
-if __name__ == "__main__":
-    flepimop_push()
