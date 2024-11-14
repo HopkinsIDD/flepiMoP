@@ -816,6 +816,7 @@ def _submit_scenario_job(
             options["mail-type"] = "BEGIN,END"
             options["mail-user"] = kwargs["email"]
         if inference_method is None:
+            options["nodes"] = "1"
             options["array"] = f"1-{job_size.jobs}"
         _sbatch_template(
             "inference_slurm.sbatch.j2",
