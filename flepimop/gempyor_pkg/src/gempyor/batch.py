@@ -27,7 +27,7 @@ import click
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .file_paths import run_id
-from .info import Cluster, get_cluster_info
+from .info import get_cluster_info
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
 from .shared_cli import (
@@ -764,6 +764,9 @@ def _submit_scenario_job(
         "job_name": job_name,
         "jobs": job_size.jobs,
         "outcome_modifiers_scenario": outcome_modifiers_scenario,
+        "nsamples": (
+            job_size.simulations if kwargs["samples"] is None else kwargs["samples"]
+        ),
         "nslots": job_size.simulations,  # aka nwalkers
         "prefix": prefix,
         "project_path": kwargs["project_path"].absolute(),
@@ -843,6 +846,12 @@ def _submit_scenario_job(
             default=None,
             type=click.IntRange(min=1),
             help="The number of sequential blocks to run per a job.",
+        ),
+        click.Option(
+            param_decls=["--samples", "samples"],
+            default=None,
+            type=click.IntRange(min=1),
+            help="The number of samples to produce. Defaults to all samples.",
         ),
         click.Option(
             param_decls=["--batch-system", "batch_system"],
