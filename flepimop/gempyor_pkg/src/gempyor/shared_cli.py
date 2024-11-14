@@ -199,6 +199,53 @@ DURATION = DurationParamType(nonnegative=False)
 NONNEGATIVE_DURATION = DurationParamType(nonnegative=True)
 
 
+class MemoryParamType(click.ParamType):
+    name = "memory"
+    _units = {
+        "kb": 1024.0**1.0,
+        "k": 1024.0**1.0,
+        "mb": 1024.0**2.0,
+        "m": 1024.0**2.0,
+        "gb": 1024.0**3.0,
+        "g": 1024.0**3.0,
+        "t": 1024.0**4.0,
+        "tb": 1024.0**4.0,
+    }
+
+    def __init__(self, unit: str) -> None:
+        super().__init__()
+        if (unit := unit.lower()) not in self._units.keys():
+            raise ValueError(
+                f"The `unit` given is not valid, given '{unit}' and "
+                "must be one of: {', '.join(self._units.keys())}."
+            )
+        self._unit = unit
+        self._regex = re.compile(
+            rf"^(([0-9]+)?(\.[0-9]+)?)({'|'.join(self._units.keys())})?$",
+            flags=re.IGNORECASE,
+        )
+
+    def convert(
+        self, value: Any, param: click.Parameter | None, ctx: click.Context | None
+    ) -> float:
+        value = str(value).strip()
+        if (m := self._regex.match(value)) is None:
+            self.fail(f"{value!r} is not a valid memory size.", param, ctx)
+        number, _, _, unit = m.groups()
+        unit = unit.lower()
+        if unit == self._unit:
+            return float(number)
+        return (self._units.get(unit, self._unit) * float(number)) / (
+            self._units.get(self._unit)
+        )
+
+
+MEMORY_KB = MemoryParamType("kb")
+MEMORY_MB = MemoryParamType("mb")
+MEMORY_GB = MemoryParamType("gb")
+MEMORY_TB = MemoryParamType("tb")
+
+
 def click_helpstring(
     params: click.Parameter | list[click.Parameter],
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
