@@ -786,8 +786,6 @@ def _submit_scenario_job(
         )
     elif batch_system == BatchSystem.SLURM:
         # Cluster info
-        if kwargs["cluster"] is None:
-            raise ValueError("When submitting a batch job to slurm a cluster is required.")
         cluster = get_cluster_info(kwargs["cluster"])
         if verbosity is not None:
             logger.info(

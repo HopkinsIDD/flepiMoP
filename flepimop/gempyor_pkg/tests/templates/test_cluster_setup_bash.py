@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import pytest
@@ -6,15 +7,13 @@ from gempyor._jinja import _render_template
 from gempyor.info import Cluster, Module, PathExport, get_cluster_info
 
 
-@pytest.mark.parametrize(
-    "cluster",
-    (
-        None,
-        get_cluster_info("longleaf").model_dump(),
-        get_cluster_info("rockfish").model_dump(),
-    ),
+@pytest.mark.parametrize("cluster", (None, "longleaf", "rockfish"))
+@pytest.mark.skipif(
+    os.getenv("FLEPI_PATH") is None,
+    reason="The $FLEPI_PATH environment variable is not set.",
 )
-def test_output_validation(cluster: dict[str, Any]) -> None:
+def test_output_validation(cluster: str | None) -> None:
+    cluster = cluster if cluster is None else get_cluster_info(cluster).model_dump()
     rendered_template = _render_template("cluster_setup.bash.j2", {"cluster": cluster})
     lines = rendered_template.split("\n")
     assert "module purge" in lines

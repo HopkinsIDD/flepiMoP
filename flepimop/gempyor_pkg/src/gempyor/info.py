@@ -3,7 +3,9 @@ __all__ = ["Cluster", "Module", "PathExport", "get_cluster_info"]
 
 import os
 from pathlib import Path
-from typing import TypeVar
+import re
+from socket import getfqdn
+from typing import Pattern, TypeVar
 
 from pydantic import BaseModel
 import yaml
@@ -27,6 +29,12 @@ class Cluster(BaseModel):
 
 
 T = TypeVar("T", bound=BaseModel)
+
+
+_CLUSTER_FQDN_REGEXES: tuple[tuple[str, Pattern], ...] = (
+    ("longleaf", re.compile(r"^longleaf\-login[0-9]+\.its\.unc\.edu$")),
+    ("rockfish", re.compile(r"^login[0-9]+\.cm\.cluster$")),
+)
 
 
 def _get_info(
@@ -61,17 +69,35 @@ def _get_info(
     return model.model_validate(yaml.safe_load(info.read_text()))
 
 
-def get_cluster_info(name: str, flepi_path: os.PathLike | None = None) -> Cluster:
+def get_cluster_info(name: str | None, flepi_path: os.PathLike | None = None) -> Cluster:
     """
     Get cluster specific info.
 
     Args:
         name: The name of the cluster to pull information for. Currently only 'longleaf'
-            and 'rockfish' are supported.
+            and 'rockfish' are supported or `None` to infer from the FQDN.
         flepi_path: Either a path like determine the directory to look for the info
             directory in or `None` to use the `FLEPI_PATH` environment variable.
 
     Returns
         An object containing the information about the `name` cluster.
     """
+    name = _infer_cluster_from_fqdn() if name is None else name
     return _get_info("cluster", name, Cluster, flepi_path)
+
+
+def _infer_cluster_from_fqdn() -> str:
+    """
+    Infer the cluster name from the FQDN.
+
+    Returns:
+        The name of the cluster inferred from the FQDN.
+
+    Raises:
+        ValueError: If the value of `socket.getfqdn()` does not match an expected regex.
+    """
+    fqdn = getfqdn()
+    for cluster, regex in _CLUSTER_FQDN_REGEXES:
+        if regex.match(fqdn):
+            return cluster
+    raise ValueError(f"The fqdn, '{fqdn}', does not match any of the expected clusters.")
