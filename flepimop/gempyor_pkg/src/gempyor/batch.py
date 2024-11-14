@@ -31,6 +31,7 @@ from .info import get_cluster_info
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
 from .shared_cli import (
+    MEMORY_MB,
     NONNEGATIVE_DURATION,
     cli,
     config_files_argument,
@@ -970,7 +971,7 @@ def _submit_scenario_job(
         ),
         click.Option(
             param_decls=["--memory", "memory"],
-            type=click.IntRange(min=1),
+            type=MEMORY_MB,
             default=None,
             help="Override for the amount of memory per node to use in MB.",
         ),
@@ -1129,12 +1130,19 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
     logger.info("Setting a total job time limit of %s minutes", job_time_limit.format())
 
     # Job resources
+    memory = None if kwargs["memory"] is None else math.ceil(kwargs["memory"])
+    if memory != kwargs["memory"]:
+        logger.warning(
+            "The requested memory of %.3fMB has been rounded up to %uMB for submission",
+            kwargs["memory"],
+            memory,
+        )
     job_resources = JobResources.from_presets(
         job_size,
         inference_method,
         nodes=kwargs["nodes"],
         cpus=kwargs["cpus"],
-        memory=kwargs["memory"],
+        memory=memory,
     )
     logger.info("Requesting the resources %s for this job.", job_resources)
 
