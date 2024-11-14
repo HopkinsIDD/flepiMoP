@@ -201,20 +201,17 @@ def create_file_name_for_push(
     Args:
         flepi_run_index :
             The index of the run. This is used to uniquely identify the run.
-        
         prefix :
             A prefix string to be included in the file names. This is typically used to categorize or 
             identify the files.
-        
         flepi_slot_index :
             The slot index used in the filename. This is formatted as a zero-padded nine-digit number.
-        
         flepi_block_index :
             The block index used in the filename. This typically indicates a specific block or segment 
             of the data being processed.
 
     Returns:
-        list[str]
+        list
             A list of generated file names, each corresponding to a different type of inference result. 
             The file names include the provided prefix, run index, slot index, block index, type, and 
             the appropriate file extension (either "csv" or "parquet").
