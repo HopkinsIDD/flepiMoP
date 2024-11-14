@@ -1002,7 +1002,63 @@ def _submit_scenario_job(
 )
 @click.pass_context
 def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
-    """Submit batch jobs"""
+    """
+    Submit batch inference jobs.
+
+    This CLI tool makes it a breeze to submit batch inference jobs. In general, this
+    tool does:
+
+    1. Determine information about the job such as the inference method, batch system,
+        job size/time limit, and resources.
+    2. Write metadata about the batch job to a 'manifest.json' file.
+    3. Loop over the outcome/seir scenario modifiers and generate/submit batch jobs for
+        each of those.
+    4. Checkout a new branch in the project directory to preserve the outputs.
+
+    To get a better understanding of this tool you can use the `--dry-run` flag which
+    will complete all of steps described above except for submitting the jobs. Or if you
+    would like to test run the batch scripts without submitting to slurm or AWS you can
+    use the `--local` flag which will run the "batch" job locally (only use for small
+    test jobs).
+
+    Here are some common examples to get started:
+
+    1. Assuming you are in your clone of the `HopkinsIDD/flepimop_sample` repository
+    this command will do a dry run of the sample inference configuration with two
+    populations.
+
+    \b
+    ```bash
+    $ flepimop submit --jobs 4 \ # With legacy inference jobs refers to chains
+        --simulations 20 \       # The number of iterations per a chain
+        --blocks 1 \             # The number of consecutive blocks to run
+        --slurm \                # Use slurm, shorthand for `--batch-system slurm`
+        --project-path $(pwd) \  # Manually specify the project path
+        --email me@college.edu \ # Use slurm's built-in email alerts for the job
+        --skip-checkout \        # Do not create a new branch in the project repo
+        -vvv \                   # Use the max verbosity
+        --dry-run \              # Do not actually submit the job via `sbatch`.
+        config_sample_2pop_inference.yml
+    ```
+
+    2. Extending on example (1) let's make some small modifications to submit a "real"
+    job.
+
+    \b
+    ```bash
+    $ flepimop submit --jobs 10 \               # See before
+        --simulations 400 \                     # See before
+        --blocks 1 \                            # See before
+        --slurm \                               # See before
+        --partition dedicated_slurm_partition \ # Submit to a particular slurm partition
+        --simulation-time 30s \                 # Specify the time limit per simulation
+        --initial-time 5min \                   # Specify the initial time limit
+        --conda-env custom-flepimop-env \       # Specify a custom conda env to use
+        --cpus 4 \                              # Use 4 CPUs per a job
+        -vvv \                                  # Use the max verbosity
+        config_sample_2pop_inference.yml
+    ```
+    """
     # Generic setup
     now = datetime.now(timezone.utc)
     logger = get_script_logger(__name__, kwargs["verbosity"])
@@ -1082,19 +1138,6 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
     )
     logger.info("Requesting the resources %s for this job.", job_resources)
 
-    # Outcome/seir modifier scenarios
-    outcome_modifiers_scenarios = (
-        cfg["outcome_modifiers"]["scenarios"].as_str_seq()
-        if cfg["outcome_modifiers"].exists()
-        and cfg["outcome_modifiers"]["scenarios"].exists()
-        else [None]
-    )
-    seir_modifiers_scenarios = (
-        cfg["seir_modifiers"]["scenarios"].as_str_seq()
-        if cfg["seir_modifiers"].exists() and cfg["seir_modifiers"]["scenarios"].exists()
-        else [None]
-    )
-
     # Restart/continuation location
     # TODO: Implement this
 
@@ -1117,6 +1160,19 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
         f.write(cfg.dump())
     logger.info(
         "Dumped the final config for this batch submission to %s", config_out.absolute()
+    )
+
+    # Outcome/seir modifier scenarios
+    outcome_modifiers_scenarios = (
+        cfg["outcome_modifiers"]["scenarios"].as_str_seq()
+        if cfg["outcome_modifiers"].exists()
+        and cfg["outcome_modifiers"]["scenarios"].exists()
+        else [None]
+    )
+    seir_modifiers_scenarios = (
+        cfg["seir_modifiers"]["scenarios"].as_str_seq()
+        if cfg["seir_modifiers"].exists() and cfg["seir_modifiers"]["scenarios"].exists()
+        else [None]
     )
 
     # Loop over the scenarios
