@@ -81,10 +81,7 @@ python script_name.py --resume_location "path/to/resume" --discard_seeding True 
 """
 import click
 import os
-import boto3
-import botocore
-from typing import Dict
-from gempyor.utils import create_resume_file_names_map, download_file_from_s3, move_file_at_local
+from .utils import create_resume_file_names_map, download_file_from_s3, move_file_at_local
 
 
 @click.command()
@@ -135,13 +132,13 @@ def fetching_resume_files(
 
 
 # Todo: Unit test
-def pull_check_for_s3(file_name_map: Dict[str, str]) -> None:
+def pull_check_for_s3(file_name_map: dict[str, str]) -> None:
     """
     Verifies the existence of specified files in an S3 bucket and checks if corresponding local files are present.
     If a file in the S3 bucket does not exist or the local file is missing, it raises appropriate errors or prints a message.
 
     Parameters:
-    file_name_map (Dict[str, str]): A dictionary where the keys are S3 URIs (Uniform Resource Identifiers) and the values are the corresponding local file paths.
+    file_name_map (dict[str, str]): A dictionary where the keys are S3 URIs (Uniform Resource Identifiers) and the values are the corresponding local file paths.
 
     Dependencies:
     - boto3: The AWS SDK for Python, used to interact with AWS services such as S3.
@@ -174,6 +171,14 @@ def pull_check_for_s3(file_name_map: Dict[str, str]) -> None:
     - Ensure that AWS credentials are configured properly for boto3 to access the S3 bucket.
     - This function assumes that the S3 URIs provided are in the format `s3://bucket-name/path/to/object`.
     """
+    try:
+        import boto3
+        from botocore.exceptions import ClientError
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError((
+            "No module named 'boto3', which is required for "
+            "gempyor.utils.download_file_from_s3. Please install the aws target."
+        ))
     s3 = boto3.client("s3")
     for s3_uri in file_name_map:
         bucket = s3_uri.split("/")[2]
@@ -190,13 +195,13 @@ def pull_check_for_s3(file_name_map: Dict[str, str]) -> None:
 
 
 # Todo: Unit Test
-def pull_check(file_name_map: Dict[str, str]) -> None:
+def pull_check(file_name_map: dict[str, str]) -> None:
     """
     Verifies the existence of specified source files and checks if corresponding destination files are present.
     If a source file does not exist or the destination file is missing, it raises appropriate errors or prints a message.
 
     Parameters:
-    file_name_map (Dict[str, str]): A dictionary where the keys are source file paths and the values are the corresponding destination file paths.
+    file_name_map (dict[str, str]): A dictionary where the keys are source file paths and the values are the corresponding destination file paths.
 
     Dependencies:
     - os: The standard library module for interacting with the operating system, used here to check for file existence.
@@ -229,7 +234,3 @@ def pull_check(file_name_map: Dict[str, str]) -> None:
                 raise FileExistsError(f"For {src_file}, it is not copied to {file_name_map[src_file]}.")
         else:
             print(f"Input {src_file} does not exist.")
-
-
-if __name__ == "__main__":
-    fetching_resume_files()
