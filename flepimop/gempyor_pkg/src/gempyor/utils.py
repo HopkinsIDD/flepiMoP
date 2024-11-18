@@ -578,7 +578,7 @@ def as_random_distribution(self):
                 sdlog=self["sdlog"].as_evaled_expression(),
             ).rvs
         else:
-            raise NotImplementedError(f"Unkown distribution [received: '{dist}'].")
+            raise NotImplementedError(f"Unknown distribution [received: '{dist}'].")
     else:
         # we allow a fixed value specified directly:
         return functools.partial(

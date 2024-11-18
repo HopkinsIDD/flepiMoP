@@ -14,7 +14,7 @@ class TestRandomDistributionSampler:
     def test_not_implemented_error_exception(self, distribution: str) -> None:
         with pytest.raises(
             NotImplementedError,
-            match=rf"^unknown distribution \[got\: {distribution}\]$",
+            match=rf"^Unknown distribution \[received.*",
         ):
             random_distribution_sampler(distribution)
 
