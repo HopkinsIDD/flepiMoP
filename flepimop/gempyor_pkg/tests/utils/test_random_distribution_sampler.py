@@ -22,7 +22,7 @@ class TestRandomDistributionSampler:
     def test_binomial_p_value_error(self, p: float) -> None:
         with pytest.raises(
             ValueError,
-            match=r"^Invalid\s`p-value`.*\s'is\sout\sof\srange.*'",
+            match=r"^Invalid\s`p-value`.*\sis\sout\sof\srange.*$",
         ):
             random_distribution_sampler("binomial", n=100, p=p)
 
