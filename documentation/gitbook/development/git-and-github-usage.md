@@ -5,12 +5,12 @@ We now use a modified gitflow style workflow for working with git and GitHub. Fo
 
 ## New Features
 
-New features should be developed in a new branch checked out from the `dev` branch and then merged back into the `dev` branch via a PR on GitHub when ready for review. These feature branches can be deleted after merging into `dev`, unless someone from operations requests that it be kept around. For example, operations may want to merge the feature into their operational branch to get new functionality in advance of a release. By convention feature branches should be prefixed with `feature/<GitHub issue>/`, I.e. `feature/99/cool-new-thing`.
+New features should be developed in a new branch checked out from the `dev` branch and then merged back into the `dev` branch via a PR on GitHub when ready for review. These feature branches can be deleted after merging into `dev`, unless someone from operations requests that it be kept around. For example, operations may want to merge the feature into their operational branch to get new functionality in advance of a release. By convention feature branches should be prefixed with `feature/<GitHub issue>/`, I.e. `feature/99/cool-new-thing`. Feature branch should also include edits to the GitBook documentation that describe their changes.
 
 
 ## Hot Fixes
 
-Hot fixes should be developed in a new branch checked out from the `main` branch and merged back into the `main` branch via a PR on GitHub when ready for review. After successfully merging into `main` the hot fix branch should then be merged into `dev`, making appropriate adjustments to stabilize the feature. The priority for hot fixes is to correct a major issue quickly, so it is okay to delay detailed testing/documentation until merging into `dev`. By convention hot fix branches should be prefixed with `hotfix/`, I.e. `hotfix/important-fix-to-something`, and then converted into a feature branch after merging into main.
+Hot fixes should be developed in a new branch checked out from the `main` branch and merged back into the `main` branch via a PR on GitHub when ready for review. After successfully merging into `main` the hot fix branch should then be merged into `dev`, making appropriate adjustments to stabilize the feature. The priority for hot fixes is to correct a major issue quickly, so it is okay to delay detailed testing/documentation until merging into `dev`. By convention hot fix branches should be prefixed with `hotfix/`, I.e. `hotfix/important-fix-to-something`, and then converted into a feature branch after merging into main. These do not have to include edits to the GitBook documentation, but if the hotfix conflicts with what is described in the GitBook documentation it's **strongly recommended**.
 
 
 ## Creating Releases
