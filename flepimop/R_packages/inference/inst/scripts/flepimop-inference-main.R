@@ -125,16 +125,9 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
       ground_truth_end_text <- c("--ground_truth_end", opt$ground_truth_end)
     }
 
-    log_file <- file.path(
-        "model_output",
-        config$name,
-        opt$run_id,
-        "log",
-        paste0("log_inference_slot", flepi_slot, ".txt")
+    log_file <- paste0(
+        "log_inference_slot_", config$name, "_", opt$run_id, "_", flepi_slot, ".txt"
     )
-    if (!dir.exists(dirname(log_file))) {
-      dir.create(dirname(log_file), recursive = TRUE, showWarnings = TRUE)
-    }
     command <- c(
         file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
         "-c", opt$config,
