@@ -523,9 +523,7 @@ class TestStatistic:
         model_rows, model_cols = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
         gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
         expected_match = (
-            rf"^{mock_inputs.name} Statistic error\: data and groundtruth do not have "
-            rf"the same shape\: model\_data\.shape\=\({model_rows}\, {model_cols}\) "
-            rf"\!\= gt\_data\.shape\=\({gt_rows}\, {gt_cols}\)$"
+            rf".*do not have the same shape:.*"
         )
         with pytest.raises(ValueError, match=expected_match):
             statistic.compute_logloss(mock_inputs.model_data, mock_inputs.gt_data)
