@@ -249,7 +249,7 @@ class TestStatistic:
             if reg_name not in ["forecast", "allsubpop"]
         )
         with pytest.raises(
-            ValueError, match=rf"^Unsupported regularization\: {unsupported_name}$"
+            ValueError, match=r"^Unsupported regularization \[received:.*$"
         ):
             mock_inputs.create_statistic_instance()
 
