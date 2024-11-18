@@ -497,7 +497,7 @@ def random_distribution_sampler(
     elif distribution == "lognorm":
         # Lognormal distribution with meanlog, sdlog
         return get_log_normal(kwargs.get("meanlog"), kwargs.get("sdlog")).rvs
-    raise NotImplementedError(f"Unkown distribution [received: '{distribution}'].")
+    raise NotImplementedError(f"Unknown distribution [received: '{distribution}'].")
 
 
 @add_method(confuse.ConfigView)
