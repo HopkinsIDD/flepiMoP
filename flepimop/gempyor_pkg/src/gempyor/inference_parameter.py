@@ -37,10 +37,15 @@ class InferenceParameters:
         # identify spatial group
         affected_subpops = set(subpops)
 
-        if  parameter_config["method"].get() == "SinglePeriodModifier":
-            if parameter_config["subpop"].exists() and parameter_config["subpop"].get() != "all":
+        if parameter_config["method"].get() == "SinglePeriodModifier":
+            if (
+                parameter_config["subpop"].exists()
+                and parameter_config["subpop"].get() != "all"
+            ):
                 affected_subpops = {str(n.get()) for n in parameter_config["subpop"]}
-            spatial_groups = NPI.helpers.get_spatial_groups(parameter_config, list(affected_subpops))
+            spatial_groups = NPI.helpers.get_spatial_groups(
+                parameter_config, list(affected_subpops)
+            )
 
             # ungrouped subpop (all affected subpop by default) have one parameter per subpop
             if spatial_groups["ungrouped"]:
@@ -64,7 +69,7 @@ class InferenceParameters:
                         pdist=parameter_config["value"].as_random_distribution(),
                         lb=parameter_config["value"]["a"].get(),
                         ub=parameter_config["value"]["b"].get(),
-                )
+                    )
         elif parameter_config["method"].get() == "MultiPeriodModifier":
             affected_subpops_grp = []
             for grp_config in parameter_config["groups"]:
@@ -80,7 +85,9 @@ class InferenceParameters:
                 else:
                     affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
 
-                this_spatial_group = NPI.helpers.get_spatial_groups(grp_config, affected_subpops_grp)
+                this_spatial_group = NPI.helpers.get_spatial_groups(
+                    grp_config, affected_subpops_grp
+                )
 
                 # ungrouped subpop (all affected subpop by default) have one parameter per subpop
                 if this_spatial_group["ungrouped"]:
@@ -104,10 +111,9 @@ class InferenceParameters:
                             pdist=parameter_config["value"].as_random_distribution(),
                             lb=parameter_config["value"]["a"].get(),
                             ub=parameter_config["value"]["b"].get(),
-                    )
+                        )
         else:
             raise ValueError(f"Unknown method {parameter_config['method']}")
-
 
     def add_single_parameter(self, ptype, pname, subpop, pdist, lb, ub):
         """

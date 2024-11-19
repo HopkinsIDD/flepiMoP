@@ -239,9 +239,11 @@ class Statistic:
             The log-likelihood of observing `gt_data` from the model `model_data` as an
             xarray DataArray with a "subpop" dimension.
         """
-        
+
         dist_map = {
-            "pois": lambda ymodel, ydata: - (ymodel+1) + ydata*np.log(ymodel+1) - gammaln(ydata+1),
+            "pois": lambda ymodel, ydata: -(ymodel + 1)
+            + ydata * np.log(ymodel + 1)
+            - gammaln(ydata + 1),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # OLD: # TODO: Swap out in favor of NEW
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
@@ -249,7 +251,7 @@ class Statistic:
             ),
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
-            ), 
+            ),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov` --> `norm_heteroskedastic`; names of input `scale` --> `sd`
             "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
@@ -259,7 +261,9 @@ class Statistic:
                 x, loc=loc, scale=self.params.get("sd", sd) * loc
             ),  # scale = standard deviation
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(x, n=self.params.get("n"), p=model_data),
+            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
+                x, n=self.params.get("n"), p=model_data
+            ),
             "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
         }

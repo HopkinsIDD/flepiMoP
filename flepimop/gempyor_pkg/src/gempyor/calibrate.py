@@ -133,8 +133,6 @@ def calibrate(
     else:
         run_id = input_run_id
 
-    
-
     # Select a file name and create the backend/resume
     if resume or resume_location is not None:
         if resume_location is None:
@@ -145,14 +143,16 @@ def calibrate(
         if not os.path.exists(filename):
             print(f"File {filename} does not exist, cannot resume")
             return
-        print(f"Doing a resume from {filename}, this only work with the same number of slot/walkers and parameters right now")
+        print(
+            f"Doing a resume from {filename}, this only work with the same number of slot/walkers and parameters right now"
+        )
     else:
         filename = f"{run_id}_backend.h5"
         if os.path.exists(filename):
             if not resume:
                 print(f"File {filename} already exists, remove it or use --resume")
                 return
-    
+
     gempyor_inference = GempyorInference(
         config_filepath=config_filepath,
         run_id=run_id,
@@ -194,18 +194,28 @@ def calibrate(
         gempyor_inference.perform_test_run()
         with multiprocessing.Pool(ncpu) as pool:
             lliks = pool.starmap(
-                gempyor_inference.get_logloss_as_single_number, [(p0[0],), (p0[0],), (p0[1],),]
+                gempyor_inference.get_logloss_as_single_number,
+                [
+                    (p0[0],),
+                    (p0[0],),
+                    (p0[1],),
+                ],
             )
         if lliks[0] != lliks[1]:
-            print(f"Test run failed, logloss with the same parameters is different: {lliks[0]} != {lliks[1]} ❌")
-            print("This means that there is config variability not captured in the emcee fits")
+            print(
+                f"Test run failed, logloss with the same parameters is different: {lliks[0]} != {lliks[1]} ❌"
+            )
+            print(
+                "This means that there is config variability not captured in the emcee fits"
+            )
             return
             # TODO THIS Test in fact does nnot work.
         else:
-            print(f"Test run done, logloss with same parameters: {lliks[0]}=={lliks[1]} ✅ ")
-        #assert lliks[1] != lliks[2], "Test run failed, logloss with different parameters is the same, perturbation are not taken into account"        
-        
-        
+            print(
+                f"Test run done, logloss with same parameters: {lliks[0]}=={lliks[1]} ✅ "
+            )
+        # assert lliks[1] != lliks[2], "Test run failed, logloss with different parameters is the same, perturbation are not taken into account"
+
     # Make a plot of the runs directly from config
     n_config_samples = min(30, nwalkers // 2)
     print(f"Making {n_config_samples} simulations from config to plot")
@@ -213,26 +223,35 @@ def calibrate(
         results = pool.starmap(
             gempyor_inference.simulate_proposal, [(p0[i],) for i in range(n_config_samples)]
         )
-    gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
-                                        loss=gempyor_inference.logloss,
-                                        plot_projections=True,
-                                        list_of_df=results, save_to=f"{run_id}_config.pdf")
-
+    gempyor.postprocess_inference.plot_fit(
+        modinf=gempyor_inference.modinf,
+        loss=gempyor_inference.logloss,
+        plot_projections=True,
+        list_of_df=results,
+        save_to=f"{run_id}_config.pdf",
+    )
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    # @JOSEPH: find below a "cocktail" move proposal 
-    moves = [(emcee.moves.DEMove(live_dangerously=True), 0.5*0.5*0.5),
-             (emcee.moves.DEMove(gamma0=1.0,live_dangerously=True),0.5*0.5*0.5),
-             (emcee.moves.DESnookerMove(live_dangerously=True),0.5*0.5),                     # First three moves: DEMove --> DE is good at "optimizing". Moves based on the (really great!) discussion in https://groups.google.com/g/emcee-users/c/FCAq459Y9OE
-             (emcee.moves.StretchMove(live_dangerously=True), 0.5),    # Stretch gives good chain movement
-             #(emcee.moves.KDEMove(live_dangerously=True, bw_method='scott'), 0.25)
-             ]            # Based on personal experience with pySODM (Tijs) - KDEMove works really well but I think it's important for this one to have at least 3x more walkers than parameters.
+    # @JOSEPH: find below a "cocktail" move proposal
+    moves = [
+        (emcee.moves.DEMove(live_dangerously=True), 0.5 * 0.5 * 0.5),
+        (emcee.moves.DEMove(gamma0=1.0, live_dangerously=True), 0.5 * 0.5 * 0.5),
+        (
+            emcee.moves.DESnookerMove(live_dangerously=True),
+            0.5 * 0.5,
+        ),  # First three moves: DEMove --> DE is good at "optimizing". Moves based on the (really great!) discussion in https://groups.google.com/g/emcee-users/c/FCAq459Y9OE
+        (
+            emcee.moves.StretchMove(live_dangerously=True),
+            0.5,
+        ),  # Stretch gives good chain movement
+        # (emcee.moves.KDEMove(live_dangerously=True, bw_method='scott'), 0.25)
+    ]  # Based on personal experience with pySODM (Tijs) - KDEMove works really well but I think it's important for this one to have at least 3x more walkers than parameters.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
+    # moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
 
     gempyor_inference.set_silent(False)
-    
-    #with multiprocessing.Pool(ncpu) as pool:
+
+    # with multiprocessing.Pool(ncpu) as pool:
     #    sampler = emcee.EnsembleSampler(
     #        nwalkers,
     #        gempyor_inference.inferpar.get_dim(),
@@ -261,13 +280,19 @@ def calibrate(
                 backend=backend,
                 moves=moves,
             )
-            state = sampler.run_mcmc(start_val, nbatch, progress=True, skip_initial_state_check=True)
+            state = sampler.run_mcmc(
+                start_val, nbatch, progress=True, skip_initial_state_check=True
+            )
     print(f"Done, mean acceptance fraction: {np.mean(sampler.acceptance_fraction):.3f}")
 
     # plotting the chain
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
     gempyor.postprocess_inference.plot_chains(
-        inferpar=gempyor_inference.inferpar, chains = sampler.get_chain(), llik = sampler.get_log_prob(), sampled_slots=None, save_to=f"{run_id}_chains.pdf"
+        inferpar=gempyor_inference.inferpar,
+        chains=sampler.get_chain(),
+        llik=sampler.get_log_prob(),
+        sampled_slots=None,
+        save_to=f"{run_id}_chains.pdf",
     )
     print("EMCEE Run done, doing sampling")
 
@@ -286,19 +311,27 @@ def calibrate(
         )
 
     results = []
-    for fn in gempyor.utils.list_filenames(folder=os.path.join(project_path,"model_output/"), filters=[run_id, "hosp.parquet"]):
+    for fn in gempyor.utils.list_filenames(
+        folder=os.path.join(project_path, "model_output/"), filters=[run_id, "hosp.parquet"]
+    ):
         df = gempyor.read_df(fn)
         df = df.set_index("date")
         results.append(df)
 
-    gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
-                                           loss=gempyor_inference.logloss, 
-                                           list_of_df=results, save_to=f"{run_id}_fit.pdf")
-    
-    gempyor.postprocess_inference.plot_fit(modinf=gempyor_inference.modinf, 
-                                           loss=gempyor_inference.logloss,
-                                           plot_projections=True,
-                                           list_of_df=results, save_to=f"{run_id}_fit_w_proj.pdf")
+    gempyor.postprocess_inference.plot_fit(
+        modinf=gempyor_inference.modinf,
+        loss=gempyor_inference.logloss,
+        list_of_df=results,
+        save_to=f"{run_id}_fit.pdf",
+    )
+
+    gempyor.postprocess_inference.plot_fit(
+        modinf=gempyor_inference.modinf,
+        loss=gempyor_inference.logloss,
+        plot_projections=True,
+        list_of_df=results,
+        save_to=f"{run_id}_fit_w_proj.pdf",
+    )
 
 
 if __name__ == "__main__":

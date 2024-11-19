@@ -53,7 +53,6 @@ def simulation_atomic(
     seeding_amounts,
     outcomes_parameters,
     save=False,
-    
 ):
     # We need to reseed because subprocess inherit of the same random generator state.
     np.random.seed(int.from_bytes(os.urandom(4), byteorder="little"))
@@ -407,7 +406,6 @@ class GempyorInference:
                     subpop_struct=self.modinf.subpop_struct,
                     time_setup=self.modinf.time_setup,
                 )
-                
 
                 print("Running Gempyor Inference")
                 print(self.logloss)
@@ -424,8 +422,15 @@ class GempyorInference:
 
     def get_all_sim_arguments(self):
         # inferpar, logloss, static_sim_arguments, modinf, proposal, silent, save
-        return [self.inferpar, self.logloss, self.static_sim_arguments, self.modinf, self.silent, self.save]
-    
+        return [
+            self.inferpar,
+            self.logloss,
+            self.static_sim_arguments,
+            self.modinf,
+            self.silent,
+            self.save,
+        ]
+
     def simulate_proposal(self, proposal):
         snpi_df_mod, hnpi_df_mod = self.inferpar.inject_proposal(
             proposal=proposal,
@@ -448,7 +453,7 @@ class GempyorInference:
             if not self.silent:
                 print("OUT OF BOUND!!")
             return -np.inf, -np.inf, -np.inf
-        
+
         outcomes_df = self.simulate_proposal(proposal=proposal)
 
         ll_total, logloss, regularizations = self.logloss.compute_logloss(
