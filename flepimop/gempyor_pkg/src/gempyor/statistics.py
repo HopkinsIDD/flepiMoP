@@ -253,7 +253,8 @@ class Statistic:
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
             ),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov` --> `norm_heteroskedastic`; names of input `scale` --> `sd`
+            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
+            # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
             "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=self.params.get("sd", sd)
             ),  # scale = standard deviation

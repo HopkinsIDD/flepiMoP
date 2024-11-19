@@ -468,7 +468,7 @@ class TestStatistic:
             mock_inputs.gt_data[mock_inputs.config["data_var"]].coords
         )
         dist_name = mock_inputs.config["likelihood"]["dist"]
-        if dist_name in {"absolute_error", "rmse"}:
+        if dist_name == "absolute_error":
             # MAE produces a single repeated number
             assert np.allclose(
                 log_likelihood.values,
@@ -481,6 +481,21 @@ class TestStatistic:
                     )
                 ),
             )
+        elif dist_name == "rmse":
+            assert np.allclose(
+                log_likelihood.values,
+                -np.log(
+                    np.sqrt(
+                        np.nansum(
+                            np.power(
+                                mock_inputs.model_data[mock_inputs.config["sim_var"]]
+                                - mock_inputs.gt_data[mock_inputs.config["data_var"]],
+                                2.0,
+                            )
+                        )
+                    )
+                ),
+            )
         elif dist_name == "pois":
             assert np.allclose(
                 log_likelihood.values,
@@ -489,7 +504,7 @@ class TestStatistic:
                     mock_inputs.model_data[mock_inputs.config["data_var"]].values,
                 ),
             )
-        elif dist_name == {"norm", "norm_cov"}:
+        elif dist_name in {"norm", "norm_cov"}:
             scale = mock_inputs.config["likelihood"]["params"]["scale"]
             if dist_name == "norm_cov":
                 scale *= mock_inputs.model_data[mock_inputs.config["sim_var"]].where(
