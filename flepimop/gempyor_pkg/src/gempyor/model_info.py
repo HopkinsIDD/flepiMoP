@@ -120,6 +120,7 @@ class ModelInfo:
 
         # 4. the SEIR structure
         self.seir_config = None
+        self.seir_modifiers_library = None
         if config["seir"].exists():
             self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]

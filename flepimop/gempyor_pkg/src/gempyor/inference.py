@@ -144,8 +144,10 @@ def get_static_arguments(modinf: model_info.ModelInfo):
     ) = modinf.compartments.get_transition_array()
 
     outcomes_parameters = outcomes.read_parameters_from_config(modinf)
-    npi_seir = seir.build_npi_SEIR(
-        modinf=modinf, load_ID=False, sim_id2load=None, config=config
+    npi_seir = (
+        seir.build_npi_SEIR(modinf=modinf, load_ID=False, sim_id2load=None, config=config)
+        if modinf.npi_config_seir is not None
+        else None
     )
     if modinf.npi_config_outcomes:
         npi_outcomes = outcomes.build_outcome_modifiers(
@@ -211,7 +213,7 @@ def get_static_arguments(modinf: model_info.ModelInfo):
             ),  # TODO add more information
         )
 
-    snpi_df_ref = npi_seir.getReductionDF()
+    snpi_df_ref = npi_seir.getReductionDF() if npi_seir is not None else pd.DataFrame()
 
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
         modinf=modinf,
