@@ -150,11 +150,6 @@ class ModelInfo:
             self.initial_conditions = initial_conditions.InitialConditionsFactory(
                 config=self.initial_conditions_config, path_prefix=self.path_prefix
             )
-            # really ugly references to the config globally here.
-            if config["compartments"].exists() and self.seir_config is not None:
-                self.compartments = compartments.Compartments(
-                    seir_config=self.seir_config, compartments_config=config["compartments"]
-                )
 
             # SEIR modifiers
             self.npi_config_seir = None
@@ -179,13 +174,21 @@ class ModelInfo:
                 )
             else:
                 logging.info("Running ModelInfo with seir but without SEIR Modifiers")
-
         elif self.seir_modifiers_scenario is not None:
             raise ValueError(
                 "A seir modifiers scenario was provided to ModelInfo but no 'seir:' sections in config"
             )
         else:
             logging.critical("Running ModelInfo without SEIR")
+
+        # really ugly references to the config globally here.
+        self.compartments = (
+            compartments.Compartments(
+                seir_config=self.seir_config, compartments_config=config["compartments"]
+            )
+            if (config["compartments"].exists() and self.seir_config is not None)
+            else None
+        )
 
         # 5. Outcomes
         self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None

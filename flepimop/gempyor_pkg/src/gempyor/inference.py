@@ -130,6 +130,10 @@ def get_static_arguments(modinf: model_info.ModelInfo):
     """
     Get the static arguments for the log likelihood function, these are the same for all walkers
     """
+    if modinf.compartments is None:
+        raise RuntimeError(
+            "The `modinf` is required to have a parsed `compartments` attribute."
+        )
 
     real_simulation = False
     (
