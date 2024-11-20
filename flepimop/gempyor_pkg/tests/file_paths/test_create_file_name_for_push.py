@@ -1,13 +1,23 @@
 from unittest.mock import patch
 from gempyor.file_paths import create_file_name_for_push
 
+
 class TestCreateFileNameForPush:
     # Mock implementation of create_file_name for testing
-    def mocked_create_file_name(self, run_id, prefix, inference_filename_prefix, inference_filepath_suffix, index, ftype, extension):
+    def mocked_create_file_name(
+        self,
+        run_id,
+        prefix,
+        inference_filename_prefix,
+        inference_filepath_suffix,
+        index,
+        ftype,
+        extension,
+    ):
         return f"{prefix}_{run_id}_{inference_filename_prefix}_{inference_filepath_suffix}_{index}_{ftype}.{extension}"
 
     # Test method for create_file_name_for_push
-    @patch("__main__.create_file_name")
+    @patch("gempyor.file_paths.create_file_name")
     def test_create_file_name_for_push(self, mock_create_file_name):
         mock_create_file_name.side_effect = self.mocked_create_file_name
 
