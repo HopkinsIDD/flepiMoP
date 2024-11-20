@@ -165,7 +165,7 @@ def steps_SEIR(
         ]:
             if modinf.stoch_traj_flag == True:
                 raise ValueError(
-                f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
+                    f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
                 )
             seir_sim = steps_experimental.ode_integration(
                 **fnct_args, integration_method=integration_method
@@ -187,9 +187,7 @@ def steps_SEIR(
         elif integration_method == "rk4_aot":
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
-            raise ValueError(
-                f"Unknown integration method given, '{integration_method}'."
-            )
+            raise ValueError(f"Unknown integration method given, '{integration_method}'.")
 
     # We return an xarray instead of a ndarray now
     compartment_coords = {}

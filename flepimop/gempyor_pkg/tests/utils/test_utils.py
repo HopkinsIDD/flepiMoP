@@ -37,7 +37,9 @@ def test_read_df_and_write_success(fname, extension):
     ("fname", "extension"), [("mobility", "csv"), ("usa-geoid-params-output", "parquet")]
 )
 def test_read_df_and_write_fail(fname, extension):
-    with pytest.raises(NotImplementedError, match=r".*Supported extensions are `.csv` or `.parquet`."):
+    with pytest.raises(
+        NotImplementedError, match=r".*Supported extensions are `.csv` or `.parquet`."
+    ):
         os.chdir(tmp_path)
         os.makedirs("data", exist_ok=True)
         os.chdir("data")

@@ -248,9 +248,7 @@ class TestStatistic:
             ]
             if reg_name not in ["forecast", "allsubpop"]
         )
-        with pytest.raises(
-            ValueError, match=r"^Unsupported regularization \[received:.*$"
-        ):
+        with pytest.raises(ValueError, match=r"^Unsupported regularization \[received:.*$"):
             mock_inputs.create_statistic_instance()
 
     @pytest.mark.parametrize("factory", all_valid_factories)
@@ -522,9 +520,7 @@ class TestStatistic:
 
         model_rows, model_cols = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
         gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
-        expected_match = (
-            rf".*do not have the same shape:.*"
-        )
+        expected_match = rf".*do not have the same shape:.*"
         with pytest.raises(ValueError, match=expected_match):
             statistic.compute_logloss(mock_inputs.model_data, mock_inputs.gt_data)
 

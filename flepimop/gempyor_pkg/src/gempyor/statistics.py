@@ -301,9 +301,9 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(
-                    f"`model_data` and `gt_data` do not have "
-                    f"the same shape: `model_data.shape` = '{model_data.shape}' != "
-                    f"`gt_data.shape` = '{gt_data.shape}'."
+                f"`model_data` and `gt_data` do not have "
+                f"the same shape: `model_data.shape` = '{model_data.shape}' != "
+                f"`gt_data.shape` = '{gt_data.shape}'."
             )
 
         regularization = 0.0
