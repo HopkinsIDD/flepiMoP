@@ -47,7 +47,7 @@ def write_df(
         None
 
     Raises:
-        ValueError: The given output extension is not supported yet.
+        NotImplementedError: The given output extension is not supported yet.
     """
     # Decipher the path given
     fname = fname.decode() if isinstance(fname, bytes) else fname
@@ -82,7 +82,7 @@ def read_df(
         A pandas DataFrame parsed from the file given.
 
     Raises:
-        ValueError: The given output extension is not supported yet.
+        NotImplementedError: The given output extension is not supported yet.
     """
     # Decipher the path given
     fname = fname.decode() if isinstance(fname, bytes) else fname
