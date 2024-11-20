@@ -30,7 +30,7 @@ class TestWriteDf:
         """
         with pytest.raises(
             expected_exception=NotImplementedError,
-            match="Invalid extension txt. Must be 'csv' or 'parquet'.",
+            match=r".*Supported extensions are `.csv` or `.parquet`.",
         ) as _:
             with NamedTemporaryFile(suffix=".txt") as temp_file:
                 write_df(fname=temp_file.name, df=self.sample_df)
