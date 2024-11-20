@@ -217,9 +217,9 @@ def create_file_name_for_push(
             the appropriate file extension (either "csv" or "parquet").
     """
     type_list = ["seir", "hosp", "llik", "spar", "snpi", "hnpi", "hpar", "init", "seed"]
+    extension_map = {type_name: "csv" if type_name == "seed" else "parquet" for type_name in type_list}
     name_list = []
-    for type_name in type_list:
-        extension = "csv" if type_name == "seed" else "parquet"
+    for type_name, extension in extension_map.items():
         file_name = create_file_name(
             run_id=flepi_run_index,
             prefix=prefix,
