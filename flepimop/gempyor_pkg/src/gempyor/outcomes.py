@@ -369,7 +369,8 @@ def compute_all_multioutcomes(
     else:
         seir_sim = bypass_seir_df
 
-    for new_comp in parameters:
+    parameters_keys = list(parameters.keys())
+    for new_comp in parameters_keys:
         if "source" in parameters[new_comp]:
             # Read the config for this compartment: if a source is specified, we
             # 1. compute incidence from binomial draw
@@ -400,6 +401,9 @@ def compute_all_multioutcomes(
             else:  # already defined outcomes
                 if source_name in all_data:
                     source_array = all_data[source_name]
+                elif source_name in parameters_keys:
+                    parameters_keys.append(new_comp)
+                    continue
                 else:
                     raise ValueError(
                         f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes."
