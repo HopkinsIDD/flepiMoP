@@ -193,8 +193,8 @@ class ModelInfo:
 
         # 5. Outcomes
         self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        self.npi_config_outcomes = None
         if self.outcomes_config is not None:
-            self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
                     self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][

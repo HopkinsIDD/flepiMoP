@@ -129,6 +129,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
+        if modinf.outcomes_config is None:
+            return {}
         outcomes_config = modinf.outcomes_config["outcomes"]
         if modinf.outcomes_config["param_from_file"].exists():
             if modinf.outcomes_config["param_from_file"].get():
