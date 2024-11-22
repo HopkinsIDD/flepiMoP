@@ -158,8 +158,6 @@ class Seeding(SimulationComponent):
             )
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
-        else:
-            raise ValueError(f"Unknown seeding method given, '{method}'.")
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, modinf=modinf)
 

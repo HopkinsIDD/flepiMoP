@@ -19,7 +19,7 @@ class TimeSetup:
         self.tf = config["end_date"].as_date()
         if self.tf <= self.ti:
             raise ValueError(
-                f"Time to finish ('{self.tf}') is less than or equal to time to start ('{self.ti}')."
+                f"Final time ('{self.tf}') is less than or equal to initial time('{self.ti}')."
             )
         self.n_days = (self.tf - self.ti).days + 1
         self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
@@ -76,7 +76,7 @@ class ModelInfo:
         # Auto-detect old config
         if config["interventions"].exists():
             raise ValueError(
-                "This config has an intervention section, which is only compatible with a previous version (1.1) of flepiMoP."
+                "This config has an intervention section, which is only compatible with a previous version (v1.1) of flepiMoP. "
             )
 
         # 1. Create a setup name that contains every scenario.
@@ -172,14 +172,14 @@ class ModelInfo:
                     )  # TODO create a Stacked from all
             elif self.seir_modifiers_scenario is not None:
                 raise ValueError(
-                    "A seir modifiers scenario was provided to `ModelInfo` but there is no `seir_modifiers` section in the config."
+                    "A `seir_modifiers_scenario` argument was provided to `ModelInfo` but there is no `seir_modifiers` section in the config."
                 )
             else:
                 logging.info("Running `ModelInfo` with seir but without SEIR Modifiers")
 
         elif self.seir_modifiers_scenario is not None:
             raise ValueError(
-                "A seir modifiers scenario was provided to `ModelInfo` but there is no `seir_modifiers` section in the config."
+                "A `seir_modifiers_scenario` argument was provided to `ModelInfo` but there is no `seir` section in the config."
             )
         else:
             logging.critical("Running ModelInfo without SEIR")
@@ -208,7 +208,7 @@ class ModelInfo:
             elif self.outcome_modifiers_scenario is not None:
                 if config["outcome_modifiers"].exists():
                     raise ValueError(
-                        "An outcome modifiers scenario was provided to `ModelInfo` but there is no `outcome_modifiers` section in the config."
+                        "A `outcome_modifiers_scenario` argument was provided to `ModelInfo` but there is no `outcome_modifiers` section in the config."
                     )
                 else:
                     self.outcome_modifiers_scenario = None
@@ -218,7 +218,7 @@ class ModelInfo:
                 )
         elif self.outcome_modifiers_scenario is not None:
             raise ValueError(
-                "An outcome modifiers scenario was provided to `ModelInfo` but there is no `outcome_modifiers` section in the config."
+                "A `outcome_modifiers_scenario` argument was provided to `ModelInfo` but there is no `outcomes` section in the config."
             )
         else:
             logging.info("Running `ModelInfo` without outcomes.")

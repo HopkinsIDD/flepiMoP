@@ -257,8 +257,8 @@ class Statistic:
         }
         if self.dist not in dist_map:
             raise ValueError(
-                f"Invalid distribution specified [received: '{self.dist}']. "
-                f"Valid distributions: '{dist_map}'."
+                f"Invalid distribution specified: '{self.dist}'. "
+                f"Valid distributions: '{dist_map.keys()}'."
             )
         if self.dist in ["pois", "nbinom"]:
             model_data = model_data.astype(int)
