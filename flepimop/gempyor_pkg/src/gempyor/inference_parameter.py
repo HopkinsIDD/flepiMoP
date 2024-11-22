@@ -53,8 +53,8 @@ class InferenceParameters:
                     pname=pname,
                     subpop=sp,
                     pdist=parameter_config["value"].as_random_distribution(),
-                    lb=parameter_config["value"]["a"].get(),
-                    ub=parameter_config["value"]["b"].get(),
+                    lb=float(parameter_config["value"]["a"].get()),
+                    ub=float(parameter_config["value"]["b"].get()),
                 )
 
         # grouped subpop have one parameter per group
@@ -65,8 +65,8 @@ class InferenceParameters:
                     pname=pname,
                     subpop=",".join(group),
                     pdist=parameter_config["value"].as_random_distribution(),
-                    lb=parameter_config["value"]["a"].get(),
-                    ub=parameter_config["value"]["b"].get(),
+                    lb=float(parameter_config["value"]["a"].get()),
+                    ub=float(parameter_config["value"]["b"].get()),
                 )
 
     def add_single_parameter(self, ptype, pname, subpop, pdist, lb, ub):
