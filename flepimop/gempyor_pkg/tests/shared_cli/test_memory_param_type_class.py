@@ -57,6 +57,10 @@ def test_convert_acts_as_identity(unit: str, as_int: bool, number: int | float) 
         ("kb", True, "2tb", 2147483648),
         ("mb", False, "0.1gb", 0.1 * 1024.0),
         ("mb", True, "0.1gb", 103),
+        ("gb", False, "4", 4.0),
+        ("gb", True, "4", 4),
+        ("mb", False, "1234.56", 1234.56),
+        ("mb", True, "1234.56", 1235),
     ),
 )
 def test_exact_results_for_select_inputs(
