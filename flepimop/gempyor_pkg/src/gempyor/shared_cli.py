@@ -302,7 +302,7 @@ class MemoryParamType(click.ParamType):
         if (m := self._regex.match(value)) is None:
             self.fail(f"{value!r} is not a valid memory size.", param, ctx)
         number, _, _, unit = m.groups()
-        unit = unit.lower()
+        unit = self._unit if unit is None else unit.lower()
         if unit == self._unit:
             result = float(number)
         else:
