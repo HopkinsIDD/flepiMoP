@@ -27,7 +27,7 @@ import click
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .file_paths import run_id
-from .info import get_cluster_info
+from .info import Cluster, get_cluster_info
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
 from .shared_cli import (
@@ -718,6 +718,7 @@ def _submit_scenario_job(
     job_size: JobSize,
     job_time_limit: JobTimeLimit,
     job_resources: JobResources,
+    cluster: Cluster | None,
     kwargs: dict[str, Any],
     verbosity: int | None,
     dry_run: bool,
@@ -757,6 +758,7 @@ def _submit_scenario_job(
 
     # Generically useful template data, regardless of batch system
     template_data = {
+        "cluster": None if cluster is None else cluster.model_dump(),
         "conda_env": kwargs["conda_env"],
         "config_path": config_out.absolute(),
         "debug": kwargs["debug"],
@@ -790,7 +792,6 @@ def _submit_scenario_job(
         )
     elif batch_system == BatchSystem.SLURM:
         # Cluster info
-        cluster = get_cluster_info(kwargs["cluster"])
         if verbosity is not None:
             logger.info(
                 "Utilizing info for the '%s' cluster to construct this job", cluster.name
@@ -800,7 +801,6 @@ def _submit_scenario_job(
                 cluster.name,
                 cluster.model_dump(),
             )
-        template_data["cluster"] = cluster.model_dump()
         # Construct the sbatch call
         options = {
             "chdir": kwargs["project_path"].absolute(),
@@ -1139,6 +1139,13 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
     )
     logger.info("Requesting the resources %s for this job.", job_resources)
 
+    # Cluster info
+    cluster = (
+        None
+        if kwargs["cluster"] is None and batch_system != BatchSystem.SLURM
+        else get_cluster_info(kwargs["cluster"])
+    )
+
     # Restart/continuation location
     # TODO: Implement this
 
@@ -1191,6 +1198,7 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
             job_size,
             job_time_limit,
             job_resources,
+            cluster,
             kwargs,
             kwargs["verbosity"],
             kwargs["dry_run"],
