@@ -27,7 +27,7 @@ import click
 
 from ._jinja import _render_template_to_file, _render_template_to_temp_file
 from .file_paths import run_id
-from .info import Cluster, get_cluster_info
+from .info import Cluster, _infer_cluster_from_fqdn, get_cluster_info
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
 from .shared_cli import (
@@ -1106,6 +1106,15 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
             "the batch system is slurm, but is instead %s.",
             kwargs["email"],
             batch_system,
+        )
+    if (
+        batch_system == BatchSystem.LOCAL
+        and (cluster_name := _infer_cluster_from_fqdn(raise_error=False)) is not None
+    ):
+        logger.critical(
+            "The batch system is local but detected a cluster, '%s'. "
+            "This will likely result in a vague error.",
+            cluster_name,
         )
 
     # Job size

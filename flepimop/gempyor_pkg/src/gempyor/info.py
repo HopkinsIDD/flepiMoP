@@ -152,18 +152,27 @@ def get_cluster_info(name: str | None, flepi_path: os.PathLike | None = None) ->
     return _get_info("cluster", name, Cluster, flepi_path)
 
 
-def _infer_cluster_from_fqdn() -> str:
+def _infer_cluster_from_fqdn(raise_error: bool = True) -> str | None:
     """
     Infer the cluster name from the FQDN.
+
+    Args:
+        raise_error: A flag indicating whether to raise an error if the FQDN does not
+            match any of the expected regexes.
 
     Returns:
         The name of the cluster inferred from the FQDN.
 
     Raises:
-        ValueError: If the value of `socket.getfqdn()` does not match an expected regex.
+        ValueError: If the value of `socket.getfqdn()` does not match an expected regex
+            and `raise_error` is `True`.
     """
     fqdn = getfqdn()
     for cluster, regex in _CLUSTER_FQDN_REGEXES:
         if regex.match(fqdn):
             return cluster
-    raise ValueError(f"The fqdn, '{fqdn}', does not match any of the expected clusters.")
+    if raise_error:
+        raise ValueError(
+            f"The fqdn, '{fqdn}', does not match any of the expected clusters."
+        )
+    return None
