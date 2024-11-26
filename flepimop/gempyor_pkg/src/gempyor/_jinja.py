@@ -14,11 +14,18 @@ from pathlib import Path
 from tempfile import mkstemp
 from typing import Any
 
-from jinja2 import Environment, PackageLoader, Template
+from jinja2 import Environment, FileSystemLoader, PackageLoader, Template
 
 
 # Globals
-_jinja_environment = Environment(loader=PackageLoader("gempyor", "templates"))
+try:
+    _jinja_environment = Environment(loader=PackageLoader("gempyor", "templates"))
+except ValueError:
+    from os.path import dirname
+
+    _jinja_environment = Environment(
+        loader=FileSystemLoader(dirname(__file__) + "/templates")
+    )
 
 
 # Functions
