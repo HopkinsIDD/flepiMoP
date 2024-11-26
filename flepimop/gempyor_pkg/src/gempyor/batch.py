@@ -728,7 +728,22 @@ def _submit_scenario_job(
     Submit a job for a scenario.
 
     Args:
-        ...
+        outcome_modifiers_scenario: The outcome modifiers scenario to use.
+        seir_modifiers_scenario: The seir modifiers scenario to use.
+        name: The name of the config file used as a prefix for the job name.
+        batch_system: The batch system to submit the job to.
+        inference_method: The inference method being used.
+        config_out: The path to the config file to use.
+        job_name: The name of the job to submit.
+        job_size: The size of the job to submit.
+        job_time_limit: The time limit of the job to submit.
+        job_resources: The resources required for the job to submit.
+        cluster: The cluster information to use for submitting the job.
+        kwargs: Additional options provided to the submit job CLI as keyword arguments.
+        verbosity: A integer verbosity level to enable logging or `None` for no logging.
+        dry_run: A boolean indicating if this is a dry run or not, if set to `True` this
+            function will not actually submit/run a job.
+        now: The current UTC timestamp.
     """
     # Get logger
     if verbosity is not None:
