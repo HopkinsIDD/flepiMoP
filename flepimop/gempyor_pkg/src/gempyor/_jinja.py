@@ -19,12 +19,12 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader, Template
 
 # Globals
 try:
-    _jinja_environment = Environment(loader=PackageLoader("gempyor", "templates"))
+    _jinja_environment = Environment(loader=PackageLoader("gempyor"))
 except ValueError:
     from os.path import dirname
 
     _jinja_environment = Environment(
-        loader=FileSystemLoader(dirname(__file__) + "/templates")
+        loader=FileSystemLoader(dirname(__file__).replace("\\", "/") + "/templates")
     )
 
 
