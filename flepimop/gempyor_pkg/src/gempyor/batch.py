@@ -21,7 +21,7 @@ from shlex import quote
 from stat import S_IXUSR
 import subprocess
 import sys
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 import click
 
@@ -41,6 +41,12 @@ from .shared_cli import (
     parse_config_files,
     verbosity_options,
 )
+
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    Self = Any
 
 
 _JOB_NAME_REGEX = re.compile(r"^[a-z]{1}([a-z0-9\_\-]+)?$", flags=re.IGNORECASE)
