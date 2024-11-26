@@ -53,7 +53,7 @@ gempyor-simulate = "gempyor.simulate:_deprecated_simulate"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-include-package-data = false
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
