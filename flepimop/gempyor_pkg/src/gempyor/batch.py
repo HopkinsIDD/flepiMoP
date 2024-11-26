@@ -1051,15 +1051,15 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
 
     \b
     ```bash
-    $ flepimop submit --jobs 4 \ # With legacy inference jobs refers to chains
-        --simulations 20 \       # The number of iterations per a chain
-        --blocks 1 \             # The number of consecutive blocks to run
-        --slurm \                # Use slurm, shorthand for `--batch-system slurm`
-        --project-path $(pwd) \  # Manually specify the project path
-        --email me@college.edu \ # Use slurm's built-in email alerts for the job
-        --skip-checkout \        # Do not create a new branch in the project repo
-        -vvv \                   # Use the max verbosity
-        --dry-run \              # Do not actually submit the job via `sbatch`.
+    $ flepimop submit --jobs 4 \\ # With legacy inference jobs refers to chains
+        --simulations 20 \\       # The number of iterations per a chain
+        --blocks 1 \\             # The number of consecutive blocks to run
+        --slurm \\                # Use slurm, shorthand for `--batch-system slurm`
+        --project-path $(pwd) \\  # Manually specify the project path
+        --email me@college.edu \\ # Use slurm's built-in email alerts for the job
+        --skip-checkout \\        # Do not create a new branch in the project repo
+        -vvv \\                   # Use the max verbosity
+        --dry-run \\              # Do not actually submit the job via `sbatch`.
         config_sample_2pop_inference.yml
     ```
 
@@ -1068,16 +1068,16 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
 
     \b
     ```bash
-    $ flepimop submit --jobs 10 \               # See before
-        --simulations 400 \                     # See before
-        --blocks 1 \                            # See before
-        --slurm \                               # See before
-        --partition dedicated_slurm_partition \ # Submit to a particular slurm partition
-        --simulation-time 30s \                 # Specify the time limit per simulation
-        --initial-time 5min \                   # Specify the initial time limit
-        --conda-env custom-flepimop-env \       # Specify a custom conda env to use
-        --cpus 4 \                              # Use 4 CPUs per a job
-        -vvv \                                  # Use the max verbosity
+    $ flepimop submit --jobs 10 \\               # See before
+        --simulations 400 \\                     # See before
+        --blocks 1 \\                            # See before
+        --slurm \\                               # See before
+        --partition dedicated_slurm_partition \\ # Submit to a particular slurm partition
+        --simulation-time 30s \\                 # Specify the time limit per simulation
+        --initial-time 5min \\                   # Specify the initial time limit
+        --conda-env custom-flepimop-env \\       # Specify a custom conda env to use
+        --cpus 4 \\                              # Use 4 CPUs per a job
+        -vvv \\                                  # Use the max verbosity
         config_sample_2pop_inference.yml
     ```
     """
