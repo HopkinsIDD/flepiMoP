@@ -14,10 +14,4 @@ set -x
 
 {% include "conda_activate.bash.j2" with context %}
 
-# AWS setup
-
-# Fetch/setup resume files
-
 {% include "inference_command.bash.j2" with context %}
-
-# Upload/move results

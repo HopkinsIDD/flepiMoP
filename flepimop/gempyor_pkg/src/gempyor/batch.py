@@ -1170,9 +1170,6 @@ def _click_submit(ctx: click.Context = mock_context, **kwargs: Any) -> None:
         else get_cluster_info(kwargs["cluster"])
     )
 
-    # Restart/continuation location
-    # TODO: Implement this
-
     # Manifest
     if kwargs["skip_manifest"]:
         logger.debug("Skipped writing manifest metadata.")
