@@ -10,6 +10,7 @@ __all__ = []
 
 
 # Imports
+from os.path import dirname
 from pathlib import Path
 from tempfile import mkstemp
 from typing import Any
@@ -19,13 +20,11 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader, Template
 
 # Globals
 try:
-    _jinja_environment = Environment(loader=PackageLoader("gempyor"))
-except ValueError:
-    from os.path import dirname
-
     _jinja_environment = Environment(
         loader=FileSystemLoader(dirname(__file__).replace("\\", "/") + "/templates")
     )
+except ValueError:
+    _jinja_environment = Environment(loader=PackageLoader("gempyor"))
 
 
 # Functions
