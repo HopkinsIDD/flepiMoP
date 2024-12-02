@@ -127,10 +127,9 @@ class SinglePeriodModifier(NPIBase):
         # Otherwise, run only on subpops specified.
         self.affected_subpops = set(self.subpops)
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
-            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
-            # subsamples the subpopulations to only the ones specified in the geodata (self.subpops)
-            self.affected_subpops = list(
-                set(self.affected_subpops).intersection(self.subpops)
+            # subsamples the subpopulations to only the ones specified in the geodata
+            self.affected_subpops = set(npi_config["subpop"].as_str_seq()).intersection(
+                self.subpops
             )
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
@@ -167,9 +166,8 @@ class SinglePeriodModifier(NPIBase):
 
         self.affected_subpops = set(self.subpops)
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
-            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
             self.affected_subpops = list(
-                set(self.affected_subpops).intersection(self.subpops)
+                set(npi_config["subpop"].as_str_seq()).intersection(self.subpops)
             )
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]

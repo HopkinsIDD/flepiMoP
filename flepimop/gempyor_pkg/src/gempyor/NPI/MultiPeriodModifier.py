@@ -189,11 +189,9 @@ class MultiPeriodModifier(NPIBase):
         if grp_config["subpop"].get() == "all":
             affected_subpops_grp = self.subpops
         else:
-            affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
             affected_subpops_grp = list(
-                set(affected_subpops_grp).intersection(self.subpops)
+                set(grp_config["subpop"].as_str_seq()).intersection(self.subpops)
             )
-
         return affected_subpops_grp
 
     def __createFromDf(self, loaded_df, npi_config):
