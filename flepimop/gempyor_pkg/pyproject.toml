@@ -54,6 +54,7 @@ gempyor-simulate = "gempyor.simulate:_deprecated_simulate"
 [tool.setuptools]
 package-dir = {"" = "src"}
 include-package-data = true
+package-data = { "gempyor" = ["templates/*.j2"] }
 
 [tool.setuptools.packages.find]
 where = ["src"]
