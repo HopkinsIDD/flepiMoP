@@ -520,7 +520,11 @@ class TestStatistic:
 
         model_rows, model_cols = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
         gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
-        expected_match = rf".*'{mock_inputs.model_data[mock_inputs.config['sim_var']].shape}'.*'{mock_inputs.gt_data[mock_inputs.config['data_var']].shape}'"
+        expected_match = (
+            rf"`model_data` and `gt_data` do not have the same shape: "
+            rf"`model_data.shape` = '{mock_inputs.model_data[mock_inputs.config['sim_var']].shape}' "
+            rf"!= `gt_data.shape` = '{mock_inputs.gt_data[mock_inputs.config['data_var']].shape}'."
+        )
         with pytest.raises(ValueError, match=expected_match):
             statistic.compute_logloss(mock_inputs.model_data, mock_inputs.gt_data)
 
