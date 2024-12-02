@@ -248,7 +248,7 @@ class TestStatistic:
             ]
             if reg_name not in ["forecast", "allsubpop"]
         )
-        with pytest.raises(ValueError, match=rf"^Unsupported regularization \[received: '{mock_inputs.config.get('regularize', [])}'\]"):
+        with pytest.raises(ValueError, match=rf"^Unsupported regularization \[received: 'invalid'\]"):
             mock_inputs.create_statistic_instance()
 
     @pytest.mark.parametrize("factory", all_valid_factories)
