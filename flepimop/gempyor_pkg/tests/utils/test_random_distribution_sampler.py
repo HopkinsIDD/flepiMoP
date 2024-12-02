@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import pytest
+import re
 
 from gempyor.testing import partials_are_similar
 from gempyor.utils import random_distribution_sampler
@@ -14,7 +15,7 @@ class TestRandomDistributionSampler:
     def test_not_implemented_error_exception(self, distribution: str) -> None:
         with pytest.raises(
             NotImplementedError,
-            match=rf"Unknown distribution [received: '{distribution}'].",
+            match=re.escape(rf"Unknown distribution [received: '{distribution}']."),
         ):
             random_distribution_sampler(distribution)
 
@@ -22,7 +23,7 @@ class TestRandomDistributionSampler:
     def test_binomial_p_value_error(self, p: float) -> None:
         with pytest.raises(
             ValueError,
-            match=rf"Invalid `p-value`: '{p}' is out of range [0,1].",
+            match=re.escape(rf"Invalid `p-value`: '{p}' is out of range [0,1]."),
         ):
             random_distribution_sampler("binomial", n=100, p=p)
 
