@@ -128,8 +128,14 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
     log_file <- paste0(
         "log_inference_slot_", config$name, "_", opt$run_id, "_", flepi_slot, ".txt"
     )
+    inference_slot_cmd <- unname(Sys.which("flepimop-inference-slot"))
+    if (inference_slot_cmd == "") {
+        stop(
+          "`flepimop-inference-slot` not found in PATH, unable to run inference slot"
+        )
+    }
     command <- c(
-        file.path(opt$flepi_path, "flepimop", "main_scripts","inference_slot.R"),
+        inference_slot_cmd,
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$seir_modifiers_scenarios,
