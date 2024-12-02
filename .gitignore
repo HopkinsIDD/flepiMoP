@@ -78,8 +78,3 @@ flepimop/gempyor_pkg/.coverage
 
 # Environment variables
 .env
-
-# Undo model_output/ gitignore above for inference test seeding
-!flepimop/gempyor_pkg/tests/inference/model_output/
-flepimop/gempyor_pkg/tests/inference/model_output/*
-!flepimop/gempyor_pkg/tests/inference/model_output/minimal_test_Scenario1_None
