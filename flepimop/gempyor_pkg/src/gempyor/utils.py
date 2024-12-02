@@ -95,7 +95,7 @@ def read_df(
     elif path.suffix == ".parquet":
         return pd.read_parquet(path, engine="pyarrow")
     raise NotImplementedError(
-        f"Invalid extension provided: '{path.suffix[1:]}'. Supported extensions are `.csv` or `.parquet`."
+        f"Invalid extension provided: '.{path.suffix[1:]}'. Supported extensions are `.csv` or `.parquet`."
     )
 
 
