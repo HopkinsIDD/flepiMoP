@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 import scipy
 import xarray as xr
+import re
 
 from gempyor.statistics import Statistic
 from gempyor.testing import create_confuse_configview_from_dict
@@ -520,7 +521,7 @@ class TestStatistic:
 
         model_rows, model_cols = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
         gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
-        expected_match = (
+        expected_match = re.escape(
             rf"`model_data` and `gt_data` do not have the same shape: "
             rf"`model_data.shape` = '{mock_inputs.model_data[mock_inputs.config['sim_var']].shape}' "
             rf"!= `gt_data.shape` = '{mock_inputs.gt_data[mock_inputs.config['data_var']].shape}'."
