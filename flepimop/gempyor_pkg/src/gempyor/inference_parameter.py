@@ -175,17 +175,13 @@ class InferenceParameters:
         return len(self.pnames)
     
     def get_parameter_df(self):
-        all_params = []
-
-        for i in zip(self.ptypes, self.subpops,self.pnames):
-            data = {
-                "ptypes": self.ptypes,
-                "subpops": self.subpops,
-                "pnames": self.pnames
-            }
-            all_params.append(pd.DataFrame(data))
-
-        return pd.concat(all_params)
+        data = {
+            "ptypes": self.ptypes,
+            "subpops": self.subpops,
+            "pnames": self.pnames
+        }
+        df = pd.DataFrame(data)
+        return df
 
     def draw_initial(self, n_draw=1):
         """
