@@ -171,6 +171,8 @@ def calibrate(
 
     # Draw/get initial parameters:
     backend = emcee.backends.HDFBackend(filename)
+    # save the dataframe of parameter names (this should be added to the h5 file)
+    gempyor_inference.inferpar.get_parameter_df().to_csv(filename.replace(".h5", ".csv"), index=True)
     if resume or resume_location is not None:
         # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
         # and then acceptances are not guaranted, see issue #316. This solves this issue and greates a new chain with llik evaluation
