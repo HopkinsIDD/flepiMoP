@@ -101,6 +101,20 @@ def modifiers():
     "--subpop", default=None, help="Subpopulation to plot, if not set then all are plotted"
 )
 def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
+    """
+    Plot the seir/outcome modifiers affects on the parameters.
+
+    This command will plot the activation of the modifiers and the parsed parameters
+    from the config file. This command will produce several PDF files in the current
+    directory contain the plots:
+
+    1. {outocmes/seir}_modifiers_activation_{subpop}.pdf: Contains plots of the
+       activation of the modifiers for the given subpopulation vs time.
+    2. unique_parsed_parameters_{run_id}.pdf: Contains plots of the parsed transition
+       rates with modifiers applied vs time.
+    3. outcomesNPIcaveat.pdf: Contains plots of the outcomes affected by modifiers vs
+       time.
+    """
     from gempyor.inference import GempyorInference
     import gempyor
     import os
