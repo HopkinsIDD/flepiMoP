@@ -58,7 +58,7 @@ def write_df(
     elif path.suffix == ".parquet":
         return df.to_parquet(path, index=False, engine="pyarrow")
     raise NotImplementedError(
-        f"Invalid extension provided: '{path.suffix[1:]}'. Supported extensions are `.csv` or `.parquet`."
+        f"Invalid extension provided: '.{path.suffix[1:]}'. Supported extensions are `.csv` or `.parquet`."
     )
 
 
