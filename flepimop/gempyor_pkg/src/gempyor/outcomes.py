@@ -198,6 +198,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                         parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
                 else:
                     logging.critical(f"No delay for outcome {new_comp}, using a 0 delay")
+                    # FIXME: We should not here modify outcomes_config := modinf.outcomes_config["outcomes"]
+                    # because this changes the order in which the outcomes the next time this function is called.
                     outcomes_config[new_comp]["delay"] = {"value": 0}
                     parameters[new_comp]["delay"] = outcomes_config[new_comp]["delay"]["value"]
                     parameters[new_comp]["delay::npi_param_name"] = f"{new_comp}::delay".lower()
