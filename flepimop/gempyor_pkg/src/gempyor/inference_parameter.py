@@ -245,7 +245,7 @@ class InferenceParameters:
 
         # Ideally this should lie in each submodules, e.g NPI.inject, parameter.inject
         if self.get_dim() != len(proposal):
-            raise ValueError(f"Inference object stores {self.get_dim()} parameters, but received a proposal of lenght {len(proposal)} to be injected.")
+            raise ValueError(f"Inference object stores {self.get_dim()} parameters, but received a proposal of length {len(proposal)} to be injected.")
 
         for p_idx in range(self.get_dim()):
             if self.ptypes[p_idx] == "seir_modifiers":
