@@ -57,7 +57,7 @@ def test_read_df_and_write_fail(fname, extension):
 
 @pytest.mark.parametrize(("fname", "extension"), [("mobility", "")])
 def test_read_df_fail(fname, extension):
-    with pytest.raises(NotImplementedError, match=r"Invalid extension provided: ''. Supported extensions are `.csv` or `.parquet`."):
+    with pytest.raises(NotImplementedError, match=r"Invalid extension provided: '.'. Supported extensions are `.csv` or `.parquet`."):
         os.chdir(tmp_path)
         utils.read_df(fname=f"{DATA_DIR}/" + fname, extension=extension)
 
