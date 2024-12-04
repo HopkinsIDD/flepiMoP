@@ -74,7 +74,10 @@ class Statistic:
                 reg_name = reg_config["name"].get()
                 reg_func = getattr(self, f"_{reg_name}_regularize", None)
                 if reg_func is None:
-                    raise ValueError(f"Unsupported regularization: {reg_name}")
+                    raise ValueError(
+                        f"Unsupported regularization [received: '{reg_name}']. "
+                        f"Currently only `forecast` and `allsubpop` are supported."
+                    )
                 self.regularizations.append((reg_func, reg_config.get()))
 
         self.resample = False
@@ -253,7 +256,10 @@ class Statistic:
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
         }
         if self.dist not in dist_map:
-            raise ValueError(f"Invalid distribution specified: {self.dist}")
+            raise ValueError(
+                f"Invalid distribution specified: '{self.dist}'. "
+                f"Valid distributions: '{dist_map.keys()}'."
+            )
         if self.dist in ["pois", "nbinom"]:
             model_data = model_data.astype(int)
             gt_data = gt_data.astype(int)
@@ -295,11 +301,9 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(
-                (
-                    f"{self.name} Statistic error: data and groundtruth do not have "
-                    f"the same shape: model_data.shape={model_data.shape} != "
-                    f"gt_data.shape={gt_data.shape}"
-                )
+                f"`model_data` and `gt_data` do not have "
+                f"the same shape: `model_data.shape` = '{model_data.shape}' != "
+                f"`gt_data.shape` = '{gt_data.shape}'."
             )
 
         regularization = 0.0
