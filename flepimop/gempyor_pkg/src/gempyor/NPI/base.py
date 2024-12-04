@@ -146,6 +146,12 @@ def config_plot(config_filepath, project_path, run_id, nsamples, subpop):
         path_prefix=project_path,  # in case the data folder is on another directory
         autowrite_seir=False,
     )
+    if gempyor_inference.static_sim_arguments is None:
+        gempyor_inference.static_sim_arguments = {
+            "unique_strings": gempyor_inference.modinf.compartments.get_transition_array()[
+                0
+            ],
+        }
     if (
         gempyor_inference.modinf.seir_config is not None
         and gempyor_inference.modinf.npi_config_seir is not None

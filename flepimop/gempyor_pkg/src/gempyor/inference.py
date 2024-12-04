@@ -393,6 +393,7 @@ class GempyorInference:
         self.autowrite_seir = autowrite_seir
 
         ## Inference Stuff
+        self.static_sim_arguments = None
         self.do_inference = False
         if config["inference"].exists():
             from . import inference_parameter, logloss
