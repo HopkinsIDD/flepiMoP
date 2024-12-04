@@ -1,9 +1,11 @@
+from collections.abc import Iterable
 import datetime
 import functools
 import logging
 import numbers
 import os
 from pathlib import Path
+from shlex import quote
 import shutil
 import subprocess
 import time
@@ -1039,3 +1041,129 @@ def move_file_at_local(name_map: dict[str, str]) -> None:
     for src, dst in name_map.items():
         os.path.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy(src, dst)
+
+
+def _shutil_which(
+    cmd: str,
+    mode: int = os.F_OK | os.X_OK,
+    path: str | bytes | os.PathLike | None = None,
+    check: bool = True,
+) -> str | None:
+    """
+    A thin wrapper around `shutil.which` with extra validation.
+
+    Args:
+        cmd: The name of the command to search for.
+        mode: The permission mask required of possible files.
+        path: A path describing the locations to search, or `None` to use
+            the PATH environment variable.
+        check: If `True` an `OSError` will be raised if a `cmd` is not found.
+            Similar in spirit to the `check` arg of `subprocess.run`.
+
+    Returns:
+        Either the full path to the `cmd` found, or `None` if `cmd` is not
+        found and `check` is `False`.
+
+    Raises:
+        OSError: If `cmd` is not found and `check` is `True`.
+
+    Examples:
+        >>> import os
+        >>> from shutil import which
+        >>> _shutil_which("python") == which("python")
+        True
+        >>> _shutil_which("does_not_exist", check=False)
+        >>> try:
+        ...     _shutil_which("does_not_exist", check=True)
+        ... except Exception as e:
+        ...     print(type(e))
+        ...     print(str(e).replace(os.environ.get("PATH"), "..."))
+        ...
+        <class 'OSError'>
+        Did not find 'does_not_exist' on path '...'.
+
+    See Also:
+        [`shutil.which`](https://docs.python.org/3/library/shutil.html#shutil.which)
+    """
+    result = shutil.which(cmd, mode=mode, path=path)
+    if check and result is None:
+        path = os.environ.get("PATH") if path is None else path
+        raise OSError(f"Did not find '{cmd}' on path '{path}'.")
+    return result
+
+
+def _git_head(repository: Path) -> str:
+    """
+    Get the sha commit has for the head of a git repository.
+
+    Args:
+        repository: A directory under version control with git to get the sha commit of.
+
+    Returns:
+        The sha commit of head for `repository`.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> _git_head(Path("~/Desktop/GitHub/HopkinsIDD/flepiMoP"))
+        'efe896b1a5e4f8e33667c170cd5319d6ef1e3db5'
+    """
+    git_cmd = _shutil_which("git")
+    proc = subprocess.run(
+        [git_cmd, "rev-parse", "HEAD"],
+        cwd=repository.expanduser().absolute(),
+        capture_output=True,
+        check=True,
+    )
+    return proc.stdout.decode().strip()
+
+
+def _git_checkout(repository: Path, branch: str) -> None:
+    """
+    Checkout a new branch from a given git repository.
+
+    Args:
+        repository: A directory under version control with git to
+            checkout a new branch in.
+        branch: The name of the new branch to checkout.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> _git_checkout(Path("~/Desktop/GitHub/HopkinsIDD/flepiMoP"), "my-new-branch")
+    """
+    git_cmd = _shutil_which("git")
+    subprocess.run(
+        [git_cmd, "checkout", "-b", branch],
+        cwd=repository.expanduser().absolute(),
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def _format_cli_options(options: dict[str, Any]) -> list[str]:
+    """
+    Convert a dictionary of CLI options into a formatted list.
+
+    Args:
+        options: A dictionary where the keys correspond to the option name and the
+            values correspond to the option value. If the option name is one character
+            it's assumed to be a short name and prefixed with one dash. Values are
+            coerced to a string and then escaped for shell.
+
+    Returns:
+        A list of options that can be passed to
+        [`subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)
+        or similar functions.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> _format_cli_options({"name": "foo bar fizz buzz"})
+        ["--name='foo bar fizz buzz'"]
+        >>> _format_cli_options({"o": Path("/path/to/output.log")})
+        ['-o=/path/to/output.log']
+        >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
+        ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+    """
+    return [
+        f"{'-' if len(k) == 1 else '--'}{k}={quote(str(v))}" for k, v in options.items()
+    ]

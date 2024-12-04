@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+{% include "inference_environment_variables.bash.j2" with context %}
+
+{%- if cluster is defined and cluster is not none %}
+{% include "cluster_setup.bash.j2" with context %}
+{%- endif %}
+
+cd $PROJECT_PATH
+
+{% include "conda_activate.bash.j2" with context %}
+
+{% include "inference_command.bash.j2" with context %}
