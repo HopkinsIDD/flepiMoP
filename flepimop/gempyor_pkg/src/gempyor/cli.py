@@ -10,8 +10,8 @@ from .shared_cli import (
 from .utils import config
 
 # register the commands from the other modules
-from . import compartments
-from . import simulate
+from . import compartments, simulate
+from .NPI import base
 
 # Guidance for extending the CLI:
 # - to add a new small command to the CLI, add a new function with the @cli.command() decorator here (e.g. patch below)

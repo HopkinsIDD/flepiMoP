@@ -99,6 +99,9 @@ def simulation_atomic(
         seeding_data_nbdict,
         seeding_amounts,
     )
+    if save:
+        seir.write_spar_snpi(sim_id=random_id, modinf=modinf, p_draw=p_draw, npi=npi_seir)
+        seir.write_seir(sim_id=random_id, modinf=modinf, states=states)
 
     # Compute outcomes
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
@@ -127,6 +130,10 @@ def get_static_arguments(modinf: model_info.ModelInfo):
     """
     Get the static arguments for the log likelihood function, these are the same for all walkers
     """
+    if modinf.compartments is None:
+        raise RuntimeError(
+            "The `modinf` is required to have a parsed `compartments` attribute."
+        )
 
     real_simulation = False
     (
@@ -137,8 +144,10 @@ def get_static_arguments(modinf: model_info.ModelInfo):
     ) = modinf.compartments.get_transition_array()
 
     outcomes_parameters = outcomes.read_parameters_from_config(modinf)
-    npi_seir = seir.build_npi_SEIR(
-        modinf=modinf, load_ID=False, sim_id2load=None, config=config
+    npi_seir = (
+        seir.build_npi_SEIR(modinf=modinf, load_ID=False, sim_id2load=None, config=config)
+        if modinf.npi_config_seir is not None
+        else None
     )
     if modinf.npi_config_outcomes:
         npi_outcomes = outcomes.build_outcome_modifiers(
@@ -204,7 +213,7 @@ def get_static_arguments(modinf: model_info.ModelInfo):
             ),  # TODO add more information
         )
 
-    snpi_df_ref = npi_seir.getReductionDF()
+    snpi_df_ref = npi_seir.getReductionDF() if npi_seir is not None else pd.DataFrame()
 
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
         modinf=modinf,
@@ -384,11 +393,14 @@ class GempyorInference:
         self.autowrite_seir = autowrite_seir
 
         ## Inference Stuff
+        self.static_sim_arguments = None
         self.do_inference = False
         if config["inference"].exists():
             from . import inference_parameter, logloss
 
             if config["inference"]["method"].get("default") == "emcee":
+                # Generates the static_sim_arguments only if this is a config argument.
+                self.static_sim_arguments = get_static_arguments(self.modinf)
                 self.do_inference = True
                 self.inference_method = "emcee"
                 self.inferpar = inference_parameter.InferenceParameters(
@@ -401,7 +413,6 @@ class GempyorInference:
                     subpop_struct=self.modinf.subpop_struct,
                     time_setup=self.modinf.time_setup,
                 )
-                self.static_sim_arguments = get_static_arguments(self.modinf)
 
                 print("Running Gempyor Inference")
                 print(self.logloss)
@@ -446,6 +457,16 @@ class GempyorInference:
         del ss["hnpi_df_ref"]
 
         outcomes_df = simulation_atomic(**ss, modinf=self.modinf, save=self.save)
+
+        return outcomes_df
+
+    def get_logloss(self, proposal):
+        if not self.inferpar.check_in_bound(proposal=proposal):
+            if not self.silent:
+                print("OUT OF BOUND!!")
+            return -np.inf, -np.inf, -np.inf
+
+        outcomes_df = self.simulate_proposal(proposal=proposal)
 
         ll_total, logloss, regularizations = self.logloss.compute_logloss(
             model_df=outcomes_df, subpop_names=self.modinf.subpop_struct.subpop_names

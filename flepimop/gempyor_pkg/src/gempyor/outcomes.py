@@ -129,6 +129,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
+        if modinf.outcomes_config is None:
+            return {}
         outcomes_config = modinf.outcomes_config["outcomes"]
         if modinf.outcomes_config["param_from_file"].exists():
             if modinf.outcomes_config["param_from_file"].get():
@@ -368,7 +370,8 @@ def compute_all_multioutcomes(
     else:
         seir_sim = bypass_seir_df
 
-    for new_comp in parameters:
+    parameters_keys = list(parameters.keys())
+    for new_comp in parameters_keys:
         if "source" in parameters[new_comp]:
             # Read the config for this compartment: if a source is specified, we
             # 1. compute incidence from binomial draw
@@ -399,6 +402,9 @@ def compute_all_multioutcomes(
             else:  # already defined outcomes
                 if source_name in all_data:
                     source_array = all_data[source_name]
+                elif source_name in parameters_keys:
+                    parameters_keys.append(new_comp)
+                    continue
                 else:
                     raise ValueError(
                         f"Issue with outcome '{new_comp}'; the specified source '{source_name}' is neither a dictionnary (for seir outcome) nor an existing pre-identified outcome."

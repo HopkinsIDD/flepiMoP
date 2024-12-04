@@ -130,7 +130,8 @@ def test_constant_population_legacy_integration():
 
 def test_constant_population_rk4jit_integration_fail():
     with pytest.raises(
-        ValueError, match=r"'rk4.jit' integration method only supports deterministic integration.*"
+        ValueError,
+        match=r"'rk4.jit' integration method only supports deterministic integration.*",
     ):
         config.set_file(f"{DATA_DIR}/config.yml")
 

@@ -118,6 +118,7 @@ class ModelInfo:
 
         # 4. the SEIR structure
         self.seir_config = None
+        self.seir_modifiers_library = None
         if config["seir"].exists():
             self.seir_config = config["seir"]
             self.parameters_config = config["seir"]["parameters"]
@@ -148,11 +149,6 @@ class ModelInfo:
             self.initial_conditions = initial_conditions.InitialConditionsFactory(
                 config=self.initial_conditions_config, path_prefix=self.path_prefix
             )
-            # really ugly references to the config globally here.
-            if config["compartments"].exists() and self.seir_config is not None:
-                self.compartments = compartments.Compartments(
-                    seir_config=self.seir_config, compartments_config=config["compartments"]
-                )
 
             # SEIR modifiers
             self.npi_config_seir = None
@@ -185,10 +181,19 @@ class ModelInfo:
         else:
             logging.critical("Running ModelInfo without SEIR")
 
+        # really ugly references to the config globally here.
+        self.compartments = (
+            compartments.Compartments(
+                seir_config=self.seir_config, compartments_config=config["compartments"]
+            )
+            if (config["compartments"].exists() and self.seir_config is not None)
+            else None
+        )
+
         # 5. Outcomes
         self.outcomes_config = config["outcomes"] if config["outcomes"].exists() else None
+        self.npi_config_outcomes = None
         if self.outcomes_config is not None:
-            self.npi_config_outcomes = None
             if config["outcome_modifiers"].exists():
                 if config["outcome_modifiers"]["scenarios"].exists():
                     self.npi_config_outcomes = config["outcome_modifiers"]["modifiers"][

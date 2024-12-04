@@ -47,7 +47,9 @@ class TestModelInfo:
         config["start_date"] = "2022-01-02"
         with pytest.raises(
             ValueError,
-            match=re.escape(rf"Final time ('{config['end_date']}') is less than or equal to initial time ('{config['start_date']}')."),
+            match=re.escape(
+                rf"Final time ('{config['end_date']}') is less than or equal to initial time ('{config['start_date']}')."
+            ),
         ):
             s = ModelInfo(
                 config=config,

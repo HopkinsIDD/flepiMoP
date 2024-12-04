@@ -8,6 +8,51 @@ subpop_setup:
   geodata: data/geodata.csv
 
 
+compartments:
+  infection_stage:
+    - S
+    - I1
+    - R
+  vaccination_stage:
+    - unvaccinated
+    - first_dose
+
+
+seir:
+  integration:
+    method: rk4
+    dt: 1
+  transitions:
+    - source: [
+        ["S"],
+        ["unvaccinated", "first_dose"]
+      ]
+      destination: [
+        ["I1"],
+        ["unvaccinated", "first_dose"]
+      ]
+      proportional_to: [
+        "source",
+        [
+          [
+            ["I1"]
+          ],
+          [
+            ["unvaccinated", "first_dose"],
+            ["unvaccinated"],
+          ],
+        ]
+      ]
+      rate: [
+        [0.85],
+        [1, 0.5]
+      ]
+      proportion_exponent: [
+        [1, [1, 1]],
+        [1, [1, 1]]
+      ]
+
+
 outcomes:
   method: delayframe
   param_from_file: False
