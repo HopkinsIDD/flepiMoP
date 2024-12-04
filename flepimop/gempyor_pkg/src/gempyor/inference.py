@@ -392,14 +392,14 @@ class GempyorInference:
         self.already_built = False  # whether we have already built the costly objects that need just one build
         self.autowrite_seir = autowrite_seir
 
-        self.static_sim_arguments = get_static_arguments(self.modinf)
-
         ## Inference Stuff
         self.do_inference = False
         if config["inference"].exists():
             from . import inference_parameter, logloss
 
             if config["inference"]["method"].get("default") == "emcee":
+                # Generates the static_sim_arguments only if this is a config argument.
+                self.static_sim_arguments = get_static_arguments(self.modinf)
                 self.do_inference = True
                 self.inference_method = "emcee"
                 self.inferpar = inference_parameter.InferenceParameters(
