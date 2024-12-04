@@ -65,8 +65,8 @@ class InferenceParameters:
                     pname=pname,
                     subpop=",".join(group),
                     pdist=parameter_config["value"].as_random_distribution(),
-                    lb=float(parameter_config["value"]["a"].get()),
-                    ub=float(parameter_config["value"]["b"].get()),
+                    lb=parameter_config["value"]["a"].get(float),
+                    ub=parameter_config["value"]["b"].get(float),
                 )
 
     def add_single_parameter(self, ptype, pname, subpop, pdist, lb, ub):
