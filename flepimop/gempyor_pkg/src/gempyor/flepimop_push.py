@@ -15,7 +15,7 @@ from .file_paths import create_file_name_for_push
     "--s3_results_path", "s3_results_path", envvar="S3_RESULTS_PATH", type=click.STRING, default="", required=False
 )
 @click.option(
-    "--fs_results_path", "fs_results_path", envvar="FS_RESULTS_PATH", type=click.Path, default="", required=False
+    "--fs_results_path", "fs_results_path", envvar="FS_RESULTS_PATH", type=click.Path(), default="", required=False
 )
 def flepimop_push(
     s3_upload: str,
