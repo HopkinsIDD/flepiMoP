@@ -8,7 +8,6 @@ import confuse
 import numpy as np
 import pandas as pd
 import pytest
-from tempfile import NamedTemporaryFile
 
 from gempyor.parameters import Parameters
 from gempyor.testing import (
@@ -373,58 +372,6 @@ class TestParameters:
             modifier_type = param_conf.get("stacked_modifier_method", "product")
             expected_stacked_modifier_method[modifier_type].append(param_name.lower())
         assert params.stacked_modifier_method == expected_stacked_modifier_method
-
-    @pytest.mark.parametrize(
-        "factory,alpha_val",
-        [
-            (fixed_three_valid_parameter_factory, None),
-            (fixed_three_valid_parameter_factory, 123),
-            (valid_parameters_factory, "abc"),
-        ],
-    )
-    def test_picklable_lamda_alpha(
-        self,
-        tmp_path: pathlib.Path,
-        factory: Callable[[pathlib.Path], MockParametersInput],
-        alpha_val: Any,
-    ) -> None:
-        # Setup
-        mock_inputs = factory(tmp_path)
-        params = mock_inputs.create_parameters_instance()
-
-        # Attribute error if `alpha_val` is not set
-        with pytest.raises(AttributeError):
-            params.picklable_lamda_alpha()
-
-        # We get the expected value when `alpha_val` is set
-        params.alpha_val = alpha_val
-        assert params.picklable_lamda_alpha() == alpha_val
-
-    @pytest.mark.parametrize(
-        "factory,sigma_val",
-        [
-            (fixed_three_valid_parameter_factory, None),
-            (fixed_three_valid_parameter_factory, 123),
-            (valid_parameters_factory, "abc"),
-        ],
-    )
-    def test_picklable_lamda_sigma(
-        self,
-        tmp_path: pathlib.Path,
-        factory: Callable[[pathlib.Path], MockParametersInput],
-        sigma_val: Any,
-    ) -> None:
-        # Setup
-        mock_inputs = factory(tmp_path)
-        params = mock_inputs.create_parameters_instance()
-
-        # Attribute error if `sigma_val` is not set
-        with pytest.raises(AttributeError):
-            params.picklable_lamda_sigma()
-
-        # We get the expected value when `sigma_val` is set
-        params.sigma_val = sigma_val
-        assert params.picklable_lamda_sigma() == sigma_val
 
     @pytest.mark.parametrize(
         "factory",

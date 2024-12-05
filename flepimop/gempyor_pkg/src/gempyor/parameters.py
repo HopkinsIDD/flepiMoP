@@ -165,32 +165,6 @@ class Parameters:
         logging.debug(f"Index in arrays are: {self.pnames2pindex}")
         logging.debug(f"NPI overlap operation is {self.stacked_modifier_method} ")
 
-    def picklable_lamda_alpha(self):
-        """
-        Read the `alpha_val` attribute.
-
-        This defunct method returns the `alpha_val` attribute of this class which is
-        never set by this class. If this method is called and the `alpha_val` attribute
-        is not set an AttributeError will be raised.
-
-        Returns:
-            The `alpha_val` attribute.
-        """
-        return self.alpha_val
-
-    def picklable_lamda_sigma(self):
-        """
-        Read the `sigma_val` attribute.
-
-        This defunct method returns the `sigma_val` attribute of this class which is
-        never set by this class. If this method is called and the `sigma_val` attribute
-        is not set an AttributeError will be raised.
-
-        Returns:
-            The `sigma_val` attribute.
-        """
-        return self.sigma_val
-
     def get_pnames2pindex(self) -> dict:
         """
         Read the `pnames2pindex` attribute.
