@@ -237,7 +237,8 @@ class TestParameters:
             ValueError,
             match=(
                 rf"^Issue loading file '{tmp_file}' for parameter 'sigma': "
-                rf"the number of non-'date' columns is '{actual_columns}', expected '{mock_inputs.number_of_subpops()}' "
+                rf"the number of non-'date' columns is '{actual_columns}', expected "
+                rf"'{mock_inputs.number_of_subpops()}' "
                 rf"\(number of subpopulations\) or one\.$"
             ),
         ):
@@ -282,7 +283,8 @@ class TestParameters:
             ValueError,
             match=(
                 f"Issue loading file '{tmp_file}' for parameter 'sigma': "
-                f"Provided file dates span '{timeseries_start_date}( 00:00:00)?' to '{timeseries_end_date}( 00:00:00)?', "
+                f"Provided file dates span '{timeseries_start_date}( 00:00:00)?' to "
+                rf"'{timeseries_end_date}( 00:00:00)?', "
                 f"but the config dates span '{mock_inputs.ti}' to '{mock_inputs.tf}'.$"
             ),
         ):
