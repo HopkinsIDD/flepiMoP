@@ -5,17 +5,63 @@ from .file_paths import create_file_name_for_push
 
 
 @click.command()
-@click.option("--s3_upload", "s3_upload", envvar="S3_UPLOAD", help="push files to aws", required=True)
-@click.option("--data-path", "data_path", envvar="PROJECT_PATH", type=click.Path(exists=True), required=True)
-@click.option("--flepi_run_index", "flepi_run_index", envvar="FLEPI_RUN_INDEX", type=click.STRING, required=True)
-@click.option("--flepi_prefix", "flepi_prefix", envvar="FLEPI_PREFIX", type=click.STRING, required=True)
-@click.option("--flepi_block_index", "flepi_block_index", envvar="FLEPI_BLOCK_INDEX", type=click.STRING, required=True)
-@click.option("--flepi_slot_index", "flepi_slot_index", envvar="FLEPI_SLOT_INDEX", type=click.STRING, required=True)
 @click.option(
-    "--s3_results_path", "s3_results_path", envvar="S3_RESULTS_PATH", type=click.STRING, default="", required=False
+    "--s3_upload",
+    "s3_upload",
+    envvar="S3_UPLOAD",
+    help="push files to aws",
+    required=True,
 )
 @click.option(
-    "--fs_results_path", "fs_results_path", envvar="FS_RESULTS_PATH", type=click.Path(), default="", required=False
+    "--data-path",
+    "data_path",
+    envvar="PROJECT_PATH",
+    type=click.Path(exists=True),
+    required=True,
+)
+@click.option(
+    "--flepi_run_index",
+    "flepi_run_index",
+    envvar="FLEPI_RUN_INDEX",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--flepi_prefix",
+    "flepi_prefix",
+    envvar="FLEPI_PREFIX",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--flepi_block_index",
+    "flepi_block_index",
+    envvar="FLEPI_BLOCK_INDEX",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--flepi_slot_index",
+    "flepi_slot_index",
+    envvar="FLEPI_SLOT_INDEX",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--s3_results_path",
+    "s3_results_path",
+    envvar="S3_RESULTS_PATH",
+    type=click.STRING,
+    default="",
+    required=False,
+)
+@click.option(
+    "--fs_results_path",
+    "fs_results_path",
+    envvar="FS_RESULTS_PATH",
+    type=click.Path(),
+    default="",
+    required=False,
 )
 def flepimop_push(
     s3_upload: str,
