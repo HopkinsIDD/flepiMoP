@@ -55,8 +55,8 @@ class InferenceParameters:
                         pname=pname,
                         subpop=sp,
                         pdist=parameter_config["value"].as_random_distribution(),
-                        lb=parameter_config["value"]["a"].get(),
-                        ub=parameter_config["value"]["b"].get(),
+                        lb=parameter_config["value"]["a"].get(float),
+                        ub=parameter_config["value"]["b"].get(float),
                     )
 
             # grouped subpop have one parameter per group
@@ -67,8 +67,8 @@ class InferenceParameters:
                         pname=pname,
                         subpop=",".join(group),
                         pdist=parameter_config["value"].as_random_distribution(),
-                        lb=parameter_config["value"]["a"].get(),
-                        ub=parameter_config["value"]["b"].get(),
+                        lb=parameter_config["value"]["a"].get(float),
+                        ub=parameter_config["value"]["b"].get(float),
                     )
         elif parameter_config["method"].get() == "MultiPeriodModifier":
             affected_subpops_grp = []
@@ -97,8 +97,8 @@ class InferenceParameters:
                             pname=pname,
                             subpop=sp,
                             pdist=parameter_config["value"].as_random_distribution(),
-                            lb=parameter_config["value"]["a"].get(),
-                            ub=parameter_config["value"]["b"].get(),
+                            lb=parameter_config["value"]["a"].get(float),
+                            ub=parameter_config["value"]["b"].get(float),
                         )
 
                 # grouped subpop have one parameter per group
@@ -109,8 +109,8 @@ class InferenceParameters:
                             pname=pname,
                             subpop=",".join(group),
                             pdist=parameter_config["value"].as_random_distribution(),
-                            lb=parameter_config["value"]["a"].get(),
-                            ub=parameter_config["value"]["b"].get(),
+                            lb=parameter_config["value"]["a"].get(float),
+                            ub=parameter_config["value"]["b"].get(float),
                         )
         else:
             raise ValueError(f"Unknown method {parameter_config['method']}")
