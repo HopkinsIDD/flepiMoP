@@ -1,5 +1,8 @@
-import pandas as pd
+import datetime
+
 import numpy as np
+import pandas as pd
+
 from . import helpers
 from .base import NPIBase
 
@@ -9,7 +12,8 @@ class MultiPeriodModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf,
+        modinf_ti: datetime.date,
+        modinf_tf: datetime.date,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -27,8 +31,8 @@ class MultiPeriodModifier(NPIBase):
         )
 
         self.sanitize = sanitize
-        self.start_date = modinf.ti
-        self.end_date = modinf.tf
+        self.start_date = modinf_ti
+        self.end_date = modinf_tf
 
         self.subpops = subpops
 
@@ -185,7 +189,9 @@ class MultiPeriodModifier(NPIBase):
         if grp_config["subpop"].get() == "all":
             affected_subpops_grp = self.subpops
         else:
-            affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
+            affected_subpops_grp = list(
+                set(grp_config["subpop"].as_str_seq()).intersection(self.subpops)
+            )
         return affected_subpops_grp
 
     def __createFromDf(self, loaded_df, npi_config):

@@ -44,6 +44,13 @@ seir:
       value:
         distribution: fixed
         value: 5
+  transitions:
+    - source: ["S", "unvaccinated", "WILD", "age0to17"]
+      destination: ["E", "unvaccinated", "WILD", "age0to17"]
+      rate: [["r1"], ["r2"], ["r3"], ["r4"]]
+      proportional_to: [["S", "unvaccinated", "WILD", "age0to17"], ["E", "unvaccinated", "WILD", "age0to17"]]
+      proportion_exponent: [[1, 1, 1, 1], [1, 1, 1, 1]]
+
 
 seir_modifiers:
   scenarios:
