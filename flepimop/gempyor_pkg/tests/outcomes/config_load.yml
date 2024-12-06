@@ -8,6 +8,32 @@ subpop_setup:
   geodata: data/geodata.csv
 
 
+compartments:
+  infection_stage: ["S", "I1", "I2", "R"]
+
+
+seir:
+  integration:
+    method: rk4
+    dt: 1
+  transitions:
+    - source: ["S"]
+      destination: ["I1"]
+      rate: ["0.85"]
+      proportional_to: [["S"], ["I1"]]
+      proportion_exponent: ["1", "1"]
+    - source: ["I1"]
+      destination: ["I2"]
+      rate: ["0.5"]
+      proportional_to: [["I1"], ["I2"]]
+      proportion_exponent: ["1", "1"]
+    - source: ["I2"]
+      destination: ["R"]
+      rate: ["0.1"]
+      proportional_to: [["I2"], ["R"]]
+      proportion_exponent: ["1", "1"]
+
+
 outcomes:
   method: delayframe
   param_from_file: True

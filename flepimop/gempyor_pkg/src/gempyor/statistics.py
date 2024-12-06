@@ -10,6 +10,7 @@ __all__ = ["Statistic"]
 
 import confuse
 import numpy as np
+from scipy.special import gammaln
 import scipy.stats
 import xarray as xr
 
@@ -74,7 +75,10 @@ class Statistic:
                 reg_name = reg_config["name"].get()
                 reg_func = getattr(self, f"_{reg_name}_regularize", None)
                 if reg_func is None:
-                    raise ValueError(f"Unsupported regularization: {reg_name}")
+                    raise ValueError(
+                        f"Unsupported regularization [received: '{reg_name}']. "
+                        f"Currently only `forecast` and `allsubpop` are supported."
+                    )
                 self.regularizations.append((reg_func, reg_config.get()))
 
         self.resample = False
@@ -238,22 +242,40 @@ class Statistic:
             The log-likelihood of observing `gt_data` from the model `model_data` as an
             xarray DataArray with a "subpop" dimension.
         """
+
         dist_map = {
-            "pois": scipy.stats.poisson.logpmf,
+            "pois": lambda ymodel, ydata: -(ymodel + 1)
+            + ydata * np.log(ymodel + 1)
+            - gammaln(ydata + 1),
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            # OLD: # TODO: Swap out in favor of NEW
             "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=self.params.get("scale", scale)
-            ),  # wrong:
+            ),
             "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
                 x, loc=loc, scale=scale * loc.where(loc > 5, 5)
             ),
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
+            # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
+            "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
+                x, loc=loc, scale=self.params.get("sd", sd)
+            ),  # scale = standard deviation
+            "norm_heteroskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
+                x, loc=loc, scale=self.params.get("sd", sd) * loc
+            ),  # scale = standard deviation
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
                 x, n=self.params.get("n"), p=model_data
             ),
-            "rmse": lambda x, y: -np.log(np.nansum(np.sqrt((x - y) ** 2))),
+            "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
             "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
         }
         if self.dist not in dist_map:
-            raise ValueError(f"Invalid distribution specified: {self.dist}")
+            raise ValueError(
+                f"Invalid distribution specified: '{self.dist}'. "
+                f"Valid distributions: '{dist_map.keys()}'."
+            )
         if self.dist in ["pois", "nbinom"]:
             model_data = model_data.astype(int)
             gt_data = gt_data.astype(int)
@@ -265,7 +287,6 @@ class Statistic:
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
-
         likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
         return likelihood
@@ -295,11 +316,9 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(
-                (
-                    f"{self.name} Statistic error: data and groundtruth do not have "
-                    f"the same shape: model_data.shape={model_data.shape} != "
-                    f"gt_data.shape={gt_data.shape}"
-                )
+                f"`model_data` and `gt_data` do not have "
+                f"the same shape: `model_data.shape` = '{model_data.shape}' != "
+                f"`gt_data.shape` = '{gt_data.shape}'."
             )
 
         regularization = 0.0

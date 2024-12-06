@@ -1,9 +1,10 @@
+import logging
 import pathlib
+
+import confuse
 import numpy as np
 import pandas as pd
 import scipy.sparse
-from .utils import read_df, write_df
-import logging, pathlib
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,13 @@ subpop_names_key = "subpop"
 
 
 class SubpopulationStructure:
-    def __init__(self, *, setup_name, subpop_config, path_prefix=pathlib.Path(".")):
+    def __init__(
+        self,
+        *,
+        setup_name: str,
+        subpop_config: confuse.Subview,
+        path_prefix=pathlib.Path("."),
+    ):
         """Important attributes:
         - self.setup_name: Name of the setup
         - self.data: DataFrame with subpopulations and populations

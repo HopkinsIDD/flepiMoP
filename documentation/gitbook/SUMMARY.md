@@ -48,6 +48,7 @@
 
 * [Before any run](how-to-run/before-any-run.md)
 * [Quick Start Guide](how-to-run/quick-start-guide.md)
+* [Multiple Configuration Files](multi-configs.md)
 * [Advanced run guides](how-to-run/advanced-run-guides/README.md)
   * [Running with Docker locally 🛳](how-to-run/advanced-run-guides/running-with-docker-locally.md)
   * [Running locally in a conda environment 🐍](how-to-run/advanced-run-guides/quick-start-guide-conda.md)
@@ -57,8 +58,9 @@
 * [Useful commands](how-to-run/useful-commands.md)
 * [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)
 
-## 🗜️ Development
+## [Development](./development/README.md)
 
+* [Git and GitHub Usage](./development/git-and-github-usage.md)
 * [Guidelines for contributors](development/python-guidelines-for-developers.md)
 
 ## Deprecated pages

@@ -7,12 +7,13 @@ on:
       - build/create_environment_yml.R
       - flepimop/R_packages/*/DESCRIPTION
     branches:
-      - main
+      - dev
   pull_request:
     paths:
       - build/create_environment_yml.R
       - flepimop/R_packages/*/DESCRIPTION
     branches:
+      - dev
       - main
 
 jobs:
