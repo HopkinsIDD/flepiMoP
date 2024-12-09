@@ -55,4 +55,4 @@ While in the `flepiMoP` directory, run the following command:
 /build/local_install_or_update.sh
 ```
 
-This command will install the flepiMoP Python package, `gempyor`, along with all its dependencies, as well as all necessary R packages and dependencies. 
+This command will install the flepiMoP Python package, `gempyor`, along with all its dependencies, as well as all necessary R packages and dependencies. This command will also verify that your `conda` environment settings are corretly configured for flepiMoP use.
