@@ -84,7 +84,8 @@ class Parameters:
         self.npar = len(self.pnames)
         if self.npar != len(set([name.lower() for name in self.pnames])):
             raise ValueError(
-                "Parameters of the SEIR model have the same name (remember that case is not sufficient!)"
+                "Parameters of the SEIR model have the same "
+                "name (remember that case is not sufficient!)"
             )
 
         # Attributes of dictionary
@@ -128,16 +129,18 @@ class Parameters:
                     print("loaded dates:", df.index)
                     raise ValueError(
                         f"Issue loading file '{fn_name}' for parameter '{pn}': "
-                        f"Provided file dates span '{str(df.index[0])}' to '{str(df.index[-1])}', "
-                        f"but the config dates span '{ti}' to '{tf}'."
+                        f"Provided file dates span '{str(df.index[0])}' to "
+                        f"'{str(df.index[-1])}', but the config dates "
+                        f"span '{ti}' to '{tf}'."
                     )
                 if not (pd.date_range(ti, tf) == df.index).all():
                     print("config dates:", pd.date_range(ti, tf))
                     print("loaded dates:", df.index)
                     raise ValueError(
                         f"Issue loading file '{fn_name}' for parameter '{pn}': "
-                        f"Provided file dates span '{str(df.index[0])}' to '{str(df.index[-1])}', "
-                        f"but the config dates span '{ti}' to '{tf}'."
+                        f"Provided file dates span '{str(df.index[0])}' to "
+                        f"'{str(df.index[-1])}', but the config dates "
+                        f"span '{ti}' to '{tf}'."
                     )
 
                 self.pdata[pn]["ts"] = df
@@ -148,7 +151,8 @@ class Parameters:
             else:
                 self.pdata[pn]["stacked_modifier_method"] = "product"
                 logging.debug(
-                    f"No 'stacked_modifier_method' for parameter {pn}, assuming multiplicative NPIs"
+                    f"No 'stacked_modifier_method' for parameter {pn}, "
+                    "assuming multiplicative NPIs."
                 )
 
             if self.pconfig[pn]["rolling_mean_windows"].exists():
@@ -164,32 +168,6 @@ class Parameters:
         logging.debug(f"Data to sample is: {self.pdata}")
         logging.debug(f"Index in arrays are: {self.pnames2pindex}")
         logging.debug(f"NPI overlap operation is {self.stacked_modifier_method} ")
-
-    def picklable_lamda_alpha(self):
-        """
-        Read the `alpha_val` attribute.
-
-        This defunct method returns the `alpha_val` attribute of this class which is
-        never set by this class. If this method is called and the `alpha_val` attribute
-        is not set an AttributeError will be raised.
-
-        Returns:
-            The `alpha_val` attribute.
-        """
-        return self.alpha_val
-
-    def picklable_lamda_sigma(self):
-        """
-        Read the `sigma_val` attribute.
-
-        This defunct method returns the `sigma_val` attribute of this class which is
-        never set by this class. If this method is called and the `sigma_val` attribute
-        is not set an AttributeError will be raised.
-
-        Returns:
-            The `sigma_val` attribute.
-        """
-        return self.sigma_val
 
     def get_pnames2pindex(self) -> dict:
         """
@@ -235,7 +213,8 @@ class Parameters:
             else:
                 param_arr[idx] = self.pdata[pn]["ts"].values
 
-        return param_arr  # we don't store it as a member because this object needs to be small to be pickable
+        # we don't store it as a member because this object needs to be small to be pickable
+        return param_arr
 
     def parameters_load(
         self, param_df: pd.DataFrame, n_days: int, nsubpops: int
@@ -275,7 +254,8 @@ class Parameters:
                 param_arr[idx] = self.pdata[pn]["ts"].values
             else:
                 print(
-                    f"PARAM: parameter {pn} NOT found in loadID file. Drawing from config distribution"
+                    f"PARAM: parameter {pn} NOT found in loadID file. "
+                    "Drawing from config distribution"
                 )
                 pval = self.pdata[pn]["dist"]()
                 param_arr[idx] = np.full((n_days, nsubpops), pval)
