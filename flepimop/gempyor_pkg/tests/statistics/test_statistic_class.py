@@ -275,12 +275,48 @@ def simple_valid_factory_with_pois() -> MockStatisticInput:
     )
 
 
+def simple_valid_factory_with_pois_with_some_zeros() -> MockStatisticInput:
+    mock_input = simple_valid_factory_with_pois()
+
+    mock_input.config["zero_to_one"] = True
+
+    mock_input.model_data["incidH"].loc[
+        {
+            "date": mock_input.model_data.coords["date"][0],
+            "subpop": mock_input.model_data.coords["subpop"][0],
+        }
+    ] = 0
+
+    mock_input.gt_data["incidD"].loc[
+        {
+            "date": mock_input.gt_data.coords["date"][0],
+            "subpop": mock_input.gt_data.coords["subpop"][0],
+        }
+    ] = 0
+
+    mock_input.model_data["incidH"].loc[
+        {
+            "date": mock_input.model_data.coords["date"][1],
+            "subpop": mock_input.model_data.coords["subpop"][1],
+        }
+    ] = 0
+    mock_input.gt_data["incidH"].loc[
+        {
+            "date": mock_input.gt_data.coords["date"][1],
+            "subpop": mock_input.gt_data.coords["subpop"][1],
+        }
+    ] = 0
+
+    return mock_input
+
+
 all_valid_factories = [
     (simple_valid_factory),
     (simple_valid_resample_factory),
     (simple_valid_resample_factory),
     (simple_valid_resample_and_scale_factory),
     (simple_valid_factory_with_pois),
+    (simple_valid_factory_with_pois_with_some_zeros),
 ]
 
 
@@ -549,8 +585,21 @@ class TestStatistic:
             assert np.allclose(
                 log_likelihood.values,
                 scipy.stats.poisson.logpmf(
-                    mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
-                    mock_inputs.model_data[mock_inputs.config["data_var"]].values,
+                    np.where(
+                        mock_inputs.config.get("zero_to_one", False)
+                        & (mock_inputs.gt_data[mock_inputs.config["data_var"]].values == 0),
+                        1,
+                        mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
+                    ),
+                    np.where(
+                        mock_inputs.config.get("zero_to_one", False)
+                        & (
+                            mock_inputs.model_data[mock_inputs.config["data_var"]].values
+                            == 0
+                        ),
+                        1,
+                        mock_inputs.model_data[mock_inputs.config["data_var"]].values,
+                    ),
                 ),
             )
         elif dist_name in {"norm", "norm_cov"}:
