@@ -1,20 +1,27 @@
-from typing import Dict, TYPE_CHECKING
+# Exports
+__all__ = ("Seeding", "SeedingFactory")
 
+
+# Imports
+import logging
+
+import confuse
+import numba as nb
 import numpy as np
 import pandas as pd
-import confuse
-import logging
+
 from .simulation_component import SimulationComponent
 from . import utils
-import numba as nb
-import os
 
+
+# Globals
 logger = logging.getLogger(__name__)
 
 
 ## TODO: ideally here path_prefix should not be used and all files loaded from modinf
 
 
+# Internal functionality
 def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     if not df["date"].is_monotonic_increasing:
         raise ValueError("The `df` given is not sorted by the 'date' column.")
@@ -40,7 +47,8 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     for idx, (row_index, row) in enumerate(df.iterrows()):
         if row["subpop"] not in modinf.subpop_struct.subpop_names:
             logging.debug(
-                f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of seeding::lambda_file. Not found in geodata... Skipping"
+                f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of "
+                "seeding::lambda_file. Not found in geodata... Skipping"
             )
         elif (row["date"].date() - modinf.ti).days >= 0:
             if (row["date"].date() - modinf.ti).days < len(nb_seed_perday):
@@ -55,19 +63,24 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
                 }
                 seeding_dict["seeding_sources"][idx] = modinf.compartments.get_comp_idx(
                     source_dict,
-                    error_info=f"(seeding source at idx={idx}, row_index={row_index}, row=>>{row}<<)",
+                    error_info=(
+                        f"(seeding source at idx={idx}, "
+                        f"row_index={row_index}, row=>>{row}<<)"
+                    ),
                 )
                 seeding_dict["seeding_destinations"][idx] = (
                     modinf.compartments.get_comp_idx(
                         destination_dict,
-                        error_info=f"(seeding destination at idx={idx}, row_index={row_index}, row=>>{row}<<)",
+                        error_info=(
+                            f"(seeding destination at idx={idx}, "
+                            f"row_index={row_index}, row=>>{row}<<)"
+                        ),
                     )
                 )
                 seeding_dict["seeding_subpops"][idx] = (
                     modinf.subpop_struct.subpop_names.index(row["subpop"])
                 )
                 seeding_amounts[idx] = amounts[idx]
-                # id_seed+=1
             else:
                 n_seeding_ignored_after += 1
         else:
@@ -75,11 +88,13 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
 
     if n_seeding_ignored_before > 0:
         logging.critical(
-            f"Seeding ignored {n_seeding_ignored_before} rows because they were before the start of the simulation."
+            f"Seeding ignored {n_seeding_ignored_before} rows "
+            "because they were before the start of the simulation."
         )
     if n_seeding_ignored_after > 0:
         logging.critical(
-            f"Seeding ignored {n_seeding_ignored_after} rows because they were after the end of the simulation."
+            f"Seeding ignored {n_seeding_ignored_after} rows "
+            "because they were after the end of the simulation."
         )
 
     day_start_idx = np.zeros(modinf.n_days + 1, dtype=np.int64)
@@ -89,6 +104,7 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     return seeding_dict, seeding_amounts
 
 
+# Exported functionality
 class Seeding(SimulationComponent):
     def __init__(self, config: confuse.ConfigView, path_prefix: str = "."):
         self.seeding_config = config
@@ -109,7 +125,8 @@ class Seeding(SimulationComponent):
             dupes = seeding[seeding.duplicated(["subpop", "date"])].index + 1
             if not dupes.empty:
                 raise ValueError(
-                    f"There are repeating subpop-date in rows '{dupes.tolist()}' of `seeding::lambda_file`."
+                    f"There are repeating subpop-date in rows '{dupes.tolist()}' "
+                    "of `seeding::lambda_file`."
                 )
         elif method == "FolderDraw":
             seeding = pd.read_csv(
@@ -154,7 +171,8 @@ class Seeding(SimulationComponent):
             amounts = np.random.poisson(seeding["amount"])
         elif method == "NegativeBinomialDistributed":
             raise ValueError(
-                "Seeding method 'NegativeBinomialDistributed' is not supported by flepiMoP anymore."
+                "Seeding method 'NegativeBinomialDistributed' "
+                "is not supported by flepiMoP anymore."
             )
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
