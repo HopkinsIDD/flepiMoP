@@ -228,11 +228,59 @@ def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
     )
 
 
+def simple_valid_factory_with_pois() -> MockStatisticInput:
+    data_coords = {
+        "date": pd.date_range(date(2024, 1, 1), date(2024, 1, 10)),
+        "subpop": ["01", "02", "03"],
+    }
+    data_dim = [len(v) for v in data_coords.values()]
+    model_data = xr.Dataset(
+        data_vars={
+            "incidH": (
+                list(data_coords.keys()),
+                np.random.poisson(lam=20.0, size=data_dim),
+            ),
+            "incidD": (
+                list(data_coords.keys()),
+                np.random.poisson(lam=20.0, size=data_dim),
+            ),
+        },
+        coords=data_coords,
+    )
+    gt_data = xr.Dataset(
+        data_vars={
+            "incidH": (
+                list(data_coords.keys()),
+                np.random.poisson(lam=20.0, size=data_dim),
+            ),
+            "incidD": (
+                list(data_coords.keys()),
+                np.random.poisson(lam=20.0, size=data_dim),
+            ),
+        },
+        coords=data_coords,
+    )
+    return MockStatisticInput(
+        "total_hospitalizations",
+        {
+            "name": "sum_hospitalizations",
+            "sim_var": "incidH",
+            "data_var": "incidH",
+            "remove_na": True,
+            "add_one": True,
+            "likelihood": {"dist": "pois"},
+        },
+        model_data=model_data,
+        gt_data=gt_data,
+    )
+
+
 all_valid_factories = [
     (simple_valid_factory),
     (simple_valid_resample_factory),
     (simple_valid_resample_factory),
     (simple_valid_resample_and_scale_factory),
+    (simple_valid_factory_with_pois),
 ]
 
 
