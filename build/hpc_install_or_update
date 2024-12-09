@@ -103,5 +103,5 @@ R -e "library(inference); inference::install_cli()"
 
 # Done
 echo "> Done installing/updating flepiMoP."
-echo "> To activate the environment, run '$FLEPI_PATH/batch/hpc_init.sh $1'."
+echo "> To activate the environment, run '$FLEPI_PATH/batch/hpc_init $1'."
 set +e

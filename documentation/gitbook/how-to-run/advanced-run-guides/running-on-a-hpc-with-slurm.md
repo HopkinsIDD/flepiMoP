@@ -32,10 +32,10 @@ Resolving deltas: 100% (59/59), done.
 Updating files: 100% (411/411), done.
 ```
 
-Run the `hpc_install_or_update.sh` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will prompt the user asking for the location to place the `flepiMoP` clone and the name of the conda environment that it will create. If this is your first time using this script accepting the defaults is the quickest way to get started. Also, expect this script to take a while the first time that you run it.
+Run the `hpc_install_or_update` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will prompt the user asking for the location to place the `flepiMoP` clone and the name of the conda environment that it will create. If this is your first time using this script accepting the defaults is the quickest way to get started. Also, expect this script to take a while the first time that you run it.
 
 ```
-$ ./flepiMoP/build/hpc_install_or_update.sh <cluster-name>
+$ ./flepiMoP/build/hpc_install_or_update <cluster-name>
 ```
 
 Remove the temporary clone of the `flepiMoP` repository created before. This step is not required, but does help alleviate confusion later.
@@ -46,20 +46,20 @@ $ rm -rf flepiMoP/
 
 ## Updating `flepiMoP`
 
-Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. Make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `hpc_install_or_update.sh` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
+Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. Make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `hpc_install_or_update` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
 
 ```
-$ ./flepiMoP/build/hpc_install_or_update.sh <cluster-name>
+$ ./flepiMoP/build/hpc_install_or_update <cluster-name>
 ```
 
 ## Initialize The Created `flepiMoP` Environment
 
 These steps to initialize the environment need to run on a per run or as needed basis.
 
-Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init.sh` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about a project directory and config, if this is your first time initializing `flepiMoP` it might be helpful to clone [the `flepimop_sample` GitHub repository](https://github.com/HopkinsIDD/flepimop\_sample) to the same directory to use as a test.
+Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about a project directory and config, if this is your first time initializing `flepiMoP` it might be helpful to clone [the `flepimop_sample` GitHub repository](https://github.com/HopkinsIDD/flepimop\_sample) to the same directory to use as a test.
 
 ```
-$ source batch/hpc_init.sh <cluster-name>
+$ ./flepiMoP/batch/hpc_init <cluster-name>
 ```
 
 Upon completing this script it will output a sample set of commands to run to quickly test if the installation/initialization has gone okay.&#x20;
