@@ -144,4 +144,4 @@ EOM
 set +e
 
 # Launch subshell with modified environment
-eval "$SHELL -i"
+eval "$SHELL -l"
