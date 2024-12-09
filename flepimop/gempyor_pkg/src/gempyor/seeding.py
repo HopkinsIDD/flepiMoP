@@ -3,14 +3,18 @@ __all__ = ("Seeding", "SeedingFactory")
 
 
 # Imports
+from datetime import date
 import logging
 
 import confuse
 import numba as nb
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
+from .compartments import Compartments
 from .simulation_component import SimulationComponent
+from .subpopulation_structure import SubpopulationStructure
 from . import utils
 
 
@@ -22,13 +26,18 @@ logger = logging.getLogger(__name__)
 
 
 # Internal functionality
-def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
+def _DataFrame2NumbaDict(
+    df: pd.DataFrame,
+    amounts: list[float],
+    compartments: Compartments,
+    subpop_struct: SubpopulationStructure,
+    n_days: int,
+    ti: date,
+) -> tuple[nb.typed.Dict, npt.NDArray[np.number]]:
     if not df["date"].is_monotonic_increasing:
         raise ValueError("The `df` given is not sorted by the 'date' column.")
 
-    cmp_grp_names = [
-        col for col in modinf.compartments.compartments.columns if col != "name"
-    ]
+    cmp_grp_names = [col for col in compartments.compartments.columns if col != "name"]
     seeding_dict: nb.typed.Dict = nb.typed.Dict.empty(
         key_type=nb.types.unicode_type,
         value_type=nb.types.int64[:],
@@ -38,22 +47,22 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     seeding_dict["seeding_subpops"] = np.zeros(len(amounts), dtype=np.int64)
     seeding_amounts = np.zeros(len(amounts), dtype=np.float64)
 
-    nb_seed_perday = np.zeros(modinf.n_days, dtype=np.int64)
+    nb_seed_perday = np.zeros(n_days, dtype=np.int64)
 
     n_seeding_ignored_before = 0
     n_seeding_ignored_after = 0
 
     # id_seed = 0
     for idx, (row_index, row) in enumerate(df.iterrows()):
-        if row["subpop"] not in modinf.subpop_struct.subpop_names:
+        if row["subpop"] not in subpop_struct.subpop_names:
             logging.debug(
                 f"Invalid subpop '{row['subpop']}' in row {row_index + 1} of "
                 "seeding::lambda_file. Not found in geodata... Skipping"
             )
-        elif (row["date"].date() - modinf.ti).days >= 0:
-            if (row["date"].date() - modinf.ti).days < len(nb_seed_perday):
-                nb_seed_perday[(row["date"].date() - modinf.ti).days] = (
-                    nb_seed_perday[(row["date"].date() - modinf.ti).days] + 1
+        elif (row["date"].date() - ti).days >= 0:
+            if (row["date"].date() - ti).days < len(nb_seed_perday):
+                nb_seed_perday[(row["date"].date() - ti).days] = (
+                    nb_seed_perday[(row["date"].date() - ti).days] + 1
                 )
                 source_dict = {
                     grp_name: row[f"source_{grp_name}"] for grp_name in cmp_grp_names
@@ -61,24 +70,22 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
                 destination_dict = {
                     grp_name: row[f"destination_{grp_name}"] for grp_name in cmp_grp_names
                 }
-                seeding_dict["seeding_sources"][idx] = modinf.compartments.get_comp_idx(
+                seeding_dict["seeding_sources"][idx] = compartments.get_comp_idx(
                     source_dict,
                     error_info=(
                         f"(seeding source at idx={idx}, "
                         f"row_index={row_index}, row=>>{row}<<)"
                     ),
                 )
-                seeding_dict["seeding_destinations"][idx] = (
-                    modinf.compartments.get_comp_idx(
-                        destination_dict,
-                        error_info=(
-                            f"(seeding destination at idx={idx}, "
-                            f"row_index={row_index}, row=>>{row}<<)"
-                        ),
-                    )
+                seeding_dict["seeding_destinations"][idx] = compartments.get_comp_idx(
+                    destination_dict,
+                    error_info=(
+                        f"(seeding destination at idx={idx}, "
+                        f"row_index={row_index}, row=>>{row}<<)"
+                    ),
                 )
-                seeding_dict["seeding_subpops"][idx] = (
-                    modinf.subpop_struct.subpop_names.index(row["subpop"])
+                seeding_dict["seeding_subpops"][idx] = subpop_struct.subpop_names.index(
+                    row["subpop"]
                 )
                 seeding_amounts[idx] = amounts[idx]
             else:
@@ -97,7 +104,7 @@ def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
             "because they were after the end of the simulation."
         )
 
-    day_start_idx = np.zeros(modinf.n_days + 1, dtype=np.int64)
+    day_start_idx = np.zeros(n_days + 1, dtype=np.int64)
     day_start_idx[1:] = np.cumsum(nb_seed_perday)
     seeding_dict["day_start_idx"] = day_start_idx
 
@@ -149,7 +156,14 @@ class Seeding(SimulationComponent):
             )
         elif method == "NoSeeding":
             seeding = pd.DataFrame(columns=["date", "subpop"])
-            return _DataFrame2NumbaDict(df=seeding, amounts=[], modinf=modinf)
+            return _DataFrame2NumbaDict(
+                seeding,
+                [],
+                modinf.compartments,
+                modinf.subpop_struct,
+                modinf.n_days,
+                modinf.ti,
+            )
         else:
             raise ValueError(f"Unknown seeding method given, '{method}'.")
 
@@ -177,7 +191,14 @@ class Seeding(SimulationComponent):
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
 
-        return _DataFrame2NumbaDict(df=seeding, amounts=amounts, modinf=modinf)
+        return _DataFrame2NumbaDict(
+            seeding,
+            amounts,
+            modinf.compartments,
+            modinf.subpop_struct,
+            modinf.n_days,
+            modinf.ti,
+        )
 
     def get_from_file(self, sim_id: int, modinf) -> nb.typed.Dict:
         """only difference with draw seeding is that the sim_id is now sim_id2load"""
