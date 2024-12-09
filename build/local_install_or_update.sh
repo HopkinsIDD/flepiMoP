@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# Generic setup
+set -e
+
+# Ensure we have a $FLEPI_PATH
+if [ -z "${FLEPI_PATH}" ]; then
+    export USERDIR=$(pwd)
+    export FLEPI_PATH="$USERDIR/flepiMoP"
+    export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
+    echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
+fi
+
+# Test that flepiMoP is located there, exit if not
+if [ ! -d "$FLEPI_PATH" ]; then
+    echo "Could not find flepiMoP repository in your directory. Please make sure you have correctly cloned flepiMoP in this directory."
+    exit 1
+fi
+
+# Ensure that conda environment is named flepimop-env
+if [ -z "${FLEPI_CONDA}" ]; then
+    export FLEPI_CONDA="flepimop-env"
+    echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
+fi
+
+# Check that the name of the FLEPI_CONDA variable matches the environment that has been set up, exit if not
+FLEPI_CONDA_ENV_MATCHES=$( conda info --envs | awk '{print $1}' | grep -x "$FLEPI_CONDA" | wc -l )
+if [ "$FLEPI_CONDA_ENV_MATCHES" -eq 0 ]; then
+    echo "Issue with conda environment: ensure you have set up your conda environment and it has the correct name."
+    exit 1
+fi
+
+# Load the conda environment
+conda activate $FLEPI_CONDA
+[ -e "$CONDA_PREFIX/conda-meta/pinned" ] && rm $CONDA_PREFIX/conda-meta/pinned
+cat << EOF > $CONDA_PREFIX/conda-meta/pinned
+r-arrow==17.0.0
+arrow==17.0.0
+EOF
+
+# Install the gempyor package from local
+pip install --editable $FLEPI_PATH/flepimop/gempyor_pkg
+
+# Install the local R packages
+R -e "install.packages('covidcast', repos='https://cloud.r-project.org')"
+RETURNTO=$( pwd )
+cd $FLEPI_PATH/flepimop/R_packages/
+for d in $( ls ); do
+    R CMD INSTALL $d
+done
+cd $RETURNTO
+R -e "library(inference); inference::install_cli()"
+
+# Done
+echo "> Done installing/updating flepiMoP."
+set +e
+
+
+
