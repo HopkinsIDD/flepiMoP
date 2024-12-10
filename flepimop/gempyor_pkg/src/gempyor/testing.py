@@ -7,7 +7,10 @@ the optional test dependencies must be installed.
 
 __all__ = [
     "change_directory_to_temp_directory",
+    "mock_empty_config",
+    "create_confuse_config_from_file",
     "create_confuse_configview_from_dict",
+    "create_confuse_config_from_dict",
     "partials_are_similar",
     "sample_fits_distribution",
 ]
@@ -17,6 +20,7 @@ import functools
 import os
 from tempfile import TemporaryDirectory
 from typing import Any, Literal
+from pathlib import Path
 
 import confuse
 import numpy as np
@@ -41,6 +45,35 @@ def change_directory_to_temp_directory() -> Generator[None, None, None]:
     yield
     os.chdir(current_dir)
     temp_dir.cleanup()
+
+
+def mock_empty_config() -> confuse.Configuration:
+    """
+    Create a `confuse.Configuration` (akin to `gempyor.utils.config`) with no data for
+    unit testing configurations.
+
+    Returns:
+        A `confuse.Configuration`.
+    """
+    return confuse.Configuration("flepiMoPMock", read=False)
+
+
+def create_confuse_config_from_file(
+    data_file: Path,
+) -> confuse.Configuration:
+    """
+    Create a `confuse.Configuration` (akin to `gempyor.utils.config`) from a file for
+    unit testing configurations.
+
+    Args:
+        data_file: The file to populate the confuse ConfigView with.
+
+    Returns:
+        A `confuse.Configuration`.
+    """
+    cv = mock_empty_config()
+    cv.set_file(data_file)
+    return cv
 
 
 def create_confuse_configview_from_dict(
@@ -101,6 +134,23 @@ def create_confuse_configview_from_dict(
     cv = confuse.RootView([confuse.ConfigSource.of(data)])
     cv = cv[name] if name is not None else cv
     return cv
+
+
+def create_confuse_config_from_dict(data: dict[str, Any]) -> confuse.Configuration:
+    """
+    Create a Configuration from a dictionary for unit testing confuse parameters.
+
+    Args:
+        data: The data to populate the confuse ConfigView with.
+
+    Returns:
+        confuse Configuration
+
+
+    """
+    cfg = mock_empty_config()
+    cfg.set_args(data)
+    return cfg
 
 
 def partials_are_similar(

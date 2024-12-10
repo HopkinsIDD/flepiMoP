@@ -1,35 +1,32 @@
 # Inference with EMCEE
 
-{% hint style="warning" %}
-For now this only work from branch emcee\_batch
-{% endhint %}
+### Config Changes Relative To Classical Inference
 
-### Config changes w.r.t classical inference
+The major changes are:
 
-You need, under inference, to add `method: emcee` and modify the `statistics:` as shown in the diff below (basically: all resampling goes to one subsection, with some minor changes to names).&#x20;
+1. Under the 'inference' section add `method: emcee` entry, and
+2. Under the 'statistics' section move the resample specific configuration under a 'resample' subsection as show bellow:
 
 <figure><img src="../.gitbook/assets/Screenshot 2024-10-25 at 15.19.02.png" alt=""><figcaption><p>left: classical inference config, right: new EMCEE config</p></figcaption></figure>
 
-To see which llik options and regularization (e.g do you want to weigh more the last weeks for forecasts, or do you want to add the sum of all subpop) see files `statistics.py.`
+In addition to those configuration changes there are now new likelihood statistics offered: `pois`, `norm`/`norm_homoskedastic`, `norm_cov`/`norm_heteroskedastic`, `nbinom`, `rmse`, `absolute_error`. As well as new regularizations: `forecast` and `allsubpops`.
 
-### Test on your computer
+### Running Locally
 
-Install gempyor from branch emcee\_batch . Test your config by running:
+You can test your updated config by running:
 
 ```bash
-flepimop-calibrate -c config_emcee.yml --nwalkers 5  --jobs 5 --niterations 10 --nsamples 5 --id my_rim_id
+flepimop-calibrate -c config_emcee.yml --nwalkers 5  --jobs 5 --niterations 10 --nsamples 5 --id my_run_id
 ```
 
-on your laptop. If it works, it should produce:
+If it works, it should produce:
 
-* plots of simulation directly from your config
-* &#x20;plots after the fits with the fits and the parameter chains
-* and h5 file with all the chains
-* and in model\_output, the final hosp/snpi/seir/... files in the flepiMoP structure.
+* Plots of simulation directly from your config,
+* Plots after the fits with the fits and the parameter chains,
+* An h5 file with all the chains, and
+* The usual `model_output/` directory.
 
-It will output something like
-
-\`\`\`
+It will also immediately produce standard out that is similar to (dependent on config):
 
 ```
   gempyor >> Running ***DETERMINISTIC*** simulation;
@@ -59,28 +56,42 @@ InferenceParameters: with 92 parameters:
 
 Here, it says the config fits 92 parameters, we'll keep that in mind and choose a number of walkers greater than (ideally 2 times) this number of parameters.
 
-### Run on cluster
+### Running On An HPC Environment With Slurm
 
-Install gempyor on the cluster. test it with the above line, then modify this script:
+First, install `flepiMoP` on the cluster following the [Running On A HPC With Slurm](./../how-to-run/advanced-run-guides/running-on-a-hpc-with-slurm.md) guide. Then manually create a batch file to submit to slurm like so:
 
 ```bash
 #!/bin/bash
-#SBATCH -N 1
-#SBATCH -n 1
-#SBATCH --mem=450g
-#SBATCH -c 256
-#SBATCH -t 00-20:00:00
-flepimop-calibrate -c config_NC_emcee.yml --nwalkers 500  --jobs 256 --niterations 2000 --nsamples 250 --id my_id  > out_fit256.out 2>&1
+#SBATCH --ntasks 1
+#SBATCH --nodes 1
+#SBATCH --mem 450g
+#SBATCH --cpus-per-task 256
+#SBATCH --time 20:00:00
+flepimop-calibrate --config config_NC_emcee.yml \
+  --nwalkers 500  \
+  --jobs 256 \
+  --niterations 2000 \
+  --nsamples 250 \
+  --id my_id  > out_fit256.out 2>&1
 ```
 
-so you need to have:
+Breaking down what each of these lines does:
 
-* &#x20;`-c` (number of core) equal to **roughly half the number of walkers** (slots/parallel chains)
-* mem to be around two times the number of walkers. Look at the computes nodes you have access to and make something that can be prioritized fast enough.&#x20;
-* nsamples is the number of final results you want, but it's fine not to care about it, I rerun the sampling from my computer.
-* To resume from an existing run, add the previous line `--resume` and it 'll start from the last parameter values in the h5 files.
+* `#SBATCH --ntasks 1`: Requests that this be run as a single job,
+* `#SBATCH --nodes 1`: Requests that the job be run on 1 node, as of right now EMCEE only supports single nodes,
+* `#SBATCH --mem 450g`: Requests that the whole job get 405GB of memory should be ~2-3GB per a walker,
+* `#SBATCH --cpus-per-task 256`: Requests that the whole job get 256 CPUs (technically 256 per a task by `ntasks` should be set to 1 for EMCEE),
+* `#SBATCH --time 20:00:00`: Specifies a time limit of 20hrs for this job to complete in, and
+* `flepimop-calibrate ...`:
+  - `--config config_NC_emcee.yml`: Use the `config_NC_emcee.yml` for this calibration run,
+  - `--nwalkers 500`: Use 500 walkers (or chains) for this calibration, should be about 2x the number of parameters,
+  - `--jobs 256`: The number of parallel walkers to run, should be either 1x or 0.5x the number of cpus,
+  - `--niterations`: The number of iterations to run for for each walker,
+  - `--nsamples`: The number of posterier samples (taken from the end of each walker) to save to the `model_output/` directory, and
+  - `--id`: An optional short but unique job name, if not explicitly provided one will be generated from the config.
 
-### Postprocess EMCEE
+For more details on other options provided by gempyor for calibration please see `flepimop-calibrate --help`.
 
-To analyze run `postprocessing/emcee_postprocess.ipynb`\
-First, this plots the chains and then it runs nsamples (you can choose it) projection with the end of the chains and does the plot of the fit, with and without projections
+### Postprocessing EMCEE
+
+At this stage postprocessing for EMCEE outputs is fairly manual. A good starting point can be found in `postprocessing/emcee_postprocess.ipynb` which plots the chains and can run forward projections from the sample drawn from calibration.

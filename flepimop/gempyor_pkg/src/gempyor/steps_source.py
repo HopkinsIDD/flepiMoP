@@ -278,8 +278,11 @@ def steps_SEIR_nb(
                 print("  ", states_current[comp].max())
 
         if (states_current.min() < 0) or (states_current.max() > 10**10):
-            print((states_current.min() < 0), (states_current.max() > 10**10))
-            raise ValueError(f"Overflow error. Too small ?. Too large ?")
+            raise ValueError(
+                f"State values are outside the valid range. "
+                f"Minimum value: '{states_current.min()}', Maximum value: '{states_current.max()}'. "
+                f"Valid range is between 0 and {10**10}."
+            )
 
     return states, states_daily_incid
 

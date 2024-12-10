@@ -14,9 +14,9 @@ params:
   model_output_dir: model_output #usually model_output, but if results were moved, might be different
   #results_path:  # path to the project folder within which the model_output directory lies. Comment out if current directory 
   #run_id: # name of the run_id to plot results for. Required if multiple run_ids in model_output. Comment out if only one run_id in config
-  #seir_modifier_scenario: Ro_all
+  seir_modifier_scenario: Ro_all
   # name of the scenario to plot results for. Required if multiple scenarios in config. Comment out if no scecnarios in config
-  #outcome_modifier_scenario: test_limits
+  outcome_modifier_scenario: test_limits
   # name of the scenario to plot results for. Required if multiple scenarios in config. Comment out if no scecnarios in config
   # NOTE: Eventually would want this to be able to plot multipe scenarios or run_ids on the same graphs?
   continue_on_error: yes
@@ -405,7 +405,7 @@ cat("\n\n")
 These are the outputs for the observational ("outcomes") model, stored in the `hosp` directory, which tracks the incidence and prevalence of individuals with defined observed disease outcomes over time. 
 
 
-## Aggregate outcomes{.tabset}
+## Aggregate outcomes - by slot{.tabset}
 Total number of individuals with each outcome over time, aggregated across other strata (only outcomes without an "_" specifying a stratification are plotted). If more than one simulation (slot) was run, results are plotted for slot `r plot_slot` which has the highest total likelihood over all subpopulations (if inference was run) or was randomly chosen (if no inference). Incidence values are per day.
 
 If inference was run, only some of these outcomes may have been used in inference, and the outcomes may have been aggregated to a longer time period (e.g., weeks, months). Inference-specific outcomes, along with the data they were compared to, are shown in later plots.

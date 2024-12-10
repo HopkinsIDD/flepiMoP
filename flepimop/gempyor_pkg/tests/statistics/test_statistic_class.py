@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 import scipy
 import xarray as xr
+import re
 
 from gempyor.statistics import Statistic
 from gempyor.testing import create_confuse_configview_from_dict
@@ -249,7 +250,7 @@ class TestStatistic:
             if reg_name not in ["forecast", "allsubpop"]
         )
         with pytest.raises(
-            ValueError, match=rf"^Unsupported regularization\: {unsupported_name}$"
+            ValueError, match=rf"^Unsupported regularization \[received: 'invalid'\]"
         ):
             mock_inputs.create_statistic_instance()
 
@@ -468,7 +469,7 @@ class TestStatistic:
             mock_inputs.gt_data[mock_inputs.config["data_var"]].coords
         )
         dist_name = mock_inputs.config["likelihood"]["dist"]
-        if dist_name in {"absolute_error", "rmse"}:
+        if dist_name == "absolute_error":
             # MAE produces a single repeated number
             assert np.allclose(
                 log_likelihood.values,
@@ -481,6 +482,21 @@ class TestStatistic:
                     )
                 ),
             )
+        elif dist_name == "rmse":
+            assert np.allclose(
+                log_likelihood.values,
+                -np.log(
+                    np.sqrt(
+                        np.nansum(
+                            np.power(
+                                mock_inputs.model_data[mock_inputs.config["sim_var"]]
+                                - mock_inputs.gt_data[mock_inputs.config["data_var"]],
+                                2.0,
+                            )
+                        )
+                    )
+                ),
+            )
         elif dist_name == "pois":
             assert np.allclose(
                 log_likelihood.values,
@@ -489,7 +505,7 @@ class TestStatistic:
                     mock_inputs.model_data[mock_inputs.config["data_var"]].values,
                 ),
             )
-        elif dist_name == {"norm", "norm_cov"}:
+        elif dist_name in {"norm", "norm_cov"}:
             scale = mock_inputs.config["likelihood"]["params"]["scale"]
             if dist_name == "norm_cov":
                 scale *= mock_inputs.model_data[mock_inputs.config["sim_var"]].where(
@@ -522,10 +538,10 @@ class TestStatistic:
 
         model_rows, model_cols = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
         gt_rows, gt_cols = mock_inputs.gt_data[mock_inputs.config["data_var"]].shape
-        expected_match = (
-            rf"^{mock_inputs.name} Statistic error\: data and groundtruth do not have "
-            rf"the same shape\: model\_data\.shape\=\({model_rows}\, {model_cols}\) "
-            rf"\!\= gt\_data\.shape\=\({gt_rows}\, {gt_cols}\)$"
+        expected_match = re.escape(
+            rf"`model_data` and `gt_data` do not have the same shape: "
+            rf"`model_data.shape` = '{mock_inputs.model_data[mock_inputs.config['sim_var']].shape}' "
+            rf"!= `gt_data.shape` = '{mock_inputs.gt_data[mock_inputs.config['data_var']].shape}'."
         )
         with pytest.raises(ValueError, match=expected_match):
             statistic.compute_logloss(mock_inputs.model_data, mock_inputs.gt_data)
