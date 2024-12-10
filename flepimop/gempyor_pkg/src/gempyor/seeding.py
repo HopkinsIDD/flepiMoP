@@ -5,6 +5,7 @@ __all__ = ("Seeding", "SeedingFactory")
 # Imports
 from datetime import date
 import logging
+from typing import Any
 
 import confuse
 import numba as nb
@@ -117,7 +118,15 @@ class Seeding(SimulationComponent):
         self.seeding_config = config
         self.path_prefix = path_prefix
 
-    def get_from_config(self, sim_id: int, modinf) -> nb.typed.Dict:
+    def get_from_config(
+        self,
+        compartments: Compartments,
+        subpop_struct: SubpopulationStructure,
+        n_days: int,
+        ti: date,
+        tf: date,
+        input_filename: str | None,
+    ) -> tuple[nb.typed.Dict, npt.NDArray[np.number]]:
         method = "NoSeeding"
         if self.seeding_config is not None and "method" in self.seeding_config.keys():
             method = self.seeding_config["method"].as_str()
@@ -137,12 +146,7 @@ class Seeding(SimulationComponent):
                 )
         elif method == "FolderDraw":
             seeding = pd.read_csv(
-                self.path_prefix
-                / modinf.get_input_filename(
-                    ftype=modinf.seeding_config["seeding_file_type"].get(),
-                    sim_id=sim_id,
-                    extension_override="csv",
-                ),
+                self.path_prefix / input_filename,
                 converters={"subpop": lambda x: str(x)},
                 parse_dates=["date"],
                 skipinitialspace=True,
@@ -157,12 +161,7 @@ class Seeding(SimulationComponent):
         elif method == "NoSeeding":
             seeding = pd.DataFrame(columns=["date", "subpop"])
             return _DataFrame2NumbaDict(
-                seeding,
-                [],
-                modinf.compartments,
-                modinf.subpop_struct,
-                modinf.n_days,
-                modinf.ti,
+                seeding, [], compartments, subpop_struct, n_days, ti
             )
         else:
             raise ValueError(f"Unknown seeding method given, '{method}'.")
@@ -171,9 +170,7 @@ class Seeding(SimulationComponent):
         # print(seeding.shape)
         seeding = seeding.sort_values(by="date", axis="index").reset_index()
         # print(seeding)
-        mask = (seeding["date"].dt.date > modinf.ti) & (
-            seeding["date"].dt.date <= modinf.tf
-        )
+        mask = (seeding["date"].dt.date > ti) & (seeding["date"].dt.date <= tf)
         seeding = seeding.loc[mask].reset_index()
         # print(seeding.shape)
         # print(seeding)
@@ -192,17 +189,14 @@ class Seeding(SimulationComponent):
             amounts = seeding["amount"]
 
         return _DataFrame2NumbaDict(
-            seeding,
-            amounts,
-            modinf.compartments,
-            modinf.subpop_struct,
-            modinf.n_days,
-            modinf.ti,
+            seeding, amounts, compartments, subpop_struct, n_days, ti
         )
 
-    def get_from_file(self, sim_id: int, modinf) -> nb.typed.Dict:
+    def get_from_file(
+        self, *args: Any, **kwargs: Any
+    ) -> tuple[nb.typed.Dict, npt.NDArray[np.number]]:
         """only difference with draw seeding is that the sim_id is now sim_id2load"""
-        return self.get_from_config(sim_id=sim_id, modinf=modinf)
+        return self.get_from_config(*args, **kwargs)
 
 
 def SeedingFactory(config: confuse.ConfigView, path_prefix: str = "."):
