@@ -438,7 +438,7 @@ class GempyorInference:
             self.save,
         ]
 
-    def get_logloss(self, proposal):
+    def simulate_proposal(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):
             if not self.silent:
                 print("`llik` is -inf (out of bound proposal).")
