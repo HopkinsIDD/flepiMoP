@@ -240,20 +240,12 @@ def simple_valid_factory_with_pois() -> MockStatisticInput:
                 list(data_coords.keys()),
                 np.random.poisson(lam=20.0, size=data_dim),
             ),
-            "incidD": (
-                list(data_coords.keys()),
-                np.random.poisson(lam=20.0, size=data_dim),
-            ),
         },
         coords=data_coords,
     )
     gt_data = xr.Dataset(
         data_vars={
             "incidH": (
-                list(data_coords.keys()),
-                np.random.poisson(lam=20.0, size=data_dim),
-            ),
-            "incidD": (
                 list(data_coords.keys()),
                 np.random.poisson(lam=20.0, size=data_dim),
             ),
@@ -287,10 +279,10 @@ def simple_valid_factory_with_pois_with_some_zeros() -> MockStatisticInput:
         }
     ] = 0
 
-    mock_input.gt_data["incidD"].loc[
+    mock_input.gt_data["incidH"].loc[
         {
-            "date": mock_input.gt_data.coords["date"][0],
-            "subpop": mock_input.gt_data.coords["subpop"][0],
+            "date": mock_input.gt_data.coords["date"][2],
+            "subpop": mock_input.gt_data.coords["subpop"][2],
         }
     ] = 0
 
