@@ -244,8 +244,8 @@ class Statistic:
         """
 
         dist_map = {
-            "pois": lambda ymodel, ydata: -(ymodel + 1)
-            + ydata * np.log(ymodel + 1)
+            "pois": lambda ydata, ymodel: -ymodel
+            + (ydata * np.log(ymodel))
             - gammaln(ydata + 1),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # OLD: # TODO: Swap out in favor of NEW
