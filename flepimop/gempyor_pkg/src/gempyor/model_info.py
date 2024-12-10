@@ -355,6 +355,18 @@ class ModelInfo:
         return fname
 
     def get_seeding_data(self, sim_id: int) -> tuple[nb.typed.Dict, npt.NDArray[np.number]]:
+        """
+        Pull the seeding data for the info represented by this model info instance.
+
+        Args:
+            sim_id: The simulation ID to pull seeding data for.
+
+        Returns:
+            A tuple containing the seeding data dictionary and the seeding data array.
+
+        See Also:
+            `gempyor.seeding.Seeding.get_from_config`
+        """
         return self.seeding.get_from_config(
             self.compartments,
             self.subpop_struct,
