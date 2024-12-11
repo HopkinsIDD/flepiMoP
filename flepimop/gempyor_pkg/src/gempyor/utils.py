@@ -17,6 +17,7 @@ import pyarrow as pa
 import scipy.ndimage
 import scipy.stats
 import sympy.parsing.sympy_parser
+import yaml
 
 from . import file_paths
 
@@ -1039,3 +1040,74 @@ def move_file_at_local(name_map: dict[str, str]) -> None:
     for src, dst in name_map.items():
         os.path.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy(src, dst)
+
+
+def _dump_formatted_yaml(cfg: confuse.Configuration) -> str:
+    """
+    Dump confuse configuration to a formatted YAML string.
+
+    Args:
+        cfg: The confuse configuration object.
+
+    Returns:
+        A formatted YAML string representation of the configuration.
+
+    Examples:
+        >>> from gempyor.utils import _dump_formatted_yaml
+        >>> import confuse
+        >>> conf = confuse.Configuration("foobar")
+        >>> data = {
+        ...     "name": "Test Config",
+        ...     "compartments": {
+        ...         "infection_stage": ["S", "E", "I", "R"]
+        ...     },
+        ...     "seir": {
+        ...         "parameters": {
+        ...             "beta": {"value": 3.4},
+        ...             "gamma": {"value": 5.6},
+        ...         },
+        ...         "transitions": {
+        ...             "source": ["S"],
+        ...             "destination": ["E"],
+        ...             "rate": ["beta * gamma"],
+        ...             "proportional_to": [["S"], ["I"]],
+        ...             "proportion_exponent": [1, 1],
+        ...         },
+        ...     },
+        ... }
+        >>> conf.set(data)
+        >>> print(_dump_formatted_yaml(conf))
+        name: "Test Config"
+        compartments:
+            infection_stage: [S, E, I, R]
+        seir:
+            parameters:
+                beta:
+                    value: 3.4
+                gamma:
+                    value: 5.6
+            transitions:
+                source: [S]
+                destination: [E]
+                rate: ["beta * gamma"]
+                proportional_to: [[S], [I]]
+                proportion_exponent: [1, 1]
+    """
+
+    class CustomDumper(yaml.Dumper):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.add_representer(list, self._represent_list)
+            self.add_representer(str, self._represent_str)
+
+        def _represent_list(self, dumper, data):
+            return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
+
+        def _represent_str(self, dumper, data):
+            if " " in data:
+                return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+    return yaml.dump(
+        yaml.safe_load(cfg.dump()), Dumper=CustomDumper, indent=4, sort_keys=False
+    )
