@@ -36,7 +36,85 @@ from .NPI import base
 )
 @click.pass_context
 def patch(ctx: click.Context = mock_context, **kwargs) -> None:
-    """Merge configuration files"""
+    """Merge configuration files
+
+    This command will merge multiple config files together by overriding the top level
+    keys in config files. The order of the config files is important, as the last file
+    has the highest priority and the first has the lowest.
+
+    A brief example:
+
+    \b
+    ```bash
+    $ cd $(mktemp -d)
+    $ cat << EOF > config1.yml
+    compartments:
+        infection_stage: ['S', 'I', 'R']
+    seir:
+        parameters:
+            beta:
+                value: 1.2
+    EOF
+    $ cat << EOF > config2.yml
+    name: 'more parameters'
+    seir:
+        parameters:
+            beta:
+                value: 3.4
+            gamma:
+                value: 5.6
+    EOF
+    $ flepimop patch config1.yml config2.yml --indent 4
+    ...: UserWarning: Configuration files contain overlapping keys: {'seir'}.
+    warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
+    compartments:
+        infection_stage:
+            - S
+            - I
+            - R
+    config_src:
+        - config1.yml
+        - config2.yml
+    first_sim_index: 1
+    jobs: 14
+    name: more parameters
+    outcome_modifiers_scenarios: []
+    seir:
+        parameters:
+            beta:
+                value: 3.4
+            gamma:
+                value: 5.6
+    seir_modifiers_scenarios: []
+    stoch_traj_flag: false
+    write_csv: false
+    write_parquet: true
+    $ flepimop patch config2.yml config1.yml --indent 4
+    ...: UserWarning: Configuration files contain overlapping keys: {'seir'}.
+    warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
+    compartments:
+        infection_stage:
+            - S
+            - I
+            - R
+    config_src:
+        - config2.yml
+        - config1.yml
+    first_sim_index: 1
+    jobs: 14
+    name: more parameters
+    outcome_modifiers_scenarios: []
+    seir:
+        parameters:
+            beta:
+                value: 1.2
+    parameters: null
+    seir_modifiers_scenarios: []
+    stoch_traj_flag: false
+    write_csv: false
+    write_parquet: true
+    ```
+    """
     parse_config_files(config, ctx, **kwargs)
     print(yaml.dump(yaml.safe_load(config.dump()), indent=kwargs["indent"]))
 
