@@ -8,7 +8,7 @@ from .shared_cli import (
     cli,
     mock_context,
 )
-from .utils import config
+from .utils import _dump_formatted_yaml, config
 
 # register the commands from the other modules
 from . import compartments, simulate
@@ -107,7 +107,7 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     ```
     """
     parse_config_files(config, ctx, **kwargs)
-    print(yaml.dump(yaml.safe_load(config.dump()), indent=4))
+    print(_dump_formatted_yaml(config))
 
 
 if __name__ == "__main__":
