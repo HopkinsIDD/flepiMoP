@@ -21,7 +21,10 @@ from .NPI import base
 
 
 # add some basic commands to the CLI
-@cli.command(params=[config_files_argument] + list(config_file_options.values()))
+@cli.command(
+    params=[config_files_argument] + list(config_file_options.values()),
+    context_settings=dict(help_option_names=["-h", "--help"]),
+)
 @click.pass_context
 def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Merge configuration files

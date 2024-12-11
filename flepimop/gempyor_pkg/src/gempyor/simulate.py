@@ -300,7 +300,9 @@ def simulate(
 
 
 @cli.command(
-    name="simulate", params=[config_files_argument] + list(config_file_options.values())
+    name="simulate",
+    params=[config_files_argument] + list(config_file_options.values()),
+    context_settings=dict(help_option_names=["-h", "--help"]),
 )
 @pass_context
 def _click_simulate(ctx: Context, **kwargs) -> int:

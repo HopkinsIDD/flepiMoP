@@ -222,7 +222,9 @@ def parse_config_files(
     config_src = []
     if len(found_configs) != 1:
         if not found_configs:
-            raise ValueError(f"No config files provided.")
+            click.echo("No configuration provided! See help for required usage:\n")
+            click.echo(ctx.get_help())
+            ctx.exit()
         else:
             error_dict = {k: kwargs[k] for k in found_configs}
             raise ValueError(
