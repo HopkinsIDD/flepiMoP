@@ -21,19 +21,7 @@ from .NPI import base
 
 
 # add some basic commands to the CLI
-@cli.command(
-    params=[config_files_argument]
-    + list(config_file_options.values())
-    + [
-        click.Option(
-            ["--indent"],
-            type=click.IntRange(min=1),
-            required=False,
-            default=2,
-            help="Indentation level for the output YAML.",
-        )
-    ],
-)
+@cli.command(params=[config_files_argument] + list(config_file_options.values()))
 @click.pass_context
 def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Merge configuration files
@@ -64,7 +52,7 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
             gamma:
                 value: 5.6
     EOF
-    $ flepimop patch config1.yml config2.yml --indent 4
+    $ flepimop patch config1.yml config2.yml
     ...: UserWarning: Configuration files contain overlapping keys: {'seir'}.
     warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
     compartments:
@@ -89,7 +77,7 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     stoch_traj_flag: false
     write_csv: false
     write_parquet: true
-    $ flepimop patch config2.yml config1.yml --indent 4
+    $ flepimop patch config2.yml config1.yml
     ...: UserWarning: Configuration files contain overlapping keys: {'seir'}.
     warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
     compartments:
@@ -116,7 +104,7 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     ```
     """
     parse_config_files(config, ctx, **kwargs)
-    print(yaml.dump(yaml.safe_load(config.dump()), indent=kwargs["indent"]))
+    print(yaml.dump(yaml.safe_load(config.dump()), indent=4))
 
 
 if __name__ == "__main__":
