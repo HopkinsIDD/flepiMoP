@@ -255,12 +255,14 @@ def parse_config_files(
         cfg["config_src"] = [str(k) for k in config_src]
 
     # deal with the scenario overrides
-    scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs.get(k)}
-    for option in scen_args:
+    scen_args = {k for k in parsed_args if k.endswith("_scenarios")}
+    for option in {s for s in scen_args if kwargs.get(s)}:
         key = option.replace("_scenarios", "")
         value = _parse_option(config_file_options[option], kwargs[option])
         if cfg[key].exists():
-            cfg[key]["scenarios"] = as_list(value)
+            cfg[key]["scenarios"] = (
+                list(value) if isinstance(value, tuple) else as_list(value)
+            )
         else:
             raise ValueError(
                 f"Specified {option} when no {key} in configuration file(s): {config_src}"

@@ -39,74 +39,72 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
 
     \b
     ```bash
-    $ flepimop patch config_sample_2pop_modifiers_part.yml config_sample_2pop_outcomes_part.yml > config_sample_2pop_patched.yml
-    $ cat config_sample_2pop_patched.yml
-    outcome_modifiers_scenarios: []
-    first_sim_index: 1
-    jobs: 14
-    stoch_traj_flag: false
-    seir_modifiers_scenarios: []
-    write_parquet: true
-    write_csv: false
-    config_src: [config_sample_2pop_modifiers_part.yml, config_sample_2pop_outcomes_part.yml]
-    seir_modifiers:
-        scenarios: [Ro_lockdown, Ro_all]
-        modifiers:
-            Ro_lockdown:
-                method: SinglePeriodModifier
-                parameter: Ro
-                period_start_date: 2020-03-15
-                period_end_date: 2020-05-01
-                subpop: all
-                value: 0.4
-            Ro_relax:
-                method: SinglePeriodModifier
-                parameter: Ro
-                period_start_date: 2020-05-01
-                period_end_date: 2020-08-31
-                subpop: all
-                value: 0.8
-            Ro_all:
-                method: StackedModifier
-                modifiers: [Ro_lockdown, Ro_relax]
-    outcome_modifiers:
-        scenarios: [test_limits]
-        modifiers:
-            test_limits:
-                method: SinglePeriodModifier
-                parameter: incidCase::probability
-                subpop: all
-                period_start_date: 2020-02-01
-                period_end_date: 2020-06-01
-                value: 0.5
-    outcomes:
-        method: delayframe
-        outcomes:
-            incidCase:
-                source:
-                    incidence:
-                        infection_stage: I
-                probability:
+        $ flepimop patch config_sample_2pop_modifiers_part.yml config_sample_2pop_outcomes_part.yml > config_sample_2pop_patched.yml
+        $ cat config_sample_2pop_patched.yml
+        write_csv: false
+        stoch_traj_flag: false
+        jobs: 14
+        write_parquet: true
+        first_sim_index: 1
+        config_src: [config_sample_2pop_modifiers_part.yml, config_sample_2pop_outcomes_part.yml]
+        seir_modifiers:
+            scenarios: [Ro_lockdown, Ro_all]
+            modifiers:
+                Ro_lockdown:
+                    method: SinglePeriodModifier
+                    parameter: Ro
+                    period_start_date: 2020-03-15
+                    period_end_date: 2020-05-01
+                    subpop: all
+                    value: 0.4
+                Ro_relax:
+                    method: SinglePeriodModifier
+                    parameter: Ro
+                    period_start_date: 2020-05-01
+                    period_end_date: 2020-08-31
+                    subpop: all
+                    value: 0.8
+                Ro_all:
+                    method: StackedModifier
+                    modifiers: [Ro_lockdown, Ro_relax]
+        outcome_modifiers:
+            scenarios: [test_limits]
+            modifiers:
+                test_limits:
+                    method: SinglePeriodModifier
+                    parameter: incidCase::probability
+                    subpop: all
+                    period_start_date: 2020-02-01
+                    period_end_date: 2020-06-01
                     value: 0.5
-                delay:
-                    value: 5
-            incidHosp:
-                source:
-                    incidence:
-                        infection_stage: I
-                probability:
-                    value: 0.05
-                delay:
-                    value: 7
-                duration:
-                    value: 10
-                    name: currHosp
-            incidDeath:
-                source: incidHosp
-                probability:
-                    value: 0.2
-                delay:
-                    value: 14
+        outcomes:
+            method: delayframe
+            outcomes:
+                incidCase:
+                    source:
+                        incidence:
+                            infection_stage: I
+                    probability:
+                        value: 0.5
+                    delay:
+                        value: 5
+                incidHosp:
+                    source:
+                        incidence:
+                            infection_stage: I
+                    probability:
+                        value: 0.05
+                    delay:
+                        value: 7
+                    duration:
+                        value: 10
+                        name: currHosp
+                incidDeath:
+                    source: incidHosp
+                    probability:
+                        value: 0.2
+                    delay:
+                        value: 14
     ```
     """
     parse_config_files(config, ctx, **kwargs)
