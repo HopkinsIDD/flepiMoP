@@ -237,12 +237,15 @@ def parse_config_files(
         )
         config_src = _parse_option(config_validator, kwargs[config_key])
         cfg.clear()
+        cfg_data = {}
         for config_file in config_src:
             tmp = confuse.Configuration("tmp")
             tmp.set_file(config_file)
-            if intersect := set(tmp.keys()) & set(cfg.keys()):
+            if intersect := set(tmp.keys()) & set(cfg_data.keys()):
                 warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
-            cfg.set_file(config_file)
+            for k in tmp.keys():
+                cfg_data[k] = tmp[k].get()
+        cfg.set(cfg_data)
         cfg["config_src"] = [str(k) for k in config_src]
 
     # deal with the scenario overrides
