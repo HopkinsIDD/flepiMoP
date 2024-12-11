@@ -64,6 +64,6 @@ def test_overlapping_sections_value_error(
     result = runner.invoke(patch, [config_one.name, config_two.name])
     assert result.exit_code == 1
     assert isinstance(result.exception, ValueError)
-    assert (
-        str(result.exception) == "Configuration files contain overlapping keys: {'seir'}."
+    assert str(result.exception) == (
+        "Configuration files contain overlapping keys, seir, introduced by config_two.yml."
     )
