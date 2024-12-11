@@ -33,77 +33,80 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     keys in config files. The order of the config files is important, as the last file
     has the highest priority and the first has the lowest.
 
-    A brief example:
+    A brief example of the command is shown below using the sample config files from the
+    `examples/tutorials` directory. The command will merge the two files together and
+    print the resulting configuration to the console.
 
     \b
     ```bash
-    $ cd $(mktemp -d)
-    $ cat << EOF > config1.yml
-    compartments:
-        infection_stage: ['S', 'I', 'R']
-    seir:
-        parameters:
-            beta:
-                value: 1.2
-    EOF
-    $ cat << EOF > config2.yml
-    name: 'more parameters'
-    seir:
-        parameters:
-            beta:
-                value: 3.4
-            gamma:
-                value: 5.6
-    EOF
-    $ flepimop patch config1.yml config2.yml
-    ...: UserWarning: Configuration files contain overlapping keys: {'seir'}.
-    warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
-    compartments:
-        infection_stage:
-            - S
-            - I
-            - R
-    config_src:
-        - config1.yml
-        - config2.yml
+    $ flepimop patch config_sample_2pop_modifiers_part.yml config_sample_2pop_outcomes_part.yml > config_sample_2pop_patched.yml
+    $ cat config_sample_2pop_patched.yml
+    outcome_modifiers_scenarios: []
     first_sim_index: 1
     jobs: 14
-    name: more parameters
-    outcome_modifiers_scenarios: []
-    seir:
-        parameters:
-            beta:
-                value: 3.4
-            gamma:
-                value: 5.6
-    seir_modifiers_scenarios: []
     stoch_traj_flag: false
-    write_csv: false
-    write_parquet: true
-    $ flepimop patch config2.yml config1.yml
-    ...: UserWarning: Configuration files contain overlapping keys: {'seir'}.
-    warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
-    compartments:
-        infection_stage:
-            - S
-            - I
-            - R
-    config_src:
-        - config2.yml
-        - config1.yml
-    first_sim_index: 1
-    jobs: 14
-    name: more parameters
-    outcome_modifiers_scenarios: []
-    seir:
-        parameters:
-            beta:
-                value: 1.2
-    parameters: null
     seir_modifiers_scenarios: []
-    stoch_traj_flag: false
-    write_csv: false
     write_parquet: true
+    write_csv: false
+    config_src: [config_sample_2pop_modifiers_part.yml, config_sample_2pop_outcomes_part.yml]
+    seir_modifiers:
+        scenarios: [Ro_lockdown, Ro_all]
+        modifiers:
+            Ro_lockdown:
+                method: SinglePeriodModifier
+                parameter: Ro
+                period_start_date: 2020-03-15
+                period_end_date: 2020-05-01
+                subpop: all
+                value: 0.4
+            Ro_relax:
+                method: SinglePeriodModifier
+                parameter: Ro
+                period_start_date: 2020-05-01
+                period_end_date: 2020-08-31
+                subpop: all
+                value: 0.8
+            Ro_all:
+                method: StackedModifier
+                modifiers: [Ro_lockdown, Ro_relax]
+    outcome_modifiers:
+        scenarios: [test_limits]
+        modifiers:
+            test_limits:
+                method: SinglePeriodModifier
+                parameter: incidCase::probability
+                subpop: all
+                period_start_date: 2020-02-01
+                period_end_date: 2020-06-01
+                value: 0.5
+    outcomes:
+        method: delayframe
+        outcomes:
+            incidCase:
+                source:
+                    incidence:
+                        infection_stage: I
+                probability:
+                    value: 0.5
+                delay:
+                    value: 5
+            incidHosp:
+                source:
+                    incidence:
+                        infection_stage: I
+                probability:
+                    value: 0.05
+                delay:
+                    value: 7
+                duration:
+                    value: 10
+                    name: currHosp
+            incidDeath:
+                source: incidHosp
+                probability:
+                    value: 0.2
+                delay:
+                    value: 14
     ```
     """
     parse_config_files(config, ctx, **kwargs)
