@@ -1,4 +1,5 @@
-from click import pass_context, Context
+import click
+import yaml
 
 from .shared_cli import (
     config_files_argument,
@@ -20,12 +21,24 @@ from .NPI import base
 
 
 # add some basic commands to the CLI
-@cli.command(params=[config_files_argument] + list(config_file_options.values()))
-@pass_context
-def patch(ctx: Context = mock_context, **kwargs) -> None:
+@cli.command(
+    params=[config_files_argument]
+    + list(config_file_options.values())
+    + [
+        click.Option(
+            ["--indent"],
+            type=click.IntRange(min=1),
+            required=False,
+            default=2,
+            help="Indentation level for the output YAML.",
+        )
+    ],
+)
+@click.pass_context
+def patch(ctx: click.Context = mock_context, **kwargs) -> None:
     """Merge configuration files"""
     parse_config_files(config, ctx, **kwargs)
-    print(config.dump())
+    print(yaml.dump(yaml.safe_load(config.dump()), indent=kwargs["indent"]))
 
 
 if __name__ == "__main__":
