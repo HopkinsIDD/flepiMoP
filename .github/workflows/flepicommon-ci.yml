@@ -1,4 +1,4 @@
-name: flepicommon-ci
+name: flepicommon CI
 
 on:
   workflow_dispatch:
@@ -6,11 +6,12 @@ on:
     paths:
       - flepimop/R_packages/flepicommon/**/*
     branches:
-      - main
+      - dev
   pull_request:
     paths:
       - flepimop/R_packages/flepicommon/**/*
     branches:
+      - dev
       - main
 
 jobs:
