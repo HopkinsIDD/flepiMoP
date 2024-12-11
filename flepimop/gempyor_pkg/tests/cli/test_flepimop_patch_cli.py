@@ -9,7 +9,7 @@ from gempyor.cli import patch
 
 
 @pytest.mark.parametrize(
-    ("data_one", "data_two", "expected_parameters"),
+    ("data_one", "data_two"),
     (
         (
             {
@@ -26,7 +26,6 @@ from gempyor.cli import patch
                     }
                 }
             },
-            {"gamma": {"value": 3.4}},
         ),
         (
             {
@@ -44,16 +43,14 @@ from gempyor.cli import patch
                     }
                 }
             },
-            {"gamma": {"value": 3.4}},
         ),
     ),
 )
-def test_patch_seir_parameters_behavior(
+def test_overlapping_sections_value_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     data_one: dict[str, Any],
     data_two: dict[str, Any],
-    expected_parameters: dict[str, Any],
 ) -> None:
     # Setup the test
     monkeypatch.chdir(tmp_path)
@@ -64,13 +61,9 @@ def test_patch_seir_parameters_behavior(
 
     # Invoke the command
     runner = CliRunner()
-    with pytest.warns(
-        UserWarning, match="^Configuration files contain overlapping keys: {'seir'}.$"
-    ):
-        result = runner.invoke(patch, [config_one.name, config_two.name])
-    assert result.exit_code == 0
-
-    # Check the output
-    patched_config = yaml.safe_load(result.output)
-    assert "seir" in patched_config
-    assert patched_config["seir"]["parameters"] == expected_parameters
+    result = runner.invoke(patch, [config_one.name, config_two.name])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ValueError)
+    assert (
+        str(result.exception) == "Configuration files contain overlapping keys: {'seir'}."
+    )

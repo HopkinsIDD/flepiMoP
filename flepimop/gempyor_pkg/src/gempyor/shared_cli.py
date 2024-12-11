@@ -242,7 +242,9 @@ def parse_config_files(
             tmp = confuse.Configuration("tmp")
             tmp.set_file(config_file)
             if intersect := set(tmp.keys()) & set(cfg_data.keys()):
-                warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
+                raise ValueError(
+                    f"Configuration files contain overlapping keys: {intersect}."
+                )
             for k in tmp.keys():
                 cfg_data[k] = tmp[k].get()
         cfg.set(cfg_data)
