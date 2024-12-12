@@ -30,7 +30,8 @@ class Test_SinglePeriodModifier:
 
         test = NPI.SinglePeriodModifier(
             npi_config=s.npi_config_seir,
-            modinf=s,
+            modinf_ti=s.ti,
+            modinf_tf=s.tf,
             modifiers_library="",
             subpops=s.subpop_struct.subpop_names,
             loaded_df=None,
@@ -38,7 +39,7 @@ class Test_SinglePeriodModifier:
         """
         test2 = NPI.SinglePeriodModifier(
             npi_config=s.npi_config_seir,
-            modinf=s,
+            modinf_ti=s.ti, modinf_tf=s.tf,
             modifiers_library="",
             subpops=s.subpop_struct.subpop_names,
             loaded_df=test.parameters,
@@ -64,7 +65,8 @@ class Test_SinglePeriodModifier:
 
             test = NPI.SinglePeriodModifier(
                 npi_config=s.npi_config_seir,
-                modinf=s,
+                modinf_ti=s.ti,
+                modinf_tf=s.tf,
                 modifiers_library="",
                 subpops=s.subpop_struct.subpop_names,
                 loaded_df=None,
@@ -89,7 +91,8 @@ class Test_SinglePeriodModifier:
 
             test = NPI.SinglePeriodModifier(
                 npi_config=s.npi_config_seir,
-                modinf=s,
+                modinf_ti=s.ti,
+                modinf_tf=s.tf,
                 modifiers_library="",
                 subpops=s.subpop_struct.subpop_names,
                 loaded_df=None,
@@ -110,7 +113,8 @@ class Test_SinglePeriodModifier:
 
         test = NPI.SinglePeriodModifier(
             npi_config=s.npi_config_seir,
-            modinf=s,
+            modinf_ti=s.ti,
+            modinf_tf=s.tf,
             modifiers_library="",
             subpops=s.subpop_struct.subpop_names,
             loaded_df=None,

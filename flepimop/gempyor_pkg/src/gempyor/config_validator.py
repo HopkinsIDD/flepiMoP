@@ -70,14 +70,14 @@ class InitialConditionsConfig(BaseModel):
         initial_file_type = values.get("initial_file_type")
         if method in {"FromFile", "SetInitialConditions"} and not initial_conditions_file:
             raise ValueError(
-                f"Error in InitialConditions: An initial_conditions_file is required when method is {method}"
+                f"An `initial_conditions_file` is required when method is '{method}'."
             )
         if (
             method in {"InitialConditionsFolderDraw", "SetInitialConditionsFolderDraw"}
             and not initial_file_type
         ):
             raise ValueError(
-                f"Error in InitialConditions: initial_file_type is required when method is {method}"
+                f"An `initial_file_type` is required when method is '{method}'."
             )
         return values
 
@@ -86,9 +86,7 @@ class InitialConditionsConfig(BaseModel):
         method = values.get("method")
         plugin_file_path = values.get("plugin_file_path")
         if method == "plugin" and not plugin_file_path:
-            raise ValueError(
-                "Error in InitialConditions: a plugin file path is required when method is plugin"
-            )
+            raise ValueError("A plugin file path is required when method is plugin.")
         return values
 
 
@@ -121,16 +119,14 @@ class SeedingConfig(BaseModel):
         seeding_file = values.get("seeding_file")
         if method == "PoissonDistributed" and not lambda_file:
             raise ValueError(
-                f"Error in Seeding: A lambda_file is required when method is {method}"
+                "A `lambda_file` is required when method is 'PoissonDistributed'."
             )
         if method == "FolderDraw" and not seeding_file_type:
             raise ValueError(
-                "Error in Seeding: A seeding_file_type is required when method is FolderDraw"
+                "A `seeding_file_type` is required when method is 'FolderDraw'."
             )
         if method == "FromFile" and not seeding_file:
-            raise ValueError(
-                "Error in Seeding: A seeding_file is required when method is FromFile"
-            )
+            raise ValueError("A `seeding_file` is required when method is 'FromFile'.")
         return values
 
     @model_validator(mode="before")
@@ -139,7 +135,8 @@ class SeedingConfig(BaseModel):
         plugin_file_path = values.get("plugin_file_path")
         if method == "plugin" and not plugin_file_path:
             raise ValueError(
-                "Error in Seeding: a plugin file path is required when method is plugin"
+                f"A plugin file path is required when method is 'plugin', "
+                f"was given '{plugin_file_path!r}'."
             )
         return values
 
@@ -173,16 +170,14 @@ class ValueConfig(BaseModel):
         if distr != "fixed":
             if not mean and not sd:
                 raise ValueError(
-                    "Error in value: mean and sd must be provided for non-fixed distributions"
+                    "Mean and sd must be provided for non-fixed distributions."
                 )
             if distr == "truncnorm" and not a and not b:
                 raise ValueError(
-                    "Error in value: a and b must be provided for truncated normal distributions"
+                    "a and b must be provided for truncated normal distributions."
                 )
         if distr == "fixed" and not value:
-            raise ValueError(
-                "Error in value: value must be provided for fixed distributions"
-            )
+            raise ValueError("Value must be provided for fixed distributions.")
         return values
 
 
@@ -211,7 +206,7 @@ class SeirParameterConfig(BaseParameterConfig):
         timeseries = values.get("timeseries") is not None
         if value and timeseries:
             raise ValueError(
-                "Error in seir::parameters: your parameter is both a timeseries and a value, please choose one"
+                f"Parsed a parameter with both a timeseries, '{values.get('timeseries')!r}', and a value, '{values.get('value')!r}', please choose one."
             )
         return values
 
@@ -301,7 +296,7 @@ class SourceConfig(
         prevalence = values.get("prevalence")
         if incidence and prevalence:
             raise ValueError(
-                "Error in outcomes::source. Can only be incidence or prevalence, not both."
+                f"Parsed a source with both an incidence, '{values.get('incidence')!r}', and prevalence, '{values.get('prevalence')!r}', please choose one."
             )
         return values
 
@@ -339,13 +334,9 @@ class DelayFrameConfig(BaseModel):
         source_present = values.get("source") is not None
 
         if sum_present and source_present:
-            raise ValueError(
-                f"Error in outcome: Both 'sum' and 'source' are present. Choose one."
-            )
+            raise ValueError("Both 'sum' and 'source' are present, please choose one.")
         elif not sum_present and not source_present:
-            raise ValueError(
-                f"Error in outcome: Neither 'sum' nor 'source' is present. Choose one."
-            )
+            raise ValueError("Neither 'sum' nor 'source' is present, please choose one.")
         return values
 
 
@@ -364,7 +355,7 @@ class OutcomesConfig(BaseModel):
 
         if param_from_file and not param_subpop_file:
             raise ValueError(
-                f"Error in outcome: 'param_subpop_file' is required when 'param_from_file' is True"
+                "A `param_subpop_file` is required when `param_from_file` is 'True'."
             )
         return values
 
@@ -450,11 +441,11 @@ class CheckConfig(BaseModel):
         start_date_groundtruth = values.get("start_date_groundtruth") is not None
         if inference_present and not start_date_groundtruth:
             raise ValueError(
-                "Inference mode is enabled but no groundtruth dates are provided"
+                "Inference mode is enabled, but no groundtruth dates are provided. Please provide groundtruth dates."
             )
         elif start_date_groundtruth and not inference_present:
             raise ValueError(
-                "Groundtruth dates are provided but inference mode is not enabled"
+                "Groundtruth dates are provided, but inference mode is not enabled. Please enable inference mode."
             )
         return values
 
@@ -464,13 +455,17 @@ class CheckConfig(BaseModel):
         end_date = values.get("end_date")
         if start_date and end_date:
             if end_date <= start_date:
-                raise ValueError("end_date must be greater than start_date")
+                raise ValueError(
+                    f"`end_date` ('{end_date}') must be later than `start_date` ('{start_date}'))."
+                )
         return values
 
     @model_validator(mode="before")
     def init_or_seed(cls, values):
         init = values.get("initial_conditions")
         seed = values.get("seeding")
-        if not init or seed:
-            raise ValueError("either initial_conditions or seeding must be provided")
+        if not (init or seed):
+            raise ValueError(
+                f"At least one of `initial_conditions` or `seeding` must be provided."
+            )
         return values

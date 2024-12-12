@@ -64,7 +64,7 @@ packrat/lib*/
 dist/
 SEIR.egg-info/
 Outcomes.egg-info/
-venv/
+*venv*/
 .venv/
 
 # R package manuals

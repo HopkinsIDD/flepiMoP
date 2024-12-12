@@ -90,7 +90,7 @@ seir_modifiers:
       method: SinglePeriodModifier
       parameter: Ro
       period_start_date: 2020-05-01
-      period_end_date: 2020-07-01
+      period_end_date: 2020-08-31
       subpop: "all"
       value: 
         distribution: truncnorm
@@ -145,7 +145,7 @@ outcome_modifiers:
     # assume that due to limitations in testing, initially the case detection probability was lower
     test_limits:
       method: SinglePeriodModifier
-      parameter: incidCase
+      parameter: incidCase::probability
       subpop: "all"
       period_start_date: 2020-02-01
       period_end_date: 2020-06-01

@@ -191,10 +191,10 @@ where:
 
 #### Non-inference run
 
-Stay in the `$DATA_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor`. To do this, call `gempyor-simulate` providing the name of the configuration file you want to run (ex. `config.yml`). An example config is provided in `flepimop_sample/config_sample_2pop_interventions.yml.`
+Stay in the `$DATA_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor`. To do this, call `flepimop simulate` providing the name of the configuration file you want to run (ex. `config.yml`). An example config is provided in `flepimop_sample/config_sample_2pop_interventions.yml.`
 
 ```
-gempyor-simulate -c config.yml
+flepimop simulate config.yml
 ```
 
 {% hint style="warning" %}

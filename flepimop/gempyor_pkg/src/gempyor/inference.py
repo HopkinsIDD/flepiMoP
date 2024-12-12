@@ -9,53 +9,29 @@
 # function terminated successfully
 
 
-from . import seir, model_info
-from . import outcomes, file_paths
-from .utils import config, Timer, read_df, as_list
-import numpy as np
 from concurrent.futures import ProcessPoolExecutor
-
-# Logger configuration
+import copy
 import logging
-import os
 import multiprocessing as mp
+import os
+
+import numba as nb
+import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
-import numba as nb
+
+from . import seir, model_info
+from . import outcomes, file_paths
+from .utils import config, Timer, read_df, as_list
 
 
 logging.basicConfig(level=os.environ.get("FLEPI_LOGLEVEL", "INFO").upper())
 logger = logging.getLogger()
 handler = logging.StreamHandler()
-# '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
-formatter = logging.Formatter(
-    " %(name)s :: %(levelname)-8s :: %(message)s"
-    # "%(asctime)s [%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
-)
-
+formatter = logging.Formatter(" %(name)s :: %(levelname)-8s :: %(message)s")
 handler.setFormatter(formatter)
-# logger.addHandler(handler)
 
-from . import seir, model_info
-from . import outcomes
-from .utils import config, Timer, read_df
-import numpy as np
-from concurrent.futures import ProcessPoolExecutor
-
-# Logger configuration
-import logging
-import os
-import multiprocessing as mp
-import pandas as pd
-import pyarrow.parquet as pq
-import xarray as xr
-import numba as nb
-import copy
-import matplotlib.pyplot as plt
-import seaborn as sns
-import confuse
-from . import inference_parameter, logloss, statistics
 
 # TODO: should be able to draw e.g from an initial condition folder buuut keep the draw as a blob
 # so it is saved by emcee, so I can build a posterio
@@ -66,7 +42,7 @@ def simulation_atomic(
     *,
     snpi_df_in,
     hnpi_df_in,
-    modinf,
+    modinf: model_info.ModelInfo,
     p_draw,
     unique_strings,
     transition_array,
@@ -123,6 +99,9 @@ def simulation_atomic(
         seeding_data_nbdict,
         seeding_amounts,
     )
+    if save:
+        seir.write_spar_snpi(sim_id=random_id, modinf=modinf, p_draw=p_draw, npi=npi_seir)
+        seir.write_seir(sim_id=random_id, modinf=modinf, states=states)
 
     # Compute outcomes
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
@@ -147,10 +126,14 @@ def simulation_atomic(
     return outcomes_df
 
 
-def get_static_arguments(modinf):
+def get_static_arguments(modinf: model_info.ModelInfo):
     """
     Get the static arguments for the log likelihood function, these are the same for all walkers
     """
+    if modinf.compartments is None:
+        raise RuntimeError(
+            "The `modinf` is required to have a parsed `compartments` attribute."
+        )
 
     real_simulation = False
     (
@@ -161,8 +144,10 @@ def get_static_arguments(modinf):
     ) = modinf.compartments.get_transition_array()
 
     outcomes_parameters = outcomes.read_parameters_from_config(modinf)
-    npi_seir = seir.build_npi_SEIR(
-        modinf=modinf, load_ID=False, sim_id2load=None, config=config
+    npi_seir = (
+        seir.build_npi_SEIR(modinf=modinf, load_ID=False, sim_id2load=None, config=config)
+        if modinf.npi_config_seir is not None
+        else None
     )
     if modinf.npi_config_outcomes:
         npi_outcomes = outcomes.build_outcome_modifiers(
@@ -228,7 +213,7 @@ def get_static_arguments(modinf):
             ),  # TODO add more information
         )
 
-    snpi_df_ref = npi_seir.getReductionDF()
+    snpi_df_ref = npi_seir.getReductionDF() if npi_seir is not None else pd.DataFrame()
 
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
         modinf=modinf,
@@ -288,9 +273,9 @@ def autodetect_scenarios(config):
 
     if len(seir_modifiers_scenarios) != 1 or len(outcome_modifiers_scenarios) != 1:
         raise ValueError(
-            f"Inference only support configurations files with one scenario, got"
-            f"seir: {seir_modifiers_scenarios}"
-            f"outcomes: {outcome_modifiers_scenarios}"
+            f"Inference only supports configuration files with one scenario, received "
+            f"SEIR modifiers: '{seir_modifiers_scenarios}', and "
+            f"Outcomes modifiers: '{outcome_modifiers_scenarios}'."
         )
 
     return seir_modifiers_scenarios[0], outcome_modifiers_scenarios[0]
@@ -353,9 +338,10 @@ class GempyorInference:
 
         config.set_file(os.path.join(path_prefix, config_filepath))
 
-        self.seir_modifiers_scenario, self.outcome_modifiers_scenario = (
-            autodetect_scenarios(config)
-        )
+        (
+            self.seir_modifiers_scenario,
+            self.outcome_modifiers_scenario,
+        ) = autodetect_scenarios(config)
 
         if run_id is None:
             run_id = file_paths.run_id()
@@ -407,11 +393,14 @@ class GempyorInference:
         self.autowrite_seir = autowrite_seir
 
         ## Inference Stuff
+        self.static_sim_arguments = None
         self.do_inference = False
         if config["inference"].exists():
             from . import inference_parameter, logloss
 
             if config["inference"]["method"].get("default") == "emcee":
+                # Generates the static_sim_arguments only if this is a config argument.
+                self.static_sim_arguments = get_static_arguments(self.modinf)
                 self.do_inference = True
                 self.inference_method = "emcee"
                 self.inferpar = inference_parameter.InferenceParameters(
@@ -424,7 +413,6 @@ class GempyorInference:
                     subpop_struct=self.modinf.subpop_struct,
                     time_setup=self.modinf.time_setup,
                 )
-                self.static_sim_arguments = get_static_arguments(self.modinf)
 
                 print("Running Gempyor Inference")
                 print(self.logloss)
@@ -450,10 +438,10 @@ class GempyorInference:
             self.save,
         ]
 
-    def get_logloss(self, proposal):
+    def simulate_proposal(self, proposal):
         if not self.inferpar.check_in_bound(proposal=proposal):
             if not self.silent:
-                print("OUT OF BOUND!!")
+                print("`llik` is -inf (out of bound proposal).")
             return -np.inf, -np.inf, -np.inf
 
         snpi_df_mod, hnpi_df_mod = self.inferpar.inject_proposal(
@@ -470,11 +458,21 @@ class GempyorInference:
 
         outcomes_df = simulation_atomic(**ss, modinf=self.modinf, save=self.save)
 
+        return outcomes_df
+
+    def get_logloss(self, proposal):
+        if not self.inferpar.check_in_bound(proposal=proposal):
+            if not self.silent:
+                print("OUT OF BOUND!!")
+            return -np.inf, -np.inf, -np.inf
+
+        outcomes_df = self.simulate_proposal(proposal=proposal)
+
         ll_total, logloss, regularizations = self.logloss.compute_logloss(
             model_df=outcomes_df, subpop_names=self.modinf.subpop_struct.subpop_names
         )
         if not self.silent:
-            print(f"llik is {ll_total}")
+            print(f"llik is '{ll_total}' ")
 
         return ll_total, logloss, regularizations
 
