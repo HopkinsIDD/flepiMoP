@@ -8,6 +8,12 @@ on:
     branches:
       - dev
   pull_request:
+    types:
+      - edited
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
     paths:
       - flepimop/R_packages/flepicommon/**/*
     branches:

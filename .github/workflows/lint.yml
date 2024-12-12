@@ -6,6 +6,12 @@ on:
     paths:
       - 'flepimop/gempyor_pkg/**/*.py'
   pull_request:
+    types:
+      - edited
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
     paths:
       - '**/*.py'
     branches:
