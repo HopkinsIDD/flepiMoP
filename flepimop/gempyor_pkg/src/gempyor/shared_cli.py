@@ -222,7 +222,9 @@ def parse_config_files(
     config_src = []
     if len(found_configs) != 1:
         if not found_configs:
-            raise ValueError(f"No config files provided.")
+            click.echo("No configuration provided! See help for required usage:\n")
+            click.echo(ctx.get_help())
+            ctx.exit()
         else:
             error_dict = {k: kwargs[k] for k in found_configs}
             raise ValueError(
@@ -237,21 +239,30 @@ def parse_config_files(
         )
         config_src = _parse_option(config_validator, kwargs[config_key])
         cfg.clear()
+        cfg_data = {}
         for config_file in config_src:
             tmp = confuse.Configuration("tmp")
             tmp.set_file(config_file)
-            if intersect := set(tmp.keys()) & set(cfg.keys()):
-                warnings.warn(f"Configuration files contain overlapping keys: {intersect}.")
-            cfg.set_file(config_file)
+            if intersect := set(tmp.keys()) & set(cfg_data.keys()):
+                intersect = ", ".join(sorted(list(intersect)))
+                raise ValueError(
+                    "Configuration files contain overlapping keys, "
+                    f"{intersect}, introduced by {config_file}."
+                )
+            for k in tmp.keys():
+                cfg_data[k] = tmp[k].get()
+        cfg.set(cfg_data)
         cfg["config_src"] = [str(k) for k in config_src]
 
     # deal with the scenario overrides
-    scen_args = {k for k in parsed_args if k.endswith("scenarios") and kwargs.get(k)}
-    for option in scen_args:
+    scen_args = {k for k in parsed_args if k.endswith("_scenarios")}
+    for option in {s for s in scen_args if kwargs.get(s)}:
         key = option.replace("_scenarios", "")
         value = _parse_option(config_file_options[option], kwargs[option])
         if cfg[key].exists():
-            cfg[key]["scenarios"] = as_list(value)
+            cfg[key]["scenarios"] = (
+                list(value) if isinstance(value, tuple) else as_list(value)
+            )
         else:
             raise ValueError(
                 f"Specified {option} when no {key} in configuration file(s): {config_src}"
