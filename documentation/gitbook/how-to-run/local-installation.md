@@ -4,7 +4,7 @@ description: >-
 ---
 
 
-# Local flepiMoP installation
+# Local flepiMoP installation 
 
 ## ⇅ Get set up to use Github
 
@@ -22,24 +22,17 @@ In order to run a model with flepiMoP, you will need to clone the flepiMoP **cod
 
 **To clone the `flepiMoP` code repository:**
 
-* If you're using the command line in a terminal, first navigate to the local directory you'll use as the directory for the files that make up `flepiMoP`. Then, use the command:\
-  `git clone https://github.com/HopkinsIDD/flepiMoP`
+* If you're using the command line in a terminal, first navigate to the local directory you'll use as the directory for the files that make up `flepiMoP`. Then, use the command: `git clone https://github.com/HopkinsIDD/flepiMoP`
 * If you're using Github Desktop, go File -> Clone Repository, switch to the "URL" tab and copy the URL `https://github.com/HopkinsIDD/flepiMoP` there. For the "Local Path" option, make sure you choose your desired directory.
 
 ## 🐍 Installing `conda`
 
-In order to complete `flepiMoP` installation, you must have [`conda`](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) installed on your machine. `conda` is a tool that will assist you in managing software environments and code packages on your device. To install `conda` follow the directions according to your operating system:
+In order to complete `flepiMoP` installation, you must have [`conda`](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) installed on your machine. `conda` is a tool that will assist you in managing software environments and code packages on your device, and it will be very helpful in ensuring consistent, reproducible environments across different projects. To install `conda` follow [the directions](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html) according to your operating system. We would recommend selecting the `Anaconda Distribution` installer of `conda`.
 
-* [Windows](https://docs.conda.io/projects/conda/en/latest/user-guide/install/windows.html)
-* [macOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
-* [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
-
-We would recommend selecting the `Anaconda Distribution` installer of `conda`.
-
-Once installed, you must set up your `conda` environmnet. To do this, navigate to your `flepiMoP` directory, and run the following commands:
+Once installed, you must set up your `conda` environment. To do this, navigate to your `flepiMoP` directory, and run the following commands:
 
 ```bash
-conda env create -f /build/renv/conda_environment.yml
+conda env create --name flepimop-env --file environment.yml
 ```
 This will create a `conda` environment called `flepimop-env`, that you will activate with the command:
 
@@ -47,12 +40,18 @@ This will create a `conda` environment called `flepimop-env`, that you will acti
 conda activate flepimop-env
 ```
 
+Installation and activation of `conda` may take a few minutes.
+
 ## ⬇️ Installing flepiMoP packages and dependencies
 
 While in the `flepiMoP` directory, run the following command:
 
+**Note: This installation script is currently only designed for Mac/Linux operating systems. Windows installation script coming soon.**
 ```bash
-/build/local_install_or_update.sh
+./build/local_install_or_update
 ```
 
-This command will install the flepiMoP Python package, `gempyor`, along with all its dependencies, as well as all necessary R packages and dependencies. This command will also verify that your `conda` environment settings are corretly configured for flepiMoP use.
+1. Determine `$FLEPI_PATH` and `$FLEPI_CONDA` environment variables
+2. Activate your conda environment
+3. Install `gempyor` and related Python dependencies
+4. Install necessary R packages and dependencies

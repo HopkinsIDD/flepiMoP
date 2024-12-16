@@ -5,15 +5,17 @@ set -e
 
 # Ensure we have a $FLEPI_PATH
 if [ -z "${FLEPI_PATH}" ]; then
-    export USERDIR=$(pwd)
-    export FLEPI_PATH="$USERDIR/flepiMoP"
-    export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
+    export FLEPI_PATH=$(realpath "$(pwd)")
+    if [ "$(basename "$FLEPI_PATH")" != "flepiMoP" ]; then 
+    echo "Could not find flepiMoP repository in your current directory."
+    exit 1
+    fi
     echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
 fi
 
 # Test that flepiMoP is located there, exit if not
 if [ ! -d "$FLEPI_PATH" ]; then
-    echo "Could not find flepiMoP repository in your directory. Please make sure you have correctly cloned flepiMoP in this directory."
+    echo "Could not find flepiMoP repository in your current directory. Please make sure you have correctly cloned flepiMoP in this directory."
     exit 1
 fi
 
@@ -54,6 +56,3 @@ R -e "library(inference); inference::install_cli()"
 # Done
 echo "> Done installing/updating flepiMoP."
 set +e
-
-
-
