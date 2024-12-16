@@ -15,6 +15,32 @@ from .utils import Timer, read_df
 
 logger = logging.getLogger(__name__)
 
+# TO DO: Write documentation for this function
+# TO DO: include dtype hints for arguments
+def neg_params(
+        parsed_parameters: np.ndarray, 
+        parameter_names: list[str], 
+        dates: pd.DatetimeIndex, 
+        subpop_names: list[str]
+) -> None:
+    if ((parsed_parameters)< 0).any():
+        negative_index_parameters = np.argwhere(parsed_parameters<0)  
+        unique_param_sp_combinations = []
+        row_index = -1
+        redundant_rows = []
+        for row in negative_index_parameters:
+            row_index += 1
+            if (row[0],row[2]) in unique_param_sp_combinations: 
+                redundant_rows.append(row_index)
+            if (row[0],row[2]) not in unique_param_sp_combinations: 
+                unique_param_sp_combinations.append((row[0],row[2]))
+        non_redundant_negative_parameters = np.delete(negative_index_parameters, (redundant_rows), axis=0)
+
+        # TO DO: Fix error message such that the print() statement occurs within the ValueError
+        print("The earliest date negative for each subpop and unique parameter are:")
+        for param_idx, day_idx, sp_idx in non_redundant_negative_parameters:
+            print("subpop: ", subpop_names[sp_idx], ", parameter ", parameter_names[param_idx], ": ", dates[day_idx].date(), sep="")
+        raise ValueError("There are negative parsed-parameters, which is likely to result in incorrect integration.")
 
 def build_step_source_arg(
     modinf: ModelInfo,
@@ -119,6 +145,14 @@ def build_step_source_arg(
         "population": modinf.subpop_pop,
         "stochastic_p": modinf.stoch_traj_flag,
     }
+
+    neg_params(
+        fnct_args["parameters"],
+        modinf.parameters.pnames,
+        modinf.dates,
+        modinf.subpop_pop
+    )
+
     return fnct_args
 
 
