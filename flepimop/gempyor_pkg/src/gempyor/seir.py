@@ -16,13 +16,27 @@ from .utils import Timer, read_df
 logger = logging.getLogger(__name__)
 
 # TO DO: Write documentation for this function
-# TO DO: include dtype hints for arguments
 def neg_params(
         parsed_parameters: np.ndarray, 
         parameter_names: list[str], 
         dates: pd.DatetimeIndex, 
         subpop_names: list[str]
 ) -> None:
+    """
+    Identifies and reports earliest negative values for parameters.
+
+    Args:
+        parsed_parameters: An array of parameter values.
+        parameter_names: A list of the names of parameters.
+        dates: A pandas DatetimeIndex containing the dates.
+        subpop_names: A list of the names of subpopulations.
+
+    Raises:
+        ValueError: Negative parameter values were detected. 
+
+    Returns:
+        None
+    """
     if ((parsed_parameters)< 0).any():
         negative_index_parameters = np.argwhere(parsed_parameters<0)  
         unique_param_sp_combinations = []
