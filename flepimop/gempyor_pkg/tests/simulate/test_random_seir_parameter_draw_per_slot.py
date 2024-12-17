@@ -25,15 +25,18 @@ def setup_sample_2pop_vaccine_scenarios(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.mark.parametrize("n_jobs", [1, 2])
 def test_random_seir_parameter_draw_per_slot(
-    monkeypatch: pytest.MonkeyPatch, setup_sample_2pop_vaccine_scenarios: Path
+    monkeypatch: pytest.MonkeyPatch, setup_sample_2pop_vaccine_scenarios: Path, n_jobs: int
 ) -> None:
     # Test setup
     monkeypatch.chdir(setup_sample_2pop_vaccine_scenarios)
 
     # Test execution of `gempyor-simulate`
     runner = CliRunner()
-    result = runner.invoke(_click_simulate, ["config_sample_2pop_vaccine_scenarios.yml"])
+    result = runner.invoke(
+        _click_simulate, ["config_sample_2pop_vaccine_scenarios.yml", "--jobs", str(n_jobs)]
+    )
     assert result.exit_code == 0
 
     # Get the contents of 'spar' and 'hpar' directories as DataFrames

@@ -258,6 +258,8 @@ def onerun_SEIR(
     config=None,
 ):
     np.random.seed()
+    modinf.parameters.reinitialize_distributions()
+
     npi = None
     if modinf.npi_config_seir:
         npi = build_npi_SEIR(
