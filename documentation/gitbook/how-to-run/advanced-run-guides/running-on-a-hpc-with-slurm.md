@@ -10,6 +10,13 @@ These details cover how to install and initialize `flepiMoP` on an HPC environme
 Currently only JHU's Rockfish and UNC's Longleaf HPC clusters are supported. If you need support for a new HPC cluster please file an issue in [the `flepiMoP` GitHub repository](https://github.com/HopkinsIDD/flepiMoP/issues).
 {% endhint %}
 
+For getting access to one of the supported HPC environments please refer to the following documentation before continuing:
+
+* [UNC's Longleaf Cluster](https://help.rc.unc.edu/getting-started-on-longleaf/) for UNC users, or
+* [JHU's Rockfish Cluster](https://www.arch.jhu.edu/support/access/) for JHU users.
+
+External users will need to consult with their PI contact at the respective institution.
+
 ## Installing `flepiMoP`
 
 This task needs to be ran once to do the initial install of `flepiMoP`.
