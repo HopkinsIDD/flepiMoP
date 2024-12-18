@@ -165,6 +165,18 @@ class Parameters:
         logging.debug(f"Index in arrays are: {self.pnames2pindex}")
         logging.debug(f"NPI overlap operation is {self.stacked_modifier_method} ")
 
+    def reinitialize_distributions(self) -> None:
+        """
+        Reinitialize all random distributions.
+
+        This method reinitializes all random distributions for the parameters contained
+        within this class. The random seed for each distribution is captured on
+        initialization so this method will change those seeds.
+        """
+        for pn in self.pnames:
+            if "dist" in self.pdata[pn]:
+                self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
+
     def picklable_lamda_alpha(self):
         """
         Read the `alpha_val` attribute.
