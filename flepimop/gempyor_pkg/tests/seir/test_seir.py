@@ -18,14 +18,15 @@ DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 def test_neg_params():
+    
+    config.set_file(f"{DATA_DIR}/config.yml")
     modinf = model_info.ModelInfo(
         config=config,
         nslots=1,
         seir_modifiers_scenario="None",
         write_csv=False,
     )
-        
-    modinf = model_info.ModelInfo()
+
     parameter_names = modinf.parameters.pnames
     dates = modinf.dates
     subpop_names = modinf.subpop_pop
@@ -56,6 +57,7 @@ def test_neg_params():
 
 
 def test_check_values():
+    # I think line 61 could be deleted...redundant b/c this also occurs outside func def
     os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config.yml")
 
