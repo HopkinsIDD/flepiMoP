@@ -33,6 +33,7 @@ if [ "$FLEPI_CONDA_ENV_MATCHES" -eq 0 ]; then
 fi
 
 # Load the conda environment
+eval "$(conda shell.bash hook)"
 conda activate $FLEPI_CONDA
 [ -e "$CONDA_PREFIX/conda-meta/pinned" ] && rm $CONDA_PREFIX/conda-meta/pinned
 cat << EOF > $CONDA_PREFIX/conda-meta/pinned
