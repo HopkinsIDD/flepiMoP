@@ -23,7 +23,7 @@ def test_check_parameter_positivity():
                        '1*zeta*1*1', 'r0*gamma*theta10*1*chi_OMICRON*1', 'r0*gamma*theta9*1*chi_OMICRON*1', 
                        'eta_X0toX3_highIE*1*1*nuage0to17', 'eta_X0toX3_highIE*1*1*nuage18to64LR', 
                        'eta_X0toX3_highIE*1*1*nuage18to64HR', 'eta_X0toX3_highIE*1*1*nuage65to100',]
-    dates = pd.date_range('2023-03-19', '2025-04-31', freq="D")
+    dates = pd.date_range('2023-03-19', '2025-04-30', freq="D")
     subpop_names = ['56000', '50000', '11000', '02000', '38000', '46000', '10000', '30000', '44000', '23000']
 
     # Test case 1: no negative params
