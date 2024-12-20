@@ -19,11 +19,19 @@ if [ ! -d "$FLEPI_PATH" ]; then
     exit 1
 fi
 
+# Create the conda environment if it doesn't exist
+if ! conda env list | grep -q "$FLEPI_CONDA"; then
+    conda env create --name flepimop-env --file $FLEPI_PATH/environment.yml
+fi
+
 # Ensure that conda environment is named flepimop-env
 if [ -z "${FLEPI_CONDA}" ]; then
     export FLEPI_CONDA="flepimop-env"
     echo "Using '$FLEPI_CONDA' for \$FLEPI_CONDA."
 fi
+
+# Activate the conda environment
+conda activate $FLEPI_CONDA
 
 # Check that the name of the FLEPI_CONDA variable matches the environment that has been set up, exit if not
 FLEPI_CONDA_ENV_MATCHES=$( conda info --envs | awk '{print $1}' | grep -x "$FLEPI_CONDA" | wc -l )

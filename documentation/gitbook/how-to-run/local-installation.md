@@ -29,22 +29,11 @@ In order to run a model with flepiMoP, you will need to clone the flepiMoP **cod
 
 In order to complete `flepiMoP` installation, you must have [`conda`](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) installed on your machine. `conda` is a tool that will assist you in managing software environments and code packages on your device, and it will be very helpful in ensuring consistent, reproducible environments across different projects. To install `conda` follow [the directions](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html) according to your operating system. We would recommend selecting the `Anaconda Distribution` installer of `conda`.
 
-Once installed, you must set up your `conda` environment. To do this, navigate to your `flepiMoP` directory, and run the following commands:
-
-```bash
-conda env create --name flepimop-env --file environment.yml
-```
-This will create a `conda` environment called `flepimop-env`, that you will activate with the command:
-
-```bash
-conda activate flepimop-env
-```
-
-Installation and activation of `conda` may take a few minutes.
+Installation of `conda` may take a few minutes.
 
 ## ⬇️ Installing flepiMoP packages and dependencies
 
-While in the `flepiMoP` directory, run the following command:
+Navigate to the `flepiMoP` directory and run the following command:
 
 **Note: This installation script is currently only designed for Mac/Linux operating systems. Windows installation script coming soon.**
 ```bash
