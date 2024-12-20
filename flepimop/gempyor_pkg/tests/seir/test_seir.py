@@ -17,19 +17,14 @@ from gempyor.utils import config
 DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
-def test_neg_params():
-    
-    config.set_file(f"{DATA_DIR}/config.yml")
-    modinf = model_info.ModelInfo(
-        config=config,
-        nslots=1,
-        seir_modifiers_scenario="None",
-        write_csv=False,
-    )
+def test_check_parameter_positivity():
 
-    parameter_names = modinf.parameters.pnames
-    dates = modinf.dates
-    subpop_names = modinf.subpop_pop
+    parameter_names = ['alpha*1*1*1', 'sigma_OMICRON*1*1*1', '3*gamma*1*1*1', 'epsilon+omegaph4*1*1*1', 
+                       '1*zeta*1*1', 'r0*gamma*theta10*1*chi_OMICRON*1', 'r0*gamma*theta9*1*chi_OMICRON*1', 
+                       'eta_X0toX3_highIE*1*1*nuage0to17', 'eta_X0toX3_highIE*1*1*nuage18to64LR', 
+                       'eta_X0toX3_highIE*1*1*nuage18to64HR', 'eta_X0toX3_highIE*1*1*nuage65to100',]
+    dates = pd.date_range('2023-03-19', '2025-04-31', freq="D")
+    subpop_names = ['56000', '50000', '11000', '02000', '38000', '46000', '10000', '30000', '44000', '23000']
 
     # Test case 1: no negative params
     test_array1 = np.zeros((len(parameter_names)-1, len(dates)-1, len(subpop_names)-1))

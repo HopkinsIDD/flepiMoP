@@ -16,7 +16,7 @@ from .utils import Timer, read_df
 logger = logging.getLogger(__name__)
 
 # TO DO: Write documentation for this function
-def neg_params(
+def check_parameter_positivity(
         parsed_parameters: np.ndarray, 
         parameter_names: list[str], 
         dates: pd.DatetimeIndex, 
@@ -160,7 +160,7 @@ def build_step_source_arg(
         "stochastic_p": modinf.stoch_traj_flag,
     }
 
-    neg_params(
+    check_parameter_positivity(
         fnct_args["parameters"],
         modinf.parameters.pnames,
         modinf.dates,
