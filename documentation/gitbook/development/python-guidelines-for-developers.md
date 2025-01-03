@@ -65,7 +65,7 @@ For more details on how to use `pytest` please refer to their [usage guide](http
 
 ### Formatting
 
-We try to remain close to Python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull requests. It provides a consistent style, which is useful when diffing. We use a custom length of 92 characters as the baseline is short for scientific code. Here is the line to use to format your code:
+We try to remain close to Python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull requests. It provides a consistent style, which is useful when diffing. To get started with black please refer to their [Getting Started guide](https://black.readthedocs.io/en/stable/getting_started.html). We use a custom length of 92 characters as the baseline is short for scientific code. Here is the line to use to format your code:
 
 ```bash
 black --line-length 92 \
@@ -73,63 +73,8 @@ black --line-length 92 \
     --verbose .
 ```
 
-For those using a Mac or Linux system for development this command is also available for use by calling `./dev/lint`. Similarly, you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
+For those using a Mac or Linux system for development this command is also available for use by calling `./bin/lint`. Similarly, you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
 
 ```bash
 cp -f bin/pre-commit .git/hooks/
 ```
-
-#### Structure of the main classes
-
-The code is structured so that each of the main classes **owns** a config segment, and only this class should parse and build the related object. To access this information, other classes first need to build the object.
-
-{% hint style="warning" %}
-Below, this page is still underconstruction
-{% endhint %}
-
-The main classes are:
-
-* `Coordinates:` this is a light class that stores all the coordinates needed by every other class (e.g the time serie
-* `Parameter`
-* `Compartments`
-* `Modifers`
-* `Seeding`,
-* `InitialConditions`
-* a `writeDF`
-* function to plot
-* (TODO: detail pipeline internal API)
-
-### Batch folder
-
-Here are some notes useful to improve the batch submission:
-
-Setup site wide Rprofile.
-
-```
-export R_PROFILE=$COVID_PATH/slurm_batch/Rprofile
-```
-
-> SLURM copies your environment variables by default. You don't need to tell it to set a variable on the command line for sbatch. Just set the variable in your environment before calling sbatch.
-
-> There are two useful environment variables that SLURM sets up when you use job arrays:
-
-> SLURM\_ARRAY\_JOB\_ID, specifies the array's master job ID number. SLURM\_ARRAY\_TASK\_ID, specifies the job array index number. https://help.rc.ufl.edu/doc/Using\_Variables\_in\_SLURM\_Jobs
-
-SLURM does not support using variables in the #SBATCH lines within a job script (for example, #SBATCH -N=$REPS will NOT work). A very limited number of variables are available in the #SBATCH just as %j for JOB ID. However, values passed from the command line have precedence over values defined in the job script. and you could use variables in the command line. For example, you could set the job name and output/error files can be passed on the sbatch command line:
-
-```
-RUNTYPE='test'
-RUNNUMBER=5
-sbatch --job-name=$RUNTYPE.$RUNNUMBER.run --output=$RUNTYPE.$RUNUMBER.txt --export=A=$A,b=$b jobscript.sbatch
-```
-
-However note in this example, the output file doesn't have the job ID which is not available from the command line, only inside the sbatch shell script.
-
-#### File descriptions
-
-launch\_job.py and runner.py for non inference job
-
-inference\_job.py launch a slurm or aws job, where it uses
-
-* \`inference\_runner.sh\` and inference\_copy.sh for aws
-* ;batch/inference\_job.run for slurm

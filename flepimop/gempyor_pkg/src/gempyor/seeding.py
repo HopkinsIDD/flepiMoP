@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 
 def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
     if not df["date"].is_monotonic_increasing:
-        raise ValueError(
-            "_DataFrame2NumbaDict got an unsorted dataframe, exposing itself to non-sense"
-        )
+        raise ValueError("The `df` given is not sorted by the 'date' column.")
 
     cmp_grp_names = [
         col for col in modinf.compartments.compartments.columns if col != "name"
@@ -111,7 +109,7 @@ class Seeding(SimulationComponent):
             dupes = seeding[seeding.duplicated(["subpop", "date"])].index + 1
             if not dupes.empty:
                 raise ValueError(
-                    f"Repeated subpop-date in rows {dupes.tolist()} of seeding::lambda_file."
+                    f"There are repeating subpop-date in rows '{dupes.tolist()}' of `seeding::lambda_file`."
                 )
         elif method == "FolderDraw":
             seeding = pd.read_csv(
@@ -136,7 +134,7 @@ class Seeding(SimulationComponent):
             seeding = pd.DataFrame(columns=["date", "subpop"])
             return _DataFrame2NumbaDict(df=seeding, amounts=[], modinf=modinf)
         else:
-            raise NotImplementedError(f"unknown seeding method [got: {method}]")
+            raise ValueError(f"Unknown seeding method given, '{method}'.")
 
         # Sorting by date is very important here for the seeding format necessary !!!!
         # print(seeding.shape)
@@ -160,8 +158,6 @@ class Seeding(SimulationComponent):
             )
         elif method == "FolderDraw" or method == "FromFile":
             amounts = seeding["amount"]
-        else:
-            raise ValueError(f"Unknown seeding method: {method}")
 
         return _DataFrame2NumbaDict(df=seeding, amounts=amounts, modinf=modinf)
 

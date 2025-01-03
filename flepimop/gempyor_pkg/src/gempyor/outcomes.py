@@ -129,6 +129,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
         # Prepare the probability table:
         # Either mean of probabilities given or from the file... This speeds up a bit the process.
         # However needs an ordered dict, here we're abusing a bit the spec.
+        if modinf.outcomes_config is None:
+            return {}
         outcomes_config = modinf.outcomes_config["outcomes"]
         if modinf.outcomes_config["param_from_file"].exists():
             if modinf.outcomes_config["param_from_file"].get():
@@ -140,7 +142,7 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                 branching_data = pa.parquet.read_table(branching_file).to_pandas()
                 if "relative_probability" not in list(branching_data["quantity"]):
                     raise ValueError(
-                        f"No 'relative_probability' quantity in {branching_file}, therefor making it useless"
+                        f"There is no `relative_probability` quantity in '{branching_file}'."
                     )
 
                 print(
@@ -162,7 +164,7 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                     modinf.subpop_struct.subpop_names
                 ):
                     raise ValueError(
-                        f"Places in seir input files does not correspond to subpops in outcome probability file {branching_file}"
+                        f"SEIR input files do not have subpops that match those in outcome probability file '{branching_file}'."
                     )
 
         parameters = {}
@@ -178,7 +180,8 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
 
                 else:
                     raise ValueError(
-                        f"unsure how to read outcome {new_comp}: not a str, nor an incidence or prevalence: {src_name}"
+                        f"Expected a `str` or `dict` containing `incidence` or `prevalence`. "
+                        f"Instead given '{src_name}' for outcome '{new_comp}'."
                     )
 
                 parameters[new_comp]["probability"] = outcomes_config[new_comp][
@@ -289,7 +292,7 @@ def read_parameters_from_config(modinf: model_info.ModelInfo):
                 parameters[new_comp] = {}
                 parameters[new_comp]["sum"] = outcomes_config[new_comp]["sum"].get()
             else:
-                raise ValueError(f"No 'source' or 'sum' specified for comp {new_comp}")
+                raise ValueError(f"No `source` or `sum` specified for comp '{new_comp}'.")
 
     return parameters
 
@@ -367,7 +370,8 @@ def compute_all_multioutcomes(
     else:
         seir_sim = bypass_seir_df
 
-    for new_comp in parameters:
+    parameters_keys = list(parameters.keys())
+    for new_comp in parameters_keys:
         if "source" in parameters[new_comp]:
             # Read the config for this compartment: if a source is specified, we
             # 1. compute incidence from binomial draw
@@ -392,15 +396,18 @@ def compute_all_multioutcomes(
                     )
                 else:
                     raise ValueError(
-                        f"Unknown type for seir simulation provided, got f{type(seir_sim)}"
+                        f"Unknown type provided for seir simulation, received '{type(seir_sim)}'."
                     )
                 # we don't keep source in this cases
             else:  # already defined outcomes
                 if source_name in all_data:
                     source_array = all_data[source_name]
+                elif source_name in parameters_keys:
+                    parameters_keys.append(new_comp)
+                    continue
                 else:
                     raise ValueError(
-                        f"ERROR with outcome {new_comp}: the specified source {source_name} is not a dictionnary (for seir outcome) nor an existing pre-identified outcomes."
+                        f"Issue with outcome '{new_comp}'; the specified source '{source_name}' is neither a dictionnary (for seir outcome) nor an existing pre-identified outcome."
                     )
 
             if (loaded_values is not None) and (
@@ -586,7 +593,7 @@ def filter_seir_df(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
         vtype = "prevalence"
     else:
         raise ValueError(
-            f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'."
+            f"Cannot discern the source of outcome '{outcome_name}'; it is not a previously defined outcome and there is no `incidence` or `prevalence`."
         )
 
     diffI = diffI[diffI["mc_value_type"] == vtype]
@@ -615,7 +622,7 @@ def filter_seir_xr(diffI, dates, subpops, filters, outcome_name) -> np.ndarray:
         vtype = "prevalence"
     else:
         raise ValueError(
-            f"Cannot distinguish the source of outcome {outcome_name}: it is not another previously defined outcome and there is no 'incidence:' or 'prevalence:'."
+            f"Cannot discern the source of outcome '{outcome_name}'; it is not a previously defined outcome and there is no `incidence` or `prevalence`."
         )
     # Filter the data
     filters = filters[vtype]
@@ -665,7 +672,7 @@ def multishiftee(arr, shifts, stoch_delay_flag=True):
     result = np.zeros_like(arr)
 
     if stoch_delay_flag:
-        raise ValueError("NOT SUPPORTED YET")
+        raise NotImplementedError("`stoch_delay_flag` not supported yet.")
         # for i, row in reversed(enumerate(np.rows(arr))):
         #    for j,elem in reversed(enumerate(row)):
         ## This function takes in :
@@ -691,7 +698,7 @@ def multishift(arr, shifts, stoch_delay_flag=True):
     result = np.zeros_like(arr)
 
     if stoch_delay_flag:
-        raise ValueError("NOT SUPPORTED YET")
+        raise NotImplementedError("`stoch_delay_flag` not supported yet.")
         # for i, row in reversed(enumerate(np.rows(arr))):
         #    for j,elem in reversed(enumerate(row)):
         ## This function takes in :

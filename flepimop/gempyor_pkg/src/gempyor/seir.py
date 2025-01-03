@@ -34,7 +34,9 @@ def build_step_source_arg(
             if integration_method == "rk4":
                 integration_method = "rk4.jit"
             if integration_method not in ["rk4.jit", "legacy"]:
-                raise ValueError(f"Unknown integration method {integration_method}.")
+                raise ValueError(
+                    f"Unknown integration method given, '{integration_method}'."
+                )
         if "dt" in modinf.seir_config["integration"].keys():
             dt = float(
                 eval(str(modinf.seir_config["integration"]["dt"].get()))
@@ -151,8 +153,7 @@ def steps_SEIR(
     elif integration_method == "rk4.jit":
         if modinf.stoch_traj_flag == True:
             raise ValueError(
-                f"with method {integration_method}, only deterministic "
-                f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
+                f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
@@ -167,8 +168,7 @@ def steps_SEIR(
         ]:
             if modinf.stoch_traj_flag == True:
                 raise ValueError(
-                    f"with method {integration_method}, only deterministic "
-                    f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
+                    f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
                 )
             seir_sim = steps_experimental.ode_integration(
                 **fnct_args, integration_method=integration_method
@@ -190,7 +190,7 @@ def steps_SEIR(
         elif integration_method == "rk4_aot":
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
-            raise ValueError(f"Unknow integration scheme, got {integration_method}")
+            raise ValueError(f"Unknown integration method given, '{integration_method}'.")
 
     # We return an xarray instead of a ndarray now
     compartment_coords = {}

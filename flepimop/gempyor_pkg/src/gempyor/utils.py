@@ -17,6 +17,7 @@ import pyarrow as pa
 import scipy.ndimage
 import scipy.stats
 import sympy.parsing.sympy_parser
+import yaml
 
 from . import file_paths
 
@@ -58,7 +59,7 @@ def write_df(
     elif path.suffix == ".parquet":
         return df.to_parquet(path, index=False, engine="pyarrow")
     raise NotImplementedError(
-        f"Invalid extension {path.suffix[1:]}. Must be 'csv' or 'parquet'."
+        f"Invalid extension provided: '.{path.suffix[1:]}'. Supported extensions are `.csv` or `.parquet`."
     )
 
 
@@ -95,7 +96,7 @@ def read_df(
     elif path.suffix == ".parquet":
         return pd.read_parquet(path, engine="pyarrow")
     raise NotImplementedError(
-        f"Invalid extension {path.suffix[1:]}. Must be 'csv' or 'parquet'."
+        f"Invalid extension provided: '.{path.suffix[1:]}'. Supported extensions are `.csv` or `.parquet`."
     )
 
 
@@ -114,7 +115,7 @@ def command_safe_run(
         As a tuple; the return code, the standard output, and standard error from running the command.
 
     Raises:
-        Exception: If fail_on_fail=True and the command fails, an exception will be thrown.
+        RuntimeError: If fail_on_fail=True and the command fails, an error will be thrown.
     """
     import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
@@ -124,8 +125,8 @@ def command_safe_run(
     )
     (stdout, stderr) = sr.communicate()
     if sr.returncode != 0:
-        print(f"{command_name} failed failed with returncode {sr.returncode}")
-        print(f"{command_name}:  {command}")
+        print(f"'{command_name}' failed failed with returncode '{sr.returncode}'")
+        print(f"'{command_name}': '{command}'")
         print("{command_name} command failed with stdout and stderr:")
 
         print("{command_name} stdout >>>>>>")
@@ -136,7 +137,7 @@ def command_safe_run(
         print(stderr.decode())
         print("{command_name} stderr <<<<<<")
         if fail_on_fail:
-            raise Exception(f"{command_name} command failed")
+            raise RuntimeError(f"The '{command_name}' command failed.")
 
     return sr.returncode, stdout, stderr
 
@@ -362,7 +363,7 @@ def as_evaled_expression(self):
         except TypeError as e:
             raise ValueError(e) from e
     else:
-        raise ValueError(f"expected numeric or string expression [got: {value}]")
+        raise ValueError(f"Expected numeric or string expression [received: '{value}'].")
 
 
 def get_truncated_normal(
@@ -484,7 +485,7 @@ def random_distribution_sampler(
     elif distribution == "binomial":
         p = kwargs.get("p")
         if not (0 < p < 1):
-            raise ValueError(f"p value {p} is out of range [0,1]")
+            raise ValueError(f"Invalid `p-value`: '{p}' is out of range [0,1].")
         return functools.partial(np.random.binomial, kwargs.get("n"), p)
     elif distribution == "truncnorm":
         # Truncated normal with mean, sd on interval [a, b]
@@ -497,7 +498,7 @@ def random_distribution_sampler(
     elif distribution == "lognorm":
         # Lognormal distribution with meanlog, sdlog
         return get_log_normal(kwargs.get("meanlog"), kwargs.get("sdlog")).rvs
-    raise NotImplementedError(f"unknown distribution [got: {distribution}]")
+    raise NotImplementedError(f"Unknown distribution [received: '{distribution}'].")
 
 
 @add_method(confuse.ConfigView)
@@ -556,7 +557,7 @@ def as_random_distribution(self):
         elif dist == "binomial":
             p = self["p"].as_evaled_expression()
             if (p < 0) or (p > 1):
-                raise ValueError(f"""p value { p } is out of range [0,1]""")
+                raise ValueError(f"Invalid `p-value`: '{p}' is out of range [0,1].")
                 # if (self["p"] < 0) or (self["p"] > 1):
                 #    raise ValueError(f"""p value { self["p"] } is out of range [0,1]""")
             return functools.partial(
@@ -578,7 +579,7 @@ def as_random_distribution(self):
                 sdlog=self["sdlog"].as_evaled_expression(),
             ).rvs
         else:
-            raise NotImplementedError(f"unknown distribution [got: {dist}]")
+            raise NotImplementedError(f"Unknown distribution [received: '{dist}'].")
     else:
         # we allow a fixed value specified directly:
         return functools.partial(
@@ -716,13 +717,13 @@ def print_disk_diagnosis():
         f"shutil.disk_usage: {total_bytes/ 1000000} Mb total, {used_bytes / 1000000} Mb used, {free_bytes / 1000000} Mb free..."
     )
     print("------------")
-    print(f"df -hT: {bash('df -hT')}")
+    print(f"df -hT: '{bash('df -hT')}'")
     print("------------")
-    print(f"df -i: {bash('df -i')}")
+    print(f"df -i: '{bash('df -i')}'")
     print("------------")
-    print(f"free -h: {bash('free -h')}")
+    print(f"free -h: '{bash('free -h')}'")
     print("------------")
-    print(f"lsblk: {bash('lsblk')}")
+    print(f"lsblk: '{bash('lsblk')}'")
     print("END AWS DIAGNOSIS ================================")
 
 
@@ -1004,8 +1005,8 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
     except ModuleNotFoundError:
         raise ModuleNotFoundError(
             (
-                "No module named 'boto3', which is required for "
-                "gempyor.utils.download_file_from_s3. Please install the aws target."
+                "No module named `boto3` found, which is required for "
+                "`gempyor.utils.download_file_from_s3`. Please install the aws target."
             )
         )
     s3 = boto3.client("s3")
@@ -1020,10 +1021,9 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
                 object = s3_uri[len(bucket) + 6 :]
                 s3.download_file(bucket, object, name_map[s3_uri])
             else:
-                raise ValueError(f"Invalid S3 URI format {s3_uri}")
+                raise ValueError(f"Invalid S3 URI format [received: '{s3_uri}'].")
         except ClientError as e:
-            print(f"An error occurred: {e}")
-            print("Could not download file from s3")
+            raise Exception(f"'{e}': could not download filefrom S3.")
 
 
 def move_file_at_local(name_map: dict[str, str]) -> None:
@@ -1040,3 +1040,74 @@ def move_file_at_local(name_map: dict[str, str]) -> None:
     for src, dst in name_map.items():
         os.path.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy(src, dst)
+
+
+def _dump_formatted_yaml(cfg: confuse.Configuration) -> str:
+    """
+    Dump confuse configuration to a formatted YAML string.
+
+    Args:
+        cfg: The confuse configuration object.
+
+    Returns:
+        A formatted YAML string representation of the configuration.
+
+    Examples:
+        >>> from gempyor.utils import _dump_formatted_yaml
+        >>> import confuse
+        >>> conf = confuse.Configuration("foobar")
+        >>> data = {
+        ...     "name": "Test Config",
+        ...     "compartments": {
+        ...         "infection_stage": ["S", "E", "I", "R"]
+        ...     },
+        ...     "seir": {
+        ...         "parameters": {
+        ...             "beta": {"value": 3.4},
+        ...             "gamma": {"value": 5.6},
+        ...         },
+        ...         "transitions": {
+        ...             "source": ["S"],
+        ...             "destination": ["E"],
+        ...             "rate": ["beta * gamma"],
+        ...             "proportional_to": [["S"], ["I"]],
+        ...             "proportion_exponent": [1, 1],
+        ...         },
+        ...     },
+        ... }
+        >>> conf.set(data)
+        >>> print(_dump_formatted_yaml(conf))
+        name: "Test Config"
+        compartments:
+            infection_stage: [S, E, I, R]
+        seir:
+            parameters:
+                beta:
+                    value: 3.4
+                gamma:
+                    value: 5.6
+            transitions:
+                source: [S]
+                destination: [E]
+                rate: ["beta * gamma"]
+                proportional_to: [[S], [I]]
+                proportion_exponent: [1, 1]
+    """
+
+    class CustomDumper(yaml.Dumper):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.add_representer(list, self._represent_list)
+            self.add_representer(str, self._represent_str)
+
+        def _represent_list(self, dumper, data):
+            return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
+
+        def _represent_str(self, dumper, data):
+            if " " in data:
+                return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+    return yaml.dump(
+        yaml.safe_load(cfg.dump()), Dumper=CustomDumper, indent=4, sort_keys=False
+    )
