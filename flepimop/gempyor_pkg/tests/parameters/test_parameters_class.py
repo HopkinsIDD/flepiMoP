@@ -1,6 +1,7 @@
 from datetime import date
 from functools import partial
 from itertools import repeat
+import multiprocessing as mp
 import pathlib
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable
@@ -717,32 +718,36 @@ class TestParameters:
         pass
 
     def test_reinitialize_parameters(self, tmp_path: pathlib.Path) -> None:
+        from concurrent.futures import ProcessPoolExecutor
+
         mock_inputs = distribution_three_valid_parameter_factory(tmp_path)
 
         np.random.seed(123)
 
         params = mock_inputs.create_parameters_instance()
 
-        results = tqdm.contrib.concurrent.process_map(
-            sample_params,
-            repeat(params, times=6),
-            repeat(False, times=6),
-            max_workers=2,
-            disable=True,
-        )
+        with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as ex:
+            results = list(
+                ex.map(
+                    sample_params,
+                    repeat(params, times=6),
+                    repeat(False, times=6),
+                )
+            )
 
         for i in range(1, len(results)):
             assert np.allclose(results[i - 1], results[i])
 
         np.random.seed(123)
 
-        results_with_reinit = tqdm.contrib.concurrent.process_map(
-            sample_params,
-            repeat(params, times=6),
-            repeat(True, times=6),
-            max_workers=2,
-            disable=True,
-        )
+        with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as ex:
+            results_with_reinit = list(
+                ex.map(
+                    sample_params,
+                    repeat(params, times=6),
+                    repeat(True, times=6),
+                )
+            )
 
         for i in range(1, len(results_with_reinit)):
             assert not np.allclose(results_with_reinit[i - 1], results_with_reinit[i])

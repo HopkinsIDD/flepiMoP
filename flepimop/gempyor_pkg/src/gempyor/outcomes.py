@@ -91,6 +91,8 @@ def onerun_delayframe_outcomes(
     load_ID: bool = False,
     sim_id2load: int = None,
 ):
+    np.random.seed(seed=sim_id2write)
+
     with Timer("buildOutcome.structure"):
         parameters = read_parameters_from_config(modinf)
 

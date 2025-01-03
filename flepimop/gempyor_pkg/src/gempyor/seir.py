@@ -1,5 +1,6 @@
 import itertools
 import logging
+import random
 import time
 
 import numpy as np
@@ -257,7 +258,7 @@ def onerun_SEIR(
     sim_id2load: int = None,
     config=None,
 ):
-    np.random.seed()
+    np.random.seed(seed=sim_id2write)
     modinf.parameters.reinitialize_distributions()
 
     npi = None
