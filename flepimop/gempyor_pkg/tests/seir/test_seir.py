@@ -40,7 +40,7 @@ def test_check_parameter_positivity():
     randint_second_dim = randint(0,len(dates)-2)
     randint_third_dim = randint(0,len(subpop_names)-1)
     test_array3[0][0][0] = -1
-    test_array3[randint(0,len(parameter_names)),randint(0,len(dates)):,randint(0,len(subpop_names))] = -1
+    test_array3[randint(0,len(parameter_names)-1),randint(0,len(dates)-1):,randint(0,len(subpop_names)-1)] = -1
     test_array3[randint_first_dim][randint_second_dim][randint_third_dim] = -1
     test_array3[randint_first_dim][randint_second_dim+1][randint_third_dim] = -1
 
