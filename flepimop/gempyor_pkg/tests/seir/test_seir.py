@@ -44,11 +44,11 @@ def test_check_parameter_positivity():
     test_array3[randint_first_dim][randint_second_dim][randint_third_dim] = -1
     test_array3[randint_first_dim][randint_second_dim+1][randint_third_dim] = -1
 
-    seir.neg_params(test_array1, parameter_names, dates, subpop_names) # NoError
+    seir.check_parameter_positivity(test_array1, parameter_names, dates, subpop_names) # NoError
 
     with pytest.raises(ValueError):
-        assert seir.neg_params(test_array2, parameter_names, dates, subpop_names) # ValueError
-        assert seir.neg_params(test_array3, parameter_names, dates, subpop_names) # ValueError
+        assert seir.check_parameter_positivity(test_array2, parameter_names, dates, subpop_names) # ValueError
+        assert seir.check_parameter_positivity(test_array3, parameter_names, dates, subpop_names) # ValueError
 
 
 def test_check_values():
