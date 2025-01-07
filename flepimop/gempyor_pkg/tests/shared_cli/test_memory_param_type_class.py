@@ -27,6 +27,7 @@ def test_invalid_value_bad_parameter(value: Any) -> None:
 
 
 @pytest.mark.parametrize("unit", MemoryParamType._units.keys())
+@pytest.mark.parametrize("as_int", (True, False))
 @pytest.mark.parametrize(
     "number",
     [random.randint(1, 1000) for _ in range(3)]  # int
@@ -35,22 +36,31 @@ def test_invalid_value_bad_parameter(value: Any) -> None:
         random.randint(1, 25) + random.random() for _ in range(3)
     ],  # float with numbers left of the decimal
 )
-def test_convert_acts_as_identity(unit: str, number: int) -> None:
-    memory = MemoryParamType(unit)
-    assert memory.convert(f"{number}{unit}".lstrip("0"), None, None) == number
-    assert memory.convert(f"{number}{unit.upper()}".lstrip("0"), None, None) == number
+def test_convert_acts_as_identity(unit: str, as_int: bool, number: int | float) -> None:
+    memory = MemoryParamType(unit, as_int=as_int)
+    for u in (unit, unit.upper()):
+        result = memory.convert(f"{number}{u}".lstrip("0"), None, None)
+        assert isinstance(result, int if as_int else float)
+        assert abs(result - number) <= 1 if as_int else result == number
 
 
 @pytest.mark.parametrize(
-    ("unit", "value", "expected"),
+    ("unit", "as_int", "value", "expected"),
     (
-        ("gb", "1.2gb", 1.2),
-        ("kb", "1mb", 1024.0),
-        ("gb", "30mb", 30.0 / 1024.0),
-        ("kb", "2tb", 2.0 * (1024.0**3.0)),
-        ("mb", "0.1gb", 0.1 * 1024.0),
+        ("gb", False, "1.2gb", 1.2),
+        ("gb", True, "1.2gb", 2),
+        ("kb", False, "1mb", 1024.0),
+        ("kb", True, "1mb", 1024),
+        ("gb", False, "30mb", 30.0 / 1024.0),
+        ("gb", True, "30mb", 1),
+        ("kb", False, "2tb", 2.0 * (1024.0**3.0)),
+        ("kb", True, "2tb", 2147483648),
+        ("mb", False, "0.1gb", 0.1 * 1024.0),
+        ("mb", True, "0.1gb", 103),
     ),
 )
-def test_exact_results_for_select_inputs(unit: str, value: Any, expected: float) -> None:
-    memory = MemoryParamType(unit)
+def test_exact_results_for_select_inputs(
+    unit: str, as_int: bool, value: Any, expected: float | int
+) -> None:
+    memory = MemoryParamType(unit, as_int=as_int)
     assert memory.convert(value, None, None) == expected
