@@ -75,11 +75,7 @@ class ClickHandler(logging.Handler):
             [`logging.Handler.emit`](https://docs.python.org/3/library/logging.html#logging.Handler.emit)
         """
         msg = self.format(record)
-        msg = (
-            f"{msg}."
-            if self._punctuate and not msg.endswith(self._punctuation)
-            else msg
-        )
+        msg = f"{msg}." if self._punctuate and not msg.endswith(self._punctuation) else msg
         click.echo(
             message=msg, file=self._file, nl=self._nl, err=self._err, color=self._color
         )

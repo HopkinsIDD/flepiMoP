@@ -28,7 +28,5 @@ def test__get_logging_level_negative_verbosity_value_error(verbosity: int) -> No
         (5, logging.DEBUG),
     ),
 )
-def test__get_logging_level_output_validation(
-    verbosity: int, expected_level: int
-) -> None:
+def test__get_logging_level_output_validation(verbosity: int, expected_level: int) -> None:
     assert _get_logging_level(verbosity) == expected_level
