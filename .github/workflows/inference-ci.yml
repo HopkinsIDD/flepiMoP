@@ -1,4 +1,4 @@
-name: inference-ci
+name: inference CI
 
 on:
   workflow_dispatch:
@@ -10,11 +10,18 @@ on:
     paths:
       - flepimop/R_packages/inference/**/*
     branches:
-      - main
+      - dev
   pull_request:
+    types:
+      - edited
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
     paths:
       - flepimop/R_packages/inference/**/*
     branches:
+      - dev
       - main
 
 jobs:

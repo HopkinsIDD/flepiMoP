@@ -7,6 +7,36 @@ nslots: 1
 subpop_setup:
   geodata: data/geodata.csv
 
+compartments:
+  infection_stage: ["S", "E", "I", "R"]
+
+seir:
+  integration:
+    method: rk4
+    dt: 1
+  parameters:
+    sigma:
+      value: 1 / 4
+    gamma:
+      value: 1 / 5
+    Ro:
+      value: 2.5
+  transitions:
+    - source: ["S"]
+      destination: ["E"]
+      rate: ["Ro * gamma"]
+      proportional_to: [["S"],["I"]]
+      proportion_exponent: ["1","1"]
+    - source: ["E"]
+      destination: ["I"]
+      rate: ["sigma"]
+      proportional_to: ["E"]
+      proportion_exponent: ["1"]
+    - source: ["I"]
+      destination: ["R"]
+      rate: ["gamma"]
+      proportional_to: ["I"]
+      proportion_exponent: ["1"]
 
 outcomes:
   method: delayframe

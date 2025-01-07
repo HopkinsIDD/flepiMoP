@@ -80,7 +80,8 @@ def test_constant_population_legacy_integration():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -128,7 +129,10 @@ def test_constant_population_legacy_integration():
 
 
 def test_constant_population_rk4jit_integration_fail():
-    with pytest.raises(ValueError, match=r".*with.*method.*integration.*"):
+    with pytest.raises(
+        ValueError,
+        match=r"'rk4.jit' integration method only supports deterministic integration.*",
+    ):
         config.set_file(f"{DATA_DIR}/config.yml")
 
         first_sim_index = 1
@@ -157,7 +161,8 @@ def test_constant_population_rk4jit_integration_fail():
 
         npi = NPI.NPIBase.execute(
             npi_config=modinf.npi_config_seir,
-            modinf=modinf,
+            modinf_ti=modinf.ti,
+            modinf_tf=modinf.tf,
             modifiers_library=modinf.seir_modifiers_library,
             subpops=modinf.subpop_struct.subpop_names,
             pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -233,7 +238,8 @@ def test_constant_population_rk4jit_integration():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -307,7 +313,8 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -415,7 +422,8 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -493,7 +501,8 @@ def test_steps_SEIR_no_spread():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -767,7 +776,8 @@ def test_parallel_compartments_with_vacc():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
@@ -860,7 +870,8 @@ def test_parallel_compartments_no_vacc():
 
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
-        modinf=modinf,
+        modinf_ti=modinf.ti,
+        modinf_tf=modinf.tf,
         modifiers_library=modinf.seir_modifiers_library,
         subpops=modinf.subpop_struct.subpop_names,
         pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],

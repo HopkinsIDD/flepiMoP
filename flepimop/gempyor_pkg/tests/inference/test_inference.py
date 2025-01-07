@@ -22,9 +22,7 @@ tmp_path = "/tmp"
 class TestGempyorInference:
     def test_GempyorInference_success(self):
         os.chdir(os.path.dirname(__file__))
-        # the minimum model test, choices are: npi_scenario="None"
-        #     config.set_file(f"{DATA_DIR}/config_min_test.yml")
-        #     i = inference.GempyorInference(config_filepath=f"{DATA_DIR}/config.yml", npi_scenario="None")
+
         i = inference.GempyorInference(config_filepath=f"{DATA_DIR}/config_test.yml")
         """ run_id="test_run_id" = in_run_id,
             prefix="test_prefix" = in_prefix = out_prefix,
