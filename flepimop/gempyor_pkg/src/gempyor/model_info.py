@@ -306,10 +306,10 @@ class ModelInfo:
         self, ftype: str, sim_id: int, input: bool, extension_override: str = ""
     ):
         return self.path_prefix / file_paths.create_file_name(
-            self.in_run_id if input else self.out_run_id,
-            self.in_prefix if input else self.out_prefix,
-            sim_id + self.first_sim_index - 1,
-            ftype,
+            run_id=self.in_run_id if input else self.out_run_id,
+            prefix=self.in_prefix if input else self.out_prefix,
+            index=sim_id + self.first_sim_index - 1,
+            ftype=ftype,
             extension=extension_override if extension_override else self.extension,
             inference_filepath_suffix=self.inference_filepath_suffix,
             inference_filename_prefix=self.inference_filename_prefix,
@@ -368,12 +368,12 @@ class ModelInfo:
             `gempyor.seeding.Seeding.get_from_config`
         """
         return self.seeding.get_from_config(
-            self.compartments,
-            self.subpop_struct,
-            self.n_days,
-            self.ti,
-            self.tf,
-            (
+            compartments=self.compartments,
+            subpop_struct=self.subpop_struct,
+            n_days=self.n_days,
+            ti=self.ti,
+            tf=self.tf,
+            input_filename=(
                 None
                 if self.seeding_config is None
                 else self.get_input_filename(

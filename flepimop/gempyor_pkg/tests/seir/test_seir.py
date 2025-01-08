@@ -73,7 +73,7 @@ def test_constant_population_legacy_integration():
     )
     integration_method = "legacy"
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -152,7 +152,7 @@ def test_constant_population_rk4jit_integration_fail():
         )
         modinf.seir_config["integration"]["method"] = "rk4.jit"
 
-        seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+        seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
         initial_conditions = modinf.initial_conditions.get_from_config(
             sim_id=100, modinf=modinf
         )
@@ -229,7 +229,7 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -304,7 +304,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -413,7 +413,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -490,7 +490,7 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -767,7 +767,7 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -861,7 +861,7 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(100)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
