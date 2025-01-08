@@ -25,6 +25,7 @@ dependencies = [
     "numpy",
     "pandas",
     "pyarrow",
+    "pydantic",
     "scipy",
     "seaborn",
     "sympy",

@@ -1,0 +1,7 @@
+name: longleaf
+modules:
+  - name: gcc
+    version: 9.1.0
+  - name: anaconda
+    version: "2023.03"
+  - name: git
