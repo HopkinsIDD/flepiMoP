@@ -10,59 +10,18 @@ __all__ = []
 
 
 # Imports
-from os.path import dirname
 from pathlib import Path
 from tempfile import mkstemp
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, PackageLoader, Template
+from jinja2 import Environment, PackageLoader
 
 
 # Globals
-try:
-    _jinja_environment = Environment(
-        loader=FileSystemLoader(dirname(__file__).replace("\\", "/") + "/templates")
-    )
-except ValueError:
-    _jinja_environment = Environment(loader=PackageLoader("gempyor"))
+_jinja_environment = Environment(loader=PackageLoader("gempyor"))
 
 
 # Functions
-def _get_template(name: str) -> Template:
-    """
-    Get a jinja template by name.
-
-    Args:
-        name: The name of the template to pull.
-
-    Returns:
-        A jinja template object corresponding to `name`.
-
-    Examples:
-        >>> _get_template("test_template.j2")
-        <Template 'test_template.j2'>
-    """
-    return _jinja_environment.get_template(name)
-
-
-def _render_template(name: str, data: dict[str, Any]) -> str:
-    """
-    Render a jinja template by name.
-
-    Args:
-        name: The name of the template to pull.
-        data: The data to pass to the template when rendering.
-
-    Returns:
-        The rendered template as a string.
-
-    Examples:
-        >>> _render_template("test_template.j2", {"name": "Bob"})
-        'Hello Bob!'
-    """
-    return _get_template(name).render(data)
-
-
 def _render_template_to_file(name: str, data: dict[str, Any], file: Path) -> None:
     """
     Render a jinja template and save to a file.
@@ -80,7 +39,7 @@ def _render_template_to_file(name: str, data: dict[str, Any], file: Path) -> Non
         'Hello Jane!'
     """
     with file.open(mode="w", encoding="utf-8") as f:
-        f.write(_render_template(name, data))
+        f.write(_jinja_environment.get_template(name).render(data))
 
 
 def _render_template_to_temp_file(
