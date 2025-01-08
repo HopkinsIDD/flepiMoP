@@ -3,7 +3,7 @@ import random
 from click.exceptions import BadParameter
 import pytest
 
-from gempyor.shared_cli import MemoryParamType
+from gempyor._click import MemoryParamType
 
 
 @pytest.mark.parametrize("unit", ("Nope", "NO CHANCE", "wrong", "bb"))

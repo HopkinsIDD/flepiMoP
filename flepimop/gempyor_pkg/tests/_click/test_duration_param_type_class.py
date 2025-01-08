@@ -1,10 +1,10 @@
 from datetime import timedelta
-from typing import Any, Literal
+from typing import Literal
 
 from click.exceptions import BadParameter
 import pytest
 
-from gempyor.shared_cli import DurationParamType
+from gempyor._click import DurationParamType
 
 
 @pytest.mark.parametrize("nonnegative", (True, False))
