@@ -20,18 +20,27 @@ def test_no_matching_fqdn_found_value_error(fqdn: str) -> None:
 
 
 @pytest.mark.parametrize(
-    ("fqdn", "expected"),
+    ("fqdn", "raise_error", "expected"),
     (
-        ("login01.cm.cluster", "rockfish"),
-        ("login3.cm.cluster", "rockfish"),
-        ("longleaf-login1.its.unc.edu", "longleaf"),
-        ("longleaf-login07.its.unc.edu", "longleaf"),
+        ("login01.cm.cluster", True, "rockfish"),
+        ("login01.cm.cluster", False, "rockfish"),
+        ("login3.cm.cluster", True, "rockfish"),
+        ("login3.cm.cluster", False, "rockfish"),
+        ("longleaf-login1.its.unc.edu", True, "longleaf"),
+        ("longleaf-login1.its.unc.edu", False, "longleaf"),
+        ("longleaf-login07.its.unc.edu", True, "longleaf"),
+        ("longleaf-login07.its.unc.edu", False, "longleaf"),
+        ("longleaf-login07.its.unc.edu", True, "longleaf"),
+        ("longleaf-login07.its.unc.edu", False, "longleaf"),
+        ("epid-iss-MacBook-Pro.local", False, None),
     ),
 )
-def test_exact_results_for_select_values(fqdn: str, expected: str) -> None:
+def test_exact_results_for_select_values(
+    fqdn: str, raise_error: bool, expected: str
+) -> None:
     def socket_fqdn_wraps() -> str:
         return fqdn
 
     with patch("gempyor.info.getfqdn", wraps=socket_fqdn_wraps) as socket_fqdn_patch:
-        assert _infer_cluster_from_fqdn() == expected
+        assert _infer_cluster_from_fqdn(raise_error=raise_error) == expected
         socket_fqdn_patch.assert_called_once()
