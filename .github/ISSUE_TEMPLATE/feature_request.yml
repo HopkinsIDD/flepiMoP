@@ -12,6 +12,7 @@ body:
       options:
         - bug
         - batch
+        - cli
         - config
         - dependency
         - documentation
