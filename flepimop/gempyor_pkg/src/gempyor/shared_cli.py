@@ -136,12 +136,11 @@ class DurationParamType(click.ParamType):
 
     Examples:
         >>> from gempyor.shared_cli import DurationParamType
-        >>> duration_param_type = DurationParamType(False)
-        >>> duration_param_type.convert("23min", None, None)
+        >>> DurationParamType(False, "minutes").convert("23min", None, None)
         datetime.timedelta(seconds=1380)
-        >>> duration_param_type.convert("2.5hr", None, None)
+        >>> DurationParamType(False, None).convert("2.5hr", None, None)
         datetime.timedelta(seconds=9000)
-        >>> duration_param_type.convert("-2", None, None)
+        >>> DurationParamType(False, "minutes").convert("-2", None, None)
         datetime.timedelta(days=-1, seconds=86280)
     """
 
@@ -173,7 +172,7 @@ class DurationParamType(click.ParamType):
     def __init__(
         self,
         nonnegative: bool,
-        default_unit: Literal["seconds", "minutes", "hours", "days", "weeks"] = "minutes",
+        default_unit: Literal["seconds", "minutes", "hours", "days", "weeks"] | None,
     ) -> None:
         """
         Initialize the instance based on parameter settings.
@@ -181,7 +180,11 @@ class DurationParamType(click.ParamType):
         Args:
             nonnegative: If `True` negative durations are not allowed.
             default_unit: The default unit to use if no unit is specified in the input
-                string.
+                string. If `None` a unitless duration is not allowed.
+
+        Notes:
+            It's on the user of this param type to document in their CLI help text what
+            the default unit is if they set it to a non-`None` value.
         """
         super().__init__()
         self._nonnegative = nonnegative
@@ -199,7 +202,8 @@ class DurationParamType(click.ParamType):
 
         Args:
             value: The value to convert, expected to be a string like representation of
-                a duration.
+                a duration. Allowed durations are limited to seconds, minutes, hours,
+                days, and weeks.
             param: The Click parameter object for context in errors.
             ctx: The Click context object for context in errors.
 
@@ -211,6 +215,8 @@ class DurationParamType(click.ParamType):
                 format.
             click.BadParameter: If the duration is negative and the class was
                 initialized with `nonnegative` set to `True`.
+            click.BadParameter: If the duration is unitless and the class was
+                initialized with `default_unit` set to `None`.
         """
         value = str(value).strip()
         if (m := self._duration_regex.match(value)) is None:
@@ -218,27 +224,30 @@ class DurationParamType(click.ParamType):
         number, posneg, _, _, unit = m.groups()
         if self._nonnegative and posneg == "-":
             self.fail(f"{value!r} is a negative duration", param, ctx)
+        if unit is None:
+            if self._default_unit is None:
+                self.fail(f"{value!r} is a unitless duration", param, ctx)
+            unit = self._default_unit
         kwargs = {}
-        kwargs[self._abbreviations.get(unit, self._default_unit)] = float(number)
+        kwargs[self._abbreviations.get(unit.lower())] = float(number)
         return timedelta(**kwargs)
 
 
 class MemoryParamType(click.ParamType):
     """
-    A custom Click parameter type for parsing duration strings into `timedelta` objects.
+    A custom Click parameter type for parsing memory strings.
 
     Attributes:
         name: The name of the parameter type.
 
     Examples:
-        >>> from gempyor.shared_cli import DurationParamType
-        >>> duration_param_type = DurationParamType(False)
-        >>> duration_param_type.convert("23min", None, None)
-        datetime.timedelta(seconds=1380)
-        >>> duration_param_type.convert("2.5hr", None, None)
-        datetime.timedelta(seconds=9000)
-        >>> duration_param_type.convert("-2", None, None)
-        datetime.timedelta(days=-1, seconds=86280)
+        >>> from gempyor.shared_cli import MemoryParamType
+        >>> MemoryParamType(False, "mb", False).convert("12.34MB", None, None)
+        12.34
+        >>> MemoryParamType(True, "mb", True).convert("78.9", None, None)
+        79
+        >>> MemoryParamType(False, "gb", False).convert("123kb", None, None)
+        0.00011730194091796875
     """
 
     name = "memory"
@@ -253,14 +262,14 @@ class MemoryParamType(click.ParamType):
         "tb": 1024.0**4.0,
     }
 
-    def __init__(self, unit: str, as_int: bool = False) -> None:
+    def __init__(self, as_int: bool, unit: str, allow_unitless: bool) -> None:
         """
         Initialize the instance based on parameter settings.
 
         Args:
-            unit: The output unit to use in the `convert` method.
             as_int: if `True` the `convert` method returns an integer instead of a
                 float.
+            unit: The output unit to use in the `convert` method.
 
         Raises:
             ValueError: If `unit` is not a valid memory unit size.
@@ -277,6 +286,7 @@ class MemoryParamType(click.ParamType):
             flags=re.IGNORECASE,
         )
         self._as_int = as_int
+        self._allow_unitless = allow_unitless
 
     def convert(
         self, value: Any, param: click.Parameter | None, ctx: click.Context | None
@@ -297,12 +307,19 @@ class MemoryParamType(click.ParamType):
         Raises:
             click.BadParameter: If the value is not a valid memory size based on the
                 format.
+            click.BadParameter: If the memory size is unitless and the class was
+                initialized with `allow_unitless` set to `False`.
         """
         value = str(value).strip()
         if (m := self._regex.match(value)) is None:
             self.fail(f"{value!r} is not a valid memory size.", param, ctx)
         number, _, _, unit = m.groups()
-        unit = self._unit if unit is None else unit.lower()
+        if unit is None:
+            if not self._allow_unitless:
+                self.fail(f"{value!r} is a unitless memory size.", param, ctx)
+            unit = self._unit
+        else:
+            unit = unit.lower()
         if unit == self._unit:
             result = float(number)
         else:
