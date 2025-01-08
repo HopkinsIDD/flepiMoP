@@ -13,10 +13,12 @@ class Module(BaseModel):
     name: str
     version: str | None = None
 
+
 class PathExport(BaseModel):
     path: Path
     prepend: bool = True
     error_if_missing: bool = False
+
 
 class Cluster(BaseModel):
     name: str
