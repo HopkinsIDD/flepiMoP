@@ -23,7 +23,8 @@ def check_parameter_positivity(
         subpop_names: list[str]
 ) -> None:
     """
-    Identifies and reports earliest negative values for parameters.
+    Identifies and reports earliest negative values for 
+    parameters after modifiers have been applied.
 
     Args:
         parsed_parameters: An array of parameter values.

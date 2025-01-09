@@ -26,15 +26,15 @@ def test_check_parameter_positivity():
     dates = pd.date_range('2023-03-19', '2025-04-30', freq="D")
     subpop_names = ['56000', '50000', '11000', '02000', '38000', '46000', '10000', '30000', '44000', '23000']
 
-    # Test case 1: no negative params
+    # No negative params
     test_array1 = np.zeros((len(parameter_names)-1, len(dates)-1, len(subpop_names)-1))
     
-    # Test case 2: randomized negative params
+    # Randomized negative params
     test_array2 = np.zeros((len(parameter_names)-1,len(dates)-1,len(subpop_names)-1))
     for _ in range(5):
         test_array2[randint(0,len(parameter_names)-1)][randint(0,len(dates)-1)][randint(0,len(subpop_names)-1)] = -1
 
-    # Test case 3: set negative params with intentional redundancy
+    # Set negative params with intentional redundancy
     test_array3 = np.zeros((len(parameter_names),len(dates),len(subpop_names)))
     randint_first_dim = randint(0,len(parameter_names)-1)
     randint_second_dim = randint(0,len(dates)-2)
@@ -52,8 +52,6 @@ def test_check_parameter_positivity():
 
 
 def test_check_values():
-    # I think line 61 could be deleted...redundant b/c this also occurs outside func def
-    os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config.yml")
 
     modinf = model_info.ModelInfo(
