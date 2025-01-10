@@ -54,20 +54,13 @@ def check_parameter_positivity(
             negative_index_parameters, (redundant_rows), axis=0
         )
 
-        # TO DO: Fix error message such that the print() statement occurs within the ValueError
-        print("The earliest date negative for each subpop and unique parameter are:")
+        error_message = "The earliest date negative for each subpop and unique parameter are:\n"
         for param_idx, day_idx, sp_idx in non_redundant_negative_parameters:
-            print(
-                "subpop: ",
-                subpop_names[sp_idx],
-                ", parameter ",
-                parameter_names[param_idx],
-                ": ",
-                dates[day_idx].date(),
-                sep="",
+            error_message += (
+                f"subpop: {subpop_names[sp_idx]}, parameter {parameter_names[param_idx]}: {dates[day_idx].date()}\n"
             )
         raise ValueError(
-            "There are negative parsed-parameters, which is likely to result in incorrect integration."
+            f"There are negative parsed-parameters, which is likely to result in incorrect integration.\n{error_message}"
         )
 
 
