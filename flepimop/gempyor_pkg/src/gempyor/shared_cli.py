@@ -9,13 +9,14 @@ __all__ = []
 import multiprocessing
 import pathlib
 
-from typing import Any, Callable, Literal
+from typing import Any, Callable
 import warnings
 
 import click
 import confuse
 
-from .utils import as_list, config
+from .logging import get_script_logger
+from .utils import config, as_list
 
 
 @click.group()
@@ -277,3 +278,51 @@ def parse_config_files(
             cfg[option] = _parse_option(config_file_options[option], value)
 
     return cfg
+
+
+def log_cli_inputs(kwargs: dict[str, Any], verbosity: int | None = None) -> None:
+    """
+    Log CLI inputs for user debugging.
+
+    This function only logs debug messages so the verbosity has to be set quite high
+    to see the output of this function.
+
+    Args:
+        kwargs: The CLI arguments given as a dictionary of key word arguments.
+        verbosity: The verbosity level of the CLI tool being used or `None` to infer
+            from the given `kwargs`.
+
+    Examples:
+        >>> from gempyor.shared_cli import log_cli_inputs
+        >>> log_cli_inputs({"abc": 123, "def": True}, 3)
+        2024-11-05 09:27:58,884:DEBUG:gempyor.shared_cli> CLI was given 2 arguments:
+        2024-11-05 09:27:58,885:DEBUG:gempyor.shared_cli> abc = 123.
+        2024-11-05 09:27:58,885:DEBUG:gempyor.shared_cli> def = True.
+        >>> log_cli_inputs({"abc": 123, "def": True}, 2)
+        >>> from pathlib import Path
+        >>> kwargs = {
+        ...     "input_file": Path("config.in"),
+        ...     "stochastic": True,
+        ...     "cluster": "longleaf",
+        ...     "verbosity": 3,
+        ... }
+        >>> log_cli_inputs(kwargs)
+        2024-11-05 09:29:21,666:DEBUG:gempyor.shared_cli> CLI was given 4 arguments:
+        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> input_file = /Users/twillard/Desktop/GitHub/HopkinsIDD/flepiMoP/flepimop/gempyor_pkg/config.in.
+        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> stochastic = True.
+        2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> cluster    = longleaf.
+        2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> verbosity  = 3.
+    """
+    verbosity = kwargs.get("verbosity") if verbosity is None else verbosity
+    if verbosity is None:
+        return
+    logger = get_script_logger(__name__, verbosity)
+    longest_key = -1
+    total_keys = 0
+    for k, _ in kwargs.items():
+        longest_key = len(k) if len(k) > longest_key else longest_key
+        total_keys += 1
+    logger.debug("CLI was given %u arguments:", total_keys)
+    for k, v in kwargs.items():
+        v = v.absolute() if isinstance(v, pathlib.Path) else v
+        logger.debug("%s = %s", k.ljust(longest_key, " "), v)
