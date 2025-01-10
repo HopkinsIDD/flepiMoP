@@ -7,12 +7,19 @@ on:
       - build/create_environment_yml.R
       - flepimop/R_packages/*/DESCRIPTION
     branches:
-      - main
+      - dev
   pull_request:
+    types:
+      - edited
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
     paths:
       - build/create_environment_yml.R
       - flepimop/R_packages/*/DESCRIPTION
     branches:
+      - dev
       - main
 
 jobs:

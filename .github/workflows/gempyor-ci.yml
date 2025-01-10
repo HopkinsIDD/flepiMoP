@@ -1,4 +1,4 @@
-name: gempyor-ci
+name: gempyor CI
 
 on:
   workflow_dispatch:
@@ -7,12 +7,19 @@ on:
       - examples/**/*
       - flepimop/gempyor_pkg/**/*
     branches:
-      - main
+      - dev
   pull_request:
+    types:
+      - edited
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
     paths:
       - examples/**/*
       - flepimop/gempyor_pkg/**/*
     branches:
+      - dev
       - main
 
 jobs:

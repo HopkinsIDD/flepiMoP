@@ -1,7 +1,9 @@
-import pandas as pd
-import numpy as np
-from . import helpers
+import datetime
 
+import numpy as np
+import pandas as pd
+
+from . import helpers
 from .base import NPIBase
 
 
@@ -10,7 +12,8 @@ class SinglePeriodModifier(NPIBase):
         self,
         *,
         npi_config,
-        modinf,
+        modinf_ti: datetime.date,
+        modinf_tf: datetime.date,
         modifiers_library,
         subpops,
         loaded_df=None,
@@ -26,8 +29,8 @@ class SinglePeriodModifier(NPIBase):
             )
         )
 
-        self.start_date = modinf.ti
-        self.end_date = modinf.tf
+        self.start_date = modinf_ti
+        self.end_date = modinf_tf
 
         self.pnames_overlap_operation_sum = pnames_overlap_operation_sum
         self.pnames_overlap_operation_reductionprod = pnames_overlap_operation_reductionprod
@@ -124,7 +127,10 @@ class SinglePeriodModifier(NPIBase):
         # Otherwise, run only on subpops specified.
         self.affected_subpops = set(self.subpops)
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
-            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
+            # subsamples the subpopulations to only the ones specified in the geodata
+            self.affected_subpops = set(npi_config["subpop"].as_str_seq()).intersection(
+                self.subpops
+            )
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         # Create reduction
@@ -160,7 +166,9 @@ class SinglePeriodModifier(NPIBase):
 
         self.affected_subpops = set(self.subpops)
         if npi_config["subpop"].exists() and npi_config["subpop"].get() != "all":
-            self.affected_subpops = {str(n.get()) for n in npi_config["subpop"]}
+            self.affected_subpops = list(
+                set(npi_config["subpop"].as_str_seq()).intersection(self.subpops)
+            )
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         self.parameters["modifier_name"] = self.name

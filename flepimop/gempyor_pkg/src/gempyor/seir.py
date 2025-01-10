@@ -1,20 +1,23 @@
 import itertools
+import logging
 import time
+
 import numpy as np
 import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
 import xarray as xr
 
-from . import NPI, model_info, steps_rk4
-from .utils import Timer, print_disk_diagnosis, read_df
-import logging
+from . import NPI, steps_rk4
+from .model_info import ModelInfo
+from .utils import Timer, read_df
+
 
 logger = logging.getLogger(__name__)
 
 
 def build_step_source_arg(
-    modinf,
+    modinf: ModelInfo,
     parsed_parameters,
     transition_array,
     proportion_array,
@@ -31,7 +34,9 @@ def build_step_source_arg(
             if integration_method == "rk4":
                 integration_method = "rk4.jit"
             if integration_method not in ["rk4.jit", "legacy"]:
-                raise ValueError(f"Unknown integration method {integration_method}.")
+                raise ValueError(
+                    f"Unknown integration method given, '{integration_method}'."
+                )
         if "dt" in modinf.seir_config["integration"].keys():
             dt = float(
                 eval(str(modinf.seir_config["integration"]["dt"].get()))
@@ -118,7 +123,7 @@ def build_step_source_arg(
 
 
 def steps_SEIR(
-    modinf,
+    modinf: ModelInfo,
     parsed_parameters,
     transition_array,
     proportion_array,
@@ -148,8 +153,7 @@ def steps_SEIR(
     elif integration_method == "rk4.jit":
         if modinf.stoch_traj_flag == True:
             raise ValueError(
-                f"with method {integration_method}, only deterministic "
-                f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
+                f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
@@ -164,8 +168,7 @@ def steps_SEIR(
         ]:
             if modinf.stoch_traj_flag == True:
                 raise ValueError(
-                    f"with method {integration_method}, only deterministic "
-                    f"integration is possible (got stoch_straj_flag={modinf.stoch_traj_flag}"
+                    f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
                 )
             seir_sim = steps_experimental.ode_integration(
                 **fnct_args, integration_method=integration_method
@@ -187,7 +190,7 @@ def steps_SEIR(
         elif integration_method == "rk4_aot":
             seir_sim = steps_experimental.rk4_aot(**fnct_args)
         else:
-            raise ValueError(f"Unknow integration scheme, got {integration_method}")
+            raise ValueError(f"Unknown integration method given, '{integration_method}'.")
 
     # We return an xarray instead of a ndarray now
     compartment_coords = {}
@@ -215,7 +218,14 @@ def steps_SEIR(
     return states
 
 
-def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_FN=None):
+def build_npi_SEIR(
+    modinf: ModelInfo,
+    load_ID,
+    sim_id2load,
+    config,
+    bypass_DF=None,
+    bypass_FN=None,
+):
     with Timer("SEIR.NPI"):
         loaded_df = None
         if bypass_DF is not None:
@@ -225,39 +235,24 @@ def build_npi_SEIR(modinf, load_ID, sim_id2load, config, bypass_DF=None, bypass_
         elif load_ID == True:
             loaded_df = modinf.read_simID(ftype="snpi", sim_id=sim_id2load)
 
-        if loaded_df is not None:
-            npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_seir,
-                modinf=modinf,
-                modifiers_library=modinf.seir_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
-                loaded_df=loaded_df,
-                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
-                    "sum"
-                ],
-                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
-                    "reduction_product"
-                ],
-            )
-        else:
-            npi = NPI.NPIBase.execute(
-                npi_config=modinf.npi_config_seir,
-                modinf=modinf,
-                modifiers_library=modinf.seir_modifiers_library,
-                subpops=modinf.subpop_struct.subpop_names,
-                pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method[
-                    "sum"
-                ],
-                pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
-                    "reduction_product"
-                ],
-            )
+        npi = NPI.NPIBase.execute(
+            npi_config=modinf.npi_config_seir,
+            modinf_ti=modinf.ti,
+            modinf_tf=modinf.tf,
+            modifiers_library=modinf.seir_modifiers_library,
+            subpops=modinf.subpop_struct.subpop_names,
+            loaded_df=loaded_df,
+            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
+            pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
+                "reduction_product"
+            ],
+        )
     return npi
 
 
 def onerun_SEIR(
     sim_id2write: int,
-    modinf: model_info.ModelInfo,
+    modinf: ModelInfo,
     load_ID: bool = False,
     sim_id2load: int = None,
     config=None,
@@ -335,7 +330,7 @@ def onerun_SEIR(
     return out_df
 
 
-def run_parallel_SEIR(modinf, config, *, n_jobs=1):
+def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
 
@@ -364,7 +359,7 @@ def run_parallel_SEIR(modinf, config, *, n_jobs=1):
     )
 
 
-def states2Df(modinf, states):
+def states2Df(modinf: ModelInfo, states):
     # Tidyup data for  R, to save it:
     #
     # Write output to .snpi.*, .spar.*, and .seir.* files
@@ -428,7 +423,7 @@ def states2Df(modinf, states):
     return out_df
 
 
-def write_spar_snpi(sim_id, modinf, p_draw, npi):
+def write_spar_snpi(sim_id: int, modinf: ModelInfo, p_draw, npi):
     # NPIs
     if npi is not None:
         modinf.write_simID(ftype="snpi", sim_id=sim_id, df=npi.getReductionDF())
@@ -438,7 +433,7 @@ def write_spar_snpi(sim_id, modinf, p_draw, npi):
     )
 
 
-def write_seir(sim_id, modinf, states):
+def write_seir(sim_id, modinf: ModelInfo, states):
     # print_disk_diagnosis()
     out_df = states2Df(modinf, states)
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
