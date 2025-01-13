@@ -3,19 +3,20 @@ An internal module to share common CLI elements. Defines the overall cli group,
 supported options for config file overrides, and custom click decorators.
 """
 
+__all__ = []
+
+
 import multiprocessing
 import pathlib
+
+from typing import Any, Callable
 import warnings
-from typing import Callable, Any
-import re
 
 import click
 import confuse
 
 from .logging import get_script_logger
 from .utils import config, as_list
-
-__all__ = []
 
 
 @click.group()
