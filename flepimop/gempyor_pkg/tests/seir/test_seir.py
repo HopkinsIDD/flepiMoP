@@ -51,6 +51,11 @@ def test_check_parameter_positivity():
     test_array1 = np.zeros(
         (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
     )
+    assert (
+        seir.check_parameter_positivity(test_array1, parameter_names, dates, subpop_names)
+        is None
+    )
+    # No Error
 
     # Randomized negative params
     test_array2 = np.zeros(
@@ -60,6 +65,15 @@ def test_check_parameter_positivity():
         test_array2[randint(0, len(parameter_names) - 1)][randint(0, len(dates) - 1)][
             randint(0, len(subpop_names) - 1)
         ] = -1
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"There are negative parsed-parameters, which is likely to result in incorrect integration."
+        ),
+    ):
+        seir.check_parameter_positivity(
+            test_array2, parameter_names, dates, subpop_names
+        )  # ValueError
 
     # Set negative params with intentional redundancy
     test_array3 = np.zeros((len(parameter_names), len(dates), len(subpop_names)))
@@ -74,16 +88,13 @@ def test_check_parameter_positivity():
     ] = -1
     test_array3[randint_first_dim][randint_second_dim][randint_third_dim] = -1
     test_array3[randint_first_dim][randint_second_dim + 1][randint_third_dim] = -1
-
-    seir.check_parameter_positivity(
-        test_array1, parameter_names, dates, subpop_names
-    )  # NoError
-
-    with pytest.raises(ValueError):
-        assert seir.check_parameter_positivity(
-            test_array2, parameter_names, dates, subpop_names
-        )  # ValueError
-        assert seir.check_parameter_positivity(
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"There are negative parsed-parameters, which is likely to result in incorrect integration."
+        ),
+    ):
+        seir.check_parameter_positivity(
             test_array3, parameter_names, dates, subpop_names
         )  # ValueError
 

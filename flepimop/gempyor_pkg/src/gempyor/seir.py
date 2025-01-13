@@ -16,7 +16,6 @@ from .utils import Timer, read_df
 logger = logging.getLogger(__name__)
 
 
-# TO DO: Write documentation for this function
 def check_parameter_positivity(
     parsed_parameters: np.ndarray,
     parameter_names: list[str],
@@ -39,8 +38,7 @@ def check_parameter_positivity(
     Returns:
         None
     """
-    if ((parsed_parameters) < 0).any():
-        negative_index_parameters = np.argwhere(parsed_parameters < 0)
+    if len(negative_index_parameters := np.argwhere(parsed_parameters < 0)) > 0:
         unique_param_sp_combinations = []
         row_index = -1
         redundant_rows = []
