@@ -15,15 +15,15 @@ Follow all the steps in the [Before any run](before-any-run.md) section to ensur
 Take note of the location of the directory on your local computer where you cloned the flepiMoP model code (which we'll call `FLEPI_PATH`), as well as where you cloned your project files (which we'll call `PROJECT_PATH`).
 
 {% hint style="info" %}
-For example, if you cloned your Github repositories into a local folder called `Github` and are using [_flepimop\_sample_](https://github.com/HopkinsIDD/flepimop\_sample) as a project repository, your directory names could be\
+For example, if you cloned your Github repositories into a local folder called `Github` and are using [_flepimop\_sample_](https://github.com/HopkinsIDD/flepimop_sample) as a project repository, your directory names could be\
 \
-_**On Mac:**_
+&#xNAN;_**On Mac:**_
 
 /Users/YourName/Github/flepiMoP
 
 /Users/YourName/Github/flepimop\_sample\
 \
-_**On Windows:**_\
+&#xNAN;_**On Windows:**_\
 C:\Users\YourName\Github\flepiMoP
 
 C:\Users\YourName\Github\flepimop\_sample
@@ -252,7 +252,7 @@ Note that you only have to re-run the installation steps once each time you upda
 
 ```
 rm -rf model_output
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_inference_new.yml
+flepimop-inference-main -c config_inference_new.yml
 ```
 
 ## 📈 Examining model output
