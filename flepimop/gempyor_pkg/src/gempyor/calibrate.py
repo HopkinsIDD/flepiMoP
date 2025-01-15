@@ -1,3 +1,27 @@
+"""
+calibrate.py
+
+Facilitates the calibration of the model using the `emcee` MCMC sampler. 
+Provides CLI options for users to specify simulation paramters. 
+
+Functions:
+    calibrate: Reads a configuration file for simulation settings.
+
+Options:
+   --config, -c             Path to the configuration file. 
+   --project_path, -p       Path to the flepiMoP project directory.  
+   --nwalkers, -n           Number of walkers (MCMC chains) to use. Overrides value in config.
+   --niterations            Number of MCMC iterations. Overrides value in config.
+   --nsamples               Number of samples to retain. OVerrides value in config.
+   --nthin                  Number of samples to thin. Overrides value in config.
+   --j, --jobs              Number of CPU cores to use for prallelization.
+   --id                     Unique ID for the run. 
+   --prefix                 Prefix for output files.
+   --resume                 Flag determining whether or not to resume the current calibration.
+   --resume_location, -r    Path to the location to resume the run from.
+
+"""
+
 #!/usr/bin/env python
 import click
 from gempyor import model_info, file_paths, config, inference_parameter
@@ -113,18 +137,37 @@ os.environ["OMP_NUM_THREADS"] = "1"
 # @profile_options
 # @profile()
 def calibrate(
-    config_filepath,
-    project_path,
-    nwalkers,
-    niter,
-    nsamples,
-    nthin,
-    ncpu,
-    input_run_id,
-    prefix,
-    resume,
-    resume_location,
-):
+    config_filepath: str,
+    project_path: str,
+    nwalkers: int,
+    niter: int,
+    nsamples: int,
+    nthin: int,
+    ncpu: int,
+    input_run_id: int,
+    prefix: str,
+    resume: bool,
+    resume_location: str,
+) -> None:
+    """
+    Calibrate using an `emcee` sampler to initialize a model based on a config. 
+
+    Args:
+        config_filepath: Path to the configuration file.
+        project_path: Path to the project directory.
+        nwalkers: Number of walkers (MCMC chains) to run.
+        niter: Number of MCMC iterations to perform.
+        nsamples: Number of samples to select from final MCMC chain.
+        nthin (optional): How often to save samples. 
+        ncpu: Number of CPU cores to use for parallelization.
+        input_run_id (optional): Run ID. Will be auto-generated if not provdied.
+        prefix (optional): A prefix for output files.
+        resume: Whether or not to resume a previous calibration run.
+        resume_location (optional): Path to the location of the saved state to resume from.
+    
+    Returns:
+        None
+    """
     # Choose a run_id
     if input_run_id is None:
         base_run_id = pathlib.Path(config_filepath).stem.replace("config_", "")

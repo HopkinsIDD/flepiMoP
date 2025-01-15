@@ -1,3 +1,20 @@
+"""
+compartments.py
+
+Defines class, methods, and functions necessary to establising compartments in the model. 
+
+Classes:
+    Compartments: An object to handle compartment data for the model. 
+
+Functions:
+    get_list_dimension: Returns length of object passed (if a list); otherwise returns 1.
+    list_access_element_safe: Attempts to access something from the given object at specified index.
+    list_access_element: Attempts to access soemthing from the given object at specified index.
+    list_recursive_convert_to_string: Convert item(s) in object to str(s). 
+    compartments: A container for subcommands related to the compartmental model. 
+    plot: Generate a plot representing transition between compartments. 
+    export: Export compartment data to a CSV file. 
+"""
 from functools import reduce
 
 import numpy as np
@@ -9,18 +26,31 @@ from click import pass_context, Context
 
 from .utils import config, Timer, as_list
 from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
 
 class Compartments:
+    """
+    An object to handle compartment data for the model. 
+
+    Arguments:
+        seir_config (optional): Config file for SEIR model construction information. 
+        compartments_config (optional): Config file for compartment information.
+        compartments_file (optional): File to specify compartment information.
+        transitions_file (optional): File to specify transition information.
+
+    Attributes:
+        times_set: Counter to track succesful data intialization from config.
+    """
     # Minimal object to be easily picklable for // runs
     def __init__(
         self,
-        seir_config=None,
-        compartments_config=None,
-        compartments_file=None,
-        transitions_file=None,
+        seir_config = None,
+        compartments_config = None,
+        compartments_file = None,
+        transitions_file = None,
     ):
         self.times_set = 0
 
@@ -36,11 +66,11 @@ class Compartments:
             raise ValueError("Compartments object not set, no config or file provided.")
         return
 
-    def constructFromConfig(self, seir_config, compartment_config):
+    def constructFromConfig(self, seir_config, compartment_config) -> None:
         """
         This method is called by the constructor if the compartments are not loaded from a file.
         It will parse the compartments and transitions from the configuration files.
-        It will populate self.compartments and self.transitions.
+        It will populate dynamic class attributes `self.compartments` and `self.transitions`. 
         """
         self.compartments = self.parse_compartments(seir_config, compartment_config)
         self.transitions = self.parse_transitions(seir_config, False)
@@ -50,31 +80,18 @@ class Compartments:
             self.compartments == other.compartments
         ).all().all()
 
-    def parse_compartments(self, seir_config, compartment_config):
-        """Parse the compartments from the configuration file:
-        seir_config: the configuration file for the SEIR model
-        compartment_config: the configuration file for the compartments
-        Example: if config says:
-        ```
-        compartments:
-            infection_stage: ["S", "E", "I", "R"]
-            vaccination_stage: ["vaccinated", "unvaccinated"]
-        ```
-        compartment_df is:
-        ```
-            infection_stage vaccination_stage         name
-        0               S        vaccinated    S_vaccinated
-        1               S      unvaccinated  S_unvaccinated
-        2               E        vaccinated    E_vaccinated
-        3               E      unvaccinated  E_unvaccinated
-        4               I        vaccinated    I_vaccinated
-        5               I      unvaccinated  I_unvaccinated
-        6               R        vaccinated    R_vaccinated
-        7               R      unvaccinated  R_unvaccinated
-        ```
-        TODO: add tests
+    def parse_compartments(self, seir_config: dict, compartment_config) -> pd.DataFrame:
         """
+        Parses compartment configurations and returns a DataFrame of compartment names.
 
+        Args:
+            seir_config: Configuraton information for model.
+            compartment_config: Configuration information for model comartments.
+
+        Returns:
+            A DataFrame where each row is a unique compartment and columns 
+            correspond to attributes of the compartments.
+        """
         compartment_df = None
         for compartment_name, compartment_value in compartment_config.get().items():
             tmp = pd.DataFrame({"key": 1, compartment_name: compartment_value})
@@ -88,7 +105,18 @@ class Compartments:
         )
         return compartment_df
 
-    def parse_transitions(self, seir_config, fake_config=False):
+    def parse_transitions(self, seir_config: dict, fake_config: bool = False) -> pd.DataFrame:
+        """
+        Parses the transitions defined in config and returns a concatenated DataFrame.
+
+        Args:
+            seir_config: Configuraton information for model.
+            fake_config (optional): 
+                Flag indicating whether or not transitions provied are placeholders.
+                Default value is False.
+        Returns:
+            A DataFrame containing all transitions from the config.
+        """
         rc = reduce(
             lambda a, b: pd.concat(
                 [a, self.parse_single_transition(seir_config, b, fake_config)]
@@ -473,10 +501,22 @@ class Compartments:
 
     def get_comp_idx(self, comp_dict: dict, error_info: str = "no information") -> int:
         """
-        return the index of a compartiment given a filter. The filter has to isolate a compartiment,
+        Return the index of a compartiment given a filter. The filter has to isolate a compartiment,
         but it ignore columns that don't exist:
-        :param comp_dict:
-        :return:
+        
+        Args:
+            comp_dict: 
+                A dictionary where keys are compartment names and 
+                values are values to filter by for each column.
+            error_info (optional): 
+                A message providing additional context about where the 
+                the method was called from. Default value is "no information". 
+        
+        Returns:
+            Index of the comaprtment that matches the filter.
+        
+        Raises:
+            ValueError: Filter results in more than one or zero matches.
         """
         mask = pd.concat(
             [self.compartments[k] == v for k, v in comp_dict.items()], axis=1
@@ -493,7 +533,21 @@ class Compartments:
     def get_ncomp(self) -> int:
         return len(self.compartments)
 
-    def get_transition_array(self):
+    def get_transition_array(self) -> tuple:
+        """
+        Constructs the transition matrix for the model. 
+
+        Returns:
+            tuple:
+                - a list of unique strings from `proportion_exponent` and `rate`
+                - array representing transitions and corresponding compartment indices.
+                - array representing proportion compartment indices
+                - array containing start and end indices for proportions 
+
+        Raises:
+            ValueError: If term is not found in list of valid compartments.
+            ValueErrror: If any string in `rate` or `proportional_to` is an invalid candidate.
+        """
         with Timer("SEIR.compartments"):
             transition_array = np.zeros(
                 (self.transitions.shape[1], self.transitions.shape[0]), dtype="int64"
@@ -654,7 +708,20 @@ class Compartments:
             proportion_info,
         )
 
-    def parse_parameters(self, parameters, parameter_names, unique_strings):
+    def parse_parameters(self, parameters: list, parameter_names: list, unique_strings: list) -> np.ndarray:
+        """
+        Parses provided parameters and stores them in NumPy arrays.
+
+        Args:
+            parameters: Input parameters to be parsed.
+            parameter_names: List of all parameter names.
+            unique_strings: 
+                List of unique values from `proportion_exponent` 
+                and `rate` columns of transitions data.
+        
+        Returns:
+            Array of parsed parameters.
+        """
         # parsed_parameters_old = self.parse_parameter_strings_to_numpy_arrays(parameters, parameter_names, unique_strings)
         parsed_parameters = self.parse_parameter_strings_to_numpy_arrays_v2(
             parameters, parameter_names, unique_strings
@@ -731,11 +798,6 @@ class Compartments:
         },
         operators=["^", "*", "/", "+", "-"],
     ):
-        """This is called recursusively for each operator. It parse the string according to the first operators
-        parameters: array with the value of each parameter
-        parameter_names: list of string with all defined parameters under parameters (not unique parameters, really parameters)
-        string"""
-
         if (
             not operators
         ):  # empty list means all have been tried. Usually there just remains one string in string_list at that time.
@@ -785,7 +847,14 @@ class Compartments:
 
         return rc
 
-    def get_compartments_explicitDF(self):
+    def get_compartments_explicitDF(self) -> pd.DataFrame:
+        """
+        Returns a copy of the compartments information DataFrame.
+        All columns receive a 'mc_' prefix.  
+
+        Returns:
+            A copy of the compartments DataFrame.
+        """
         df: pd.DataFrame = self.compartments.copy(
             deep=True
         )  # .melt(id_vars='name', var_name='meta_compartment', value_name='sub_compartment')
@@ -797,10 +866,6 @@ class Compartments:
     def plot(
         self, output_file="transition_graph", source_filters=[], destination_filters=[]
     ):
-        """
-        if source_filters is [["age0to17"], ["OMICRON", "WILD"]], it means filter all transitions that have
-        as source age0to17 AND (OMICRON OR WILD).
-        """
         import graphviz
         from functools import reduce, partial
 
@@ -849,13 +914,39 @@ class Compartments:
         src.render(output_file)
 
 
-def get_list_dimension(thing):
+def get_list_dimension(thing: any) -> int:
+    """
+    Returns the dimension of a given object. 
+    
+    Args:
+        thing: Object whose dimension needs to be determined.
+    
+    Returns:
+        int: Length of the object if a list, otherwise 1.
+    """
     if type(thing) == list:
         return len(thing)
     return 1
 
 
-def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=False):
+def list_access_element_safe(thing: any, idx: int, dimension=None, encapsulate_as_list=False) -> Union[any, list]:
+    """
+    Attempts to access an element from the given object `thing` at the specified index `idx`.
+    
+    Args:
+        thing: Object to be accessed from.
+        idx: Index of object you would like to access. 
+        dimension (optional): Dimension or shape of the object.
+        encapsulate_as_list (optional): If `True`, the accessed element will be returned as a list.
+    
+    Raises:
+        Exception: If `thing` is not iterable or `idx ` is out of range.
+    
+    Returns:
+        Item at `idx` if `thing` is list, or
+        element itself if `thing` is not a list.
+        Returned item will be a list if `encapsulate_as_list` is `True`.
+    """
     try:
         return list_access_element(thing, idx, dimension, encapsulate_as_list)
     except Exception as e:
@@ -868,11 +959,19 @@ def list_access_element_safe(thing, idx, dimension=None, encapsulate_as_list=Fal
         )
 
 
-def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
+def list_access_element(thing: any, idx: int, dimension=None, encapsulate_as_list=False) -> Union[any, list]:
     """
-    This function is used to access elements in a list or a single element.
-    if list, it will return the element at index idx.
-    if not list, it will return the element itself, for any idx.
+    Access an element from a list or return the input itself if not a list.
+    If input `thing` is a list, the function will return the element at the specified index (`idx`).
+    If input `thing` is not a list, the function will return the element itself, regardless of the 
+    `idx` value. 
+
+    Args:
+
+    Returns:
+        Item at `idx` if `thing` is list, or
+        element itself if `thing` is not a list.
+        Returned item will be a list if `encapsulate_as_list` is `True`.
     """
     if not dimension is None:
         if dimension == 1:
@@ -889,7 +988,17 @@ def list_access_element(thing, idx, dimension=None, encapsulate_as_list=False):
         return rc
 
 
-def list_recursive_convert_to_string(thing):
+def list_recursive_convert_to_string(thing: any) -> str:
+    """
+    Return given object as a str, 
+    or recursively convert elements of given list to strs.
+
+    Args:
+        thing: Object to be converted to a str or series of strs.
+    
+    Returns:
+        Value(s) in `thing` as str(s). 
+    """
     if type(thing) == list:
         return [list_recursive_convert_to_string(x) for x in thing]
     return str(thing)
@@ -898,14 +1007,20 @@ def list_recursive_convert_to_string(thing):
 @cli.group()
 @pass_context
 def compartments(ctx: Context):
-    """Commands for working with FlepiMoP compartments"""
+    """
+    Add commands for working with FlepiMoP compartments.
+    A container for subcommands `plot` and `export`. 
+    Commands in this container will require context about the compartmental model. 
+    """
     pass
 
 
 @compartments.command(params=[config_files_argument] + list(config_file_options.values()))
 @pass_context
 def plot(ctx: Context, **kwargs):
-    """Plot compartments"""
+    """
+    Command to generate a plot representing transitions between compartments.
+    """
     parse_config_files(config, ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
@@ -927,7 +1042,9 @@ def plot(ctx: Context, **kwargs):
 @compartments.command(params=[config_files_argument] + list(config_file_options.values()))
 @pass_context
 def export(ctx: Context, **kwargs):
-    """Export compartments"""
+    """
+    Export compartment information to a CSV file.
+    """
     parse_config_files(config, ctx, **kwargs)
     assert config["compartments"].exists()
     assert config["seir"].exists()
