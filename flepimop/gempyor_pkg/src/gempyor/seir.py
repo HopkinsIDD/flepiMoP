@@ -23,8 +23,7 @@ def check_parameter_positivity(
     subpop_names: list[str],
 ) -> None:
     """
-    Identifies and reports earliest negative values for
-    parameters after modifiers have been applied.
+    Identifies and reports earliest negative values for parameters after modifiers have been applied.
 
     Args:
         parsed_parameters: An array of parameter values.
@@ -51,15 +50,15 @@ def check_parameter_positivity(
         non_redundant_negative_parameters = np.delete(
             negative_index_parameters, (redundant_rows), axis=0
         )
-
-        error_message = (
-            "The earliest date negative for each subpop and unique parameter are:\n"
-        )
+        
+        neg_subpops = []
+        neg_params = []
+        first_neg_date = dates[0].date()
         for param_idx, day_idx, sp_idx in non_redundant_negative_parameters:
-            error_message += f"subpop: {subpop_names[sp_idx]}, parameter {parameter_names[param_idx]}: {dates[day_idx].date()}\n"
-        raise ValueError(
-            f"There are negative parsed-parameters, which is likely to result in incorrect integration.\n{error_message}"
-        )
+            neg_subpops.append(subpop_names[sp_idx])
+            neg_params.append(parameter_names[param_idx])
+        error_message = f"There are negative parameter errors in subpops {neg_subpops}, starting from date {first_neg_date} in parameters {neg_params}."
+        raise ValueError(f"{error_message}")
 
 
 def build_step_source_arg(
