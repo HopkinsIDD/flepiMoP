@@ -50,7 +50,7 @@ def check_parameter_positivity(
         non_redundant_negative_parameters = np.delete(
             negative_index_parameters, (redundant_rows), axis=0
         )
-        
+
         neg_subpops = []
         neg_params = []
         first_neg_date = dates[0].date()
