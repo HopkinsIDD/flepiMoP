@@ -5,7 +5,6 @@ import warnings
 import shutil
 from random import randint
 import pandas as pd
-import re
 
 import pathlib
 import pyarrow as pa
@@ -67,14 +66,18 @@ def test_check_parameter_positivity():
             randint(0, len(subpop_names) - 1)
         ] = -1
     test_2_negative_index_parameters = np.argwhere(test_array2 < 0)
+    test_2_neg_params = []
     test_2_neg_subpops = []
-    for _, _, sp_idx in test_2_negative_index_parameters:
+    test_2_first_neg_date = dates[0].date
+    for param_idx, _, sp_idx in test_2_negative_index_parameters:
         test_2_neg_subpops.append(subpop_names[sp_idx])
-    test_2_neg_subpops = str(test_2_neg_subpops)
+        test_2_neg_params.append(parameter_names[param_idx])
 
     with pytest.raises(
         ValueError,
-        match=(rf"There are negative parameter errors in subpops {test_2_neg_subpops}.*"),
+        match=(
+            rf"There are negative parameter errors in subpops {test_2_neg_subpops}, starting from date {test_2_first_neg_date} in parameters {test_2_neg_params}."
+        ),
     ):
         seir.check_parameter_positivity(
             test_array2, parameter_names, dates, subpop_names
@@ -94,14 +97,18 @@ def test_check_parameter_positivity():
     test_array3[randint_first_dim][randint_second_dim][randint_third_dim] = -1
     test_array3[randint_first_dim][randint_second_dim + 1][randint_third_dim] = -1
     test_3_negative_index_parameters = np.argwhere(test_array2 < 0)
+    test_3_neg_params = []
     test_3_neg_subpops = []
-    for _, _, sp_idx in test_3_negative_index_parameters:
+    test_3_first_neg_date = dates[0].date
+    for param_idx, _, sp_idx in test_3_negative_index_parameters:
         test_3_neg_subpops.append(subpop_names[sp_idx])
-    test_3_neg_subpops = str(test_3_neg_subpops)
+        test_3_neg_params.append(parameter_names[param_idx])
 
     with pytest.raises(
         ValueError,
-        match=(rf"There are negative parameter errors in subpops {test_3_neg_subpops}.*"),
+        match=(
+            rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
+        ),
     ):
         seir.check_parameter_positivity(
             test_array3, parameter_names, dates, subpop_names
