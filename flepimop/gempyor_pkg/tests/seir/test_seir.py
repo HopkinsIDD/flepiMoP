@@ -70,10 +70,11 @@ def test_check_parameter_positivity():
     test_2_neg_subpops = []
     for _, _, sp_idx in test_2_negative_index_parameters:
         test_2_neg_subpops.append(subpop_names[sp_idx])
+    test_2_neg_subpops = str(test_2_neg_subpops)
 
     with pytest.raises(
         ValueError,
-        match=re.escape((rf"There are negative parameter errors in subpops {test_2_neg_subpops}.*")),
+        match=(rf"There are negative parameter errors in subpops {test_2_neg_subpops}.*"),
     ):
         seir.check_parameter_positivity(
             test_array2, parameter_names, dates, subpop_names
@@ -96,10 +97,11 @@ def test_check_parameter_positivity():
     test_3_neg_subpops = []
     for _, _, sp_idx in test_3_negative_index_parameters:
         test_3_neg_subpops.append(subpop_names[sp_idx])
+    test_3_neg_subpops = str(test_3_neg_subpops)
 
     with pytest.raises(
         ValueError,
-        match=re.escape((rf"There are negative parameter errors in subpops {test_3_neg_subpops}.*")),
+        match=(rf"There are negative parameter errors in subpops {test_3_neg_subpops}.*"),
     ):
         seir.check_parameter_positivity(
             test_array3, parameter_names, dates, subpop_names
