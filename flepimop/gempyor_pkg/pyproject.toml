@@ -20,6 +20,7 @@ dependencies = [
     "emcee",
     "graphviz",
     "h5py",
+    "Jinja2",
     "matplotlib",
     "numba>=0.53.1",
     "numpy",
@@ -51,7 +52,8 @@ gempyor-simulate = "gempyor.simulate:_deprecated_simulate"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-include-package-data = false
+include-package-data = true
+package-data = { "gempyor" = ["templates/*.j2"] }
 
 [tool.setuptools.packages.find]
 where = ["src"]

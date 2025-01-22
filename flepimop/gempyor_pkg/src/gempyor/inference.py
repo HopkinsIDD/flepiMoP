@@ -187,7 +187,7 @@ def get_static_arguments(modinf: model_info.ModelInfo):
     )
 
     initial_conditions = modinf.initial_conditions.get_from_config(sim_id=0, modinf=modinf)
-    seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id=0, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=0)
 
     # reduce them
     parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
@@ -747,18 +747,15 @@ class GempyorInference:
                 self.lastsim_parsed_parameters = parsed_parameters
 
             with Timer("onerun_SEIR.seeding"):
+                seeding_data, seeding_amounts = self.modinf.get_seeding_data(
+                    sim_id=sim_id2load if load_ID else sim_id2write
+                )
                 if load_ID:
                     initial_conditions = self.modinf.initial_conditions.get_from_file(
                         sim_id2load, modinf=self.modinf
                     )
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(
-                        sim_id2load, modinf=self.modinf
-                    )
                 else:
                     initial_conditions = self.modinf.initial_conditions.get_from_config(
-                        sim_id2write, modinf=self.modinf
-                    )
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
                         sim_id2write, modinf=self.modinf
                     )
                 self.lastsim_seeding_data = seeding_data
