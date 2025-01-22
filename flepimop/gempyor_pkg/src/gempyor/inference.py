@@ -342,10 +342,10 @@ class GempyorInference:
     """
     Encapsulates the process of simulation. Provides functionality for parameter
     inference, SEIR model execution, outcome computation, and inference optimization.
-    
+
     Attributes:
         seir_modifiers_scenario:
-        outcome_modifiers_scenario: 
+        outcome_modifiers_scenario:
         modinf: A `ModelInfo` object.
         already_built: Flag to determine if necessary objects have been built.
         autowrite_seir: Flag to automatically write SEIR data after simulation.
@@ -354,19 +354,20 @@ class GempyorInference:
         silent: Flag indicating whether to supress output messaging.
         save: Flag indicating whether simulation results should be saved.
     """
+
     def __init__(
         self,
         config_filepath,
-        run_id = "test_run_id",
+        run_id="test_run_id",
         prefix: str = None,
         first_sim_index: int = 1,
         stoch_traj_flag: bool = False,
-        rng_seed = None,
+        rng_seed=None,
         nslots: int = 1,
         inference_filename_prefix: str = "",  # usually for {global or chimeric}/{intermediate or final}
         inference_filepath_suffix: str = "",  # usually for the slot_id
-        out_run_id = None,  # if out_run_id is different from in_run_id, fill this
-        out_prefix = None,  # if out_prefix is different from in_prefix, fill this
+        out_run_id=None,  # if out_run_id is different from in_run_id, fill this
+        out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         path_prefix: str = "",  # in case the data folder is on another directory
         autowrite_seir: bool = False,
     ):
@@ -378,8 +379,8 @@ class GempyorInference:
             config_filepath: Path to the config file.
 
         Optional Args:
-            run_id: ID of the run. 
-            prefix: Prefix for files. 
+            run_id: ID of the run.
+            prefix: Prefix for files.
             first_sim_index: Index of first simulation, default is 1.
             stoch_traj_flag: Whether to run the model stochastically, default is False.
             rng_seed: Number of slots for parallel computation.
@@ -624,7 +625,7 @@ class GempyorInference:
     ):
         """
         Method to oversee inference simulation.
-        You can optionally load previous simulation data as well. 
+        You can optionally load previous simulation data as well.
 
         Args:
             sim_id2write: ID of the simulation to be written.
@@ -831,11 +832,11 @@ class GempyorInference:
         Args:
             load_ID: Whether to load a previous simulation's data, default is False.
             sim_id2load: ID of simulation to be loaded, default is None.
-            bypass_DF: An alternative data frame to use during outcome modifier construction, default is None. 
-            bypass_FN: An alternative function to use during outcome modifier construction, default is None. 
+            bypass_DF: An alternative data frame to use during outcome modifier construction, default is None.
+            bypass_FN: An alternative function to use during outcome modifier construction, default is None.
 
         Returns:
-            npi_outcomes: An object that contains computed NPI outcome modifiers. 
+            npi_outcomes: An object that contains computed NPI outcome modifiers.
         """
         npi_outcomes = None
         if self.modinf.npi_config_outcomes:
@@ -851,16 +852,16 @@ class GempyorInference:
 
     def get_seir_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
         """
-        Builds the SEIR non-pharmaceutical interventions information. 
+        Builds the SEIR non-pharmaceutical interventions information.
 
         Args:
             load_ID: Whether to load a previous simulation's data, default is False.
             sim_id2load: ID of simulation to be loaded, default is None.
-            bypass_DF: An alternative data frame to use during outcome modifier construction, default is None. 
-            bypass_FN: An alternative function to use during outcome modifier construction, default is None. 
-        
+            bypass_DF: An alternative data frame to use during outcome modifier construction, default is None.
+            bypass_FN: An alternative function to use during outcome modifier construction, default is None.
+
         Returns:
-            npi_seir: An object that contains NPI parameters for the SEIR model. 
+            npi_seir: An object that contains NPI parameters for the SEIR model.
         """
         npi_seir = seir.build_npi_SEIR(
             modinf=self.modinf,
@@ -881,8 +882,8 @@ class GempyorInference:
         Args:
             load_ID: Whether to load a previous simulation's data, default is False.
             sim_id2load: ID of simulation to be loaded, default is None.
-            bypass_DF: An alternative data frame to use during outcome modifier construction, default is None. 
-            bypass_FN: An alternative function to use during outcome modifier construction, default is None. 
+            bypass_DF: An alternative data frame to use during outcome modifier construction, default is None.
+            bypass_FN: An alternative function to use during outcome modifier construction, default is None.
 
         Returns:
             p_draw: An array containing the drawn model parameters.
@@ -919,7 +920,7 @@ class GempyorInference:
             bypass_DF: An alternative data frame to use during outcome modifier construction, default is None.
             bypass_FN: An alternative function to use during outcome modifier construction, default is None.
 
-        Returns: 
+        Returns:
             A pd.DatyaFrame containing the SEIR model parameters.
         """
         p_draw = self.get_seir_parameters(
@@ -940,18 +941,18 @@ class GempyorInference:
         bypass_FN=None,
     ):
         """
-        Retreives and reduces SEIR model parameters and returns them as a pd.DataFrame. 
+        Retreives and reduces SEIR model parameters and returns them as a pd.DataFrame.
 
         Args:
             npi_seir: A dictionary of NPI parameters.
-            p_draw: An array containing drawn model parameters, default is None. 
+            p_draw: An array containing drawn model parameters, default is None.
             load_ID: Whether to load a previous simulation's data, default is False.
             sim_id2load: ID of simulation to be loaded, default is None.
             bypass_DF: An alternative data frame to use during outcome modifier construction, default is None.
             bypass_FN: An alternative function to use during outcome modifier construction, default is None.
-        
+
         Returns:
-            A pd.DataFrame containing reduced SEIR model parameters. 
+            A pd.DataFrame containing reduced SEIR model parameters.
         """
         if p_draw is None:
             p_draw = self.get_seir_parameters(

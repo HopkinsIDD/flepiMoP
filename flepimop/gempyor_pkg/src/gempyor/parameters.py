@@ -37,10 +37,10 @@ class Parameters:
     Args:
         parameter_config: Configuration information (in a confuse.ConfigView) for parameters.
         ti: Initial time of simulation (time start).
-        tf: Final time of simulation (time finish). 
+        tf: Final time of simulation (time finish).
         subpop_names: Names of all subpopulations.
-        path_prefix: Pathway prefix to directory with 
-    
+        path_prefix: Pathway prefix to directory with
+
     Attributes:
         npar: The number of parameters contained within the given configuration.
         pconfig: A view subsetting to the parameters section of a given config file.
@@ -72,7 +72,7 @@ class Parameters:
         Args:
             parameter_config: A confuse.ConfigView subsetting the parameters section of a given
                 config file.
-            ti: An initial date for simulation. 
+            ti: An initial date for simulation.
             tf: A final date for simulation.
             subpop_names: A list of subpopulation names.
             path_prefix: A file path prefix to directory containing parameter values.
@@ -87,7 +87,7 @@ class Parameters:
                 attribute.
             stacked_modifier_method: A map of modifier methods to the parameters which
                 that modifier method is relevant for.
-                
+
         Raises:
             ValueError: The parameter names for the SEIR model are not unique.
             ValueError: The dataframe file found for a given parameter contains an

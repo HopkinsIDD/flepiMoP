@@ -33,8 +33,8 @@ class TimeSetup:
     """
     Handles the simulation time frame based on config info.
 
-    `TimeSetup` reads the start and end dates from the config, validates the time frame, 
-    and calculates the number of days in the simulation. It also establishes a 
+    `TimeSetup` reads the start and end dates from the config, validates the time frame,
+    and calculates the number of days in the simulation. It also establishes a
     pd.DatetimeIndex for the entire simulation period.
 
     Args:
@@ -47,6 +47,7 @@ class TimeSetup:
         n_days (int): Total number of days in the simulation time frame.
         dates (pd.DatetimeIndex): A sequence of dates spanning the simulation time frame (inclusive of the start and end dates).
     """
+
     def __init__(self, config: confuse.ConfigView):
         self.ti = config["start_date"].as_date()
         self.tf = config["end_date"].as_date()
@@ -60,27 +61,27 @@ class TimeSetup:
 
 class ModelInfo:
     """
-    Parse config file and manage file input/output. 
+    Parse config file and manage file input/output.
 
     Non-optional Arg:
         config: Config object.
     Optional Args:
-        nslots: Number of slots for MCMC (default is 1). 
-        write_csv: Whether to write results to CSV files (default is False). 
+        nslots: Number of slots for MCMC (default is 1).
+        write_csv: Whether to write results to CSV files (default is False).
         write_parquet: Whether to write results to parquet files (default is False). **
-        first_sim_index : Index of first simulation (default is 1). 
+        first_sim_index : Index of first simulation (default is 1).
         stoch_traj_flag: Whether to run the model stochastically (default is False). **
-        seir_modifiers_scenario: SEIR modifier. 
-        outcome_modifiers_scenario: Outcomes modifier. 
-        setup_name: Name of setup (to override config, if applicable). 
-        path_prefix: Prefix to paths where simulation data files are stored. 
+        seir_modifiers_scenario: SEIR modifier.
+        outcome_modifiers_scenario: Outcomes modifier.
+        setup_name: Name of setup (to override config, if applicable).
+        path_prefix: Prefix to paths where simulation data files are stored.
         in_run_id: ID for input run (generated if not specified).
         out_run_id: ID for outputr run (generated if not specified).
-        in_prefix: Path prefix for input directory. 
-        out_prefix: Path prefix for output directory. 
-        inference_filename_prefix: Path prefix for inference files directory. 
-        inference_filepath_suffix: Path suffix for inference files directory. 
-        config_filepath: Path to configuration file. 
+        in_prefix: Path prefix for input directory.
+        out_prefix: Path prefix for output directory.
+        inference_filename_prefix: Path prefix for inference files directory.
+        inference_filepath_suffix: Path suffix for inference files directory.
+        config_filepath: Path to configuration file.
     All optional args are inherited as attributes.
 
     Additional Attributes:
@@ -88,7 +89,7 @@ class ModelInfo:
         ti: Initial time (time start).
         tf: Final time (fime finish).
         n_days: Number of days in simulation.
-        dates: pd.DatetimeIndex sequence of dates that span simulation. 
+        dates: pd.DatetimeIndex sequence of dates that span simulation.
         subpop_struct: `SubpopulationStructure` object (info about subpops).
         nsubpops: Number of subpopulations in simulation.
         subpop_pop: NumPy array containing population of each subpop.
@@ -108,7 +109,7 @@ class ModelInfo:
         ValueError:
             If provided configuration information is incompatible with expectations.
         ValueError:
-            If non-existent sections are referenced. 
+            If non-existent sections are referenced.
         NotImplementedError:
             If an unimplemented feature is referenced.
 

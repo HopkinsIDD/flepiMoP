@@ -150,7 +150,7 @@ def calibrate(
     resume_location: str,
 ) -> None:
     """
-    Calibrate using an `emcee` sampler to initialize a model based on a config. 
+    Calibrate using an `emcee` sampler to initialize a model based on a config.
 
     Args:
         config_filepath: Path to the configuration file.
@@ -158,13 +158,13 @@ def calibrate(
         nwalkers: Number of walkers (MCMC chains) to run.
         niter: Number of MCMC iterations to perform.
         nsamples: Number of samples to select from final MCMC chain.
-        nthin (optional): How often to save samples. 
+        nthin (optional): How often to save samples.
         ncpu: Number of CPU cores to use for parallelization.
         input_run_id (optional): Run ID. Will be auto-generated if not provdied.
         prefix (optional): A prefix for output files.
         resume: Whether or not to resume a previous calibration run.
         resume_location (optional): Path to the location of the saved state to resume from.
-    
+
     Returns:
         None
     """

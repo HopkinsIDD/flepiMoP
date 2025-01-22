@@ -15,6 +15,7 @@ Functions:
     plot: Generate a plot representing transition between compartments. 
     export: Export compartment data to a CSV file. 
 """
+
 from functools import reduce
 
 import numpy as np
@@ -33,10 +34,10 @@ logger = logging.getLogger(__name__)
 
 class Compartments:
     """
-    An object to handle compartment data for the model. 
+    An object to handle compartment data for the model.
 
     Arguments:
-        seir_config (optional): Config file for SEIR model construction information. 
+        seir_config (optional): Config file for SEIR model construction information.
         compartments_config (optional): Config file for compartment information.
         compartments_file (optional): File to specify compartment information.
         transitions_file (optional): File to specify transition information.
@@ -44,13 +45,14 @@ class Compartments:
     Attributes:
         times_set: Counter to track succesful data intialization from config.
     """
+
     # Minimal object to be easily picklable for // runs
     def __init__(
         self,
-        seir_config = None,
-        compartments_config = None,
-        compartments_file = None,
-        transitions_file = None,
+        seir_config=None,
+        compartments_config=None,
+        compartments_file=None,
+        transitions_file=None,
     ):
         self.times_set = 0
 
@@ -70,7 +72,7 @@ class Compartments:
         """
         This method is called by the constructor if the compartments are not loaded from a file.
         It will parse the compartments and transitions from the configuration files.
-        It will populate dynamic class attributes `self.compartments` and `self.transitions`. 
+        It will populate dynamic class attributes `self.compartments` and `self.transitions`.
         """
         self.compartments = self.parse_compartments(seir_config, compartment_config)
         self.transitions = self.parse_transitions(seir_config, False)
@@ -89,7 +91,7 @@ class Compartments:
             compartment_config: Configuration information for model comartments.
 
         Returns:
-            A DataFrame where each row is a unique compartment and columns 
+            A DataFrame where each row is a unique compartment and columns
             correspond to attributes of the compartments.
         """
         compartment_df = None
@@ -105,13 +107,15 @@ class Compartments:
         )
         return compartment_df
 
-    def parse_transitions(self, seir_config: dict, fake_config: bool = False) -> pd.DataFrame:
+    def parse_transitions(
+        self, seir_config: dict, fake_config: bool = False
+    ) -> pd.DataFrame:
         """
         Parses the transitions defined in config and returns a concatenated DataFrame.
 
         Args:
             seir_config: Configuraton information for model.
-            fake_config (optional): 
+            fake_config (optional):
                 Flag indicating whether or not transitions provied are placeholders.
                 Default value is False.
         Returns:
@@ -503,18 +507,18 @@ class Compartments:
         """
         Return the index of a compartiment given a filter. The filter has to isolate a compartiment,
         but it ignore columns that don't exist:
-        
+
         Args:
-            comp_dict: 
-                A dictionary where keys are compartment names and 
+            comp_dict:
+                A dictionary where keys are compartment names and
                 values are values to filter by for each column.
-            error_info (optional): 
-                A message providing additional context about where the 
-                the method was called from. Default value is "no information". 
-        
+            error_info (optional):
+                A message providing additional context about where the
+                the method was called from. Default value is "no information".
+
         Returns:
             Index of the comaprtment that matches the filter.
-        
+
         Raises:
             ValueError: Filter results in more than one or zero matches.
         """
@@ -535,14 +539,14 @@ class Compartments:
 
     def get_transition_array(self) -> tuple:
         """
-        Constructs the transition matrix for the model. 
+        Constructs the transition matrix for the model.
 
         Returns:
             tuple:
                 - a list of unique strings from `proportion_exponent` and `rate`
                 - array representing transitions and corresponding compartment indices.
                 - array representing proportion compartment indices
-                - array containing start and end indices for proportions 
+                - array containing start and end indices for proportions
 
         Raises:
             ValueError: If term is not found in list of valid compartments.
@@ -708,17 +712,19 @@ class Compartments:
             proportion_info,
         )
 
-    def parse_parameters(self, parameters: list, parameter_names: list, unique_strings: list) -> np.ndarray:
+    def parse_parameters(
+        self, parameters: list, parameter_names: list, unique_strings: list
+    ) -> np.ndarray:
         """
         Parses provided parameters and stores them in NumPy arrays.
 
         Args:
             parameters: Input parameters to be parsed.
             parameter_names: List of all parameter names.
-            unique_strings: 
-                List of unique values from `proportion_exponent` 
+            unique_strings:
+                List of unique values from `proportion_exponent`
                 and `rate` columns of transitions data.
-        
+
         Returns:
             Array of parsed parameters.
         """
@@ -850,7 +856,7 @@ class Compartments:
     def get_compartments_explicitDF(self) -> pd.DataFrame:
         """
         Returns a copy of the compartments information DataFrame.
-        All columns receive a 'mc_' prefix.  
+        All columns receive a 'mc_' prefix.
 
         Returns:
             A copy of the compartments DataFrame.
@@ -916,11 +922,11 @@ class Compartments:
 
 def get_list_dimension(thing: any) -> int:
     """
-    Returns the dimension of a given object. 
-    
+    Returns the dimension of a given object.
+
     Args:
         thing: Object whose dimension needs to be determined.
-    
+
     Returns:
         int: Length of the object if a list, otherwise 1.
     """
@@ -929,19 +935,21 @@ def get_list_dimension(thing: any) -> int:
     return 1
 
 
-def list_access_element_safe(thing: any, idx: int, dimension=None, encapsulate_as_list=False) -> Union[any, list]:
+def list_access_element_safe(
+    thing: any, idx: int, dimension=None, encapsulate_as_list=False
+) -> Union[any, list]:
     """
     Attempts to access an element from the given object `thing` at the specified index `idx`.
-    
+
     Args:
         thing: Object to be accessed from.
-        idx: Index of object you would like to access. 
+        idx: Index of object you would like to access.
         dimension (optional): Dimension or shape of the object.
         encapsulate_as_list (optional): If `True`, the accessed element will be returned as a list.
-    
+
     Raises:
         Exception: If `thing` is not iterable or `idx ` is out of range.
-    
+
     Returns:
         Item at `idx` if `thing` is list, or
         element itself if `thing` is not a list.
@@ -959,12 +967,14 @@ def list_access_element_safe(thing: any, idx: int, dimension=None, encapsulate_a
         )
 
 
-def list_access_element(thing: any, idx: int, dimension=None, encapsulate_as_list=False) -> Union[any, list]:
+def list_access_element(
+    thing: any, idx: int, dimension=None, encapsulate_as_list=False
+) -> Union[any, list]:
     """
     Access an element from a list or return the input itself if not a list.
     If input `thing` is a list, the function will return the element at the specified index (`idx`).
-    If input `thing` is not a list, the function will return the element itself, regardless of the 
-    `idx` value. 
+    If input `thing` is not a list, the function will return the element itself, regardless of the
+    `idx` value.
 
     Args:
 
@@ -990,14 +1000,14 @@ def list_access_element(thing: any, idx: int, dimension=None, encapsulate_as_lis
 
 def list_recursive_convert_to_string(thing: any) -> str:
     """
-    Return given object as a str, 
+    Return given object as a str,
     or recursively convert elements of given list to strs.
 
     Args:
         thing: Object to be converted to a str or series of strs.
-    
+
     Returns:
-        Value(s) in `thing` as str(s). 
+        Value(s) in `thing` as str(s).
     """
     if type(thing) == list:
         return [list_recursive_convert_to_string(x) for x in thing]
@@ -1009,8 +1019,8 @@ def list_recursive_convert_to_string(thing: any) -> str:
 def compartments(ctx: Context):
     """
     Add commands for working with FlepiMoP compartments.
-    A container for subcommands `plot` and `export`. 
-    Commands in this container will require context about the compartmental model. 
+    A container for subcommands `plot` and `export`.
+    Commands in this container will require context about the compartmental model.
     """
     pass
 
