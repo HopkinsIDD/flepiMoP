@@ -9,8 +9,8 @@ This submodule is intended to serve as a foundational part of flepiMoP's
 infrastructure for conducting simulations and storing results.
 
 Classes:
-    TimeSetup:
-    ModelInfo:
+    TimeSetup: Handles simulation time frame.
+    ModelInfo: Parses config file, holds model information, and manages file input/output.
 """
 
 import pandas as pd
@@ -61,7 +61,7 @@ class TimeSetup:
 
 class ModelInfo:
     """
-    Parse config file and manage file input/output.
+    Parses config file, holds model information, and manages file input/output.
 
     Non-optional Arg:
         config: Config object.
