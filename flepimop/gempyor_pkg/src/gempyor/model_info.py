@@ -13,8 +13,17 @@ Classes:
     ModelInfo: Parses config file, holds model information, and manages file input/output.
 """
 
+import datetime
+import logging
+import os
+import pathlib
+
+import confuse
+import numba as nb
+import numpy as np
+import numpy.typing as npt
 import pandas as pd
-import datetime, os, logging, pathlib, confuse
+
 from . import (
     seeding,
     subpopulation_structure,
@@ -380,30 +389,15 @@ class ModelInfo:
     def get_filename(
         self, ftype: str, sim_id: int, input: bool, extension_override: str = ""
     ):
-        """return a CSP formated filename."""
-
-        if extension_override:  # empty strings are Falsy
-            extension = extension_override
-        else:  # Constructed like this because in some test, extension is not defined
-            extension = self.extension
-
-        if input:
-            run_id = self.in_run_id
-            prefix = self.in_prefix
-        else:
-            run_id = self.out_run_id
-            prefix = self.out_prefix
-
-        fn = self.path_prefix / file_paths.create_file_name(
-            run_id=run_id,
-            prefix=prefix,
+        return self.path_prefix / file_paths.create_file_name(
+            run_id=self.in_run_id if input else self.out_run_id,
+            prefix=self.in_prefix if input else self.out_prefix,
             index=sim_id + self.first_sim_index - 1,
+            ftype=ftype,
+            extension=extension_override if extension_override else self.extension,
             inference_filepath_suffix=self.inference_filepath_suffix,
             inference_filename_prefix=self.inference_filename_prefix,
-            ftype=ftype,
-            extension=extension,
         )
-        return fn
 
     def get_setup_name(self):
         return self.setup_name
@@ -443,3 +437,33 @@ class ModelInfo:
             df=df,
         )
         return fname
+
+    def get_seeding_data(self, sim_id: int) -> tuple[nb.typed.Dict, npt.NDArray[np.number]]:
+        """
+        Pull the seeding data for the info represented by this model info instance.
+
+        Args:
+            sim_id: The simulation ID to pull seeding data for.
+
+        Returns:
+            A tuple containing the seeding data dictionary and the seeding data array.
+
+        See Also:
+            `gempyor.seeding.Seeding.get_from_config`
+        """
+        return self.seeding.get_from_config(
+            compartments=self.compartments,
+            subpop_struct=self.subpop_struct,
+            n_days=self.n_days,
+            ti=self.ti,
+            tf=self.tf,
+            input_filename=(
+                None
+                if self.seeding_config is None
+                else self.get_input_filename(
+                    ftype=self.seeding_config["seeding_file_type"].get(),
+                    sim_id=sim_id,
+                    extension_override="csv",
+                )
+            ),
+        )
