@@ -277,8 +277,9 @@ class Statistic:
                 f"Valid distributions: '{dist_map.keys()}'."
             )
         if self.dist in ["pois", "nbinom"]:
-            model_data = model_data.astype(int)
-            gt_data = gt_data.astype(int)
+            # pydata/xarray#4612
+            model_data = model_data.fillna(0.0).astype(int)
+            gt_data = gt_data.fillna(0.0).astype(int)
 
         if self.zero_to_one:
             # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
