@@ -287,6 +287,10 @@ class Statistic:
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
+        if len(likelihood.shape) == 0:
+            # If the likelihood is a scalar, broadcast it to the shape of the data.
+            # Xarray used to do this, but not anymore after numpy/numpy#26889?
+            likelihood = np.full(gt_data.shape, likelihood)
         likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
         return likelihood
