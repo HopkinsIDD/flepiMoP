@@ -110,10 +110,6 @@ class ModelInfo:
 
         # 3. What about subpopulations
         subpop_config = config["subpop_setup"]
-        if "data_path" in config:
-            raise ValueError(
-                "The config has a `data_path` section. This is no longer supported."
-            )
         self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(

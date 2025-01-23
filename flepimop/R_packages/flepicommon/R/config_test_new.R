@@ -86,18 +86,6 @@ validation_list$nslots<- function(value,full_config,config_name){
 ## With Default: Geodata, Mobility, Popnodes, Statelevel
 
 validation_list$subpop_setup <- list()
-validation_list$data_path <- function(value, full_config, config_name) {
-  if (is.null(value)) {
-    print("No base path mentioned in the configuration file")
-    return(FALSE)
-  }
-  if (!dir.exists(value)) {
-    print(paste("The base path ", value, "could not be found."))
-    return(FALSE)
-  }
-  return(TRUE)
-}
-
 validation_list$subpop_setup$modeled_states <- function(value, full_config,config_name) {
   if(length(value)==0){
     print("No state mentioned in the configuration file")
@@ -568,18 +556,6 @@ validation_list$inference$do_inference<- function(value,full_config,config_name)
   }
   if(value!=TRUE & value!=FALSE){
     print("Incorrect value mentioned: should be TRUE or FALSE")
-    return(FALSE)
-  }
-  return(TRUE)
-}
-
-validation_list$inference$data_path<-function(value,full_config,config_name){
-  if(is.null(value)){
-    print("Mention correct data path for inference")
-    return(FALSE)
-  }
-  if(!file.exists(value)){
-    print("Mentioned data path does not exist for inference")
     return(FALSE)
   }
   return(TRUE)
