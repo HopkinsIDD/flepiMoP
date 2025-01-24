@@ -714,7 +714,7 @@ class Compartments:
         )
 
     def parse_parameters(
-        self, parameters: list, parameter_names: list, unique_strings: list
+        self, parameters: np.ndarray, parameter_names: list, unique_strings: list
     ) -> np.ndarray:
         """
         Parses provided parameters and stores them in NumPy arrays.
