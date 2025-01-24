@@ -1,12 +1,9 @@
 """
-parameters.py
-
 Provides abstractions for interacting with the parameters configurations.
 
 Classes:
     Parameters: 
-        Encapsulates logic for loading, parsing, and 
-        summarizing parameter configurations.
+        Encapsulates logic for loading, parsing, and summarizing parameter configurations.
 """
 
 __all__ = ["Parameters"]
@@ -32,14 +29,6 @@ logger = logging.getLogger(__name__)
 class Parameters:
     """
     Encapsulates logic for loading, parsing, and summarizing parameter configurations.
-    Parameters can be defined or drawn from distributions.
-
-    Args:
-        parameter_config: Configuration information (in a confuse.ConfigView) for parameters.
-        ti: Initial time of simulation (time start).
-        tf: Final time of simulation (time finish).
-        subpop_names: Names of all subpopulations.
-        path_prefix: Pathway prefix to directory with
 
     Attributes:
         npar: The number of parameters contained within the given configuration.
@@ -51,8 +40,6 @@ class Parameters:
             attribute.
         stacked_modifier_method: A mapping of modifier method to the parameters to which
             that modifier method is relevant for.
-
-    Raises:
     """
 
     def __init__(
@@ -66,6 +53,7 @@ class Parameters:
     ):
         """
         Initialize a `Parameters` instance from a parameter config view.
+
         Encapsulates logic for loading, parsing, and summarizing parameter configurations.
         Parameters can be defined or drawn from distributions.
 
@@ -76,17 +64,6 @@ class Parameters:
             tf: A final date for simulation.
             subpop_names: A list of subpopulation names.
             path_prefix: A file path prefix to directory containing parameter values.
-
-        Attributes:
-            pconfig: confuse.ConfigView of parameter configuration information.
-            pnames: A list of parameter names.
-            npar: Number of parameters.
-            pdata: A dictionary containing a processed and reformatted view of the `pconfig`
-                attribute.
-            pnames2pindex: A map of parameter names to their location in the `pnames`
-                attribute.
-            stacked_modifier_method: A map of modifier methods to the parameters which
-                that modifier method is relevant for.
 
         Raises:
             ValueError: The parameter names for the SEIR model are not unique.

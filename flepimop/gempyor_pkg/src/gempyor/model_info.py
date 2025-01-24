@@ -1,6 +1,4 @@
 """
-model_info.py
-
 Defines the `ModelInfo` class (and associated methods), used for setting up and 
 managing the configuration of a simulation. The primary focuses of a `ModelInfo` object
 are parsing and validating config details (including time frames, subpop info, 
@@ -46,10 +44,6 @@ class TimeSetup:
     and calculates the number of days in the simulation. It also establishes a
     pd.DatetimeIndex for the entire simulation period.
 
-    Args:
-        config: A config object.
-
-
     Attributes:
         ti (datetime.date): Start date of simulation.
         tf (datetime.date): End date of simulation.
@@ -58,6 +52,12 @@ class TimeSetup:
     """
 
     def __init__(self, config: confuse.ConfigView):
+        """
+        Initializes a `TimeSetup` object.
+
+        Args:
+            config: A configuration confuse.ConfigView object.
+        """
         self.ti = config["start_date"].as_date()
         self.tf = config["end_date"].as_date()
         if self.tf <= self.ti:
@@ -72,28 +72,15 @@ class ModelInfo:
     """
     Parses config file, holds model information, and manages file input/output.
 
-    Non-optional Arg:
-        config: Config object.
-    Optional Args:
-        nslots: Number of slots for MCMC (default is 1).
+    Attributes:
+        nslots: Number of slots for MCMC.
         write_csv: Whether to write results to CSV files (default is False).
-        write_parquet: Whether to write results to parquet files (default is False). **
-        first_sim_index : Index of first simulation (default is 1).
-        stoch_traj_flag: Whether to run the model stochastically (default is False). **
-        seir_modifiers_scenario: SEIR modifier.
+        write_parquet: Whether to write results to parquet files (default is False)
+        first_sim_index: Index of first simulation (default is 1).
+        stoch_traj_flag: Whether to run the model stochastically (default is False).
+        seir_modifiers_scenario: seir_modifiers_scenario: SEIR modifier.
         outcome_modifiers_scenario: Outcomes modifier.
         setup_name: Name of setup (to override config, if applicable).
-        path_prefix: Prefix to paths where simulation data files are stored.
-        in_run_id: ID for input run (generated if not specified).
-        out_run_id: ID for outputr run (generated if not specified).
-        in_prefix: Path prefix for input directory.
-        out_prefix: Path prefix for output directory.
-        inference_filename_prefix: Path prefix for inference files directory.
-        inference_filepath_suffix: Path suffix for inference files directory.
-        config_filepath: Path to configuration file.
-    All optional args are inherited as attributes.
-
-    Additional Attributes:
         time_setup: `TimeSetup` object (start/end dates of simulation, as pd.DatetimeIndex).
         ti: Initial time (time start).
         tf: Final time (fime finish).
@@ -103,8 +90,11 @@ class ModelInfo:
         nsubpops: Number of subpopulations in simulation.
         subpop_pop: NumPy array containing population of each subpop.
         mobility: Matrix with values representing movement of people between subpops.
+        path_prefix: Prefix to paths where simulation data files are stored.
         seir_config: SEIR configuration info, if relevant for simulation.
         seir_modifiers_library: Modifiers for SEIR model, if relevant for simulation.
+        parameters_config: Parameter information from config.
+        initial_conditions_config: Initial conditions information from config.
         seeding_config: Seeding config, if relevant.
         parameters: `Parameter` object containing information about parameters.
         seeding: Seeding configuration information, if relevant.
@@ -113,6 +103,16 @@ class ModelInfo:
         compartments: `Compartments` object contianing information about compartments.
         outcomes_config: Outcomes configurations, if relevant.
         npi_config_outcomes: Non-pharmaceutical intervention outcome configurations, if relevant.
+        outcome_modifiers_library: Outcome modifiers, pulled from config.
+        in_run_id: ID for input run (generated if not specified).
+        out_run_id: ID for outputr run (generated if not specified).
+        in_prefix: Path prefix for input directory.
+        out_prefix: Path prefix for output directory.
+        inference_filename_prefix: Path prefix for inference files directory.
+        inference_filepath_suffix: Path suffix for inference files directory.
+        timestamp: Current datetime.
+        extension: File extensions.
+        config_filepath: Path to configuration file.
 
     Raises:
         ValueError:
@@ -158,6 +158,28 @@ class ModelInfo:
         setup_name=None,  # override config setup_name
         config_filepath="",
     ):
+        """
+        Initializes a `ModelInfo` object.
+
+        Args:
+            config: Config object.
+            nslots: Number of slots for MCMC (default is 1).
+            write_csv: Whether to write results to CSV files (default is False).
+            write_parquet: Whether to write results to parquet files (default is False).
+            first_sim_index : Index of first simulation (default is 1).
+            stoch_traj_flag: Whether to run the model stochastically (default is False).
+            seir_modifiers_scenario: SEIR modifier.
+            outcome_modifiers_scenario: Outcomes modifier.
+            setup_name: Name of setup (to override config, if applicable).
+            path_prefix: Prefix to paths where simulation data files are stored.
+            in_run_id: ID for input run (generated if not specified).
+            out_run_id: ID for outputr run (generated if not specified).
+            in_prefix: Path prefix for input directory.
+            out_prefix: Path prefix for output directory.
+            inference_filename_prefix: Path prefix for inference files directory.
+            inference_filepath_suffix: Path suffix for inference files directory.
+            config_filepath: Path to configuration file.
+        """
         self.nslots = nslots
         self.write_csv = write_csv
         self.write_parquet = write_parquet
