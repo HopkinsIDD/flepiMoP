@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel
 import pytest
@@ -35,21 +36,42 @@ def test_file_does_not_exist_value_error(
 @pytest.mark.parametrize(
     ("category", "name", "model"), (("abc", "def", NameOnly), ("abc", "ghi", NameOnly))
 )
-def test_output_validation(
+def test_output_validation_with_working_directory(
     monkeypatch: pytest.MonkeyPatch,
     create_mock_info_directory: Path,
     category: str,
     name: str,
     model: type[BaseModel],
 ) -> None:
-    monkeypatch.setenv("FLEPI_PATH", str(create_mock_info_directory))
+    monkeypatch.chdir(create_mock_info_directory)
+    _output_validation_test(create_mock_info_directory, category, name, model)
+
+
+@pytest.mark.parametrize(
+    ("category", "name", "model"), (("abc", "def", NameOnly), ("abc", "ghi", NameOnly))
+)
+@pytest.mark.parametrize("envvar", ("FLEPI_INFO_PATH", "FLEPI_PATH"))
+def test_output_validation_with_env_vars(
+    monkeypatch: pytest.MonkeyPatch,
+    create_mock_info_directory: Path,
+    category: str,
+    name: str,
+    model: type[BaseModel],
+    envvar: Literal["FLEPI_INFO_PATH", "FLEPI_PATH"],
+) -> None:
+    monkeypatch.setenv(envvar, str(create_mock_info_directory))
+    _output_validation_test(create_mock_info_directory, category, name, model)
+
+
+def _output_validation_test(
+    path: Path,
+    category: str,
+    name: str,
+    model: type[BaseModel],
+) -> None:
     results = []
-    for flepi_path in (
-        None,
-        create_mock_info_directory,
-        str(create_mock_info_directory),
-    ):
-        info = _get_info(category, name, model, flepi_path)
+    for path in (None, path, str(path)):
+        info = _get_info(category, name, model, path)
         assert isinstance(info, model)
         results.append(info)
     for i in range(len(results) - 1):
