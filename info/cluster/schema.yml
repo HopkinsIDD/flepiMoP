@@ -1,5 +1,4 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: https://example.com/product.schema.json
 title: Cluster
 description: A generic description of an HPC cluster and its properties.
 type: object
