@@ -100,12 +100,13 @@ class JobSize:
                 )
 
     @classmethod
-    def size_from_jobs_sims_blocks(
+    def from_jobs_simulations_blocks(
         cls,
         jobs: int | None,
         simulations: int | None,
         blocks: int | None,
         inference_method: Literal["emcee"] | None,
+        batch_system: BatchSystem | None,
     ) -> "JobSize":
         """
         Infer a job size from several explicit and implicit parameters.
@@ -120,6 +121,8 @@ class JobSize:
         Returns:
             A job size instance with either the explicit or inferred job sizing.
         """
+        if batch_system == BatchSystem.LOCAL:
+            return cls(jobs=1, simulations=min(blocks * simulations, 10), blocks=1)
         if inference_method == "emcee":
             return cls(jobs=jobs, simulations=blocks * simulations, blocks=1)
         return cls(jobs=jobs, simulations=simulations, blocks=blocks)
