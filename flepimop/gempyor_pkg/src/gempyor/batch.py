@@ -5,7 +5,7 @@ This module provides functionality for required for batch jobs, including creati
 metadata and job size calculations for example.
 """
 
-__all__ = ["BatchSystem", "JobSize", "JobTimeLimit"]
+__all__ = ["BatchSystem", "JobSize", "JobResources", "JobTimeLimit"]
 
 
 from dataclasses import dataclass
@@ -120,12 +120,88 @@ class JobSize:
         Returns:
             A job size instance with either the explicit or inferred job sizing.
         """
-        inference_method = (
-            inference_method if inference_method is None else inference_method.lower()
-        )
         if inference_method == "emcee":
             return cls(jobs=jobs, simulations=blocks * simulations, blocks=1)
         return cls(jobs=jobs, simulations=simulations, blocks=blocks)
+
+
+@dataclass(frozen=True, slots=True)
+class JobResources:
+    """
+    A batch submission job resources request.
+
+    Attributes:
+        nodes: The number of nodes to request.
+        cpus: The number of CPUs to request per a node.
+        memory: The amount of memory to request per a node in MB.
+
+    Raises:
+        ValueError: If any of the attributes are less than 1.
+    """
+
+    nodes: int
+    cpus: int
+    memory: int
+
+    def __post_init__(self) -> None:
+        for p in self.__slots__:
+            if (val := getattr(self, p)) < 1:
+                raise ValueError(
+                    (
+                        f"The '{p}' attribute must be greater than 0, "
+                        f"but instead was given '{val}'."
+                    )
+                )
+
+    @classmethod
+    def from_presets(
+        cls, job_size: JobSize, inference_method: Literal["emcee"] | None
+    ) -> "JobResources":
+        """
+        Calculate suggested job resources from presets.
+
+        Args:
+            job_size: The size of the job being ran.
+            inference_method: The inference method being used for this job.
+
+        Returns:
+            A job resources instances scaled to the job size given.
+        """
+        if inference_method == "emcee":
+            return cls(
+                nodes=1, cpus=2 * job_size.jobs, memory=2 * 1024 * job_size.simulations
+            )
+        return cls(nodes=job_size.jobs, cpus=2, memory=2 * 1024)
+
+    @property
+    def total_cpus(self) -> int:
+        """
+        Calculate the total number of CPUs.
+
+        Returns:
+            The total number of CPUs represented by this instance.
+        """
+        return self.nodes * self.cpus
+
+    @property
+    def total_memory(self) -> int:
+        """
+        Calculate the total amount of memory.
+
+        Returns:
+            The total amount of memory represented by this instance.
+        """
+        return self.nodes * self.memory
+
+    def total_resources(self) -> tuple[int, int, int]:
+        """
+        Calculate the total resources.
+
+        Returns:
+            A tuple of the nodes, total CPUs, and total memory represented by
+            this instance.
+        """
+        return (self.nodes, self.total_cpus, self.total_memory)
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,8 +307,6 @@ class JobTimeLimit:
         Raises:
             ValueError: If `time_per_simulation` is non-positive.
             ValueError: If `initial_time` is non-positive.
-
-        Examples:
         """
         if (total_seconds := time_per_simulation.total_seconds()) <= 0.0:
             raise ValueError(
