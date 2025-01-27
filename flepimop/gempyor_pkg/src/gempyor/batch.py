@@ -55,9 +55,10 @@ def write_manifest(
         The path to the written json file.
 
     Examples:
+        >>> import os
         >>> from pathlib import Path
-        >>> flepi_path = Path("~/Desktop/GitHub/HopkinsIDD/flepiMoP").expanduser()
-        >>> project_path = Path("~/Desktop/GitHub/HopkinsIDD/flepimop_sample").expanduser()
+        >>> flepi_path = Path(os.environ["FLEPI_PATH"])
+        >>> project_path = flepi_path / "examples" / "tutorials"
         >>> manifest = write_manifest("Foobar", flepi_path, project_path)
         >>> manifest.name
         'manifest.json'

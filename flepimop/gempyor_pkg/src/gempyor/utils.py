@@ -1165,7 +1165,7 @@ def _shutil_which(
 
 def _git_head(repository: Path) -> str:
     """
-    Get the sha commit has for the head of a git repository.
+    Get the sha commit hash for the head of a git repository.
 
     Args:
         repository: A directory under version control with git to get the sha commit of.
@@ -1174,8 +1174,9 @@ def _git_head(repository: Path) -> str:
         The sha commit of head for `repository`.
 
     Examples:
+        >>> import os
         >>> from pathlib import Path
-        >>> _git_head(Path("~/Desktop/GitHub/HopkinsIDD/flepiMoP"))
+        >>> _git_head(Path(os.environ["FLEPI_PATH"]))
         'efe896b1a5e4f8e33667c170cd5319d6ef1e3db5'
     """
     git_cmd = _shutil_which("git")
