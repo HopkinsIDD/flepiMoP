@@ -11,7 +11,7 @@ description: >-
 See the [Before any run](../before-any-run.md) section to ensure you have access to the correct files needed to run. On your local machine, determine the file paths to:
 
 * the directory containing the flepimop code (likely the folder you cloned from Github), which we'll call `<dir1>`
-* the directory containing your project code including input configuration file and population structure (again likely from Github), which we'll call `<dir2>`
+* the directory containing your project code including input configuration file and population structure, which we'll call `<dir2>`
 
 {% hint style="info" %}
 For example, if you clone your Github repositories into a local folder called Github and are using the flepimop\_sample as a project repository, your directory names could be\
@@ -20,16 +20,12 @@ _**On Mac:** ;
 
 \<dir1> = /Users/YourName/Github/flepiMoP
 
-\<dir2> = /Users/YourName/Github/flepimop\_sample\
+\<dir2> = /Users/YourName/Github/fleiMoP/examples/tutorials
 \
 _**On Windows:**_ \
 \<dir1> = C:\Users\YourName\Github\flepiMoP
 
-\<dir2> = C:\Users\YourName\Github\flepimop\_sample\
-
-
-(hint: if you navigate to a directory like `C:\Users\YourName\Github` using `cd C:\Users\YourName\Github`, modify the above `<dir1>` paths to be `.\flepiMoP` and `.\flepimop_sample)`\
-
+\<dir2> = C:\Users\YourName\Github\flepiMoP\examples\tutorials
 
 Note that Docker file and directory names are case sensitive
 {% endhint %}

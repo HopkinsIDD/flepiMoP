@@ -12,7 +12,7 @@ These files contain the values of the variables for both the infection and (if i
 
 Within the `model_output` directory in the project's directory, the files will be organized into folders named for the file types: `seir`, `spar`, `snpi`, `hpar`, `hnpi`, `seed`, `init`, or `llik` (see descriptions below). Within each file type folder, files will further be organized by the simulation name (`setup_name` in config), the modifier scenario names - if scenarios exist for either `seir` or `outcome` parameters (specified with `seir_modifiers::scenarios` and `outcome_modifiers::scenarios` in config), and the `run_id` (the date and time of the simulation, by default). For example:
 
-<pre><code><strong>flepimop_sample
+<pre><code><strong>flepiMoP/examples/tutorials
 </strong>├── model_output
 │   ├── {setup_name}_{seir_modifier_scenario}_{outcome_modifier_scenario}
 │   │   └── run_id
