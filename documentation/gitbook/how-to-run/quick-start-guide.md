@@ -17,13 +17,13 @@ Take note of the location of the directory on your local computer where you clon
 {% hint style="info" %}
 For example, if you cloned your Github repositories into a local folder called `Github` and are using `flepiMoP/examples/tutorials` as a project repository, your directory names could be\
 \
-_**On Mac:**_
+&#xNAN;_**On Mac:**_
 
 /Users/YourName/Github/flepiMoP
 
 /Users/YourName/Github/fleiMoP/examples/tutorials
 \
-_**On Windows:**_\
+&#xNAN;_**On Windows:**_\
 C:\Users\YourName\Github\flepiMoP
 
 C:\Users\YourName\Github\flepiMoP\examples\tutorials
@@ -168,7 +168,7 @@ Note that you only have to re-run the installation steps once each time you upda
 
 ```
 rm -rf model_output
-Rscript $FLEPI_PATH/flepimop/main_scripts/inference_main.R -c config_inference_new.yml
+flepimop-inference-main -c config_inference_new.yml
 ```
 
 ## 📈 Examining model output
