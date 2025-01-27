@@ -203,6 +203,17 @@ class JobResources:
         """
         return (self.nodes, self.total_cpus, self.total_memory)
 
+    def format_nodes(self, batch_system: BatchSystem | None) -> str:
+        return str(self.nodes)
+
+    def format_cpus(self, batch_system: BatchSystem | None) -> str:
+        return str(self.cpus)
+
+    def format_memory(self, batch_system: BatchSystem | None) -> str:
+        if batch_system == BatchSystem.SLURM:
+            return f"{self.memory}MB"
+        return str(self.memory)
+
 
 @dataclass(frozen=True, slots=True)
 class JobTimeLimit:
@@ -260,7 +271,7 @@ class JobTimeLimit:
     def __ge__(self, other: Self | timedelta) -> bool:
         return self.__eq__(other) or self.__gt__(other)
 
-    def format(self, batch_system: Literal["aws", "local", "slurm"] | None = None) -> str:
+    def format(self, batch_system: BatchSystem | None = None) -> str:
         """
         Format the job time limit as a string appropriate for a given batch system.
 
@@ -271,16 +282,17 @@ class JobTimeLimit:
             The time limit formatted for the batch system.
 
         Examples:
+            >>> from gempyor.batch import BatchSystem
             >>> from datetime import timedelta
             >>> job_time_limit = JobTimeLimit(
             ...     time_limit=timedelta(days=1, hours=2, minutes=34, seconds=5)
             ... )
             >>> job_time_limit.format()
             '1595'
-            >>> job_time_limit.format(batch_system="slurm")
+            >>> job_time_limit.format(batch_system=BatchSystem.SLURM)
             '26:34:05'
         """
-        if batch_system == "slurm":
+        if batch_system == BatchSystem.SLURM:
             total_seconds = self.time_limit.total_seconds()
             hours = math.floor(total_seconds / (60.0 * 60.0))
             minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
