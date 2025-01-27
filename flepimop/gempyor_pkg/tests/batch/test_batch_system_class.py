@@ -2,7 +2,7 @@ from typing import Literal
 
 import pytest
 
-from gempyor.batch import _resolve_batch_system
+from gempyor.batch import BatchSystem
 
 
 @pytest.mark.parametrize(
@@ -17,7 +17,7 @@ def test_multiple_flags_value_error(aws: bool, local: bool, slurm: bool) -> None
             "flags given, expected either 0 or 1.$"
         ),
     ):
-        _resolve_batch_system(None, aws, local, slurm)
+        BatchSystem.from_options(None, aws, local, slurm)
 
 
 @pytest.mark.parametrize(
@@ -42,21 +42,21 @@ def test_batch_system_flag_mismatch_value_error(
             f"is '{batch_system}' and the flags indicate '{name}'.$"
         ),
     ):
-        _resolve_batch_system(batch_system, aws, local, slurm)
+        BatchSystem.from_options(batch_system, aws, local, slurm)
 
 
 @pytest.mark.parametrize(
     ("batch_system", "aws", "local", "slurm", "expected"),
     (
-        (None, True, False, False, "aws"),
-        ("aws", False, False, False, "aws"),
-        ("aws", True, False, False, "aws"),
-        (None, False, True, False, "local"),
-        ("local", False, False, False, "local"),
-        ("local", False, True, False, "local"),
-        (None, False, False, True, "slurm"),
-        ("slurm", False, False, False, "slurm"),
-        ("slurm", False, False, True, "slurm"),
+        (None, True, False, False, BatchSystem.AWS),
+        ("aws", False, False, False, BatchSystem.AWS),
+        ("aws", True, False, False, BatchSystem.AWS),
+        (None, False, True, False, BatchSystem.LOCAL),
+        ("local", False, False, False, BatchSystem.LOCAL),
+        ("local", False, True, False, BatchSystem.LOCAL),
+        (None, False, False, True, BatchSystem.SLURM),
+        ("slurm", False, False, False, BatchSystem.SLURM),
+        ("slurm", False, False, True, BatchSystem.SLURM),
     ),
 )
 def test_output_validation(
@@ -66,4 +66,4 @@ def test_output_validation(
     slurm: bool,
     expected: Literal["aws", "local", "slurm"],
 ) -> None:
-    assert _resolve_batch_system(batch_system, aws, local, slurm) == expected
+    assert BatchSystem.from_options(batch_system, aws, local, slurm) == expected
