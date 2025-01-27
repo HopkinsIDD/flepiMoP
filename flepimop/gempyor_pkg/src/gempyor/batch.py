@@ -11,7 +11,7 @@ __all__ = ["JobSize", "JobTimeLimit"]
 from dataclasses import dataclass
 from datetime import timedelta
 import math
-from typing import Literal
+from typing import Literal, Self
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,6 +150,38 @@ class JobTimeLimit:
     def __str__(self) -> str:
         return self.format()
 
+    def __hash__(self) -> int:
+        return hash(self.time_limit)
+
+    def __eq__(self, other: Self | timedelta) -> bool:
+        if isinstance(other, JobTimeLimit):
+            return self.time_limit == other.time_limit
+        if isinstance(other, timedelta):
+            return self.time_limit == other
+        raise TypeError(
+            "'==' not supported between instances of "
+            f"'JobTimeLimit' and '{type(other).__name__}'."
+        )
+
+    def __lt__(self, other: Self | timedelta) -> bool:
+        if isinstance(other, JobTimeLimit):
+            return self.time_limit < other.time_limit
+        if isinstance(other, timedelta):
+            return self.time_limit < other
+        raise TypeError(
+            "'<' not supported between instances of "
+            f"'JobTimeLimit' and '{type(other).__name__}'."
+        )
+
+    def __le__(self, other: Self | timedelta) -> bool:
+        return self.__eq__(other) or self.__lt__(other)
+
+    def __gt__(self, other: Self | timedelta) -> bool:
+        return not self.__le__(other)
+
+    def __ge__(self, other: Self | timedelta) -> bool:
+        return self.__eq__(other) or self.__gt__(other)
+
     def format(self, batch_system: Literal["aws", "local", "slurm"] | None = None) -> str:
         """
         Format the job time limit as a string appropriate for a given batch system.
@@ -178,6 +210,42 @@ class JobTimeLimit:
             return f"{hours}:{minutes:02d}:{seconds:02d}"
         limit_in_mins = math.ceil(self.time_limit.total_seconds() / 60.0)
         return str(limit_in_mins)
+
+    @classmethod
+    def from_per_simulation_time(
+        cls, job_size: JobSize, time_per_simulation: timedelta, initial_time: timedelta
+    ) -> "JobTimeLimit":
+        """
+        Construct a job time limit that scales with job size.
+
+        Args:
+            job_size: The job size to scale the time limit with.
+            time_per_simulation: The time per a simulation.
+            initial_time: Time required to setup per a job.
+
+        Returns:
+            A job time limit that is scaled to match `job_size`.
+
+        Raises:
+            ValueError: If `time_per_simulation` is non-positive.
+            ValueError: If `initial_time` is non-positive.
+
+        Examples:
+        """
+        if (total_seconds := time_per_simulation.total_seconds()) <= 0.0:
+            raise ValueError(
+                f"The `time_per_simulation` is '{math.floor(total_seconds):,}' "
+                "seconds, which is less than or equal to 0."
+            )
+        if (total_seconds := initial_time.total_seconds()) <= 0.0:
+            raise ValueError(
+                f"The `initial_time` is '{math.floor(total_seconds):,}' "
+                "seconds, which is less than or equal to 0."
+            )
+        time_limit = (
+            job_size.blocks * job_size.simulations * time_per_simulation
+        ) + initial_time
+        return cls(time_limit=time_limit)
 
 
 def _resolve_batch_system(

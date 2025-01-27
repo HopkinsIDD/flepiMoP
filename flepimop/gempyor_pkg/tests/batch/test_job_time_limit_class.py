@@ -4,12 +4,13 @@ from typing import Literal
 
 import pytest
 
-from gempyor.batch import JobTimeLimit
+from gempyor.batch import JobSize, JobTimeLimit
 
 
-@pytest.mark.parametrize(
-    "time_limit", (timedelta(), timedelta(hours=-1.0), timedelta(days=-3.0))
-)
+NONPOSITIVE_TIMEDELTAS = (timedelta(), timedelta(hours=-1.0), timedelta(days=-3.0))
+
+
+@pytest.mark.parametrize("time_limit", NONPOSITIVE_TIMEDELTAS)
 def test_time_limit_non_positive_value_error(time_limit: timedelta) -> None:
     with pytest.raises(
         ValueError,
@@ -61,3 +62,63 @@ def test_format_exact_results(
 ) -> None:
     job_time_limit = JobTimeLimit(time_limit=time_limit)
     assert job_time_limit.format(batch_system=batch_system) == expected
+
+
+@pytest.mark.parametrize("time_per_simulation", NONPOSITIVE_TIMEDELTAS)
+def test_from_per_simulation_time_per_simulation_nonpositive_value_error(
+    time_per_simulation: timedelta,
+) -> None:
+    job_size = JobSize(jobs=1, simulations=1, blocks=1)
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^The \`time\_per\_simulation\` is \'[0-9\,\-]+\' seconds\, "
+            r"which is less than or equal to 0\.$"
+        ),
+    ):
+        JobTimeLimit.from_per_simulation_time(
+            job_size, time_per_simulation, timedelta(minutes=10)
+        )
+
+
+@pytest.mark.parametrize("initial_time", NONPOSITIVE_TIMEDELTAS)
+def test_from_per_simulation_initial_time_nonpositive_value_error(
+    initial_time: timedelta,
+) -> None:
+    job_size = JobSize(jobs=1, simulations=1, blocks=1)
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^The \`initial\_time\` is \'[0-9\,\-]+\' seconds\, "
+            r"which is less than or equal to 0\.$"
+        ),
+    ):
+        JobTimeLimit.from_per_simulation_time(job_size, timedelta(minutes=10), initial_time)
+
+
+@pytest.mark.parametrize(
+    "job_size",
+    (
+        JobSize(jobs=1, simulations=10, blocks=1),
+        JobSize(jobs=10, simulations=25, blocks=15),
+    ),
+)
+@pytest.mark.parametrize(
+    "time_per_simulation",
+    (timedelta(minutes=5), timedelta(seconds=120), timedelta(hours=1.5)),
+)
+@pytest.mark.parametrize(
+    "initial_time", (timedelta(minutes=10), timedelta(seconds=30), timedelta(hours=2))
+)
+def test_from_per_simulation_time(
+    job_size: JobSize, time_per_simulation: timedelta, initial_time: timedelta
+) -> None:
+    job_time_limit = JobTimeLimit.from_per_simulation_time(
+        job_size, time_per_simulation, initial_time
+    )
+    assert job_time_limit.time_limit >= initial_time
+
+    double_job_time_limit = JobTimeLimit.from_per_simulation_time(
+        job_size, 2 * time_per_simulation, initial_time
+    )
+    assert double_job_time_limit > job_time_limit
