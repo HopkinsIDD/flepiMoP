@@ -81,3 +81,19 @@ def test_from_presets_for_select_inputs(
     else:
         assert job_resources.cpus == 2
         assert job_resources.memory == 2 * 1024
+
+
+@pytest.mark.parametrize("inference_method", ("emcee", None))
+@pytest.mark.parametrize("nodes", (1, 2, 4, 8))
+@pytest.mark.parametrize("cpus", (1, 2, 4, 8))
+@pytest.mark.parametrize("memory", (1024, 2 * 1024, 4 * 1024, 8 * 1024))
+def test_from_presets_overrides(
+    inference_method: Literal["emcee"] | None, nodes: int, cpus: int, memory: int
+) -> None:
+    job_size = JobSize(jobs=1, simulations=1, blocks=1)
+    job_resources = JobResources.from_presets(
+        job_size, inference_method, nodes=nodes, cpus=cpus, memory=memory
+    )
+    assert job_resources.nodes == nodes
+    assert job_resources.cpus == cpus
+    assert job_resources.memory == memory
