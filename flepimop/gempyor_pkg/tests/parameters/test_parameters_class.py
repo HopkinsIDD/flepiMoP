@@ -1,9 +1,9 @@
+from concurrent.futures import ProcessPoolExecutor
 from datetime import date
 from functools import partial
 from itertools import repeat
 import multiprocessing as mp
 import pathlib
-from tempfile import NamedTemporaryFile
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -667,8 +667,6 @@ class TestParameters:
         pass
 
     def test_reinitialize_parameters(self, tmp_path: pathlib.Path) -> None:
-        from concurrent.futures import ProcessPoolExecutor
-
         mock_inputs = distribution_three_valid_parameter_factory(tmp_path)
 
         np.random.seed(123)
