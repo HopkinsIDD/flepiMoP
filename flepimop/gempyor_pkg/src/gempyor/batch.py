@@ -123,3 +123,43 @@ class JobSize:
             blocks = math.ceil(iterations_per_slot / simulations)
 
         return cls(jobs=jobs, simulations=simulations, blocks=blocks)
+
+def _resolve_batch_system(
+    batch_system: Literal["aws", "local", "slurm"] | None,
+    aws: bool,
+    local: bool,
+    slurm: bool,
+) -> Literal["aws", "local", "slurm"]:
+    """
+    Resolve the batch system options.
+
+    Args:
+        batch_system: The name of the batch system to use if provided explicitly by
+            name or `None` to rely on the other flags.
+        aws: A flag indicating if the batch system should be AWS.
+        local: A flag indicating if the batch system should be local.
+        slurm: A flag indicating if the batch system should be slurm.
+
+    Returns:
+        The name of the batch system to use given the user options.
+    """
+    batch_system = batch_system.lower() if batch_system is not None else batch_system
+    if (boolean_flags := sum((aws, local, slurm))) > 1:
+        raise ValueError(
+            f"There were {boolean_flags} boolean flags given, expected either 0 or 1."
+        )
+    if batch_system is not None:
+        for name, flag in zip(("aws", "local", "slurm"), (aws, local, slurm)):
+            if flag and batch_system != name:
+                raise ValueError(
+                    "Conflicting batch systems given. The batch system name "
+                    f"is '{batch_system}' and the flags indicate '{name}'."
+                )
+    if batch_system is None:
+        if aws:
+            batch_system = "aws"
+        elif local:
+            batch_system = "local"
+        else:
+            batch_system = "slurm"
+    return batch_system
