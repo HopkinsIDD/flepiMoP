@@ -1,0 +1,41 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Cluster
+description: A generic description of an HPC cluster and its properties.
+type: object
+required:
+  - name
+properties:
+  name:
+    description: A short hand human readable unique name.
+    type: string
+  modules:
+    description: The modules to load when setting up this cluster.
+    type: array
+    items:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: The name of the module.
+          type: string
+        version:
+          description: The preferred version of the module if there is one.
+          type: string
+  path_exports:
+    description: Modifications to the $PATH environment variable in cluster setup.
+    type: array
+    items:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          description: The path to add to the $PATH environment variable.
+          type: string
+        prepend:
+          description: If true the path will prepended and appended if false.
+          type: boolean
+        error_if_missing:
+          description: If true an error will be thrown if the path is missing and if false will be ignored if missing.
+          type: boolean

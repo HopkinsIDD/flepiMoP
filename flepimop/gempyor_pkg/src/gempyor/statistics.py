@@ -277,8 +277,9 @@ class Statistic:
                 f"Valid distributions: '{dist_map.keys()}'."
             )
         if self.dist in ["pois", "nbinom"]:
-            model_data = model_data.astype(int)
-            gt_data = gt_data.astype(int)
+            # pydata/xarray#4612
+            model_data = model_data.fillna(0.0).astype(int)
+            gt_data = gt_data.fillna(0.0).astype(int)
 
         if self.zero_to_one:
             # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
@@ -287,6 +288,10 @@ class Statistic:
 
         # Use stored parameters in the distribution function call
         likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
+        if len(likelihood.shape) == 0:
+            # If the likelihood is a scalar, broadcast it to the shape of the data.
+            # Xarray used to do this, but not anymore after numpy/numpy#26889?
+            likelihood = np.full(gt_data.shape, likelihood)
         likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
         return likelihood
