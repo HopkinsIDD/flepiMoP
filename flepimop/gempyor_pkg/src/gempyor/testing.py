@@ -13,18 +13,24 @@ __all__ = [
     "create_confuse_config_from_dict",
     "partials_are_similar",
     "sample_fits_distribution",
+    "run_test_in_separate_process",
 ]
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 import functools
 import os
-from tempfile import TemporaryDirectory
-from typing import Any, Literal
 from pathlib import Path
+from shlex import quote
+import shutil
+import subprocess
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from typing import Any, Literal
 
 import confuse
 import numpy as np
 import pytest
+
+from .utils import _shutil_which
 
 
 @pytest.fixture
@@ -271,3 +277,59 @@ def sample_fits_distribution(
         )
     elif distribution == "lognorm":
         return bool(np.greater(sample, 0.0))
+
+
+def run_test_in_separate_process(
+    script: str | Path, dest: Path | None = None, args: Iterable[str] = ()
+) -> None:
+    """
+    Execute a test script in a separate process.
+
+    This function is useful for testing functionality that requires initialization for
+    the process (i.e. setting the start method for multiprocessing). This method of unit
+    testing is **slow** and should be used sparingly.
+
+    Args:
+        script: The script to run, either a string of the code or a path to the script
+            to use.
+        dest: The destination to write the script to or `None` to use a temporary file.
+        args: The arguments to pass to the script, can be obtained in the script either
+            through `sys.argv` (starting with index 1) or through `argparse`.
+
+    Returns:
+        None
+
+    Examples:
+        Typically this function is used in a test like so:
+
+        >>> assert run_test_in_separate_process(
+        ...     Path(__file__).parent / "external_script.py",
+        ...     tmp_path / "test.py",
+        ...     args=["arg1", "arg2"],
+        ... ) is None
+
+        The `external_script.py` would reside in the same directory as the test file and
+        the `tmp_path` would be a `pytest` fixture.
+    """
+    if not isinstance(script, Path):
+        if dest is None:
+            with NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(script.encode())
+                script = Path(temp_file.name)
+        else:
+            dest.write_text(script)
+            script = dest
+    elif dest is not None:
+        shutil.copy(script, dest)
+        script = dest
+
+    try:
+        python = _shutil_which("python")
+        args = [python, str(script)] + list(quote(a) for a in args)
+        proc = subprocess.run(args, capture_output=True)
+        assert (
+            proc.returncode == 0
+        ), f"Issue running test script returned {proc.returncode}: {proc.stderr.decode()}."
+    finally:
+        if dest is None and script.exists():
+            script.unlink()

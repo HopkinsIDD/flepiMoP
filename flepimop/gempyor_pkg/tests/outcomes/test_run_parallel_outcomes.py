@@ -7,6 +7,8 @@ import subprocess
 import pandas as pd
 import pytest
 
+from gempyor.testing import run_test_in_separate_process
+
 
 @pytest.fixture
 def setup_sample_2pop_vaccine_scenarios(tmp_path: Path) -> Path:
@@ -55,81 +57,14 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
     monkeypatch.chdir(setup_sample_2pop_vaccine_scenarios)
 
     # Run a pared down version of `gempyor.simulate.simulate` in a new process
-    test_python_script = setup_sample_2pop_vaccine_scenarios / "test.py"
-    with open(test_python_script, "w") as f:
-        f.write(
-            f"""
-import multiprocessing as mp
-import os
-from pathlib import Path
-
-
-from gempyor.model_info import ModelInfo
-from gempyor.outcomes import run_parallel_outcomes
-from gempyor.seir import run_parallel_SEIR
-from gempyor.shared_cli import parse_config_files
-
-def main():
-    setup_sample_2pop_vaccine_scenarios = Path("{setup_sample_2pop_vaccine_scenarios}")
-
-    cfg = parse_config_files(
-        config_filepath=setup_sample_2pop_vaccine_scenarios
-        / "config_sample_2pop_vaccine_scenarios.yml",
-        id_run_id=None,
-        out_run_id=None,
-        seir_modifiers_scenarios=[],
-        outcome_modifiers_scenarios=[],
-        in_prefix=None,
-        nslots=None,
-        jobs={n_jobs},
-        write_csv=False,
-        write_parquet=True,
-        first_sim_index=1,
-        stoch_traj_flag=False,
-        verbose=True,
-    )
-
-    seir_modifiers_scenario, outcome_modifiers_scenario = "no_vax", None
-    nchains = cfg["nslots"].as_number()
-    assert nchains == 10
-
-    modinf = ModelInfo(
-        config=cfg,
-        nslots=nchains,
-        seir_modifiers_scenario=seir_modifiers_scenario,
-        outcome_modifiers_scenario=outcome_modifiers_scenario,
-        write_csv=cfg["write_csv"].get(bool),
-        write_parquet=cfg["write_parquet"].get(bool),
-        first_sim_index=cfg["first_sim_index"].get(int),
-        in_run_id=cfg["in_run_id"].get(str) if cfg["in_run_id"].exists() else None,
-        out_run_id=cfg["out_run_id"].get(str) if cfg["out_run_id"].exists() else None,
-        stoch_traj_flag=cfg["stoch_traj_flag"].get(bool),
-        config_filepath=cfg["config_src"].as_str_seq(),
-    )
-    
-    # `gempyor.outcomes.run_parallel_outcomes` expects SEIR files
-    assert run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int)) is None
-
-    assert run_parallel_outcomes(
-        sim_id2write=cfg["first_sim_index"].get(int),
-        modinf=modinf,
-        nslots=nchains,
-        n_jobs=cfg["jobs"].get(int),
-    ) == 1
-
-if __name__ == "__main__":
-    os.chdir("{setup_sample_2pop_vaccine_scenarios}")
-    mp.set_start_method("{start_method}", force=True)
-    main()
-"""
-        )
-
-    python = shutil.which("python")
-    assert python is not None
-    proc = subprocess.run([python, test_python_script], capture_output=True, check=True)
     assert (
-        proc.returncode == 0
-    ), f"Issue running test script returned {proc.returncode}: {proc.stderr.decode()}."
+        run_test_in_separate_process(
+            Path(__file__).parent / "run_parallel_outcomes_test_script.py",
+            setup_sample_2pop_vaccine_scenarios / "test.py",
+            args=[str(setup_sample_2pop_vaccine_scenarios), start_method, str(n_jobs)],
+        )
+        is None
+    )
 
     # Get the contents of 'hpar' directories as DataFrames
     hpar_directory: Path | None = None
