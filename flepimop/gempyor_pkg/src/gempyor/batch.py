@@ -5,9 +5,19 @@ This module provides functionality for required for batch jobs, including creati
 metadata and job size calculations for example.
 """
 
-__all__ = ["BatchSystem", "JobSize", "JobResources", "JobTimeLimit", "write_manifest"]
+__all__ = [
+    "BatchSystem",
+    "SlurmBatchSystem",
+    "LocalBatchSystem",
+    "register_batch_system",
+    "get_batch_system",
+    "JobSize",
+    "JobResources",
+    "write_manifest",
+]
 
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import Enum, auto
@@ -15,7 +25,7 @@ import json
 import math
 from pathlib import Path
 import sys
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 from .utils import _git_head
 
@@ -26,60 +36,7 @@ else:
     Self = Any
 
 
-class BatchSystem(Enum):
-    """
-    Enum representing the various batch systems that flepiMoP can run on.
-    """
-
-    AWS = auto()
-    LOCAL = auto()
-    SLURM = auto()
-
-    @classmethod
-    def from_options(
-        cls,
-        batch_system: Literal["aws", "local", "slurm"] | None,
-        aws: bool,
-        local: bool,
-        slurm: bool,
-    ) -> "BatchSystem":
-        """
-        Resolve the batch system options.
-
-        Args:
-            batch_system: The name of the batch system to use if provided explicitly by
-                name or `None` to rely on the other flags.
-            aws: A flag indicating if the batch system should be AWS.
-            local: A flag indicating if the batch system should be local.
-            slurm: A flag indicating if the batch system should be slurm.
-
-        Returns:
-            The name of the batch system to use given the user options.
-        """
-        batch_system = batch_system.lower() if batch_system is not None else batch_system
-        if (boolean_flags := sum((aws, local, slurm))) > 1:
-            raise ValueError(
-                f"There were {boolean_flags} boolean flags given, expected either 0 or 1."
-            )
-        if batch_system is not None:
-            for name, flag in zip(("aws", "local", "slurm"), (aws, local, slurm)):
-                if flag and batch_system != name:
-                    raise ValueError(
-                        "Conflicting batch systems given. The batch system name "
-                        f"is '{batch_system}' and the flags indicate '{name}'."
-                    )
-        if batch_system is None:
-            if aws:
-                batch_system = "aws"
-            elif local:
-                batch_system = "local"
-            else:
-                batch_system = "slurm"
-        if batch_system == "aws":
-            return cls.AWS
-        elif batch_system == "local":
-            return cls.LOCAL
-        return cls.SLURM
+_batch_systems = []
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,34 +67,6 @@ class JobSize:
                     )
                 )
 
-    @classmethod
-    def from_jobs_simulations_blocks(
-        cls,
-        jobs: int | None,
-        simulations: int | None,
-        blocks: int | None,
-        inference_method: Literal["emcee"] | None,
-        batch_system: BatchSystem | None,
-    ) -> "JobSize":
-        """
-        Infer a job size from several explicit and implicit parameters.
-
-        Args:
-            jobs: An explicit number of jobs.
-            simulations: An explicit number of simulations per a block.
-            blocks: An explicit number of blocks per a job.
-            inference_method: The inference method being used as different methods have
-                different restrictions.
-
-        Returns:
-            A job size instance with either the explicit or inferred job sizing.
-        """
-        if batch_system == BatchSystem.LOCAL:
-            return cls(jobs=1, simulations=min(blocks * simulations, 10), blocks=1)
-        if inference_method == "emcee":
-            return cls(jobs=jobs, simulations=blocks * simulations, blocks=1)
-        return cls(jobs=jobs, simulations=simulations, blocks=blocks)
-
 
 @dataclass(frozen=True, slots=True)
 class JobResources:
@@ -166,38 +95,6 @@ class JobResources:
                         f"but instead was given '{val}'."
                     )
                 )
-
-    @classmethod
-    def from_presets(
-        cls,
-        job_size: JobSize,
-        inference_method: Literal["emcee"] | None,
-        nodes: int | None = None,
-        cpus: int | None = None,
-        memory: int | None = None,
-    ) -> "JobResources":
-        """
-        Calculate suggested job resources from presets with optional overrides.
-
-        Args:
-            job_size: The size of the job being ran.
-            inference_method: The inference method being used for this job.
-            nodes: Optional manual override for the number of nodes.
-            cpus: Optional manual override for the number of CPUs per node.
-            memory: Optional manual override for the amount of memory per node.
-
-        Returns:
-            A job resources instances scaled to the job size given.
-        """
-        if inference_method == "emcee":
-            nodes = 1 if nodes is None else nodes
-            cpus = 2 * job_size.jobs if cpus is None else cpus
-            memory = 2 * 1024 * job_size.simulations if memory is None else memory
-        else:
-            nodes = job_size.jobs if nodes is None else nodes
-            cpus = 2 if cpus is None else cpus
-            memory = 2 * 1024 if memory is None else memory
-        return cls(nodes=nodes, cpus=cpus, memory=memory)
 
     @property
     def total_cpus(self) -> int:
@@ -229,137 +126,195 @@ class JobResources:
         """
         return (self.nodes, self.total_cpus, self.total_memory)
 
-    def format_nodes(self, batch_system: BatchSystem | None) -> str:
-        return str(self.nodes)
 
-    def format_cpus(self, batch_system: BatchSystem | None) -> str:
-        return str(self.cpus)
-
-    def format_memory(self, batch_system: BatchSystem | None) -> str:
-        if batch_system == BatchSystem.SLURM:
-            return f"{self.memory}MB"
-        return str(self.memory)
-
-
-@dataclass(frozen=True, slots=True)
-class JobTimeLimit:
+class BatchSystem(ABC):
     """
-    A batch submission job time limit.
+    An abstract base class for batch systems.
+
+    This class contains logic for interacting with batch systems, such as formatting
+    job resources and time limits.
 
     Attributes:
-        time_limit: The time limit of the batch job.
-
-    Raises:
-        ValueError: If the `time_limit` attribute is not positive.
+        name: The name of the batch system. Must be unique when registered.
     """
 
-    time_limit: timedelta
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
 
-    def __post_init__(self) -> None:
-        if (total_seconds := self.time_limit.total_seconds()) <= 0.0:
-            raise ValueError(
-                f"The `time_limit` attribute has {math.floor(total_seconds):,} "
-                "seconds, which is less than or equal to 0."
-            )
-
-    def __str__(self) -> str:
-        return self.format()
-
-    def __hash__(self) -> int:
-        return hash(self.time_limit)
-
-    def __eq__(self, other: Self | timedelta) -> bool:
-        if isinstance(other, JobTimeLimit):
-            return self.time_limit == other.time_limit
-        if isinstance(other, timedelta):
-            return self.time_limit == other
-        raise TypeError(
-            "'==' not supported between instances of "
-            f"'JobTimeLimit' and '{type(other).__name__}'."
-        )
-
-    def __lt__(self, other: Self | timedelta) -> bool:
-        if isinstance(other, JobTimeLimit):
-            return self.time_limit < other.time_limit
-        if isinstance(other, timedelta):
-            return self.time_limit < other
-        raise TypeError(
-            "'<' not supported between instances of "
-            f"'JobTimeLimit' and '{type(other).__name__}'."
-        )
-
-    def __le__(self, other: Self | timedelta) -> bool:
-        return self.__eq__(other) or self.__lt__(other)
-
-    def __gt__(self, other: Self | timedelta) -> bool:
-        return not self.__le__(other)
-
-    def __ge__(self, other: Self | timedelta) -> bool:
-        return self.__eq__(other) or self.__gt__(other)
-
-    def format(self, batch_system: BatchSystem | None = None) -> str:
+    def format_nodes(self, job_resources: JobResources) -> str:
         """
-        Format the job time limit as a string appropriate for a given batch system.
+        Format the number of nodes for a job.
+
+        The default implementation returns the number of nodes as a string.
 
         Args:
-            batch_system: The batch system the format should be formatted for.
+            job_resources: The job resources to format.
 
         Returns:
-            The time limit formatted for the batch system.
-
-        Examples:
-            >>> from gempyor.batch import BatchSystem
-            >>> from datetime import timedelta
-            >>> job_time_limit = JobTimeLimit(
-            ...     time_limit=timedelta(days=1, hours=2, minutes=34, seconds=5)
-            ... )
-            >>> job_time_limit.format()
-            '1595'
-            >>> job_time_limit.format(batch_system=BatchSystem.SLURM)
-            '26:34:05'
+            The formatted number of nodes.
         """
-        if batch_system == BatchSystem.SLURM:
-            total_seconds = self.time_limit.total_seconds()
-            hours = math.floor(total_seconds / (60.0 * 60.0))
-            minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
-            seconds = math.ceil(total_seconds - (60.0 * minutes) - (60.0 * 60.0 * hours))
-            return f"{hours}:{minutes:02d}:{seconds:02d}"
-        limit_in_mins = math.ceil(self.time_limit.total_seconds() / 60.0)
-        return str(limit_in_mins)
+        return str(job_resources.nodes)
 
-    @classmethod
-    def from_per_simulation_time(
-        cls, job_size: JobSize, time_per_simulation: timedelta, initial_time: timedelta
-    ) -> "JobTimeLimit":
+    def format_cpus(self, job_resources: JobResources) -> str:
         """
-        Construct a job time limit that scales with job size.
+        Format the number of CPUs for a job.
+
+        The default implementation returns the number of CPUs as a string.
 
         Args:
-            job_size: The job size to scale the time limit with.
-            time_per_simulation: The time per a simulation.
-            initial_time: Time required to setup per a job.
+            job_resources: The job resources to format.
 
         Returns:
-            A job time limit that is scaled to match `job_size`.
-
-        Raises:
-            ValueError: If `time_per_simulation` is non-positive.
-            ValueError: If `initial_time` is non-positive.
+            The formatted number of CPUs.
         """
-        if (total_seconds := time_per_simulation.total_seconds()) <= 0.0:
-            raise ValueError(
-                f"The `time_per_simulation` is '{math.floor(total_seconds):,}' "
-                "seconds, which is less than or equal to 0."
-            )
-        if (total_seconds := initial_time.total_seconds()) <= 0.0:
-            raise ValueError(
-                f"The `initial_time` is '{math.floor(total_seconds):,}' "
-                "seconds, which is less than or equal to 0."
-            )
-        time_limit = (
-            job_size.blocks * job_size.simulations * time_per_simulation
-        ) + initial_time
-        return cls(time_limit=time_limit)
+        return str(job_resources.cpus)
+
+    def format_memory(self, job_resources: JobResources) -> str:
+        """
+        Format the amount of memory for a job.
+
+        The default implementation returns the amount of memory as a string.
+
+        Args:
+            job_resources: The job resources to format.
+
+        Returns:
+            The formatted amount of memory.
+        """
+        return str(self.memory)
+
+    def format_time_limit(self, job_time_limit: timedelta) -> str:
+        """
+        Format the time limit for a job.
+
+        The default implementation returns the time limit in minutes rounded up.
+
+        Args:
+            job_time_limit: The time limit to format.
+
+        Returns:
+            The formatted time limit.
+        """
+        return str(math.ceil(job_time_limit.total_seconds() / 60.0))
+
+    def size_from_jobs_simulations_blocks(
+        self,
+        jobs: int,
+        simulations: int,
+        blocks: int,
+    ) -> JobSize:
+        """
+        Infer a job size from several explicit and implicit parameters.
+
+        Args:
+            jobs: An explicit number of jobs.
+            simulations: An explicit number of simulations per a block.
+            blocks: An explicit number of blocks per a job.
+            inference_method: The inference method being used as different methods have
+                different restrictions.
+
+        Returns:
+            A job size instance with either the explicit or inferred job sizing.
+        """
+        return JobSize(jobs=jobs, simulations=simulations, blocks=blocks)
+
+
+class SlurmBatchSystem(BatchSystem):
+    name = "slurm"
+
+    def format_memory(self, job_resources: JobResources) -> str:
+        return f"{job_resources.memory}MB"
+
+    def format_time_limit(self, job_time_limit: timedelta) -> str:
+        total_seconds = job_time_limit.total_seconds()
+        hours = math.floor(total_seconds / (60.0 * 60.0))
+        minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
+        seconds = math.ceil(total_seconds - (60.0 * minutes) - (60.0 * 60.0 * hours))
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+
+
+class LocalBatchSystem(BatchSystem):
+    name = "local"
+
+    def size_from_jobs_simulations_blocks(
+        self,
+        jobs: int,
+        simulations: int,
+        blocks: int,
+    ) -> JobSize:
+        """
+        Infer a job size from several explicit and implicit parameters.
+
+        Args:
+            jobs: An explicit number of jobs.
+            simulations: An explicit number of simulations per a block.
+            blocks: An explicit number of blocks per a job.
+            inference_method: The inference method being used as different methods have
+                different restrictions.
+
+        Returns:
+            A job size instance with either the explicit or inferred job sizing.
+        """
+        return JobSize(jobs=1, simulations=min(blocks * simulations, 10), blocks=1)
+
+
+def register_batch_system(batch_system: BatchSystem) -> None:
+    """
+    Register a batch system with gempyor.
+
+    Args:
+        batch_system: The batch system to register.
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If the batch system is already registered, checks the `name`
+            attribute to determine this.
+    """
+    if any(batch_system.name == bs.name for bs in _batch_systems):
+        raise ValueError(f"Batch system '{batch_system.name}' already registered.")
+    _batch_systems.append(batch_system)
+
+
+@overload
+def get_batch_system(name: str, raise_on_missing: Literal[True] = ...) -> BatchSystem: ...
+
+
+def get_batch_system(name: str, raise_on_missing: bool = True) -> BatchSystem | None:
+    """
+    Get a registered batch system by name.
+
+    Args:
+        name: The name of the batch system to get.
+        raise_on_missing: Whether to raise an error if the batch system is not found.
+
+    Returns:
+        The batch system with the given name or `None` if not found.
+
+    Raises:
+        ValueError: If the batch system is not found and `raise_on_missing` is `True`.
+    """
+    batch_system = next((bs for bs in _batch_systems if bs.name == name), None)
+    if batch_system is None and raise_on_missing:
+        raise ValueError(f"Batch system '{name}' not found in registered batch systems.")
+    return batch_system
+
+
+def _reset_batch_systems() -> None:
+    """
+    Reset the batch systems to the default state.
+
+    This function is intended for testing purposes.
+
+    Returns:
+        None
+    """
+    globals()["_batch_systems"] = []
+    for batch_system in (SlurmBatchSystem(), LocalBatchSystem()):
+        register_batch_system(batch_system)
 
 
 def write_manifest(
@@ -429,3 +384,6 @@ def write_manifest(
         json.dump(manifest, f, indent=4)
 
     return destination
+
+
+_reset_batch_systems()

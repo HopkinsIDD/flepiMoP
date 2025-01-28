@@ -41,59 +41,59 @@ def test_instance_attributes(nodes: int, cpus: int, memory: int) -> None:
     assert job_resources.total_resources() == (nodes, nodes * cpus, nodes * memory)
 
 
-@pytest.mark.parametrize("nodes", (1, 2, 4, 8))
-@pytest.mark.parametrize("cpus", (1, 2, 4, 8))
-@pytest.mark.parametrize("memory", (1024, 2 * 1024, 4 * 1024, 8 * 1024))
-@pytest.mark.parametrize(
-    "batch_system", (BatchSystem.AWS, BatchSystem.LOCAL, BatchSystem.SLURM, None)
-)
-def test_formatting(
-    nodes: int, cpus: int, memory: int, batch_system: BatchSystem | None
-) -> None:
-    job_resources = JobResources(nodes=nodes, cpus=cpus, memory=memory)
+# @pytest.mark.parametrize("nodes", (1, 2, 4, 8))
+# @pytest.mark.parametrize("cpus", (1, 2, 4, 8))
+# @pytest.mark.parametrize("memory", (1024, 2 * 1024, 4 * 1024, 8 * 1024))
+# @pytest.mark.parametrize(
+#     "batch_system", (BatchSystem.AWS, BatchSystem.LOCAL, BatchSystem.SLURM, None)
+# )
+# def test_formatting(
+#     nodes: int, cpus: int, memory: int, batch_system: BatchSystem | None
+# ) -> None:
+#     job_resources = JobResources(nodes=nodes, cpus=cpus, memory=memory)
 
-    formatted_nodes = job_resources.format_nodes(batch_system)
-    assert isinstance(formatted_nodes, str)
-    assert str(nodes) in formatted_nodes
+#     formatted_nodes = job_resources.format_nodes(batch_system)
+#     assert isinstance(formatted_nodes, str)
+#     assert str(nodes) in formatted_nodes
 
-    formatted_cpus = job_resources.format_cpus(batch_system)
-    assert isinstance(formatted_cpus, str)
-    assert str(cpus) in formatted_cpus
+#     formatted_cpus = job_resources.format_cpus(batch_system)
+#     assert isinstance(formatted_cpus, str)
+#     assert str(cpus) in formatted_cpus
 
-    formatted_memory = job_resources.format_memory(batch_system)
-    assert isinstance(formatted_memory, str)
-    assert str(memory) in formatted_memory
-
-
-@pytest.mark.parametrize("jobs", (1, 4, 16, 32))
-@pytest.mark.parametrize("simulations", (250, 4 * 250, 16 * 250, 32 * 250))
-@pytest.mark.parametrize("blocks", (1, 4, 16, 32))
-@pytest.mark.parametrize("inference_method", ("emcee", None))
-def test_from_presets_for_select_inputs(
-    jobs: int, simulations: int, blocks: int, inference_method: Literal["emcee"] | None
-) -> None:
-    job_size = JobSize(jobs=jobs, simulations=simulations, blocks=blocks)
-    job_resources = JobResources.from_presets(job_size, inference_method)
-    if inference_method == "emcee":
-        assert job_resources.nodes == 1
-        assert job_resources.cpus % 2 == 0
-        assert job_resources.memory % (2 * 1024) == 0
-    else:
-        assert job_resources.cpus == 2
-        assert job_resources.memory == 2 * 1024
+#     formatted_memory = job_resources.format_memory(batch_system)
+#     assert isinstance(formatted_memory, str)
+#     assert str(memory) in formatted_memory
 
 
-@pytest.mark.parametrize("inference_method", ("emcee", None))
-@pytest.mark.parametrize("nodes", (1, 2, 4, 8))
-@pytest.mark.parametrize("cpus", (1, 2, 4, 8))
-@pytest.mark.parametrize("memory", (1024, 2 * 1024, 4 * 1024, 8 * 1024))
-def test_from_presets_overrides(
-    inference_method: Literal["emcee"] | None, nodes: int, cpus: int, memory: int
-) -> None:
-    job_size = JobSize(jobs=1, simulations=1, blocks=1)
-    job_resources = JobResources.from_presets(
-        job_size, inference_method, nodes=nodes, cpus=cpus, memory=memory
-    )
-    assert job_resources.nodes == nodes
-    assert job_resources.cpus == cpus
-    assert job_resources.memory == memory
+# @pytest.mark.parametrize("jobs", (1, 4, 16, 32))
+# @pytest.mark.parametrize("simulations", (250, 4 * 250, 16 * 250, 32 * 250))
+# @pytest.mark.parametrize("blocks", (1, 4, 16, 32))
+# @pytest.mark.parametrize("inference_method", ("emcee", None))
+# def test_from_presets_for_select_inputs(
+#     jobs: int, simulations: int, blocks: int, inference_method: Literal["emcee"] | None
+# ) -> None:
+#     job_size = JobSize(jobs=jobs, simulations=simulations, blocks=blocks)
+#     job_resources = JobResources.from_presets(job_size, inference_method)
+#     if inference_method == "emcee":
+#         assert job_resources.nodes == 1
+#         assert job_resources.cpus % 2 == 0
+#         assert job_resources.memory % (2 * 1024) == 0
+#     else:
+#         assert job_resources.cpus == 2
+#         assert job_resources.memory == 2 * 1024
+
+
+# @pytest.mark.parametrize("inference_method", ("emcee", None))
+# @pytest.mark.parametrize("nodes", (1, 2, 4, 8))
+# @pytest.mark.parametrize("cpus", (1, 2, 4, 8))
+# @pytest.mark.parametrize("memory", (1024, 2 * 1024, 4 * 1024, 8 * 1024))
+# def test_from_presets_overrides(
+#     inference_method: Literal["emcee"] | None, nodes: int, cpus: int, memory: int
+# ) -> None:
+#     job_size = JobSize(jobs=1, simulations=1, blocks=1)
+#     job_resources = JobResources.from_presets(
+#         job_size, inference_method, nodes=nodes, cpus=cpus, memory=memory
+#     )
+#     assert job_resources.nodes == nodes
+#     assert job_resources.cpus == cpus
+#     assert job_resources.memory == memory
