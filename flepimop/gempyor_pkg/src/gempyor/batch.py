@@ -20,7 +20,6 @@ __all__ = (
 
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from datetime import timedelta
 from enum import Enum, auto
 import json
@@ -29,6 +28,8 @@ from pathlib import Path
 import sys
 from typing import Any, Literal, overload
 import warnings
+
+from pydantic import BaseModel, PositiveInt
 
 from .utils import _git_head
 
@@ -42,8 +43,7 @@ else:
 _batch_systems = []
 
 
-@dataclass(frozen=True, slots=True)
-class JobResources:
+class JobResources(BaseModel):
     """
     A batch submission job resources request.
 
@@ -70,25 +70,26 @@ class JobResources:
         ...     JobResources(nodes=0, cpus=1, memory=1024)
         ... except Exception as e:
         ...     print(e)
-        The 'nodes' attribute must be greater than 0, but instead was given '0'.
+        1 validation error for JobResources
+        nodes
+        Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
+            For further information visit https://errors.pydantic.dev/2.10/v/greater_than
+        >>> try:
+        ...     JobResources(nodes=2, cpus=4.5, memory=1024)
+        ... except Exception as e:
+        ...     print(e)
+        1 validation error for JobResources
+        cpus
+        Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=4.5, input_type=float]
+            For further information visit https://errors.pydantic.dev/2.10/v/int_from_float
     """
 
-    nodes: int
-    cpus: int
-    memory: int
-
-    def __post_init__(self) -> None:
-        for p in self.__slots__:
-            if (val := getattr(self, p)) < 1:
-                raise ValueError(
-                    (
-                        f"The '{p}' attribute must be greater than 0, "
-                        f"but instead was given '{val}'."
-                    )
-                )
+    nodes: PositiveInt
+    cpus: PositiveInt
+    memory: PositiveInt
 
     @property
-    def total_cpus(self) -> int:
+    def total_cpus(self) -> PositiveInt:
         """
         Calculate the total number of CPUs.
 
@@ -98,7 +99,7 @@ class JobResources:
         return self.nodes * self.cpus
 
     @property
-    def total_memory(self) -> int:
+    def total_memory(self) -> PositiveInt:
         """
         Calculate the total amount of memory.
 
@@ -107,7 +108,7 @@ class JobResources:
         """
         return self.nodes * self.memory
 
-    def total_resources(self) -> tuple[int, int, int]:
+    def total_resources(self) -> tuple[PositiveInt, PositiveInt, PositiveInt]:
         """
         Calculate the total resources.
 
@@ -118,8 +119,7 @@ class JobResources:
         return (self.nodes, self.total_cpus, self.total_memory)
 
 
-@dataclass(frozen=True, slots=True)
-class JobSize:
+class JobSize(BaseModel):
     """
     A batch submission job size.
 
@@ -140,22 +140,23 @@ class JobSize:
         ...     JobSize(jobs=10, simulations=200, blocks=0)
         ... except Exception as e:
         ...     print(e)
-        The 'blocks' attribute must be greater than 0, but instead was given '0'.
+        1 validation error for JobSize
+        blocks
+        Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
+            For further information visit https://errors.pydantic.dev/2.10/v/greater_than
+        >>> try:
+        ...     JobSize(jobs=10, simulations=200.25, blocks=5)
+        ... except Exception as e:
+        ...     print(e)
+        1 validation error for JobSize
+        simulations
+        Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=200.25, input_type=float]
+            For further information visit https://errors.pydantic.dev/2.10/v/int_from_float
     """
 
-    jobs: int
-    simulations: int
-    blocks: int
-
-    def __post_init__(self) -> None:
-        for p in self.__slots__:
-            if (val := getattr(self, p)) < 1:
-                raise ValueError(
-                    (
-                        f"The '{p}' attribute must be greater than 0, "
-                        f"but instead was given '{val}'."
-                    )
-                )
+    jobs: PositiveInt
+    simulations: PositiveInt
+    blocks: PositiveInt
 
 
 class BatchSystem(ABC):
