@@ -1,20 +1,22 @@
 """
 Functionality for creating and submitting batch jobs.
 
-This module provides functionality for required for batch jobs, including creating 
-metadata and job size calculations for example.
+This module provides functionality for required for batch jobs, including:
+* Objects for representing job resources and job sizes,
+* A system for registering and getting batch systems, and
+* Functionalities for writing job metadata to a manifest file.
 """
 
-__all__ = [
+__all__ = (
     "BatchSystem",
-    "SlurmBatchSystem",
-    "LocalBatchSystem",
-    "register_batch_system",
-    "get_batch_system",
-    "JobSize",
     "JobResources",
+    "JobSize",
+    "LocalBatchSystem",
+    "SlurmBatchSystem",
+    "get_batch_system",
+    "register_batch_system",
     "write_manifest",
-]
+)
 
 
 from abc import ABC, abstractmethod
@@ -41,35 +43,6 @@ _batch_systems = []
 
 
 @dataclass(frozen=True, slots=True)
-class JobSize:
-    """
-    A batch submission job size.
-
-    Attributes:
-        jobs: The number of jobs to use.
-        simulations: The number of simulations to run per a block.
-        blocks: The number of sequential blocks to run per a job.
-
-    Raises:
-        ValueError: If any of the attributes are less than 1.
-    """
-
-    jobs: int
-    simulations: int
-    blocks: int
-
-    def __post_init__(self) -> None:
-        for p in self.__slots__:
-            if (val := getattr(self, p)) < 1:
-                raise ValueError(
-                    (
-                        f"The '{p}' attribute must be greater than 0, "
-                        f"but instead was given '{val}'."
-                    )
-                )
-
-
-@dataclass(frozen=True, slots=True)
 class JobResources:
     """
     A batch submission job resources request.
@@ -81,6 +54,23 @@ class JobResources:
 
     Raises:
         ValueError: If any of the attributes are less than 1.
+
+    Examples:
+        >>> from gempyor.batch import JobResources
+        >>> resources = JobResources(nodes=5, cpus=10, memory=10*1024)
+        >>> resources
+        JobResources(nodes=5, cpus=10, memory=10240)
+        >>> resources.total_cpus
+        50
+        >>> resources.total_memory
+        51200
+        >>> resources.total_resources()
+        (5, 50, 51200)
+        >>> try:
+        ...     JobResources(nodes=0, cpus=1, memory=1024)
+        ... except Exception as e:
+        ...     print(e)
+        The 'nodes' attribute must be greater than 0, but instead was given '0'.
     """
 
     nodes: int
@@ -128,6 +118,46 @@ class JobResources:
         return (self.nodes, self.total_cpus, self.total_memory)
 
 
+@dataclass(frozen=True, slots=True)
+class JobSize:
+    """
+    A batch submission job size.
+
+    Attributes:
+        jobs: The number of jobs to use.
+        simulations: The number of simulations to run per a block.
+        blocks: The number of sequential blocks to run per a job.
+
+    Raises:
+        ValueError: If any of the attributes are less than 1.
+
+    Examples:
+        >>> from gempyor.batch import JobSize
+        >>> size = JobSize(jobs=10, simulations=200, blocks=5)
+        >>> size
+        JobSize(jobs=10, simulations=200, blocks=5)
+        >>> try:
+        ...     JobSize(jobs=10, simulations=200, blocks=0)
+        ... except Exception as e:
+        ...     print(e)
+        The 'blocks' attribute must be greater than 0, but instead was given '0'.
+    """
+
+    jobs: int
+    simulations: int
+    blocks: int
+
+    def __post_init__(self) -> None:
+        for p in self.__slots__:
+            if (val := getattr(self, p)) < 1:
+                raise ValueError(
+                    (
+                        f"The '{p}' attribute must be greater than 0, "
+                        f"but instead was given '{val}'."
+                    )
+                )
+
+
 class BatchSystem(ABC):
     """
     An abstract base class for batch systems.
@@ -137,6 +167,25 @@ class BatchSystem(ABC):
 
     Attributes:
         name: The name of the batch system. Must be unique when registered.
+
+    Examples:
+        >>> from datetime import timedelta
+        >>> from gempyor.batch import BatchSystem, JobResources, JobSize
+        >>> class MyCustomBatchSystem(BatchSystem):
+        ...     name = "my_custom"
+        >>> batch_system = MyCustomBatchSystem()
+        >>> resources = JobResources(nodes=1, cpus=2, memory=1024)
+        >>> batch_system.format_nodes(resources)
+        '1'
+        >>> batch_system.format_cpus(resources)
+        '2'
+        >>> batch_system.format_memory(resources)
+        '1024
+        >>> time_limit = timedelta(days=1, hours=2, minutes=34, seconds=56)
+        >>> batch_system.format_time_limit(time_limit)
+        '1595'
+        >>> batch_system.size_from_jobs_simulations_blocks(2, 10, 5)
+        JobSize(jobs=2, simulations=10, blocks=5)
     """
 
     @property
@@ -184,7 +233,7 @@ class BatchSystem(ABC):
         Returns:
             The formatted amount of memory.
         """
-        return str(self.memory)
+        return str(job_resources.memory)
 
     def format_time_limit(self, job_time_limit: timedelta) -> str:
         """
@@ -222,21 +271,51 @@ class BatchSystem(ABC):
         return JobSize(jobs=jobs, simulations=simulations, blocks=blocks)
 
 
-class SlurmBatchSystem(BatchSystem):
-    name = "slurm"
-
-    def format_memory(self, job_resources: JobResources) -> str:
-        return f"{job_resources.memory}MB"
-
-    def format_time_limit(self, job_time_limit: timedelta) -> str:
-        total_seconds = job_time_limit.total_seconds()
-        hours = math.floor(total_seconds / (60.0 * 60.0))
-        minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
-        seconds = math.ceil(total_seconds - (60.0 * minutes) - (60.0 * 60.0 * hours))
-        return f"{hours}:{minutes:02d}:{seconds:02d}"
-
-
 class LocalBatchSystem(BatchSystem):
+    """
+    Batch system for running jobs locally.
+
+    This class is a batch system for running jobs locally. It is intended for testing
+    and development purposes, not production jobs. Therefore it will override user
+    inputs to limit the number of jobs to 1 and the number of blocks x simulations to
+    10.
+
+    Attributes:
+        name: The name of the batch system which is 'local'.
+
+    Examples:
+        >>> import warnings
+        >>> from gempyor.batch import LocalBatchSystem
+        >>> batch_system = LocalBatchSystem()
+        >>> batch_system.size_from_jobs_simulations_blocks(1, 10, 1)
+        JobSize(jobs=1, simulations=10, blocks=1)
+        >>> with warnings.catch_warnings(record=True) as warns:
+        ...     size = batch_system.size_from_jobs_simulations_blocks(2, 10, 1)
+        ...     for warn in warns:
+        ...             print(warn.message)
+        ...
+        Local batch system only supports 1 job but was given 2, overriding.
+        >>> size
+        JobSize(jobs=1, simulations=10, blocks=1)
+        >>> with warnings.catch_warnings(record=True) as warns:
+        ...     size = batch_system.size_from_jobs_simulations_blocks(1, 20, 1)
+        ...     for warn in warns:
+        ...             print(warn.message)
+        ...
+        Local batch system only supports 10 blocks x simulations but was given 20, overriding.
+        >>> size
+        JobSize(jobs=1, simulations=10, blocks=1)
+        >>> with warnings.catch_warnings(record=True) as warns:
+        ...     size = batch_system.size_from_jobs_simulations_blocks(4, 10, 2)
+        ...     for warn in warns:
+        ...             print(warn.message)
+        ...
+        Local batch system only supports 1 job but was given 4, overriding.
+        Local batch system only supports 10 blocks x simulations but was given 20, overriding.
+        >>> size
+        JobSize(jobs=1, simulations=10, blocks=1)
+    """
+
     name = "local"
 
     def size_from_jobs_simulations_blocks(
@@ -270,9 +349,48 @@ class LocalBatchSystem(BatchSystem):
         return JobSize(jobs=1, simulations=min(blocks_x_simulations, 10), blocks=1)
 
 
+class SlurmBatchSystem(BatchSystem):
+    """
+    Batch system for running jobs on a Slurm HPC cluster.
+
+    This class is a batch system for running jobs on a Slurm HPC cluster. It provides
+    formatting overrides that are specific to Slurm's submission requirements.
+
+    Attributes:
+        name: The name of the batch system which is 'slurm'.
+
+    Examples:
+        >>> from datetime import timedelta
+        >>> from gempyor.batch import SlurmBatchSystem, JobResources
+        >>> batch_system = SlurmBatchSystem()
+        >>> resources = JobResources(nodes=2, cpus=4, memory=8*1024)
+        >>> batch_system.format_memory(resources)
+        '8192MB'
+        >>> time_limit = timedelta(days=1, hours=2, minutes=34, seconds=56)
+        >>> batch_system.format_time_limit(time_limit)
+        '26:34:56'
+    """
+
+    name = "slurm"
+
+    def format_memory(self, job_resources: JobResources) -> str:
+        return f"{job_resources.memory}MB"
+
+    def format_time_limit(self, job_time_limit: timedelta) -> str:
+        total_seconds = job_time_limit.total_seconds()
+        hours = math.floor(total_seconds / (60.0 * 60.0))
+        minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
+        seconds = math.ceil(total_seconds - (60.0 * minutes) - (60.0 * 60.0 * hours))
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+
+
 def register_batch_system(batch_system: BatchSystem) -> None:
     """
     Register a batch system with gempyor.
+
+    Add a batch system to the list of registered batch systems with gempyor. This
+    function acts as a complement to `get_batch_system` and is intended to be used by
+    users who wish to add their own batch system to gempyor.
 
     Args:
         batch_system: The batch system to register.
@@ -283,6 +401,19 @@ def register_batch_system(batch_system: BatchSystem) -> None:
     Raises:
         ValueError: If the batch system is already registered, checks the `name`
             attribute to determine this.
+
+    Examples:
+        >>> from gempyor.batch import BatchSystem, register_batch_system
+        >>> class CustomBatchSystem(BatchSystem):
+        ...     name = "custom"
+        >>> register_batch_system(CustomBatchSystem()) is None
+        True
+        >>> try:
+        ...     register_batch_system(CustomBatchSystem()) is None
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        Batch system 'custom' already registered.
     """
     if any(batch_system.name == bs.name for bs in _batch_systems):
         raise ValueError(f"Batch system '{batch_system.name}' already registered.")
@@ -306,6 +437,21 @@ def get_batch_system(name: str, raise_on_missing: bool = True) -> BatchSystem | 
 
     Raises:
         ValueError: If the batch system is not found and `raise_on_missing` is `True`.
+
+    Examples:
+        >>> from gempyor.batch import get_batch_system
+        >>> get_batch_system("local")
+        <gempyor.batch.LocalBatchSystem object at 0x1629f9b10>
+        >>> get_batch_system("slurm")
+        <gempyor.batch.SlurmBatchSystem object at 0x1629f9ad0>
+        >>> try:
+        ...     get_batch_system("does not exist")
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        Batch system 'does not exist' not found in registered batch systems.
+        >>> get_batch_system("does not exist", raise_on_missing=False) is None
+        True
     """
     batch_system = next((bs for bs in _batch_systems if bs.name == name), None)
     if batch_system is None and raise_on_missing:
