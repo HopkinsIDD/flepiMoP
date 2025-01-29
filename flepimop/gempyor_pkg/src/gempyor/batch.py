@@ -26,6 +26,7 @@ import math
 from pathlib import Path
 import sys
 from typing import Any, Literal, overload
+import warnings
 
 from .utils import _git_head
 
@@ -257,7 +258,16 @@ class LocalBatchSystem(BatchSystem):
         Returns:
             A job size instance with either the explicit or inferred job sizing.
         """
-        return JobSize(jobs=1, simulations=min(blocks * simulations, 10), blocks=1)
+        if jobs != 1:
+            warnings.warn(
+                f"Local batch system only supports 1 job but was given {jobs}, overriding."
+            )
+        if (blocks_x_simulations := blocks * simulations) > 10:
+            warnings.warn(
+                "Local batch system only supports 10 blocks x simulations "
+                f"but was given {blocks_x_simulations}, overriding."
+            )
+        return JobSize(jobs=1, simulations=min(blocks_x_simulations, 10), blocks=1)
 
 
 def register_batch_system(batch_system: BatchSystem) -> None:
