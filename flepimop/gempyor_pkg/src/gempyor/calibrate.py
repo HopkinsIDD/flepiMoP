@@ -4,7 +4,6 @@ Provides CLI options for users to specify simulation paramters.
 
 Functions:
     calibrate: Reads a configuration file for simulation settings.
-
 """
 
 #!/usr/bin/env python
@@ -136,22 +135,6 @@ def calibrate(
 ) -> None:
     """
     Calibrate using an `emcee` sampler to initialize a model based on a config.
-
-    Args:
-        config_filepath: Path to the configuration file.
-        project_path: Path to the project directory.
-        nwalkers: Number of walkers (MCMC chains) to run.
-        niter: Number of MCMC iterations to perform.
-        nsamples: Number of samples to select from final MCMC chain.
-        nthin: How often to save samples.
-        ncpu: Number of CPU cores to use for parallelization.
-        input_run_id: Run ID. Will be auto-generated if not provdied.
-        prefix: A prefix for output files.
-        resume: Whether or not to resume a previous calibration run.
-        resume_location: Path to the location of the saved state to resume from.
-
-    Returns:
-        None
     """
     # Choose a run_id
     if input_run_id is None:
