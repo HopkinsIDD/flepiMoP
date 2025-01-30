@@ -5,6 +5,7 @@ import logging
 import numbers
 import os
 from pathlib import Path
+from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
@@ -1187,3 +1188,35 @@ def _git_head(repository: Path) -> str:
         check=True,
     )
     return proc.stdout.decode().strip()
+
+
+def _format_cli_options(
+    options: dict[str, Any] | None, always_single: bool = False
+) -> list[str]:
+    """
+    Convert a dictionary of CLI options into a formatted list.
+    Args:
+        options: A dictionary where the keys correspond to the option name and the
+            values correspond to the option value. If the option name is one character
+            it's assumed to be a short name and prefixed with one dash. Values are
+            coerced to a string and then escaped for shell.
+        always_single: If `True` all options will be formatted with a single dash prefix
+            always, useful for commands that don't support long options like
+            `pdftotext`.
+    Returns:
+        A list of options that can be passed to
+        [`subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)
+        or similar functions.
+    Examples:
+        >>> from pathlib import Path
+        >>> _format_cli_options({"name": "foo bar fizz buzz"})
+        ["--name='foo bar fizz buzz'"]
+        >>> _format_cli_options({"o": Path("/path/to/output.log")})
+        ['-o=/path/to/output.log']
+        >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
+        ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+    """
+    return [
+        f"{'-' if (always_single or len(k) == 1) else '--'}{k}={shlex_quote(str(v))}"
+        for k, v in (options or {}).items()
+    ]
