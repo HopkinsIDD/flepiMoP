@@ -15,12 +15,14 @@ __all__ = [
     "sample_fits_distribution",
 ]
 
+
 from collections.abc import Generator
 import functools
 import os
+from pathlib import Path
+from stat import S_IXUSR
 from tempfile import TemporaryDirectory
 from typing import Any, Literal
-from pathlib import Path
 
 import confuse
 import numpy as np
@@ -271,3 +273,28 @@ def sample_fits_distribution(
         )
     elif distribution == "lognorm":
         return bool(np.greater(sample, 0.0))
+
+
+def sample_script(directory: Path, executable: bool) -> Path:
+    """
+    Create a sample script for testing functions that require a script.
+
+    Args:
+        directory: The directory to create the script in.
+        executable: If the script should be executable.
+
+    Returns:
+        The path to the script.
+
+    Notes:
+        The script is a simple bash script in a file named 'example' with contents:
+        ```bash
+        #!/usr/bin/env bash
+        echo 'Hello local!'
+        ```
+    """
+    script = directory / "example"
+    script.write_text("#!/usr/bin/env bash\necho 'Hello local!'")
+    if executable:
+        script.chmod(script.stat().st_mode | S_IXUSR)
+    return script
