@@ -159,6 +159,54 @@ class JobSize(BaseModel):
     blocks: PositiveInt
 
 
+def _job_resources_from_size_and_inference(
+    job_size: JobSize,
+    inference: Literal["emcee"] | None,
+    nodes: PositiveInt | None = None,
+    cpus: PositiveInt | None = None,
+    memory: PositiveInt | None = None,
+) -> JobResources:
+    """
+    Default job resources from a job size and inference method.
+
+    This function is meant to be used by CLI scripts that work with batch environments
+    to submit inference/calibration jobs. This particular function is meant meant to be
+    a temporary solution to a method that GH-402/GH-432 should implement.
+
+    Args:
+        job_size: The job size to infer resources from.
+        inference: The inference method being used.
+        nodes: The user provided number of nodes to use or `None` to infer from the
+            job size and inference method.
+        cpus: The user provided number of CPUs to use or `None` to infer from the job
+            size and inference method.
+        memory: The user provided amount of memory to use or `None` to infer from the
+            job size and inference method.
+
+    Returns:
+        The inferred job resources.
+    """
+    if inference == "emcee":
+        if nodes is not None and nodes != 1:
+            warnings.warn(
+                f"EMCEE inference only supports 1 node given {nodes}, overriding."
+            )
+        return JobResources(
+            nodes=1,
+            cpus=2 * job_size.jobs if cpus is None else cpus,
+            memory=(
+                2 * 1024 * job_size.simulations * job_size.blocks
+                if memory is None
+                else memory
+            ),
+        )
+    return JobResources(
+        nodes=job_size.jobs if nodes is None else nodes,
+        cpus=2 if cpus is None else cpus,
+        memory=2 * 1024 if memory is None else memory,
+    )
+
+
 class BatchSystem(ABC):
     """
     An abstract base class for batch systems.
