@@ -11,6 +11,7 @@ __all__ = (
     "BatchSystem",
     "JobResources",
     "JobSize",
+    "JobSubmission",
     "LocalBatchSystem",
     "SlurmBatchSystem",
     "get_batch_system",
@@ -25,13 +26,17 @@ from enum import Enum, auto
 import json
 import math
 from pathlib import Path
+import re
+from stat import S_IXUSR
+import subprocess
 import sys
 from typing import Any, Literal, overload
 import warnings
 
 from pydantic import BaseModel, PositiveInt
 
-from .utils import _git_head
+from .logging import get_script_logger
+from .utils import _format_cli_options, _git_head, _shutil_which
 
 
 if sys.version_info >= (3, 11):
@@ -207,6 +212,75 @@ def _job_resources_from_size_and_inference(
     )
 
 
+class JobSubmission(subprocess.CompletedProcess):
+    """
+    Job submission result.
+
+    This class extends the `subprocess.CompletedProcess` class to include a job ID which
+    corresponds to the job submission. This is useful for tracking and managing jobs
+    after submission and dependent on the context of the batch system.
+
+    Attributes:
+        job_id: The job ID of the submitted job.
+        args: The command line arguments of the job submission.
+        returncode: The return code of the job submission.
+        stdout: The standard output of the job submission.
+        stderr: The standard error of the job submission.
+
+    See Also:
+        [`subprocess.CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)
+    """
+
+    def __init__(
+        self,
+        job_id: int | None,
+        args: Any,
+        returncode: int,
+        stdout: bytes | str | None = None,
+        stderr: bytes | str | None = None,
+    ) -> None:
+        """
+        Create a job submission result.
+
+        Args:
+            job_id: The job ID of the submitted job.
+            args: The command line arguments of the job submission.
+            returncode: The return code of the job submission.
+            stdout: The standard output of the job submission.
+            stderr: The standard error of the job submission.
+
+        Returns:
+            None
+        """
+        super().__init__(args, returncode, stdout, stderr)
+        self.job_id = job_id
+
+    @classmethod
+    def from_completed_process(
+        cls, job_id: int | None, completed_process: subprocess.CompletedProcess
+    ) -> Self:
+        """
+        Create a job submission result from a completed process.
+
+        This convenience method creates a job submission result from a completed process
+        since most job submissions typically are done with `subprocess.run`.
+
+        Args:
+            job_id: The job ID of the submitted job.
+            completed_process: The completed process to create a job submission from.
+
+        Returns:
+            The job submission result.
+        """
+        return cls(
+            job_id=job_id,
+            args=completed_process.args,
+            returncode=completed_process.returncode,
+            stdout=completed_process.stdout,
+            stderr=completed_process.stderr,
+        )
+
+
 class BatchSystem(ABC):
     """
     An abstract base class for batch systems.
@@ -240,6 +314,52 @@ class BatchSystem(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
+        raise NotImplementedError
+
+    @overload
+    @abstractmethod
+    def submit(
+        self,
+        script: Path,
+        options: dict[str, Any] | None = None,
+        verbosity: int | None = None,
+        dry_run: Literal[True] = ...,
+    ) -> None: ...
+
+    @overload
+    @abstractmethod
+    def submit(
+        self,
+        script: Path,
+        options: dict[str, Any] | None = None,
+        verbosity: int | None = None,
+        dry_run: Literal[False] = ...,
+    ) -> JobSubmission: ...
+
+    @abstractmethod
+    def submit(
+        self,
+        script: Path,
+        options: dict[str, Any] | None = None,
+        verbosity: int | None = None,
+        dry_run: bool = False,
+    ) -> JobSubmission | None:
+        """
+        Submit a job to the batch system.
+
+        Args:
+            script: The path to the script to submit.
+            options: Additional options to pass to the batch system, if applicable.
+            verbosity: The verbosity level of the submission.
+            dry_run: Whether to perform a dry run of the submission, if applicable.
+
+        Returns:
+            The job submission result or `None` if a dry run.
+
+        Notes:
+            Batch systems which implement this method and do not support dry runs should
+            raise a `NotImplementedError` when `dry_run` is `True`.
+        """
         raise NotImplementedError
 
     def format_nodes(self, job_resources: JobResources) -> str:
@@ -367,6 +487,77 @@ class LocalBatchSystem(BatchSystem):
 
     name = "local"
 
+    def submit(
+        self,
+        script: Path,
+        options: dict[str, Any] | None = None,
+        verbosity: int | None = None,
+        dry_run: bool = False,
+    ) -> JobSubmission | None:
+        """
+        Submit a job to the local batch system.
+
+        Args:
+            script: The path to the script to submit.
+            options: Additional options to pass to the batch system.
+            verbosity: The verbosity level of the submission.
+            dry_run: Whether to perform a dry run of the submission.
+
+        Returns:
+            The job submission result where the `job_id` is the PID of the process or
+            `None` if a dry run.
+        """
+        if verbosity is not None:
+            logger = get_script_logger(__name__, verbosity)
+            logger.debug("Using script '%s' for local execution", script.absolute())
+
+        if not script.exists() or not script.is_file():
+            raise ValueError(
+                f"The script '{script.absolute()}' either does not exist or is not a file."
+            )
+        if not bool((current_perms := script.stat().st_mode) & S_IXUSR):
+            if verbosity is not None:
+                logger.warning(
+                    "The script '%s' is not executable, making it executable.",
+                    script.absolute(),
+                )
+            new_perms = current_perms | S_IXUSR
+            script.chmod(new_perms)
+
+        cmd_args = [str(script.absolute())] + _format_cli_options(options)
+
+        if dry_run:
+            if verbosity is not None:
+                logger.info(
+                    "If not dry mode would have executed script with: %s",
+                    " ".join(cmd_args),
+                )
+            return None
+
+        if verbosity is not None:
+            logger.info("Executing script with: %s", " ".join(cmd_args))
+        process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process.wait(timeout=5 * 60)
+        stdout, stderr = process.communicate()
+        if verbosity is not None:
+            if process.returncode != 0:
+                logger.critical(
+                    "Received non-zero exit code, %u, from executed script.",
+                    process.returncode,
+                )
+            if stdout:
+                logger.debug("Captured stdout from executed script: %s", stdout)
+            if stderr:
+                logger.error("Captured stderr from executed script: %s", stderr)
+
+        return JobSubmission(
+            job_id=process.pid,
+            args=process.args,
+            returncode=process.returncode,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
     def size_from_jobs_simulations_blocks(
         self,
         jobs: int,
@@ -421,6 +612,56 @@ class SlurmBatchSystem(BatchSystem):
     """
 
     name = "slurm"
+
+    _sbatch_regex = re.compile(r"submitted batch job (\d+)", flags=re.IGNORECASE)
+
+    def submit(
+        self,
+        script: Path,
+        options: dict[str, Any] | None = None,
+        verbosity: int | None = None,
+        dry_run: bool = False,
+    ) -> JobSubmission | None:
+        if verbosity is not None:
+            logger = get_script_logger(__name__, verbosity)
+            logger.debug("Using batch script '%s' to submit to slurm", script.absolute())
+
+        cmd_args = (
+            [_shutil_which("sbatch")]
+            + _format_cli_options(options)
+            + [str(script.absolute())]
+        )
+
+        if dry_run:
+            if verbosity is not None:
+                logger.info(
+                    "If not dry mode would have submitted to slurm with: %s",
+                    " ".join(cmd_args),
+                )
+            return None
+
+        if verbosity is not None:
+            logger.info("Submitting to slurm with: %s", " ".join(cmd_args))
+        process = subprocess.run(cmd_args, text=True, capture_output=True)
+        stdout = process.stdout.strip()
+        stderr = process.stderr.strip()
+        if verbosity is not None:
+            if process.returncode != 0:
+                logger.critical(
+                    "Received non-zero exit code, %u, from executed script.",
+                    process.returncode,
+                )
+            if stdout:
+                logger.debug("Captured stdout from sbatch submission: %s", stdout)
+            if stderr:
+                logger.error("Captured stderr from sbatch submission: %s", stderr)
+
+        match = self._sbatch_regex.match(stdout)
+        if not match:
+            raise ValueError(f"Failed to parse job ID from sbatch output: {stdout}")
+        job_id = int(match.group(1))
+
+        return JobSubmission.from_completed_process(job_id, process)
 
     def format_memory(self, job_resources: JobResources) -> str:
         return f"{job_resources.memory}MB"
