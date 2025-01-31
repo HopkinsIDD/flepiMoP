@@ -6,6 +6,9 @@ from gempyor.batch import BatchSystem, register_batch_system, _reset_batch_syste
 class TestBatchSystem(BatchSystem):
     name = "test"
 
+    def submit(self, script, options=None, verbosity=None, dry_run=False):
+        return None
+
 
 def test_registration_adds_batch_system() -> None:
     _reset_batch_systems()
