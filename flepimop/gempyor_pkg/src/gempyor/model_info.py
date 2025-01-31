@@ -1,4 +1,6 @@
 """
+Abstractions for interacting with models as a monolithic object.
+
 Defines the `ModelInfo` class (and associated methods), used for setting up and 
 managing the configuration of a simulation. The primary focuses of a `ModelInfo` object
 are parsing and validating config details (including time frames, subpop info, 
