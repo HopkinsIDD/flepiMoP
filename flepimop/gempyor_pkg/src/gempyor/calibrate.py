@@ -8,17 +8,22 @@ Functions:
 """
 
 #!/usr/bin/env python
+import os
+import shutil
+import copy
+import pathlib
+import multiprocessing
+
 import click
+import emcee
+import numpy as np
+
+import gempyor
 from gempyor import model_info, file_paths, config, inference_parameter
 from gempyor.inference import GempyorInference
 from gempyor.utils import config, as_list
-import gempyor
-import numpy as np
-import os, shutil, copy
-import emcee
-import pathlib
-import multiprocessing
 import gempyor.postprocess_inference
+
 
 # from .profile import profile_options
 

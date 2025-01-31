@@ -58,8 +58,8 @@ class Parameters:
         Parameters can be defined or drawn from distributions.
 
         Args:
-            parameter_config: A view of the overall configuration object focused on the parameters section of a given
-                config file.
+            parameter_config: A view of the overall configuration object focused on the parameters 
+                section of a given config file.
             ti: An initial date for simulation.
             tf: A final date for simulation.
             subpop_names: A list of subpopulation names.

@@ -30,22 +30,23 @@ Functions:
         parameters based on this info. Returns the reduced parameters.
 """
 
-from concurrent.futures import ProcessPoolExecutor
-import copy
-import logging
-import multiprocessing as mp
 import os
+import logging
+import copy
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
 
-import numba as nb
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
+import numba as nb
+
+from typing import Literal
 
 from . import seir, model_info
 from . import outcomes, file_paths
 from .utils import config, Timer, read_df, as_list
-from typing import Literal
 
 
 logging.basicConfig(level=os.environ.get("FLEPI_LOGLEVEL", "INFO").upper())

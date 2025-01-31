@@ -14,18 +14,18 @@ Functions:
     export: Export compartment data to a CSV file. 
 """
 
+import logging
 from functools import reduce
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import logging
 from click import pass_context, Context
 
 from .utils import config, Timer, as_list
 from .shared_cli import config_files_argument, config_file_options, parse_config_files, cli
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
