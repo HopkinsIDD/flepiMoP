@@ -1,6 +1,7 @@
 """
 Facilitates the calibration of the model using the `emcee` MCMC sampler. 
-Provides CLI options for users to specify simulation paramters. 
+
+Provides CLI options for users to specify simulation parameters. 
 
 Functions:
     calibrate: Reads a configuration file for simulation settings.
