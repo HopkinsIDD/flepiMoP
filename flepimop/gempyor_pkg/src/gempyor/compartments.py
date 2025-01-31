@@ -856,7 +856,9 @@ class Compartments:
 
     def get_compartments_explicitDF(self) -> pd.DataFrame:
         """
-        Returns a copy of the compartments information DataFrame; all columns receive a 'mc_' prefix.
+        Returns a copy of the compartments information DataFrame.
+
+        All columns receive a 'mc_' prefix.
 
         Returns:
             A copy of the compartments DataFrame.
