@@ -151,7 +151,7 @@ Create environmental variables for the paths to the flepiMoP code folder and the
 ```bash
 cd /scratch4/primary-user/flepimop-code/$USER # move to the directory where all your code is stored
 export FLEPI_PATH=$(pwd)/flepiMoP 
-export DATA_PATH=$(pwd)/flepimop-sample  # whatever your project directory is called
+export PROJECT_PATH=$(pwd)/flepiMoP/examples/tutorials  # whatever your project directory is called
 ```
 
 Go into the code directory and do the installation the R and Python code packages:
@@ -171,7 +171,7 @@ Everything is now ready 🎉 The next step depends on what sort of simulation yo
 In either case, navigate to the project directory and make sure to delete any old model output files that are there. Note that in the example config provided, the output is saved to `model_output`, but this might be otherwise defined in `config::model_output_dirname.`
 
 ```bash
-cd $DATA_PATH       # goes to your project repository
+cd $PROJECT_PATH       # goes to your project repository
 rm -r model_output/ # delete the outputs of past run if there are
 ```
 
@@ -212,7 +212,7 @@ If you'd like to have more control, you can specify the arguments manually:
 <pre class="language-bash"><code class="lang-bash"><strong>python $FLEPI_PATH/batch/inference_job_launcher.py --slurm \
 </strong><strong>                    -c $CONFIG_PATH \
 </strong><strong>                    -p $FLEPI_PATH \
-</strong><strong>                    --data-path $DATA_PATH \
+</strong><strong>                    --data-path $PROJECT_PATH \
 </strong><strong>                    --upload-to-s3 True \
 </strong><strong>                    --id $FLEPI_RUN_INDEX \
 </strong><strong>                    --fs-folder /scratch4/primary-user/flepimop-runs \

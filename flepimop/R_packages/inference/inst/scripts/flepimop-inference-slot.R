@@ -28,7 +28,7 @@ required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
 
 # There are multiple ways to specify options when flepimop-inference-slot is run, which take the following precedence:
 #  1) (optional) options called along with the script at the command line (ie > flepimop-inference-slot -c my_config.yml)
-#  2) (optional) environmental variables set by the user (ie user could set > export CONFIG_PATH = ~/flepimop_sample/my_config.yml to not have t specify it each time the script is run)
+#  2) (optional) environmental variables set by the user (ie user could set > export CONFIG_PATH = ~/examples/tutorials/my_config.yml to not have t specify it each time the script is run)
 # If neither are specified, then a default value is used, given by the second argument of Sys.getenv() commands below.
 #  *3) For some options, a default doesn't exist, and the value specified in the config will be used if the option is not specified at the command line or by an environmental variable (iterations_per_slot, slots)
 

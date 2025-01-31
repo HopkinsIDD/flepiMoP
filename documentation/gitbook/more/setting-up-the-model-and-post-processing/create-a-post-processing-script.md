@@ -13,10 +13,10 @@ Some information to consider if you'd like your script to be run automatically a
   * `$JOB_NAME` this job name (e.g `USA-20230130T163847_inference_med`)
   * `$FS_RESULTS_PATH` the path where lies the model results. It's a folder that contains the model\_ouput/ as a subfolder
   * `$FLEPI_PATH` path of the flepiMoP repository.
-  * `$DATA_PATH` path of the Data directory (e.g Flu\_USA or COVID19\_USA).
+  * `$PROJECT_PATH` path of the Data directory (e.g Flu\_USA or COVID19\_USA).
   * Anything you ask can theoretically be provided here.
 * The script must run without any user intervention.
-* The script is run from $DATA\_PATH.
+* The script is run from $PROJECT\_PATH.
 * Your script lies in the flepiMoP directory (preferably) or it's ok if it is in a data directory if it makes sense ;
 * It is run on a 64Gb of RAM multicore machine. All scripts combined must complete under 4 hours, and you can use multiprocessing (48 cores)
 * Outputs (pdf, csv, html, txt, png ...) must be saved in a directory named `pplot/` (you can assume that it exists) in order to be sent to slack by FlepiBot 🤖 after the run.

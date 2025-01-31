@@ -11,7 +11,7 @@ description: >-
 See the [Before any run](../before-any-run.md) section to ensure you have access to the correct files needed to run. On your local machine, determine the file paths to:
 
 * the directory containing the flepimop code (likely the folder you cloned from Github), which we'll call `<dir1>`
-* the directory containing your project code including input configuration file and population structure (again likely from Github), which we'll call `<dir2>`
+* the directory containing your project code including input configuration file and population structure, which we'll call `<dir2>`
 
 {% hint style="info" %}
 For example, if you clone your Github repositories into a local folder called Github and are using the flepimop\_sample as a project repository, your directory names could be\
@@ -20,16 +20,12 @@ _**On Mac:** ;
 
 \<dir1> = /Users/YourName/Github/flepiMoP
 
-\<dir2> = /Users/YourName/Github/flepimop\_sample\
+\<dir2> = /Users/YourName/Github/fleiMoP/examples/tutorials
 \
 _**On Windows:**_ \
 \<dir1> = C:\Users\YourName\Github\flepiMoP
 
-\<dir2> = C:\Users\YourName\Github\flepimop\_sample\
-
-
-(hint: if you navigate to a directory like `C:\Users\YourName\Github` using `cd C:\Users\YourName\Github`, modify the above `<dir1>` paths to be `.\flepiMoP` and `.\flepimop_sample)`\
-
+\<dir2> = C:\Users\YourName\Github\flepiMoP\examples\tutorials
 
 Note that Docker file and directory names are case sensitive
 {% endhint %}
@@ -113,7 +109,7 @@ Create environmental variables for the paths to the flepimop code folder and the
 
 ```bash
 export FLEPI_PATH=/home/app/flepimop/
-export DATA_PATH=/home/app/drp/
+export PROJECT_PATH=/home/app/drp/
 ```
 
 Go into the code directory and do the installation the R and Python code packages
@@ -137,19 +133,19 @@ Everything is now ready 🎉  The next step depends on what sort of simulation y
 In either case, navigate to the project folder and make sure to delete any old model output files that are there
 
 ```bash
-cd $DATA_PATH       # goes to your project repository
+cd $PROJECT_PATH       # goes to your project repository
 rm -r model_output/ # delete the outputs of past run if there are
 ```
 
 ### Inference run
 
-An inference run requires a configuration file that has the `inference` section. Stay in the `$DATA_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml` ;
+An inference run requires a configuration file that has the `inference` section. Stay in the `$PROJECT_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml` ;
 
 ```bash
 flepimop-inference-main -c config.yml
 ```
 
-This will run the model and create a lot of output files in `$DATA_PATH/model_output/` ;
+This will run the model and create a lot of output files in `$PROJECT_PATH/model_output/` ;
 
 The last few lines visible on the command prompt should be:
 
@@ -181,18 +177,18 @@ docker run -it \
   -v &#x3C;dir2>:/home/app/drp \
 hopkinsidd/flepimop:latest-dev
 <strong>export FLEPI_PATH=/home/app/flepimop/
-</strong>export DATA_PATH=/home/app/drp/
+</strong>export PROJECT_PATH=/home/app/drp/
 cd $FLEPI_PATH
 Rscript build/local_install.R
 pip install --no-deps -e flepimop/gempyor_pkg/
-cd $DATA_PATH
+cd $PROJECT_PATH
 rm -rf model_output
 flepimop-inference-main -j 1 -n 1 -k 1 -c config.yml
 </code></pre>
 
 ### Non-inference run
 
-Stay in the `$DATA_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor,`call `flepimop simulate` providing the name of the configuration file you want to run (ex. `config.yml`):
+Stay in the `$PROJECT_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor,`call `flepimop simulate` providing the name of the configuration file you want to run (ex. `config.yml`):
 
 ```
 flepimop simulate config.yml
@@ -210,11 +206,11 @@ docker run -it \
   -v &#x3C;dir2>:/home/app/drp \
 hopkinsidd/flepimop:latest-dev
 <strong>export FLEPI_PATH=/home/app/flepimop/
-</strong>export DATA_PATH=/home/app/drp/
+</strong>export PROJECT_PATH=/home/app/drp/
 cd $FLEPI_PATH
 Rscript build/local_install.R
 pip install --no-deps -e flepimop/gempyor_pkg/
-cd $DATA_PATH
+cd $PROJECT_PATH
 rm -rf model_output
 flepimop simulate config.yml
 </code></pre>
