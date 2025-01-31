@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'flepimop/gempyor_pkg/**/*.py'
+      - 'info/**/*'
   pull_request:
     types:
       - edited
@@ -14,8 +15,10 @@ on:
       - synchronize
     paths:
       - '**/*.py'
+      - 'info/**/*'
     branches:
       - main
+      - dev
 
 jobs:
   black-for-python:
@@ -45,3 +48,37 @@ jobs:
         with:
           src: ${{ env.BLACK_SRC }}
           options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"
+  check-info-json-schema:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            info
+          sparse-checkout-cone-mode: false
+      - name: Install yq and check-jsonschema
+        run: |
+          sudo apt update
+          sudo apt install snapd
+          sudo snap install yq
+          sudo apt install pipx
+          pipx install check-jsonschema
+      - name: Convert YAML to JSON
+        run: |
+          cd info
+          for d in $( ls ); do
+            cd $d
+            for y in *.yml; do
+              yq --output-format json $y > ${y%.yml}.json
+            done
+            for j in *.json; do
+              if [[ "$j" != "schema.json" ]]; then
+                check-jsonschema --verbose --schemafile schema.json $j
+              fi
+            done
+            cd ..
+          done
+          cd ..

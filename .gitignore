@@ -78,3 +78,6 @@ flepimop/gempyor_pkg/.coverage
 
 # Environment variables
 .env
+
+# info/ directory
+info/**/*.json
