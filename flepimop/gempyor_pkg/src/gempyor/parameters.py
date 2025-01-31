@@ -58,7 +58,7 @@ class Parameters:
         Parameters can be defined or drawn from distributions.
 
         Args:
-            parameter_config: A confuse.ConfigView subsetting the parameters section of a given
+            parameter_config: A view of the overall configuration object focused on the parameters section of a given
                 config file.
             ti: An initial date for simulation.
             tf: A final date for simulation.
