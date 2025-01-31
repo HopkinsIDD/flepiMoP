@@ -54,7 +54,7 @@ def check_parameter_positivity(
         neg_subpops = []
         neg_params = []
         first_neg_date = dates[0].date()
-        for param_idx, day_idx, sp_idx in non_redundant_negative_parameters:
+        for param_idx, _, sp_idx in non_redundant_negative_parameters:
             neg_subpops.append(subpop_names[sp_idx])
             neg_params.append(parameter_names[param_idx])
         error_message = f"There are negative parameter errors in subpops {neg_subpops}, starting from date {first_neg_date} in parameters {neg_params}."

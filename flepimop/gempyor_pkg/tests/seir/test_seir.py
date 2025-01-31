@@ -5,6 +5,7 @@ import warnings
 import shutil
 from random import randint
 import pandas as pd
+import re
 
 import pathlib
 import pyarrow as pa
@@ -75,7 +76,7 @@ def test_check_parameter_positivity():
 
     with pytest.raises(
         ValueError,
-        match=(
+        match=re.escape(
             rf"There are negative parameter errors in subpops {test_2_neg_subpops}, starting from date {test_2_first_neg_date} in parameters {test_2_neg_params}."
         ),
     ):
@@ -83,20 +84,13 @@ def test_check_parameter_positivity():
             test_array2, parameter_names, dates, subpop_names
         )  # ValueError
 
-    # Set negative params with intentional redundancy
+    # Manually set negative params with intentional redundancy
     test_array3 = np.zeros((len(parameter_names), len(dates), len(subpop_names)))
-    randint_first_dim = randint(0, len(parameter_names) - 1)
-    randint_second_dim = randint(0, len(dates) - 2)
-    randint_third_dim = randint(0, len(subpop_names) - 1)
-    test_array3[0][0][0] = -1
-    test_array3[
-        randint(0, len(parameter_names) - 1),
-        randint(0, len(dates) - 1) :,
-        randint(0, len(subpop_names) - 1),
-    ] = -1
-    test_array3[randint_first_dim][randint_second_dim][randint_third_dim] = -1
-    test_array3[randint_first_dim][randint_second_dim + 1][randint_third_dim] = -1
-    test_3_negative_index_parameters = np.argwhere(test_array2 < 0)
+    test_array3[0, 0, 0] = -1
+    test_array3[1, 1, 1] = -1
+    test_array3[2, 2, 2] = -1
+    test_array3[3, 3, 3] = -1
+    test_3_negative_index_parameters = np.argwhere(test_array3 < 0)
     test_3_neg_params = []
     test_3_neg_subpops = []
     test_3_first_neg_date = dates[0].date()
@@ -106,7 +100,7 @@ def test_check_parameter_positivity():
 
     with pytest.raises(
         ValueError,
-        match=(
+        match=re.escape(
             rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
         ),
     ):
