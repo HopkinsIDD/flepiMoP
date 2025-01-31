@@ -73,7 +73,7 @@ class Compartments:
         """
         This method is called by the constructor if the compartments are not loaded from a file.
         It will parse the compartments and transitions from the configuration files.
-        It will populate dynamic class attributes `self.compartments` and `self.transitions`.
+        It will populate dynamic class attributes `compartments` and `transitions`.
         """
         self.compartments = self.parse_compartments(seir_config, compartment_config)
         self.transitions = self.parse_transitions(seir_config, False)
