@@ -560,9 +560,4 @@ if("spar" %in% model_outputs){
 }
 
 
-## MOVE FILES TO /pplot --------------------------------------------------------------------
-
-# file.copy(from = files_,
-#           to = file.path(data_path, "pplot",basename(files_)),
-#           overwrite = TRUE)
 

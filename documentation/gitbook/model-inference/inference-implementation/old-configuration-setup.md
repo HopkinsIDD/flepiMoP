@@ -210,7 +210,6 @@ This section configures the settings for the inference algorithm. The below exam
 filtering:
   simulations_per_slot: 350
   do_filtering: TRUE
-  data_path: data/observed_data.csv
   likelihood_directory: importation/likelihood/
   statistics:
     sum_deaths:
