@@ -1,8 +1,9 @@
 """
-Abstractions for interacting with the parameters configurations.
+Provides abstractions for interacting with the parameters configurations.
 
-This module contains abstractions for interacting with the parameters section of given
-config files. Namely it contains the `Parameters` class.
+Classes:
+    Parameters: 
+        Encapsulates logic for loading, parsing, and summarizing parameter configurations.
 """
 
 __all__ = ["Parameters"]
@@ -53,14 +54,16 @@ class Parameters:
         """
         Initialize a `Parameters` instance from a parameter config view.
 
+        Encapsulates logic for loading, parsing, and summarizing parameter configurations.
+        Parameters can be defined or drawn from distributions.
+
         Args:
-            parameter_config: A view subsetting to the parameters section of a given
-                config file.
-            ti: An initial date.
-            tf: A final date.
+            parameter_config: A view of the overall configuration object focused on the parameters
+                section of a given config file.
+            ti: An initial date for simulation.
+            tf: A final date for simulation.
             subpop_names: A list of subpopulation names.
-            path_prefix: A file path prefix to use when reading in parameter values from
-                a dataframe like file.
+            path_prefix: A file path prefix to directory containing parameter values.
 
         Raises:
             ValueError: The parameter names for the SEIR model are not unique.
