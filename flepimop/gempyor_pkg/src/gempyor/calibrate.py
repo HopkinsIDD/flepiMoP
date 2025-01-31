@@ -121,7 +121,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 # @profile_options
 # @profile()
 def calibrate(
-    config_filepath: str,
+    config_filepath: str | pathlib.Path,
     project_path: str,
     nwalkers: int,
     niter: int,
