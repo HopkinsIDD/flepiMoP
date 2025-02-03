@@ -29,8 +29,6 @@ You can routinely ensure that your local clone of the flepiMoP code is up to dat
 
 # Locally install `flepiMoP`
 
-First, ensure you have Python and R installed. You need a working Python.7+ installation. We recommend using the latest stable Python release (Python 3.12) to benefit from huge speed-ups and future-proof your installation. We also recommend installing Rstudio to interact with the R code and explore your model outputs.
-
 ## 🐍 Install `conda`
 
 In order to complete `flepiMoP` installation, you must have [`conda`](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) installed on your machine. `conda` is a tool that will assist you in managing software environments and code packages on your device, and it will be very helpful in ensuring consistent, reproducible environments across different projects. To install `conda` follow [the directions](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html) according to your operating system. We would recommend selecting the `Anaconda Distribution` installer of `conda`.

@@ -8,32 +8,13 @@ description: >-
 
 ## 🧱 Set up
 
-### Access model files
-
-Follow all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your model with flepiMoP.
-
-Take note of the location of the directory on your local computer where you cloned the flepiMoP model code (which we'll call `FLEPI_PATH`).
-
-{% hint style="info" %}
-For example, if you cloned your Github repositories into a local folder called `Github` and are using `flepiMoP/examples/tutorials` as a project repository, your directory names could be\
-\
-_**On Mac:**_
-
-/Users/YourName/Github/flepiMoP
-
-/Users/YourName/Github/fleiMoP/examples/tutorials
-\
-_**On Windows:**_
-C:\Users\YourName\Github\flepiMoP
-
-C:\Users\YourName\Github\flepiMoP\examples\tutorials
-{% endhint %}
+Before completing this **Quick Start Guide**, make sureyou have followed all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your model with flepiMoP.
 
 ### Define environment variables (optional)
 
 Since you'll be navigating frequently between the folder that contains your project code and the folder that contains the core flepiMoP model code, it's helpful to define shortcuts for these file paths. You can do this by creating environmental variables that you can then quickly call instead of writing out the whole file path.
 
-If you're on a **Mac** or Linux/Unix based operating system, define the FLEPI\_PATH and PROJECT\_PATH environmental variables to be your directory locations, for example
+For example, if you're on a **Mac** or Linux/Unix based operating system and storing the `flepiMoP` code in a directory called `Github`, you define the FLEPI\_PATH and PROJECT\_PATH environmental variables to be your directory locations as follows:
 
 ```bash
 export FLEPI_PATH=/Users/YourName/Github/flepiMoP
@@ -49,7 +30,7 @@ export PROJECT_PATH=$(pwd)/examples/tutorials
 
 You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEPI_PATH` to see the value of `FLEPI_PATH`.
 
-If you're on a **Windows** machine
+If you're on a **Windows** machine:
 
 <pre class="language-bash"><code class="lang-bash"><strong>set FLEPI_PATH=C:\Users\YourName\Github\flepiMoP
 </strong>set PROJECT_PATH=C:\Users\YourName\Github\flepiMoP\examples\tutorials
@@ -101,8 +82,6 @@ For your first `flepiMoP` run, it's better to run each command individually as d
 ```
 export FLEPI_PATH=/Users/YourName/Github/flepiMoP
 export PROJECT_PATH=/Users/YourName/Github/flepiMoP/examples/tutorials
-cd $FLEPI_PATH
-pip install --no-deps -e flepimop/gempyor_pkg/
 cd $PROJECT_PATH
 rm -rf model_output
 flepimop simulate config.yml
