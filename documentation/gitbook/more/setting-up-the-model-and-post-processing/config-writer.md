@@ -10,7 +10,67 @@ These functions are used to print specific sections of the configuration files.
 
 Used to generate the global header. For more information on global headers click [HERE](../../gempyor/model-implementation/introduction-to-configuration-files.md#global-header).
 
-<table><thead><tr><th width="172.33333333333331">Variable name</th><th>Required (default value if optional)</th><th>Description</th></tr></thead><tbody><tr><td>sim_name</td><td><strong>Required</strong></td><td>Name of the configuration file to be generated. Generally based on the type of simulation</td></tr><tr><td>setup_name</td><td><strong>Optional</strong> (SMH)</td><td>Type of run - a Scenario Modeling Hub ("SMH") or Forecasting Hub ("FCH") Simulation.</td></tr><tr><td>disease</td><td><strong>Optional</strong> (covid19)</td><td>Pathogen or disease being simulated</td></tr><tr><td>smh_round</td><td><strong>Optional</strong> (NA)</td><td>Round number for Scenario Modeling Hub Submission</td></tr><tr></tr><tr><td>model_output_dir_name</td><td><strong>Optional</strong> (model_output)</td><td>Folder path where the outputs of the simulated model is stored</td></tr><tr><td>sim_start_date</td><td><strong>Required</strong></td><td>Start date for model simulation</td></tr><tr><td>sim_end_date</td><td><strong>Required</strong></td><td>End date for model simulation</td></tr><tr><td>start_date_groundtruth</td><td><strong>Optional</strong> (NA)</td><td>Start date for fitting data for inference runs</td></tr><tr><td>end_date_groundtruth</td><td><strong>Optional</strong> (NA)</td><td>End date for fitting data for inference runs</td></tr><tr><td>nslots</td><td><strong>Required</strong></td><td>number of independent simulations to run</td></tr></tbody></table>
+<table>
+  <thead>
+    <tr>
+      <th width="172.33333333333331">Variable name</th>
+      <th>Required (default value if optional)</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>sim_name</td>
+      <td><strong>Required</strong></td>
+      <td>Name of the configuration file to be generated. Generally based on the type of simulation</td>
+    </tr>
+    <tr>
+      <td>setup_name</td>
+      <td><strong>Optional</strong> (SMH)</td>
+      <td>Type of run - a Scenario Modeling Hub ("SMH") or Forecasting Hub ("FCH") Simulation.</td>
+    </tr>
+    <tr>
+      <td>disease</td>
+      <td><strong>Optional</strong> (covid19)</td>
+      <td>Pathogen or disease being simulated</td>
+    </tr>
+    <tr>
+      <td>smh_round</td>
+      <td><strong>Optional</strong> (NA)</td>
+      <td>Round number for Scenario Modeling Hub Submission</td>
+    </tr>
+    <tr>
+      <td>model_output_dir_name</td>
+      <td><strong>Optional</strong> (model_output)</td>
+      <td>Folder path where the outputs of the simulated model are stored</td>
+    </tr>
+    <tr>
+      <td>sim_start_date</td>
+      <td><strong>Required</strong></td>
+      <td>Start date for model simulation</td>
+    </tr>
+    <tr>
+      <td>sim_end_date</td>
+      <td><strong>Required</strong></td>
+      <td>End date for model simulation</td>
+    </tr>
+    <tr>
+      <td>start_date_groundtruth</td>
+      <td><strong>Optional</strong> (NA)</td>
+      <td>Start date for fitting data for inference runs</td>
+    </tr>
+    <tr>
+      <td>end_date_groundtruth</td>
+      <td><strong>Optional</strong> (NA)</td>
+      <td>End date for fitting data for inference runs</td>
+    </tr>
+    <tr>
+      <td>nslots</td>
+      <td><strong>Required</strong></td>
+      <td>Number of independent simulations to run</td>
+    </tr>
+  </tbody>
+</table>
 
 #### print\_spatial\_setup
 

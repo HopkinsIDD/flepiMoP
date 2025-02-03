@@ -9,8 +9,8 @@
 # ```yaml
 # subpop_setup:
 #   modeled_states: <list of state postal codes> e.g. MD, CA, NY
-#   mobility: <path to file relative> optional; default is 'mobility.csv'
-#   geodata: <path to file relative> optional; default is 'geodata.csv'
+#   mobility: <path to file; may be absolute or relative> optional; default is 'mobility.csv'
+#   geodata: <path to file; may be absolute or relative> optional; default is 'geodata.csv'
 #
 # importation:
 #   census_api_key: <string, optional> default is environment variable CENSUS_API_KEY. Environment variable is preferred so you don't accidentally commit your key.

@@ -9,8 +9,8 @@
 # ```yaml
 # subpop_setup:
 #   modeled_states: <list of country ISO3 codes> e.g. ZMB, BGD, CAN
-#   mobility: <path to file> optional; default is 'mobility.csv'
-#   geodata: <path to file> optional; default is 'geodata.csv'
+#   mobility: <path to file; may be absolute or relative> optional; default is 'mobility.csv'
+#   geodata: <path to file; may be absolute or relative> optional; default is 'geodata.csv'
 #
 # ## Input Data
 #

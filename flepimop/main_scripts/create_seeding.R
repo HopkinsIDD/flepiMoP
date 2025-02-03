@@ -106,7 +106,7 @@ if (is.null(gt_data_path)) {
     }
 }
 cases_deaths <- readr::read_csv(gt_data_path)
-print(paste("Successfully loaded data from ", gt_data_path, "for seeding."))
+print(paste("Successfully loaded data from ", gt_data_path, " for seeding."))
 
 if (is_US_run) {
     cases_deaths <- cases_deaths %>%
