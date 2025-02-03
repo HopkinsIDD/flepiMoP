@@ -559,5 +559,7 @@ if("spar" %in% model_outputs){
   
 }
 
-
+# file.copy(from = files_,
+#           to = file.path(gt_data_path, "pplot",basename(files_)),
+#           overwrite = TRUE)
 

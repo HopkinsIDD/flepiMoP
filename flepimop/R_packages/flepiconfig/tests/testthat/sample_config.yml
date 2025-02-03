@@ -12011,6 +12011,7 @@ outcomes:
 inference:
   iterations_per_slot: 1000
   do_inference: TRUE
+  gt_data_path: data/us_data.csv
   gt_source: "csse"
   statistics:
     sum_deaths:
