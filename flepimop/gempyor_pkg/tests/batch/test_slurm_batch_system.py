@@ -53,7 +53,7 @@ def test_time_limit_formatting_for_select_values(
         ({}, None),
         ({"time": "1:00:00", "mem": "2GB"}, "--time=1:00:00 --mem=2GB"),
         (
-            {"output": Path("/abc/def/ghi.log"), "ntasks": 2},
+            {"output": "/abc/def/ghi.log", "ntasks": "2"},
             "--output=/abc/def/ghi.log --ntasks=2",
         ),
         (

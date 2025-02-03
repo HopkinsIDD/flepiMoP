@@ -21,8 +21,8 @@ __all__ = (
 
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from datetime import timedelta
-from enum import Enum, auto
 import json
 import math
 from pathlib import Path
@@ -490,7 +490,7 @@ class LocalBatchSystem(BatchSystem):
     def submit(
         self,
         script: Path,
-        options: dict[str, Any] | None = None,
+        options: dict[str, str | Iterable[str]] | None = None,
         verbosity: int | None = None,
         dry_run: bool = False,
     ) -> JobSubmission | None:
@@ -618,7 +618,7 @@ class SlurmBatchSystem(BatchSystem):
     def submit(
         self,
         script: Path,
-        options: dict[str, Any] | None = None,
+        options: dict[str, str | Iterable[str]] | None = None,
         verbosity: int | None = None,
         dry_run: bool = False,
     ) -> JobSubmission | None:

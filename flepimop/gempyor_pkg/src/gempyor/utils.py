@@ -1191,32 +1191,56 @@ def _git_head(repository: Path) -> str:
 
 
 def _format_cli_options(
-    options: dict[str, Any] | None, always_single: bool = False
+    options: dict[str, str | Iterable[str]] | None,
+    always_single: bool = False,
+    iterable_formatting: Literal["split", "comma"] = "split",
 ) -> list[str]:
     """
     Convert a dictionary of CLI options into a formatted list.
+
     Args:
         options: A dictionary where the keys correspond to the option name and the
-            values correspond to the option value. If the option name is one character
-            it's assumed to be a short name and prefixed with one dash. Values are
-            coerced to a string and then escaped for shell.
+            values correspond to the option value. Values are escaped for shell.
         always_single: If `True` all options will be formatted with a single dash prefix
             always, useful for commands that don't support long options like
-            `pdftotext`.
+            `pdftotext`. If `False` the option will be formatted with a double dash
+            prefix if the key is longer than one character.
+        iterable_formatting: The formatting to use for iterable values. If 'split' each
+            value will be formatted as a separate option. If 'comma' the values will be
+            joined with a comma and formatted as a single option.
+
     Returns:
         A list of options that can be passed to
         [`subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)
         or similar functions.
+
     Examples:
-        >>> from pathlib import Path
+        >>> from gempyor.utils import _format_cli_options
         >>> _format_cli_options({"name": "foo bar fizz buzz"})
         ["--name='foo bar fizz buzz'"]
-        >>> _format_cli_options({"o": Path("/path/to/output.log")})
+        >>> _format_cli_options({"o": "/path/to/output.log"})
         ['-o=/path/to/output.log']
         >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
         ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+        >>> _format_cli_options({"output": "/path/to/output.log"}, always_single=True)
+        ['-output=/path/to/output.log']
+        >>> _format_cli_options({"person": ["Alice", "Bob", "Charlie"]})
+        ['--person=Alice', '--person=Bob', '--person=Charlie']
+        >>> _format_cli_options(
+        ...     {"person": ["Alice", "Bob", "Charlie"]},
+        ...     iterable_formatting="comma",
+        ... )
+        ['--person=Alice,Bob,Charlie']
     """
-    return [
-        f"{'-' if (always_single or len(k) == 1) else '--'}{k}={shlex_quote(str(v))}"
-        for k, v in (options or {}).items()
-    ]
+    opts = []
+    for k, v in (options or {}).items():
+        new_opts = []
+        opt_name = f"{'-' if (always_single or len(k) == 1) else '--'}{k}"
+        if isinstance(v, str):
+            new_opts.append(f"{opt_name}={shlex_quote(v)}")
+        elif iterable_formatting == "comma":
+            new_opts.append(f"{opt_name}={','.join(shlex_quote(w) for w in v)}")
+        else:
+            new_opts.extend(f"{opt_name}={shlex_quote(w)}" for w in v)
+        opts.extend(new_opts)
+    return opts
