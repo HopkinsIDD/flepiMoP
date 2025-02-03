@@ -347,12 +347,12 @@ def _submit_via_subprocess(
 
     if not exec.exists() or not exec.is_file():
         raise ValueError(
-            f"The script '{exec.absolute()}' either does not exist or is not a file."
+            f"The executable '{exec.absolute()}' either does not exist or is not a file."
         )
     if coerce_exec and not bool((current_perms := exec.stat().st_mode) & S_IXUSR):
         if logger is not None:
             logger.warning(
-                "The script '%s' is not executable, making it executable.", exec.absolute()
+                "The file '%s' is not executable, making it executable.", exec.absolute()
             )
         new_perms = current_perms | S_IXUSR
         exec.chmod(new_perms)
@@ -374,7 +374,7 @@ def _submit_via_subprocess(
     if exec_method == "popen":
         process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process.wait(timeout=5 * 60)
-        stdout, stderr = process.communicate()
+        stdout, stderr = [comm.decode().strip() for comm in process.communicate()]
     else:
         process = subprocess.run(cmd_args, text=True, capture_output=True)
         stdout = process.stdout.strip()
@@ -392,7 +392,7 @@ def _submit_via_subprocess(
             logger.error("Captured stderr from executed script: %s", stderr)
 
     job_id = None if job_id_callback is None else job_id_callback(process)
-    if logger is not None:
+    if logger is not None and job_id is not None:
         logger.info("Extracted job ID of: %s", str(job_id))
 
     if exec_method == "popen":
