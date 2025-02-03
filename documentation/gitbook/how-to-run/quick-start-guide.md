@@ -17,7 +17,7 @@ Take note of the location of the directory on your local computer where you clon
 {% hint style="info" %}
 For example, if you cloned your Github repositories into a local folder called `Github` and are using `flepiMoP/examples/tutorials` as a project repository, your directory names could be\
 \
-&#xNAN;_**On Mac:**_
+_**On Mac:**_
 
 /Users/YourName/Github/flepiMoP
 
