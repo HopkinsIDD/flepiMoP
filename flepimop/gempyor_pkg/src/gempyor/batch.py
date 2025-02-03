@@ -166,7 +166,7 @@ class JobSize(BaseModel):
 
 def _job_resources_from_size_and_inference(
     job_size: JobSize,
-    inference: Literal["emcee"] | None,
+    inference: Literal["emcee", "r"],
     nodes: PositiveInt | None = None,
     cpus: PositiveInt | None = None,
     memory: PositiveInt | None = None,

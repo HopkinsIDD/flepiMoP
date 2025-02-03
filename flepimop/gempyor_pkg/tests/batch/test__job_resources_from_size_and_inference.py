@@ -36,9 +36,9 @@ def test_resources_is_constant_with_size_for_legacy(
     jobs: int, simulations: int, blocks: int
 ) -> None:
     size_1x = JobSize(jobs=jobs, simulations=simulations, blocks=blocks)
-    resources_1x = _job_resources_from_size_and_inference(size_1x, None)
+    resources_1x = _job_resources_from_size_and_inference(size_1x, "r")
     size_2x = JobSize(jobs=2 * jobs, simulations=2 * simulations, blocks=2 * blocks)
-    resources_2x = _job_resources_from_size_and_inference(size_2x, None)
+    resources_2x = _job_resources_from_size_and_inference(size_2x, "r")
     assert resources_2x.nodes >= 2 * resources_1x.nodes
     assert resources_2x.cpus == resources_1x.cpus
     assert resources_2x.memory == resources_1x.memory
