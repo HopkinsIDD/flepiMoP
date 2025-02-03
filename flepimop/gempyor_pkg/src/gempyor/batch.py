@@ -24,13 +24,14 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from datetime import timedelta
 import json
+from logging import Logger
 import math
 from pathlib import Path
 import re
 from stat import S_IXUSR
 import subprocess
 import sys
-from typing import Any, Literal, overload
+from typing import Any, Callable, Literal, overload
 import warnings
 
 from pydantic import BaseModel, PositiveInt
@@ -281,6 +282,130 @@ class JobSubmission(subprocess.CompletedProcess):
         )
 
 
+@overload
+def _submit_via_subprocess(
+    exec: Path,
+    coerce_exec: bool,
+    exec_method: Literal["run", "popen"],
+    options: dict[str, str | Iterable[str]] | None,
+    args: Iterable[str] | None,
+    job_id_callback: (
+        Callable[[subprocess.CompletedProcess | subprocess.Popen], int | None] | None
+    ),
+    logger: Logger | None,
+    dry_run: Literal[True],
+) -> None: ...
+
+
+@overload
+def _submit_via_subprocess(
+    exec: Path,
+    coerce_exec: bool,
+    exec_method: Literal["run", "popen"],
+    options: dict[str, str | Iterable[str]] | None,
+    args: Iterable[str] | None,
+    job_id_callback: (
+        Callable[[subprocess.CompletedProcess | subprocess.Popen], int | None] | None
+    ),
+    logger: Logger | None,
+    dry_run: Literal[False],
+) -> JobSubmission: ...
+
+
+def _submit_via_subprocess(
+    exec: Path,
+    coerce_exec: bool,
+    exec_method: Literal["run", "popen"],
+    options: dict[str, str | Iterable[str]] | None,
+    args: Iterable[str] | None,
+    job_id_callback: (
+        Callable[[subprocess.CompletedProcess | subprocess.Popen], int | None] | None
+    ),
+    logger: Logger | None,
+    dry_run: bool,
+) -> JobSubmission:
+    """
+    Submit a job via a subprocess.
+
+    Args:
+        exec: The path to the command to execute.
+        coerce_exec: Whether to make the command executable if it is not.
+        exec_method: The method to use to execute the command, if 'run' then this
+            function will use `subprocess.run` and if 'popen' it will use
+            `subprocess.Popen`.
+        options: Additional options to pass to the command if any.
+        args: Additional arguments to pass to the command if any.
+        job_id_callback: A callback to extract the job ID from the executed command.
+        logger: The logger to use for logging.
+        dry_run: Whether to perform a dry run of the submission.
+
+    Returns:
+        A job submission result or `None` if a dry run.
+    """
+    if logger is not None:
+        logger.debug("Using script '%s' for local execution", exec.absolute())
+
+    if not exec.exists() or not exec.is_file():
+        raise ValueError(
+            f"The script '{exec.absolute()}' either does not exist or is not a file."
+        )
+    if coerce_exec and not bool((current_perms := exec.stat().st_mode) & S_IXUSR):
+        if logger is not None:
+            logger.warning(
+                "The script '%s' is not executable, making it executable.", exec.absolute()
+            )
+        new_perms = current_perms | S_IXUSR
+        exec.chmod(new_perms)
+
+    cmd_args = [str(exec.absolute())] + _format_cli_options(options)
+    if args is not None:
+        cmd_args.extend(args)
+
+    if dry_run:
+        if logger is not None:
+            logger.info(
+                "If not dry mode would have executed script with: %s",
+                " ".join(cmd_args),
+            )
+        return None
+
+    if logger is not None:
+        logger.info("Executing script with: %s", " ".join(cmd_args))
+    if exec_method == "popen":
+        process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process.wait(timeout=5 * 60)
+        stdout, stderr = process.communicate()
+    else:
+        process = subprocess.run(cmd_args, text=True, capture_output=True)
+        stdout = process.stdout.strip()
+        stderr = process.stderr.strip()
+
+    if logger is not None:
+        if process.returncode != 0:
+            logger.critical(
+                "Received non-zero exit code, %u, from executed script.",
+                process.returncode,
+            )
+        if stdout:
+            logger.debug("Captured stdout from executed script: %s", stdout)
+        if stderr:
+            logger.error("Captured stderr from executed script: %s", stderr)
+
+    job_id = None if job_id_callback is None else job_id_callback(process)
+    if logger is not None:
+        logger.info("Extracted job ID of: %s", str(job_id))
+
+    if exec_method == "popen":
+        return JobSubmission(
+            job_id=job_id,
+            args=process.args,
+            returncode=process.returncode,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    return JobSubmission.from_completed_process(job_id, process)
+
+
 class BatchSystem(ABC):
     """
     An abstract base class for batch systems.
@@ -507,55 +632,17 @@ class LocalBatchSystem(BatchSystem):
             The job submission result where the `job_id` is the PID of the process or
             `None` if a dry run.
         """
-        if verbosity is not None:
-            logger = get_script_logger(__name__, verbosity)
-            logger.debug("Using script '%s' for local execution", script.absolute())
-
-        if not script.exists() or not script.is_file():
-            raise ValueError(
-                f"The script '{script.absolute()}' either does not exist or is not a file."
-            )
-        if not bool((current_perms := script.stat().st_mode) & S_IXUSR):
-            if verbosity is not None:
-                logger.warning(
-                    "The script '%s' is not executable, making it executable.",
-                    script.absolute(),
-                )
-            new_perms = current_perms | S_IXUSR
-            script.chmod(new_perms)
-
-        cmd_args = [str(script.absolute())] + _format_cli_options(options)
-
-        if dry_run:
-            if verbosity is not None:
-                logger.info(
-                    "If not dry mode would have executed script with: %s",
-                    " ".join(cmd_args),
-                )
-            return None
-
-        if verbosity is not None:
-            logger.info("Executing script with: %s", " ".join(cmd_args))
-        process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        process.wait(timeout=5 * 60)
-        stdout, stderr = process.communicate()
-        if verbosity is not None:
-            if process.returncode != 0:
-                logger.critical(
-                    "Received non-zero exit code, %u, from executed script.",
-                    process.returncode,
-                )
-            if stdout:
-                logger.debug("Captured stdout from executed script: %s", stdout)
-            if stderr:
-                logger.error("Captured stderr from executed script: %s", stderr)
-
-        return JobSubmission(
-            job_id=process.pid,
-            args=process.args,
-            returncode=process.returncode,
-            stdout=stdout,
-            stderr=stderr,
+        return _submit_via_subprocess(
+            exec=script,
+            coerce_exec=True,
+            exec_method="popen",
+            options=options,
+            args=None,
+            job_id_callback=lambda proc: proc.pid,
+            logger=(
+                get_script_logger(__name__, verbosity) if verbosity is not None else None
+            ),
+            dry_run=dry_run,
         )
 
     def size_from_jobs_simulations_blocks(
@@ -622,46 +709,33 @@ class SlurmBatchSystem(BatchSystem):
         verbosity: int | None = None,
         dry_run: bool = False,
     ) -> JobSubmission | None:
-        if verbosity is not None:
-            logger = get_script_logger(__name__, verbosity)
-            logger.debug("Using batch script '%s' to submit to slurm", script.absolute())
+        """
+        Submit a job to the slurm batch system.
 
-        cmd_args = (
-            [_shutil_which("sbatch")]
-            + _format_cli_options(options)
-            + [str(script.absolute())]
+        Args:
+            script: The path to the script to submit.
+            options: Additional options to pass to the batch system.
+            verbosity: The verbosity level of the submission.
+            dry_run: Whether to perform a dry run of the submission.
+
+        Returns:
+            The job submission result where the `job_id` is the slurm ID of the job or
+            `None` if a dry run.
+        """
+        return _submit_via_subprocess(
+            exec=Path(_shutil_which("sbatch")),
+            coerce_exec=False,
+            exec_method="run",
+            options=options,
+            args=[str(script.absolute())],
+            job_id_callback=lambda proc: int(
+                self._sbatch_regex.match(proc.stdout).group(1)
+            ),
+            logger=(
+                get_script_logger(__name__, verbosity) if verbosity is not None else None
+            ),
+            dry_run=dry_run,
         )
-
-        if dry_run:
-            if verbosity is not None:
-                logger.info(
-                    "If not dry mode would have submitted to slurm with: %s",
-                    " ".join(cmd_args),
-                )
-            return None
-
-        if verbosity is not None:
-            logger.info("Submitting to slurm with: %s", " ".join(cmd_args))
-        process = subprocess.run(cmd_args, text=True, capture_output=True)
-        stdout = process.stdout.strip()
-        stderr = process.stderr.strip()
-        if verbosity is not None:
-            if process.returncode != 0:
-                logger.critical(
-                    "Received non-zero exit code, %u, from executed script.",
-                    process.returncode,
-                )
-            if stdout:
-                logger.debug("Captured stdout from sbatch submission: %s", stdout)
-            if stderr:
-                logger.error("Captured stderr from sbatch submission: %s", stderr)
-
-        match = self._sbatch_regex.match(stdout)
-        if not match:
-            raise ValueError(f"Failed to parse job ID from sbatch output: {stdout}")
-        job_id = int(match.group(1))
-
-        return JobSubmission.from_completed_process(job_id, process)
 
     def format_memory(self, job_resources: JobResources) -> str:
         return f"{job_resources.memory}MB"

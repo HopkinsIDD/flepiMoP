@@ -275,11 +275,12 @@ def sample_fits_distribution(
         return bool(np.greater(sample, 0.0))
 
 
-def sample_script(directory: Path, executable: bool) -> Path:
+def sample_script(name: str, directory: Path, executable: bool) -> Path:
     """
     Create a sample script for testing functions that require a script.
 
     Args:
+        name: The name of the script.
         directory: The directory to create the script in.
         executable: If the script should be executable.
 
@@ -287,13 +288,13 @@ def sample_script(directory: Path, executable: bool) -> Path:
         The path to the script.
 
     Notes:
-        The script is a simple bash script in a file named 'example' with contents:
+        The script is a simple bash script in a file named `name` with contents:
         ```bash
         #!/usr/bin/env bash
         echo 'Hello local!'
         ```
     """
-    script = directory / "example"
+    script = directory / name
     script.write_text("#!/usr/bin/env bash\necho 'Hello local!'")
     if executable:
         script.chmod(script.stat().st_mode | S_IXUSR)

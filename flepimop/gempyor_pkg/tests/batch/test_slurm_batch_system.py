@@ -73,14 +73,15 @@ def test_output_validation(
     dry_run: bool,
 ) -> None:
     batch_system = get_batch_system("slurm")
-    script = sample_script(tmp_path, False)
+    sbatch = str(sample_script("sbatch", tmp_path, True).absolute())
+    script = sample_script("run.sbatch", tmp_path, False)
 
     with patch("gempyor.batch._shutil_which") as shutil_which_patch:
-        shutil_which_patch.return_value = "sbatch"
+        shutil_which_patch.return_value = sbatch
         with patch("gempyor.batch.subprocess.run") as subprocess_run_patch:
             mock_process = MagicMock()
             mock_process.returncode = 0
-            mock_process.args = ["sbatch", str(script.absolute())]
+            mock_process.args = [sbatch, str(script.absolute())]
             mock_process.stdout = "Submitted batch job 999"
             mock_process.stderr = ""
             subprocess_run_patch.return_value = mock_process
@@ -99,9 +100,9 @@ def test_output_validation(
             else:
                 log_messages_by_level = {
                     hash((logging.DEBUG, True)): 2,
-                    hash((logging.DEBUG, False)): 3,
+                    hash((logging.DEBUG, False)): 4,
                     hash((logging.INFO, True)): 1,
-                    hash((logging.INFO, False)): 1,
+                    hash((logging.INFO, False)): 2,
                 }
                 assert len(caplog.records) == log_messages_by_level.get(
                     hash((_get_logging_level(verbosity), dry_run)), 0

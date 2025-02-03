@@ -101,7 +101,7 @@ def test_local_submit(
     dry_run: bool,
 ) -> None:
     batch_system = get_batch_system("local")
-    script = sample_script(tmp_path, executable)
+    script = sample_script("example", tmp_path, executable)
 
     with patch("gempyor.batch.subprocess.Popen") as subprocess_popen_patch:
         mock_process = MagicMock()
@@ -121,9 +121,9 @@ def test_local_submit(
 
         log_messages_by_level = {
             hash((logging.DEBUG, True)): 2,
-            hash((logging.DEBUG, False)): 3,
+            hash((logging.DEBUG, False)): 4,
             hash((logging.INFO, True)): 1,
-            hash((logging.INFO, False)): 1,
+            hash((logging.INFO, False)): 2,
         }
         assert len(caplog.records) == log_messages_by_level.get(
             hash((verbosity, dry_run)), 0
