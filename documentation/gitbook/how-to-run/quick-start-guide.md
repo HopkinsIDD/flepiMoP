@@ -23,7 +23,7 @@ _**On Mac:**_
 
 /Users/YourName/Github/fleiMoP/examples/tutorials
 \
-&#xNAN;_**On Windows:**_\
+_**On Windows:**_
 C:\Users\YourName\Github\flepiMoP
 
 C:\Users\YourName\Github\flepiMoP\examples\tutorials
