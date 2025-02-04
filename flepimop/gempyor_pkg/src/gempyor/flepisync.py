@@ -4,6 +4,7 @@ from typing import Literal
 from pathlib import Path
 
 from click import pass_context, Context
+from pydantic import BaseModel
 
 import shutil
 from .shared_cli import (
@@ -31,24 +32,28 @@ class AWSS3Sync(SyncMethod):
 def sync_method_factory(module: str, **constructor_args) -> SyncMethod:
     pass
 
-sync_options = {
-    "mode": click.Option(
-        ["-m", "--mode"],
-        type=click.Path(exists=True, path_type=pathlib.Path),
-        multiple=False,
-        help="Synchronization mode",
-    ),
-}
+# sync_options = {
+#     "mode": click.Option(
+#         ["-m", "--mode"],
+#         type=click.Path(exists=True, path_type=pathlib.Path),
+#         multiple=False,
+#         help="Synchronization mode",
+#     ),
+# }
 
-@cli.group(invoke_without_subcommand=True)
+@cli.group(
+    name="sync",
+    params=[config_files_argument],
+    context_settings=dict(help_option_names=["-h", "--help"]),
+)
 @pass_context
-def sync(ctx: Context = mock_context, **kwargs) -> None:
+def sync(ctx: Context = mock_context, **kwargs) -> int:
     print("invoking bare sync -- assuming default value from config file")
 
-@sync.command()
-@pass_context
-def aws(ctx: Context = mock_context, **kwargs) -> None:
-    print("invoking sync aws -- selecting particular mode from config file")
+# @sync.command()
+# @pass_context
+# def aws(ctx: Context = mock_context, **kwargs) -> None:
+#     print("invoking sync aws -- selecting particular mode from config file")
 
 # @click.option(
 #     "--flepi_run_index",
