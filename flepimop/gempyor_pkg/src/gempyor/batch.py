@@ -130,7 +130,7 @@ class JobSize(BaseModel):
     A batch submission job size.
 
     Attributes:
-        jobs: The number of jobs to use.
+        chains: The number of chains to use.
         simulations: The number of simulations to run per a block.
         blocks: The number of sequential blocks to run per a job.
 
@@ -139,11 +139,11 @@ class JobSize(BaseModel):
 
     Examples:
         >>> from gempyor.batch import JobSize
-        >>> size = JobSize(jobs=10, simulations=200, blocks=5)
+        >>> size = JobSize(chains=10, simulations=200, blocks=5)
         >>> size
-        JobSize(jobs=10, simulations=200, blocks=5)
+        JobSize(chains=10, simulations=200, blocks=5)
         >>> try:
-        ...     JobSize(jobs=10, simulations=200, blocks=0)
+        ...     JobSize(chains=10, simulations=200, blocks=0)
         ... except Exception as e:
         ...     print(e)
         1 validation error for JobSize
@@ -151,7 +151,7 @@ class JobSize(BaseModel):
         Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
             For further information visit https://errors.pydantic.dev/2.10/v/greater_than
         >>> try:
-        ...     JobSize(jobs=10, simulations=200.25, blocks=5)
+        ...     JobSize(chains=10, simulations=200.25, blocks=5)
         ... except Exception as e:
         ...     print(e)
         1 validation error for JobSize
@@ -160,7 +160,7 @@ class JobSize(BaseModel):
             For further information visit https://errors.pydantic.dev/2.10/v/int_from_float
     """
 
-    jobs: PositiveInt
+    chains: PositiveInt
     simulations: PositiveInt
     blocks: PositiveInt
 
@@ -199,7 +199,7 @@ def _job_resources_from_size_and_inference(
             )
         return JobResources(
             nodes=1,
-            cpus=2 * job_size.jobs if cpus is None else cpus,
+            cpus=2 * job_size.chains if cpus is None else cpus,
             memory=(
                 2 * 1024 * job_size.simulations * job_size.blocks
                 if memory is None
@@ -207,7 +207,7 @@ def _job_resources_from_size_and_inference(
             ),
         )
     return JobResources(
-        nodes=job_size.jobs if nodes is None else nodes,
+        nodes=job_size.chains if nodes is None else nodes,
         cpus=2 if cpus is None else cpus,
         memory=2 * 1024 if memory is None else memory,
     )
@@ -433,7 +433,7 @@ class BatchSystem(ABC):
         >>> batch_system.format_time_limit(time_limit)
         '1595'
         >>> batch_system.size_from_jobs_simulations_blocks(2, 10, 5)
-        JobSize(jobs=2, simulations=10, blocks=5)
+        JobSize(chains=2, simulations=10, blocks=5)
     """
 
     @property
@@ -545,7 +545,7 @@ class BatchSystem(ABC):
 
     def size_from_jobs_simulations_blocks(
         self,
-        jobs: int,
+        chains: int,
         simulations: int,
         blocks: int,
     ) -> JobSize:
@@ -553,7 +553,7 @@ class BatchSystem(ABC):
         Infer a job size from several explicit and implicit parameters.
 
         Args:
-            jobs: An explicit number of jobs.
+            chains: An explicit number of chains.
             simulations: An explicit number of simulations per a block.
             blocks: An explicit number of blocks per a job.
             inference_method: The inference method being used as different methods have
@@ -562,7 +562,7 @@ class BatchSystem(ABC):
         Returns:
             A job size instance with either the explicit or inferred job sizing.
         """
-        return JobSize(jobs=jobs, simulations=simulations, blocks=blocks)
+        return JobSize(chains=chains, simulations=simulations, blocks=blocks)
 
 
 class LocalBatchSystem(BatchSystem):
@@ -582,7 +582,7 @@ class LocalBatchSystem(BatchSystem):
         >>> from gempyor.batch import LocalBatchSystem
         >>> batch_system = LocalBatchSystem()
         >>> batch_system.size_from_jobs_simulations_blocks(1, 10, 1)
-        JobSize(jobs=1, simulations=10, blocks=1)
+        JobSize(chains=1, simulations=10, blocks=1)
         >>> with warnings.catch_warnings(record=True) as warns:
         ...     size = batch_system.size_from_jobs_simulations_blocks(2, 10, 1)
         ...     for warn in warns:
@@ -590,7 +590,7 @@ class LocalBatchSystem(BatchSystem):
         ...
         Local batch system only supports 1 job but was given 2, overriding.
         >>> size
-        JobSize(jobs=1, simulations=10, blocks=1)
+        JobSize(chains=1, simulations=10, blocks=1)
         >>> with warnings.catch_warnings(record=True) as warns:
         ...     size = batch_system.size_from_jobs_simulations_blocks(1, 20, 1)
         ...     for warn in warns:
@@ -598,7 +598,7 @@ class LocalBatchSystem(BatchSystem):
         ...
         Local batch system only supports 10 blocks x simulations but was given 20, overriding.
         >>> size
-        JobSize(jobs=1, simulations=10, blocks=1)
+        JobSize(chains=1, simulations=10, blocks=1)
         >>> with warnings.catch_warnings(record=True) as warns:
         ...     size = batch_system.size_from_jobs_simulations_blocks(4, 10, 2)
         ...     for warn in warns:
@@ -607,7 +607,7 @@ class LocalBatchSystem(BatchSystem):
         Local batch system only supports 1 job but was given 4, overriding.
         Local batch system only supports 10 blocks x simulations but was given 20, overriding.
         >>> size
-        JobSize(jobs=1, simulations=10, blocks=1)
+        JobSize(chains=1, simulations=10, blocks=1)
     """
 
     name = "local"
@@ -647,7 +647,7 @@ class LocalBatchSystem(BatchSystem):
 
     def size_from_jobs_simulations_blocks(
         self,
-        jobs: int,
+        chains: int,
         simulations: int,
         blocks: int,
     ) -> JobSize:
@@ -655,7 +655,7 @@ class LocalBatchSystem(BatchSystem):
         Infer a job size from several explicit and implicit parameters.
 
         Args:
-            jobs: An explicit number of jobs.
+            chains: An explicit number of chains.
             simulations: An explicit number of simulations per a block.
             blocks: An explicit number of blocks per a job.
             inference_method: The inference method being used as different methods have
@@ -664,16 +664,16 @@ class LocalBatchSystem(BatchSystem):
         Returns:
             A job size instance with either the explicit or inferred job sizing.
         """
-        if jobs != 1:
+        if chains != 1:
             warnings.warn(
-                f"Local batch system only supports 1 job but was given {jobs}, overriding."
+                f"Local batch system only supports 1 chain but was given {chains}, overriding."
             )
         if (blocks_x_simulations := blocks * simulations) > 10:
             warnings.warn(
                 "Local batch system only supports 10 blocks x simulations "
                 f"but was given {blocks_x_simulations}, overriding."
             )
-        return JobSize(jobs=1, simulations=min(blocks_x_simulations, 10), blocks=1)
+        return JobSize(chains=1, simulations=min(blocks_x_simulations, 10), blocks=1)
 
 
 class SlurmBatchSystem(BatchSystem):
