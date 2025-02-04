@@ -937,4 +937,66 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
     return f"{name}-{timestamp}" if name else timestamp
 
 
+def _resolve_batch_system_name(name: str | None, local: bool, slurm: bool) -> str | None:
+    """
+    Resolve the batch system name from the given arguments.
+
+    Args:
+        name: The name of the batch system or `None` to infer from `local` and `slurm`.
+        local: A flag to use the local batch system.
+        slurm: A flag to use the slurm batch system.
+
+    Returns:
+        The resolved batch system name lowercased or `None` if no batch system was
+        resolved.
+
+    Raises:
+        ValueError: If more than one batch system is indicated via boolean flags.
+        ValueError: If the given name conflicts with the boolean flags.
+
+    Examples:
+        >>> from gempyor.batch import _resolve_batch_system_name
+        >>> _resolve_batch_system_name("abc", False, False)
+        'abc'
+        >>> _resolve_batch_system_name("SLURM", False, False)
+        'slurm'
+        >>> _resolve_batch_system_name("local", True, False)
+        'local'
+        >>> _resolve_batch_system_name(None, True, False)
+        'local'
+        >>> _resolve_batch_system_name(None, False, True)
+        'slurm'
+        >>> try:
+        ...     _resolve_batch_system_name(None, True, True)
+        ... except Exception as e:
+        ...     print(e)
+        There were 2 boolean flags given, expected either 0 or 1.
+        >>> try:
+        ...     _resolve_batch_system_name("slurm", True, False)
+        ... except Exception as e:
+        ...     print(e)
+        Conflicting batch systems given. The batch system name is 'slurm' and the flags indicate 'local'.
+        >>> _resolve_batch_system_name(None, False, False) is None
+        True
+    """
+    name = name.lower() if name is not None else name
+    if (boolean_flags := sum((local, slurm))) > 1:
+        raise ValueError(
+            f"There were {boolean_flags} boolean flags given, expected either 0 or 1."
+        )
+    if name is not None:
+        for flag, flag_name in zip((local, slurm), ("local", "slurm")):
+            if flag and name != flag_name:
+                raise ValueError(
+                    "Conflicting batch systems given. The batch system name "
+                    f"is '{name}' and the flags indicate '{flag_name}'."
+                )
+    if name is None:
+        if local:
+            name = "local"
+        elif slurm:
+            name = "slurm"
+    return name
+
+
 _reset_batch_systems()
