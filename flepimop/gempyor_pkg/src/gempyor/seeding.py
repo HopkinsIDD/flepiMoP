@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def _DataFrame2NumbaDict(df, amounts, modinf) -> nb.typed.Dict:
+    # This functions is extremely unsafe and should only be used after the dataframe has
+    # been filtered on dates and subpop according to the limits sets in `modinf`. And
+    # sorted by date.
     if not df["date"].is_monotonic_increasing:
         raise ValueError("The `df` given is not sorted by the 'date' column.")
 
@@ -138,12 +141,15 @@ class Seeding(SimulationComponent):
 
         # Sorting by date is very important here for the seeding format necessary !!!!
         # print(seeding.shape)
-        seeding = seeding.sort_values(by="date", axis="index").reset_index()
+        seeding = seeding.sort_values(by="date", axis="index").reset_index(drop=True)
         # print(seeding)
         mask = (seeding["date"].dt.date > modinf.ti) & (
             seeding["date"].dt.date <= modinf.tf
         )
-        seeding = seeding.loc[mask].reset_index()
+        seeding = seeding.loc[mask].reset_index(drop=True)
+        mask = seeding["subpop"].isin(modinf.subpop_struct.subpop_names)
+        seeding = seeding.loc[mask].reset_index(drop=True)
+
         # print(seeding.shape)
         # print(seeding)
 
