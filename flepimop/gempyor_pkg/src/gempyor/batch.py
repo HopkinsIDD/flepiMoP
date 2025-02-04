@@ -22,7 +22,7 @@ __all__ = (
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import json
 from logging import Logger
 import math
@@ -45,6 +45,8 @@ if sys.version_info >= (3, 11):
 else:
     Self = Any
 
+
+_JOB_NAME_REGEX = re.compile(r"^[a-z]{1}([a-z0-9\_\-]+)?$", flags=re.IGNORECASE)
 
 _batch_systems = []
 
@@ -904,6 +906,35 @@ def write_manifest(
         json.dump(manifest, f, indent=4)
 
     return destination
+
+
+def _job_name(name: str | None, timestamp: datetime | None) -> str:
+    """
+    Generate a unique human readable job name.
+    Args:
+        name: The config name used as a prefix or `None` for no prefix.
+        timestamp: The timestamp used to make the job name unique or `None` to use the
+            current UTC timestamp.
+    Returns:
+        A job name that is unique and intended for use when submitting to slurm.
+    Raises:
+        ValueError: If `name` does not start with a letter and contains characters other
+            than the alphabet, numbers, underscores or dashes.
+    Examples:
+        >>> from gempyor.batch import _job_name
+        >>> _job_name(None, None)
+        '20241105T153818'
+        >>> _job_name("foobar", None)
+        'foobar-20241105T153831'
+        >>> from datetime import datetime, timezone
+        >>> _job_name(None, datetime(2024, 1, 1, tzinfo=timezone.utc))
+        '20240101T000000'
+    """
+    timestamp = datetime.now(timezone.utc) if timestamp is None else timestamp
+    timestamp = timestamp.strftime("%Y%m%dT%H%M%S")
+    if name is not None and not _JOB_NAME_REGEX.match(name):
+        raise ValueError(f"The given `name`, '{name}', is not a valid safe name.")
+    return f"{name}-{timestamp}" if name else timestamp
 
 
 _reset_batch_systems()
