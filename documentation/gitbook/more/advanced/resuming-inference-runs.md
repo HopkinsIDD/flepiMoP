@@ -113,35 +113,13 @@ The `git` mode is simply a wrapper around normal git operations and expects that
 
 If there are no issues with the repository, `sync` will fetch the authoritative repository version, attempting to update the local repository. If there are any merge conflicts, the `sync` operation will fail and refer you to the normal process for resolving such conflicts.
 
-## Syntax
+## Applications
 
-With a `sync` section in your configuration file and associated credential files, you can use
+The `gempyor` approaches to projection and inference support resuming from previously completed work.
 
-```bash
-$ flepimop sync yourconfig.yml
-```
+### Resuming Inference
 
-to either fetch previously calculated results (for the "resume" and "continue" functions discussed below) or create / store a snapshot.
-
-A `sync` section looks like:
-
-```yaml
-sync:
-  PROTOCOLNAME:
-    type: aws-s3
-    source: value
-    target: value
-    include: [optional, pattern(s) to include]
-    exclude: [optional, pattern(s) to exclude]
-  PROTOCOLNAME2:
-    ...
-```
-
-By default, `sync` will use the first named protocol. A protocol must have a `type` key: this determines what tool will be used to synchronize; currently, we only support synchronization with an aws s3 bucket, so this element is a placeholder.
-
-# Resuming inference runs
-
-## Communication Between Iterations
+### Communication Between Iterations
 
 The pipeline uses files to communicate between different iterations. Currently, the following file types exist:
 
@@ -171,6 +149,6 @@ Resumes take the following files (if they exist) from previous runs and uses the
 * snpi
 * seed
 
-#### Continue from previous run
+### Continuing projection
 
 In addition to resuming parameters (above), we can also perform a **continuation resume**. In addition to resuming parameters and seeding, continuations also use the compartmental fits from previous runs. For a config starting at time $$t_s$$ continuing and resuming from a previous run, the compartmental states of the previous run at time $$t_s$$are used as the initial conditions of the continuation resume ;
