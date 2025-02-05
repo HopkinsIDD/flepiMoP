@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Literal
 from pathlib import Path
 
-from click import pass_context, Context
+import click
 from pydantic import BaseModel
 
 import shutil
@@ -32,36 +32,42 @@ class AWSS3Sync(SyncMethod):
 def sync_method_factory(module: str, **constructor_args) -> SyncMethod:
     pass
 
-# sync_options = {
-#     "mode": click.Option(
-#         ["-m", "--mode"],
-#         type=click.Path(exists=True, path_type=pathlib.Path),
-#         multiple=False,
-#         help="Synchronization mode",
-#     ),
-# }
+sync_options = {
+    "protocol": click.Option(
+        ["-p", "--protocol"],
+        type=click.STRING,
+        help="sync protocol to use from configuration file",
+    ),
+    "source": click.Option(
+        ["-s", "--source"],
+        type=click.Path(),
+        help="source directory to 'push' changes from",
+    ),
+    "target": click.Option(
+        ["-t", "--target"],
+        type=click.Path(),
+        help="target directory to 'push' changes to",
+    ),
+    "filter": click.Option(
+        ["-f", "--filter"],
+        type=click.STRING,
+        multiple=True,
+        help="filter to apply to files; see `man rsync` for details",
+    ),
+}
 
-@cli.group(
+@cli.command(
     name="sync",
-    params=[config_files_argument],
+    params=[config_files_argument] + list(sync_options.values()),
     context_settings=dict(help_option_names=["-h", "--help"]),
 )
-@pass_context
-def sync(ctx: Context = mock_context, **kwargs) -> int:
+@click.pass_context
+def sync(ctx: click.Context = mock_context, **kwargs) -> int:
+    """Sync flepimop files between local and remote locations."""
+    config_files = kwargs.pop("config_files")
+    if not config_files:
+        ctx.fail("No configuration files provided." + "\n" + ctx.get_help())
     print("invoking bare sync -- assuming default value from config file")
-
-# @sync.command()
-# @pass_context
-# def aws(ctx: Context = mock_context, **kwargs) -> None:
-#     print("invoking sync aws -- selecting particular mode from config file")
-
-# @click.option(
-#     "--flepi_run_index",
-#     "flepi_run_index",
-#     envvar="FLEPI_RUN_INDEX",
-#     type=click.STRING,
-#     required=True,
-# )
 
 # def flepimop_push(
 #     s3_upload: str,
