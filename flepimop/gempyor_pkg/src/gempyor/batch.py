@@ -31,10 +31,10 @@ import re
 from stat import S_IXUSR
 import subprocess
 import sys
-from typing import Any, Callable, Literal, overload
+from typing import Annotated, Any, Callable, Literal, overload
 import warnings
 
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt, model_validator
 
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_head, _shutil_which
@@ -47,6 +47,7 @@ else:
 
 
 _JOB_NAME_REGEX = re.compile(r"^[a-z]{1}([a-z0-9\_\-]+)?$", flags=re.IGNORECASE)
+_SAMPLES_SIMULATIONS_RATIO: Annotated[float, Field(gt=0.0, lt=1.0)] = 0.6
 
 _batch_systems = []
 
@@ -132,39 +133,178 @@ class JobSize(BaseModel):
     A batch submission job size.
 
     Attributes:
-        chains: The number of chains to use.
+        chains: The number of chains, or equivalent concept, to use.
+        blocks: The number of sequential blocks to run per a chain.
+        samples: The number of samples to run per a block.
         simulations: The number of simulations to run per a block.
-        blocks: The number of sequential blocks to run per a job.
 
     Raises:
         ValueError: If any of the attributes are less than 1.
 
     Examples:
+        >>> import warnings
         >>> from gempyor.batch import JobSize
-        >>> size = JobSize(chains=10, simulations=200, blocks=5)
-        >>> size
-        JobSize(chains=10, simulations=200, blocks=5)
+        >>> JobSize(blocks=5, chains=10, samples=100, simulations=200)
+        JobSize(blocks=5, chains=10, samples=100, simulations=200)
+        >>> JobSize(chains=32, simulations=500)
+        JobSize(blocks=None, chains=32, samples=None, simulations=500)
         >>> try:
-        ...     JobSize(chains=10, simulations=200, blocks=0)
+        ...     JobSize(blocks=0, chains=12, simulations=100)
         ... except Exception as e:
         ...     print(e)
+        ...
         1 validation error for JobSize
         blocks
         Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
             For further information visit https://errors.pydantic.dev/2.10/v/greater_than
         >>> try:
-        ...     JobSize(chains=10, simulations=200.25, blocks=5)
+        ...     JobSize(chains=10, samples=50.5, simulations=200)
         ... except Exception as e:
         ...     print(e)
+        ...
         1 validation error for JobSize
-        simulations
-        Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=200.25, input_type=float]
+        samples
+        Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=50.5, input_type=float]
             For further information visit https://errors.pydantic.dev/2.10/v/int_from_float
+        >>> try:
+        ...     JobSize(samples=100, simulations=50)
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        1 validation error for JobSize
+        Value error, The number of samples, 100, must be less than or equal to the number of simulations, 50, per a block. [type=value_error, input_value={'samples': 100, 'simulations': 50}, input_type=dict]
+            For further information visit https://errors.pydantic.dev/2.10/v/value_error
+        >>> with warnings.catch_warnings(record=True) as warns:
+        ...     JobSize(samples=75, simulations=100)
+        ...     for warn in warns:
+        ...             print(warn.message)
+        ...
+        JobSize(blocks=None, chains=None, samples=75, simulations=100)
+        The samples to simulations ratio is 75%, which is higher than the recommended limit of 60%.
+        >>> JobSize()
+        JobSize(blocks=None, chains=None, samples=None, simulations=None)
+        >>> size = JobSize(blocks=4, chains=3, samples=10, simulations=25)
+        >>> size.samples_per_chain
+        40
+        >>> size.simulations_per_chain
+        100
+        >>> size.total_samples
+        120
+        >>> size.total_simulations
+        300
     """
 
-    chains: PositiveInt
-    simulations: PositiveInt
-    blocks: PositiveInt
+    blocks: PositiveInt | None = None
+    chains: PositiveInt | None = None
+    samples: PositiveInt | None = None
+    simulations: PositiveInt | None = None
+
+    @staticmethod
+    def _scale(x: PositiveInt | None, y: PositiveInt | None) -> PositiveInt | None:
+        """
+        Scale `x` by `y`.
+
+        Args:
+            x: The number to scale.
+            y: The number to scale by.
+
+        Returns:
+            The scaled number or `None` if `x` is `None`.
+        """
+        return None if x is None else (x if y is None else x * y)
+
+    def _total(self, x: PositiveInt | None) -> PositiveInt | None:
+        """
+        Calculate the total number of `x` by scaling by the number of chains.
+
+        Args:
+            x: The number of `x` to calculate the total of.
+
+        Returns:
+            The total number of `x` or `None` if `x` is `None`.
+        """
+        return self._scale(x, self.chains)
+
+    def _per_chain(self, x: PositiveInt | None) -> PositiveInt | None:
+        """
+        Calculate the number of `x` per a chain by scaling by the number of blocks.
+
+        Args:
+            x: The number of `x` to calculate per a chain.
+
+        Returns:
+            The number of `x` per a chain or `None` if `x` is `None`.
+        """
+        return self._scale(x, self.blocks)
+
+    @property
+    def samples_per_chain(self) -> PositiveInt | None:
+        """
+        Calculate the number of samples per a chain.
+
+        Multiplies the number of samples by the number of blocks. If blocks is `None`
+        then this is the same as the number of samples.
+
+        Returns:
+            The number of samples per a chain.
+        """
+        return self._per_chain(self.samples)
+
+    @property
+    def simulations_per_chain(self) -> PositiveInt | None:
+        """
+        Calculate the number of simulations per a chain.
+
+        Multiplies the number of simulations by the number of blocks. If blocks is
+        `None` then this is the same as the number of simulations.
+
+        Returns:
+            The number of simulations per a chain.
+        """
+        return self._per_chain(self.simulations)
+
+    @property
+    def total_samples(self) -> PositiveInt | None:
+        """
+        Calculate the total number of samples.
+
+        Multiplies the number of samples by the number of chains. If chains is `None`
+        then this is the same as the number of samples.
+
+        Returns:
+            The total number of samples.
+        """
+        return self._total(self.samples_per_chain)
+
+    @property
+    def total_simulations(self) -> PositiveInt | None:
+        """
+        Calculate the total number of simulations.
+
+        Multiplies the number of simulations by the number of chains. If chains is `None`
+        then this is the same as the number of simulations.
+
+        Returns:
+            The total number of simulations.
+        """
+        return self._total(self.simulations_per_chain)
+
+    @model_validator(mode="after")
+    def check_samples_is_consistent(self) -> Self:
+        if self.samples is not None and self.simulations is not None:
+            if self.samples > self.simulations:
+                raise ValueError(
+                    f"The number of samples, {self.samples}, must be less than or equal to "
+                    f"the number of simulations, {self.simulations}, per a block."
+                )
+            elif (ratio := (self.samples / self.simulations)) > _SAMPLES_SIMULATIONS_RATIO:
+                warnings.warn(
+                    f"The samples to simulations ratio is {100.*ratio:.0f}%, which is "
+                    "higher than the recommended limit of "
+                    f"{100.*_SAMPLES_SIMULATIONS_RATIO:.0f}%.",
+                    UserWarning,
+                )
+        return self
 
 
 def _job_resources_from_size_and_inference(
@@ -203,9 +343,7 @@ def _job_resources_from_size_and_inference(
             nodes=1,
             cpus=2 * job_size.chains if cpus is None else cpus,
             memory=(
-                2 * 1024 * job_size.simulations * job_size.blocks
-                if memory is None
-                else memory
+                2 * 1024 * job_size.simulations_per_chain if memory is None else memory
             ),
         )
     return JobResources(
@@ -423,6 +561,8 @@ class BatchSystem(ABC):
         >>> from gempyor.batch import BatchSystem, JobResources, JobSize
         >>> class MyCustomBatchSystem(BatchSystem):
         ...     name = "my_custom"
+        ...     def submit(self, script, options, verbosity, dry_run):
+        ...             return None
         >>> batch_system = MyCustomBatchSystem()
         >>> resources = JobResources(nodes=1, cpus=2, memory=1024)
         >>> batch_system.format_nodes(resources)
@@ -430,12 +570,12 @@ class BatchSystem(ABC):
         >>> batch_system.format_cpus(resources)
         '2'
         >>> batch_system.format_memory(resources)
-        '1024
+        '1024'
         >>> time_limit = timedelta(days=1, hours=2, minutes=34, seconds=56)
         >>> batch_system.format_time_limit(time_limit)
         '1595'
-        >>> batch_system.size_from_jobs_simulations_blocks(2, 10, 5)
-        JobSize(chains=2, simulations=10, blocks=5)
+        >>> batch_system.size_from_jobs_simulations_blocks(2, 10, None, 5)
+        JobSize(blocks=2, chains=10, samples=None, simulations=5)
     """
 
     @property
@@ -547,24 +687,29 @@ class BatchSystem(ABC):
 
     def size_from_jobs_simulations_blocks(
         self,
-        chains: int,
-        simulations: int,
-        blocks: int,
+        blocks: PositiveInt | None,
+        chains: PositiveInt | None,
+        samples: PositiveInt | None,
+        simulations: PositiveInt | None,
     ) -> JobSize:
         """
         Infer a job size from several explicit and implicit parameters.
 
         Args:
-            chains: An explicit number of chains.
-            simulations: An explicit number of simulations per a block.
             blocks: An explicit number of blocks per a job.
-            inference_method: The inference method being used as different methods have
-                different restrictions.
+            chains: An explicit number of chains.
+            samples: An explicit number of samples per a block.
+            simulations: An explicit number of simulations per a block.
 
         Returns:
             A job size instance with either the explicit or inferred job sizing.
+
+        See Also:
+            `gempyor.batch.JobSize`
         """
-        return JobSize(chains=chains, simulations=simulations, blocks=blocks)
+        return JobSize(
+            blocks=blocks, chains=chains, samples=samples, simulations=simulations
+        )
 
 
 class LocalBatchSystem(BatchSystem):
@@ -583,33 +728,19 @@ class LocalBatchSystem(BatchSystem):
         >>> import warnings
         >>> from gempyor.batch import LocalBatchSystem
         >>> batch_system = LocalBatchSystem()
-        >>> batch_system.size_from_jobs_simulations_blocks(1, 10, 1)
-        JobSize(chains=1, simulations=10, blocks=1)
+        >>> batch_system.size_from_jobs_simulations_blocks(1, 1, 25, 50)
+        JobSize(blocks=1, chains=1, samples=25, simulations=50)
         >>> with warnings.catch_warnings(record=True) as warns:
-        ...     size = batch_system.size_from_jobs_simulations_blocks(2, 10, 1)
+        ...     size = batch_system.size_from_jobs_simulations_blocks(2, 4, 50, 100)
         ...     for warn in warns:
         ...             print(warn.message)
         ...
-        Local batch system only supports 1 job but was given 2, overriding.
+        Local batch system only supports 1 chain but was given 4, overriding.
+        Local batch system only supports 1 block but was given 2, overriding.
+        Local batch system only supports 50 total simulations but was given 800, overriding.
+        Local batch system only supports 25 total samples but was given 400, overriding.
         >>> size
-        JobSize(chains=1, simulations=10, blocks=1)
-        >>> with warnings.catch_warnings(record=True) as warns:
-        ...     size = batch_system.size_from_jobs_simulations_blocks(1, 20, 1)
-        ...     for warn in warns:
-        ...             print(warn.message)
-        ...
-        Local batch system only supports 10 blocks x simulations but was given 20, overriding.
-        >>> size
-        JobSize(chains=1, simulations=10, blocks=1)
-        >>> with warnings.catch_warnings(record=True) as warns:
-        ...     size = batch_system.size_from_jobs_simulations_blocks(4, 10, 2)
-        ...     for warn in warns:
-        ...             print(warn.message)
-        ...
-        Local batch system only supports 1 job but was given 4, overriding.
-        Local batch system only supports 10 blocks x simulations but was given 20, overriding.
-        >>> size
-        JobSize(chains=1, simulations=10, blocks=1)
+        JobSize(blocks=1, chains=1, samples=25, simulations=50)
     """
 
     name = "local"
@@ -649,33 +780,63 @@ class LocalBatchSystem(BatchSystem):
 
     def size_from_jobs_simulations_blocks(
         self,
-        chains: int,
-        simulations: int,
-        blocks: int,
+        blocks: PositiveInt | None,
+        chains: PositiveInt | None,
+        samples: PositiveInt | None,
+        simulations: PositiveInt | None,
     ) -> JobSize:
         """
         Infer a job size from several explicit and implicit parameters.
 
         Args:
-            chains: An explicit number of chains.
-            simulations: An explicit number of simulations per a block.
             blocks: An explicit number of blocks per a job.
-            inference_method: The inference method being used as different methods have
-                different restrictions.
+            chains: An explicit number of chains.
+            samples: An explicit number of samples per a block.
+            simulations: An explicit number of simulations per a block.
 
         Returns:
             A job size instance with either the explicit or inferred job sizing.
+
+        See Also:
+            `gempyor.batch.JobSize`
         """
-        if chains != 1:
+        prelim_size = JobSize(
+            blocks=blocks, chains=chains, samples=samples, simulations=simulations
+        )
+        if prelim_size.chains is not None and prelim_size.chains != 1:
             warnings.warn(
-                f"Local batch system only supports 1 chain but was given {chains}, overriding."
+                "Local batch system only supports 1 chain but "
+                f"was given {prelim_size.chains}, overriding."
             )
-        if (blocks_x_simulations := blocks * simulations) > 10:
+        if prelim_size.blocks is not None and prelim_size.blocks != 1:
             warnings.warn(
-                "Local batch system only supports 10 blocks x simulations "
-                f"but was given {blocks_x_simulations}, overriding."
+                "Local batch system only supports 1 block but "
+                f"was given {prelim_size.blocks}, overriding."
             )
-        return JobSize(chains=1, simulations=min(blocks_x_simulations, 10), blocks=1)
+        if prelim_size.total_samples is not None and prelim_size.total_samples > 25:
+            warnings.warn(
+                "Local batch system only supports 25 total samples but "
+                f"was given {prelim_size.total_samples}, overriding."
+            )
+        if prelim_size.total_simulations is not None and prelim_size.total_simulations > 50:
+            warnings.warn(
+                "Local batch system only supports 50 total simulations but "
+                f"was given {prelim_size.total_simulations}, overriding."
+            )
+        return JobSize(
+            blocks=None if prelim_size.blocks is None else 1,
+            chains=None if prelim_size.chains is None else 1,
+            samples=(
+                None
+                if prelim_size.total_samples is None
+                else min(prelim_size.total_samples, 25)
+            ),
+            simulations=(
+                None
+                if prelim_size.total_simulations is None
+                else min(prelim_size.total_simulations, 50)
+            ),
+        )
 
 
 class SlurmBatchSystem(BatchSystem):
