@@ -36,6 +36,7 @@ import warnings
 
 from pydantic import BaseModel, Field, PositiveInt, model_validator
 
+from ._jinja import _jinja_environment
 from .logging import get_script_logger
 from .utils import _format_cli_options, _git_head, _shutil_which
 
@@ -351,6 +352,30 @@ def _job_resources_from_size_and_inference(
         cpus=2 if cpus is None else cpus,
         memory=2 * 1024 if memory is None else memory,
     )
+
+
+def _create_inference_command(
+    inference: Literal["emcee", "r"], job_size: JobSize, **kwargs
+) -> str:
+    """
+    Create an inference command for a job.
+
+    Args:
+        inference: The inference method to use.
+        job_size: The job size to infer resources from.
+        kwargs: Additional keyword arguments to pass to the template to generate the
+            command.
+
+    Returns:
+        The inference command.
+    """
+    template_data = {
+        **{"log_output": "/dev/null"},
+        **job_size.model_dump(),
+        **kwargs,
+    }
+    template = _jinja_environment.get_template(f"{inference}_inference_command.bash.j2")
+    return template.render(template_data)
 
 
 class JobSubmission(subprocess.CompletedProcess):
