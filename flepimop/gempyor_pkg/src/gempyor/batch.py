@@ -257,6 +257,7 @@ class JobSize(BaseModel):
         """
         return self._scale(x, self.blocks)
 
+    @computed_field
     @property
     def samples_per_chain(self) -> PositiveInt | None:
         """
@@ -270,6 +271,7 @@ class JobSize(BaseModel):
         """
         return self._per_chain(self.samples)
 
+    @computed_field
     @property
     def simulations_per_chain(self) -> PositiveInt | None:
         """
@@ -283,6 +285,7 @@ class JobSize(BaseModel):
         """
         return self._per_chain(self.simulations)
 
+    @computed_field
     @property
     def total_samples(self) -> PositiveInt | None:
         """
@@ -296,6 +299,7 @@ class JobSize(BaseModel):
         """
         return self._total(self.samples_per_chain)
 
+    @computed_field
     @property
     def total_simulations(self) -> PositiveInt | None:
         """
