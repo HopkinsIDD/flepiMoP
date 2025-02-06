@@ -1,5 +1,5 @@
 """
-Abstractions for interacting with models as a monolithic object.
+Abstractions for interacting with the model as a monolithic object.
 
 Defines the `ModelInfo` class (and associated methods), used for setting up and 
 managing the configuration of a simulation. The primary focuses of a `ModelInfo` object
@@ -168,7 +168,7 @@ class ModelInfo:
             nslots: Number of slots for MCMC (default is 1).
             write_csv: Whether to write results to CSV files (default is False).
             write_parquet: Whether to write results to parquet files (default is False).
-            first_sim_index : Index of first simulation (default is 1).
+            first_sim_index: Index of first simulation (default is 1).
             stoch_traj_flag: Whether to run the model stochastically (default is False).
             seir_modifiers_scenario: SEIR modifier.
             outcome_modifiers_scenario: Outcomes modifier.

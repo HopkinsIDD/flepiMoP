@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 ##
 # inference.py defines handlers to the gempyor epidemic module
 # (both (SEIR) and the pipeline outcomes module (Outcomes))
@@ -151,7 +150,7 @@ def simulation_atomic(
 
 def get_static_arguments(modinf: model_info.ModelInfo):
     """
-    Get the static arguments for the log likelihood function, these are the same for all walkers
+    Get the static arguments for the log likelihood function, these are the same for all walkers.
     """
     if modinf.compartments is None:
         raise RuntimeError(
@@ -359,8 +358,8 @@ class GempyorInference:
 
     def __init__(
         self,
-        config_filepath,
-        run_id="test_run_id",
+        config_filepath: str,
+        run_id: str | int = "test_run_id",
         prefix: str | None = None,
         first_sim_index: int = 1,
         stoch_traj_flag: bool = False,
@@ -620,7 +619,7 @@ class GempyorInference:
         sim_id2write: int,
         load_ID: bool = False,
         sim_id2load: int = None,
-        parallel=False,
+        parallel: bool = False,
     ) -> Literal[0]:
         """
         Method to oversee inference simulation.
@@ -820,7 +819,7 @@ class GempyorInference:
         )
 
     def get_outcome_npi(
-        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+        self, load_ID: bool = False, sim_id2load=None, bypass_DF=None, bypass_FN=None
     ):
         """
         Builds the non-pharmaceutical intervention outcome modifiers.
@@ -846,7 +845,9 @@ class GempyorInference:
             )
         return npi_outcomes
 
-    def get_seir_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
+    def get_seir_npi(
+        self, load_ID: bool = False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+    ):
         """
         Builds the SEIR non-pharmaceutical interventions information.
 
@@ -857,7 +858,7 @@ class GempyorInference:
             bypass_FN: An alternative function to use during outcome modifier construction.
 
         Returns:
-            npi_seir: An object that contains NPI parameters for the SEIR model.
+            An object that contains NPI parameters for the SEIR model.
         """
         npi_seir = seir.build_npi_SEIR(
             modinf=self.modinf,
@@ -870,7 +871,7 @@ class GempyorInference:
         return npi_seir
 
     def get_seir_parameters(
-        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+        self, load_ID: bool = False, sim_id2load=None, bypass_DF=None, bypass_FN=None
     ):
         """
         Generates SEIR model parameters.
@@ -882,7 +883,7 @@ class GempyorInference:
             bypass_FN: An alternative function to use during outcome modifier construction.
 
         Returns:
-            p_draw: An array containing the drawn model parameters.
+            An array containing the drawn model parameters.
         """
         param_df = None
         if bypass_DF is not None:
@@ -905,8 +906,8 @@ class GempyorInference:
         return p_draw
 
     def get_seir_parametersDF(
-        self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
-    ):
+        self, load_ID: bool = False, sim_id2load=None, bypass_DF=None, bypass_FN=None
+    ) -> pd.DataFrame:
         """
         Retreive SEIR parameters and return them as a pd.DataFrame.
 
@@ -917,7 +918,7 @@ class GempyorInference:
             bypass_FN: An alternative function to use during outcome modifier construction.
 
         Returns:
-            A pd.DatyaFrame containing the SEIR model parameters.
+            A pd.DataFrame containing the SEIR model parameters.
         """
         p_draw = self.get_seir_parameters(
             load_ID=load_ID,
@@ -931,11 +932,11 @@ class GempyorInference:
         self,
         npi_seir,
         p_draw=None,
-        load_ID=False,
+        load_ID: bool = False,
         sim_id2load=None,
         bypass_DF=None,
         bypass_FN=None,
-    ):
+    ) -> pd.DataFrame:
         """
         Retreives and reduces SEIR model parameters and returns them as a pd.DataFrame.
 
