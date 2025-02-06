@@ -1358,4 +1358,410 @@ def _resolve_batch_system_name(name: str | None, local: bool, slurm: bool) -> st
     return name
 
 
+def _submit_scenario_job(
+    name: str,
+    job_name: str,
+    inference: Literal["emcee", "r"],
+    job_size: JobSize,
+    batch_system: BatchSystem,
+    outcome_modifiers_scenario: str,
+    seir_modifiers_scenario: str,
+    options: dict[str, str | Iterable[str]] | None,
+    template_data: dict[str, Any],
+    verbosity: int,
+    dry_run: bool,
+) -> None:
+    """
+    Submit a job for a scenario.
+
+    Args:
+        outcome_modifiers_scenario: The outcome modifiers scenario to use.
+        seir_modifiers_scenario: The seir modifiers scenario to use.
+        name: The name of the config file used as a prefix for the job name.
+        batch_system: The batch system to submit the job to.
+        inference_method: The inference method being used.
+        config_out: The path to the config file to use.
+        job_name: The name of the job to submit.
+        job_size: The size of the job to submit.
+        job_time_limit: The time limit of the job to submit.
+        job_resources: The resources required for the job to submit.
+        cluster: The cluster information to use for submitting the job.
+        kwargs: Additional options provided to the submit job CLI as keyword arguments.
+        verbosity: A integer verbosity level to enable logging or `None` for no logging.
+        dry_run: A boolean indicating if this is a dry run or not, if set to `True` this
+            function will not actually submit/run a job.
+        now: The current UTC timestamp.
+    """
+    # Get logger
+    if verbosity is not None:
+        logger = get_script_logger(__name__, verbosity)
+        if outcome_modifiers_scenario is None:
+            logger.warning(
+                "The outcome modifiers scenario is `None`, may lead to "
+                "unintended consequences in output file/directory names."
+            )
+        if seir_modifiers_scenario is None:
+            logger.warning(
+                "The seir modifiers scenario is `None`, may lead to "
+                "unintended consequences in output file/directory names."
+            )
+
+    # Modify the job for the given scenario info
+    job_name += f"_{seir_modifiers_scenario}_{outcome_modifiers_scenario}"
+    prefix = f"{name}_{seir_modifiers_scenario}_{outcome_modifiers_scenario}"
+    if verbosity is not None:
+        logger.info(
+            "Preparing a job for outcome and seir modifiers scenarios "
+            "'%s' and '%s', respectively, with job name '%s'.",
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+            job_name,
+        )
+
+    # Get inference command
+    inference_command = _create_inference_command(
+        inference,
+        job_size,
+        outcome_modifiers_scenario=outcome_modifiers_scenario,
+        prefix=prefix,
+        seir_modifiers_scenario=seir_modifiers_scenario,
+    )
+
+    # Submit
+    batch_system.submit_command(
+        inference_command, options, verbosity, dry_run, **template_data
+    )
+
+
+@cli.command(
+    name="batch-calibrate",
+    params=[config_files_argument]
+    + list(config_file_options.values())
+    + [
+        click.Option(
+            param_decls=["--flepi-path", "flepi_path"],
+            envvar="FLEPI_PATH",
+            type=click.Path(exists=True, path_type=Path),
+            required=True,
+            help="Path to the flepiMoP directory being used.",
+        ),
+        click.Option(
+            param_decls=["--project-path", "project_path"],
+            envvar="PROJECT_PATH",
+            type=click.Path(exists=True, path_type=Path),
+            required=True,
+            help="Path to the project directory being used.",
+        ),
+        click.Option(
+            param_decls=["--blocks", "blocks"],
+            required=True,
+            type=click.IntRange(min=1),
+            help="The number of sequential blocks to run per a chain.",
+        ),
+        click.Option(
+            param_decls=["--chains", "chains"],
+            required=True,
+            type=click.IntRange(min=1),
+            help="The number of chains or walkers, depending on inference method, to run.",
+        ),
+        click.Option(
+            param_decls=["--samples", "samples"],
+            required=True,
+            type=click.IntRange(min=1),
+            help="The number of samples per a block.",
+        ),
+        click.Option(
+            param_decls=["--simulations", "simulations"],
+            required=True,
+            type=click.IntRange(min=1),
+            help="The number of simulations per a block.",
+        ),
+        click.Option(
+            param_decls=["--time-limit", "time_limit"],
+            type=DurationParamType(True, "minutes"),
+            default="1hr",
+            help=(
+                "The time limit for the job. If units "
+                "are not specified, minutes are assumed."
+            ),
+        ),
+        click.Option(
+            param_decls=["--batch-system", "batch_system"],
+            default=None,
+            type=str,
+            help="The name of the batch system being used.",
+        ),
+        click.Option(
+            param_decls=["--local", "local"],
+            default=False,
+            is_flag=True,
+            help=(
+                "Flag to use the local batch system. "
+                "Equivalent to `--batch-system local`."
+            ),
+        ),
+        click.Option(
+            param_decls=["--slurm", "slurm"],
+            default=False,
+            is_flag=True,
+            help=(
+                "Flag to use the slurm batch system. "
+                "Equivalent to `--batch-system slurm`."
+            ),
+        ),
+        click.Option(
+            param_decls=["--cluster", "cluster"],
+            default=None,
+            type=str,
+            help=(
+                "The name of the cluster being used, "
+                "only needed if cluster info is required."
+            ),
+        ),
+        click.Option(
+            param_decls=["--nodes", "nodes"],
+            type=click.IntRange(min=1),
+            default=None,
+            help="Override for the number of nodes to use.",
+        ),
+        click.Option(
+            param_decls=["--cpus", "cpus"],
+            type=click.IntRange(min=1),
+            default=None,
+            help="Override for the number of CPUs per node to use.",
+        ),
+        click.Option(
+            param_decls=["--memory", "memory"],
+            type=MemoryParamType(True, "mb", True),
+            default=None,
+            help="Override for the amount of memory per node to use in MB.",
+        ),
+        click.Option(
+            param_decls=["--skip-manifest", "skip_manifest"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help="Flag to skip writing a manifest file, useful in dry runs.",
+        ),
+        click.Option(
+            param_decls=["--skip-job-config", "skip_job_config"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help="Flag to skip writing a job config file, useful in dry runs.",
+        ),
+        click.Option(
+            param_decls=["--skip-checkout", "skip_checkout"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help=(
+                "Flag to skip checking out a new branch in "
+                "the git repository, useful in dry runs."
+            ),
+        ),
+        click.Option(
+            param_decls=["--debug", "debug"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help="Flag to enable debugging in batch submission scripts.",
+        ),
+        click.Option(
+            param_decls=["--partition", "partition"],
+            type=str,
+            default=None,
+            help=(
+                "The partition to submit the job to on the cluster. Only relevant to slurm."
+            ),
+        ),
+        click.Option(
+            param_decls=["--email", "email"],
+            type=str,
+            default=None,
+            help="The email address to send job notifications to. Only relevant to slurm.",
+        ),
+    ]
+    + list(verbosity_options.values()),
+)
+@click.pass_context
+def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> None:
+    """
+    Submit a calibration job to a batch system.
+    """
+    # Generic setup
+    now = datetime.now(timezone.utc)
+    logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
+    log_cli_inputs(kwargs)
+    cfg = parse_config_files(config, ctx, **kwargs)
+
+    # Job name/run id
+    name = cfg["name"].as_str() if cfg["name"].exists() else None
+    job_name = _job_name(name, now)
+    logger.info("Assigning job name of '%s'", job_name)
+    if kwargs.get("run_id") is None:
+        kwargs["run_id"] = run_id(now)
+    logger.info("Using a run id of '%s'", kwargs.get("run_id"))
+
+    # Inference method
+    inference_method = (
+        cfg["inference"]["method"].as_str()
+        if cfg["inference"].exists() and cfg["inference"]["method"].exists()
+        else "r"
+    ).lower()
+    logger.info("Using inference method '%s'", inference_method)
+
+    # Outcome/seir modifier scenarios
+    outcome_modifiers_scenarios = (
+        cfg["outcome_modifiers"]["scenarios"].as_str_seq()
+        if cfg["outcome_modifiers"].exists()
+        and cfg["outcome_modifiers"]["scenarios"].exists()
+        else [None]
+    )
+    logger.info(
+        "Using outcome modifier scenarios of '%s'", "', '".join(outcome_modifiers_scenarios)
+    )
+    seir_modifiers_scenarios = (
+        cfg["seir_modifiers"]["scenarios"].as_str_seq()
+        if cfg["seir_modifiers"].exists() and cfg["seir_modifiers"]["scenarios"].exists()
+        else [None]
+    )
+    logger.info(
+        "Using SEIR modifier scenarios of '%s'", "', '".join(seir_modifiers_scenarios)
+    )
+
+    # Batch system
+    batch_system_name = _resolve_batch_system_name(
+        kwargs.get("batch_system", None),
+        kwargs.get("local", False),
+        kwargs.get("slurm", False),
+    )
+    logger.debug("Resolved batch system name to '%s'", batch_system_name)
+    batch_system = get_batch_system(batch_system_name)
+    logger.info("Using batch system '%s'", batch_system.name)
+
+    # Job size
+    logger.debug(
+        "User provided job size of blocks=%s, chains=%s, samples=%s, simulations=%s",
+        kwargs.get("blocks"),
+        kwargs.get("chains"),
+        kwargs.get("samples"),
+        kwargs.get("simulations"),
+    )
+    job_size = batch_system.size_from_jobs_simulations_blocks(
+        kwargs.get("blocks"),
+        kwargs.get("chains"),
+        kwargs.get("samples"),
+        kwargs.get("simulations"),
+    )
+    logger.info("Using job size of %s", job_size)
+
+    # Job time limit
+    job_time_limit = kwargs.get("time_limit")
+    logger.info("Using job time limit of %s", job_time_limit)
+
+    # Job resources
+    nodes, cpus, memory = (kwargs.get(k) for k in ("nodes", "cpus", "memory"))
+    logger.debug(
+        "User provided job resources of nodes=%s, cpus=%s, memory=%sMB", nodes, cpus, memory
+    )
+    if not all((nodes, cpus, memory)):
+        raise NotImplementedError(
+            "Automatic resource estimation is not yet implemented "
+            "and one of nodes, cpus, memory is not given."
+        )
+    job_resources = _job_resources_from_size_and_inference(
+        job_size, inference_method, nodes=nodes, cpus=cpus, memory=memory
+    )
+    logger.info("Using job resources of %s", job_resources)
+
+    # HPC cluster info
+    cluster_name = kwargs.get("cluster")
+    logger.debug("User provided cluster name of '%s'", cluster_name)
+    cluster = (
+        get_cluster_info(cluster_name)
+        if isinstance(batch_system, SlurmBatchSystem)
+        else None
+    )
+    logger.info("Using cluster info of %s", cluster)
+
+    # Manifest
+    if not kwargs.get("skip_manifest", False):
+        manifest = write_manifest(
+            job_name,
+            kwargs.get("flepi_path"),
+            kwargs.get("project_path"),
+        )
+        logger.info("Wrote manifest to '%s'", manifest)
+    else:
+        if kwargs.get("dry_run", False):
+            logger.info("Skipping manifest.")
+        else:
+            logger.warning("Skipping manifest in non-dry run which is not recommended.")
+
+    # Job config
+    if not kwargs.get("skip_job_config", False):
+        job_config = Path(f"config_{job_name}.yml").absolute()
+        with job_config.open(mode="w") as f:
+            f.write(cfg.dump())
+        logger.info(
+            "Dumped the job config for this batch submission to %s", job_config.absolute()
+        )
+    else:
+        if kwargs.get("dry_run", False):
+            logger.info("Skipping job config.")
+        else:
+            logger.warning("Skipping job config in non-dry run which is not recommended.")
+
+    # Git checkout
+    if not kwargs.get("skip_checkout", False):
+        _git_checkout(kwargs.get("project_path"), f"run_{job_name}")
+    else:
+        if kwargs.get("dry_run", False):
+            logger.info("Skipping git checkout.")
+        else:
+            logger.warning("Skipping git checkout in non-dry run which is not recommended.")
+
+    # Construct template data
+    general_template_data = {
+        **kwargs,
+        **{
+            "name": name,
+            "job_name": job_name,
+            "job_size": job_size.model_dump(),
+            "job_time_limit": batch_system.format_time_limit(job_time_limit),
+            "job_resources_nodes": batch_system.format_nodes(job_resources.nodes),
+            "job_resources_cpus": batch_system.format_cpus(job_resources),
+            "job_resources_memory": batch_system.format_memory(job_resources),
+            "cluster": None if cluster is None else cluster.model_dump(),
+        },
+    }
+
+    # Submit jobs
+    for outcome_modifiers_scenario, seir_modifiers_scenario in product(
+        outcome_modifiers_scenarios, seir_modifiers_scenarios
+    ):
+        _submit_scenario_job(
+            name,
+            job_name,
+            inference_method,
+            job_size,
+            batch_system,
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+            batch_system.options_from_config_and_cli(
+                cfg, kwargs, kwargs.get("verbosity", 0)
+            ),
+            {  # template_data
+                **general_template_data,
+                **{
+                    "outcome_modifiers_scenario": outcome_modifiers_scenario,
+                    "seir_modifiers_scenario": seir_modifiers_scenario,
+                },
+            },
+            kwargs.get("verbosity", 0),
+            kwargs.get("dry_run", False),
+        )
+
+
 _reset_batch_systems()
