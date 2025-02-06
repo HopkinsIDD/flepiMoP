@@ -759,6 +759,25 @@ class BatchSystem(ABC):
             blocks=blocks, chains=chains, samples=samples, simulations=simulations
         )
 
+    def options_from_config_and_cli(
+        self,
+        config: confuse.Configuration,
+        cli_options: dict[str, Any],
+        verbosity: int | None,
+    ) -> dict[str, str | Iterable[str]] | None:
+        """
+        Generate batch system options from a configuration and CLI options.
+
+        Args:
+            config: The configuration options to use.
+            cli_options: The CLI options to use.
+            verbosity: The verbosity level of the submission.
+
+        Returns:
+            The batch system options.
+        """
+        return None
+
 
 class LocalBatchSystem(BatchSystem):
     """
@@ -909,9 +928,9 @@ class SlurmBatchSystem(BatchSystem):
         '26:34:56'
     """
 
-    name = "slurm"
-
     _sbatch_regex = re.compile(r"submitted batch job (\d+)", flags=re.IGNORECASE)
+
+    name = "slurm"
 
     def submit(
         self,
@@ -957,6 +976,34 @@ class SlurmBatchSystem(BatchSystem):
         minutes = math.floor((total_seconds - (60.0 * 60.0 * hours)) / 60.0)
         seconds = math.ceil(total_seconds - (60.0 * minutes) - (60.0 * 60.0 * hours))
         return f"{hours}:{minutes:02d}:{seconds:02d}"
+
+    def options_from_config_and_cli(
+        self,
+        config: confuse.Configuration,
+        cli_options: dict[str, Any],
+        verbosity: int | None,
+    ) -> dict[str, str | Iterable[str]] | None:
+        """
+        Generate batch system options from a configuration and CLI options.
+
+        Args:
+            config: The configuration options to use.
+            cli_options: The CLI options to use.
+            verbosity: The verbosity level of the submission.
+
+        Returns:
+            The batch system options.
+        """
+        logger = get_script_logger(__name__, verbosity) if verbosity is not None else None
+        options = {}
+        if cli_options.get("partition") is not None:
+            options["partition"] = cli_options["partition"]
+        if cli_options.get("email") is not None:
+            options["mail-user"] = cli_options["email"]
+            options["mail-type"] = "ALL"
+        if logger is not None:
+            logger.debug("Generated options: %s", options)
+        return options
 
 
 def register_batch_system(batch_system: BatchSystem) -> None:
