@@ -677,6 +677,37 @@ class BatchSystem(ABC):
         """
         raise NotImplementedError
 
+    def submit_command(
+        self,
+        command: str,
+        options: dict[str, str | Iterable[str]] | None = None,
+        verbosity: int | None = None,
+        dry_run: bool = False,
+        **kwargs: Any,
+    ) -> JobSubmission | None:
+        """
+        Submit a command to the batch system.
+
+        Args:
+            command: The command to submit.
+            options: Additional options to pass to the batch system, if applicable.
+            verbosity: The verbosity level of the submission.
+            dry_run: Whether to perform a dry run of the submission, if applicable.
+            **kwargs: Additional keyword arguments to be used by subclasses.
+
+        Returns:
+            The job submission result or `None` if a dry run.
+
+        See Also:
+            The `submit` method.
+        """
+        with NamedTemporaryFile(mode="w") as temp_script:
+            temp_script.write(command)
+            temp_script.flush()
+            return self.submit(
+                Path(temp_script.name).absolute(), options, verbosity, dry_run
+            )
+
     def format_nodes(self, job_resources: JobResources) -> str:
         """
         Format the number of nodes for a job.
@@ -906,6 +937,24 @@ class LocalBatchSystem(BatchSystem):
         )
 
 
+def _slurm_submit_command_cleanup(sbatch_script: Path, cwd: Path) -> None:
+    """
+    Clean up the sbatch script on exit.
+
+    Internal helper to copy an sbatch submission script to the current working directory
+    and remove the original script on exit.
+
+    Args:
+        sbatch_script: The path to the sbatch script.
+        cwd: The current working directory.
+
+    Returns:
+        None
+    """
+    shutil.copy2(sbatch_script, cwd / sbatch_script.name)
+    sbatch_script.unlink(missing_ok=True)
+
+
 class SlurmBatchSystem(BatchSystem):
     """
     Batch system for running jobs on a Slurm HPC cluster.
@@ -966,6 +1015,60 @@ class SlurmBatchSystem(BatchSystem):
             ),
             dry_run=dry_run,
         )
+
+    def submit_command(
+        self,
+        command: str,
+        options: dict[str, str | Iterable[str]] | None = None,
+        verbosity: int | None = None,
+        dry_run: bool = False,
+        **kwargs: Any,
+    ) -> JobSubmission | None:
+        """
+        Submit a command to the slurm batch system.
+
+        Args:
+            command: The command to submit.
+            options: Additional options to pass to the batch system, if applicable.
+            verbosity: The verbosity level of the submission.
+            dry_run: Whether to perform a dry run of the submission, if applicable.
+            **kwargs: Additional keyword arguments used to generate the sbatch
+                submission script.
+
+        Returns:
+            The job submission result or `None` if a dry run.
+
+        Notes:
+            If `dry_run` is `True` then the sbatch submission script will be copied to
+            the current working directory before program end.
+        """
+        logger = get_script_logger(__name__, verbosity) if verbosity is not None else None
+        with NamedTemporaryFile(
+            mode="w",
+            suffix=".sbatch",
+            prefix=None if (job_name := options.get("job_name")) is None else job_name,
+            delete=not dry_run,
+        ) as temp_script:
+            sbatch_script = Path(temp_script.name).absolute()
+            sbatch_script.write_text(
+                _jinja_environment.get_template("sbatch_submit_command.bash.j2").render(
+                    {**kwargs, **{"command": command}}
+                )
+            )
+            sbatch_script.flush()
+            if dry_run:
+                atexit.register(
+                    _slurm_submit_command_cleanup, dry_run, sbatch_script, Path.cwd()
+                )
+            if logger is not None:
+                logger.info("Using sbatch script '%s' for submission", sbatch_script)
+                logger.debug("Sbatch script will be copied to '%s' on exit", Path.cwd())
+            return self.submit(
+                sbatch_script,
+                options,
+                verbosity,
+                dry_run,
+            )
 
     def format_memory(self, job_resources: JobResources) -> str:
         return f"{job_resources.memory}MB"
