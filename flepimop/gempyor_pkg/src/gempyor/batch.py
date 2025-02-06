@@ -636,7 +636,7 @@ class BatchSystem(ABC):
     def submit(
         self,
         script: Path,
-        options: dict[str, Any] | None = None,
+        options: dict[str, str | Iterable[str]] | None = None,
         verbosity: int | None = None,
         dry_run: Literal[True] = ...,
     ) -> None: ...
@@ -646,7 +646,7 @@ class BatchSystem(ABC):
     def submit(
         self,
         script: Path,
-        options: dict[str, Any] | None = None,
+        options: dict[str, str | Iterable[str]] | None = None,
         verbosity: int | None = None,
         dry_run: Literal[False] = ...,
     ) -> JobSubmission: ...
@@ -655,7 +655,7 @@ class BatchSystem(ABC):
     def submit(
         self,
         script: Path,
-        options: dict[str, Any] | None = None,
+        options: dict[str, str | Iterable[str]] | None = None,
         verbosity: int | None = None,
         dry_run: bool = False,
     ) -> JobSubmission | None:
