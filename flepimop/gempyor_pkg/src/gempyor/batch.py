@@ -21,24 +21,43 @@ __all__ = (
 
 
 from abc import ABC, abstractmethod
+import atexit
 from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
+from getpass import getuser
+from itertools import product
 import json
 from logging import Logger
 import math
 from pathlib import Path
 import re
+import shutil
 from stat import S_IXUSR
 import subprocess
 import sys
+from tempfile import NamedTemporaryFile
 from typing import Annotated, Any, Callable, Literal, overload
 import warnings
 
-from pydantic import BaseModel, Field, PositiveInt, model_validator
+import click
+import confuse
+from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
 
+from ._click import DurationParamType, MemoryParamType
 from ._jinja import _jinja_environment
+from .file_paths import run_id
+from .info import get_cluster_info
 from .logging import get_script_logger
-from .utils import _format_cli_options, _git_head, _shutil_which
+from .shared_cli import (
+    cli,
+    config_files_argument,
+    config_file_options,
+    log_cli_inputs,
+    mock_context,
+    parse_config_files,
+    verbosity_options,
+)
+from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
 
 
 if sys.version_info >= (3, 11):
