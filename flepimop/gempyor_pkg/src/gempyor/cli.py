@@ -27,7 +27,8 @@ from .NPI import base
 )
 @click.pass_context
 def patch(ctx: click.Context = mock_context, **kwargs) -> None:
-    """Merge configuration files
+    """
+    Merge configuration files.
 
     This command will merge multiple config files together by overriding the top level
     keys in config files. The order of the config files is important, as the last file

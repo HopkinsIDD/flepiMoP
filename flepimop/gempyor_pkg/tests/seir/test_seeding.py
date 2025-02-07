@@ -39,5 +39,16 @@ class TestSeeding:
         sic = seeding.SeedingFactory(config=s.seeding_config)
         s.seeding_config["method"] = "NoSeeding"
 
-        seeding_result = sic.get_from_config(sim_id=100, modinf=s)
+        seeding_result = sic.get_from_config(
+            compartments=s.compartments,
+            subpop_struct=s.subpop_struct,
+            n_days=s.n_days,
+            ti=s.ti,
+            tf=s.tf,
+            input_filename=s.get_input_filename(
+                ftype=s.seeding_config["seeding_file_type"].get(),
+                sim_id=0,
+                extension_override="csv",
+            ),
+        )
         print(seeding_result)

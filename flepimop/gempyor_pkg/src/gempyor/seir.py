@@ -16,6 +16,51 @@ from .utils import Timer, read_df
 logger = logging.getLogger(__name__)
 
 
+def check_parameter_positivity(
+    parsed_parameters: np.ndarray,
+    parameter_names: list[str],
+    dates: pd.DatetimeIndex,
+    subpop_names: list[str],
+) -> None:
+    """
+    Identifies and reports earliest negative values for parameters after modifiers have been applied.
+
+    Args:
+        parsed_parameters: An array of parameter values.
+        parameter_names: A list of the names of parameters.
+        dates: A pandas DatetimeIndex containing the dates.
+        subpop_names: A list of the names of subpopulations.
+
+    Raises:
+        ValueError: Negative parameter values were detected.
+
+    Returns:
+        None
+    """
+    if len(negative_index_parameters := np.argwhere(parsed_parameters < 0)) > 0:
+        unique_param_sp_combinations = []
+        row_index = -1
+        redundant_rows = []
+        for row in negative_index_parameters:
+            row_index += 1
+            if (row[0], row[2]) in unique_param_sp_combinations:
+                redundant_rows.append(row_index)
+            if (row[0], row[2]) not in unique_param_sp_combinations:
+                unique_param_sp_combinations.append((row[0], row[2]))
+        non_redundant_negative_parameters = np.delete(
+            negative_index_parameters, (redundant_rows), axis=0
+        )
+
+        neg_subpops = []
+        neg_params = []
+        first_neg_date = dates[0].date()
+        for param_idx, _, sp_idx in non_redundant_negative_parameters:
+            neg_subpops.append(subpop_names[sp_idx])
+            neg_params.append(parameter_names[param_idx])
+        error_message = f"There are negative parameter errors in subpops {neg_subpops}, starting from date {first_neg_date} in parameters {neg_params}."
+        raise ValueError(f"{error_message}")
+
+
 def build_step_source_arg(
     modinf: ModelInfo,
     parsed_parameters,
@@ -119,6 +164,11 @@ def build_step_source_arg(
         "population": modinf.subpop_pop,
         "stochastic_p": modinf.stoch_traj_flag,
     }
+
+    check_parameter_positivity(
+        fnct_args["parameters"], modinf.parameters.pnames, modinf.dates, modinf.subpop_pop
+    )
+
     return fnct_args
 
 
@@ -277,16 +327,13 @@ def onerun_SEIR(
             initial_conditions = modinf.initial_conditions.get_from_file(
                 sim_id2load, modinf=modinf
             )
-            seeding_data, seeding_amounts = modinf.seeding.get_from_file(
-                sim_id2load, modinf=modinf
-            )
         else:
             initial_conditions = modinf.initial_conditions.get_from_config(
                 sim_id2write, modinf=modinf
             )
-            seeding_data, seeding_amounts = modinf.seeding.get_from_config(
-                sim_id2write, modinf=modinf
-            )
+        seeding_data, seeding_amounts = modinf.get_seeding_data(
+            sim_id=sim_id2load if load_ID else sim_id2write
+        )
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters

@@ -121,12 +121,12 @@ export RESUME_ID=FCH_R1_highVac_pesImm_2022_Nov20 &&
 </strong>   export CONFIG_NAME=config_$SCENARIO.yml &#x26;&#x26; 
    export CONFIG_PATH=/home/app/drp/$CONFIG_NAME &#x26;&#x26; 
    export COVID_PATH=/home/app/drp/COVIDScenarioPipeline &#x26;&#x26; 
-   export DATA_PATH=/home/app/drp &#x26;&#x26; 
+   export PROJECT_PATH=/home/app/drp &#x26;&#x26; 
    export INTERVENTION_NAME="med" &#x26;&#x26; 
    export COVID_STOCHASTIC=FALSE &#x26;&#x26; 
-   rm -rf $DATA_PATH/model_output $DATA_PATH/us_data.csv &#x26;&#x26;
-   rm -rf $DATA_PATH/seeding_territories.csv &#x26;&#x26; 
-   cd $DATA_PATH &#x26;&#x26; Rscript $COVID_PATH/R/scripts/build_US_setup.R -c $CONFIG_NAME &#x26;&#x26; 
+   rm -rf $PROJECT_PATH/model_output $PROJECT_PATH/us_data.csv &#x26;&#x26;
+   rm -rf $PROJECT_PATH/seeding_territories.csv &#x26;&#x26; 
+   cd $PROJECT_PATH &#x26;&#x26; Rscript $COVID_PATH/R/scripts/build_US_setup.R -c $CONFIG_NAME &#x26;&#x26; 
    Rscript $COVID_PATH/R/scripts/build_flu_data.R -c $CONFIG_NAME &#x26;&#x26; 
    Rscript $COVID_PATH/R/scripts/full_filter.R -c $CONFIG_NAME -j 1 -n 1 -k 1 &#x26;&#x26; 
    printenv CONFIG_NAME
@@ -152,7 +152,7 @@ You will be prompted to enter the following items. These can be found in a file 
 {% tabs %}
 {% tab title="Standard" %}
 <pre><code><strong>export CONFIG_PATH=$CONFIG_NAME &#x26;&#x26;
-</strong><strong>cd $DATA_PATH &#x26;&#x26;
+</strong><strong>cd $PROJECT_PATH &#x26;&#x26;
 </strong>$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic &#x26;&#x26;
 printenv CONFIG_NAME
 </code></pre>
@@ -161,7 +161,7 @@ printenv CONFIG_NAME
 {% tab title="Non-inference" %}
 ```
 export CONFIG_PATH=$CONFIG_NAME &&
-cd $DATA_PATH &&
+cd $PROJECT_PATH &&
 $COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic -j 1 -k 1 &&
 printenv CONFIG_NAME
 ```
@@ -175,7 +175,7 @@ printenv CONFIG_NAME
 **Carrying seeding**  (_do this to use seeding fits from resumed run_):
 
 <pre><code>export CONFIG_PATH=$CONFIG_NAME &#x26;&#x26;
-<strong>cd $DATA_PATH &#x26;&#x26;
+<strong>cd $PROJECT_PATH &#x26;&#x26;
 </strong>$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID &#x26;&#x26;
 printenv CONFIG_NAME
 </code></pre>
@@ -186,7 +186,7 @@ printenv CONFIG_NAME
 
 ```
 export CONFIG_PATH=$CONFIG_NAME &&  
-cd $DATA_PATH &&
+cd $PROJECT_PATH &&
 $COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-discard-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID &&
 printenv CONFIG_NAME
 ```
@@ -197,7 +197,7 @@ printenv CONFIG_NAME
 
 ```
 export CONFIG_PATH=$CONFIG_NAME &&
-cd $DATA_PATH &&
+cd $PROJECT_PATH &&
 $COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID -j 1 -k 1 &&
 printenv CONFIG_NAME
 ```

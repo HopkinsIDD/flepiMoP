@@ -49,6 +49,7 @@ jobs:
         shell: bash
       - name: Run gempyor tests
         run: |
+          export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
           pytest --exitfirst
         shell: bash
