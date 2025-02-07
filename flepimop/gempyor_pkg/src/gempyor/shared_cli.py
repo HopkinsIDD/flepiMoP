@@ -8,15 +8,16 @@ __all__ = []
 
 import multiprocessing
 import pathlib
-
-from typing import Any, Callable
 import warnings
 
 import click
 import confuse
 
+from typing import Any, Callable
+
+from . import utils
 from .logging import get_script_logger
-from .utils import config, as_list
+from .utils import as_list, config
 
 
 @click.group()

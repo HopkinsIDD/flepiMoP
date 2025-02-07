@@ -1,7 +1,9 @@
 import logging
 import numpy as np
+import scipy
+import tqdm
 from numba import jit
-import tqdm, scipy
+
 from .utils import Timer
 
 (

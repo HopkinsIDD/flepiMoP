@@ -10,8 +10,8 @@ __all__ = ["Statistic"]
 
 import confuse
 import numpy as np
-from scipy.special import gammaln
 import scipy.stats
+from scipy.special import gammaln
 import xarray as xr
 
 

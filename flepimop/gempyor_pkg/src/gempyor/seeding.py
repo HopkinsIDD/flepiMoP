@@ -3,10 +3,10 @@ __all__ = ("Seeding", "SeedingFactory")
 
 
 # Imports
-from datetime import date
 import logging
-from typing import Any
 import warnings
+from datetime import date
+from typing import Any
 
 import confuse
 import numba as nb
@@ -14,10 +14,10 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from . import utils
 from .compartments import Compartments
 from .simulation_component import SimulationComponent
 from .subpopulation_structure import SubpopulationStructure
-from . import utils
 
 
 # Globals

@@ -1,17 +1,17 @@
-import numpy as np
 import os
-import pytest
-import warnings
 import shutil
-
+import warnings
+import filecmp
 import pathlib
+
+import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import filecmp
-import pandas as pd
+import pytest
 import matplotlib.pyplot as plt
-from . import compartments, seir, NPI, file_paths, model_info
 
+from . import compartments, NPI, file_paths, model_info, seir
 from .utils import config
 
 DATA_DIR = "data"

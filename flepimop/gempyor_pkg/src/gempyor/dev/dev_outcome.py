@@ -1,36 +1,22 @@
-import numpy as np
-import os
-import pytest
-import warnings
-import shutil
-
-import pathlib
-import pyarrow as pa
-import pyarrow.parquet as pq
+import datetime
 import filecmp
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import datetime
+import glob
+import os
+import pathlib
+import shutil
+import sys
+import warnings
 
-import pytest
-
-from . import outcomes
-from .utils import config
-
-import pandas as pd
-import numpy as np
-import datetime
-import matplotlib.pyplot as plt
-import glob, os, sys
-from pathlib import Path
-
-# import seaborn as sns
-import pyarrow.parquet as pq
 import click
+import numpy as np
+import pandas as pd
 import pyarrow as pa
-from . import file_paths
+import pyarrow.parquet as pq
+import pytest
+import matplotlib.pyplot as plt
+
+from . import file_paths, outcomes
+from .utils import config
 
 config.clear()
 config.read(user=False)

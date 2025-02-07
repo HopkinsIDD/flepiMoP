@@ -1,8 +1,9 @@
 import numpy as np
-from scipy.integrate import solve_ivp, odeint, ode
-from numba import jit
 import numba
+from numba import jit
 import tqdm
+from scipy.integrate import solve_ivp, odeint, ode
+
 from ..utils import Timer
 
 (

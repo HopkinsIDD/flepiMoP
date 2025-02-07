@@ -156,23 +156,18 @@
 
 ## @cond
 
-import time, warnings, sys
+import sys
+import time
+import warnings
 
-from pathlib import Path
 from collections.abc import Iterable
+from pathlib import Path
 
-from confuse import Configuration
 from click import Context, pass_context
+from confuse import Configuration
 
-from . import seir, outcomes, model_info, utils
-from .shared_cli import (
-    config_files_argument,
-    config_file_options,
-    parse_config_files,
-    cli,
-    click_helpstring,
-    mock_context,
-)
+from . import model_info, outcomes, seir, utils
+from .shared_cli import cli, click_helpstring, config_file_options, config_files_argument, mock_context, parse_config_files
 
 # from .profile import profile_options
 
