@@ -12,7 +12,7 @@ from gempyor._jinja import _jinja_environment
         (
             {
                 "config": Path("/path/to/config.yaml"),
-                "run_id": "20250206_160655",
+                "job_name": "20250206_160655",
                 "seir_modifiers_scenario": "None",
                 "outcome_modifiers_scenario": "None",
                 "simulations_per_chain": 400,
@@ -27,7 +27,7 @@ from gempyor._jinja import _jinja_environment
                 "    --outcome_modifiers_scenarios None \\",
                 "    --jobs 1 \\",
                 "    --iterations_per_slot 400 \\",
-                "    --this_slot $SLURM_ARRAY_TASK_ID \\",
+                '    --this_slot "${SLURM_ARRAY_TASK_ID:=1}" \\',
                 "    --this_block 1 \\",
                 "    --stoch_traj_flag TRUE \\",
                 "    --flepi_path /path/to/flepiMoP \\",

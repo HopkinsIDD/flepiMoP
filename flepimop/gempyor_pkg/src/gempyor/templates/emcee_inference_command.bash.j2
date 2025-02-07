@@ -5,7 +5,7 @@ flepimop-calibrate \
     --niterations {{ simulations_per_chain }} \
     --nsamples {{ samples_per_chain }} \
     {%- if nthin is defined and nthin is not none %}--nthin {{ nthin }} \{% endif %}
-    --id {{ run_id }} \
+    --id {{ job_name }} \
     --prefix {{ prefix }} \
     {%- if resume is defined and resume is not none %}--resume \{% endif %}
     {%- if resume is defined and resume is not none %}--resume_location {{ resume }} \{% endif %}

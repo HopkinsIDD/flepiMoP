@@ -16,7 +16,7 @@ from gempyor._jinja import _jinja_environment
                 "chains": 8,
                 "simulations_per_chain": 400,
                 "samples_per_chain": 200,
-                "run_id": "20250206_160655",
+                "job_name": "20250206_160655",
                 "prefix": "foobar_None_None",
                 "log_output": "/dev/null",
             },
