@@ -167,7 +167,14 @@ from click import Context, pass_context
 from confuse import Configuration
 
 from . import model_info, outcomes, seir, utils
-from .shared_cli import cli, click_helpstring, config_file_options, config_files_argument, mock_context, parse_config_files
+from .shared_cli import (
+    cli,
+    click_helpstring,
+    config_file_options,
+    config_files_argument,
+    mock_context,
+    parse_config_files,
+)
 
 # from .profile import profile_options
 

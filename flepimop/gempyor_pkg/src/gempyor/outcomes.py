@@ -9,7 +9,14 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import compartments, file_paths, initial_conditions, parameters, seeding, subpopulation_structure
+from . import (
+    compartments,
+    file_paths,
+    initial_conditions,
+    parameters,
+    seeding,
+    subpopulation_structure,
+)
 from .utils import read_df, write_df
 
 
