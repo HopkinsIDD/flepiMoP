@@ -14,7 +14,6 @@ An example configuration file with the global header and the spatial\_setup sect
 
 ```
 name: test_simulation
-data_path: data
 model_output_dirname: model_output
 start_date: 2020-01-01
 end_date: 2020-12-31
@@ -29,8 +28,8 @@ subpop_setup:
 
 | Config Item | Required?    | Type/Format  | Description                           |
 | ----------- | ------------ | ------------ | ------------------------------------- |
-| geodata     | **required** | path to file | path to file relative to `data_path`  |
-| mobility    | **required** | path to file | path to file relative to `data_path`  |
+| geodata     | **required** | path to file | path to geodata file                  |
+| mobility    | **required** | path to file | path to mobility file                 |
 | selected    | **optional** | string       | name of selected location in`geodata` |
 
 ### `geodata` file

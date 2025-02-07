@@ -200,7 +200,7 @@ def generate_pdf(
         # In[5]:
 
         # gempyor.config.set_file(run_info.config_filepath)
-        # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
+        # gt = pd.read_csv(gempyor.config["inference"]["gt_data_path"].get())
         # gt
         # statistics = {}
         # Ingoring agreegation and all, assuming by week

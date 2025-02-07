@@ -2,7 +2,6 @@ name: USA
 setup_name: usa_inference_territories_statelevel
 start_date: 2020-01-01
 end_date: 2021-08-07
-data_path: data
 nslots: 300
 dt: 0.25
 
@@ -12012,7 +12011,7 @@ outcomes:
 inference:
   iterations_per_slot: 1000
   do_inference: TRUE
-  data_path: data/us_data.csv
+  gt_data_path: data/us_data.csv
   gt_source: "csse"
   statistics:
     sum_deaths:

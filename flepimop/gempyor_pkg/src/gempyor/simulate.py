@@ -15,7 +15,6 @@
 # end_date: <date>
 # dt: float
 # nslots: <integer> overridden by the -n/--nslots script parameter
-# data_path: <path to directory>
 # subpop_setup:
 #   geodata: <path to file>
 #   mobility: <path to file>
@@ -98,8 +97,8 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::subpop_pop}
-# * <b>{data_path}/{subpop_setup::mobility}</b>
+# * <b>{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::subpop_pop}
+# * <b>{subpop_setup::mobility}</b>
 #
 # If {seeding::method} is PoissonDistributed
 # * {seeding::lambda_file}
