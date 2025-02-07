@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+{%- if job_name is defined and job_name is not none %}
+#SBATCH --job-name="{{ job_name }}"
+{%- endif %}
+{%- if job_comment is defined and job_comment is not none %}
+#SBATCH --comment="{{ job_comment }}"
+{%- endif %}
+{%- if project_path is defined and project_path is not none %}
+#SBATCH --chdir={{ project_path }}
+{%- endif %}
+{%- if job_time_limit is defined and job_time_limit is not none %}
+#SBATCH --time={{ job_time_limit }}
+{%- endif %}
+{%- if job_resources_nodes is defined and job_resources_nodes is not none %}
+#SBATCH --nodes={{ job_resources_nodes }}
+{%- endif %}
+#SBATCH --ntasks=1
+{%- if job_resources_cpus is defined and job_resources_cpus is not none %}
+#SBATCH --cpus-per-task={{ job_resources_cpus }}
+{%- endif %}
+{%- if job_resources_memory is defined and job_resources_memory is not none %}
+#SBATCH --mem={{ job_resources_memory }}
+{%- endif %}
+
+{% if debug -%}
+# Debugging
+set -x
+{%- endif %}
+
+{% include "cluster_setup.bash.j2" with context %}
+
+{% include "conda_activate.bash.j2" with context %}
+
+{{ command }}
