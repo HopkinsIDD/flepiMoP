@@ -133,7 +133,7 @@ export CONFIG_NAME=config_$SCENARIO.yml &&
    export PROJECT_PATH=/home/app/drp/COVID19_USA && 
    export INTERVENTION_NAME="med" && 
    export FLEPI_STOCHASTIC=FALSE && 
-   rm -rf $PROJECT_PATH/model_output PROJECT_PATH/us_data.csv && 
+   rm -rf $PROJECT_PATH/model_output $PROJECT_PATH/us_data.csv && 
    cd $PROJECT_PATH && 
    Rscript $FLEPI_PATH/R/scripts/build_US_setup.R -c $CONFIG_NAME && 
    Rscript $FLEPI_PATH/R/scripts/build_covid_data.R -c $CONFIG_NAME && 
