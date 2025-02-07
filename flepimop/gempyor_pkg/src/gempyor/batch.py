@@ -718,13 +718,17 @@ class BatchSystem(ABC):
                 "If you have experience with scripting on windows and would like to "
                 "contribute, please consider opening a pull request."
             )
-        with NamedTemporaryFile(mode="w") as temp_script:
-            temp_script.write("#!/usr/bin/env bash\n")
-            temp_script.write(command)
-            temp_script.flush()
-            return self.submit(
-                Path(temp_script.name).absolute(), options, verbosity, dry_run
-            )
+        with NamedTemporaryFile(mode="w") as temp:
+            temp_script = Path(temp.name).absolute()
+            temp_script.write_text(f"#!/usr/bin/env bash\n\n{command}\n")
+            if dry_run:
+                dest = Path.cwd() / temp_script
+                shutil.copy(temp_script, Path.cwd() / dest.name)
+                if logger is not None:
+                    logger.info(
+                        "Since dry run copying script to '%s' for inspection.", dest
+                    )
+            return self.submit(temp_script, options, verbosity, dry_run)
 
     def format_nodes(self, job_resources: JobResources) -> str:
         """
