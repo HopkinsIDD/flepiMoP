@@ -1,0 +1,14 @@
+flepimop-inference-slot --config {{ config }} \
+    --run_id {{ run_id }} \
+    --seir_modifiers_scenarios {{ seir_modifiers_scenario }} \
+    --outcome_modifiers_scenarios {{ outcome_modifiers_scenario }} \
+    --jobs 1 \
+    --iterations_per_slot {{ simulations_per_chain }} \
+    --this_slot $SLURM_ARRAY_TASK_ID \
+    --this_block 1 \
+    --stoch_traj_flag {{ stoch_traj_flag | string | upper }} \
+    --flepi_path {{ flepi_path }} \
+    --python $WHICH_PYTHON \
+    --rpath $WHICH_RSCRIPT \
+    --is-interactive FALSE \
+    > {{ log_output }} 2>&1
