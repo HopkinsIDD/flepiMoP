@@ -146,22 +146,32 @@ def test_output_validation_for_select_values(
             log_count = 0
             if verbosity is not None:
                 if verbosity <= logging.DEBUG:
-                    log_count += 1
+                    log_count += 1  # Using script...
                 if (
                     coerce_exec and not exec_is_executable
                 ) and verbosity <= logging.WARNING:
-                    log_count += 1
+                    log_count += 1  # ...making it executable.
                 if dry_run and verbosity <= logging.INFO:
-                    log_count += 1
+                    log_count += 1  # If not dry run...
                 elif not dry_run:
                     if verbosity <= logging.INFO:
-                        log_count += 1
-                    if returncode != 0 and verbosity <= logging.CRITICAL:
-                        log_count += 1
-                    if verbosity <= logging.DEBUG and stdout:
-                        log_count += 1
-                    if verbosity <= logging.ERROR and stderr:
-                        log_count += 1
+                        log_count += 1  # Executing script...
+                    if returncode != 0:
+                        if verbosity <= logging.CRITICAL:
+                            log_count += 1  # Received non-zero exit code...
+                        if stdout and verbosity <= logging.INFO:
+                            log_count += 1  # Captured stdout...
+                        if not stdout and verbosity <= logging.WARNING:
+                            log_count += 1  # No stdout...
+                        if stderr and verbosity <= logging.ERROR:
+                            log_count += 1  # Captured stderr...
+                        if not stderr and verbosity <= logging.WARNING:
+                            log_count += 1  # No stderr...
+                    else:
+                        if verbosity <= logging.DEBUG and stdout:
+                            log_count += 1  # Captured stdout...
+                        if verbosity <= logging.ERROR and stderr:
+                            log_count += 1  # Captured stderr...
                     if use_job_id_callback and verbosity <= logging.INFO:
-                        log_count += 1
+                        log_count += 1  # Extracted job ID...
             assert len(caplog.records) == log_count

@@ -553,7 +553,7 @@ def _submit_via_subprocess(
     if dry_run:
         if logger is not None:
             logger.info(
-                "If not dry mode would have executed script with: %s",
+                "If not dry run would have executed script with: %s",
                 " ".join(cmd_args),
             )
         return None
@@ -575,10 +575,19 @@ def _submit_via_subprocess(
                 "Received non-zero exit code, %u, from executed script.",
                 process.returncode,
             )
-        if stdout:
-            logger.debug("Captured stdout from executed script: %s", stdout)
-        if stderr:
-            logger.error("Captured stderr from executed script: %s", stderr)
+            if stdout:
+                logger.info("Captured stdout from executed script: %s", stdout)
+            else:
+                logger.warning("No stdout captured from executed script.")
+            if stderr:
+                logger.error("Captured stderr from executed script: %s", stderr)
+            else:
+                logger.warning("No stderr captured from executed script.")
+        else:
+            if stdout:
+                logger.debug("Captured stdout from executed script: %s", stdout)
+            if stderr:
+                logger.error("Captured stderr from executed script: %s", stderr)
 
     job_id = None if job_id_callback is None else job_id_callback(process)
     if logger is not None and job_id is not None:
