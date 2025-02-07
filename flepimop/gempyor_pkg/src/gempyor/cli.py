@@ -2,13 +2,14 @@ import click
 import yaml
 
 from .shared_cli import (
-    config_files_argument,
-    config_file_options,
-    parse_config_files,
     cli,
+    config_file_options,
+    config_files_argument,
     mock_context,
+    parse_config_files,
 )
-from .utils import _dump_formatted_yaml, config
+
+from .utils import config, _dump_formatted_yaml
 
 # register the commands from the other modules
 from . import compartments, simulate

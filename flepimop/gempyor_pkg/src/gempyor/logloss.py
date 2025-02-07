@@ -1,10 +1,12 @@
-import xarray as xr
-import pandas as pd
-import numpy as np
-import confuse
-import scipy.stats
-from . import statistics
 import os
+
+import confuse
+import numpy as np
+import pandas as pd
+import scipy.stats
+import xarray as xr
+
+from . import statistics
 
 
 ## https://docs.xarray.dev/en/stable/user-guide/indexing.html#assigning-values-with-indexing

@@ -1,15 +1,17 @@
 import yaml
+from datetime import date
+from functools import partial
+from typing import Any, Annotated, Dict, List, Literal, Optional, Union
+
 from pydantic import (
+    AfterValidator,
     BaseModel,
+    Field,
     ValidationError,
     model_validator,
-    Field,
-    AfterValidator,
     validator,
 )
-from datetime import date
-from typing import Dict, List, Union, Literal, Optional, Annotated, Any
-from functools import partial
+
 from gempyor import compartments
 
 

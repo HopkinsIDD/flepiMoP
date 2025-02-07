@@ -15,12 +15,12 @@ __all__ = [
     "sample_fits_distribution",
 ]
 
-from collections.abc import Generator
-import functools
 import os
-from tempfile import TemporaryDirectory
-from typing import Any, Literal
+import functools
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from collections.abc import Generator
+from typing import Any, Literal
 
 import confuse
 import numpy as np

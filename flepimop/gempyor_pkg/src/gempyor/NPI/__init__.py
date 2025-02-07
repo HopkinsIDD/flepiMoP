@@ -1,10 +1,10 @@
-from pathlib import Path
-import sys
 import inspect
 import pkgutil
+import sys
 from importlib import import_module
-from .helpers import *
+from pathlib import Path
 
+from . import helpers
 from .base import NPIBase
 
 __all__ = ["NPIBase"]

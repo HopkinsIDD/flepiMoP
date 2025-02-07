@@ -1,8 +1,8 @@
 import abc
 import datetime
 
-import pyarrow as pa
 import click
+import pyarrow as pa
 
 from ..shared_cli import cli
 

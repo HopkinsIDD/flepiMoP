@@ -1,7 +1,7 @@
-from numba.pycc import CC
 import numpy as np
 import numba as nb
 from numba import types
+from numba.pycc import CC
 
 cc = CC("steps")
 cc.verbose = True

@@ -45,15 +45,16 @@ Examples:
 __all__ = ["Cluster", "Module", "PathExport", "get_cluster_info"]
 
 
-from collections.abc import Iterable
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 from socket import getfqdn
+from collections.abc import Iterable
 from typing import Pattern, TypeVar
 
-from pydantic import BaseModel
 import yaml
+
+from pydantic import BaseModel
 
 
 class Module(BaseModel):

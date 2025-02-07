@@ -4,9 +4,8 @@ __all__ = []
 from datetime import timedelta
 from math import ceil
 import re
-from typing import Any, Literal
-
 import click
+from typing import Any, Literal
 
 
 class DurationParamType(click.ParamType):
