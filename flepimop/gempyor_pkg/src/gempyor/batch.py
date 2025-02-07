@@ -30,6 +30,7 @@ import json
 from logging import Logger
 import math
 from pathlib import Path
+import platform
 import re
 import shutil
 from stat import S_IXUSR
@@ -701,7 +702,15 @@ class BatchSystem(ABC):
         See Also:
             The `submit` method.
         """
+        logger = get_script_logger(__name__, verbosity) if verbosity is not None else None
+        if logger is not None and platform.system() == "Windows":
+            logger.critical(
+                "Local batch system does not support command submissions on windows. "
+                "If you have experience with scripting on windows and would like to "
+                "contribute, please consider opening a pull request."
+            )
         with NamedTemporaryFile(mode="w") as temp_script:
+            temp_script.write("#!/usr/bin/env bash\n")
             temp_script.write(command)
             temp_script.flush()
             return self.submit(
