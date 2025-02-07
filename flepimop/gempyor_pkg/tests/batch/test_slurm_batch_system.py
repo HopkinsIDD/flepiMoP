@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+from confuse import Configuration
 import pytest
 
 from gempyor.batch import JobResources, JobSubmission, SlurmBatchSystem, get_batch_system
@@ -64,7 +65,7 @@ def test_time_limit_formatting_for_select_values(
 )
 @pytest.mark.parametrize("verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING))
 @pytest.mark.parametrize("dry_run", (True, False))
-def test_output_validation(
+def test_submit_output_validation(
     caplog: pytest.LogCaptureFixture,
     tmp_path: Path,
     options: dict[str, Any],
@@ -114,3 +115,26 @@ def test_output_validation(
                 assert Path(args[-1]) == script.absolute()
                 if options:
                     assert " ".join(args[1:-1]) == expected_options
+
+
+@pytest.mark.parametrize(
+    "cli_options",
+    (
+        {},
+        {"partition": "foobar"},
+        {"email": "janedoe@example.com"},
+        {"partition": "fizzbuzz", "email": "jake@statefarm.com"},
+        {"partition": "foo", "other_opt": "not relevant"},
+    ),
+)
+@pytest.mark.parametrize("verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING))
+def test_options_from_config_and_cli(
+    caplog: pytest.LogCaptureFixture, cli_options: dict[str, Any], verbosity: int | None
+) -> None:
+    batch_system = get_batch_system("slurm")
+    options = batch_system.options_from_config_and_cli(
+        Configuration("foobar", read=True), cli_options, verbosity
+    )
+    assert isinstance(options, dict)
+    assert len(options) == int("partition" in cli_options) + 2 * int("email" in cli_options)
+    assert len(caplog.records) == int(verbosity == logging.DEBUG)
