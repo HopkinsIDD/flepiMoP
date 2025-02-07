@@ -1440,15 +1440,6 @@ def _submit_scenario_job(
             job_name,
         )
 
-    # Get inference command
-    inference_command = _create_inference_command(
-        inference,
-        job_size,
-        outcome_modifiers_scenario=outcome_modifiers_scenario,
-        prefix=prefix,
-        seir_modifiers_scenario=seir_modifiers_scenario,
-    )
-
     # Template data
     template_data = {
         **template_data,
@@ -1461,8 +1452,16 @@ def _submit_scenario_job(
                 f"scenarios '{outcome_modifiers_scenario}' and "
                 f"'{seir_modifiers_scenario}', respectively."
             ),
+            "job_name": job_name,
         },
     }
+
+    # Get inference command
+    inference_command = _create_inference_command(
+        inference,
+        job_size,
+        **{k: v for k, v in template_data.items() if k not in {"inference", "job_size"}},
+    )
 
     # Submit
     batch_system.submit_command(
