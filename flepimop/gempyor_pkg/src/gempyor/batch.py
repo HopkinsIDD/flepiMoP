@@ -1427,6 +1427,21 @@ def _submit_scenario_job(
         seir_modifiers_scenario=seir_modifiers_scenario,
     )
 
+    # Template data
+    template_data = {
+        **template_data,
+        **{
+            "outcome_modifiers_scenario": outcome_modifiers_scenario,
+            "seir_modifiers_scenario": seir_modifiers_scenario,
+            "job_comment": (
+                f"{name} submitted by {template_data.get('user', 'unknown')} at "
+                f"{template_data.get('now', 'unknown')} with outcome and seir modifiers "
+                f"scenarios '{outcome_modifiers_scenario}' and "
+                f"'{seir_modifiers_scenario}', respectively."
+            ),
+        },
+    }
+
     # Submit
     batch_system.submit_command(
         inference_command, options, verbosity, dry_run, **template_data
@@ -1616,7 +1631,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
         cfg["outcome_modifiers"]["scenarios"].as_str_seq()
         if cfg["outcome_modifiers"].exists()
         and cfg["outcome_modifiers"]["scenarios"].exists()
-        else [None]
+        else ["None"]
     )
     logger.info(
         "Using outcome modifier scenarios of '%s'", "', '".join(outcome_modifiers_scenarios)
@@ -1624,7 +1639,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     seir_modifiers_scenarios = (
         cfg["seir_modifiers"]["scenarios"].as_str_seq()
         if cfg["seir_modifiers"].exists() and cfg["seir_modifiers"]["scenarios"].exists()
-        else [None]
+        else ["None"]
     )
     logger.info(
         "Using SEIR modifier scenarios of '%s'", "', '".join(seir_modifiers_scenarios)
@@ -1726,11 +1741,13 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     general_template_data = {
         **kwargs,
         **{
+            "user": getuser(),
+            "now": now.strftime("%c"),
             "name": name,
             "job_name": job_name,
             "job_size": job_size.model_dump(),
             "job_time_limit": batch_system.format_time_limit(job_time_limit),
-            "job_resources_nodes": batch_system.format_nodes(job_resources.nodes),
+            "job_resources_nodes": batch_system.format_nodes(job_resources),
             "job_resources_cpus": batch_system.format_cpus(job_resources),
             "job_resources_memory": batch_system.format_memory(job_resources),
             "cluster": None if cluster is None else cluster.model_dump(),
@@ -1752,13 +1769,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             batch_system.options_from_config_and_cli(
                 cfg, kwargs, kwargs.get("verbosity", 0)
             ),
-            {  # template_data
-                **general_template_data,
-                **{
-                    "outcome_modifiers_scenario": outcome_modifiers_scenario,
-                    "seir_modifiers_scenario": seir_modifiers_scenario,
-                },
-            },
+            general_template_data,
             kwargs.get("verbosity", 0),
             kwargs.get("dry_run", False),
         )
