@@ -1444,7 +1444,15 @@ def _submit_scenario_job(
 
     # Submit
     batch_system.submit_command(
-        inference_command, options, verbosity, dry_run, **template_data
+        inference_command,
+        options,
+        verbosity,
+        dry_run,
+        **{
+            k: v
+            for k, v in template_data.items()
+            if k not in {"command", "options", "verbosity", "dry_run"}
+        },
     )
 
 
