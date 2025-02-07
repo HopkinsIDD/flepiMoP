@@ -1588,13 +1588,6 @@ def _submit_scenario_job(
             help="Flag to skip writing a manifest file, useful in dry runs.",
         ),
         click.Option(
-            param_decls=["--skip-job-config", "skip_job_config"],
-            type=bool,
-            default=False,
-            is_flag=True,
-            help="Flag to skip writing a job config file, useful in dry runs.",
-        ),
-        click.Option(
             param_decls=["--skip-checkout", "skip_checkout"],
             type=bool,
             default=False,
@@ -1744,18 +1737,13 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             logger.warning("Skipping manifest in non-dry run which is not recommended.")
 
     # Job config
-    if not kwargs.get("skip_job_config", False):
-        job_config = Path(f"config_{job_name}.yml").absolute()
-        with job_config.open(mode="w") as f:
-            f.write(cfg.dump())
+    job_config = Path(f"config_{job_name}.yml").absolute()
+    with job_config.open(mode="w") as f:
+        f.write(cfg.dump())
+    if logger is not None:
         logger.info(
             "Dumped the job config for this batch submission to %s", job_config.absolute()
         )
-    else:
-        if kwargs.get("dry_run", False):
-            logger.info("Skipping job config.")
-        else:
-            logger.warning("Skipping job config in non-dry run which is not recommended.")
 
     # Git checkout
     if not kwargs.get("skip_checkout", False):
@@ -1780,6 +1768,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "job_resources_cpus": batch_system.format_cpus(job_resources),
             "job_resources_memory": batch_system.format_memory(job_resources),
             "cluster": None if cluster is None else cluster.model_dump(),
+            "config": job_config,
         },
     }
 
