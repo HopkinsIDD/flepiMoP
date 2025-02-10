@@ -165,7 +165,7 @@ print(paste("Wrote geodata file:", file.path(geodata_file)))
 
 if(state_level & !file.exists(paste0(config$subpop_setup$mobility))){
 
-  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", paste0(config$subpop_setup$mobility), "(specified in the config) currently exists. Please check again."))
+  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", config$subpop_setup$mobility, "(specified in the config) currently exists. Please check again."))
 
 } else if(state_level & file.exists(paste0(config$subpop_setup$mobility))){
 
