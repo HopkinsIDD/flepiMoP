@@ -408,6 +408,19 @@ def _create_inference_command(
     return template.render(template_data)
 
 
+def _inference_is_array_capable(inference: Literal["emcee", "r"]) -> bool:
+    """
+    Determine if an inference method is capable of running in an array.
+
+    Args:
+        inference: The inference method to check.
+
+    Returns:
+        Whether the inference method is capable of running in an array.
+    """
+    return inference == "r"
+
+
 class JobSubmission(subprocess.CompletedProcess):
     """
     Job submission result.
@@ -1431,12 +1444,12 @@ def _submit_scenario_job(
     # Get logger
     if verbosity is not None:
         logger = get_script_logger(__name__, verbosity)
-        if outcome_modifiers_scenario is None:
+        if outcome_modifiers_scenario == "None":
             logger.warning(
                 "The outcome modifiers scenario is `None`, may lead to "
                 "unintended consequences in output file/directory names."
             )
-        if seir_modifiers_scenario is None:
+        if seir_modifiers_scenario == "None":
             logger.warning(
                 "The seir modifiers scenario is `None`, may lead to "
                 "unintended consequences in output file/directory names."
@@ -1794,6 +1807,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "job_resources_memory": batch_system.format_memory(job_resources),
             "cluster": None if cluster is None else cluster.model_dump(),
             "config": job_config,
+            "array_capable": _inference_is_array_capable(inference_method),
         },
     }
 

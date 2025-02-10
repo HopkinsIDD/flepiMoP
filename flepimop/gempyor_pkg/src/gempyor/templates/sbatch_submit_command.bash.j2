@@ -12,7 +12,12 @@
 #SBATCH --time={{ job_time_limit }}
 {%- endif %}
 {%- if job_resources_nodes is defined and job_resources_nodes is not none %}
+{%- if array_capable %}
+#SBATCH --nodes=1
+#SBATCH --array=1-{{ job_resources_nodes }}
+{%- else %}
 #SBATCH --nodes={{ job_resources_nodes }}
+{%- endif %}
 {%- endif %}
 #SBATCH --ntasks=1
 {%- if job_resources_cpus is defined and job_resources_cpus is not none %}
