@@ -1496,6 +1496,12 @@ def _submit_scenario_job(
             help="Path to the project directory being used.",
         ),
         click.Option(
+            param_decls=["--conda-env", "conda_env"],
+            type=str,
+            default="flepimop-env",
+            help="The conda environment to use for the job.",
+        ),
+        click.Option(
             param_decls=["--blocks", "blocks"],
             required=True,
             type=click.IntRange(min=1),
