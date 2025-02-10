@@ -27,7 +27,6 @@ name: sir
 setup_name: minimal
 start_date: 2020-01-31
 end_date: 2020-05-31
-data_path: data
 nslots: 1
 
 subpop_setup:
