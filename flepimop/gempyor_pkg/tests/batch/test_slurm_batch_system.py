@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import timedelta
 import logging
 from pathlib import Path
@@ -115,6 +116,45 @@ def test_submit_output_validation(
                 assert Path(args[-1]) == script.absolute()
                 if options:
                     assert " ".join(args[1:-1]) == expected_options
+
+
+@pytest.mark.parametrize("command", ("echo 'Foobar!'",))
+@pytest.mark.parametrize("options", (None, {}, {"job_name": "my_job_name"}))
+@pytest.mark.parametrize(
+    "verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
+)
+@pytest.mark.parametrize("dry_run", (True, False))
+def test_submit_command_output_validation(
+    caplog: pytest.LogCaptureFixture,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    options: dict[str, str | Iterable[str]] | None,
+    verbosity: int | None,
+    dry_run: bool,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    batch_system = get_batch_system("slurm")
+    with patch.object(batch_system, "submit") as submit_patch:
+        submit_patch.return_value = None
+        assert batch_system.submit_command(command, options, verbosity, dry_run) is None
+        submit_patch.assert_called_once()
+        assert len(caplog.records) == (
+            0 if verbosity is None else (verbosity <= logging.INFO) * (1 + dry_run)
+        )
+        sbatch_script = submit_patch.call_args.args[0]
+        assert str(sbatch_script).endswith(".sbatch")
+        if "job_name" in (options or {}):
+            assert sbatch_script.name.startswith(options.get("job_name"))
+        if dry_run:
+            sbatch_script_copy = tmp_path / sbatch_script.name
+            assert sbatch_script_copy.exists()
+            assert command in sbatch_script_copy.read_text()
+        assert len(submit_patch.call_args.args[1]) == (
+            0 if options is None else len(options)
+        )
+        assert submit_patch.call_args.args[2] == verbosity
+        assert submit_patch.call_args.args[3] == dry_run
 
 
 @pytest.mark.parametrize(

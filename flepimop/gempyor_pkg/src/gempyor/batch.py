@@ -1065,11 +1065,11 @@ class SlurmBatchSystem(BatchSystem):
             the current working directory before program end.
         """
         logger = get_script_logger(__name__, verbosity) if verbosity is not None else None
+        options = options or {}
         with NamedTemporaryFile(
             mode="w",
             suffix=".sbatch",
             prefix=None if (job_name := options.get("job_name")) is None else job_name,
-            delete=not dry_run,
         ) as temp_script:
             sbatch_script = Path(temp_script.name).absolute()
             sbatch_script.write_text(
@@ -1077,14 +1077,13 @@ class SlurmBatchSystem(BatchSystem):
                     {**kwargs, **{"command": command}}
                 )
             )
-            sbatch_script.flush()
-            if dry_run:
-                atexit.register(
-                    _slurm_submit_command_cleanup, dry_run, sbatch_script, Path.cwd()
-                )
             if logger is not None:
                 logger.info("Using sbatch script '%s' for submission", sbatch_script)
-                logger.debug("Sbatch script will be copied to '%s' on exit", Path.cwd())
+            if dry_run:
+                dest = Path.cwd() / sbatch_script.name
+                shutil.copy2(sbatch_script, dest)
+                if logger is not None:
+                    logger.info("Sbatch script copied to '%s' for inspection", dest)
             return self.submit(
                 sbatch_script,
                 options,
