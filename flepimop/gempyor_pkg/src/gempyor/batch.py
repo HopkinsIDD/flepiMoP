@@ -21,7 +21,6 @@ __all__ = (
 
 
 from abc import ABC, abstractmethod
-import atexit
 from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 from getpass import getuser
@@ -58,7 +57,14 @@ from .shared_cli import (
     parse_config_files,
     verbosity_options,
 )
-from .utils import _format_cli_options, _git_checkout, _git_head, _shutil_which, config
+from .utils import (
+    _dump_formatted_yaml,
+    _format_cli_options,
+    _git_checkout,
+    _git_head,
+    _shutil_which,
+    config,
+)
 
 
 if sys.version_info >= (3, 11):
@@ -394,7 +400,7 @@ def _create_inference_command(
         The inference command.
     """
     template_data = {
-        **{"log_output": "/dev/null"},
+        **{"log_output": "/dev/stdout"},
         **job_size.model_dump(),
         **kwargs,
     }
@@ -720,7 +726,11 @@ class BatchSystem(ABC):
             )
         with NamedTemporaryFile(mode="w") as temp:
             temp_script = Path(temp.name).absolute()
-            temp_script.write_text(f"#!/usr/bin/env bash\n\n{command}\n")
+            temp_script.write_text(
+                _jinja_environment.get_template("submit_command.bash.j2").render(
+                    {**kwargs, **{"command": command}}
+                )
+            )
             if dry_run:
                 dest = Path.cwd() / temp_script
                 shutil.copy(temp_script, Path.cwd() / dest.name)
@@ -1647,6 +1657,11 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     logger.info("Using a run id of '%s'", kwargs.get("run_id"))
 
     # Inference method
+    if not cfg["inference"].exists():
+        logger.critical(
+            "No inference section specified in the config "
+            "file, likely missing important information."
+        )
     inference_method = (
         cfg["inference"]["method"].as_str()
         if cfg["inference"].exists() and cfg["inference"]["method"].exists()
@@ -1744,8 +1759,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
 
     # Job config
     job_config = Path(f"config_{job_name}.yml").absolute()
-    with job_config.open(mode="w") as f:
-        f.write(cfg.dump())
+    job_config.write_text(_dump_formatted_yaml(cfg))
     if logger is not None:
         logger.info(
             "Dumped the job config for this batch submission to %s", job_config.absolute()
