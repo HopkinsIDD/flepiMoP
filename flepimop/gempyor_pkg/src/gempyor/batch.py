@@ -1443,6 +1443,7 @@ def _submit_scenario_job(
     template_data = {
         **template_data,
         **{
+            "prefix": prefix,
             "outcome_modifiers_scenario": outcome_modifiers_scenario,
             "seir_modifiers_scenario": seir_modifiers_scenario,
             "job_comment": (
