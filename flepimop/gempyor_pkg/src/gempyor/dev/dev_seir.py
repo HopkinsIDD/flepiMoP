@@ -12,7 +12,7 @@ import pytest
 import matplotlib.pyplot as plt
 
 from . import compartments, NPI, file_paths, model_info, seir
-from .utils import config
+from ..utils import config
 
 DATA_DIR = "data"
 

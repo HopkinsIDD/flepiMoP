@@ -18,11 +18,11 @@ import logging
 from functools import reduce
 from typing import Any
 
-import click
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from click import pass_context, Context
 
 from .shared_cli import cli, config_file_options, config_files_argument, parse_config_files
 from .utils import Timer, as_list, config
