@@ -619,6 +619,8 @@ class BatchSystem(ABC):
 
     Attributes:
         name: The name of the batch system. Must be unique when registered.
+        needs_cluster: Whether the batch system requires a cluster to run jobs, defaults
+            to `False`.
 
     Examples:
         >>> from datetime import timedelta
@@ -641,6 +643,8 @@ class BatchSystem(ABC):
         >>> batch_system.size_from_jobs_simulations_blocks(2, 10, None, 5)
         JobSize(blocks=2, chains=10, samples=None, simulations=5)
     """
+
+    needs_cluster: bool = False
 
     @property
     @abstractmethod
@@ -1012,6 +1016,7 @@ class SlurmBatchSystem(BatchSystem):
     _sbatch_regex = re.compile(r"submitted batch job (\d+)", flags=re.IGNORECASE)
 
     name = "slurm"
+    needs_cluster = True
 
     def submit(
         self,
@@ -1738,7 +1743,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     logger.debug("User provided cluster name of '%s'", cluster_name)
     cluster = (
         get_cluster_info(cluster_name)
-        if isinstance(batch_system, SlurmBatchSystem)
+        if (batch_system.needs_cluster or cluster_name is not None)
         else None
     )
     logger.info("Using cluster info of %s", cluster)
