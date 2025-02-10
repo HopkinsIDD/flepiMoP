@@ -161,10 +161,11 @@ def test_submit_command_output_validation(
     "cli_options",
     (
         {},
-        {"partition": "foobar"},
-        {"email": "janedoe@example.com"},
-        {"partition": "fizzbuzz", "email": "jake@statefarm.com"},
-        {"partition": "foo", "other_opt": "not relevant"},
+        {"extra": {}},
+        {"extra": {"partition": "foobar"}},
+        {"extra": {"email": "janedoe@example.com"}},
+        {"extra": {"partition": "fizzbuzz", "email": "jake@statefarm.com"}},
+        {"extra": {"partition": "foo", "other_opt": "not relevant"}},
     ),
 )
 @pytest.mark.parametrize("verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING))
@@ -176,5 +177,7 @@ def test_options_from_config_and_cli(
         Configuration("foobar", read=True), cli_options, verbosity
     )
     assert isinstance(options, dict)
-    assert len(options) == int("partition" in cli_options) + 2 * int("email" in cli_options)
+    assert len(options) == int("partition" in cli_options.get("extra", {})) + 2 * int(
+        "email" in cli_options.get("extra", {})
+    )
     assert len(caplog.records) == int(verbosity == logging.DEBUG)

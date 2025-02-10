@@ -1148,10 +1148,10 @@ class SlurmBatchSystem(BatchSystem):
         """
         logger = get_script_logger(__name__, verbosity) if verbosity is not None else None
         options = {}
-        if cli_options.get("partition") is not None:
-            options["partition"] = cli_options["partition"]
-        if cli_options.get("email") is not None:
-            options["mail-user"] = cli_options["email"]
+        if (partition := cli_options.get("extra", {}).get("partition")) is not None:
+            options["partition"] = partition
+        if (email := cli_options.get("extra", {}).get("email")) is not None:
+            options["mail-user"] = email
             options["mail-type"] = "ALL"
         if logger is not None:
             logger.debug("Generated options: %s", options)
@@ -1407,6 +1407,34 @@ def _resolve_batch_system_name(name: str | None, local: bool, slurm: bool) -> st
     return name
 
 
+def _parse_extra_options(extra: list[str] | None) -> dict[str, str]:
+    """
+    Parse `--extra` options into a dictionary.
+
+    Args:
+        extra: A list of extra options to parse if given.
+
+    Returns:
+        A dictionary of the parsed extra options.
+
+    Examples:
+        >>> from gempyor.batch import _parse_extra_options
+        >>> _parse_extra_options(["abc=def", "ghi=jkl"])
+        {'abc': 'def', 'ghi': 'jkl'}
+        >>> _parse_extra_options([
+        ...     "email=bob@example.com",
+        ...     "partition=special-cluster",
+        ...     "slack=my-alerts-channel",
+        ... ])
+        {'email': 'bob@example.com', 'partition': 'special-cluster', 'slack': 'my-alerts-channel'}
+        >>> _parse_extra_options(None)
+        {}
+    """
+    if extra is None:
+        return {}
+    return {k: v for k, v in (opt.split("=", 1) for opt in extra)}
+
+
 def _submit_scenario_job(
     name: str,
     job_name: str,
@@ -1639,18 +1667,14 @@ def _submit_scenario_job(
             help="Flag to enable debugging in batch submission scripts.",
         ),
         click.Option(
-            param_decls=["--partition", "partition"],
+            param_decls=["--extra", "extra"],
             type=str,
             default=None,
+            multiple=True,
             help=(
-                "The partition to submit the job to on the cluster. Only relevant to slurm."
+                "Extra options to pass to the batch system. Please consult "
+                "the batch system documentation for valid options."
             ),
-        ),
-        click.Option(
-            param_decls=["--email", "email"],
-            type=str,
-            default=None,
-            help="The email address to send job notifications to. Only relevant to slurm.",
         ),
     ]
     + list(verbosity_options.values()),
@@ -1673,6 +1697,10 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     if kwargs.get("run_id") is None:
         kwargs["run_id"] = run_id(now)
     logger.info("Using a run id of '%s'", kwargs.get("run_id"))
+
+    # Parse extra options
+    kwargs["extra"] = _parse_extra_options(kwargs.get("extra", None))
+    logger.debug("Parsed extra options: %s", kwargs["extra"])
 
     # Inference method
     if not cfg["inference"].exists():
