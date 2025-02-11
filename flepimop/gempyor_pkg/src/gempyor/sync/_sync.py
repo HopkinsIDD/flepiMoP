@@ -4,18 +4,7 @@ from typing import Literal, Annotated, Union, Dict
 from pathlib import Path
 from subprocess import run, CompletedProcess
 
-import click
 from pydantic import BaseModel, Field
-
-import shutil
-from ..shared_cli import (
-    config_files_argument,
-    parse_config_files,
-    cli,
-    mock_context,
-)
-from ..utils import config
-from ..file_paths import create_file_name_for_push
 
 class SyncABC(ABC):
     """
@@ -35,7 +24,8 @@ class RsyncModel(BaseModel, SyncABC):
     source : Path
 
     def sync(self, dryrun: bool, sync_options : dict) -> CompletedProcess:
-        pass
+        testcmd = ["rsync", "-av", "--delete", "--dry-run" if dryrun else "", self.source, self.target].join(" ")
+        run(["echo", testcmd])
 
 class S3SyncModel(BaseModel, SyncABC):
     """
@@ -47,7 +37,8 @@ class S3SyncModel(BaseModel, SyncABC):
     source : Path
 
     def sync(self, dryrun: bool, sync_options : dict) -> CompletedProcess:
-        pass
+        testcmd = ["aws", "s3", "sync", "-av", "--delete", "--dry-run" if dryrun else "", self.source, self.target].join(" ")
+        run(["echo", testcmd])
 
 
 class GitModel(BaseModel, SyncABC):
@@ -58,7 +49,8 @@ class GitModel(BaseModel, SyncABC):
     type : Literal["git"]
 
     def sync(self, dryrun: bool, sync_options : dict) -> CompletedProcess:
-        pass
+        testcmd = ["git", "status"].join(" ")
+        run(["echo", testcmd])
 
 
 SyncModel = Annotated[
@@ -67,7 +59,25 @@ SyncModel = Annotated[
 ]
 
 class SyncProtocols(BaseModel, SyncABC):
-    protocols : dict[str, SyncModel]
+    protocols : Dict[str, SyncModel]
 
     def sync(self, dryrun: bool, sync_options: dict) -> CompletedProcess:
-        pass
+        if not self.protocols:
+            return run(["echo", "No protocols to sync"])
+        elif protoname := sync_options['protocol']:
+            if protocol := self.protocols.get(protoname):
+                return protocol.sync(dryrun, sync_options)
+            else:
+                return run(["echo", f"No protocol named {protoname} found"])
+        else:
+            res = { k: v.sync(dryrun, sync_options) for k, v in self.protocols.items() }
+            accargs = []
+            allargs = [accargs := accargs + list(v.args) for v in res.values()]
+            return CompletedProcess(
+                args = allargs,
+                returncode = min([ v.returncode for v in res.values() ]),
+                stdout = "\n".join([ v.stdout for v in res.values() ]),
+                stderr = "\n".join([ v.stderr for v in res.values() ]),
+            )
+
+

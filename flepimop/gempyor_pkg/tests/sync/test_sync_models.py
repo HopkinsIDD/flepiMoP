@@ -5,34 +5,31 @@ from pydantic import TypeAdapter, ValidationError
 from gempyor.sync._sync import SyncProtocols
 
 @pytest.mark.parametrize(
-    "protocols",
-    [
-        {{
-            "demorsync" : {
-                'type': 'rsync', 'source' : '.', 'target' : 'host:~/some/path'
-            },
-            "demos3sync": {
-                'type': 's3sync', 'source' : '.', 'target' : 'some/path'
-            },
-            "demogit" : {
-                'type' : 'git'
-            }
-        }},
-        {{
-            "justone" : {
-                'type' : 'git'
-            }
-        }},
-        {}
-    ]
-)
-def test_valid_type_protocols(protocols: dict):
+    "protocols", [
+    {
+        "demorsync" : {
+            'type': 'rsync', 'source' : '.', 'target' : 'host:~/some/path'
+        },
+        "demos3sync": {
+            'type': 's3sync', 'source' : '.', 'target' : 'some/path'
+        },
+        "demogit" : {
+            'type' : 'git'
+        }
+    },
+    {
+        "justone" : {
+            'type' : 'git'
+        }
+    },
+    {}
+])
+def test_successfully_construct_from_valid_protocols(protocols: dict):
     """
-    Ensures TriggerConfig can instantiate valid objects
+    Ensures SyncProtocols can instantiate valid objects
     """
 
-    ta = TypeAdapter(SyncProtocols)
-    _ = ta.validate_python(protocols)
+    SyncProtocols(protocols=protocols)
 
 
 # @pytest.mark.parametrize(
