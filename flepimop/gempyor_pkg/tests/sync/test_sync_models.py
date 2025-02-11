@@ -31,6 +31,31 @@ def test_successfully_construct_from_valid_protocols(protocols: dict):
 
     SyncProtocols(protocols=protocols)
 
+@pytest.mark.parametrize(
+    "protocols", [
+    {
+        "demorsync" : {
+            'type': 'unsupported', 'source' : '.', 'target' : 'host:~/some/path'
+        }
+    },
+    {
+        "missingtar" : {
+            'type' : 'rsync', "source" : "."
+        }
+    },
+    {
+        "badgit" : {
+            'type' : 'git', "source" : "."
+        }
+    },
+])
+def test_fail_construct_from_invalid_protocols(protocols: dict):
+    """
+    Ensures SyncProtocols doesn't instantiate invalid objects
+    """
+    with pytest.raises(ValidationError):
+        SyncProtocols(protocols=protocols)
+
 
 # @pytest.mark.parametrize(
 #     "data",
