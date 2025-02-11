@@ -4,12 +4,14 @@ from typing import Literal, Annotated, Union, Dict
 from pathlib import Path
 from subprocess import run, CompletedProcess
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class SyncABC(ABC):
     """
     Defines a remote location to sync files to / from
     """
+
+    model_config = ConfigDict(extra='forbid')
 
     @abstractmethod
     def sync(self, dryrun : bool, sync_options : dict) -> CompletedProcess: ...
