@@ -1,0 +1,53 @@
+import pytest
+
+from pydantic import TypeAdapter, ValidationError
+
+from gempyor.sync._sync import SyncProtocols
+
+@pytest.mark.parametrize(
+    "protocols",
+    [
+        {{
+            "demorsync" : {
+                'type': 'rsync', 'source' : '.', 'target' : 'host:~/some/path'
+            },
+            "demos3sync": {
+                'type': 's3sync', 'source' : '.', 'target' : 'some/path'
+            },
+            "demogit" : {
+                'type' : 'git'
+            }
+        }},
+        {{
+            "justone" : {
+                'type' : 'git'
+            }
+        }},
+        {}
+    ]
+)
+def test_valid_type_protocols(protocols: dict):
+    """
+    Ensures TriggerConfig can instantiate valid objects
+    """
+
+    ta = TypeAdapter(SyncProtocols)
+    _ = ta.validate_python(protocols)
+
+
+# @pytest.mark.parametrize(
+#     "data",
+#     [
+#         {'TriggerType': 'Scheduled'},
+#         {'TriggerType': 'OnDemand', 'TriggerProperties': {'foo': 'bar'}},
+#         {'TriggerType': 'Event', 'TriggerProperties': {'foo': 'bar'}}
+#     ]
+# )
+# def test_trigger_config_invalid(data: dict):
+#     """
+#     Ensures TriggerConfig raises error when instantiating invalid objects
+#     """
+
+#     ta = TypeAdapter(TriggerConfig)
+#     with pytest.raises(ValidationError):
+#         _ = ta.validate_python(data)

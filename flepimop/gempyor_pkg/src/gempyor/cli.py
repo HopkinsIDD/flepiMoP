@@ -11,7 +11,9 @@ from .shared_cli import (
 from .utils import _dump_formatted_yaml, config
 
 # register the commands from the other modules
-from . import compartments, simulate, flepisync
+from . import compartments, simulate
+from .sync import flepisync
+
 from .NPI import base
 
 # Guidance for extending the CLI:
