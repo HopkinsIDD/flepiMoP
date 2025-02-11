@@ -1683,6 +1683,54 @@ def _submit_scenario_job(
 def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> None:
     """
     Submit a calibration job to a batch system.
+    
+    This job makes it straightforward to submit a calibration job to a batch system. The
+    job will be submitted with the given configuration file and additional options. The
+    general steps this tool follows are:
+    
+    \b
+    1) Generate a unique job name from the configuration and timestamp,
+    2) Determine the outcome/SEIR modifier scenarios to use,
+    3) Determine the batch system to use and required job size/resources/time limit,
+    4) Write a 'manifest.json' with job metadata, write the config used to a file, and
+       checkout a new branch in the project git repository,
+    5) Loop over the outcome/SEIR modifier scenarios and submit a job for each scenario.
+    
+    To get a better understanding of this tool you can use the `--dry-run` flag which
+    will complete all of steps described above except for submitting the jobs. Or if you
+    would like to test run the batch scripts without submitting to slurm or other batch 
+    systems you can use the `--local` flag which will run the "batch" job locally (only 
+    use for small test jobs).
+    
+    Here is an example of how to use this tool with the `examples/tutorials/` directory:
+    
+    \b
+    ```bash
+    $ flepimop batch-calibrate \\
+        # The paths and conda environment to use (assuming $FLEPI_PATH is set)
+        --flepi-path $FLEPI_PATH \\
+        --project-path $FLEPI_PATH/examples/tutorials \\
+        --conda-env flepimop-env \\ 
+        # The size of the job to run
+        --blocks 1 \\
+        --chains 50 \\
+        --samples 100 \\
+        --simulations 500 \\
+        # The time limit for the job
+        --time-limit 8hr \\
+        # The batch system to use, equivalent to `--batch-system slurm`
+        --slurm \\
+        # Resource options
+        --nodes 50 \\
+        --cpus 2 \\
+        --memory 4GB \\
+        # Batch system specific options can be provided via `--extra`
+        --extra partition=normal \\
+        --extra email=bob@example.edu \\
+        # Only run a dry run to see what would be submitted for the config
+        --dry-run \\
+        -vvv config_sample_2pop_inference.yml
+    ```
     """
     # Generic setup
     now = datetime.now(timezone.utc)
