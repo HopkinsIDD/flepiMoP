@@ -1407,12 +1407,12 @@ def _resolve_batch_system_name(name: str | None, local: bool, slurm: bool) -> st
     return name
 
 
-def _parse_extra_options(extra: list[str] | None) -> dict[str, str]:
+def _parse_extra_options(extra: Iterable[str] | None) -> dict[str, str]:
     """
     Parse `--extra` options into a dictionary.
 
     Args:
-        extra: A list of extra options to parse if given.
+        extra: An iterable of extra options to parse if given.
 
     Returns:
         A dictionary of the parsed extra options.
@@ -1432,7 +1432,9 @@ def _parse_extra_options(extra: list[str] | None) -> dict[str, str]:
     """
     if extra is None:
         return {}
-    return {k: v for k, v in (opt.split("=", 1) for opt in extra)}
+    return {
+        k: v for k, v in (opt.split("=", 1) if "=" in opt else [opt, ""] for opt in extra)
+    }
 
 
 def _submit_scenario_job(
