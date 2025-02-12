@@ -7,6 +7,6 @@ flepimop-calibrate \
     {%- if nthin is defined and nthin is not none %}--nthin {{ nthin }} \{% endif %}
     --id {{ job_name }} \
     --prefix {{ prefix }} \
-    {%- if resume is defined and resume is not none %}--resume \{% endif %}
-    {%- if resume is defined and resume is not none %}--resume_location {{ resume }} \{% endif %}
+    {%- if resume is defined and resume is not none %}--resume \
+    --resume_location {{ resume }} \{% endif %}
     > {{ log_output }} 2>&1

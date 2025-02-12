@@ -25,12 +25,12 @@ from gempyor._jinja import _jinja_environment
                 "#!/usr/bin/env bash",
                 '#SBATCH --job-name="Foobar"',
                 '#SBATCH --comment="My custom comment"',
-                "#SBATCH --chdir=/foo/bar",
-                "#SBATCH --time=1:00:00",
-                "#SBATCH --nodes=1",
-                "#SBATCH --ntasks=1",
-                "#SBATCH --cpus-per-task=1",
-                "#SBATCH --mem=1024G",
+                '#SBATCH --chdir="/foo/bar"',
+                '#SBATCH --time="1:00:00"',
+                '#SBATCH --nodes="1"',
+                '#SBATCH --ntasks="1"',
+                '#SBATCH --cpus-per-task="1"',
+                '#SBATCH --mem="1024G"',
                 "",
                 "",
                 "",
@@ -47,7 +47,7 @@ from gempyor._jinja import _jinja_environment
             },
             [
                 "#!/usr/bin/env bash",
-                "#SBATCH --ntasks=1",
+                '#SBATCH --ntasks="1"',
                 "",
                 "",
                 "",
@@ -71,11 +71,11 @@ from gempyor._jinja import _jinja_environment
             [
                 "#!/usr/bin/env bash",
                 '#SBATCH --job-name="flu_20250101"',
-                "#SBATCH --chdir=/path/to/project",
-                "#SBATCH --nodes=10",
-                "#SBATCH --ntasks=1",
-                "#SBATCH --cpus-per-task=4",
-                "#SBATCH --mem=2048MB",
+                '#SBATCH --chdir="/path/to/project"',
+                '#SBATCH --nodes="10"',
+                '#SBATCH --ntasks="1"',
+                '#SBATCH --cpus-per-task="4"',
+                '#SBATCH --mem="2048MB"',
                 "",
                 "# Debugging",
                 "set -x",
@@ -97,7 +97,7 @@ from gempyor._jinja import _jinja_environment
             },
             [
                 "#!/usr/bin/env bash",
-                "#SBATCH --ntasks=1",
+                '#SBATCH --ntasks="1"',
                 "",
                 "",
                 "",
@@ -126,12 +126,12 @@ from gempyor._jinja import _jinja_environment
             [
                 "#!/usr/bin/env bash",
                 '#SBATCH --job-name="rsv_2024"',
-                "#SBATCH --chdir=/path/to/rsv/project",
-                "#SBATCH --nodes=1",
-                "#SBATCH --array=1-10",
-                "#SBATCH --ntasks=1",
-                "#SBATCH --cpus-per-task=4",
-                "#SBATCH --mem=2048MB",
+                '#SBATCH --chdir="/path/to/rsv/project"',
+                '#SBATCH --nodes="1"',
+                '#SBATCH --array="1-10"',
+                '#SBATCH --ntasks="1"',
+                '#SBATCH --cpus-per-task="4"',
+                '#SBATCH --mem="2048MB"',
                 "",
                 "# Debugging",
                 "set -x",
@@ -151,4 +151,6 @@ def test_exact_results_for_select_inputs(data: dict[str, Any], expected: list[st
         .render(data)
         .split("\n")
     )
+    print(lines)
+    print(expected)
     assert lines == expected

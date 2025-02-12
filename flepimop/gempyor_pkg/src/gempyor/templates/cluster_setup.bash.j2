@@ -2,11 +2,7 @@
 # Purge/load modules
 module purge
 {%- for module in cluster.modules %}
-{%- if module.version is defined and module.version is not none %}
-module load {{ module.name }}/{{ module.version }}
-{%- else %}
-module load {{ module.name }}
-{%- endif %}
+module load {{ module.name }}{{ "/{}".format(module.version) if module.version is defined and module.version is not none }}
 {%- endfor %}
 {%- if cluster.path_exports|length %}
 
