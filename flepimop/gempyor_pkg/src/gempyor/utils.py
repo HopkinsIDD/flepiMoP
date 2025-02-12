@@ -1190,7 +1190,7 @@ def _git_head(repository: Path) -> str:
     return proc.stdout.decode().strip()
 
 
-def _git_checkout(repository: Path, branch: str) -> None:
+def _git_checkout(repository: Path, branch: str) -> subprocess.CompletedProcess:
     """
     Checkout a new branch from a given git repository.
 
@@ -1205,7 +1205,7 @@ def _git_checkout(repository: Path, branch: str) -> None:
         >>> _git_checkout(Path(os.environ["FLEPI_PATH"]), "my-new-branch")
     """
     git_cmd = _shutil_which("git")
-    subprocess.run(
+    return subprocess.run(
         [git_cmd, "checkout", "-b", shlex_quote(branch)],
         cwd=repository.expanduser().absolute(),
         check=True,
