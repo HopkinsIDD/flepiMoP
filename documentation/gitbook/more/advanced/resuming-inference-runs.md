@@ -6,9 +6,11 @@ The `flepimop` pipeline provides a uniform interface to synchronization tools: `
  - `aws s3 sync`: generally for long term record of outputs or external sharing
  - `git`: for version controlled elements, like pre-/post-processing scripts, configuration files, etc
 
-Used directly, these underlying tools are quite flexible-but-complex. Via `flepimop sync`, we provide a simplified-but-limited interface, which makes it easy to accomplish typical tasks, but won't solve every last data transfer problem. For a particular project, you can specify multiple `sync` "protocols", associated with different tasks. By default, the first protocol will be used, but you can specify any (or multiple) ones to execute.
+Used directly, these underlying tools are quite flexible-but-complex. Via `flepimop sync`, we provide a simplified-but-limited interface, which makes it easy to accomplish typical tasks, but won't solve every last data transfer problem. For a particular project, you can specify multiple `sync` "protocols", associated with different tasks. By default, the first protocol will be used, but you can specify a specific one to execute from a collection.
 
-The `sync` action is intended to ensure both ends match, but generally the tools have push vs pull modes, thus synchronization entails picking which end has priority. We distinguish these by setting source and destination
+All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations (rsync and aws s3 sync) or by setting mode (git). When invoking sync, however, you can supply a `--reverse` flag.
+
+Lastly, generally `sync`-style operations support filters to include or exclude files, and you may provide those filters either as part of the protocol definition OR on-demand with an invocation of sync. In general, all tools that do filtering have a order-based precedence for resolving ambiguity between include and exclude directives, but some use first-highest and some use last-highest. We normalize this within the config definition, and our filters key is always interpretted as PICK ONE.
 
 ## `rsync` mode
 
