@@ -61,9 +61,6 @@ jobs:
         with:
           lfs: true
           sparse-checkout-cone-mode: false
-      - name: Append Source to GitHub Pathway
-        run: |
-          echo PYLINT_SRC >> $GITHUB_ENV
       - name: Linting with Pylint
         run: |
           pylint ${{ env.PYLINT_SRC }} --max-line-length=${{ env.PYLINT_LINE_LENGTH }} --fail-under=${{ env.PYLINT_FAIL_UNDER }} --verbose
