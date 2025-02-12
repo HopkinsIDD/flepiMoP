@@ -48,6 +48,32 @@ jobs:
         with:
           src: ${{ env.BLACK_SRC }}
           options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"
+  pylint-for-python:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    env: 
+      PYLINT_LINE_LENGTH: 92
+      PYLINT_SRC: 'flepimop/src/gempyor'
+      PYLINT_FAIL_UNDER: 2.5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            *
+            !docs/
+            !pyproject.toml
+            !README.md
+          sparse-checkout-cone-mode: false
+      - name: Append Source to GitHub Pathway
+        run: |
+          echo PYLINT_SRC >> $GITHUB_ENV
+      - name: Linting with Pylint
+        uses:
+        with:
+          src: ${{ env.PYLINT_SRC}}
+          options: "--max-line-length=${{ evn.PYLINT_LINE_LENGTH}} --fail-under=${{ env.PYLINT_FAIL_UNDER}} --verbose"
   check-info-json-schema:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
