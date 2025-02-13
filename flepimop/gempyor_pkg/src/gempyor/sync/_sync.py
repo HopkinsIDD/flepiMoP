@@ -1,15 +1,22 @@
 import re
 from abc import ABC, abstractmethod
-from typing import Literal, Annotated, Union, Dict, List, Optional, overload
+from typing import Literal, Annotated, Union, Dict, List, Any
 from pathlib import Path
 from subprocess import run, CompletedProcess
 
-from pydantic import BaseModel, Field, ConfigDict
+import yaml
+from pydantic import BaseModel, Field, ConfigDict, AfterValidator
 
 FilterRegex = r'^([+-] )?'
 frcompiled = re.compile(FilterRegex)
 
+# once 3.12, use type parametrization
+# def _ensure_list[T](value: T | list[T]) -> list[T]:
+def _ensure_list(value: Any) -> list:
+    return [value] if not isinstance(value, list) else value
+
 SyncFilter = Annotated[str, Field(pattern=FilterRegex)]
+ListSyncFilter = Annotated[List[SyncFilter], AfterValidator(_ensure_list)]
 
 def _filter_mode(filter : SyncFilter) -> Literal["+", "-"]:
     return "-" if filter.startswith("- ") else "+"
@@ -30,9 +37,11 @@ class SyncOptions(BaseModel):
     :param reverse: optional (default: false) perform the sync operation in reverse (e.g. swap source and target)
     """
 
-    target_override : Optional[Path] = None
-    source_override : Optional[Path] = None
-    filter_override : Optional[List[SyncFilter]] = None
+    protocol_name: str | None = None
+    target_override : Path | None = None
+    source_override : Path | None = None
+    filter_override : ListSyncFilter | None = None
+    # n.b. a filter_override = [] would be a valid override, e.g. to clear filters
 
     dryrun : bool = False
     reverse : bool = False
@@ -54,6 +63,12 @@ class SyncABC(ABC):
         Perform the sync operation
         """
         ...
+    
+    def _sync_poly(self, **kwargs) -> CompletedProcess:
+        """
+        Perform the sync operation with polymorphism
+        """
+        return self.sync(SyncOptions(**kwargs))
 
 class RsyncModel(BaseModel, SyncABC):
     """
@@ -63,16 +78,15 @@ class RsyncModel(BaseModel, SyncABC):
     type : Literal["rsync"]
     target : Path
     source : Path
-    filters : List[SyncFilter] = []
+    filters : ListSyncFilter = []
 
     @staticmethod
-    def _format_filters(filters : list[SyncFilter]) -> list[str]:
+    def _format_filters(filters : ListSyncFilter) -> list[str]:
         return ["-f'{} {}'".format("-" if mode == "exclude" else "+", filt) for (mode, filt) in (_filter_parse(f) for f in filters)]
 
     def sync(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
-        inner_tar = self.target if not sync_options.reverse else self.source
-        inner_src = self.source if not sync_options.reverse else self.target
-        inner_filter = self.filters if not sync_options.filter_override else sync_options.filter_override
+        (inner_tar, inner_src) = (self.target, self.source) if not sync_options.reverse else (self.source, self.target)
+        inner_filter = self.filters if sync_options.filter_override is None else sync_options.filter_override
         testcmd = ["rsync", "-avz"] + (["-v", "--dry-run"] if sync_options.dryrun else []) + self._format_filters(inner_filter) + [inner_src, inner_tar]
         return run(["echo"] + testcmd)
 
@@ -84,20 +98,16 @@ class S3SyncModel(BaseModel, SyncABC):
     type : Literal["s3sync"]
     target : Path
     source : Path
-    filter : List[SyncFilter] = []
+    filters : ListSyncFilter = []
 
     @staticmethod
-    def _format_filters(filters : list[SyncFilter]) -> list[str]:
-        return ["-f'{} {}'".format("-" if mode == "exclude" else "+", filt) for (mode, filt) in (_filter_parse(f) for f in filters)]
+    def _format_filters(filters : ListSyncFilter) -> list[str]:
+        return ["--{} '{}'".format("exclude" if mode == "-" else "include", filt) for (mode, filt) in (_filter_parse(f) for f in filters.reverse())]
 
     def sync(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
-        inner_tar = self.target if not sync_options.reverse else self.source
-        inner_src = self.source if not sync_options.reverse else self.target
-        inner_filter = self.filters if not sync_options.filter_override else sync_options.filter_override
-        testcmd = ["rsync", "-avz"] + (["-v", "--dry-run"] if sync_options.dryrun else []) + self._format_filters(inner_filter) + [inner_src, inner_tar]
-        return run(["echo"] + testcmd)
-    
-        testcmd = ["aws", "s3", "sync", "-av", "--delete", "--dry-run" if dryrun else "", self.source, self.target].join(" ")
+        (inner_tar, inner_src) = (self.target, self.source) if not sync_options.reverse else (self.source, self.target)
+        inner_filter = self.filters if sync_options.filter_override is None else sync_options.filter_override
+        testcmd = ["aws", "s3", "sync", "--recursive"] + (["--dryrun"] if sync_options.dryrun else []) + self._format_filters(inner_filter) + [inner_src, inner_tar]
         return run(["echo", testcmd])
 
 
@@ -109,7 +119,7 @@ class GitModel(BaseModel, SyncABC):
     type : Literal["git"]
     mode : Literal["push", "pull"]
 
-    def sync(self, sync_options : dict) -> CompletedProcess:
+    def sync(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
         testcmd = ["git", "status"].join(" ")
         return run(["echo", testcmd])
 
@@ -120,14 +130,16 @@ SyncModel = Annotated[
 ]
 
 class SyncProtocols(BaseModel, SyncABC):
-    protocols : Dict[str, SyncModel]
+    sync : dict[str, SyncModel]
 
-    def sync(self, dryrun: bool, reverse : bool, sync_options: dict) -> CompletedProcess:
+    model_config = ConfigDict(extra='ignore')
+
+    def sync(self, sync_options: SyncOptions = SyncOptions()) -> CompletedProcess:
         if not self.protocols:
             return run(["echo", "No protocols to sync"])
         elif protoname := sync_options['protocol']:
             if protocol := self.protocols.get(protoname):
-                return protocol.sync(dryrun, sync_options)
+                return protocol.sync(sync_options)
             else:
                 return run(["echo", f"No protocol named {protoname} found"])
         else:
@@ -141,4 +153,15 @@ class SyncProtocols(BaseModel, SyncABC):
                 stderr = "\n".join([ v.stderr for v in res.values() ]),
             )
 
-
+def sync_from_yaml(yamlfiles : List[Path]) -> SyncProtocols:
+    """
+    Parse a list of yaml files into a SyncProtocols object
+    """
+    syncdef = { 'sync' : {} }
+    for yf in yamlfiles:
+        with open(yf, 'r') as handle:
+            look = yaml.safe_load(handle)
+            if 'sync' in look:
+                syncdef['sync'].update(look['sync'])
+    
+    return SyncProtocols(protocols=syncdef)

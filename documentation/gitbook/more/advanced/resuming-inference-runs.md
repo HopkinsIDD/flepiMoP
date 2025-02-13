@@ -8,9 +8,9 @@ The `flepimop` pipeline provides a uniform interface to synchronization tools: `
 
 Used directly, these underlying tools are quite flexible-but-complex. Via `flepimop sync`, we provide a simplified-but-limited interface, which makes it easy to accomplish typical tasks, but won't solve every last data transfer problem. For a particular project, you can specify multiple `sync` "protocols", associated with different tasks. By default, the first protocol will be used, but you can specify a specific one to execute from a collection.
 
-All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations (rsync and aws s3 sync) or by setting mode (git). When invoking sync, however, you can supply a `--reverse` flag.
+All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations (rsync and aws s3 sync) or by setting mode (git). When invoking sync, however, you can supply a `--reverse` flag, which will swap the synchronization direction.
 
-Lastly, generally `sync`-style operations support filters to include or exclude files, and you may provide those filters either as part of the protocol definition OR on-demand with an invocation of sync. In general, all tools that do filtering have a order-based precedence for resolving ambiguity between include and exclude directives, but some use first-highest and some use last-highest. We normalize this within the config definition, and our filters key is always interpretted as PICK ONE.
+Lastly, generally `sync`-style operations support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition (in the case of `git`, everything that is tracked). If the source is a directory, it will be recursively crawled. To modify this behavior, you can use filters either as part of the protocol definition OR with options provided when invoking sync (which override any in the protocol definition). See the (Filters)[#filters] section below details about filtering.
 
 ## `rsync` mode
 
@@ -114,6 +114,10 @@ The `git` mode is simply a wrapper around normal git operations and expects that
  - warn: changes to files which are untracked, but are also unignored
 
 If there are no issues with the repository, `sync` will fetch the authoritative repository version, attempting to update the local repository. If there are any merge conflicts, the `sync` operation will fail and refer you to the normal process for resolving such conflicts.
+
+## Filtering
+
+TODO
 
 ## Applications
 
