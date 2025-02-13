@@ -531,7 +531,7 @@ def _submit_via_subprocess(
     ),
     logger: Logger | None,
     dry_run: bool,
-) -> JobSubmission:
+) -> JobSubmission | None:
     """
     Submit a job via a subprocess.
 
