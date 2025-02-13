@@ -1,32 +1,24 @@
-{%- macro sbatch(arg, val) %}{{ "#SBATCH --{}=\"{}\"".format(arg, val) if val }}{% endmacro -%}
+{%- macro sbatch(arg, val) -%}
+{%- if val is defined and val is not none -%}
+#SBATCH --{{ arg }}="{{ val }}"
+{% endif -%}
+{%- endmacro -%}
 #!/usr/bin/env bash
-{%- if job_name is defined and job_name is not none %}
 {{ sbatch("job-name", job_name) }}
-{%- endif %}
-{%- if job_comment is defined and job_comment is not none %}
-{{ sbatch("comment", job_comment) }}
-{%- endif %}
-{%- if project_path is defined and project_path is not none %}
-{{ sbatch ("chdir", project_path) }}
-{%- endif %}
-{%- if job_time_limit is defined and job_time_limit is not none %}
-{{ sbatch("time", job_time_limit) }}
-{%- endif %}
-{%- if job_resources_nodes is defined and job_resources_nodes is not none %}
-{%- if array_capable %}
-{{ sbatch("nodes", 1) }}
-{{ sbatch("array", "1-{}".format(job_resources_nodes)) }}
-{%- else %}
-{{ sbatch("nodes", job_resources_nodes) }}
-{%- endif %}
-{%- endif %}
-{{ sbatch("ntasks", 1) }}
-{%- if job_resources_cpus is defined and job_resources_cpus is not none %}
-{{ sbatch("cpus-per-task", job_resources_cpus) }}
-{%- endif %}
-{%- if job_resources_memory is defined and job_resources_memory is not none %}
-{{ sbatch("mem", job_resources_memory) }}
-{%- endif %}
+{{- sbatch("comment", job_comment) }}
+{{- sbatch("chdir", project_path) }}
+{{- sbatch("time", job_time_limit) }}
+{%- if job_resources_nodes is defined and job_resources_nodes is not none -%}
+{%- if array_capable -%}
+{{- sbatch("nodes", 1) }}
+{{- sbatch("array", "1-{}".format(job_resources_nodes)) }}
+{%- else -%}
+{{- sbatch("nodes", job_resources_nodes) }}
+{%- endif -%}
+{%- endif -%}
+{{- sbatch("ntasks", 1) }}
+{{- sbatch("cpus-per-task", job_resources_cpus) }}
+{{- sbatch("mem", job_resources_memory) }}
 
 {% if debug -%}
 # Debugging
