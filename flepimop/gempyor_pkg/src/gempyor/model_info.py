@@ -478,12 +478,15 @@ class ModelInfo:
             ti=self.ti,
             tf=self.tf,
             input_filename=(
-                None
-                if self.seeding_config is None
-                else self.get_input_filename(
+                self.get_input_filename(
                     ftype=self.seeding_config["seeding_file_type"].get(),
                     sim_id=sim_id,
                     extension_override="csv",
                 )
+                if (
+                    self.seeding_config is not None
+                    and self.seeding_config["seeding_file_type"].exists()
+                )
+                else None
             ),
         )
