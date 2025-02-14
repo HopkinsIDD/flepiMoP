@@ -112,14 +112,13 @@ class RsyncModel(BaseModel, SyncABC):
     def _cmd() -> list[str]:
         return ["rsync", "-avz"]
 
-
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
-        inner_paths = [str(_override_or_val(sync_options.source_override, self.source)), str(_override_or_val(sync_options.target_override, self.target))]
+        inner_paths = [str(_override_or_val(sync_options.source_override, self.source)) + "/", str(_override_or_val(sync_options.target_override, self.target)) + "/"]
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
         testcmd = self._cmd() + self._dryrun(sync_options.dryrun) + inner_filter + inner_paths
-        return run(["echo"] + testcmd)
+        return run(testcmd)
 
 class S3SyncModel(BaseModel, SyncABC):
     """
@@ -144,7 +143,7 @@ class S3SyncModel(BaseModel, SyncABC):
         return ["aws", "s3", "sync", "--recursive"]
 
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
-        inner_paths = [str(_override_or_val(sync_options.source_override, self.source)), str(_override_or_val(sync_options.target_override, self.target))]
+        inner_paths = [str(_override_or_val(sync_options.source_override, self.source)) + "/", str(_override_or_val(sync_options.target_override, self.target)) + "/"]
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
