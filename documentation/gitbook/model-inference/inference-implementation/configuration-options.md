@@ -8,7 +8,7 @@ The `filtering` section configures the settings for the inference algorithm. The
 filtering:
   simulations_per_slot: 350
   do_filtering: TRUE
-  data_path: data/observed_data.csv
+  gt_data_path: data/observed_dat.csv
   likelihood_directory: importation/likelihood/
   statistics:
     sum_deaths:
@@ -59,7 +59,52 @@ filtering:
 
 With inference model runs, the number of simulations `nsimulations` refers to the number of final model simulations that will be produced. The `filtering$simulations_per_slot` setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 
-<table><thead><tr><th>Item</th><th width="104.33333333333331">Required?</th><th>Type/Format</th></tr></thead><tbody><tr><td>simulations_per_slot</td><td><strong>required</strong></td><td>number of iterations in a single MCMC inference chain</td></tr><tr><td>do_filtering</td><td>required</td><td>TRUE if inference should be performed</td></tr><tr><td>data_path</td><td>required</td><td>file path where observed data are saved</td></tr><tr><td>likelihood_directory</td><td>required</td><td>folder path where likelihood evaluations will be stored as the inference algorithm runs</td></tr><tr><td>statistics</td><td>required</td><td>specifies which data will be used to calibrate the model. see <code>filtering::statistics</code> for details</td></tr><tr><td>hierarchical_stats_geo</td><td>optional</td><td>specifies whether a hierarchical structure should be applied to any inferred parameters. See <code>filtering::hierarchical_stats_geo</code> for details.</td></tr><tr><td>priors</td><td>optional</td><td>specifies prior distributions on inferred parameters. See <code>filtering::priors</code> for details</td></tr></tbody></table>
+<table>
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th width="104.33333333333331">Required?</th>
+      <th>Type/Format</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>simulations_per_slot</td>
+      <td><strong>required</strong></td>
+      <td>number of iterations in a single MCMC inference chain</td>
+    </tr>
+    <tr>
+      <td>do_filtering</td>
+      <td>required</td>
+      <td>TRUE if inference should be performed</td>
+    </tr>
+    <tr>
+      <td>data_path</td>
+      <td>required</td>
+      <td>file path where observed data are saved</td>
+    </tr>
+    <tr>
+      <td>likelihood_directory</td>
+      <td>required</td>
+      <td>folder path where likelihood evaluations will be stored as the inference algorithm runs</td>
+    </tr>
+    <tr>
+      <td>statistics</td>
+      <td>required</td>
+      <td>specifies which data will be used to calibrate the model. see <code>filtering::statistics</code> for details</td>
+    </tr>
+    <tr>
+      <td>hierarchical_stats_geo</td>
+      <td>optional</td>
+      <td>specifies whether a hierarchical structure should be applied to any inferred parameters. See <code>filtering::hierarchical_stats_geo</code> for details.</td>
+    </tr>
+    <tr>
+      <td>priors</td>
+      <td>optional</td>
+      <td>specifies prior distributions on inferred parameters. See <code>filtering::priors</code> for details</td>
+    </tr>
+  </tbody>
+</table>
 
 ### `filtering::statistics`
 

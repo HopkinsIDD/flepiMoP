@@ -114,7 +114,7 @@ read FLEPI_RUN_INDEX
 cat << EOM
 > The HPC init script has successfully finished.
 
-If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepimop_sample\` repository:
+If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepiMoP/examples/tutorials\` directory:
 \`\`\`bash
 cd \$PROJECT_PATH
 flepimop-inference-main -c \$CONFIG_PATH -j 1 -n 1 -k 1

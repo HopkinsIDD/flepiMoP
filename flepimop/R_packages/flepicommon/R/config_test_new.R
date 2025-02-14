@@ -86,7 +86,7 @@ validation_list$nslots<- function(value,full_config,config_name){
 ## With Default: Geodata, Mobility, Popnodes, Statelevel
 
 validation_list$subpop_setup <- list()
-validation_list$data_path <- function(value, full_config, config_name) {
+validation_list$gt_data_path <- function(value, full_config, config_name) {
   if (is.null(value)) {
     print("No base path mentioned in the configuration file")
     return(FALSE)
@@ -573,7 +573,7 @@ validation_list$inference$do_inference<- function(value,full_config,config_name)
   return(TRUE)
 }
 
-validation_list$inference$data_path<-function(value,full_config,config_name){
+validation_list$inference$gt_data_path<-function(value,full_config,config_name){
   if(is.null(value)){
     print("Mention correct data path for inference")
     return(FALSE)

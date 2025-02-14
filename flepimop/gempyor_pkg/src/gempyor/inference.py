@@ -8,18 +8,41 @@
 # This populate the namespace with four functions, with return value 0 if the
 # function terminated successfully
 
+"""
+Classes:
+    GempyorInference: 
+        Encapsulates the process of simulation. Provides functionality for parameter
+        inference, SEIR model execution, outcome computation, and inference optimization.
 
-from concurrent.futures import ProcessPoolExecutor
-import copy
-import logging
-import multiprocessing as mp
+Functions:
+    simulation_atomic: 
+        Runs a SEIR simulation (generates and reduces parameters, executes SEIR
+        processes, computes outcomes, handles NPIs and seeding data).
+    get_static_arguments: Get the static arguments for the log likelihood function.
+    autodetect_senarios: Auto-detect the scenarios provided in config.
+    paramred_parallel: 
+        Initializes a `GempyorInference` object with a configuration file, 
+        reads specified NPI file, and computes reduced SEIR model specifications
+        based on this info. Returns the reduced parameters.
+    paramred_parallel_config: 
+        Initializes a `GempyorInference` object with a configuration file,
+        retreives SEIR model specifications and NPIs, and computes reduced
+        parameters based on this info. Returns the reduced parameters.
+"""
+
 import os
+import logging
+import copy
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
 
-import numba as nb
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
+import numba as nb
+
+from typing import Literal
 
 from . import seir, model_info
 from . import outcomes, file_paths
@@ -164,7 +187,7 @@ def get_static_arguments(modinf: model_info.ModelInfo):
     )
 
     initial_conditions = modinf.initial_conditions.get_from_config(sim_id=0, modinf=modinf)
-    seeding_data, seeding_amounts = modinf.seeding.get_from_config(sim_id=0, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=0)
 
     # reduce them
     parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
@@ -316,22 +339,58 @@ def autodetect_scenarios(config):
 
 
 class GempyorInference:
+    """
+    Class to encapsulate the process of inference simulation.
+
+    Provides functionality for parameter inference, SEIR model execution,
+    outcome computation, and inference optimization.
+
+    Attributes:
+        seir_modifiers_scenario:
+        outcome_modifiers_scenario:
+        modinf: A `ModelInfo` object.
+        already_built: Flag to determine if necessary objects have been built.
+        autowrite_seir: Flag to automatically write SEIR data after simulation.
+        static_sim_arguments: Dictionary containing static simulation arguments.
+        do_inference: Flag to determine if model should be run with inference.
+        silent: Flag indicating whether to supress output messaging.
+        save: Flag indicating whether simulation results should be saved.
+    """
+
     def __init__(
         self,
         config_filepath,
         run_id="test_run_id",
-        prefix=None,
-        first_sim_index=1,
-        stoch_traj_flag=False,
+        prefix: str | None = None,
+        first_sim_index: int = 1,
+        stoch_traj_flag: bool = False,
         rng_seed=None,
-        nslots=1,
-        inference_filename_prefix="",  # usually for {global or chimeric}/{intermediate or final}
-        inference_filepath_suffix="",  # usually for the slot_id
+        nslots: int = 1,
+        inference_filename_prefix: str = "",  # usually for {global or chimeric}/{intermediate or final}
+        inference_filepath_suffix: str = "",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
-        path_prefix="",  # in case the data folder is on another directory
-        autowrite_seir=False,
+        path_prefix: str = "",  # in case the data folder is on another directory
+        autowrite_seir: bool = False,
     ):
+        """
+        Initializes the `GempyorInference` object by loading config, setting up the model, and configuring inference parameters.
+
+        Args:
+            config_filepath: Path to the config file.
+            run_id: ID of the run.
+            prefix: Prefix for files.
+            first_sim_index: Index of first simulation, default is 1.
+            stoch_traj_flag: Whether to run the model stochastically, default is False.
+            rng_seed: Number of slots for parallel computation.
+            nslots: Number of slots, default is 1.
+            inference_filename_prefix: Prefix for inference-related file paths.
+            inference_filepath_suffix: Suffix for inference-related file paths.
+            out_run_id: ID for run output.
+            out_prefix: Prefix for file paths to output.
+            path_prefix: Prefix for paths to files (in case data folder is in another directory)
+            autowrite_seir: Flag to automatically write SEIR data after simulation, default is False.
+        """
         # Config prep
         config.clear()
         config.read(user=False)
@@ -562,7 +621,22 @@ class GempyorInference:
         load_ID: bool = False,
         sim_id2load: int = None,
         parallel=False,
-    ):
+    ) -> Literal[0]:
+        """
+        Method to oversee inference simulation.
+        You can optionally load previous simulation data as well.
+
+        Args:
+            sim_id2write: ID of the simulation to be written.
+            load_ID: Wether to load a previous simulation's data, default is False.
+            sim_id2load: ID of simulation to be loaded.
+            parallel: Whether to run simulation in parallel chains, default is False.
+
+        Returns: 0
+
+        Raises:
+            ValueError: If `load_ID` is True and `sim_id2load` is not provided.
+        """
         sim_id2write = int(sim_id2write)
         self.lastsim_sim_id2write = sim_id2write
         self.lastsim_loadID = load_ID
@@ -672,18 +746,15 @@ class GempyorInference:
                 self.lastsim_parsed_parameters = parsed_parameters
 
             with Timer("onerun_SEIR.seeding"):
+                seeding_data, seeding_amounts = self.modinf.get_seeding_data(
+                    sim_id=sim_id2load if load_ID else sim_id2write
+                )
                 if load_ID:
                     initial_conditions = self.modinf.initial_conditions.get_from_file(
                         sim_id2load, modinf=self.modinf
                     )
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_file(
-                        sim_id2load, modinf=self.modinf
-                    )
                 else:
                     initial_conditions = self.modinf.initial_conditions.get_from_config(
-                        sim_id2write, modinf=self.modinf
-                    )
-                    seeding_data, seeding_amounts = self.modinf.seeding.get_from_config(
                         sim_id2write, modinf=self.modinf
                     )
                 self.lastsim_seeding_data = seeding_data
@@ -751,6 +822,18 @@ class GempyorInference:
     def get_outcome_npi(
         self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
     ):
+        """
+        Builds the non-pharmaceutical intervention outcome modifiers.
+
+        Args:
+            load_ID: Whether to load a previous simulation's data.
+            sim_id2load: ID of simulation to be loaded.
+            bypass_DF: An alternative data frame to use during outcome modifier construction.
+            bypass_FN: An alternative function to use during outcome modifier construction.
+
+        Returns:
+            An object that contains computed NPI outcome modifiers.
+        """
         npi_outcomes = None
         if self.modinf.npi_config_outcomes:
             npi_outcomes = outcomes.build_outcome_modifiers(
@@ -764,6 +847,18 @@ class GempyorInference:
         return npi_outcomes
 
     def get_seir_npi(self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None):
+        """
+        Builds the SEIR non-pharmaceutical interventions information.
+
+        Args:
+            load_ID: Whether to load a previous simulation's data, default is False.
+            sim_id2load: ID of simulation to be loaded.
+            bypass_DF: An alternative data frame to use during outcome modifier construction.
+            bypass_FN: An alternative function to use during outcome modifier construction.
+
+        Returns:
+            npi_seir: An object that contains NPI parameters for the SEIR model.
+        """
         npi_seir = seir.build_npi_SEIR(
             modinf=self.modinf,
             load_ID=load_ID,
@@ -777,6 +872,18 @@ class GempyorInference:
     def get_seir_parameters(
         self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
     ):
+        """
+        Generates SEIR model parameters.
+
+        Args:
+            load_ID: Whether to load a previous simulation's data, default is False.
+            sim_id2load: ID of simulation to be loaded.
+            bypass_DF: An alternative data frame to use during outcome modifier construction.
+            bypass_FN: An alternative function to use during outcome modifier construction.
+
+        Returns:
+            p_draw: An array containing the drawn model parameters.
+        """
         param_df = None
         if bypass_DF is not None:
             param_df = bypass_DF
@@ -800,6 +907,18 @@ class GempyorInference:
     def get_seir_parametersDF(
         self, load_ID=False, sim_id2load=None, bypass_DF=None, bypass_FN=None
     ):
+        """
+        Retreive SEIR parameters and return them as a pd.DataFrame.
+
+        Args:
+            load_ID: Whether to load a previous simulation's data, default is False.
+            sim_id2load: ID of simulation to be loaded.
+            bypass_DF: An alternative data frame to use during outcome modifier construction.
+            bypass_FN: An alternative function to use during outcome modifier construction.
+
+        Returns:
+            A pd.DatyaFrame containing the SEIR model parameters.
+        """
         p_draw = self.get_seir_parameters(
             load_ID=load_ID,
             sim_id2load=sim_id2load,
@@ -817,6 +936,20 @@ class GempyorInference:
         bypass_DF=None,
         bypass_FN=None,
     ):
+        """
+        Retreives and reduces SEIR model parameters and returns them as a pd.DataFrame.
+
+        Args:
+            npi_seir: A dictionary of NPI parameters.
+            p_draw: An array containing drawn model parameters.
+            load_ID: Whether to load a previous simulation's data, default is False.
+            sim_id2load: ID of simulation to be loaded.
+            bypass_DF: An alternative data frame to use during outcome modifier construction.
+            bypass_FN: An alternative function to use during outcome modifier construction.
+
+        Returns:
+            A pd.DataFrame containing reduced SEIR model parameters.
+        """
         if p_draw is None:
             p_draw = self.get_seir_parameters(
                 load_ID=load_ID,

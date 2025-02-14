@@ -63,7 +63,7 @@ $ ./flepiMoP/build/hpc_install_or_update <cluster-name>
 
 These steps to initialize the environment need to run on a per run or as needed basis.
 
-Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about a project directory and config, if this is your first time initializing `flepiMoP` it might be helpful to clone [the `flepimop_sample` GitHub repository](https://github.com/HopkinsIDD/flepimop\_sample) to the same directory to use as a test. This script will finish by outputting a summary of the environment changes and launching a subshell with this modified environment.
+Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about a project directory and config, if this is your first time initializing `flepiMoP` it might be helpful to use configs out of `flepiMoP/examples/tutorials` directory as a test.
 
 ```
 $ ./batch/hpc_init <cluster-name>
@@ -89,7 +89,7 @@ If you'd like to have more control, you can specify the arguments manually:
 $ python $FLEPI_PATH/batch/inference_job_launcher.py --slurm \
                     -c $CONFIG_PATH \
                     -p $FLEPI_PATH \
-                    --data-path $DATA_PATH \
+                    --data-path $PROJECT_PATH \
                     --upload-to-s3 True \
                     --id $FLEPI_RUN_INDEX \
                     --fs-folder /scratch4/primary-user/flepimop-runs \

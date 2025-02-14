@@ -305,7 +305,7 @@ def simple_valid_factory_with_pois_with_some_zeros() -> MockStatisticInput:
 all_valid_factories = [
     (simple_valid_factory),
     (simple_valid_resample_factory),
-    (simple_valid_resample_factory),
+    (simple_valid_scale_factory),
     (simple_valid_resample_and_scale_factory),
     (simple_valid_factory_with_pois),
     (simple_valid_factory_with_pois_with_some_zeros),
