@@ -75,8 +75,8 @@ def test_submit_output_validation(
     dry_run: bool,
 ) -> None:
     batch_system = get_batch_system("slurm")
-    sbatch = str(sample_script("sbatch", tmp_path, True).absolute())
-    script = sample_script("run.sbatch", tmp_path, False)
+    sbatch = str(sample_script(tmp_path, True, name="sbatch").absolute())
+    script = sample_script(tmp_path, False, name="run.sbatch")
 
     with patch("gempyor.batch._shutil_which") as shutil_which_patch:
         shutil_which_patch.return_value = sbatch

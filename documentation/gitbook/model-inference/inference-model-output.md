@@ -35,7 +35,7 @@ The meanings of the columns are:
 For inference runs, `...` _flepiMoP_ produces one file per parallel slot, for both global and chimeric outputs...
 
 ```
-flepimop_sample
+flepiMoP/examples/tutorials
 ├── model_output
 │   ├── seir
 │   ├── spar

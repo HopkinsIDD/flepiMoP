@@ -101,7 +101,7 @@ This section configures the settings for the inference algorithm. The below exam
 inference:
   iterations_per_slot: 350
   do_inference: TRUE
-  data_path: data/observed_data.csv
+  gt_data_path: data/observed_data.csv
   likelihood_directory: importation/likelihood/
   statistics:
     sum_deaths:
@@ -137,7 +137,7 @@ With inference model runs, the number of simulations `nslots` refers to the numb
 |-------------------|-----------------------|-------------------------------------------------|
 | iterations_per_slot  | **required**    | number of iterations in a single MCMC inference chain |
 | do_inference          | required        | TRUE if inference should be performed |
-| data_path             | required        | file path where observed data are saved  |
+| gt_data_path             | required        | file path where observed data are saved  |
 | likelihood_directory  | required        | folder path where likelihood evaluations will be stored as the inference algorithm runs |
 | statistics            | required        | specifies which data will be used to calibrate the model. see `inference::statistics::[statistics settings]` for details |
 
