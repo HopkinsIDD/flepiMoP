@@ -12,7 +12,7 @@ from .utils import _dump_formatted_yaml, config
 
 # register the commands from the other modules
 from . import compartments, simulate
-from .sync import flepisync
+from .sync import sync
 
 from .NPI import base
 
