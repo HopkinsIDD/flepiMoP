@@ -10,6 +10,7 @@ This module provides functionality for required for batch jobs, including:
 __all__ = (
     "BatchSystem",
     "JobResources",
+    "JobResult",
     "JobSize",
     "JobSubmission",
     "LocalBatchSystem",
@@ -490,6 +491,55 @@ class JobSubmission(subprocess.CompletedProcess):
         )
 
 
+class JobResult(BaseModel):
+    """
+    Representation of a job result.
+
+    Attributes:
+        status: The status of the job.
+        returncode: The return code of the job.
+        wall_time: The wall time of the job.
+        memory_efficiency: The memory efficiency of the job.
+    """
+
+    status: Literal["pending", "running", "completed", "failed"]
+    returncode: int | None = None
+    wall_time: timedelta | None = None
+    memory_efficiency: (
+        Annotated[float, Field(json_schema_extra={"minimum": 0.0, "maximum": 1.0})] | None
+    ) = None
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Check if two job results are equal.
+
+        Custom implementation of the equality operator to compare two job results to
+        make unit testing simpler by doing relative comparisons of the
+        `memory_efficiency` attributes.
+
+        Args:
+            other: The other job result to compare.
+
+        Returns:
+            Whether the two job results are equal.
+        """
+        if not isinstance(other, JobResult):
+            return False
+        return (
+            self.status == other.status
+            and self.returncode == other.returncode
+            and self.wall_time == other.wall_time
+            and (
+                math.isclose(self.memory_efficiency, other.memory_efficiency)
+                if (
+                    self.memory_efficiency is not None
+                    and other.memory_efficiency is not None
+                )
+                else self.memory_efficiency == other.memory_efficiency
+            )
+        )
+
+
 @overload
 def _submit_via_subprocess(
     exec: Path,
@@ -634,6 +684,9 @@ class BatchSystem(ABC):
         name: The name of the batch system. Must be unique when registered.
         needs_cluster: Whether the batch system requires a cluster to run jobs, defaults
             to `False`.
+        estimatible: Whether the batch system can estimate the resources required for a
+            job, defaults to `False`. If `True` then the batch system should implement
+            the `status` method.
 
     Examples:
         >>> from datetime import timedelta
@@ -658,6 +711,7 @@ class BatchSystem(ABC):
     """
 
     needs_cluster: bool = False
+    estimatible: bool = False
 
     @property
     @abstractmethod
@@ -756,6 +810,19 @@ class BatchSystem(ABC):
                         "Since dry run copying script to '%s' for inspection.", dest
                     )
             return self.submit(temp_script, options, verbosity, dry_run)
+
+    def status(self, submission: JobSubmission) -> JobResult | None:
+        """
+        Get the status of a job submission.
+
+        Args:
+            submission: The job submission to get the status of.
+
+        Returns:
+            The status of the job submission or `None` if the status could not be
+            determined or the batch system is not estimatible.
+        """
+        return None
 
     def format_nodes(self, job_resources: JobResources) -> str:
         """
@@ -1027,9 +1094,23 @@ class SlurmBatchSystem(BatchSystem):
     """
 
     _sbatch_regex = re.compile(r"submitted batch job (\d+)", flags=re.IGNORECASE)
+    _seff_state_regex = re.compile(
+        r"state:\s+(pending|running|completed|failed)(\s+\(exit\s+code\s+([0-9]+)\))?",
+        flags=re.IGNORECASE,
+    )
+    _seff_wall_time_regex = re.compile(
+        r"job\s+wall\-clock\s+time:\s+([0-9]+):([0-9]+):([0-9]+)", flags=re.IGNORECASE
+    )
+    _seff_memory_efficiency_regex = re.compile(
+        r"memory\s+efficiency:\s([0-9]+\.[0-9]+)%", flags=re.IGNORECASE
+    )
+    _seff_cpu_efficiency_regex = re.compile(
+        r"cpu\s+efficiency:\s([0-9]+\.[0-9]+)%", flags=re.IGNORECASE
+    )
 
     name = "slurm"
     needs_cluster = True
+    estimatible = True
 
     def submit(
         self,
@@ -1118,6 +1199,39 @@ class SlurmBatchSystem(BatchSystem):
                 verbosity,
                 dry_run,
             )
+
+    def status(self, submission: JobSubmission) -> JobResult:
+        """
+        Get the status of a job submission via `seff`.
+
+        Args:
+            submission: The job submission to get the status of.
+
+        Returns:
+            The status of the job submission.
+        """
+        seff = _shutil_which("seff")
+        seff_proc = subprocess.run(
+            [seff, str(submission.job_id)], text=True, capture_output=True, check=True
+        )
+        lines = seff_proc.stdout.splitlines()
+        job_result_kwargs = {}
+        for line in lines:
+            line = line.strip().lower()
+            if (match := self._seff_state_regex.match(line)) is not None:
+                state, _, returncode = match.groups()
+                job_result_kwargs["status"] = state.lower()
+                job_result_kwargs["returncode"] = int(returncode) if returncode else None
+            elif (match := self._seff_wall_time_regex.match(line)) is not None:
+                hours, minutes, seconds = match.groups()
+                job_result_kwargs["wall_time"] = timedelta(
+                    hours=int(hours), minutes=int(minutes), seconds=int(seconds)
+                )
+            elif (match := self._seff_memory_efficiency_regex.match(line)) is not None:
+                job_result_kwargs["memory_efficiency"] = 0.01 * float(match.group(1))
+            elif (match := self._seff_cpu_efficiency_regex.match(line)) is not None:
+                job_result_kwargs["cpu_efficiency"] = 0.01 * float(match.group(1))
+        return JobResult(**job_result_kwargs)
 
     def format_memory(self, job_resources: JobResources) -> str:
         return f"{job_resources.memory}MB"

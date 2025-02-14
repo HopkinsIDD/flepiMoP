@@ -8,7 +8,13 @@ from unittest.mock import MagicMock, patch
 from confuse import Configuration
 import pytest
 
-from gempyor.batch import JobResources, JobSubmission, SlurmBatchSystem, get_batch_system
+from gempyor.batch import (
+    JobResources,
+    JobResult,
+    JobSubmission,
+    SlurmBatchSystem,
+    get_batch_system,
+)
 from gempyor.logging import _get_logging_level
 from gempyor.testing import sample_script
 
@@ -158,6 +164,125 @@ def test_submit_command_output_validation(
 
 
 @pytest.mark.parametrize(
+    ("submission", "returncode", "stdout", "stderr", "expected"),
+    (
+        (
+            JobSubmission(job_id=123, args=[], returncode=0, stdout="", stderr=""),
+            0,
+            "\n".join(
+                (
+                    "Job ID: 123",
+                    "Cluster: longleaf",
+                    "User/Group: twillard/users",
+                    "State: PENDING",
+                    "Cores: 1",
+                    "Efficiency not available for jobs in the PENDING state.",
+                )
+            ),
+            "",
+            JobResult(
+                status="pending", returncode=None, wall_time=None, memory_efficiency=None
+            ),
+        ),
+        (
+            JobSubmission(job_id=456, args=[], returncode=0, stdout="", stderr=""),
+            0,
+            "\n".join(
+                (
+                    "Job ID: 456",
+                    "Cluster: longleaf",
+                    "User/Group: twillard/users",
+                    "State: COMPLETED (exit code 0)",
+                    "Cores: 1",
+                    "CPU Utilized: 00:00:01",
+                    "CPU Efficiency: 50.00% of 00:00:02 core-walltime",
+                    "Job Wall-clock time: 00:00:02",
+                    "Memory Utilized: 236.00 KB",
+                    "Memory Efficiency: 0.02% of 1000.00 MB",
+                )
+            ),
+            "",
+            JobResult(
+                status="completed",
+                returncode=0,
+                wall_time=timedelta(seconds=2),
+                memory_efficiency=0.0002,
+            ),
+        ),
+        (
+            JobSubmission(job_id=456, args=[], returncode=0, stdout="", stderr=""),
+            0,
+            "\n".join(
+                (
+                    "Job ID: 456",
+                    "Cluster: longleaf",
+                    "User/Group: twillard/users",
+                    "State: RUNNING",
+                    "Cores: 1",
+                    "CPU Utilized: 00:00:00",
+                    "CPU Efficiency: 0.00% of 00:00:09 core-walltime",
+                    "Job Wall-clock time: 00:00:09",
+                    "Memory Utilized: 0.00 MB (estimated maximum)",
+                    "Memory Efficiency: 0.00% of 500.00 MB (500.00 MB/core)",
+                    "WARNING: Efficiency statistics may be misleading for RUNNING jobs.",
+                )
+            ),
+            "",
+            JobResult(
+                status="running",
+                returncode=None,
+                wall_time=timedelta(seconds=9),
+                memory_efficiency=0.0,
+            ),
+        ),
+        (
+            JobSubmission(job_id=789, args=[], returncode=0, stdout="", stderr=""),
+            0,
+            "\n".join(
+                (
+                    "Job ID: 59241870",
+                    "Cluster: longleaf",
+                    "User/Group: twillard/users",
+                    "State: FAILED (exit code 1)",
+                    "Cores: 1",
+                    "CPU Utilized: 00:00:01",
+                    "CPU Efficiency: 0.79% of 00:02:07 core-walltime",
+                    "Job Wall-clock time: 00:02:07",
+                    "Memory Utilized: 656.00 KB",
+                    "Memory Efficiency: 0.13% of 500.00 MB",
+                )
+            ),
+            "",
+            JobResult(
+                status="failed",
+                returncode=1,
+                wall_time=timedelta(seconds=7, minutes=2),
+                memory_efficiency=0.0013,
+            ),
+        ),
+    ),
+)
+def test_status_output_validation(
+    submission: JobSubmission,
+    returncode: int,
+    stdout: str,
+    stderr: str,
+    expected: JobResult,
+) -> None:
+    batch_system = get_batch_system("slurm")
+    with patch("gempyor.batch._shutil_which") as shutil_which_patch:
+        shutil_which_patch.return_value = "seff"
+        with patch("gempyor.batch.subprocess.run") as subprocess_run_patch:
+            mock_process = MagicMock()
+            mock_process.returncode = returncode
+            mock_process.stdout = stdout
+            mock_process.stderr = stderr
+            subprocess_run_patch.return_value = mock_process
+            assert isinstance(job_result := batch_system.status(submission), JobResult)
+            assert job_result == expected
+
+
+@pytest.mark.parametrize(
     "cli_options",
     (
         {},
@@ -181,3 +306,65 @@ def test_options_from_config_and_cli(
         "email" in cli_options.get("extra", {})
     )
     assert len(caplog.records) == int(verbosity == logging.DEBUG)
+
+
+@pytest.mark.parametrize(
+    ("regex_name", "string", "expected_groups"),
+    (
+        ("state", "State: PENDING", ("PENDING", None, None)),
+        ("state", "state: pending", ("pending", None, None)),
+        ("state", "State: COMPLETED (exit code 0)", ("COMPLETED", " (exit code 0)", "0")),
+        ("state", "state: completed (exit code 0)", ("completed", " (exit code 0)", "0")),
+        ("state", "State: RUNNING", ("RUNNING", None, None)),
+        ("state", "state: running", ("running", None, None)),
+        ("state", "State: FAILED (exit code 1)", ("FAILED", " (exit code 1)", "1")),
+        ("state", "state: failed (exit code 1)", ("failed", " (exit code 1)", "1")),
+        ("state", "Cluster: longleaf", None),
+        ("state", "cluster: longleaf", None),
+        ("state", "Memory Utilized: 656.00 KB", None),
+        ("state", "memory utilized: 656.00 KB", None),
+        ("state", "CPU Efficiency: 0.79% of 00:02:07 core-walltime", None),
+        ("state", "cpu efficiency: 0.79% of 00:02:07 core-walltime", None),
+        ("wall_time", "Job Wall-clock time: 00:02:07", ("00", "02", "07")),
+        ("wall_time", "job wall-clock time: 00:02:07", ("00", "02", "07")),
+        ("wall_time", "Job Wall-clock time: 12:34:56", ("12", "34", "56")),
+        ("wall_time", "job wall-clock time: 12:34:56", ("12", "34", "56")),
+        ("wall_time", "Efficiency not available for jobs in the PENDING state.", None),
+        ("wall_time", "efficiency not available for jobs in the pending state.", None),
+        ("wall_time", "User/Group: twillard/users", None),
+        ("wall_time", "user/group: twillard/users", None),
+        ("memory_efficiency", "Memory Efficiency: 0.02% of 1000.00 MB", ("0.02",)),
+        ("memory_efficiency", "memory efficiency: 0.02% of 1000.00 MB", ("0.02",)),
+        ("memory_efficiency", "Memory Efficiency: 0.00% of 1000.00 MB", ("0.00",)),
+        ("memory_efficiency", "memory efficiency: 0.00% of 1000.00 MB", ("0.00",)),
+        ("memory_efficiency", "Memory Efficiency: 0.13% of 500.00 MB", ("0.13",)),
+        ("memory_efficiency", "memory efficiency: 0.13% of 500.00 MB", ("0.13",)),
+        ("memory_efficiency", "Job Wall-clock time: 00:02:07", None),
+        ("memory_efficiency", "job wall-clock time: 00:02:07", None),
+        ("memory_efficiency", "User/Group: twillard/users", None),
+        ("memory_efficiency", "user/group: twillard/users", None),
+        ("memory_efficiency", "CPU Efficiency: 0.79% of 00:02:07 core-walltime", None),
+        ("memory_efficiency", "cpu efficiency: 0.79% of 00:02:07 core-walltime", None),
+        ("cpu_efficiency", "CPU Efficiency: 0.79% of 00:02:07 core-walltime", ("0.79",)),
+        ("cpu_efficiency", "cpu efficiency: 0.79% of 00:02:07 core-walltime", ("0.79",)),
+        ("cpu_efficiency", "CPU Efficiency: 0.00% of 00:02:07 core-walltime", ("0.00",)),
+        ("cpu_efficiency", "cpu efficiency: 0.00% of 00:02:07 core-walltime", ("0.00",)),
+        ("cpu_efficiency", "CPU Efficiency: 50.00% of 00:00:02 core-walltime", ("50.00",)),
+        ("cpu_efficiency", "cpu efficiency: 50.00% of 00:00:02 core-walltime", ("50.00",)),
+        ("cpu_efficiency", "Job Wall-clock time: 00:02:07", None),
+        ("cpu_efficiency", "job wall-clock time: 00:02:07", None),
+        ("cpu_efficiency", "Job ID: 59241870", None),
+        ("cpu_efficiency", "job id: 59241870", None),
+        ("cpu_efficiency", "User/Group: twillard/users", None),
+        ("cpu_efficiency", "user/group: twillard/users", None),
+        ("cpu_efficiency", "Memory Efficiency: 0.13% of 500.00 MB", None),
+        ("cpu_efficiency", "memory efficiency: 0.13% of 500.00 MB", None),
+    ),
+)
+def test_seff_regexes(
+    regex_name: str, string: str, expected_groups: tuple[str, ...] | None
+) -> None:
+    batch_system = get_batch_system("slurm")
+    regex = getattr(batch_system, f"_seff_{regex_name}_regex")
+    match_groups = m.groups() if (m := regex.match(string)) is not None else None
+    assert match_groups == expected_groups
