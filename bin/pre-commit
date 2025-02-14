@@ -10,7 +10,6 @@ fi
 if which pylint > /dev/null 2>&1; then
     pylint ./flepimop/gempyor_pkg/src/gempyor \
     --max-line-length=92 \
-    --fail-under=2.5 \
     --verbose .
 else 
     echo "'pylint' is not available, so python files willl not be linted."
