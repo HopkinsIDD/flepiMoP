@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Generic setup
 set -e
 
@@ -140,3 +142,6 @@ Otherwise make sure this diagnostic info looks correct before continuing:
 EOM
 
 set +e
+
+# Launch subshell with modified environment
+eval "$SHELL -l"
