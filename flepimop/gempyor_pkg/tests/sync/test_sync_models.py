@@ -1,8 +1,51 @@
+from typing import Literal
+
 import pytest
+from pydantic import ValidationError
 
-from pydantic import TypeAdapter, ValidationError
+from gempyor.sync._sync import SyncOptions, _ensure_list, SyncProtocols, _filter_mode
 
-from gempyor.sync._sync import SyncProtocols
+@pytest.mark.parametrize(
+    "opts",[
+        { "filter_override" : "somefilter" },
+        { "filter_override" : ["somefilter", "another"] },
+        { "filter_override" : [] },
+    ]
+)
+def test_sync_opts_filters(opts: dict):
+    """
+    Ensures SyncOptions can instantiate valid objects w.r.t to filters
+    """
+    sp = SyncOptions(**opts)
+    assert sp.filter_override == _ensure_list(opts["filter_override"])
+
+@pytest.mark.parametrize(
+    "opts",[
+        { "filter_override" : 1 },
+        { "filter_override" : "-something" },
+        { "filter_override" : "+something" },
+        { "filter_override" : " something" },
+    ]
+)
+def test_sync_opts_filters(opts: dict):
+    """
+    Ensures SyncOptions can identify invalid objects w.r.t to filters
+    """
+    with pytest.raises(ValidationError):
+        SyncOptions(**opts)
+
+@pytest.mark.parametrize(
+    "opts,mode", [
+        ({ "filter_override" : "+ something" },"+"),
+        ({ "filter_override" : "- something" },"-"),
+        ({ "filter_override" : ["- something", "other"] }, ["-", "+"])
+    ]
+)
+def test_sync_opts_filters_mode(opts: dict, mode: Literal["+", "-"]):
+    """
+    Ensures SyncOptions can identify invalid objects w.r.t to filters
+    """
+    assert [_filter_mode(f) for f in SyncOptions(**opts).filter_override] == _ensure_list(mode)
 
 @pytest.mark.parametrize(
     "protocols", [
@@ -14,12 +57,12 @@ from gempyor.sync._sync import SyncProtocols
             'type': 's3sync', 'source' : '.', 'target' : 'some/path'
         },
         "demogit" : {
-            'type' : 'git'
+            'type' : 'git', 'mode' : 'push'
         }
     },
     {
         "justone" : {
-            'type' : 'git'
+            'type' : 'git', 'mode' : 'pull'
         }
     },
     {}
@@ -29,7 +72,7 @@ def test_successfully_construct_from_valid_protocols(protocols: dict):
     Ensures SyncProtocols can instantiate valid objects
     """
 
-    SyncProtocols(protocols=protocols)
+    SyncProtocols(sync = protocols)
 
 @pytest.mark.parametrize(
     "protocols", [
@@ -56,20 +99,6 @@ def test_fail_construct_from_invalid_protocols(protocols: dict):
     with pytest.raises(ValidationError):
         SyncProtocols(protocols=protocols)
 
+# construct from yaml file(s)
 
-# @pytest.mark.parametrize(
-#     "data",
-#     [
-#         {'TriggerType': 'Scheduled'},
-#         {'TriggerType': 'OnDemand', 'TriggerProperties': {'foo': 'bar'}},
-#         {'TriggerType': 'Event', 'TriggerProperties': {'foo': 'bar'}}
-#     ]
-# )
-# def test_trigger_config_invalid(data: dict):
-#     """
-#     Ensures TriggerConfig raises error when instantiating invalid objects
-#     """
-
-#     ta = TypeAdapter(TriggerConfig)
-#     with pytest.raises(ValidationError):
-#         _ = ta.validate_python(data)
+# construct options
