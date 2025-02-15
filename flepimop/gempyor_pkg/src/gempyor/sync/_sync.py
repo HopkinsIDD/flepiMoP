@@ -4,6 +4,7 @@ from functools import singledispatchmethod
 from typing import Literal, Annotated, Union, Dict, List, Any
 from pathlib import Path
 from subprocess import run, CompletedProcess
+from itertools import chain
 
 import yaml
 from pydantic import BaseModel, Field, ConfigDict, BeforeValidator
@@ -40,15 +41,19 @@ def _filter_parse(filter : SyncFilter) -> tuple[Literal["+", "-"], str]:
 def _override_or_val(override : Any, value : Any) -> Any:
     return value if override is None else override
 
-def _echo_failed(res : CompletedProcess) -> CompletedProcess:
-    if res.returncode != 0:
-        return run(
-            ["echo", "`{}` failed with return code {}".format(" ".join(res.args), res.returncode)],
-            stdout=res.stdout,
-            stderr=res.stderr
-        )
-    else:
-        return res
+def _echo_failed(cmd : list[str]) -> CompletedProcess:
+    try:
+        res = run(cmd)
+        if res.returncode != 0:
+            return run(
+                ["echo", "`{}` failed with return code {}".format(" ".join(res.args), res.returncode)],
+                stdout=res.stdout,
+                stderr=res.stderr
+            )
+        else:
+            return res
+    except FileNotFoundError as e:
+        return run(["echo", "command `{}` not found".format(cmd[0])])
 
 class SyncOptions(BaseModel):
     """
@@ -114,7 +119,7 @@ class RsyncModel(BaseModel, SyncABC):
 
     @staticmethod
     def _format_filters(filters : ListSyncFilter) -> list[str]:
-        return ["-f'{} {}'".format("-" if mode == "exclude" else "+", filt) for (mode, filt) in (_filter_parse(f) for f in filters)]
+        return ["-f{} {}".format("-" if mode == "-" else "+", filt) for (mode, filt) in (_filter_parse(f) for f in filters)]
 
     @staticmethod
     def _dryrun(dry : bool) -> list[str]:
@@ -129,8 +134,8 @@ class RsyncModel(BaseModel, SyncABC):
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
-        testcmd = self._cmd() + self._dryrun(sync_options.dryrun) + inner_filter + inner_paths
-        return _echo_failed(run(testcmd))
+        testcmd = self._cmd() + inner_filter + self._dryrun(sync_options.dryrun) + inner_paths
+        return _echo_failed(testcmd)
 
 
 class S3SyncModel(BaseModel, SyncABC):
@@ -145,7 +150,9 @@ class S3SyncModel(BaseModel, SyncABC):
 
     @staticmethod
     def _format_filters(filters : ListSyncFilter) -> list[str]:
-        return ["--{} '{}'".format("exclude" if mode == "-" else "include", filt) for (mode, filt) in (_filter_parse(f) for f in reversed(filters))]
+        return list(chain.from_iterable(
+            [["--exclude" if mode == "-" else "--include", '"{}"'.format(filt)] for (mode, filt) in (_filter_parse(f) for f in reversed(filters))]
+        ))
 
     @staticmethod
     def _dryrun(dry : bool) -> list[str]:
@@ -161,7 +168,7 @@ class S3SyncModel(BaseModel, SyncABC):
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
         testcmd = self._cmd() + self._dryrun(sync_options.dryrun) + inner_filter + inner_paths
-        return _echo_failed(run(testcmd))
+        return _echo_failed(testcmd)
 
 
 class GitModel(BaseModel, SyncABC):
@@ -178,7 +185,7 @@ class GitModel(BaseModel, SyncABC):
 
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
         inner_mode = self.mode if not sync_options.reverse else ("push" if self.mode == "pull" else "pull")
-        return _echo_failed(run(["git", inner_mode] + self._dryrun(sync_options.dryrun)))
+        return _echo_failed(["git", inner_mode] + self._dryrun(sync_options.dryrun))
 
 
 SyncModel = Annotated[
