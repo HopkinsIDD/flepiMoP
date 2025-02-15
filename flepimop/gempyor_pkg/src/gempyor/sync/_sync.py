@@ -160,7 +160,7 @@ class S3SyncModel(BaseModel, SyncABC):
 
     @staticmethod
     def _cmd() -> list[str]:
-        return ["aws", "s3", "sync", "--recursive"]
+        return ["aws", "s3", "sync"]
 
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
         inner_paths = [str(_override_or_val(sync_options.source_override, self.source)) + "/", str(_override_or_val(sync_options.target_override, self.target)) + "/"]
