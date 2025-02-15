@@ -12,7 +12,7 @@ __all__ = ["SyncABC", "sync_from_yaml"]
 
 # filters can begin with a `+` or `-` followed by a space, but not just those symbols or a space
 FilterRegex = r'^([\+\-] |[^\+\- ])'
-frcompiled = re.compile(FilterRegex)
+frcompiled = re.compile(r'^([\+\-] )?')
 
 # once 3.12, use type parametrization
 # def _ensure_list[T](value: T | list[T]) -> list[T]:
@@ -40,6 +40,16 @@ def _filter_parse(filter : SyncFilter) -> tuple[Literal["+", "-"], str]:
 def _override_or_val(override : Any, value : Any) -> Any:
     return value if override is None else override
 
+def _echo_failed(res : CompletedProcess) -> CompletedProcess:
+    if res.returncode != 0:
+        return run(
+            ["echo", "`{}` failed with return code {}".format(" ".join(res.args), res.returncode)],
+            stdout=res.stdout,
+            stderr=res.stderr
+        )
+    else:
+        return res
+
 class SyncOptions(BaseModel):
     """
     The potential overriding options for a sync operation
@@ -61,6 +71,7 @@ class SyncOptions(BaseModel):
 
     # allow potentially other fields for external modules
     model_config = ConfigDict(extra='allow')
+
 
 class SyncABC(ABC):
     """
@@ -90,6 +101,7 @@ class SyncABC(ABC):
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
         ...
 
+
 class RsyncModel(BaseModel, SyncABC):
     """
     `SyncABC` Implementation of `rsync` based approach to synchronization
@@ -118,7 +130,8 @@ class RsyncModel(BaseModel, SyncABC):
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
         testcmd = self._cmd() + self._dryrun(sync_options.dryrun) + inner_filter + inner_paths
-        return run(testcmd)
+        return _echo_failed(run(testcmd))
+
 
 class S3SyncModel(BaseModel, SyncABC):
     """
@@ -132,7 +145,7 @@ class S3SyncModel(BaseModel, SyncABC):
 
     @staticmethod
     def _format_filters(filters : ListSyncFilter) -> list[str]:
-        return ["--{} '{}'".format("exclude" if mode == "-" else "include", filt) for (mode, filt) in (_filter_parse(f) for f in filters.reverse())]
+        return ["--{} '{}'".format("exclude" if mode == "-" else "include", filt) for (mode, filt) in (_filter_parse(f) for f in reversed(filters))]
 
     @staticmethod
     def _dryrun(dry : bool) -> list[str]:
@@ -148,7 +161,7 @@ class S3SyncModel(BaseModel, SyncABC):
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
         testcmd = self._cmd() + self._dryrun(sync_options.dryrun) + inner_filter + inner_paths
-        return run(["echo"] + testcmd)
+        return _echo_failed(run(testcmd))
 
 
 class GitModel(BaseModel, SyncABC):
@@ -159,9 +172,13 @@ class GitModel(BaseModel, SyncABC):
     type : Literal["git"]
     mode : Literal["push", "pull"]
 
+    @staticmethod
+    def _dryrun(dry : bool) -> list[str]:
+        return ["--dry-run"] if dry else []
+
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
-        testcmd = ["git", "status"].join(" ")
-        return run(["echo", testcmd])
+        inner_mode = self.mode if not sync_options.reverse else ("push" if self.mode == "pull" else "pull")
+        return _echo_failed(run(["git", inner_mode] + self._dryrun(sync_options.dryrun)))
 
 
 SyncModel = Annotated[
@@ -182,7 +199,7 @@ class SyncProtocols(BaseModel, SyncABC):
             if proto := self.sync.get(tarproto):
                 return proto.execute(sync_options)
             else:
-                return run(["echo", "No protocol `{}` to sync".format(tarproto)])
+                return run(["echo", "No protocol `{}` to sync;".format(tarproto), "available protocols are: {}".format(", ".join(self.sync.keys()))])
 
 def sync_from_yaml(yamlfiles : List[Path]) -> SyncABC:
     """
