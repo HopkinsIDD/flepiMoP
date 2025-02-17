@@ -2,6 +2,7 @@ from pathlib import Path
 
 import yaml
 import click
+from pydantic import ValidationError
 
 from ..shared_cli import (
     config_files_argument,
@@ -85,9 +86,12 @@ def sync(ctx: click.Context = mock_context, **kwargs) -> int:
             if not kwargs["filter_override"]:
                 kwargs["filter_override"] = None
 
-        syncdef = sync_from_yaml(config_files)
+        try:
+            syncdef = sync_from_yaml(config_files)
 
-        verbosity = kwargs.pop("verbosity")
+            verbosity = kwargs.pop("verbosity")
 
-        res = syncdef.execute(kwargs, verbosity)
-        return res.returncode
+            res = syncdef.execute(kwargs, verbosity)
+            return res.returncode
+        except ValidationError as e:
+            ctx.fail(f"Configuration error in `sync`: {e}")
