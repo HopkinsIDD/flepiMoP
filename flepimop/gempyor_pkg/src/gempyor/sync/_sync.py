@@ -1,7 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
-from typing import Literal, Annotated, Union, Dict, List, Any
+from typing import Literal, Annotated, Union, Dict, List, Any, Self
 from pathlib import Path
 from subprocess import run, CompletedProcess
 from itertools import chain
@@ -13,7 +13,7 @@ from pydantic import (
     ConfigDict,
     BeforeValidator,
     computed_field,
-    ValidationError,
+    model_validator,
 )
 
 __all__ = ["SyncABC", "sync_from_yaml"]
@@ -175,15 +175,30 @@ class RsyncModel(BaseModel, SyncABC):
         return _echo_failed(testcmd)
 
 
+def _trim_s3_path(path: str | Path) -> str | Path:
+    if isinstance(path, str):
+        return path.lstrip("s3:")
+    else:
+        return path
+
 class S3SyncModel(BaseModel, SyncABC):
     """
     Implementation of `aws s3 sync` based approach to synchronization
     """
 
     type: Literal["s3sync"]
-    target: Path
-    source: Path
+    target: Annotated[Path, BeforeValidator(_trim_s3_path)]
+    source: Annotated[Path, BeforeValidator(_trim_s3_path)]
     filters: ListSyncFilter = []
+
+    @model_validator(mode='after')
+    def _check_at_least_one_bucket(self) -> Self:
+        srcs3 = self.source.root == "//"
+        tars3 = self.target.root == "//"
+        if srcs3 or tars3:
+            return self
+        else:
+            raise ValueError('At least one of `source` or `target` must be an s3 bucket, as indicated by a `//` prefix')
 
     @computed_field
     @property
@@ -196,10 +211,6 @@ class S3SyncModel(BaseModel, SyncABC):
             return "source"
         elif tars3:
             return "target"
-        else:
-            raise ValidationError(
-                "Neither source nor target are S3 paths; at least one must begin with `//`"
-            )
 
     @staticmethod
     def _format_filters(filters: ListSyncFilter) -> list[str]:

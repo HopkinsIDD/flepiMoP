@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from gempyor.sync._sync import SyncOptions, _ensure_list, SyncProtocols, _filter_mode
 
-
 @pytest.mark.parametrize(
     "opts",
     [
@@ -93,5 +92,33 @@ def test_fail_construct_from_invalid_protocols(protocols: dict):
 
 
 # construct from yaml file(s)
+
+# @pytest.mark.parametrize("data", (
+        
+# ))
+# @pytest.mark.parametrize("which", (
+#     1, (1, 2), (1, 3)
+# ))
+# def test_sync_yaml_load(
+#     tmp_path: Path,
+#     monkeypatch: pytest.MonkeyPatch,
+#     dat: dict[str, Any],
+#     which: str | ,
+# ) -> None:
+#     # Setup the test
+#     monkeypatch.chdir(tmp_path)
+#     config_one = tmp_path / "config_one.yml"
+#     config_one.write_text(yaml.dump(data_one))
+#     config_two = tmp_path / "config_two.yml"
+#     config_two.write_text(yaml.dump(data_two))
+
+#     # Invoke the command
+#     runner = CliRunner()
+#     result = runner.invoke(patch, [config_one.name, config_two.name])
+#     assert result.exit_code == 1
+#     assert isinstance(result.exception, ValueError)
+#     assert str(result.exception) == (
+#         "Configuration files contain overlapping keys, seir, introduced by config_two.yml."
+#     )
 
 # construct options
