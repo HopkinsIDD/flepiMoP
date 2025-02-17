@@ -58,7 +58,13 @@ def create_file_name(
     """
     if create_directory:
         os.makedirs(
-            create_dir_name(run_id, prefix, ftype, inference_filepath_suffix, inference_filename_prefix,),
+            create_dir_name(
+                run_id,
+                prefix,
+                ftype,
+                inference_filepath_suffix,
+                inference_filename_prefix,
+            ),
             exist_ok=True,
         )
 
@@ -117,7 +123,13 @@ def create_file_name_without_extension(
     """
     if create_directory:
         os.makedirs(
-            create_dir_name(run_id, prefix, ftype, inference_filepath_suffix, inference_filename_prefix,),
+            create_dir_name(
+                run_id,
+                prefix,
+                ftype,
+                inference_filepath_suffix,
+                inference_filename_prefix,
+            ),
             exist_ok=True,
         )
     filename = Path(
@@ -157,7 +169,11 @@ def run_id(timestamp: None | datetime = None) -> str:
 
 
 def create_dir_name(
-    run_id: str, prefix: str, ftype: str, inference_filepath_suffix: str, inference_filename_prefix: str,
+    run_id: str,
+    prefix: str,
+    ftype: str,
+    inference_filepath_suffix: str,
+    inference_filename_prefix: str,
 ) -> str:
     """
     Generate a directory name based on the given parameters.
@@ -182,7 +198,13 @@ def create_dir_name(
     """
     return os.path.dirname(
         create_file_name_without_extension(
-            run_id, prefix, 1, ftype, inference_filepath_suffix, inference_filename_prefix, create_directory=False,
+            run_id,
+            prefix,
+            1,
+            ftype,
+            inference_filepath_suffix,
+            inference_filename_prefix,
+            create_directory=False,
         )
     )
 
@@ -192,32 +214,34 @@ def create_file_name_for_push(
 ) -> list[str]:
     """
     Generate a list of file names for different types of inference results.
-    
-    This function generates a list of file names based on the provided run index, prefix, slot index, 
-    and block index. Each file name corresponds to a different type of inference result, such as 
-    "seir", "hosp", "llik", etc. The file names are generated using the `create_file_name` function, 
+
+    This function generates a list of file names based on the provided run index, prefix, slot index,
+    and block index. Each file name corresponds to a different type of inference result, such as
+    "seir", "hosp", "llik", etc. The file names are generated using the `create_file_name` function,
     with specific extensions based on the type: "csv" for "seed" and "parquet" for all other types.
 
     Args:
         flepi_run_index :
             The index of the run. This is used to uniquely identify the run.
         prefix :
-            A prefix string to be included in the file names. This is typically used to categorize or 
+            A prefix string to be included in the file names. This is typically used to categorize or
             identify the files.
         flepi_slot_index :
             The slot index used in the filename. This is formatted as a zero-padded nine-digit number.
         flepi_block_index :
-            The block index used in the filename. This typically indicates a specific block or segment 
+            The block index used in the filename. This typically indicates a specific block or segment
             of the data being processed.
 
     Returns:
         list
-            A list of generated file names, each corresponding to a different type of inference result. 
-            The file names include the provided prefix, run index, slot index, block index, type, and 
+            A list of generated file names, each corresponding to a different type of inference result.
+            The file names include the provided prefix, run index, slot index, block index, type, and
             the appropriate file extension (either "csv" or "parquet").
     """
     type_list = ["seir", "hosp", "llik", "spar", "snpi", "hnpi", "hpar", "init", "seed"]
-    extension_map = {type_name: "csv" if type_name == "seed" else "parquet" for type_name in type_list}
+    extension_map = {
+        type_name: "csv" if type_name == "seed" else "parquet" for type_name in type_list
+    }
     name_list = []
     for type_name, extension in extension_map.items():
         file_name = create_file_name(

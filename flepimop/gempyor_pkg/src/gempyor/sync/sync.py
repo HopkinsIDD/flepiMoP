@@ -58,6 +58,7 @@ sync_options = {
     ),
 }
 
+
 @cli.command(
     name="sync",
     params=[config_files_argument] + list(sync_options.values()),
@@ -67,22 +68,26 @@ sync_options = {
 def sync(ctx: click.Context = mock_context, **kwargs) -> int:
     """Sync flepimop files between local and remote locations."""
 
-    config_files : list[Path] = kwargs.pop("config_files")
+    config_files: list[Path] = kwargs.pop("config_files")
     if not config_files:
         ctx.fail("No configuration files provided." + "\n" + ctx.get_help())
     else:
-        if kwargs['nofilter']:
-            if kwargs['filter_override']:
-                ctx.fail("Cannot use both `--no-filter` and `--filter` options together." + "\n" + ctx.get_help())
+        if kwargs["nofilter"]:
+            if kwargs["filter_override"]:
+                ctx.fail(
+                    "Cannot use both `--no-filter` and `--filter` options together."
+                    + "\n"
+                    + ctx.get_help()
+                )
             else:
-                kwargs['filter_override'] = []
+                kwargs["filter_override"] = []
         else:
-            if not kwargs['filter_override']:
-                kwargs['filter_override'] = None
-        
+            if not kwargs["filter_override"]:
+                kwargs["filter_override"] = None
+
         syncdef = sync_from_yaml(config_files)
 
         verbosity = kwargs.pop("verbosity")
-           
+
         res = syncdef.execute(kwargs, verbosity)
         return res.returncode
