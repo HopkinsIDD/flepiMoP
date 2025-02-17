@@ -51,6 +51,11 @@ sync_options = {
         is_flag=True,
         help="perform a dry run of the sync operation",
     ),
+    "verbosity": click.Option(
+        param_decls=["-v", "--verbose", "verbosity"],
+        count=True,
+        help="The verbosity level to use for this command.",
+    ),
 }
 
 @cli.command(
@@ -76,5 +81,8 @@ def sync(ctx: click.Context = mock_context, **kwargs) -> int:
                 kwargs['filter_override'] = None
         
         syncdef = sync_from_yaml(config_files)
-        res = syncdef.execute(kwargs)
+
+        verbosity = kwargs.pop("verbosity")
+           
+        res = syncdef.execute(kwargs, verbosity)
         return res.returncode
