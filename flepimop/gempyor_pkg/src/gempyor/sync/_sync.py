@@ -87,7 +87,7 @@ class SyncABC(ABC):
     model_config = ConfigDict(extra='forbid')
 
     @singledispatchmethod
-    def execute(self, sync_options) -> CompletedProcess:
+    def execute(self, sync_options, verbosity : int = 0) -> CompletedProcess:
         """
         Perform the sync operation
         :param sync_options: optional: the options to override the sync operation
@@ -95,15 +95,15 @@ class SyncABC(ABC):
         raise ValueError("Invalid `execute(sync_options = ...)`; must be a `SyncOptions` or `dict`")
 
     @execute.register
-    def _sync_impl(self, sync_options : SyncOptions) -> CompletedProcess:
-        return self._sync_pydantic(sync_options)
+    def _sync_impl(self, sync_options : SyncOptions, verbosity : int = 0) -> CompletedProcess:
+        return self._sync_pydantic(sync_options, verbosity)
 
     @execute.register
-    def _sync_dict(self, sync_options : dict) -> CompletedProcess:
-        return self._sync_pydantic(SyncOptions(**sync_options))
+    def _sync_dict(self, sync_options : dict, verbosity : int = 0) -> CompletedProcess:
+        return self._sync_pydantic(SyncOptions(**sync_options), verbosity)
     
     @abstractmethod
-    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
+    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions(), verbosity : int = 0) -> CompletedProcess:
         ...
 
 
@@ -129,12 +129,14 @@ class RsyncModel(BaseModel, SyncABC):
     def _cmd() -> list[str]:
         return ["rsync", "-avz"]
 
-    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
+    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions(), verbosity : int = 0) -> CompletedProcess:
         inner_paths = [str(_override_or_val(sync_options.source_override, self.source)) + "/", str(_override_or_val(sync_options.target_override, self.target)) + "/"]
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
         testcmd = self._cmd() + inner_filter + self._dryrun(sync_options.dryrun) + inner_paths
+        if verbosity > 0:
+            print(" ".join(testcmd))
         return _echo_failed(testcmd)
 
 
@@ -162,12 +164,14 @@ class S3SyncModel(BaseModel, SyncABC):
     def _cmd() -> list[str]:
         return ["aws", "s3", "sync"]
 
-    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
+    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions(), verbosity : int = 0) -> CompletedProcess:
         inner_paths = [str(_override_or_val(sync_options.source_override, self.source)) + "/", str(_override_or_val(sync_options.target_override, self.target)) + "/"]
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
         testcmd = self._cmd() + self._dryrun(sync_options.dryrun) + inner_filter + inner_paths
+        if verbosity > 0:
+            print(" ".join(testcmd))
         return _echo_failed(testcmd)
 
 
@@ -183,9 +187,12 @@ class GitModel(BaseModel, SyncABC):
     def _dryrun(dry : bool) -> list[str]:
         return ["--dry-run"] if dry else []
 
-    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions()) -> CompletedProcess:
+    def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions(), verbosity : int = 0) -> CompletedProcess:
         inner_mode = self.mode if not sync_options.reverse else ("push" if self.mode == "pull" else "pull")
-        return _echo_failed(["git", inner_mode] + self._dryrun(sync_options.dryrun))
+        testcmd = ["git", inner_mode] + self._dryrun(sync_options.dryrun)
+        if verbosity > 0:
+            print(" ".join(testcmd))
+        return _echo_failed(testcmd)
 
 
 SyncModel = Annotated[
@@ -198,13 +205,13 @@ class SyncProtocols(BaseModel, SyncABC):
 
     model_config = ConfigDict(extra='ignore')
 
-    def _sync_pydantic(self, sync_options: SyncOptions = SyncOptions()) -> CompletedProcess:
+    def _sync_pydantic(self, sync_options: SyncOptions = SyncOptions(), verbosity : int = 0) -> CompletedProcess:
         if not self.sync:
             return run(["echo", "No protocols to sync"])
         else:
             tarproto = sync_options.protocol if sync_options.protocol else list(self.sync.keys())[0]
             if proto := self.sync.get(tarproto):
-                return proto.execute(sync_options)
+                return proto.execute(sync_options, verbosity)
             else:
                 return run(["echo", "No protocol `{}` to sync;".format(tarproto), "available protocols are: {}".format(", ".join(self.sync.keys()))])
 
