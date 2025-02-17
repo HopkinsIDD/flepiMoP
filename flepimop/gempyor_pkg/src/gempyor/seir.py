@@ -207,40 +207,25 @@ def steps_SEIR(
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
-        from .dev import steps as steps_experimental
-
-        logging.critical("Experimental !!! These methods are not ready for production ! ")
-        if integration_method in [
+        if integration_method in {
             "scipy.solve_ivp",
             "scipy.odeint",
             "scipy.solve_ivp2",
             "scipy.odeint2",
-        ]:
-            if modinf.stoch_traj_flag == True:
-                raise ValueError(
-                    f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
-                )
-            seir_sim = steps_experimental.ode_integration(
-                **fnct_args, integration_method=integration_method
+            "rk4.jit1",
+            "rk4.jit2",
+            "rk4.jit3",
+            "rk4.jit4",
+            "rk4.jit5",
+            "rk4.jit6",
+            "rk4.jit.smart",
+            "rk4_aot",
+        }:
+            logger.critical(
+                "The '%s' integration method is considered experimental, please use the 'rk4_experimental' git branch.",
+                integration_method,
             )
-        elif integration_method == "rk4.jit1":
-            seir_sim = steps_experimental.rk4_integration1(**fnct_args)
-        elif integration_method == "rk4.jit2":
-            seir_sim = steps_experimental.rk4_integration2(**fnct_args)
-        elif integration_method == "rk4.jit3":
-            seir_sim = steps_experimental.rk4_integration3(**fnct_args)
-        elif integration_method == "rk4.jit4":
-            seir_sim = steps_experimental.rk4_integration4(**fnct_args)
-        elif integration_method == "rk4.jit5":
-            seir_sim = steps_experimental.rk4_integration5(**fnct_args)
-        elif integration_method == "rk4.jit6":
-            seir_sim = steps_experimental.rk4_integration6(**fnct_args)
-        elif integration_method == "rk4.jit.smart":
-            seir_sim = steps_experimental.rk4_integration2_smart(**fnct_args)
-        elif integration_method == "rk4_aot":
-            seir_sim = steps_experimental.rk4_aot(**fnct_args)
-        else:
-            raise ValueError(f"Unknown integration method given, '{integration_method}'.")
+        raise ValueError(f"Unknown integration method given, '{integration_method}'.")
 
     # We return an xarray instead of a ndarray now
     compartment_coords = {}
