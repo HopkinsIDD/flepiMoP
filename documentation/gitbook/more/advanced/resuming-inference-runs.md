@@ -73,7 +73,7 @@ Of course, if your local machine still had earlier results, `sync` will automati
 
 ## `aws s3 sync` mode
 
-The `aws s3 sync` mode is intended to be used to get results to and from longterm storage on AWS S3. That should generally be snapshotting a "final" analysis run, rather troubleshooting results during development towards such a run.
+The `aws s3 sync` mode is intended to be used to get results to and from longterm storage on AWS S3. That should generally be snapshotting a "final" analysis run, rather troubleshooting results during development towards such a run. Use of this tool assume that you have already taken two steps. First, that `aws s3 sync` is available on the command line, which might require e.g. `module load s3` or adjusting your `$PATH` such that aws command line interface is available with having to provide a fully qualified location. Second, your credentials are setup such that you can directly invoked `aws s3 sync` without having to provide username, etc.
 
 ### Example: Pushing Results
 
@@ -84,16 +84,18 @@ sync:
   snapshots3: # defines the protocol name
     type: s3sync # defines this is an aws s3 sync protocol
     source: model_output # what folder to sync from
-    target: idd-inference-runs/myproject # what *remote* project folder to sync to
+    target: //idd-inference-runs/myproject # what *remote* project folder to sync to
 ```
 
-Note: we are assuming you have setup your WHATEVER FILES ARE NECESSARY FOR S3 ACCESS.
+Note the distinction here where target starts with `//` - that defines that this end is the s3 bucket. A valid `s3sync` protocol requires at least one end to be an s3 bucket, and thus to start with `//`.
 
 You could then
 
 ```bash
 $ flepimop sync myconfig.yml
 ```
+
+to send your outputs to the s3 bucket.
 
 ## `git` mode
 

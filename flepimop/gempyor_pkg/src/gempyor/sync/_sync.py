@@ -7,7 +7,7 @@ from subprocess import run, CompletedProcess
 from itertools import chain
 
 import yaml
-from pydantic import BaseModel, Field, ConfigDict, BeforeValidator
+from pydantic import BaseModel, Field, ConfigDict, BeforeValidator, computed_field, ValidationError
 
 __all__ = ["SyncABC", "sync_from_yaml"]
 
@@ -150,6 +150,20 @@ class S3SyncModel(BaseModel, SyncABC):
     source : Path
     filters : ListSyncFilter = []
 
+    @computed_field
+    @property
+    def s3(self) -> Literal["source", "target", "both"]:
+        srcs3 = self.source.root == "//"
+        tars3 = self.target.root == "//"
+        if srcs3 and tars3:
+            return "both"
+        elif srcs3:
+            return "source"
+        elif tars3:
+            return "target"
+        else:
+            raise ValidationError("Neither source nor target are S3 paths; at least one must begin with `//`")
+
     @staticmethod
     def _format_filters(filters : ListSyncFilter) -> list[str]:
         return list(chain.from_iterable(
@@ -166,6 +180,14 @@ class S3SyncModel(BaseModel, SyncABC):
 
     def _sync_pydantic(self, sync_options : SyncOptions = SyncOptions(), verbosity : int = 0) -> CompletedProcess:
         inner_paths = [str(_override_or_val(sync_options.source_override, self.source)) + "/", str(_override_or_val(sync_options.target_override, self.target)) + "/"]
+        match self.s3:
+            case "source":
+                inner_paths[0] = "s3:" + inner_paths[0]
+            case "target":
+                inner_paths[1] = "s3:" + inner_paths[1]
+            case "both":
+                inner_paths = ["s3:" + p for p in inner_paths]
+        
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self._format_filters(_override_or_val(sync_options.filter_override, self.filters))
