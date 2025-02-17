@@ -10,7 +10,7 @@ Used directly, these underlying tools are quite flexible-but-complex. Via `flepi
 
 All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations (rsync and aws s3 sync) or by setting mode (git). When invoking sync, however, you can supply a `--reverse` flag, which will swap the synchronization direction.
 
-Lastly, generally `sync`-style operations support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition (in the case of `git`, everything that is tracked). If the source is a directory, it will be recursively crawled. To modify this behavior, you can use filters either as part of the protocol definition OR with options provided when invoking sync (which override any in the protocol definition). See the (Filters)[#filters] section below details about filtering.
+Lastly, generally `sync`-style operations support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition (in the case of `git`, everything that is tracked). If the source is a directory, it will be recursively crawled. To modify this behavior, you can use filters either as part of the protocol definition OR with options provided when invoking sync (which override any in the protocol definition). See the (Filters)[#filters] section below for details about filtering, but in general `sync` uses the `rsync` conventions for including / excluding files.
 
 ## `rsync` mode
 
