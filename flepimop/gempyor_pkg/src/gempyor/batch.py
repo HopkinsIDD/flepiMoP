@@ -741,20 +741,17 @@ class BatchSystem(ABC):
                 "If you have experience with scripting on windows and would like to "
                 "contribute, please consider opening a pull request."
             )
-        with NamedTemporaryFile(mode="w") as temp:
+        with NamedTemporaryFile(mode="w", dir=Path.cwd(), delete=False) as temp:
             temp_script = Path(temp.name).absolute()
             temp_script.write_text(
                 _jinja_environment.get_template("submit_command.bash.j2").render(
                     {**kwargs, **{"command": command}}
                 )
             )
-            if dry_run:
-                dest = Path.cwd() / temp_script
-                shutil.copy(temp_script, Path.cwd() / dest.name)
-                if logger is not None:
-                    logger.info(
-                        "Since dry run copying script to '%s' for inspection.", dest
-                    )
+            if logger is not None:
+                logger.info(
+                    "Submit command script placed at '%s' for inspection.", temp_script
+                )
             return self.submit(temp_script, options, verbosity, dry_run)
 
     def format_nodes(self, job_resources: JobResources) -> str:
@@ -1098,6 +1095,8 @@ class SlurmBatchSystem(BatchSystem):
             mode="w",
             suffix=".sbatch",
             prefix=None if (job_name := options.get("job_name")) is None else job_name,
+            dir=Path.cwd(),
+            delete=False,
         ) as temp_script:
             sbatch_script = Path(temp_script.name).absolute()
             sbatch_script.write_text(
@@ -1107,11 +1106,6 @@ class SlurmBatchSystem(BatchSystem):
             )
             if logger is not None:
                 logger.info("Using sbatch script '%s' for submission", sbatch_script)
-            if dry_run:
-                dest = Path.cwd() / sbatch_script.name
-                shutil.copy2(sbatch_script, dest)
-                if logger is not None:
-                    logger.info("Sbatch script copied to '%s' for inspection", dest)
             return self.submit(
                 sbatch_script,
                 options,
