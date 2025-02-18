@@ -42,7 +42,10 @@ import warnings
 
 import click
 import confuse
+import numpy as np
+import numpy.typing as npt
 from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
+from scipy import linalg, stats
 
 from ._click import DurationParamType, MemoryParamType
 from ._jinja import _jinja_environment
@@ -1648,6 +1651,37 @@ def _submit_scenario_job(
         },
     )
     return submission
+
+
+def _estimate_upper_bound(
+    X: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x: npt.NDArray[np.float64],
+    pred_interval: float,
+) -> float:
+    """
+    Estimate the upper bound of a linear regression.
+
+    This helper function calculates the upper bound for resources required for a job
+    given some description of the job size. The upper bound is calculated using a
+    multivariate linear regression with a prediction interval and `pred_interval`
+    controls the interval.
+
+    Args:
+        X: The independent variables.
+        y: The dependent variables.
+        x: The independent variables to estimate the upper bound for.
+        pred_interval: The prediction interval to use.
+
+    Returns:
+        The estimated upper bound of the linear regression.
+    """
+    n, k = X.shape
+    beta, _, _, _ = linalg.lstsq(X, y)
+    mse = np.sum((y - np.dot(X, beta)) ** 2) / (n - k - 1)
+    se = np.sqrt(mse * (1 + np.dot(x, np.dot(linalg.inv(np.dot(X.T, X)), x))))
+    t = stats.t.ppf(0.5 * (pred_interval + 1), n - k - 1)
+    return np.dot(x, beta) + (t * se)
 
 
 @cli.command(
