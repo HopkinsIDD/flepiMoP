@@ -1954,20 +1954,6 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     )
     logger.info("Using cluster info of %s", cluster)
 
-    # Manifest
-    if not kwargs.get("skip_manifest", False):
-        manifest = write_manifest(
-            job_name,
-            kwargs.get("flepi_path"),
-            kwargs.get("project_path"),
-        )
-        logger.info("Wrote manifest to '%s'", manifest)
-    else:
-        if kwargs.get("dry_run", False):
-            logger.info("Skipping manifest.")
-        else:
-            logger.warning("Skipping manifest in non-dry run which is not recommended.")
-
     # Job config
     job_config = Path(f"config_{job_name}.yml").absolute()
     job_config.write_text(_dump_formatted_yaml(cfg))
@@ -1975,15 +1961,6 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
         logger.info(
             "Dumped the job config for this batch submission to %s", job_config.absolute()
         )
-
-    # Git checkout
-    if not kwargs.get("skip_checkout", False):
-        _git_checkout(kwargs.get("project_path"), f"run_{job_name}")
-    else:
-        if kwargs.get("dry_run", False):
-            logger.info("Skipping git checkout.")
-        else:
-            logger.warning("Skipping git checkout in non-dry run which is not recommended.")
 
     # Construct template data
     general_template_data = {
@@ -2003,6 +1980,29 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "array_capable": _inference_is_array_capable(inference_method),
         },
     }
+
+    # Manifest
+    if not kwargs.get("skip_manifest", False):
+        manifest = write_manifest(
+            job_name,
+            kwargs.get("flepi_path"),
+            kwargs.get("project_path"),
+        )
+        logger.info("Wrote manifest to '%s'", manifest)
+    else:
+        if kwargs.get("dry_run", False):
+            logger.info("Skipping manifest.")
+        else:
+            logger.warning("Skipping manifest in non-dry run which is not recommended.")
+
+    # Git checkout
+    if not kwargs.get("skip_checkout", False):
+        _git_checkout(kwargs.get("project_path"), f"run_{job_name}")
+    else:
+        if kwargs.get("dry_run", False):
+            logger.info("Skipping git checkout.")
+        else:
+            logger.warning("Skipping git checkout in non-dry run which is not recommended.")
 
     # Submit jobs
     for outcome_modifiers_scenario, seir_modifiers_scenario in product(
