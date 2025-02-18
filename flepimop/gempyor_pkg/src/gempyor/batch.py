@@ -983,24 +983,6 @@ class LocalBatchSystem(BatchSystem):
         )
 
 
-def _slurm_submit_command_cleanup(sbatch_script: Path, cwd: Path) -> None:
-    """
-    Clean up the sbatch script on exit.
-
-    Internal helper to copy an sbatch submission script to the current working directory
-    and remove the original script on exit.
-
-    Args:
-        sbatch_script: The path to the sbatch script.
-        cwd: The current working directory.
-
-    Returns:
-        None
-    """
-    shutil.copy2(sbatch_script, cwd / sbatch_script.name)
-    sbatch_script.unlink(missing_ok=True)
-
-
 class SlurmBatchSystem(BatchSystem):
     """
     Batch system for running jobs on a Slurm HPC cluster.
@@ -1703,7 +1685,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     \b
     ```bash
     $ flepimop batch-calibrate \\
-        # The paths and conda environment to use (assuming $FLEPI_PATH is set)
+        # The paths and conda environment to use
         --flepi-path $FLEPI_PATH \\
         --project-path $FLEPI_PATH/examples/tutorials \\
         --conda-env flepimop-env \\ 
