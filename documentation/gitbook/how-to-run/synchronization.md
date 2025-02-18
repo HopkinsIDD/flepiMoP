@@ -6,11 +6,23 @@ The `flepimop` pipeline provides a uniform interface to synchronization tools: `
  - `aws s3 sync`: generally for long term record of outputs or external sharing
  - `git`: for version controlled elements, like pre-/post-processing scripts, configuration files, etc
 
-Used directly, these underlying tools are quite flexible-but-complex. Via `flepimop sync`, we provide a simplified-but-limited interface, which makes it easy to accomplish typical tasks, but won't solve every last data transfer problem. For a particular project, you can specify multiple `sync` "protocols", associated with different tasks. By default, the first protocol will be used, but you can specify a specific one to execute from a collection.
+Used directly, these underlying tools are flexible-but-complex. Via `flepimop sync`, we provide a simplified-but-limited interface, which makes it easy to accomplish typical tasks, but won't solve every last data transfer problem. For a particular project, you can specify multiple `sync` "protocols", associated with different tasks. By default, the first protocol will be used, but you can specify a specific one to execute from a collection. A `sync` section is defined by a top-level `sync` key, mapping to any number of keys (which name the protocols), each of which has a `type` key (indicating the underlying tool) and any necessary configuration options (see following sections for the necessary fields by type). So a typical `sync` section might look like:
 
-All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations (rsync and aws s3 sync) or by setting mode (git). When invoking sync, however, you can supply a `--reverse` flag, which will swap the synchronization direction.
+```yaml
+sync:
+  protocolA: # the default protocol: fetch hpc results to local directory
+    type: rsync
+    source: host:someproj/model_output
+    target: some/local/dir
+  protocolB: # a protocol to store results to S3
+    type: s3sync
+    source: some/hpc/model_output
+    target: //s3bucket/someproj/model_output
+```
 
-Lastly, generally `sync`-style operations support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition (in the case of `git`, everything that is tracked). If the source is a directory, it will be recursively crawled. To modify this behavior, you can use filters either as part of the protocol definition OR with options provided when invoking sync (which override any in the protocol definition). See the (Filters)[#filters] section below for details about filtering, but in general `sync` uses the `rsync` conventions for including / excluding files.
+All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations (`rsync` and `s3sync`) or by setting mode (`git`). When invoking `sync`, however, you can supply a `--reverse` flag, which will swap the synchronization direction.
+
+Generally `sync`-style operations support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition (in the case of `git`, everything that is tracked), and if the source is a directory, it will be recursively crawled. To modify this behavior, you can use filters either as part of the protocol definition OR with options provided when invoking sync. See the (Filters)[#filters] section below for details about filtering, but in general `sync` uses the `rsync` conventions for including / excluding files.
 
 ## `rsync` mode
 
@@ -25,7 +37,7 @@ sync:
   pushlongleaf: # defines the protocol name
     type: rsync # defines this is an rsync protocol
     source: model_input # what *local* folder to sync from
-    target: "longleaf:~/flepiproject/model_input" # what *remote* project folder to sync to
+    target: longleaf:~/flepiproject/model_input # what *remote* project folder to sync to
 ```
 
 Note: we are assuming you have setup your `.ssh/config` file to define you username, credentials location, host details, etc - so here `longleaf` corresponds to the host name of an HPC system. If you haven't done that, `flepimop` makes no guarantees about handling prompts for username, password, etc when using `sync`.
@@ -48,7 +60,7 @@ sync:
     type: rsync # defines this is an rsync protocol
     source: "longleaf:~/flepiproject/model_output" # what *remote* project folder to sync from
     target: model_output # what *local* folder to sync to
-    filter: SOME_RUN_INDEX # an optional matching filter
+    filters: '+ *.SOME_RUN_INDEX.*' # an optional match-only SOME_RUN_INDEX filter
 ```
 
 then
@@ -60,7 +72,7 @@ $ flepimop sync myconfig.yml
 would pull the results from "model_output" matching `SOME_RUN_INDEX`. If you're iterating on some model specification, you might be working a series of run indicies. Rather than revising the configuration file repeatedly, you could instead call:
 
 ```bash
-$ flepimop sync --filter=$FLEPI_RUN_INDEX --target=model_output/$FLEPI_RUN_INDEX myconfig.yml
+$ flepimop sync -f'+ $FLEPI_RUN_INDEX' --target=model_output/$FLEPI_RUN_INDEX myconfig.yml
 ```
 
 This would fetch only the results associated with the defined `$FLEPI_RUN_INDEX` and group them together in a corresponding subfolder of `model_output`.
@@ -117,11 +129,20 @@ The `git` mode is simply a wrapper around normal git operations and expects that
 
 If there are no issues with the repository, `sync` will fetch the authoritative repository version, attempting to update the local repository. If there are any merge conflicts, the `sync` operation will fail and refer you to the normal process for resolving such conflicts.
 
-## Filtering
+## Filters
 
-TODO
+Filtering happens by applying include or exclude filters in sequence. A filter is a string that starts either with a "- " (an exclude filter), "+ " (an include filter), or neither of those (defaulting to an include filter). Filters can include `*` or `**` for file or directory globs - see the particular tool documentation for supported patterns.  We adopt the `rsync` convention where earlier filters in the sequence have precedence over filters applied later, which we adapt to other tools conventions as necessary. So an "+ *" as the first filter means "include everything" and has precedence over subsequent filters; similarly, a "- *" filter (meaning exclude everything) and would block all inclusions specified.
 
-## Applications
+For convenience, when users provide **single include** filter (after resolving the configuration file(s) and any command line options), this is interpretted as "include whatever matches this filter, and then exclude everything else".
+
+In configuration files, the filter key is `filters` within a supporting protocol type. The value of that key can be a single string or a list of strings (in either square-bracket or bullet form). The left-to-right (or top-to-bottom) order determines which filter is first vs last.
+
+When invoked on the command line, you can also specify changes to the filters in a few ways:
+ - `-(-f)ilter` option(s) to **override** any configuration file filters. To provide multiple stages of filters, simply provide the option multiple times: `-f'+ include.me' -f'- *.me'` would include a `include.me` and exclude all other `.me` files.
+ - `-e|--fsuffix` and `-a|--fprefix` option(s) to prefix and/or suffix filter(s) to the core filter (which can be from the configuration file, or an via override `-f`s). If there are no configuration-based filters, these are equivalent to just using `-f` filters.
+ - `--no-filter` overrides specified configuration filter(s) to be an empty list; cannot be combined with `-f|a|e` options.
+
+## Applications: `gempyor` resume and continue operations
 
 The `gempyor` approaches to projection and inference support resuming from previously completed work.
 
@@ -147,7 +168,7 @@ During each iteration, inference uses these files to communicate with the compar
 
 The first iteration of an MCMC algorithm is a special case, because we need to pull initial conditions for our parameters. We originally developed the model without inference in mind, so the compartmental model is already set up to read parameter distributions from the configuration file, and to draw values from those distributions, and record those parameters to file. We take advantage of this to bootstrap our MCMC parameters by running the model one time, and reading the parameters it generated from file.
 
-#### Resume from previous run
+### Resume from previous run
 
 We can, instead of bootstrapping our first iteration, read in final values of a previous iteration. This allows us to resume from runs to save computational time and effectively continue iterating on the same chain. We call these **resumes**: inferred parameters are taken from a previous run and allowed to continue being inferred ;
 
@@ -156,6 +177,17 @@ Resumes take the following files (if they exist) from previous runs and uses the
 * hnpi
 * snpi
 * seed
+
+So a resume protocol for `sync` (to fetch previously computed results), might look something like:
+
+```yaml
+sync:
+  resumerun:
+    type: s3sync
+    source: //mybucket/myproject/
+    target: model_output
+    filters: ["*hnpi*", "*snpi*", "*seed*", "- *"]
+```
 
 ### Continuing projection
 
