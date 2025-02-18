@@ -37,6 +37,7 @@ from stat import S_IXUSR
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
+import time
 from typing import Annotated, Any, Callable, Literal, overload
 import warnings
 
@@ -46,6 +47,7 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
 from scipy import linalg, stats
+from scipy.stats.qmc import Sobol
 
 from ._click import DurationParamType, MemoryParamType
 from ._jinja import _jinja_environment
@@ -1684,6 +1686,218 @@ def _estimate_upper_bound(
     return np.dot(x, beta) + (t * se)
 
 
+def _estimate_job_resources(
+    name: str,
+    job_name: str,
+    inference_method: Literal["emcee", "r"],
+    job_size: JobSize,
+    job_resources: JobResources,
+    time_limit: timedelta,
+    batch_system: BatchSystem,
+    outcome_modifiers_scenarios: list[str],
+    seir_modifiers_scenarios: list[str],
+    options: dict[str, str | Iterable[str]] | None,
+    general_template_data: dict[str, Any],
+    estimate_runs: int,
+    estimate_interval: float,
+    verbosity: int,
+    dry_run: bool,
+) -> None:
+    """
+    Estimate the memory resources and time limit for a production job.
+
+    Loosely this function will:
+    1) Construct a set of job sizes that are smaller than the given job size that
+       are still representative of the job size (between a 10th and a 3rd of the
+       original size).
+    2) Submit a job for each of these job sizes and record the time and resources
+       used. Can get that info via `batch_system.status`.
+    3) Use the time and resources used to estimate the time and resources needed
+       for the full job size. Makes this estimate by doing a linear regression and
+       taking the upper bound on the prediction interval.
+
+    Args:
+        name: The name of the config file used as a prefix for the job name.
+        job_name: The name of the job to submit.
+        inference_method: The inference method being used.
+        job_size: The size of the job to submit.
+        job_resources: The resources required for the job to submit.
+        time_limit: The time limit of the job to submit.
+        batch_system: The batch system to submit the job to.
+        outcome_modifiers_scenarios: The outcome modifiers scenarios to use.
+        seir_modifiers_scenarios: The seir modifiers scenarios to use.
+        options: Additional options to pass to the batch system.
+        general_template_data: The general template data to use for the job submission.
+        estimate_runs: The number of runs to use for the estimation.
+        estimate_interval: The prediction interval to use for the estimation.
+        verbosity: The verbosity level of the submission.
+        dry_run: Whether to perform a dry run of the submission.
+
+    Returns:
+        None
+    """
+    logger = get_script_logger(__name__, verbosity or 0)
+    logger.info("Estimating resources for job size of %s", job_size)
+    if not batch_system.estimatible:
+        raise NotImplementedError(
+            f"The batch system '{batch_system.name}' does not support estimation."
+        )
+
+    engine = Sobol(3)
+    fields = ("blocks", "chains", "simulations")
+    samples = engine.integers(
+        l_bounds=(getattr(job_size, f) // 10 for f in fields),
+        u_bounds=(getattr(job_size, f) // 3 for f in fields),
+        n=estimate_runs,
+        endpoint=True,
+    )
+    estimate_job_sizes = [
+        JobSize(blocks=x[0], chains=x[1], samples=0, simulations=x[2]) for x in samples
+    ]
+    logger.info(
+        "Estimating resources for %u job sizes between a 10th and a 3rd of "
+        "the original job size.",
+        estimate_runs,
+    )
+    for i, estimate_job_size in enumerate(estimate_job_sizes):
+        logger.debug("Estimation job %u has size %s.", i, estimate_job_size)
+
+    submissions = {}
+    for estimate_job_size in estimate_job_sizes:
+        general_template_data["job_size"] = estimate_job_size.model_dump()
+        for outcome_modifiers_scenario, seir_modifiers_scenario in product(
+            outcome_modifiers_scenarios, seir_modifiers_scenarios
+        ):
+            submission = _submit_scenario_job(
+                name,
+                job_name,
+                inference_method,
+                job_size,
+                batch_system,
+                outcome_modifiers_scenario,
+                seir_modifiers_scenario,
+                options,
+                general_template_data,
+                verbosity,
+                dry_run,
+            )
+            submissions[
+                hash(
+                    (
+                        estimate_job_size,
+                        outcome_modifiers_scenario,
+                        seir_modifiers_scenario,
+                    )
+                )
+            ] = submission
+            if not dry_run:
+                logger.debug(
+                    "Submitted job %i with size %s for outcome modifier "
+                    "scenario '%s' and SEIR modifier scenario '%s'.",
+                    submission.job_id,
+                    estimate_job_size,
+                )
+
+    if dry_run:
+        logger.info(
+            "If not dry run, would have waited for %u estimates to "
+            "finish then calculated the resource estimation using "
+            "%.2f%% prediction interval.",
+            estimate_runs,
+            100.0 * estimate_interval,
+        )
+        return None
+    else:
+        logger.info(
+            "Waiting for %u estimates to finish, then will calculate the "
+            "resource estimation using %.2f%% prediction interval.",
+            estimate_runs,
+            100.0 * estimate_interval,
+        )
+
+    results = {}
+    start = datetime.now(timezone.utc)
+    logger.info(
+        "Starting to poll for submission jobs, will timeout at %s.",
+        (start + time_limit).strftime("%c %Z"),
+    )
+    while len(results) < len(submissions):
+        time.sleep(120.0)
+        for key, submission in submissions.items():
+            if key in results:
+                continue
+            result = batch_system.status(submission)
+            if result is not None and result.status in {"completed", "failed"}:
+                logger.log(
+                    "Test job %i finished with status '%s'.",
+                    submission.job_id,
+                    result.status,
+                    level=logging.INFO if result.status == "completed" else logging.WARNING,
+                )
+                results[key] = result
+        if datetime.now(timezone.utc) - start > (
+            seconds_limit := math.ceil(10.0 * time_limit.total_seconds())
+        ):
+            raise TimeoutError(
+                "Timed out waiting for estimation jobs "
+                f"to finish after {seconds_limit} seconds."
+            )
+    logger.info("All estimation jobs have finished.")
+
+    y_upper = (0.0, 0.0)
+    for outcome_modifiers_scenario, seir_modifiers_scenario in product(
+        outcome_modifiers_scenarios, seir_modifiers_scenarios
+    ):
+        x = []
+        y_time = []
+        y_memory = []
+        for i in range(len(estimate_job_sizes)):
+            key = hash(
+                (
+                    estimate_job_sizes[i],
+                    outcome_modifiers_scenario,
+                    seir_modifiers_scenario,
+                )
+            )
+            result = results[key]
+            if result.status == "completed":
+                x.append(estimate_job_sizes[i].total_simulations)
+                y_time.append(result.wall_time.total_seconds())
+                y_memory.append(result.memory_efficiency * job_resources.memory)
+
+        x = np.array(x, dtype=np.float64)
+        X = np.ones((len(x), 2), dtype=np.float64)
+        X[:, 1] = x
+        y_time = np.array(y_time, dtype=np.float64)
+        y_memory = np.array(y_memory, dtype=np.float64)
+        y_time_upper = _estimate_upper_bound(
+            X, y_time, np.array([1.0, job_size.total_simulations]), estimate_interval
+        )
+        y_memory_upper = _estimate_upper_bound(
+            X, y_memory, np.array([1.0, job_size.total_simulations]), estimate_interval
+        )
+        y_upper = (max(y_upper[0], y_time_upper), max(y_upper[1], y_memory_upper))
+        logger.debug(
+            "Processed estimation for outcome modifier scenario '%s' "
+            "and SEIR modifier scenario '%s' and determined a time limit "
+            "of %u seconds and %uMB of memory.",
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+            int(y_time_upper),
+            int(y_memory_upper),
+        )
+    logger.info(
+        "Estimated upper bounds for time and memory are %u seconds and %uMB.",
+        int(y_time_upper),
+        int(y_memory_upper),
+    )
+    resources = Path.cwd() / f"{name}_resources.json"
+    resources.write_text(
+        json.dumps({"time_limit": y_upper[0], "memory": y_upper[1]}, indent=4)
+    )
+    logger.info("Wrote estimated resources to '%s'.", resources)
+
+
 @cli.command(
     name="batch-calibrate",
     params=[config_files_argument]
@@ -1792,6 +2006,37 @@ def _estimate_upper_bound(
             type=MemoryParamType(True, "mb", True),
             default=None,
             help="Override for the amount of memory per node to use in MB.",
+        ),
+        click.Option(
+            param_decls=["--estimate", "estimate"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help=(
+                "Should this be submitted as an estimation job? If this flag is given "
+                "then several jobs will be submitted with smaller sizes to estimate "
+                "the time and resources needed for the full job. A time limit and "
+                "memory requirement must still be given, but act as upper bounds on "
+                "estimation jobs."
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-runs", "estimate_runs"],
+            type=click.IntRange(min=6),
+            default=10,
+            help=(
+                "The number of estimation runs to perform. Must be at least 6 due to "
+                "the estimation method, but more runs will provide a better estimate."
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-interval", "estimate_interval"],
+            type=click.FloatRange(min=0.0, max=1.0),
+            default=0.9,
+            help=(
+                "The size of the prediction interval to use for estimating the "
+                "required resources. Must be between 0 and 1."
+            ),
         ),
         click.Option(
             param_decls=["--skip-manifest", "skip_manifest"],
@@ -2014,6 +2259,28 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "array_capable": _inference_is_array_capable(inference_method),
         },
     }
+
+    # Switch to estimation
+    if kwargs.get("estimate", False):
+        return _estimate_job_resources(
+            name,
+            job_name,
+            inference_method,
+            job_size,
+            job_resources,
+            job_time_limit,
+            batch_system,
+            outcome_modifiers_scenarios,
+            seir_modifiers_scenarios,
+            batch_system.options_from_config_and_cli(
+                cfg, kwargs, kwargs.get("verbosity", 0)
+            ),
+            general_template_data,
+            kwargs.get("estimate_runs", 10),
+            kwargs.get("estimate_interval", 0.9),
+            kwargs.get("verbosity", 0),
+            kwargs.get("dry_run", False),
+        )
 
     # Manifest
     if not kwargs.get("skip_manifest", False):
