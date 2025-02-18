@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from getpass import getuser
 from itertools import product
 import json
-from logging import Logger
+import logging
 import math
 from pathlib import Path
 import platform
@@ -553,7 +553,7 @@ def _submit_via_subprocess(
     job_id_callback: (
         Callable[[subprocess.CompletedProcess | subprocess.Popen], int | None] | None
     ),
-    logger: Logger | None,
+    logger: logging.Logger | None,
     dry_run: Literal[True],
 ) -> None: ...
 
@@ -568,7 +568,7 @@ def _submit_via_subprocess(
     job_id_callback: (
         Callable[[subprocess.CompletedProcess | subprocess.Popen], int | None] | None
     ),
-    logger: Logger | None,
+    logger: logging.Logger | None,
     dry_run: Literal[False],
 ) -> JobSubmission: ...
 
@@ -582,7 +582,7 @@ def _submit_via_subprocess(
     job_id_callback: (
         Callable[[subprocess.CompletedProcess | subprocess.Popen], int | None] | None
     ),
-    logger: Logger | None,
+    logger: logging.Logger | None,
     dry_run: bool,
 ) -> JobSubmission | None:
     """
@@ -2001,7 +2001,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
         **kwargs,
         **{
             "user": getuser(),
-            "now": now.strftime("%c"),
+            "now": now.strftime("%c %Z"),
             "name": name,
             "job_name": job_name,
             "job_size": job_size.model_dump(),
