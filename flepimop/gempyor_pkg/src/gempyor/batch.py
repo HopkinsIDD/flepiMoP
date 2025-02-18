@@ -1563,7 +1563,7 @@ def _submit_scenario_job(
     template_data: dict[str, Any],
     verbosity: int,
     dry_run: bool,
-) -> None:
+) -> JobSubmission | None:
     """
     Submit a job for a scenario.
 
@@ -1636,7 +1636,7 @@ def _submit_scenario_job(
     )
 
     # Submit
-    batch_system.submit_command(
+    submission = batch_system.submit_command(
         inference_command,
         options,
         verbosity,
@@ -1647,6 +1647,7 @@ def _submit_scenario_job(
             if k not in {"command", "options", "verbosity", "dry_run"}
         },
     )
+    return submission
 
 
 @cli.command(
