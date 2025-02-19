@@ -86,9 +86,7 @@ class SyncABC(ABC):
         )
 
     @execute.register
-    def _sync_impl(
-        self, sync_options: SyncOptions, verbosity: int = 0
-    ) -> CompletedProcess:
+    def _sync_impl(self, sync_options: SyncOptions, verbosity: int = 0) -> CompletedProcess:
         return self._sync_pydantic(sync_options, verbosity)
 
     @execute.register
@@ -273,9 +271,7 @@ class GitModel(BaseModel, SyncABC):
         return _echo_failed(testcmd)
 
 
-SyncModel = Annotated[
-    Union[RsyncModel, S3SyncModel, GitModel], Field(discriminator="type")
-]
+SyncModel = Annotated[Union[RsyncModel, S3SyncModel, GitModel], Field(discriminator="type")]
 
 
 class SyncProtocols(BaseModel, SyncABC):
@@ -301,9 +297,7 @@ class SyncProtocols(BaseModel, SyncABC):
                     [
                         "echo",
                         "No protocol `{}` to sync;".format(tarproto),
-                        "available protocols are: {}".format(
-                            ", ".join(self.sync.keys())
-                        ),
+                        "available protocols are: {}".format(", ".join(self.sync.keys())),
                     ]
                 )
 

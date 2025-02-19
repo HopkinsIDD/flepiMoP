@@ -51,9 +51,9 @@ def test_sync_opts_filters_mode(opts: dict, mode: Literal["+", "-"]):
     """
     Ensures SyncOptions can identify invalid objects w.r.t to filters
     """
-    assert [
-        _filter_mode(f) for f in SyncOptions(**opts).filter_override
-    ] == _ensure_list(mode)
+    assert [_filter_mode(f) for f in SyncOptions(**opts).filter_override] == _ensure_list(
+        mode
+    )
 
 
 @pytest.mark.parametrize(
