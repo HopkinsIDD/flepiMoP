@@ -1840,6 +1840,8 @@ def _estimate_job_resources(
                     "scenario '%s' and SEIR modifier scenario '%s'.",
                     submission.job_id,
                     estimate_job_size,
+                    outcome_modifiers_scenario,
+                    seir_modifiers_scenario,
                 )
 
     if dry_run:
