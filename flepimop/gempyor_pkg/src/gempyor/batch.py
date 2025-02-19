@@ -1875,10 +1875,10 @@ def _estimate_job_resources(
             result = batch_system.status(submission)
             if result is not None and result.status in {"completed", "failed"}:
                 logger.log(
+                    logging.INFO if result.status == "completed" else logging.WARNING,
                     "Test job %i finished with status '%s'.",
                     submission.job_id,
                     result.status,
-                    level=logging.INFO if result.status == "completed" else logging.WARNING,
                 )
                 results[key] = result
         if datetime.now(timezone.utc) - start > (
