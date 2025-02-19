@@ -102,7 +102,11 @@ def sync(ctx: click.Context = mock_context, **kwargs) -> int:
         ctx.fail("No configuration files provided." + "\n" + ctx.get_help())
     else:
         if kwargs["nofilter"]:
-            if kwargs["filter_override"] or kwargs["filter_prefix"] or kwargs["filter_suffix"]:
+            if (
+                kwargs["filter_override"]
+                or kwargs["filter_prefix"]
+                or kwargs["filter_suffix"]
+            ):
                 ctx.fail(
                     "Cannot use both `--no-filter` and `-f|a|e` options together."
                     + "\n"
