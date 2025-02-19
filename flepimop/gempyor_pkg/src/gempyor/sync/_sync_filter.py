@@ -17,14 +17,18 @@ ListSyncFilter = Annotated[list[SyncFilter], BeforeValidator(_ensure_list)]
 
 FilterParts = tuple[Literal["+", "-"], str]
 
+
 def _filter_mode(filter: SyncFilter) -> Literal["+", "-"]:
     return "-" if filter.startswith("- ") else "+"
+
 
 def _filter_pattern(filter: SyncFilter) -> str:
     return frcompiled.sub("", filter)
 
+
 def _filter_parse(filter: SyncFilter) -> FilterParts:
     return (_filter_mode(filter), _filter_pattern(filter))
+
 
 class WithFilters:
     """
@@ -35,13 +39,14 @@ class WithFilters:
     :method format_filters: creates the formatted version of :method list_filters:.
     """
 
-    filters : ListSyncFilter = []
+    filters: ListSyncFilter = []
 
     def list_filters(
-        self, overrides: ListSyncFilter | None = None,
+        self,
+        overrides: ListSyncFilter | None = None,
         prefix: ListSyncFilter = [],
-        suffix : ListSyncFilter = [],
-        reverse: bool = False
+        suffix: ListSyncFilter = [],
+        reverse: bool = False,
     ) -> list[FilterParts]:
         chn = chain(prefix, _override_or_val(overrides, self.filters), suffix)
         if reverse:
@@ -55,10 +60,15 @@ class WithFilters:
         self,
         overrides: ListSyncFilter | None = None,
         prefix: ListSyncFilter = [],
-        suffix : ListSyncFilter = [],
-        reverse: bool = False
+        suffix: ListSyncFilter = [],
+        reverse: bool = False,
     ) -> list[str]:
-        return list(chain.from_iterable(self._formatter(f) for f in self.list_filters(overrides, prefix, suffix, reverse)))
-    
+        return list(
+            chain.from_iterable(
+                self._formatter(f)
+                for f in self.list_filters(overrides, prefix, suffix, reverse)
+            )
+        )
+
     @abstractmethod
     def _formatter(self, f: FilterParts) -> list[str]: ...
