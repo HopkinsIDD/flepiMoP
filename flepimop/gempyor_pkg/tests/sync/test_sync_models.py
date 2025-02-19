@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from gempyor.sync._sync import SyncOptions, _ensure_list, SyncProtocols, _filter_mode
 
+
 @pytest.mark.parametrize(
     "opts",
     [
@@ -50,9 +51,9 @@ def test_sync_opts_filters_mode(opts: dict, mode: Literal["+", "-"]):
     """
     Ensures SyncOptions can identify invalid objects w.r.t to filters
     """
-    assert [_filter_mode(f) for f in SyncOptions(**opts).filter_override] == _ensure_list(
-        mode
-    )
+    assert [
+        _filter_mode(f) for f in SyncOptions(**opts).filter_override
+    ] == _ensure_list(mode)
 
 
 @pytest.mark.parametrize(
@@ -78,7 +79,13 @@ def test_successfully_construct_from_valid_protocols(protocols: dict):
 @pytest.mark.parametrize(
     "protocols",
     [
-        {"demorsync": {"type": "unsupported", "source": ".", "target": "host:~/some/path"}},
+        {
+            "demorsync": {
+                "type": "unsupported",
+                "source": ".",
+                "target": "host:~/some/path",
+            }
+        },
         {"missingtar": {"type": "rsync", "source": "."}},
         {"badgit": {"type": "git", "source": "."}},
     ],
@@ -94,7 +101,7 @@ def test_fail_construct_from_invalid_protocols(protocols: dict):
 # construct from yaml file(s)
 
 # @pytest.mark.parametrize("data", (
-        
+
 # ))
 # @pytest.mark.parametrize("which", (
 #     1, (1, 2), (1, 3)
