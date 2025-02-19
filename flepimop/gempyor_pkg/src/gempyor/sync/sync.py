@@ -15,6 +15,8 @@ from ..file_paths import create_file_name_for_push
 
 from ._sync import sync_from_yaml
 
+__all__ = ["sync"]
+
 sync_options = {
     "protocol": click.Option(
         ["-p", "--protocol", "protocol"],
