@@ -1747,6 +1747,133 @@ def _generate_job_sizes_grid(
     return estimate_job_sizes
 
 
+def _submit_and_poll_estimate_jobs(
+    estimate_job_sizes: list[JobSize],
+    name: str,
+    job_name: str,
+    inference_method: Literal["emcee", "r"],
+    time_out_limit: timedelta,
+    batch_system: BatchSystem,
+    outcome_modifiers_scenarios: list[str],
+    seir_modifiers_scenarios: list[str],
+    options: dict[str, str | Iterable[str]] | None,
+    general_template_data: dict[str, Any],
+    estimate_runs: int,
+    estimate_interval: float,
+    verbosity: int,
+    dry_run: bool,
+) -> dict[int, JobResult] | None:
+    """
+    Submit and poll for estimation jobs.
+
+    Args:
+        estimate_job_sizes: The job sizes to estimate resources for.
+        name: The name of the config file used as a prefix for the job name.
+        job_name: The name of the job to submit.
+        inference_method: The inference method being used.
+        time_out_limit: The time limit to wait for the estimation jobs to finish.
+        batch_system: The batch system to submit the job to.
+        outcome_modifiers_scenarios: The outcome modifiers scenarios to use.
+        seir_modifiers_scenarios: The SEIR modifiers scenarios to use.
+        options: Additional options to pass to the batch system.
+        general_template_data: The general template data to use for the job submission.
+        estimate_runs: The number of runs to use for the estimation.
+        estimate_interval: The prediction interval to use for the estimation.
+        verbosity: The verbosity level of the submission.
+        dry_run: Whether to perform a dry run of the submission.
+
+    Returns:
+        The results of the estimation jobs as a dict keyed on the hash of the job size,
+        outcome modifiers scenario, and SEIR modifiers scenario or `None` if a dry run.
+    """
+    logger = get_script_logger(__name__, verbosity)
+
+    submissions = {}
+    for i, estimate_job_size in enumerate(estimate_job_sizes):
+        general_template_data["job_size"] = estimate_job_size.model_dump()
+        for outcome_modifiers_scenario, seir_modifiers_scenario in product(
+            outcome_modifiers_scenarios, seir_modifiers_scenarios
+        ):
+            submission = _submit_scenario_job(
+                name,
+                f"{job_name}_estimate_{i}",
+                inference_method,
+                estimate_job_size,
+                batch_system,
+                outcome_modifiers_scenario,
+                seir_modifiers_scenario,
+                options,
+                general_template_data,
+                verbosity,
+                dry_run,
+            )
+            submissions[
+                hash(
+                    (
+                        frozenset(estimate_job_size),
+                        outcome_modifiers_scenario,
+                        seir_modifiers_scenario,
+                    )
+                )
+            ] = submission
+            if not dry_run:
+                logger.debug(
+                    "Submitted job %i with size %s for outcome modifier "
+                    "scenario '%s' and SEIR modifier scenario '%s'.",
+                    submission.job_id,
+                    estimate_job_size,
+                    outcome_modifiers_scenario,
+                    seir_modifiers_scenario,
+                )
+
+    if dry_run:
+        logger.info(
+            "If not dry run, would have waited for %u estimates to "
+            "finish then calculated the resource estimation using "
+            "%.2f%% prediction interval.",
+            estimate_runs,
+            100.0 * estimate_interval,
+        )
+        return None
+    else:
+        logger.info(
+            "Waiting for %u estimates to finish, then will calculate the "
+            "resource estimation using %.2f%% prediction interval.",
+            estimate_runs,
+            100.0 * estimate_interval,
+        )
+
+    results = {}
+    start = datetime.now(timezone.utc)
+    logger.info(
+        "Starting to poll for submission jobs, will timeout at %s.",
+        (start + time_out_limit).strftime("%c %Z"),
+    )
+    while len(results) < len(submissions):
+        time.sleep(120.0)
+        for key, submission in submissions.items():
+            if key in results:
+                continue
+            result = batch_system.status(submission)
+            if result is not None and result.status in {"completed", "failed"}:
+                logger.log(
+                    logging.INFO if result.status == "completed" else logging.WARNING,
+                    "Test job %i finished with status '%s'.",
+                    submission.job_id,
+                    result.status,
+                )
+                results[key] = result
+        if datetime.now(timezone.utc) - start > time_out_limit:
+            seconds_limit = math.ceil(time_out_limit.total_seconds())
+            raise TimeoutError(
+                "Timed out waiting for estimation jobs "
+                f"to finish after {seconds_limit} seconds."
+            )
+    logger.info("All estimation jobs have finished.")
+
+    return results
+
+
 def _estimate_job_resources(
     name: str,
     job_name: str,
@@ -1806,89 +1933,24 @@ def _estimate_job_resources(
 
     estimate_job_sizes = _generate_job_sizes_grid(job_size, estimate_runs, verbosity)
 
-    submissions = {}
-    for i, estimate_job_size in enumerate(estimate_job_sizes):
-        general_template_data["job_size"] = estimate_job_size.model_dump()
-        for outcome_modifiers_scenario, seir_modifiers_scenario in product(
-            outcome_modifiers_scenarios, seir_modifiers_scenarios
-        ):
-            submission = _submit_scenario_job(
-                name,
-                f"{job_name}_estimate_{i}",
-                inference_method,
-                job_size,
-                batch_system,
-                outcome_modifiers_scenario,
-                seir_modifiers_scenario,
-                options,
-                general_template_data,
-                verbosity,
-                dry_run,
-            )
-            submissions[
-                hash(
-                    (
-                        frozenset(estimate_job_size),
-                        outcome_modifiers_scenario,
-                        seir_modifiers_scenario,
-                    )
-                )
-            ] = submission
-            if not dry_run:
-                logger.debug(
-                    "Submitted job %i with size %s for outcome modifier "
-                    "scenario '%s' and SEIR modifier scenario '%s'.",
-                    submission.job_id,
-                    estimate_job_size,
-                    outcome_modifiers_scenario,
-                    seir_modifiers_scenario,
-                )
-
-    if dry_run:
-        logger.info(
-            "If not dry run, would have waited for %u estimates to "
-            "finish then calculated the resource estimation using "
-            "%.2f%% prediction interval.",
-            estimate_runs,
-            100.0 * estimate_interval,
-        )
-        return None
-    else:
-        logger.info(
-            "Waiting for %u estimates to finish, then will calculate the "
-            "resource estimation using %.2f%% prediction interval.",
-            estimate_runs,
-            100.0 * estimate_interval,
-        )
-
-    results = {}
-    start = datetime.now(timezone.utc)
-    time_out_limit = 10.0 * time_limit
-    logger.info(
-        "Starting to poll for submission jobs, will timeout at %s.",
-        (start + time_out_limit).strftime("%c %Z"),
+    results = _submit_and_poll_estimate_jobs(
+        estimate_job_sizes,
+        name,
+        job_name,
+        inference_method,
+        10.0 * time_limit,
+        batch_system,
+        outcome_modifiers_scenarios,
+        seir_modifiers_scenarios,
+        options,
+        general_template_data,
+        estimate_runs,
+        estimate_interval,
+        verbosity,
+        dry_run,
     )
-    while len(results) < len(submissions):
-        time.sleep(120.0)
-        for key, submission in submissions.items():
-            if key in results:
-                continue
-            result = batch_system.status(submission)
-            if result is not None and result.status in {"completed", "failed"}:
-                logger.log(
-                    logging.INFO if result.status == "completed" else logging.WARNING,
-                    "Test job %i finished with status '%s'.",
-                    submission.job_id,
-                    result.status,
-                )
-                results[key] = result
-        if datetime.now(timezone.utc) - start > time_out_limit:
-            seconds_limit = math.ceil(time_out_limit.total_seconds())
-            raise TimeoutError(
-                "Timed out waiting for estimation jobs "
-                f"to finish after {seconds_limit} seconds."
-            )
-    logger.info("All estimation jobs have finished.")
+    if results is None:
+        return None
 
     y_upper = (0.0, 0.0)
     for outcome_modifiers_scenario, seir_modifiers_scenario in product(
