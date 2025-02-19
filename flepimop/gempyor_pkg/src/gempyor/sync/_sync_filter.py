@@ -7,6 +7,8 @@ from pydantic import Field, BeforeValidator
 
 from .._pydantic_ext import _ensure_list, _override_or_val
 
+__all__ = ["ListSyncFilter", "FilterParts", "WithFilters"]
+
 # filters can begin with a `+` or `-` followed by a space, but not just those symbols or a space
 FilterRegex = r"^([\+\-] |[^\+\- ])"
 frcompiled = re.compile(r"^([\+\-] )?")
