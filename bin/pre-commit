@@ -12,4 +12,4 @@ if which pylint > /dev/null 2>&1; then
     --max-line-length=92 \
     --verbose .
 else 
-    echo "'pylint' is not available, so python files willl not be linted."
+    echo "'pylint' is not available, so python files will not be linted."

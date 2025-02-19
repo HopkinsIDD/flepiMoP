@@ -48,13 +48,11 @@ jobs:
         with:
           src: ${{ env.BLACK_SRC }}
           options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"
-  pylint-for-python:
+  pylint-for-gempyor:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env: 
-      PYLINT_LINE_LENGTH: 92
       PYLINT_SRC: 'flepimop/gempyor_pkg/src/gempyor'
-      # PYLINT_FAIL_UNDER: 2.5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,7 +61,7 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: Linting with Pylint
         run: |
-          pylint ${{ env.PYLINT_SRC }} --max-line-length=${{ env.PYLINT_LINE_LENGTH }} --verbose
+          pylint ${{ env.PYLINT_SRC }} --verbose
   check-info-json-schema:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
