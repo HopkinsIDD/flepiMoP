@@ -1807,14 +1807,14 @@ def _estimate_job_resources(
     estimate_job_sizes = _generate_job_sizes_grid(job_size, estimate_runs, verbosity)
 
     submissions = {}
-    for estimate_job_size in estimate_job_sizes:
+    for i, estimate_job_size in enumerate(estimate_job_sizes):
         general_template_data["job_size"] = estimate_job_size.model_dump()
         for outcome_modifiers_scenario, seir_modifiers_scenario in product(
             outcome_modifiers_scenarios, seir_modifiers_scenarios
         ):
             submission = _submit_scenario_job(
                 name,
-                job_name,
+                f"{job_name}_estimate_{i}",
                 inference_method,
                 job_size,
                 batch_system,
