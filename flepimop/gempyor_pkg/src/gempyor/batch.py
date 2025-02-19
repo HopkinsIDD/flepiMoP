@@ -22,7 +22,7 @@ __all__ = (
 
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import datetime, timedelta, timezone
 from getpass import getuser
 from itertools import product
@@ -1686,8 +1686,44 @@ def _estimate_upper_bound(
     return np.dot(x, beta) + (t * se)
 
 
+def _create_estimate_job_size_from_reference(
+    reference_job_size: JobSize,
+    overrides: dict[
+        Literal["blocks", "chains", "samples", "simulations"], PositiveInt | None
+    ],
+) -> JobSize:
+    """
+    Create an estimate job size from a reference job size.
+
+    Args:
+        reference_job_size: The reference job size to use.
+        overrides: The overrides to apply to the reference job size.
+
+    Returns:
+        The estimated job size.
+    """
+    kwargs = (
+        reference_job_size.model_dump(
+            include=("blocks", "chains", "samples", "simulations")
+        )
+        | overrides
+    )
+    if (
+        (samples := kwargs.get("samples")) is not None
+        and (simulations := kwargs.get("simulations")) is not None
+        and samples > simulations
+    ):
+        kwargs["samples"] = max(math.floor(_SAMPLES_SIMULATIONS_RATIO * simulations), 1)
+    return JobSize(**kwargs)
+
+
 def _generate_job_sizes_grid(
-    reference_job_size: JobSize, estimate_runs: PositiveInt, verbosity: int
+    reference_job_size: JobSize,
+    vary_fields: Sequence[Literal["blocks", "chains", "simulations"]],
+    lower_scale: float | int,
+    upper_scale: float | int,
+    estimate_runs: PositiveInt,
+    verbosity: int,
 ) -> list[JobSize]:
     """
     Generate a grid of job sizes for resource estimation.
@@ -1709,33 +1745,45 @@ def _generate_job_sizes_grid(
             in the reference job size.
     """
     logger = get_script_logger(__name__, verbosity)
-    fields = ("blocks", "chains", "simulations")
-    if none_fields := [f for f in fields if getattr(reference_job_size, f) is None]:
-        # TODO: This is a temporary limitation, should be allowed
-        # to determine/infer what fields to scale in estimation.
+    if not vary_fields:
+        raise ValueError(f"The vary fields must not be empty.")
+    if lower_scale <= upper_scale or math.isclose(lower_scale, upper_scale):
+        raise ValueError(
+            f"The lower scale, {lower_scale}, must be "
+            f"greater than the upper scale, {upper_scale}."
+        )
+    if none_fields := [f for f in vary_fields if getattr(reference_job_size, f) is None]:
         none_fields = "'" + "', '".join(none_fields) + "'"
         raise ValueError(
             "The reference job size has `None` for the following fields "
             f"which is not allowed for estimation: {none_fields}."
         )
-    l_bounds = [max(getattr(reference_job_size, f) // 10, 1) for f in fields]
-    u_bounds = [max(getattr(reference_job_size, f) // 3, 1) for f in fields]
+    l_bounds = [
+        max(math.floor(getattr(reference_job_size, f) / lower_scale), 1)
+        for f in vary_fields
+    ]
+    u_bounds = [
+        max(math.ceil(getattr(reference_job_size, f) / upper_scale), 1) for f in vary_fields
+    ]
     logger.info(
         "Generating %u job sizes between %s and %s in size.",
         estimate_runs,
-        JobSize(
-            blocks=l_bounds[0], chains=l_bounds[1], samples=None, simulations=l_bounds[2]
+        _create_estimate_job_size_from_reference(
+            reference_job_size, dict(zip(vary_fields, l_bounds))
         ),
-        JobSize(
-            blocks=u_bounds[0], chains=u_bounds[1], samples=None, simulations=u_bounds[2]
+        _create_estimate_job_size_from_reference(
+            reference_job_size, dict(zip(vary_fields, u_bounds))
         ),
     )
-    engine = Halton(3)
+    engine = Halton(len(vary_fields))
     samples = engine.integers(
         l_bounds=l_bounds, u_bounds=u_bounds, n=estimate_runs, endpoint=True
     )
     estimate_job_sizes = [
-        JobSize(blocks=x[0], chains=x[1], samples=None, simulations=x[2]) for x in samples
+        _create_estimate_job_size_from_reference(
+            reference_job_size, dict(zip(vary_fields, x))
+        )
+        for x in samples
     ]
     logger.info(
         "Estimating resources for %u job sizes between a 10th and a 3rd of "
@@ -1931,7 +1979,9 @@ def _estimate_job_resources(
             f"The batch system '{batch_system.name}' does not support estimation."
         )
 
-    estimate_job_sizes = _generate_job_sizes_grid(job_size, estimate_runs, verbosity)
+    estimate_job_sizes = _generate_job_sizes_grid(
+        job_size, ("blocks", "chains", "simulations"), 10, 3, estimate_runs, verbosity
+    )
 
     results = _submit_and_poll_estimate_jobs(
         estimate_job_sizes,
