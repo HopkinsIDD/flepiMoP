@@ -47,7 +47,7 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
 from scipy import linalg, stats
-from scipy.stats.qmc import Sobol
+from scipy.stats.qmc import Halton
 
 from ._click import DurationParamType, MemoryParamType
 from ._jinja import _jinja_environment
@@ -1743,11 +1743,11 @@ def _estimate_job_resources(
             f"The batch system '{batch_system.name}' does not support estimation."
         )
 
-    engine = Sobol(3)
     fields = ("blocks", "chains", "simulations")
+    engine = Halton(3)
     samples = engine.integers(
-        l_bounds=(getattr(job_size, f) // 10 for f in fields),
-        u_bounds=(getattr(job_size, f) // 3 for f in fields),
+        l_bounds=list(getattr(job_size, f) // 10 for f in fields),
+        u_bounds=list(getattr(job_size, f) // 3 for f in fields),
         n=estimate_runs,
         endpoint=True,
     )
