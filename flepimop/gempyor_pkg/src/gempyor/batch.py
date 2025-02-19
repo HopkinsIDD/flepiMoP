@@ -1828,7 +1828,7 @@ def _estimate_job_resources(
             submissions[
                 hash(
                     (
-                        estimate_job_size,
+                        frozenset(estimate_job_size),
                         outcome_modifiers_scenario,
                         seir_modifiers_scenario,
                     )
@@ -1898,7 +1898,7 @@ def _estimate_job_resources(
         for i in range(len(estimate_job_sizes)):
             key = hash(
                 (
-                    estimate_job_sizes[i],
+                    frozenset(estimate_job_sizes[i]),
                     outcome_modifiers_scenario,
                     seir_modifiers_scenario,
                 )
