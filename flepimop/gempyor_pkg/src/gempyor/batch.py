@@ -1574,7 +1574,7 @@ def _submit_scenario_job(
 
     Args:
         outcome_modifiers_scenario: The outcome modifiers scenario to use.
-        seir_modifiers_scenario: The seir modifiers scenario to use.
+        seir_modifiers_scenario: The SEIR modifiers scenario to use.
         name: The name of the config file used as a prefix for the job name.
         batch_system: The batch system to submit the job to.
         inference_method: The inference method being used.
@@ -1600,7 +1600,7 @@ def _submit_scenario_job(
             )
         if seir_modifiers_scenario == "None":
             logger.warning(
-                "The seir modifiers scenario is `None`, may lead to "
+                "The SEIR modifiers scenario is `None`, may lead to "
                 "unintended consequences in output file/directory names."
             )
 
@@ -1609,7 +1609,7 @@ def _submit_scenario_job(
     prefix = f"{name}_{seir_modifiers_scenario}_{outcome_modifiers_scenario}"
     if verbosity is not None:
         logger.info(
-            "Preparing a job for outcome and seir modifiers scenarios "
+            "Preparing a job for outcome and SEIR modifiers scenarios "
             "'%s' and '%s', respectively, with job name '%s'.",
             outcome_modifiers_scenario,
             seir_modifiers_scenario,
@@ -1625,8 +1625,8 @@ def _submit_scenario_job(
             "seir_modifiers_scenario": seir_modifiers_scenario,
             "job_comment": (
                 f"{name} submitted by {template_data.get('user', 'unknown')} at "
-                f"{template_data.get('now', 'unknown')} with outcome and seir modifiers "
-                f"scenarios '{outcome_modifiers_scenario}' and "
+                f"{template_data.get('now', 'unknown')} with outcome and SEIR "
+                f"modifiers scenarios '{outcome_modifiers_scenario}' and "
                 f"'{seir_modifiers_scenario}', respectively."
             ),
             "job_name": job_name,
@@ -1786,7 +1786,7 @@ def _estimate_job_resources(
         time_limit: The time limit of the job to submit.
         batch_system: The batch system to submit the job to.
         outcome_modifiers_scenarios: The outcome modifiers scenarios to use.
-        seir_modifiers_scenarios: The seir modifiers scenarios to use.
+        seir_modifiers_scenarios: The SEIR modifiers scenarios to use.
         options: Additional options to pass to the batch system.
         general_template_data: The general template data to use for the job submission.
         estimate_runs: The number of runs to use for the estimation.
@@ -1797,7 +1797,7 @@ def _estimate_job_resources(
     Returns:
         None
     """
-    logger = get_script_logger(__name__, verbosity or 0)
+    logger = get_script_logger(__name__, verbosity)
     logger.info("Estimating resources for job size of %s", job_size)
     if not batch_system.estimatible:
         raise NotImplementedError(
@@ -2203,7 +2203,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     ).lower()
     logger.info("Using inference method '%s'", inference_method)
 
-    # Outcome/seir modifier scenarios
+    # Outcome/SEIR modifier scenarios
     outcome_modifiers_scenarios = (
         cfg["outcome_modifiers"]["scenarios"].as_str_seq()
         if cfg["outcome_modifiers"].exists()
