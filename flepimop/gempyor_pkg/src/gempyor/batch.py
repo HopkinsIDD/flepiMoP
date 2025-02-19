@@ -1863,9 +1863,10 @@ def _estimate_job_resources(
 
     results = {}
     start = datetime.now(timezone.utc)
+    time_out_limit = 10.0 * time_limit
     logger.info(
         "Starting to poll for submission jobs, will timeout at %s.",
-        (start + time_limit).strftime("%c %Z"),
+        (start + time_out_limit).strftime("%c %Z"),
     )
     while len(results) < len(submissions):
         time.sleep(120.0)
@@ -1881,9 +1882,8 @@ def _estimate_job_resources(
                     result.status,
                 )
                 results[key] = result
-        if datetime.now(timezone.utc) - start > (
-            seconds_limit := math.ceil(10.0 * time_limit.total_seconds())
-        ):
+        if datetime.now(timezone.utc) - start > time_out_limit:
+            seconds_limit = math.ceil(time_out_limit.total_seconds())
             raise TimeoutError(
                 "Timed out waiting for estimation jobs "
                 f"to finish after {seconds_limit} seconds."
