@@ -1945,6 +1945,7 @@ def _collect_submission_results(
     estimate_measurements: Iterable[Literal["cpu", "memory", "time"]],
     estimate_interval: float,
     reference_job_size: JobSize,
+    reference_job_resources: JobResources,
     estimate_job_sizes: list[JobSize],
     outcome_modifiers_scenarios: list[str],
     seir_modifiers_scenarios: list[str],
@@ -1987,9 +1988,9 @@ def _collect_submission_results(
                 x.append([model_dump[ef] for ef in estimate_factors])
                 y_i = []
                 if "cpu" in estimate_measurements:
-                    y_i.append(result.cpu_efficiency * estimate_job_sizes[i].cpu)
+                    y_i.append(result.cpu_efficiency * reference_job_resources.cpu)
                 if "memory" in estimate_measurements:
-                    y_i.append(result.memory_efficiency * estimate_job_sizes[i].memory)
+                    y_i.append(result.memory_efficiency * reference_job_resources.memory)
                 if "time" in estimate_measurements:
                     y_i.append(result.wall_time.total_seconds())
                 y.append(y_i)
@@ -2108,6 +2109,7 @@ def _estimate_job_resources(
         ("memory", "time"),
         estimate_interval,
         job_size,
+        job_resources,
         estimate_job_sizes,
         outcome_modifiers_scenarios,
         seir_modifiers_scenarios,
