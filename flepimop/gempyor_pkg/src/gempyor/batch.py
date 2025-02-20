@@ -2129,6 +2129,16 @@ def _estimate_job_resources(
             f"The batch system '{batch_system.name}' does not support estimation."
         )
 
+    if general_template_data["array_capable"]:
+        logger.warning(
+            "The inference method '%s' is array capable, but resource "
+            "estimation is only designed for non-array jobs. Overriding "
+            "array capable to False and nodes to 1.",
+            inference_method,
+        )
+        general_template_data["array_capable"] = False
+        general_template_data["nodes"] = 1
+
     estimate_job_sizes = _generate_job_sizes_grid(
         job_size, ("blocks", "chains", "simulations"), 10, 3, estimate_runs, verbosity
     )
