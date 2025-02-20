@@ -1950,7 +1950,7 @@ def _collect_submission_results(
     outcome_modifiers_scenarios: list[str],
     seir_modifiers_scenarios: list[str],
     submission_results: dict[int, JobResult],
-    resources_file: Path,
+    resources_file: Path | None,
     verbosity: int,
 ) -> None:
     """
@@ -1966,25 +1966,30 @@ def _collect_submission_results(
         outcome_modifiers_scenarios: The outcome modifiers scenarios to use.
         seir_modifiers_scenarios: The SEIR modifiers scenarios to use.
         submission_results: The results of the estimation jobs.
-        resources_file: The file to write the estimated resources to.
+        resources_file: The file to write the estimated resources to or `None` to not
+            write the estimated resources.
         verbosity: The verbosity level of the submission.
 
     Returns:
         None
 
     Raises:
+        ValueError: If the estimate factors are empty.
         ValueError: If the estimate factors are not valid job size fields.
         ValueError: If the estimate measurements are empty.
     """
     logger = get_script_logger(__name__, verbosity)
 
+    if not estimate_factors:
+        raise ValueError("The estimate factors must not be empty.")
     valid_estimate_factors = (
         JobSize.model_fields.keys() | JobSize.model_computed_fields.keys()
     )
     if invalid_estimate_factors := set(estimate_factors) - valid_estimate_factors:
         invalid_estimate_factors = "'" + "', '".join(invalid_estimate_factors) + "'"
         raise ValueError(
-            f"The estimate factors {invalid_estimate_factors} are not valid job size fields."
+            f"The estimate factors {invalid_estimate_factors} "
+            "are not valid job size fields."
         )
     if not estimate_measurements:
         raise ValueError("The estimate measurements must not be empty.")
@@ -2017,6 +2022,14 @@ def _collect_submission_results(
                 if "time" in estimate_measurements:
                     y_i.append(result.wall_time.total_seconds())
                 y.append(y_i)
+
+        logger.debug(
+            "Collected %u submissions for outcome modifier scenario '%s' and "
+            "SEIR modifier scenario '%s' to estimate resources from.",
+            len(x),
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+        )
 
         X = np.array(x, dtype=np.float64)
         X = np.hstack((np.ones((X.shape[0], 1), dtype=np.float64), X))
@@ -2054,8 +2067,9 @@ def _collect_submission_results(
         ", ".join(estimate_measurements),
         _format_resource_bounds(y_bounds),
     )
-    resources_file.write_text(json.dumps(y_bounds, indent=4))
-    logger.info("Wrote estimated resources to '%s'.", resources_file)
+    if resources_file is not None:
+        resources_file.write_text(json.dumps(y_bounds, indent=4))
+        logger.info("Wrote estimated resources to '%s'.", resources_file)
 
 
 def _estimate_job_resources(
@@ -2151,6 +2165,8 @@ def _estimate_job_resources(
         Path.cwd() / f"{name}_resources.json",
         verbosity,
     )
+
+    logger.info("Resource estimation complete.")
 
 
 @cli.command(
