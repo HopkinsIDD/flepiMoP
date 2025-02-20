@@ -1953,6 +1953,29 @@ def _collect_submission_results(
     resources_file: Path,
     verbosity: int,
 ) -> None:
+    """
+    Collect submission results and estimate upper bounds for resources.
+
+    Args:
+        estimate_factors: The job size fields to use for estimation.
+        estimate_measurements: The job size measurements to estimate.
+        estimate_interval: The prediction interval to use for the estimation.
+        reference_job_size: The reference job size to use for estimation.
+        reference_job_resources: The reference job resources to use for estimation.
+        estimate_job_sizes: The job sizes to estimate resources for.
+        outcome_modifiers_scenarios: The outcome modifiers scenarios to use.
+        seir_modifiers_scenarios: The SEIR modifiers scenarios to use.
+        submission_results: The results of the estimation jobs.
+        resources_file: The file to write the estimated resources to.
+        verbosity: The verbosity level of the submission.
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If the estimate factors are not valid job size fields.
+        ValueError: If the estimate measurements are empty.
+    """
     logger = get_script_logger(__name__, verbosity)
 
     valid_estimate_factors = (
@@ -2003,8 +2026,19 @@ def _collect_submission_results(
             dtype=np.float64,
         )
         for i, measurement in enumerate(estimate_measurements):
-            y_upper = _estimate_upper_bound(X, Y[:, measurement], x_pred, estimate_interval)
-            y_bounds[measurement] = max(y_bounds[measurement], y_upper)
+            try:
+                y_upper = _estimate_upper_bound(X, Y[:, i], x_pred, estimate_interval)
+                y_bounds[measurement] = max(y_bounds[measurement], y_upper)
+            except linalg.LinAlgError as e:
+                logger.error(
+                    "Failed to estimate %s upper bound for outcome modifier scenario "
+                    "'%s' and SEIR modifier scenario '%s' using linear regression "
+                    "with error: %s",
+                    measurement,
+                    outcome_modifiers_scenario,
+                    seir_modifiers_scenario,
+                    e,
+                )
         logger.debug(
             "Processed estimation for outcome modifier scenario '%s' "
             "and SEIR modifier scenario '%s' and determined upper bounds "
