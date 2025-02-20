@@ -1922,6 +1922,107 @@ def _submit_and_poll_estimate_jobs(
     return results
 
 
+def _format_resource_bounds(bounds: dict[Literal["cpu", "memory", "time"], float]) -> str:
+    """
+    Format resource bounds for logging.
+
+    Args:
+        bounds: The resource bounds to format.
+
+    Returns:
+        The formatted resource bounds.
+    """
+    fmts = {
+        "cpu": "{:.2f}",
+        "memory": "{:.2f}MB",
+        "time": "{:.2f}s",
+    }
+    return ", ".join(fmts[k].format(v) for k, v in bounds.items())
+
+
+def _collect_submission_results(
+    estimate_factors: Iterable[str],
+    estimate_measurements: Iterable[Literal["cpu", "memory", "time"]],
+    estimate_interval: float,
+    reference_job_size: JobSize,
+    estimate_job_sizes: list[JobSize],
+    outcome_modifiers_scenarios: list[str],
+    seir_modifiers_scenarios: list[str],
+    submission_results: dict[int, JobResult],
+    resources_file: Path,
+    verbosity: int,
+) -> None:
+    logger = get_script_logger(__name__, verbosity)
+
+    valid_estimate_factors = (
+        JobSize.model_fields.keys() | JobSize.model_computed_fields.keys()
+    )
+    if invalid_estimate_factors := set(estimate_factors) - valid_estimate_factors:
+        invalid_estimate_factors = "'" + "', '".join(invalid_estimate_factors) + "'"
+        raise ValueError(
+            f"The estimate factors {invalid_estimate_factors} are not valid job size fields."
+        )
+    if not estimate_measurements:
+        raise ValueError("The estimate measurements must not be empty.")
+
+    y_bounds = dict(zip(estimate_measurements, len(estimate_measurements) * [0.0]))
+
+    for outcome_modifiers_scenario, seir_modifiers_scenario in product(
+        outcome_modifiers_scenarios, seir_modifiers_scenarios
+    ):
+        x = []
+        y = []
+
+        for i in range(len(estimate_job_sizes)):
+            key = hash(
+                (
+                    frozenset(estimate_job_sizes[i]),
+                    outcome_modifiers_scenario,
+                    seir_modifiers_scenario,
+                )
+            )
+            result = submission_results[key]
+            if result.status == "completed":
+                model_dump = estimate_job_sizes[i].model_dump(include=estimate_factors)
+                x.append([model_dump[ef] for ef in estimate_factors])
+                y_i = []
+                if "cpu" in estimate_measurements:
+                    y_i.append(result.cpu_efficiency * estimate_job_sizes[i].cpu)
+                if "memory" in estimate_measurements:
+                    y_i.append(result.memory_efficiency * estimate_job_sizes[i].memory)
+                if "time" in estimate_measurements:
+                    y_i.append(result.wall_time.total_seconds())
+                y.append(y_i)
+
+        X = np.array(x, dtype=np.float64)
+        X = np.hstack((np.ones((X.shape[0], 1), dtype=np.float64), X))
+        Y = np.array(y, dtype=np.float64)
+        x_pred = np.array(
+            [1.0] + [reference_job_size.model_dump()[ef] for ef in estimate_factors],
+            dtype=np.float64,
+        )
+        for i, measurement in enumerate(estimate_measurements):
+            y_upper = _estimate_upper_bound(X, Y[:, measurement], x_pred, estimate_interval)
+            y_bounds[measurement] = max(y_bounds[measurement], y_upper)
+        logger.debug(
+            "Processed estimation for outcome modifier scenario '%s' "
+            "and SEIR modifier scenario '%s' and determined upper bounds "
+            "for %s are %s.",
+            outcome_modifiers_scenario,
+            seir_modifiers_scenario,
+            ", ".join(estimate_measurements),
+            _format_resource_bounds(y_bounds),
+        )
+
+    logger.info(
+        "Estimated upper bounds for %s are %s.",
+        ", ".join(estimate_measurements),
+        _format_resource_bounds(y_bounds),
+    )
+    resources_file.write_text(json.dumps(y_bounds, indent=4))
+    logger.info("Wrote estimated resources to '%s'.", resources_file)
+
+
 def _estimate_job_resources(
     name: str,
     job_name: str,
@@ -2002,58 +2103,18 @@ def _estimate_job_resources(
     if results is None:
         return None
 
-    y_upper = (0.0, 0.0)
-    for outcome_modifiers_scenario, seir_modifiers_scenario in product(
-        outcome_modifiers_scenarios, seir_modifiers_scenarios
-    ):
-        x = []
-        y_time = []
-        y_memory = []
-        for i in range(len(estimate_job_sizes)):
-            key = hash(
-                (
-                    frozenset(estimate_job_sizes[i]),
-                    outcome_modifiers_scenario,
-                    seir_modifiers_scenario,
-                )
-            )
-            result = results[key]
-            if result.status == "completed":
-                x.append(estimate_job_sizes[i].total_simulations)
-                y_time.append(result.wall_time.total_seconds())
-                y_memory.append(result.memory_efficiency * job_resources.memory)
-
-        x = np.array(x, dtype=np.float64)
-        X = np.ones((len(x), 2), dtype=np.float64)
-        X[:, 1] = x
-        y_time = np.array(y_time, dtype=np.float64)
-        y_memory = np.array(y_memory, dtype=np.float64)
-        y_time_upper = _estimate_upper_bound(
-            X, y_time, np.array([1.0, job_size.total_simulations]), estimate_interval
-        )
-        y_memory_upper = _estimate_upper_bound(
-            X, y_memory, np.array([1.0, job_size.total_simulations]), estimate_interval
-        )
-        y_upper = (max(y_upper[0], y_time_upper), max(y_upper[1], y_memory_upper))
-        logger.debug(
-            "Processed estimation for outcome modifier scenario '%s' "
-            "and SEIR modifier scenario '%s' and determined a time limit "
-            "of %u seconds and %uMB of memory.",
-            outcome_modifiers_scenario,
-            seir_modifiers_scenario,
-            int(y_time_upper),
-            int(y_memory_upper),
-        )
-    logger.info(
-        "Estimated upper bounds for time and memory are %u seconds and %uMB.",
-        int(y_time_upper),
-        int(y_memory_upper),
+    _collect_submission_results(
+        ("total_simulations",),
+        ("memory", "time"),
+        estimate_interval,
+        job_size,
+        estimate_job_sizes,
+        outcome_modifiers_scenarios,
+        seir_modifiers_scenarios,
+        results,
+        Path.cwd() / f"{name}_resources.json",
+        verbosity,
     )
-    resources = Path.cwd() / f"{name}_resources.json"
-    resources.write_text(
-        json.dumps({"time_limit": y_upper[0], "memory": y_upper[1]}, indent=4)
-    )
-    logger.info("Wrote estimated resources to '%s'.", resources)
 
 
 @cli.command(
