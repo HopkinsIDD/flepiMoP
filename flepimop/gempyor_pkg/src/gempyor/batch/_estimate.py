@@ -503,9 +503,7 @@ def _estimate_job_resources(
         return None
 
     _collect_submission_results(
-        estimate_settings.factors,
-        estimate_settings.measurements,
-        estimate_settings.interval,
+        estimate_settings,
         job_size,
         job_resources,
         estimate_job_sizes,
