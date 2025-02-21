@@ -1,7 +1,8 @@
 from pydantic import PositiveInt
 import pytest
 
-from gempyor.batch import _SAMPLES_SIMULATIONS_RATIO, JobSize
+from gempyor.batch import JobSize
+from gempyor.constants import _SAMPLES_SIMULATIONS_RATIO
 
 
 @pytest.mark.parametrize(

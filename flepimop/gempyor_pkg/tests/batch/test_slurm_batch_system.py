@@ -84,9 +84,9 @@ def test_submit_output_validation(
     sbatch = str(sample_script(tmp_path, True, name="sbatch").absolute())
     script = sample_script(tmp_path, False, name="run.sbatch")
 
-    with patch("gempyor.batch._shutil_which") as shutil_which_patch:
+    with patch("gempyor.batch.systems._shutil_which") as shutil_which_patch:
         shutil_which_patch.return_value = sbatch
-        with patch("gempyor.batch.subprocess.run") as subprocess_run_patch:
+        with patch("gempyor.batch.systems.subprocess.run") as subprocess_run_patch:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.args = [sbatch, str(script.absolute())]
@@ -270,9 +270,9 @@ def test_status_output_validation(
     expected: JobResult,
 ) -> None:
     batch_system = get_batch_system("slurm")
-    with patch("gempyor.batch._shutil_which") as shutil_which_patch:
+    with patch("gempyor.batch.systems._shutil_which") as shutil_which_patch:
         shutil_which_patch.return_value = "seff"
-        with patch("gempyor.batch.subprocess.run") as subprocess_run_patch:
+        with patch("gempyor.batch.systems.subprocess.run") as subprocess_run_patch:
             mock_process = MagicMock()
             mock_process.returncode = returncode
             mock_process.stdout = stdout

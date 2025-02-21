@@ -1,6 +1,7 @@
 import pytest
 
-from gempyor.batch import BatchSystem, register_batch_system, _reset_batch_systems
+from gempyor.batch import BatchSystem, register_batch_system
+from gempyor.batch.systems import _reset_batch_systems
 
 
 class TestBatchSystem(BatchSystem):
@@ -12,11 +13,11 @@ class TestBatchSystem(BatchSystem):
 
 def test_registration_adds_batch_system() -> None:
     _reset_batch_systems()
-    from gempyor.batch import _batch_systems
+    from gempyor.batch.systems import _batch_systems
 
     initial_len = len(_batch_systems)
     assert register_batch_system(TestBatchSystem()) is None
-    from gempyor.batch import _batch_systems
+    from gempyor.batch.systems import _batch_systems
 
     assert len(_batch_systems) == initial_len + 1
 

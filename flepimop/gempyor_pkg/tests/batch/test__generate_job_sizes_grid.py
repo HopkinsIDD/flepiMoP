@@ -5,7 +5,8 @@ import math
 from pydantic import PositiveInt
 import pytest
 
-from gempyor.batch import JobSize, _generate_job_sizes_grid
+from gempyor.batch._estimate import _generate_job_sizes_grid
+from gempyor.batch import JobSize
 
 
 @pytest.mark.parametrize("vary_fields", ([], ()))

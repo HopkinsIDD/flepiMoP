@@ -8,7 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gempyor.batch import JobSubmission, _submit_via_subprocess
+from gempyor.batch.systems import _submit_via_subprocess
+from gempyor.batch import JobSubmission
 from gempyor.logging import get_script_logger
 from gempyor.testing import sample_script
 from gempyor.utils import _format_cli_options
@@ -78,13 +79,13 @@ def test_output_validation_for_select_values(
         if exec_method == "popen"
         else (lambda proc: int("".join(re.findall(r"\d+", proc.stdout) or ["-1"])))
     )
-    with patch("gempyor.batch.subprocess.run") as subprocess_run_patch:
+    with patch("gempyor.batch.systems.subprocess.run") as subprocess_run_patch:
         mock_completed_process = MagicMock()
         mock_completed_process.returncode = returncode
         mock_completed_process.stdout = stdout
         mock_completed_process.stderr = stderr
         subprocess_run_patch.return_value = mock_completed_process
-        with patch("gempyor.batch.subprocess.Popen") as subprocess_popen_patch:
+        with patch("gempyor.batch.systems.subprocess.Popen") as subprocess_popen_patch:
             mock_popened_process = MagicMock()
             mock_popened_process.returncode = returncode
             mock_popened_process.pid = 123

@@ -1,6 +1,7 @@
 import pytest
 
-from gempyor.batch import JobSize, _job_resources_from_size_and_inference
+from gempyor.batch._inference import _job_resources_from_size_and_inference
+from gempyor.batch import JobSize
 
 
 @pytest.mark.parametrize("nodes", (2, 4, 8))

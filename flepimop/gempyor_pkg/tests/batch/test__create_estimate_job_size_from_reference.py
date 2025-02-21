@@ -1,6 +1,7 @@
 import pytest
 
-from gempyor.batch import JobSize, _create_estimate_job_size_from_reference
+from gempyor.batch._estimate import _create_estimate_job_size_from_reference
+from gempyor.batch import JobSize
 
 
 example_job_sizes = (

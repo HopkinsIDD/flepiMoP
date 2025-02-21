@@ -70,7 +70,7 @@ def test_local_submit(
     batch_system = get_batch_system("local")
     script = sample_script(tmp_path, executable)
 
-    with patch("gempyor.batch.subprocess.Popen") as subprocess_popen_patch:
+    with patch("gempyor.batch.systems.subprocess.Popen") as subprocess_popen_patch:
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"Hello local\n", b"")
         mock_process.returncode = 0

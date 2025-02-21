@@ -20,7 +20,7 @@ def test_getting_default_batch_systems(name: str, class_: type[BatchSystem]) -> 
 @pytest.mark.parametrize("name", ("missing batch system",))
 @pytest.mark.parametrize("raise_on_missing", (True, False))
 def test_getting_batch_system_missing(name: str, raise_on_missing: bool) -> None:
-    from gempyor.batch import _batch_systems
+    from gempyor.batch.systems import _batch_systems
 
     assert name not in {bs.name for bs in _batch_systems}
     if raise_on_missing:

@@ -3,7 +3,7 @@ from typing import Literal
 
 import pytest
 
-from gempyor.batch import _format_resource_bounds
+from gempyor.batch._helpers import _format_resource_bounds
 
 
 @pytest.mark.parametrize(

@@ -2,7 +2,8 @@ from collections.abc import Iterable
 
 import pytest
 
-from gempyor.batch import JobResources, JobSize, _collect_submission_results
+from gempyor.batch._estimate import _collect_submission_results
+from gempyor.batch import JobResources, JobSize
 
 
 @pytest.mark.parametrize("estimate_factors", ((), []))

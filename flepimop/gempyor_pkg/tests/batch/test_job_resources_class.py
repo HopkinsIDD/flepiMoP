@@ -2,7 +2,7 @@ from typing import Literal
 
 import pytest
 
-from gempyor.batch import BatchSystem, JobResources, JobSize
+from gempyor.batch import JobResources
 
 
 @pytest.mark.parametrize("nodes", (1, 2, 4, 8))
