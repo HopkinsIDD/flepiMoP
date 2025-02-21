@@ -1,9 +1,11 @@
 __all__ = ()
 
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from getpass import getuser
 from itertools import product
+import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +25,7 @@ from ..shared_cli import (
     verbosity_options,
 )
 from ..utils import _dump_formatted_yaml, _git_checkout, config
-from ._estimate import _estimate_job_resources
+from ._estimate import _estimate_job_resources, _format_resource_bounds
 from ._helpers import _job_name, _parse_extra_options
 from ._inference import _inference_is_array_capable, _job_resources_from_size_and_inference
 from ._submit import _submit_scenario_job
@@ -140,6 +142,15 @@ from .types import EstimationSettings, JobSize
             type=MemoryParamType(True, "mb", True),
             default=None,
             help="Override for the amount of memory per node to use in MB.",
+        ),
+        click.Option(
+            param_decls=["--from-estimate", "from_estimate"],
+            type=click.Path(exists=True, path_type=Path),
+            default=None,
+            help=(
+                "The path to a previous estimation file to use for the job. "
+                "This will override the job resources and time limit given."
+            ),
         ),
         click.Option(
             param_decls=["--estimate", "estimate"],
@@ -391,6 +402,38 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
         kwargs.get("simulations"),
     )
     logger.info("Using job size of %s", job_size)
+
+    # From estimate
+    if (from_estimate := kwargs.get("from_estimate")) is not None:
+        logger.info("Using job resources from estimation file '%s'", from_estimate)
+        estimated_resources = json.loads(from_estimate.read_text())
+        logger.info(
+            "Contains estimated resources for %s of %s",
+            ", ".join(estimated_resources.keys()),
+            _format_resource_bounds(estimated_resources),
+        )
+        if "time" in estimated_resources:
+            old_time_limit = kwargs.get("time_limit")
+            kwargs["time_limit"] = timedelta(seconds=estimated_resources["time"])
+            logger.debug(
+                "Overriding time limit %s with estimated time of %s",
+                old_time_limit,
+                kwargs["time_limit"],
+            )
+        if "memory" in estimated_resources:
+            old_memory = kwargs.get("memory")
+            kwargs["memory"] = math.ceil(estimated_resources["memory"])
+            logger.debug(
+                "Overriding memory %sMB with estimated memory of %sMB",
+                old_memory,
+                kwargs["memory"],
+            )
+        if "cpu" in estimated_resources:
+            old_cpus = kwargs.get("cpus")
+            kwargs["cpus"] = math.ceil(estimated_resources["cpu"])
+            logger.debug(
+                "Overriding cpus %s with estimated cpus of %s", old_cpus, kwargs["cpus"]
+            )
 
     # Job time limit
     job_time_limit = kwargs.get("time_limit")
