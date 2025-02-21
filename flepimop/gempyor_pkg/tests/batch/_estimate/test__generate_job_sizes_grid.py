@@ -6,46 +6,7 @@ from pydantic import PositiveInt
 import pytest
 
 from gempyor.batch._estimate import _generate_job_sizes_grid
-from gempyor.batch import JobSize
-
-
-@pytest.mark.parametrize("vary_fields", ([], ()))
-def test_empty_vary_fields_value_error(vary_fields: Sequence[str]) -> None:
-    with pytest.raises(
-        ValueError,
-        match=f"^The vary fields must not be empty.$",
-    ):
-        _generate_job_sizes_grid(
-            JobSize(blocks=1, chains=1, samples=1, simulations=2),
-            vary_fields,
-            10,
-            3,
-            1,
-            logging.INFO,
-        )
-
-
-@pytest.mark.parametrize(
-    ("lower_scale", "upper_scale"), ((3, 3), (2.3, 2.3), (10, 20), (2.3, 2.4))
-)
-def test_lower_and_upper_scale_value_error(
-    lower_scale: float | int, upper_scale: float | int
-) -> None:
-    with pytest.raises(
-        ValueError,
-        match=(
-            f"^The lower scale, {lower_scale}, must be "
-            f"greater than the upper scale, {upper_scale}.$"
-        ),
-    ):
-        _generate_job_sizes_grid(
-            JobSize(blocks=1, chains=1, samples=1, simulations=2),
-            ("blocks", "chains", "simulations"),
-            lower_scale,
-            upper_scale,
-            1,
-            logging.INFO,
-        )
+from gempyor.batch import EstimationSettings, JobSize
 
 
 @pytest.mark.parametrize(
@@ -84,6 +45,15 @@ def test_lower_and_upper_scale_value_error(
 def test_invalid_reference_job_size(
     reference_job_size: JobSize, expected_none_fields: str
 ) -> None:
+    estimate_settings = EstimationSettings(
+        runs=10,
+        interval=0.9,
+        vary=("blocks", "chains", "simulations"),
+        factors=("total_simulations",),
+        measurements=("cpu", "memory", "time"),
+        scale_upper=3.0,
+        scale_lower=10.0,
+    )
     with pytest.raises(
         ValueError,
         match=(
@@ -91,9 +61,7 @@ def test_invalid_reference_job_size(
             f"which is not allowed for estimation: {expected_none_fields}.$"
         ),
     ):
-        _generate_job_sizes_grid(
-            reference_job_size, ("blocks", "chains", "simulations"), 10, 3, 1, logging.INFO
-        )
+        _generate_job_sizes_grid(reference_job_size, estimate_settings, logging.INFO)
 
 
 @pytest.mark.filterwarnings(
@@ -137,13 +105,17 @@ def test_output_validation(
     estimate_runs: PositiveInt,
     verbosity: int,
 ) -> None:
+    estimate_settings = EstimationSettings(
+        runs=estimate_runs,
+        interval=0.9,
+        vary=vary_fields,
+        factors=("total_simulations",),
+        measurements=("cpu", "memory", "time"),
+        scale_upper=upper_scale,
+        scale_lower=lower_scale,
+    )
     estimate_job_sizes = _generate_job_sizes_grid(
-        reference_job_size,
-        vary_fields,
-        lower_scale,
-        upper_scale,
-        estimate_runs,
-        verbosity,
+        reference_job_size, estimate_settings, verbosity
     )
     assert len(estimate_job_sizes) == estimate_runs
     assert isinstance(estimate_job_sizes, list)

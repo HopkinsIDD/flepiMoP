@@ -22,7 +22,7 @@ from ..logging import get_script_logger
 from ._helpers import _format_resource_bounds
 from ._submit import _submit_scenario_job
 from .systems import BatchSystem
-from .types import JobResources, JobResult, JobSize
+from .types import EstimationSettings, JobResources, JobResult, JobSize
 
 
 def _estimate_upper_bound(
@@ -89,10 +89,7 @@ def _create_estimate_job_size_from_reference(
 
 def _generate_job_sizes_grid(
     reference_job_size: JobSize,
-    vary_fields: Sequence[Literal["blocks", "chains", "simulations"]],
-    lower_scale: float | int,
-    upper_scale: float | int,
-    estimate_runs: PositiveInt,
+    estimate_settings: EstimationSettings,
     verbosity: int,
 ) -> list[JobSize]:
     """
@@ -104,7 +101,7 @@ def _generate_job_sizes_grid(
 
     Args:
         reference_job_size: The reference job size to generate the grid from.
-        estimate_runs: The number of runs to generate.
+        estimate_settings: The settings to use for the estimation.
         verbosity: The verbosity level of the estimation.
 
     Returns:
@@ -115,53 +112,54 @@ def _generate_job_sizes_grid(
             in the reference job size.
     """
     logger = get_script_logger(__name__, verbosity)
-    if not vary_fields:
-        raise ValueError(f"The vary fields must not be empty.")
-    if lower_scale <= upper_scale or math.isclose(lower_scale, upper_scale):
-        raise ValueError(
-            f"The lower scale, {lower_scale}, must be "
-            f"greater than the upper scale, {upper_scale}."
-        )
-    if none_fields := [f for f in vary_fields if getattr(reference_job_size, f) is None]:
-        none_fields = "'" + "', '".join(none_fields) + "'"
+
+    if none_fields := [
+        f for f in estimate_settings.vary if getattr(reference_job_size, f) is None
+    ]:
+        none_fields = "'" + "', '".join(sorted(none_fields)) + "'"
         raise ValueError(
             "The reference job size has `None` for the following fields "
             f"which is not allowed for estimation: {none_fields}."
         )
+
     l_bounds = [
-        max(math.floor(getattr(reference_job_size, f) / lower_scale), 1)
-        for f in vary_fields
+        max(math.floor(getattr(reference_job_size, f) / estimate_settings.scale_lower), 1)
+        for f in estimate_settings.vary
     ]
     u_bounds = [
-        max(math.ceil(getattr(reference_job_size, f) / upper_scale), 1) for f in vary_fields
+        max(math.ceil(getattr(reference_job_size, f) / estimate_settings.scale_upper), 1)
+        for f in estimate_settings.vary
     ]
     logger.info(
         "Generating %u job sizes between %s and %s in size.",
-        estimate_runs,
+        estimate_settings.runs,
         _create_estimate_job_size_from_reference(
-            reference_job_size, dict(zip(vary_fields, l_bounds))
+            reference_job_size, dict(zip(estimate_settings.vary, l_bounds))
         ),
         _create_estimate_job_size_from_reference(
-            reference_job_size, dict(zip(vary_fields, u_bounds))
+            reference_job_size, dict(zip(estimate_settings.vary, u_bounds))
         ),
     )
-    engine = Halton(len(vary_fields))
+
+    engine = Halton(len(estimate_settings.vary))
     samples = engine.integers(
-        l_bounds=l_bounds, u_bounds=u_bounds, n=estimate_runs, endpoint=True
+        l_bounds=l_bounds, u_bounds=u_bounds, n=estimate_settings.runs, endpoint=True
     )
     estimate_job_sizes = [
         _create_estimate_job_size_from_reference(
-            reference_job_size, dict(zip(vary_fields, x))
+            reference_job_size, dict(zip(estimate_settings.vary, x))
         )
         for x in samples
     ]
+
     logger.info(
         "Estimating resources for %u job sizes between a 10th and a 3rd of "
         "the original job size.",
-        estimate_runs,
+        estimate_settings.runs,
     )
     for i, estimate_job_size in enumerate(estimate_job_sizes):
         logger.debug("Estimation job %u has size %s.", i, estimate_job_size)
+
     return estimate_job_sizes
 
 
@@ -176,8 +174,7 @@ def _submit_and_poll_estimate_jobs(
     seir_modifiers_scenarios: list[str],
     options: dict[str, str | Iterable[str]] | None,
     general_template_data: dict[str, Any],
-    estimate_runs: int,
-    estimate_interval: float,
+    estimate_settings: EstimationSettings,
     verbosity: int,
     dry_run: bool,
 ) -> dict[int, JobResult] | None:
@@ -195,8 +192,7 @@ def _submit_and_poll_estimate_jobs(
         seir_modifiers_scenarios: The SEIR modifiers scenarios to use.
         options: Additional options to pass to the batch system.
         general_template_data: The general template data to use for the job submission.
-        estimate_runs: The number of runs to use for the estimation.
-        estimate_interval: The prediction interval to use for the estimation.
+        estimate_settings: The settings to use for the estimation.
         verbosity: The verbosity level of the submission.
         dry_run: Whether to perform a dry run of the submission.
 
@@ -249,16 +245,16 @@ def _submit_and_poll_estimate_jobs(
             "If not dry run, would have waited for %u estimates to "
             "finish then calculated the resource estimation using "
             "%.2f%% prediction interval.",
-            estimate_runs,
-            100.0 * estimate_interval,
+            estimate_settings.runs,
+            100.0 * estimate_settings.interval,
         )
         return None
     else:
         logger.info(
             "Waiting for %u estimates to finish, then will calculate the "
             "resource estimation using %.2f%% prediction interval.",
-            estimate_runs,
-            100.0 * estimate_interval,
+            estimate_settings.runs,
+            100.0 * estimate_settings.interval,
         )
 
     results = {}
@@ -293,9 +289,7 @@ def _submit_and_poll_estimate_jobs(
 
 
 def _collect_submission_results(
-    estimate_factors: Iterable[str],
-    estimate_measurements: Iterable[Literal["cpu", "memory", "time"]],
-    estimate_interval: float,
+    estimate_settings: EstimationSettings,
     reference_job_size: JobSize,
     reference_job_resources: JobResources,
     estimate_job_sizes: list[JobSize],
@@ -309,9 +303,7 @@ def _collect_submission_results(
     Collect submission results and estimate upper bounds for resources.
 
     Args:
-        estimate_factors: The job size fields to use for estimation.
-        estimate_measurements: The job size measurements to estimate.
-        estimate_interval: The prediction interval to use for the estimation.
+        estimate_settings: The settings to use for the estimation.
         reference_job_size: The reference job size to use for estimation.
         reference_job_resources: The reference job resources to use for estimation.
         estimate_job_sizes: The job sizes to estimate resources for.
@@ -332,21 +324,9 @@ def _collect_submission_results(
     """
     logger = get_script_logger(__name__, verbosity)
 
-    if not estimate_factors:
-        raise ValueError("The estimate factors must not be empty.")
-    valid_estimate_factors = (
-        JobSize.model_fields.keys() | JobSize.model_computed_fields.keys()
+    y_bounds = dict(
+        zip(estimate_settings.measurements, len(estimate_settings.measurements) * [0.0])
     )
-    if invalid_estimate_factors := set(estimate_factors) - valid_estimate_factors:
-        invalid_estimate_factors = "'" + "', '".join(invalid_estimate_factors) + "'"
-        raise ValueError(
-            f"The estimate factors {invalid_estimate_factors} "
-            "are not valid job size fields."
-        )
-    if not estimate_measurements:
-        raise ValueError("The estimate measurements must not be empty.")
-
-    y_bounds = dict(zip(estimate_measurements, len(estimate_measurements) * [0.0]))
 
     for outcome_modifiers_scenario, seir_modifiers_scenario in product(
         outcome_modifiers_scenarios, seir_modifiers_scenarios
@@ -364,14 +344,16 @@ def _collect_submission_results(
             )
             result = submission_results[key]
             if result.status == "completed":
-                model_dump = estimate_job_sizes[i].model_dump(include=estimate_factors)
-                x.append([model_dump[ef] for ef in estimate_factors])
+                model_dump = estimate_job_sizes[i].model_dump(
+                    include=estimate_settings.factors
+                )
+                x.append([model_dump[ef] for ef in estimate_settings.factors])
                 y_i = []
-                if "cpu" in estimate_measurements:
+                if "cpu" in estimate_settings.measurements:
                     y_i.append(result.cpu_efficiency * reference_job_resources.cpu)
-                if "memory" in estimate_measurements:
+                if "memory" in estimate_settings.measurements:
                     y_i.append(result.memory_efficiency * reference_job_resources.memory)
-                if "time" in estimate_measurements:
+                if "time" in estimate_settings.measurements:
                     y_i.append(result.wall_time.total_seconds())
                 y.append(y_i)
 
@@ -387,12 +369,15 @@ def _collect_submission_results(
         X = np.hstack((np.ones((X.shape[0], 1), dtype=np.float64), X))
         Y = np.array(y, dtype=np.float64)
         x_pred = np.array(
-            [1.0] + [reference_job_size.model_dump()[ef] for ef in estimate_factors],
+            [1.0]
+            + [reference_job_size.model_dump()[ef] for ef in estimate_settings.factors],
             dtype=np.float64,
         )
-        for i, measurement in enumerate(estimate_measurements):
+        for i, measurement in enumerate(estimate_settings.measurements):
             try:
-                y_upper = _estimate_upper_bound(X, Y[:, i], x_pred, estimate_interval)
+                y_upper = _estimate_upper_bound(
+                    X, Y[:, i], x_pred, estimate_settings.interval
+                )
                 y_bounds[measurement] = max(y_bounds[measurement], y_upper)
             except linalg.LinAlgError as e:
                 logger.error(
@@ -410,13 +395,13 @@ def _collect_submission_results(
             "for %s are %s.",
             outcome_modifiers_scenario,
             seir_modifiers_scenario,
-            ", ".join(estimate_measurements),
+            ", ".join(estimate_settings.measurements),
             _format_resource_bounds(y_bounds),
         )
 
     logger.info(
         "Estimated upper bounds for %s are %s.",
-        ", ".join(estimate_measurements),
+        ", ".join(estimate_settings.measurements),
         _format_resource_bounds(y_bounds),
     )
     if resources_file is not None:
@@ -436,8 +421,7 @@ def _estimate_job_resources(
     seir_modifiers_scenarios: list[str],
     options: dict[str, str | Iterable[str]] | None,
     general_template_data: dict[str, Any],
-    estimate_runs: int,
-    estimate_interval: float,
+    estimate_settings: EstimationSettings,
     verbosity: int,
     dry_run: bool,
 ) -> None:
@@ -491,9 +475,7 @@ def _estimate_job_resources(
         general_template_data["array_capable"] = False
         general_template_data["nodes"] = 1
 
-    estimate_job_sizes = _generate_job_sizes_grid(
-        job_size, ("blocks", "chains", "simulations"), 10, 3, estimate_runs, verbosity
-    )
+    estimate_job_sizes = _generate_job_sizes_grid(job_size, estimate_settings, verbosity)
 
     results = _submit_and_poll_estimate_jobs(
         estimate_job_sizes,
@@ -506,8 +488,7 @@ def _estimate_job_resources(
         seir_modifiers_scenarios,
         options,
         general_template_data,
-        estimate_runs,
-        estimate_interval,
+        estimate_settings,
         verbosity,
         dry_run,
     )
@@ -515,9 +496,9 @@ def _estimate_job_resources(
         return None
 
     _collect_submission_results(
-        ("total_simulations",),
-        ("memory", "time"),
-        estimate_interval,
+        estimate_settings.factors,
+        estimate_settings.measurements,
+        estimate_settings.interval,
         job_size,
         job_resources,
         estimate_job_sizes,

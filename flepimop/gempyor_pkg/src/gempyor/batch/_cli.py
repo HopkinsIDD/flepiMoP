@@ -29,6 +29,7 @@ from ._inference import _inference_is_array_capable, _job_resources_from_size_an
 from ._submit import _submit_scenario_job
 from .manifest import write_manifest
 from .systems import _resolve_batch_system_name, get_batch_system
+from .types import EstimationSettings, JobSize
 
 
 @cli.command(
@@ -169,6 +170,60 @@ from .systems import _resolve_batch_system_name, get_batch_system
             help=(
                 "The size of the prediction interval to use for estimating the "
                 "required resources. Must be between 0 and 1."
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-vary", "estimate_vary"],
+            type=click.Choice(["blocks", "chains", "simulations"]),
+            default=["blocks", "chains", "simulations"],
+            multiple=True,
+            help=(
+                "The job size fields to vary for estimating the resources needed for "
+                "the job. This should be a subset of the job size fields."
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-factors", "estimate_factors"],
+            type=click.Choice(
+                JobSize.model_fields.keys() | JobSize.model_computed_fields.keys()
+            ),
+            default=["total_simulations"],
+            multiple=True,
+            help=(
+                "The factors to use for estimating the resources needed for the job. "
+                "This should be a subset of the job size fields. Also keep in mind to "
+                "avoid using colinear factors, i.e. blocks and simulations per a "
+                "block. Doing so can lead to unstable estimates."
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-measurements", "estimate_measurements"],
+            type=click.Choice(["cpu", "memory", "time"]),
+            default=["memory", "time"],
+            multiple=True,
+            help=(
+                "The measurements to use for estimating the resources needed for the "
+                "job. "
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-scale-upper", "estimate_scale_upper"],
+            type=float,
+            default=3.0,
+            help=(
+                "The upper scale to use for estimating the resources needed for the "
+                "job. This is the factor to scale the job size by to get the upper "
+                "bound for the estimation job sizes."
+            ),
+        ),
+        click.Option(
+            param_decls=["--estimate-scale-lower", "estimate_scale_lower"],
+            type=float,
+            default=10.0,
+            help=(
+                "The lower scale to use for estimating the resources needed for the "
+                "job. This is the factor to scale the job size by to get the lower "
+                "bound for the estimation job sizes."
             ),
         ),
         click.Option(
@@ -395,6 +450,15 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
 
     # Switch to estimation
     if kwargs.get("estimate", False):
+        estimation_settings = EstimationSettings(
+            runs=kwargs.get("estimate_runs"),
+            interval=kwargs.get("estimate_interval"),
+            vary=kwargs.get("estimate_vary"),
+            factors=kwargs.get("estimate_factors"),
+            measurements=kwargs.get("estimate_measurements"),
+            scale_upper=kwargs.get("estimate_scale_upper"),
+            scale_lower=kwargs.get("estimate_scale_lower"),
+        )
         return _estimate_job_resources(
             name,
             job_name,
@@ -409,8 +473,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
                 cfg, kwargs, kwargs.get("verbosity", 0)
             ),
             general_template_data,
-            kwargs.get("estimate_runs", 10),
-            kwargs.get("estimate_interval", 0.9),
+            estimation_settings,
             kwargs.get("verbosity", 0),
             kwargs.get("dry_run", False),
         )

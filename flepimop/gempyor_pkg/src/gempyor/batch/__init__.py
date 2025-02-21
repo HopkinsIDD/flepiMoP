@@ -1,5 +1,6 @@
 __all__ = (
     "BatchSystem",
+    "EstimationSettings",
     "JobResources",
     "JobResult",
     "JobSize",
@@ -19,4 +20,4 @@ from .systems import (
     get_batch_system,
     register_batch_system,
 )
-from .types import JobResources, JobResult, JobSize, JobSubmission
+from .types import EstimationSettings, JobResources, JobResult, JobSize, JobSubmission

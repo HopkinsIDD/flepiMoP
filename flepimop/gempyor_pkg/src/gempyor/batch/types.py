@@ -1,4 +1,4 @@
-__all__ = ("JobResources", "JobResult", "JobSize", "JobSubmission")
+__all__ = ("EstimationSettings", "JobResources", "JobResult", "JobSize", "JobSubmission")
 
 
 from datetime import timedelta
@@ -17,6 +17,35 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     Self = Any
+
+
+class EstimationSettings(BaseModel):
+    runs: PositiveInt
+    interval: Annotated[float, Field(gt=0.0, lt=1.0)]
+    vary: set[Literal["blocks", "chains", "simulations"]] = Field(min_length=1)
+    factors: set[str] = Field(min_length=1)
+    measurements: set[Literal["cpu", "memory", "time"]] = Field(min_length=1)
+    scale_upper: Annotated[float, Field(gt=0.0)]
+    scale_lower: Annotated[float, Field(gt=0.0)]
+
+    @model_validator(mode="after")
+    def check_factors(self) -> Self:
+        if invalid_factors := self.factors - (
+            JobSize.model_fields.keys() | JobSize.model_computed_fields.keys()
+        ):
+            raise ValueError(f"Factors must be derived from JobSize: {invalid_factors}.")
+        return self
+
+    @model_validator(mode="after")
+    def check_scales(self) -> Self:
+        if self.scale_upper >= self.scale_lower or isclose(
+            self.scale_upper, self.scale_lower
+        ):
+            raise ValueError(
+                f"The lower scale, {self.scale_lower}, must be greater "
+                f"than the upper scale, {self.scale_upper}."
+            )
+        return self
 
 
 class JobResources(BaseModel):
