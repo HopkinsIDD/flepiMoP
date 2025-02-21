@@ -404,6 +404,13 @@ def _collect_submission_results(
         ", ".join(estimate_settings.measurements),
         _format_resource_bounds(y_bounds),
     )
+    if any((v <= 0.0 or math.isclose(v, 0.0)) for v in y_bounds.values()):
+        logger.critical(
+            "Estimated upper bounds for %s are %s, which are less than or equal "
+            "to zero. These estimations results should not be trusted.",
+            ", ".join(estimate_settings.measurements),
+            _format_resource_bounds(y_bounds),
+        )
     if resources_file is not None:
         resources_file.write_text(json.dumps(y_bounds, indent=4))
         logger.info("Wrote estimated resources to '%s'.", resources_file)
