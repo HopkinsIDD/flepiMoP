@@ -275,14 +275,14 @@ def sample_fits_distribution(
         return bool(np.greater(sample, 0.0))
 
 
-def sample_script(name: str, directory: Path, executable: bool) -> Path:
+def sample_script(directory: Path, executable: bool, name: str = "example") -> Path:
     """
     Create a sample script for testing functions that require a script.
 
     Args:
-        name: The name of the script.
         directory: The directory to create the script in.
         executable: If the script should be executable.
+        name: The name of the script.
 
     Returns:
         The path to the script.

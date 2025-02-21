@@ -800,20 +800,17 @@ class BatchSystem(ABC):
                 "If you have experience with scripting on windows and would like to "
                 "contribute, please consider opening a pull request."
             )
-        with NamedTemporaryFile(mode="w") as temp:
+        with NamedTemporaryFile(mode="w", dir=Path.cwd(), delete=False) as temp:
             temp_script = Path(temp.name).absolute()
             temp_script.write_text(
                 _jinja_environment.get_template("submit_command.bash.j2").render(
                     {**kwargs, **{"command": command}}
                 )
             )
-            if dry_run:
-                dest = Path.cwd() / temp_script
-                shutil.copy(temp_script, Path.cwd() / dest.name)
-                if logger is not None:
-                    logger.info(
-                        "Since dry run copying script to '%s' for inspection.", dest
-                    )
+            if logger is not None:
+                logger.info(
+                    "Submit command script placed at '%s' for inspection.", temp_script
+                )
             return self.submit(temp_script, options, verbosity, dry_run)
 
     def status(self, submission: JobSubmission) -> JobResult | None:
@@ -1058,24 +1055,6 @@ class LocalBatchSystem(BatchSystem):
         )
 
 
-def _slurm_submit_command_cleanup(sbatch_script: Path, cwd: Path) -> None:
-    """
-    Clean up the sbatch script on exit.
-
-    Internal helper to copy an sbatch submission script to the current working directory
-    and remove the original script on exit.
-
-    Args:
-        sbatch_script: The path to the sbatch script.
-        cwd: The current working directory.
-
-    Returns:
-        None
-    """
-    shutil.copy2(sbatch_script, cwd / sbatch_script.name)
-    sbatch_script.unlink(missing_ok=True)
-
-
 class SlurmBatchSystem(BatchSystem):
     """
     Batch system for running jobs on a Slurm HPC cluster.
@@ -1184,6 +1163,8 @@ class SlurmBatchSystem(BatchSystem):
             mode="w",
             suffix=".sbatch",
             prefix=None if (job_name := options.get("job_name")) is None else job_name,
+            dir=Path.cwd(),
+            delete=False,
         ) as temp_script:
             sbatch_script = Path(temp_script.name).absolute()
             sbatch_script.write_text(
@@ -1193,11 +1174,6 @@ class SlurmBatchSystem(BatchSystem):
             )
             if logger is not None:
                 logger.info("Using sbatch script '%s' for submission", sbatch_script)
-            if dry_run:
-                dest = Path.cwd() / sbatch_script.name
-                shutil.copy2(sbatch_script, dest)
-                if logger is not None:
-                    logger.info("Sbatch script copied to '%s' for inspection", dest)
             return self.submit(
                 sbatch_script,
                 options,
@@ -2384,7 +2360,7 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     \b
     ```bash
     $ flepimop batch-calibrate \\
-        # The paths and conda environment to use (assuming $FLEPI_PATH is set)
+        # The paths and conda environment to use
         --flepi-path $FLEPI_PATH \\
         --project-path $FLEPI_PATH/examples/tutorials \\
         --conda-env flepimop-env \\ 

@@ -544,7 +544,6 @@ yaml_stack2 <- function (dat, scenario = "Inference", stack = TRUE){
 #' @param setup_name # SMH, FCH
 #' @param disease # covid19, flu
 #' @param smh_round round of Scenario Modeling Hub, for special adjustments. NA if not SMH.
-#' @param data_path path to setup data directory
 #' @param sim_start_date simulation start date, should match that of interventions, with format YYYY-MM-DD (e.g., 2020-01-31)
 #' @param sim_end_date simulation end date with format YYYY-MM-DD (e.g., 2020-01-31)
 #' @param end_date_groundtruth end date of the ground truth that is fit to. NA if not limiting ground truth date
@@ -563,7 +562,6 @@ print_header <- function (
         setup_name = "SMH",
         disease = "covid19",
         smh_round = NA,
-        # data_path = "data",
         model_output_dirname = "model_output",
         sim_start_date,
         sim_end_date,
@@ -577,7 +575,6 @@ print_header <- function (
                "disease: ", disease, "\n",
                ifelse(!is.na(smh_round),
                       paste0("smh_round: ", smh_round, "\n"), ""),
-               # "data_path: ", data_path, "\n",
                "model_output_dirname: ", model_output_dirname, "\n",
                "start_date: ", sim_start_date, "\n",
                "end_date: ", sim_end_date, "\n",
@@ -597,9 +594,9 @@ print_header <- function (
 #'
 #' @param census_year integer(year)
 #' @param modeled_states vector of sub-populations (i.e., locations) that will be modeled. This can be different from the subpop IDs. For the US, state abbreviations are often used. This component is only used for filtering the data to the set of populations.
-#' @param geodata_file path to file relative to data_path Geodata is a .csv with column headers, with at least two columns: subpop and popnodes
+#' @param geodata_file path to file. Geodata is a .csv with column headers, with at least two columns: subpop and popnodes
 #' @param subpop is the name of a column in geodata that specifies the geo IDs of an area. This column must be unique.
-#' @param mobility_file path to file relative to data_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the subpop column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
+#' @param mobility_file path to file. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the subpop column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
 #' @param state_level whether this is a state-level run
 #'
 #' @return
@@ -1135,9 +1132,9 @@ print_seir <- function(integration_method = "rk4",
 #' @description Prints the global options and the spatial/subpop setup section of the configuration files. These typically sit at the top of the configuration file.
 #'
 #' @param sim_states vector of locations that will be modeled
-#' @param geodata_file path to file relative to data_path Geodata is a .csv with column headers, with at least two columns: nodenames and popnodes
+#' @param geodata_file path to file. Geodata is a .csv with column headers, with at least two columns: nodenames and popnodes
 #' @param popnodes is the name of a column in geodata that specifies the population of the nodenames column
-#' @param mobility_file path to file relative to data_path. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the nodenames column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
+#' @param mobility_file path to file. The mobility file is a .csv file (it has to contains .csv as extension) with long form comma separated values. Columns have to be named ori, dest, amount with amount being the amount of individual going from place ori to place dest. Unassigned relations are assumed to be zero. ori and dest should match exactly the nodenames column in geodata.csv. It is also possible, but NOT RECOMMENDED to specify the mobility file as a .txt with space-separated values in the shape of a matrix. This matrix is symmetric and of size K x K, with K being the number of rows in geodata.
 #' @param state_level whether this is a state-level run
 #'
 #' @return
@@ -1613,7 +1610,6 @@ print_outcomes <- function (resume_modifier = NULL,
 #'
 #' @param iterations_per_slot number of iterations in a single MCMC inference chain With inference model runs, the number of simulations nslots refers to the number of final model simulations that will be produced. The iterations_per_slot setting refers to the number of iterative simulations that will be run in order to produce a single final simulation (i.e., number of simulations in a single MCMC chain).
 #' @param do_inference whether to perform inference
-#' @param data_path file path where observed data are saved
 #' @param gt_source source of data
 #' @param gt_source_statistics
 #' @param misc_data_filename

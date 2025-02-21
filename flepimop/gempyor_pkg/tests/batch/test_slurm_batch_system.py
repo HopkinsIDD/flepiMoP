@@ -81,8 +81,8 @@ def test_submit_output_validation(
     dry_run: bool,
 ) -> None:
     batch_system = get_batch_system("slurm")
-    sbatch = str(sample_script("sbatch", tmp_path, True).absolute())
-    script = sample_script("run.sbatch", tmp_path, False)
+    sbatch = str(sample_script(tmp_path, True, name="sbatch").absolute())
+    script = sample_script(tmp_path, False, name="run.sbatch")
 
     with patch("gempyor.batch._shutil_which") as shutil_which_patch:
         shutil_which_patch.return_value = sbatch
@@ -146,7 +146,7 @@ def test_submit_command_output_validation(
         assert batch_system.submit_command(command, options, verbosity, dry_run) is None
         submit_patch.assert_called_once()
         assert len(caplog.records) == (
-            0 if verbosity is None else (verbosity <= logging.INFO) * (1 + dry_run)
+            0 if verbosity is None else (verbosity <= logging.INFO)
         )
         sbatch_script = submit_patch.call_args.args[0]
         assert str(sbatch_script).endswith(".sbatch")

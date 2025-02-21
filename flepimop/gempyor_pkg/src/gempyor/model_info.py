@@ -218,10 +218,6 @@ class ModelInfo:
 
         # 3. What about subpopulations
         subpop_config = config["subpop_setup"]
-        if "data_path" in config:
-            raise ValueError(
-                "The config has a `data_path` section. This is no longer supported."
-            )
         self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
@@ -482,12 +478,15 @@ class ModelInfo:
             ti=self.ti,
             tf=self.tf,
             input_filename=(
-                None
-                if self.seeding_config is None
-                else self.get_input_filename(
+                self.get_input_filename(
                     ftype=self.seeding_config["seeding_file_type"].get(),
                     sim_id=sim_id,
                     extension_override="csv",
                 )
+                if (
+                    self.seeding_config is not None
+                    and self.seeding_config["seeding_file_type"].exists()
+                )
+                else None
             ),
         )

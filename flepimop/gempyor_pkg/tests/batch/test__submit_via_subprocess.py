@@ -71,7 +71,7 @@ def test_output_validation_for_select_values(
     stdout: str,
     stderr: str,
 ) -> None:
-    exec = sample_script(exec_name, tmp_path, exec_is_executable)
+    exec = sample_script(tmp_path, exec_is_executable, name=exec_name)
     logger = None if verbosity is None else get_script_logger(__name__, verbosity)
     job_id_callback = (
         (lambda proc: proc.pid)

@@ -1,9 +1,6 @@
-from datetime import timedelta
 import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import subprocess
-import sys
 
 import pytest
 
@@ -71,7 +68,7 @@ def test_local_submit(
     dry_run: bool,
 ) -> None:
     batch_system = get_batch_system("local")
-    script = sample_script("example", tmp_path, executable)
+    script = sample_script(tmp_path, executable)
 
     with patch("gempyor.batch.subprocess.Popen") as subprocess_popen_patch:
         mock_process = MagicMock()
