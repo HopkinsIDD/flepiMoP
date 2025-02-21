@@ -1,9 +1,11 @@
+from collections.abc import Iterable
 from datetime import timedelta
 import logging
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+from confuse import Configuration
 import pytest
 
 from gempyor.batch import JobResources, JobSubmission, SlurmBatchSystem, get_batch_system
@@ -64,7 +66,7 @@ def test_time_limit_formatting_for_select_values(
 )
 @pytest.mark.parametrize("verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING))
 @pytest.mark.parametrize("dry_run", (True, False))
-def test_output_validation(
+def test_submit_output_validation(
     caplog: pytest.LogCaptureFixture,
     tmp_path: Path,
     options: dict[str, Any],
@@ -114,3 +116,68 @@ def test_output_validation(
                 assert Path(args[-1]) == script.absolute()
                 if options:
                     assert " ".join(args[1:-1]) == expected_options
+
+
+@pytest.mark.parametrize("command", ("echo 'Foobar!'",))
+@pytest.mark.parametrize("options", (None, {}, {"job_name": "my_job_name"}))
+@pytest.mark.parametrize(
+    "verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
+)
+@pytest.mark.parametrize("dry_run", (True, False))
+def test_submit_command_output_validation(
+    caplog: pytest.LogCaptureFixture,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    options: dict[str, str | Iterable[str]] | None,
+    verbosity: int | None,
+    dry_run: bool,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    batch_system = get_batch_system("slurm")
+    with patch.object(batch_system, "submit") as submit_patch:
+        submit_patch.return_value = None
+        assert batch_system.submit_command(command, options, verbosity, dry_run) is None
+        submit_patch.assert_called_once()
+        assert len(caplog.records) == (
+            0 if verbosity is None else (verbosity <= logging.INFO)
+        )
+        sbatch_script = submit_patch.call_args.args[0]
+        assert str(sbatch_script).endswith(".sbatch")
+        if "job_name" in (options or {}):
+            assert sbatch_script.name.startswith(options.get("job_name"))
+        if dry_run:
+            sbatch_script_copy = tmp_path / sbatch_script.name
+            assert sbatch_script_copy.exists()
+            assert command in sbatch_script_copy.read_text()
+        assert len(submit_patch.call_args.args[1]) == (
+            0 if options is None else len(options)
+        )
+        assert submit_patch.call_args.args[2] == verbosity
+        assert submit_patch.call_args.args[3] == dry_run
+
+
+@pytest.mark.parametrize(
+    "cli_options",
+    (
+        {},
+        {"extra": {}},
+        {"extra": {"partition": "foobar"}},
+        {"extra": {"email": "janedoe@example.com"}},
+        {"extra": {"partition": "fizzbuzz", "email": "jake@statefarm.com"}},
+        {"extra": {"partition": "foo", "other_opt": "not relevant"}},
+    ),
+)
+@pytest.mark.parametrize("verbosity", (None, logging.DEBUG, logging.INFO, logging.WARNING))
+def test_options_from_config_and_cli(
+    caplog: pytest.LogCaptureFixture, cli_options: dict[str, Any], verbosity: int | None
+) -> None:
+    batch_system = get_batch_system("slurm")
+    options = batch_system.options_from_config_and_cli(
+        Configuration("foobar", read=True), cli_options, verbosity
+    )
+    assert isinstance(options, dict)
+    assert len(options) == int("partition" in cli_options.get("extra", {})) + 2 * int(
+        "email" in cli_options.get("extra", {})
+    )
+    assert len(caplog.records) == int(verbosity == logging.DEBUG)
