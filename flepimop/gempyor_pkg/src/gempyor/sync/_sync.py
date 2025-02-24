@@ -67,7 +67,7 @@ class SyncOptions(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-class SyncABC(ABC):
+class SyncABC(BaseModel, ABC):
     """
     Defines an (abstract) object capable of sync files to / from a remote resource
     :method execute: perform the sync operation, potentially with modifying options
@@ -102,7 +102,7 @@ class SyncABC(ABC):
 rsynchostregex = re.compile(r"^(?P<host>[^:]+):(?P<path>.+)$")
 
 
-class RsyncModel(BaseModel, WithFilters, SyncABC):
+class RsyncModel(SyncABC, WithFilters):
     """
     `SyncABC` Implementation of `rsync` based approach to synchronization
     """
@@ -167,7 +167,7 @@ def _trim_s3_path(path: str | Path) -> str | Path:
         return path
 
 
-class S3SyncModel(BaseModel, WithFilters, SyncABC):
+class S3SyncModel(SyncABC, WithFilters):
     """
     Implementation of `aws s3 sync` based approach to synchronization
     """
@@ -245,7 +245,7 @@ class S3SyncModel(BaseModel, WithFilters, SyncABC):
         return _echo_failed(testcmd)
 
 
-class GitModel(BaseModel, SyncABC):
+class GitModel(SyncABC):
     """
     Implementation of `git` based approach to synchronization
     """
@@ -274,7 +274,7 @@ class GitModel(BaseModel, SyncABC):
 SyncModel = Annotated[Union[RsyncModel, S3SyncModel, GitModel], Field(discriminator="type")]
 
 
-class SyncProtocols(BaseModel, SyncABC):
+class SyncProtocols(SyncABC):
     sync: dict[str, SyncModel] = {}
 
     model_config = ConfigDict(extra="ignore")
