@@ -76,9 +76,10 @@ black --line-length 92 \
 To identify instances of poor Python practices within `gempyor`, we use [pylint](https://www.pylint.org/). `pylint` checks for these instances in the code, then produces a list of labeled errors. Again, we use a custom length of 92 characters as the recommended max line length. To lint your code with these settings, you can run the following line from the `flepiMoP` directory:
 
 ```bash
-pylint ./flepimop/gempyor_pkg/src/gempyor \
-    --max-line-length=92 \
-    --verbose .
+pylint flepimop/gempyor_pkg/src/gempyor/ \
+    --fail-under 5 \
+    --rcfile flepimop/gempyor_pkg/.pylintrc \
+    --verbose
 ```
 
 For those using a Mac or Linux system for development, these commands are also available for execution by calling `./bin/lint`. Similarly, you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
