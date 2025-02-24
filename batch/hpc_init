@@ -149,4 +149,6 @@ EOM
 set +e
 
 # Launch subshell with modified environment
+echo ""
+echo "> Launching subshell with modified environment. To exit, type 'exit'. Subshell may not display conda environment correctly, run 'which python' to verify."
 eval "$SHELL -l"
