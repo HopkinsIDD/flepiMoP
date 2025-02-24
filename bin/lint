@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+echo "> Formatting code with 'black'."
 black --line-length 92 \
     --extend-exclude 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py' \
+    --verbose .
+
+echo "> Linting gempyor with 'pylint'."
+pylint ./flepimop/gempyor_pkg/src/gempyor \
+    --max-line-length=92 \
     --verbose .
