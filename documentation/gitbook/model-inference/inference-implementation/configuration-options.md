@@ -8,7 +8,7 @@ The `filtering` section configures the settings for the inference algorithm. The
 filtering:
   simulations_per_slot: 350
   do_filtering: TRUE
-  gt_data_path: data/observed_dat.csv
+  gt_data_path: data/observed_data.csv
   likelihood_directory: importation/likelihood/
   statistics:
     sum_deaths:
