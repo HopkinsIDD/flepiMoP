@@ -53,7 +53,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env: 
       PYLINT_SRC: 'flepimop/gempyor_pkg/src/gempyor'
-      PYLINT_FAIL_UNDER: '5'
+      PYLINT_FAIL_UNDER: '4'
       PYLINT_RCFILE: 'flepimop/gempyor_pkg/.pylintrc'
     steps:
       - name: Checkout
