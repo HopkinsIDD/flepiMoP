@@ -20,5 +20,6 @@ def test__render_template_to_file_renders_correctly(
     if file.is_absolute():
         raise ValueError("The `file` argument must be relative for unit testing.")
     file = tmp_path / file
-    _render_template_to_file(name, data, file)
+    return_file = _render_template_to_file(name, data, file)
     assert file.read_text() == output
+    assert return_file == file
