@@ -88,7 +88,8 @@ $ flepimop batch-calibrate \
     --nodes 4 \
     --cpus 1 \
     --memory 1G \
-    --extra 'partition=jlessler' \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
     --skip-checkout \
     -vvv \
     config_sample_2pop_inference.yml
@@ -118,13 +119,19 @@ $ flepimop batch-calibrate \
     --nodes 1 \
     --cpus 4 \
     --memory 8G \
-    --extra 'partition=jlessler' \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
     --skip-checkout \
     -vvv \
     simple_usa_statelevel.yml
 ```
 
-One notable difference is, unlike R inference, EMCEE inference only supports running on 1 node so resources for this command are adjusted accordingly. This command will also produce a similar set of record keeping files like before that you can safely remove after inspecting.
+One notable difference is, unlike R inference, EMCEE inference only supports running on 1 node so resources for this command are adjusted accordingly:
+
+* Swapping 4 nodes with 1 cpu each to 1 node with 4 cpus, and
+* Doubling the memory usage from 4 nodes with 1GB each for 4GB total to 1 node with 8GB for 8GB total.
+
+The extra increase in memory is to run a configuration that is slightly more resource intense than the previous example. This command will also produce a similar set of record keeping files like before that you can safely remove after inspecting.
 
 ### Estimating Required Resources For A Batch Inference Job
 
@@ -151,7 +158,8 @@ $ flepimop batch-calibrate \
     --nodes 1 \
     --cpus 4 \
     --memory 24GB \
-    --extra 'partition=jlessler' \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
     --skip-checkout \
     --estimate \
     --estimate-runs 6 \
@@ -182,7 +190,8 @@ $ flepimop batch-calibrate \
     --cpus 4 \
     --memory 24GB \
     --from-estimate USA_influpaint_resources.json \
-    --extra 'partition=jlessler' \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
     --skip-checkout \
     -vvv \
     simple_usa_statelevel.yml
