@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from itertools import chain
 from abc import abstractmethod
 
-from pydantic import Field, BeforeValidator
+from pydantic import BaseModel, Field, BeforeValidator
 
 from .._pydantic_ext import _ensure_list, _override_or_val
 
@@ -32,7 +32,7 @@ def _filter_parse(filter: SyncFilter) -> FilterParts:
     return (_filter_mode(filter), _filter_pattern(filter))
 
 
-class WithFilters:
+class WithFilters(BaseModel):
     """
     A mixin to be applied to SyncModels that have a `sync::filters` key.
     :method list_filters: creates a list filters in the order they should be applied,
