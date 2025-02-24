@@ -54,6 +54,7 @@ jobs:
     env: 
       PYLINT_SRC: 'flepimop/gempyor_pkg/src/gempyor'
       PYLINT_FAIL_UNDER: '5'
+      PYLINT_RCFILE: 'flepimop/gempyor_pkg/.pylintrc'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,7 +73,10 @@ jobs:
           python -m pip install pylint
       - name: Linting with Pylint
         run: |
-          pylint ${{ env.PYLINT_SRC }} --fail-under ${{ env.PYLINT_FAIL_UNDER }} --verbose
+          pylint ${{ env.PYLINT_SRC }} \
+            --fail-under ${{ env.PYLINT_FAIL_UNDER }} \
+            --rcfile ${{ env.PYLINT_RCFILE }} \
+            --verbose
   check-info-json-schema:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
