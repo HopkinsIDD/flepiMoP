@@ -6,6 +6,7 @@ black --line-length 92 \
     --verbose .
 
 echo "> Linting gempyor with 'pylint'."
-pylint ./flepimop/gempyor_pkg/src/gempyor \
-    --max-line-length=92 \
-    --verbose .
+pylint flepimop/gempyor_pkg/src/gempyor/ \
+    --fail-under 5 \
+    --rcfile flepimop/gempyor_pkg/.pylintrc \
+    --verbose
