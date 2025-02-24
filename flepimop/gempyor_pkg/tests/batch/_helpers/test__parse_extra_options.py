@@ -1,6 +1,6 @@
 import pytest
 
-from gempyor.batch import _parse_extra_options
+from gempyor.batch._helpers import _parse_extra_options
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 import pytest
 
-from gempyor.batch import _resolve_batch_system_name
+from gempyor.batch.systems import _resolve_batch_system_name
 
 
 def test_multiple_flags_value_error() -> None:

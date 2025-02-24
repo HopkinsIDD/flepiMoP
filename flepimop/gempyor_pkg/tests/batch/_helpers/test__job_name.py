@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from gempyor.batch import _job_name
+from gempyor.batch._helpers import _job_name
 
 
 VALID_JOB_NAME = re.compile(

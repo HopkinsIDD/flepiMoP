@@ -50,7 +50,7 @@ def test_output_validation(
             else _git_head(repository)
         )
 
-    with patch("gempyor.batch._git_head", wraps=git_head_wraps) as git_head_patch:
+    with patch("gempyor.batch.manifest._git_head", wraps=git_head_wraps) as git_head_patch:
         manifest_file = write_manifest(
             job_name, flepi_path, project_path, destination=destination, **additional_meta
         )

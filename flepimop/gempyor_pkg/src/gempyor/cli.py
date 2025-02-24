@@ -11,7 +11,8 @@ from .shared_cli import (
 from .utils import _dump_formatted_yaml, config
 
 # register the commands from the other modules
-from . import batch, compartments, simulate
+from . import compartments, simulate
+from .batch._cli import *
 from .NPI import base
 
 # Guidance for extending the CLI:
