@@ -94,11 +94,16 @@ if [ ! -d $PROJECT_PATH ]; then
     echo "> The project path provided, $PROJECT_PATH, is not a directory. Please ensure this is correct."
 fi
 
-echo -n "Please set a config path (relative to '$PROJECT_PATH'): "
+echo -n "Please set a config path (relative to '$PROJECT_PATH' or press enter to skip): "
 read CONFIG_PATH
-export CONFIG_PATH="$PROJECT_PATH/$CONFIG_PATH"
-if [ ! -f $CONFIG_PATH ]; then
-    echo "> The config path provided, $CONFIG_PATH, is not a file. Please ensure this is correct."
+if [ -z "$CONFIG_PATH" ]; then
+    unset CONFIG_PATH
+    echo "Skipping config path."
+else
+    export CONFIG_PATH="$PROJECT_PATH/$CONFIG_PATH"
+    if [ ! -f $CONFIG_PATH ]; then
+        echo "> The config path provided, $CONFIG_PATH, is not a file. Please ensure this is correct."
+    fi
 fi
 
 echo -n "Please set a validation date (today is $TODAY): "
