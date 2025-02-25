@@ -57,7 +57,7 @@ class WithFilters(BaseModel):
 
         chn = chain(prefix, _override_or_val(overrides, self.filters), suffix)
         res = [_filter_parse(f) for f in chn]
-        if all(f[0] == "+" for f in res):
+        if (res.__len__() > 0) and all(f[0] == "+" for f in res):
             res.append(_filter_parse("- **"))
         if reverse:
             res.reverse()
