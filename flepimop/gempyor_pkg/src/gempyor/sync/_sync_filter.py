@@ -20,6 +20,7 @@ ListSyncFilter = Annotated[list[SyncFilter], BeforeValidator(_ensure_list)]
 # mode, pattern, whole specification (for debugging)
 FilterParts = tuple[Literal["+", "-"], str, str]
 
+
 def _filter_mode(filter: SyncFilter) -> Literal["+", "-"]:
     return "-" if filter.startswith("- ") else "+"
 
@@ -30,6 +31,7 @@ def _filter_pattern(filter: SyncFilter) -> str:
 
 def _filter_parse(filter: SyncFilter) -> FilterParts:
     return (_filter_mode(filter), _filter_pattern(filter), filter)
+
 
 class WithFilters(BaseModel):
     """
@@ -49,7 +51,7 @@ class WithFilters(BaseModel):
         suffix: ListSyncFilter = [],
         reverse: bool = False,
     ) -> list[FilterParts]:
-        
+
         if not overrides is None:
             overrides = TypeAdapter(ListSyncFilter).validate_python(overrides)
         prefix = TypeAdapter(ListSyncFilter).validate_python(prefix)

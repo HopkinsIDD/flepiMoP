@@ -12,6 +12,7 @@ from gempyor._pydantic_ext import _ensure_list
 
 # ensure that all the other options properly bind / fail when given garbage
 
+
 @pytest.mark.parametrize(
     "opts",
     [
@@ -26,4 +27,3 @@ def test_sync_opts_filters(opts: dict):
     """
     sp = SyncOptions(**opts)
     assert sp.filter_override == _ensure_list(opts["filter_override"])
-
