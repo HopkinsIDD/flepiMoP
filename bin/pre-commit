@@ -4,5 +4,13 @@ if which black > /dev/null 2>&1; then
         --extend-exclude 'flepimop/gempyor_pkg/src/gempyor/steps_rk4.py' \
         --check --verbose .
 else
-    echo "'black' is not available so python files will not be checked."
+    echo "'black' is not available, so python files will not be formatted."
 fi
+
+if which pylint > /dev/null 2>&1; then
+    pylint flepimop/gempyor_pkg/src/gempyor/ \
+        --fail-under 5 \
+        --rcfile flepimop/gempyor_pkg/.pylintrc \
+        --verbose
+else 
+    echo "'pylint' is not available, so python files will not be linted."

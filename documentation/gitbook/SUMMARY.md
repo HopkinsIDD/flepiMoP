@@ -41,7 +41,6 @@
   * [Numerical methods](more/advanced/numerical-methods.md)
   * [Additional parameter options](more/advanced/additional-parameter-options.md)
   * [Swapping model modules](more/advanced/swapping-model-modules.md)
-  * [Resuming inference runs](more/advanced/resuming-inference-runs.md)
   * [Using plug-ins 🧩\[experimental\]](more/advanced/using-plug-ins-experimental.md)
 
 ## 🛠️ How To Run
@@ -49,6 +48,7 @@
 * [Before any run](how-to-run/before-any-run.md)
 * [Quick Start Guide](how-to-run/quick-start-guide.md)
 * [Multiple Configuration Files](multi-configs.md)
+* [Synchronizing Files](how-to-run/synchronization.md)
 * [Advanced run guides](how-to-run/advanced-run-guides/README.md)
   * [Running with Docker locally 🛳](how-to-run/advanced-run-guides/running-with-docker-locally.md)
   * [Running locally in a conda environment 🐍](how-to-run/advanced-run-guides/quick-start-guide-conda.md)

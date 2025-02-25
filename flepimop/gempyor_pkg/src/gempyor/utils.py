@@ -1,9 +1,11 @@
+from collections.abc import Iterable
 import datetime
 import functools
 import logging
 import numbers
 import os
 from pathlib import Path
+from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
@@ -943,7 +945,7 @@ def create_resume_file_names_map(
                 liketype=liketype,
             )
             input_file_name = output_file_name
-            if os.environ.get("FLEPI_BLOCK_INDEX") == "1":
+            if flepi_block_index == "1":
                 input_file_name = create_resume_input_filename(
                     resume_run_index=resume_run_index,
                     flepi_prefix=flepi_prefix,
@@ -1111,3 +1113,158 @@ def _dump_formatted_yaml(cfg: confuse.Configuration) -> str:
     return yaml.dump(
         yaml.safe_load(cfg.dump()), Dumper=CustomDumper, indent=4, sort_keys=False
     )
+
+
+def _shutil_which(
+    cmd: str,
+    mode: int = os.F_OK | os.X_OK,
+    path: str | bytes | os.PathLike | None = None,
+    check: bool = True,
+) -> str | None:
+    """
+    A thin wrapper around `shutil.which` with extra validation.
+
+    Args:
+        cmd: The name of the command to search for.
+        mode: The permission mask required of possible files.
+        path: A path describing the locations to search, or `None` to use
+            the PATH environment variable.
+        check: If `True` an `OSError` will be raised if a `cmd` is not found.
+            Similar in spirit to the `check` arg of `subprocess.run`.
+
+    Returns:
+        Either the full path to the `cmd` found, or `None` if `cmd` is not
+        found and `check` is `False`.
+
+    Raises:
+        OSError: If `cmd` is not found and `check` is `True`.
+
+    Examples:
+        >>> import os
+        >>> from shutil import which
+        >>> _shutil_which("python") == which("python")
+        True
+        >>> _shutil_which("does_not_exist", check=False)
+        >>> try:
+        ...     _shutil_which("does_not_exist", check=True)
+        ... except Exception as e:
+        ...     print(type(e))
+        ...     print(str(e).replace(os.environ.get("PATH"), "..."))
+        ...
+        <class 'OSError'>
+        Did not find 'does_not_exist' on path '...'.
+
+    See Also:
+        [`shutil.which`](https://docs.python.org/3/library/shutil.html#shutil.which)
+    """
+    result = shutil.which(cmd, mode=mode, path=path)
+    if check and result is None:
+        path = os.environ.get("PATH") if path is None else path
+        raise OSError(f"Did not find '{cmd}' on path '{path}'.")
+    return result
+
+
+def _git_head(repository: Path) -> str:
+    """
+    Get the sha commit hash for the head of a git repository.
+
+    Args:
+        repository: A directory under version control with git to get the sha commit of.
+
+    Returns:
+        The sha commit of head for `repository`.
+
+    Examples:
+        >>> import os
+        >>> from pathlib import Path
+        >>> _git_head(Path(os.environ["FLEPI_PATH"]))
+        'efe896b1a5e4f8e33667c170cd5319d6ef1e3db5'
+    """
+    git_cmd = _shutil_which("git")
+    proc = subprocess.run(
+        [git_cmd, "rev-parse", "HEAD"],
+        cwd=repository.expanduser().absolute(),
+        capture_output=True,
+        check=True,
+    )
+    return proc.stdout.decode().strip()
+
+
+def _git_checkout(repository: Path, branch: str) -> subprocess.CompletedProcess:
+    """
+    Checkout a new branch from a given git repository.
+
+    Args:
+        repository: A directory under version control with git to
+            checkout a new branch in.
+        branch: The name of the new branch to checkout.
+
+    Examples:
+        >>> import os
+        >>> from pathlib import Path
+        >>> _git_checkout(Path(os.environ["FLEPI_PATH"]), "my-new-branch")
+    """
+    git_cmd = _shutil_which("git")
+    return subprocess.run(
+        [git_cmd, "checkout", "-b", shlex_quote(branch)],
+        cwd=repository.expanduser().absolute(),
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def _format_cli_options(
+    options: dict[str, str | Iterable[str]] | None,
+    always_single: bool = False,
+    iterable_formatting: Literal["split", "comma"] = "split",
+) -> list[str]:
+    """
+    Convert a dictionary of CLI options into a formatted list.
+
+    Args:
+        options: A dictionary where the keys correspond to the option name and the
+            values correspond to the option value. Values are escaped for shell.
+        always_single: If `True` all options will be formatted with a single dash prefix
+            always, useful for commands that don't support long options like
+            `pdftotext`. If `False` the option will be formatted with a double dash
+            prefix if the key is longer than one character.
+        iterable_formatting: The formatting to use for iterable values. If 'split' each
+            value will be formatted as a separate option. If 'comma' the values will be
+            joined with a comma and formatted as a single option.
+
+    Returns:
+        A list of options that can be passed to
+        [`subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)
+        or similar functions.
+
+    Examples:
+        >>> from gempyor.utils import _format_cli_options
+        >>> _format_cli_options({"name": "foo bar fizz buzz"})
+        ["--name='foo bar fizz buzz'"]
+        >>> _format_cli_options({"o": "/path/to/output.log"})
+        ['-o=/path/to/output.log']
+        >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
+        ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+        >>> _format_cli_options({"output": "/path/to/output.log"}, always_single=True)
+        ['-output=/path/to/output.log']
+        >>> _format_cli_options({"person": ["Alice", "Bob", "Charlie"]})
+        ['--person=Alice', '--person=Bob', '--person=Charlie']
+        >>> _format_cli_options(
+        ...     {"person": ["Alice", "Bob", "Charlie"]},
+        ...     iterable_formatting="comma",
+        ... )
+        ['--person=Alice,Bob,Charlie']
+    """
+    opts = []
+    for k, v in (options or {}).items():
+        new_opts = []
+        opt_name = f"{'-' if (always_single or len(k) == 1) else '--'}{k}"
+        if isinstance(v, str):
+            new_opts.append(f"{opt_name}={shlex_quote(v)}")
+        elif iterable_formatting == "comma":
+            new_opts.append(f"{opt_name}={','.join(shlex_quote(w) for w in v)}")
+        else:
+            new_opts.extend(f"{opt_name}={shlex_quote(w)}" for w in v)
+        opts.extend(new_opts)
+    return opts

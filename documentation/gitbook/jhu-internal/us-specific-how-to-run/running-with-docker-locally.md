@@ -44,7 +44,7 @@ First, populate the folder name variables:
 
 ```bash
 export FLEPI_PATH=/home/app/csp/
-export DATA_PATH=/home/app/drp/
+export PROJECT_PATH=/home/app/drp/
 ```
 
 Then, export variables for some flags and the census API key (you can use your own):
@@ -87,13 +87,13 @@ Note: These installations take place in the docker container and not the Operati
 Everything is now ready. 🎉 Let's do some clean-up in the data folder (these files might not exist, but it's good practice to make sure your simulation isn't re-using some old files) ;
 
 ```bash
-cd $DATA_PATH       # goes to Flu_USA
+cd $PROJECT_PATH       # goes to Flu_USA
 git restore data/
 rm -rf data/mobility_territories.csv data/geodata_territories.csv data/us_data.csv
 rm -r model_output/ # delete the outputs of past run if there are
 ```
 
-Stay in `$DATA_PATH`, select a config, and build the setup. The setup creates the population seeding file (geodata) and the population mobility file (mobility). Then, run inference:
+Stay in `$PROJECT_PATH`, select a config, and build the setup. The setup creates the population seeding file (geodata) and the population mobility file (mobility). Then, run inference:
 
 ```bash
 export CONFIG_PATH=config_SMH_R1_lowVac_optImm_2022.yml

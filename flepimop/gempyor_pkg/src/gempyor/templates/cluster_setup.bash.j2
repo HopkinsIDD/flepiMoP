@@ -1,0 +1,23 @@
+{%- if cluster is defined and cluster is not none -%}
+# Purge/load modules
+module purge
+{%- for module in cluster.modules %}
+module load {{ module.name }}{{ "/{}".format(module.version) if module.version is defined and module.version is not none }}
+{%- endfor %}
+{%- if cluster.path_exports|length %}
+
+# Path modifications
+{%- for path_export in cluster.path_exports %}
+if [ -r "{{ path_export.path }}" ]; then
+    {% if path_export.prepend -%}
+    export PATH={{ path_export.path }}:$PATH
+    {%- else -%}
+    export PATH=$PATH:{{ path_export.path }}
+    {%- endif %}
+elif [ "{{ path_export.error_if_missing }}" = "True" ]; then
+    echo "The path '{{ path_export.path }}' does not exist but is required."
+    exit 1
+fi
+{%- endfor %}
+{%- endif %}
+{%- endif %}

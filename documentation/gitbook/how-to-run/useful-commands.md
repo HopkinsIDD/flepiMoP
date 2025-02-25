@@ -53,7 +53,7 @@ Don't paste them if you don't know what they do
 ### Filepaths structure
 
 in configs with a setup `name: USA`
-
+ 
 ```
 model_output/{FileType}/{Prefix}{Index}.{run_id}.{FileType}.{Extension}
                            ^ 
@@ -71,7 +71,7 @@ where, eg:
 
 ```bash
 export COVID_PATH=$(pwd)/COVIDScenarioPipeline
-export DATA_PATH=$(pwd)/COVID19_USA
+export PROJECT_PATH=$(pwd)/COVID19_USA
 conda activate covidSP
 cd $COVID_PATH
 Rscript local_install.R
@@ -79,7 +79,7 @@ pip install --no-deps -e gempyor_pkg # before: python setup.py develop --no-deps
 git lfs install
 git lfs pull
 export CENSUS_API_KEY=YOUR_KEY
-cd $DATA_PATH
+cd $PROJECT_PATH
 git restore data/
 export CONFIG_PATH=config_smh_r11_optsev_highie_base_deathscases_blk1.yml
 Rscript $COVID_PATH/R/scripts/build_US_setup.R
