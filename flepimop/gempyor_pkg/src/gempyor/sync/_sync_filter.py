@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from itertools import chain
 from abc import abstractmethod
 
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, Field, BeforeValidator, TypeAdapter
 
 from .._pydantic_ext import _ensure_list, _override_or_val
 
@@ -17,8 +17,8 @@ SyncFilter = Annotated[str, Field(pattern=FilterRegex)]
 
 ListSyncFilter = Annotated[list[SyncFilter], BeforeValidator(_ensure_list)]
 
-FilterParts = tuple[Literal["+", "-"], str]
-
+# mode, pattern, whole specification (for debugging)
+FilterParts = tuple[Literal["+", "-"], str, str]
 
 def _filter_mode(filter: SyncFilter) -> Literal["+", "-"]:
     return "-" if filter.startswith("- ") else "+"
@@ -29,8 +29,7 @@ def _filter_pattern(filter: SyncFilter) -> str:
 
 
 def _filter_parse(filter: SyncFilter) -> FilterParts:
-    return (_filter_mode(filter), _filter_pattern(filter))
-
+    return (_filter_mode(filter), _filter_pattern(filter), filter)
 
 class WithFilters(BaseModel):
     """
@@ -50,12 +49,18 @@ class WithFilters(BaseModel):
         suffix: ListSyncFilter = [],
         reverse: bool = False,
     ) -> list[FilterParts]:
+        
+        if not overrides is None:
+            overrides = TypeAdapter(ListSyncFilter).validate_python(overrides)
+        prefix = TypeAdapter(ListSyncFilter).validate_python(prefix)
+        suffix = TypeAdapter(ListSyncFilter).validate_python(suffix)
+
         chn = chain(prefix, _override_or_val(overrides, self.filters), suffix)
-        if reverse:
-            chn = reversed(chn)
         res = [_filter_parse(f) for f in chn]
-        if res.__len__ == 1 and res[0][0] == "+":
-            res.append(("-", "*"))
+        if all(f[0] == "+" for f in res):
+            res.append(_filter_parse("- **"))
+        if reverse:
+            res.reverse()
         return res
 
     def format_filters(
