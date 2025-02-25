@@ -69,7 +69,7 @@ class Compartments:
             raise ValueError("Compartments object not set, no config or file provided.")
         return
 
-    def constructFromConfig(self, seir_config, compartment_config) -> None:
+    def constructFromConfig(self, seir_config: dict, compartment_config: dict) -> None:
         """
         This method is called by the constructor if the compartments are not loaded from a file.
         It will parse the compartments and transitions from the configuration files.
@@ -85,14 +85,14 @@ class Compartments:
 
     def parse_compartments(self, seir_config: dict, compartment_config) -> pd.DataFrame:
         """
-        Parses compartment configurations and returns a DataFrame of compartment names.
+        Parses compartment configurations and returns a pd.DataFrame of compartment names.
 
         Args:
             seir_config: Configuraton information for model.
             compartment_config: Configuration information for model comartments.
 
         Returns:
-            A DataFrame where each row is a unique compartment and columns
+            A pd.DataFrame where each row is a unique compartment and columns
             correspond to attributes of the compartments.
         """
         compartment_df = None
@@ -112,7 +112,7 @@ class Compartments:
         self, seir_config: dict, fake_config: bool = False
     ) -> pd.DataFrame:
         """
-        Parses the transitions defined in config and returns a concatenated DataFrame.
+        Parses the transitions defined in config and returns a concatenated pd.DataFrame.
 
         Args:
             seir_config: Configuraton information for model.
@@ -120,7 +120,7 @@ class Compartments:
                 Flag indicating whether or not transitions provied are placeholders.
                 Default value is False.
         Returns:
-            A DataFrame containing all transitions from the config.
+            A pd.DataFrame containing all transitions from the config.
         """
         rc = reduce(
             lambda a, b: pd.concat(
@@ -714,7 +714,7 @@ class Compartments:
         )
 
     def parse_parameters(
-        self, parameters: np.ndarray, parameter_names: list, unique_strings: list
+        self, parameters: np.ndarray, parameter_names: list[str], unique_strings: list[str]
     ) -> np.ndarray:
         """
         Parses provided parameters and stores them in NumPy arrays.
@@ -856,12 +856,12 @@ class Compartments:
 
     def get_compartments_explicitDF(self) -> pd.DataFrame:
         """
-        Returns a copy of the compartments information DataFrame.
+        Returns a copy of the compartments information pd.DataFrame.
 
         All columns receive a 'mc_' prefix.
 
         Returns:
-            A copy of the compartments DataFrame.
+            A copy of the compartments pd.DataFrame.
         """
         df: pd.DataFrame = self.compartments.copy(
             deep=True
