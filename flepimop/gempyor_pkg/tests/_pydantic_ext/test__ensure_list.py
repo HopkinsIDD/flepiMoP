@@ -9,7 +9,8 @@ from gempyor._pydantic_ext import _ensure_list
 
 
 @pytest.mark.parametrize(
-    "value", (None, "abc", 123, [True, False, True], (True, False, True), (1, 2, 3, 4)),
+    "value",
+    (None, "abc", 123, [True, False, True], (True, False, True), (1, 2, 3, 4)),
 )
 def test_value_output_validation(value) -> None:
     """Ensure that the output of `_ensure_list` is as expected."""
@@ -23,10 +24,12 @@ def test_value_output_validation(value) -> None:
 
 
 @pytest.mark.parametrize(
-    "letters", (None, "a", "b", "abc", ["a", "b", "c"], ("a", "b", "c")),
+    "letters",
+    (None, "a", "b", "abc", ["a", "b", "c"], ("a", "b", "c")),
 )
 def test_pydantic_compatibility(letters: list[str] | tuple[str] | str | None) -> None:
     """Ensure that `_ensure_list` can be used as a Pydantic validator."""
+
     class Alphabet(BaseModel):
         letters: Annotated[list[str] | None, BeforeValidator(_ensure_list)]
 

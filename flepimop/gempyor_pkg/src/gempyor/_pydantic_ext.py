@@ -18,10 +18,10 @@ U = TypeVar("U")
 def _ensure_list(value: list[T] | tuple[T] | T | None) -> list[T] | None:
     """
     Ensure that a list, tuple, or single value is returned as a list.
-    
+
     Args:
         value: A value to ensure is a list.
-    
+
     Returns:
         A list of the value(s), if the `value` is not None.
 
@@ -60,14 +60,14 @@ def _override_or_val(override: None, value: U) -> U: ...
 def _override_or_val(override: T | None, value: U) -> T | U:
     """
     Return the override value if it is not None, otherwise return the value.
-    
+
     Args:
         override: Optional override value.
         value: The value to return if the override is None.
-    
+
     Returns:
         The `override` value if it is not None, otherwise `value`.
-    
+
     Examples:
         >>> from gempyor._pydantic_ext import _override_or_val
         >>> _override_or_val(None, 1)
