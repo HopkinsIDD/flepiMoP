@@ -180,3 +180,33 @@ def test_override_filter(filter : list[str], override: list[str] | None):
         assert all(f[-1] == o for f, o in zip(lfs, filter))
 
 # asking for reverse view should present filters in reverse order
+@pytest.mark.parametrize(
+    "filter", [
+        (["somefilter"]),
+        (["somefilter", "- another"]),
+    ],
+)
+def test_reverse_filter(filter : list[str]):
+    """
+    asking for reverse view should present filters in reverse order
+    """
+    obj = MockFilters(filters = filter)
+    lfs = obj.list_filters()
+    rlfs = obj.list_filters(reverse=True)
+    assert all(l == r for l, r in zip(lfs, reversed(rlfs)))
+
+# reverse should also preserve prefix and suffix order
+@pytest.mark.parametrize(
+    "filter, prefix, suffix", [
+        (["somefilter"], ["more"], ["more"]),
+        (["somefilter", "- another"], ["more"], ["+ more"]),
+    ],
+)
+def test_reverse_filter(filter : list[str], prefix : list[str], suffix : list[str]):
+    """
+    reverse should accommodate prefix and suffix order
+    """
+    obj = MockFilters(filters = filter)
+    lfs = obj.list_filters(prefix=prefix, suffix=suffix)
+    rlfs = obj.list_filters(prefix=prefix, suffix=suffix, reverse=True)
+    assert all(l == r for l, r in zip(lfs, reversed(rlfs)))
