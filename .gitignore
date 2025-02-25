@@ -81,3 +81,6 @@ flepimop/gempyor_pkg/.coverage
 
 # info/ directory
 info/**/*.json
+
+# Sphinx gempyor documentation build folder
+flepiMoP/flepimop/gempyor_pkg/docs/build/
