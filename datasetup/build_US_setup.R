@@ -7,11 +7,10 @@
 # ## Configuration Items
 #
 # ```yaml
-# data_path: <path to directory>
 # subpop_setup:
 #   modeled_states: <list of state postal codes> e.g. MD, CA, NY
-#   mobility: <path to file relative to data_path> optional; default is 'mobility.csv'
-#   geodata: <path to file relative to data_path> optional; default is 'geodata.csv'
+#   mobility: <path to file; may be absolute or relative> optional; default is 'mobility.csv'
+#   geodata: <path to file; may be absolute or relative> optional; default is 'geodata.csv'
 #
 # importation:
 #   census_api_key: <string, optional> default is environment variable CENSUS_API_KEY. Environment variable is preferred so you don't accidentally commit your key.
@@ -23,8 +22,8 @@
 #
 # ## Output Data
 #
-# * {data_path}/{subpop_setup::mobility}
-# * {data_path}/{subpop_setup::geodata}
+# * {subpop_setup::mobility}
+# * {subpop_setup::geodata}
 #
 
 ## @cond
@@ -166,7 +165,7 @@ print(paste("Wrote geodata file:", file.path(geodata_file)))
 
 if(state_level & !file.exists(paste0(config$subpop_setup$mobility))){
 
-  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", paste0(config$data_path, "/", config$subpop_setup$mobility), "(specified in the config) currently exists. Please check again."))
+  warning(paste("State-level mobility files must be created manually because `build_US_setup.R` does not generate a state-level mobility file automatically. No valid mobility file named", config$subpop_setup$mobility, "(specified in the config) currently exists. Please check again."))
 
 } else if(state_level & file.exists(paste0(config$subpop_setup$mobility))){
 

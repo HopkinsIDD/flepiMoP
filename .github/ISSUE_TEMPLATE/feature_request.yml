@@ -12,6 +12,7 @@ body:
       options:
         - bug
         - batch
+        - cli
         - config
         - dependency
         - documentation
@@ -61,7 +62,7 @@ body:
     id: relevant-relationship
     attributes:
       label: Is your feature request related to a new application, scenario round, pathogen? Please describe.
-      placeholder: A clear and concise description of th application, round, etc. that the feature addresses. 
+      placeholder: A clear and concise description of the application, round, etc. that the feature addresses. 
     validations:
       required: false
 

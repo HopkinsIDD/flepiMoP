@@ -20,11 +20,13 @@ dependencies = [
     "emcee",
     "graphviz",
     "h5py",
+    "Jinja2",
     "matplotlib",
     "numba>=0.53.1",
     "numpy",
     "pandas",
     "pyarrow",
+    "pydantic>=2.10.0",
     "scipy",
     "seaborn",
     "sympy",
@@ -38,7 +40,7 @@ version = "2.1"
 
 [project.optional-dependencies]
 aws = ["boto3", "botocore"]
-test = ["pytest", "mock"]
+dev = ["pytest", "mock", "pylint", "black"]
 
 [project.urls]
 Homepage = "https://www.flepimop.org/"
@@ -51,7 +53,8 @@ gempyor-simulate = "gempyor.simulate:_deprecated_simulate"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-include-package-data = false
+include-package-data = true
+package-data = { "gempyor" = ["templates/*.j2"] }
 
 [tool.setuptools.packages.find]
 where = ["src"]

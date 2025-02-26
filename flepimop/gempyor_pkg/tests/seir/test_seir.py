@@ -3,6 +3,9 @@ import os
 import pytest
 import warnings
 import shutil
+from random import randint
+import pandas as pd
+import re
 
 import pathlib
 import pyarrow as pa
@@ -16,8 +19,97 @@ DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 
+def test_check_parameter_positivity():
+
+    parameter_names = [
+        "alpha*1*1*1",
+        "sigma_OMICRON*1*1*1",
+        "3*gamma*1*1*1",
+        "epsilon+omegaph4*1*1*1",
+        "1*zeta*1*1",
+        "r0*gamma*theta10*1*chi_OMICRON*1",
+        "r0*gamma*theta9*1*chi_OMICRON*1",
+        "eta_X0toX3_highIE*1*1*nuage0to17",
+        "eta_X0toX3_highIE*1*1*nuage18to64LR",
+        "eta_X0toX3_highIE*1*1*nuage18to64HR",
+        "eta_X0toX3_highIE*1*1*nuage65to100",
+    ]
+    dates = pd.date_range("2023-03-19", "2025-04-30", freq="D")
+    subpop_names = [
+        "56000",
+        "50000",
+        "11000",
+        "02000",
+        "38000",
+        "46000",
+        "10000",
+        "30000",
+        "44000",
+        "23000",
+    ]
+
+    # No negative params
+    test_array1 = np.zeros(
+        (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
+    )
+    assert (
+        seir.check_parameter_positivity(test_array1, parameter_names, dates, subpop_names)
+        is None
+    )
+    # No Error
+
+    # Randomized negative params
+    test_array2 = np.zeros(
+        (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
+    )
+    for _ in range(5):
+        test_array2[randint(0, len(parameter_names) - 1)][randint(0, len(dates) - 1)][
+            randint(0, len(subpop_names) - 1)
+        ] = -1
+    test_2_negative_index_parameters = np.argwhere(test_array2 < 0)
+    test_2_neg_params = []
+    test_2_neg_subpops = []
+    test_2_first_neg_date = dates[0].date()
+    for param_idx, _, sp_idx in test_2_negative_index_parameters:
+        test_2_neg_subpops.append(subpop_names[sp_idx])
+        test_2_neg_params.append(parameter_names[param_idx])
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            rf"There are negative parameter errors in subpops {test_2_neg_subpops}, starting from date {test_2_first_neg_date} in parameters {test_2_neg_params}."
+        ),
+    ):
+        seir.check_parameter_positivity(
+            test_array2, parameter_names, dates, subpop_names
+        )  # ValueError
+
+    # Manually set negative params with intentional redundancy
+    test_array3 = np.zeros((len(parameter_names), len(dates), len(subpop_names)))
+    test_array3[0, 0, 0] = -1
+    test_array3[1, 1, 1] = -1
+    test_array3[2, 2, 2] = -1
+    test_array3[3, 3, 3] = -1
+    test_3_negative_index_parameters = np.argwhere(test_array3 < 0)
+    test_3_neg_params = []
+    test_3_neg_subpops = []
+    test_3_first_neg_date = dates[0].date()
+    for param_idx, _, sp_idx in test_3_negative_index_parameters:
+        test_3_neg_subpops.append(subpop_names[sp_idx])
+        test_3_neg_params.append(parameter_names[param_idx])
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
+        ),
+    ):
+        seir.check_parameter_positivity(
+            test_array3, parameter_names, dates, subpop_names
+        )  # ValueError
+
+
 def test_check_values():
-    os.chdir(os.path.dirname(__file__))
     config.set_file(f"{DATA_DIR}/config.yml")
 
     modinf = model_info.ModelInfo(
@@ -73,7 +165,7 @@ def test_constant_population_legacy_integration():
     )
     integration_method = "legacy"
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -152,9 +244,7 @@ def test_constant_population_rk4jit_integration_fail():
         )
         modinf.seir_config["integration"]["method"] = "rk4.jit"
 
-        seeding_data, seeding_amounts = modinf.seeding.get_from_file(
-            sim_id=100, modinf=modinf
-        )
+        seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
         initial_conditions = modinf.initial_conditions.get_from_config(
             sim_id=100, modinf=modinf
         )
@@ -231,7 +321,7 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -306,7 +396,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -415,7 +505,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -492,7 +582,7 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -673,9 +763,6 @@ def test_inference_resume():
     stoch_traj_flag = True
 
     spatial_config = config["subpop_setup"]
-    if "data_path" in config:
-        raise ValueError("The config has a data_path section. This is no longer supported.")
-    # spatial_base_path = pathlib.Path(config["data_path"].get())
     modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,
@@ -769,7 +856,7 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )
@@ -863,7 +950,7 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.seeding.get_from_file(sim_id=100, modinf=modinf)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
         sim_id=100, modinf=modinf
     )

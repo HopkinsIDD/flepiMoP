@@ -2,13 +2,12 @@ name: inference CI
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ['flepicommon-ci', 'gempyor-ci']
-    types:
-      - completed
   push:
     paths:
       - flepimop/R_packages/inference/**/*
+      - flepimop/R_packages/flepicommon/**/*
+      - examples/**/*
+      - flepimop/gempyor_pkg/**/*
     branches:
       - dev
   pull_request:
@@ -20,6 +19,9 @@ on:
       - synchronize
     paths:
       - flepimop/R_packages/inference/**/*
+      - flepimop/R_packages/flepicommon/**/*
+      - examples/**/*
+      - flepimop/gempyor_pkg/**/*
     branches:
       - dev
       - main
@@ -27,7 +29,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    if: (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     strategy:
       matrix:
         R-version: ["4.3.3"]
@@ -56,7 +58,7 @@ jobs:
           r-version: ${{ matrix.R-version }}
           update-rtools: true
       - name: Install System Dependencies
-        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+        run: sudo apt install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libtiff5-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev libfontconfig1-dev
       - name: Determine R Library Location
         run: |
           R_LIBPATH=$( R -s -e "cat(.libPaths()[1L])" | xargs )
@@ -70,6 +72,13 @@ jobs:
         with:
           key: inference-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-${{ env.CACHE_DATE }}
           path: ${{ env.R_LIBPATH }}
+          restore-keys: |
+            inference-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-
+            inference-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE') }}-
+            inference-rlibs-${{ runner.os }}-${{ matrix.R-version }}-
+            flepicommon-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE') }}-${{ env.R_LIBPATH_CKSUM }}-
+            flepicommon-rlibs-${{ runner.os }}-${{ matrix.R-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE') }}-
+            flepicommon-rlibs-${{ runner.os }}-${{ matrix.R-version }}-
       - name: Install R Dependencies For flepicommon
         if: steps.r-library-cache.outputs.cache-hit != 'true'
         run: |

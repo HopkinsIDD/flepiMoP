@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Generic setup
 set -e
 
@@ -92,11 +94,16 @@ if [ ! -d $PROJECT_PATH ]; then
     echo "> The project path provided, $PROJECT_PATH, is not a directory. Please ensure this is correct."
 fi
 
-echo -n "Please set a config path (relative to '$PROJECT_PATH'): "
+echo -n "Please set a config path (relative to '$PROJECT_PATH' or press enter to skip): "
 read CONFIG_PATH
-export CONFIG_PATH="$PROJECT_PATH/$CONFIG_PATH"
-if [ ! -f $CONFIG_PATH ]; then
-    echo "> The config path provided, $CONFIG_PATH, is not a file. Please ensure this is correct."
+if [ -z "$CONFIG_PATH" ]; then
+    unset CONFIG_PATH
+    echo "Skipping config path."
+else
+    export CONFIG_PATH="$PROJECT_PATH/$CONFIG_PATH"
+    if [ ! -f $CONFIG_PATH ]; then
+        echo "> The config path provided, $CONFIG_PATH, is not a file. Please ensure this is correct."
+    fi
 fi
 
 echo -n "Please set a validation date (today is $TODAY): "
@@ -112,7 +119,7 @@ read FLEPI_RUN_INDEX
 cat << EOM
 > The HPC init script has successfully finished.
 
-If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepimop_sample\` repository:
+If you are testing if this worked, say installing for the first time, you can use the inference example from the \`flepiMoP/examples/tutorials\` directory:
 \`\`\`bash
 cd \$PROJECT_PATH
 flepimop-inference-main -c \$CONFIG_PATH -j 1 -n 1 -k 1
@@ -140,3 +147,8 @@ Otherwise make sure this diagnostic info looks correct before continuing:
 EOM
 
 set +e
+
+# Launch subshell with modified environment
+echo ""
+echo "> Launching subshell with modified environment. To exit, type 'exit'. Subshell may not display conda environment correctly, run 'which python' to verify."
+eval "$SHELL -l"

@@ -63,7 +63,7 @@ pytest -vvvv -k outcomes
 
 For more details on how to use `pytest` please refer to their [usage guide](https://docs.pytest.org/en/latest/how-to/usage.html).
 
-### Formatting
+### Formatting and Linting 
 
 We try to remain close to Python conventions and to follow the updated rules and best practices. For formatting, we use [black](https://github.com/psf/black), the _Uncompromising Code Formatter_ before submitting pull requests. It provides a consistent style, which is useful when diffing. To get started with black please refer to their [Getting Started guide](https://black.readthedocs.io/en/stable/getting_started.html). We use a custom length of 92 characters as the baseline is short for scientific code. Here is the line to use to format your code:
 
@@ -73,7 +73,16 @@ black --line-length 92 \
     --verbose .
 ```
 
-For those using a Mac or Linux system for development this command is also available for use by calling `./bin/lint`. Similarly, you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
+To identify instances of poor Python practices within `gempyor`, we use [pylint](https://www.pylint.org/). `pylint` checks for these instances in the code, then produces a list of labeled errors. Again, we use a custom length of 92 characters as the recommended max line length. To lint your code with these settings, you can run the following line from the `flepiMoP` directory:
+
+```bash
+pylint flepimop/gempyor_pkg/src/gempyor/ \
+    --fail-under 5 \
+    --rcfile flepimop/gempyor_pkg/.pylintrc \
+    --verbose
+```
+
+For those using a Mac or Linux system for development, these commands are also available for execution by calling `./bin/lint`. Similarly, you can take advantage of the formatting pre-commit hook found at `bin/pre-commit`. To start using it copy this file to your git hooks folder:
 
 ```bash
 cp -f bin/pre-commit .git/hooks/

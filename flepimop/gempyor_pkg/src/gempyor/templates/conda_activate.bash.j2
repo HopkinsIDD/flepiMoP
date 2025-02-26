@@ -1,0 +1,7 @@
+{%- if conda_env is defined and conda_env is not none -%}
+# Load conda env
+eval "$( conda shell.bash hook )"
+conda activate {{ conda_env }}
+WHICH_PYTHON=$( which python )
+WHICH_RSCRIPT=$( which Rscript )
+{%- endif %}
