@@ -47,7 +47,7 @@ config_file_options = {
     ),
     "seir_modifiers_scenarios": click.Option(
         ["-s", "--seir_modifiers_scenarios"],
-        envvar="FLEPI_SEIR_SCENARIO",
+        envvar="FLEPI_SEIR_SCENARIOS",
         type=click.STRING,
         default=[],
         multiple=True,
@@ -55,7 +55,7 @@ config_file_options = {
     ),
     "outcome_modifiers_scenarios": click.Option(
         ["-d", "--outcome_modifiers_scenarios"],
-        envvar="FLEPI_OUTCOME_SCENARIO",
+        envvar="FLEPI_OUTCOME_SCENARIOS",
         type=click.STRING,
         default=[],
         multiple=True,
