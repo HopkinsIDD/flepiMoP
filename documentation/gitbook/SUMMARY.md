@@ -56,6 +56,7 @@
   * [Running On A HPC With Slurm](how-to-run/advanced-run-guides/running-on-a-hpc-with-slurm.md)
 * [Common errors](how-to-run/common-errors.md)
 * [Useful commands](how-to-run/useful-commands.md)
+* [Indepth Tutorial](how-to-run/indepth-guide.md)
 * [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)
 
 ## [Development](./development/README.md)
