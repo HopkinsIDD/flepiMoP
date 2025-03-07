@@ -21,8 +21,6 @@ options(readr.num_columns = 0)
 
 required_packages <- c("dplyr", "magrittr", "xts", "zoo", "stringr")
 
-print("running updated inference 423pm")
-
 #Temporary
 #print("Setting random number seed")
 #set.seed(1) # set within R
