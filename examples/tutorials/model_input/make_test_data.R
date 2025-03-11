@@ -10,8 +10,6 @@ gempyor <- import("gempyor")
 
 # INPUT FILES AND PARAMETERS  ----------
 
-setwd("~/Dropbox/Research/GitHub/flepiMoP/examples/tutorials")
-
 input_config = "config_sample_2pop_modifiers.yml" # config to take output from (forward simulation). Must be run first
 input_inference_config = "config_sample_2pop_inference.yml"
 input_seir_modifier_scenario = "Ro_all" # which SEIR modifier scenario to use. If null, will take the first. Not required if only 1 scenario. 
