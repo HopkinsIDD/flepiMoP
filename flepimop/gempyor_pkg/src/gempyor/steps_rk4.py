@@ -60,7 +60,6 @@ def rk4_integration(
             1,
         )
 
-    @jit(nopython=True)
     def rhs(t, x, today):
         states_current = np.reshape(x, (2, ncompartments, nspatial_nodes))[0]
         st_next = states_current.copy()  # this is used to make sure stochastic integration never goes below zero
@@ -159,6 +158,9 @@ def rk4_integration(
         # for spatial_node in range(nspatial_nodes):
         #    if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
         #        number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
+
+    if not (method == "legacy" and stochastic_p):
+        rhs = jit(nopython=True)(rhs)
 
     @jit(nopython=True)
     def update_states(states, delta_t, transition_amounts):
