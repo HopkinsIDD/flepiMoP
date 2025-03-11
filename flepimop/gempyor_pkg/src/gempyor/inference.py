@@ -10,21 +10,21 @@
 
 """
 Classes:
-    GempyorInference: 
+    GempyorInference:
         Encapsulates the process of simulation. Provides functionality for parameter
         inference, SEIR model execution, outcome computation, and inference optimization.
 
 Functions:
-    simulation_atomic: 
+    simulation_atomic:
         Runs a SEIR simulation (generates and reduces parameters, executes SEIR
         processes, computes outcomes, handles NPIs and seeding data).
     get_static_arguments: Get the static arguments for the log likelihood function.
     autodetect_senarios: Auto-detect the scenarios provided in config.
-    paramred_parallel: 
-        Initializes a `GempyorInference` object with a configuration file, 
+    paramred_parallel:
+        Initializes a `GempyorInference` object with a configuration file,
         reads specified NPI file, and computes reduced SEIR model specifications
         based on this info. Returns the reduced parameters.
-    paramred_parallel_config: 
+    paramred_parallel_config:
         Initializes a `GempyorInference` object with a configuration file,
         retreives SEIR model specifications and NPIs, and computes reduced
         parameters based on this info. Returns the reduced parameters.
