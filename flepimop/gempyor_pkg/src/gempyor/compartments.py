@@ -1,17 +1,17 @@
 """
-Defines class, methods, and functions necessary to establising compartments in the model. 
+Defines class, methods, and functions necessary to establising compartments in the model.
 
 Classes:
-    Compartments: An object to handle compartment data for the model. 
+    Compartments: An object to handle compartment data for the model.
 
 Functions:
     get_list_dimension: Returns length of object passed (if a list); otherwise returns 1.
     list_access_element_safe: Attempts to access something from the given object at specified index.
     list_access_element: Attempts to access soemthing from the given object at specified index.
-    list_recursive_convert_to_string: Convert item(s) in object to str(s). 
-    compartments: A container for subcommands related to the compartmental model. 
-    plot: Generate a plot representing transition between compartments. 
-    export: Export compartment data to a CSV file. 
+    list_recursive_convert_to_string: Convert item(s) in object to str(s).
+    compartments: A container for subcommands related to the compartmental model.
+    plot: Generate a plot representing transition between compartments.
+    export: Export compartment data to a CSV file.
 """
 
 import logging

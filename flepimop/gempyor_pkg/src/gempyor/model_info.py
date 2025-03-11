@@ -1,11 +1,11 @@
 """
 Abstractions for interacting with models as a monolithic object.
 
-Defines the `ModelInfo` class (and associated methods), used for setting up and 
+Defines the `ModelInfo` class (and associated methods), used for setting up and
 managing the configuration of a simulation. The primary focuses of a `ModelInfo` object
-are parsing and validating config details (including time frames, subpop info, 
-model parameters, outcomes) and file handling for input and output data. 
-This submodule is intended to serve as a foundational part of flepiMoP's 
+are parsing and validating config details (including time frames, subpop info,
+model parameters, outcomes) and file handling for input and output data.
+This submodule is intended to serve as a foundational part of flepiMoP's
 infrastructure for conducting simulations and storing results.
 
 Classes:
