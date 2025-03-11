@@ -1,4 +1,5 @@
 # Script to take output from a model simulated with another config and turn it into fake "data" that can be used as ground truth input to a different inference config file
+# Make sure to be in the project directory (usually where configs are kept) and have installed the flepimop R packages
 library(dplyr)
 library(data.table)
 library(reticulate)
@@ -9,9 +10,9 @@ gempyor <- import("gempyor")
 
 # INPUT FILES AND PARAMETERS  ----------
 
-input_config = "config_sample_2pop_modifiers.yml" # config to take output from (forward simulation)
+input_config = "config_sample_2pop_modifiers.yml" # config to take output from (forward simulation). Must be run first
 input_inference_config = "config_sample_2pop_inference.yml"
-input_seir_modifier_scenario = NULL # which SEIR modifier scenario to use. If null, will take the first. Not required if only 1 scenario. 
+input_seir_modifier_scenario = "Ro_all" # which SEIR modifier scenario to use. If null, will take the first. Not required if only 1 scenario. 
 input_outcome_modifier_scenario = NULL # which SEIR modifier scenario to use. If null, will take the first. Not required if only 1 scenario. 
 input_run_id = NULL # which RUNID to use results from. If null, will take the first. Nor required if only 1 output run. 
 input_slot = NULL 
@@ -140,7 +141,7 @@ outcome_vars_data <- sapply(1:length(fit_stats), function(j) config_inference$in
 
 
 
-# results_filelist <- file.path(res_dir, 
+# results_filelist <- file.path(res_dir,
 #                               paste0(config$name, "_", config$seir_modifiers$scenarios[scenario_num], "_", config$outcome_modifiers$scenarios[scenario_num]))
 # results_filelist <- file.path(results_filelist, list.files(results_filelist))
 # model_outputs <- "hosp"
@@ -151,7 +152,7 @@ outcome_vars_data <- sapply(1:length(fit_stats), function(j) config_inference$in
 # output_hosp <- setDT(arrow::read_parquet(file.path(results_filelist,"hosp",hosp_file)))
 
 # filter these outcome variables for desired dates then aggregate to desired level -------
-outcome_hosp_ <- output_hosp %>% 
+outcome_hosp_ <- hosp_outputs %>% 
   .[date >= config_inference$start_date & date <= config_inference$end_date] 
 # add filter line here to aggregate to desired level 
 

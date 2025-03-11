@@ -1196,6 +1196,7 @@ llik_outputs_int %>%
   geom_step(aes(iter, value, color = as.factor(slot),linetype = factor(ll_type,levels=c("global","chimeric")))) + 
   facet_wrap(subpop~name, scales = "free")+
   labs(x = 'iterations', y = "llikelihood stats", color = "slot", linetype="likelihood type") +
+  #xlim(0,20)
   theme_bw() + theme_small
 
 ```
