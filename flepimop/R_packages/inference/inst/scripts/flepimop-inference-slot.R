@@ -713,7 +713,8 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       # Accept if MCMC acceptance decision = 1 or it's the first iteration of the first block
       # note - we already have a catch for the first block thing earlier (we set proposed = initial likelihood) - shouldn't need 2!
       global_accept <- ifelse(  #same value for all subpopulations
-        inference::iterateAccept(global_current_likelihood_total, proposed_likelihood_total) ||
+        inference::iterateAccept(ll_ref = global_current_likelihood_total, 
+								 ll_new = proposed_likelihood_total)$accept ||
           ((last_accepted_index == 0) && (opt$this_block == 1)) ||
           ((this_index == opt$iterations_per_slot && !opt$reset_chimeric_on_accept))
         ,1,0
