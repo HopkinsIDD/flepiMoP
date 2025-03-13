@@ -1,6 +1,7 @@
 import itertools
 import logging
 import time
+from typing import Literal
 
 from numba import jit
 import numpy as np
@@ -18,40 +19,33 @@ logger = logging.getLogger(__name__)
 
 def run_parallel_outcomes(
     modinf: model_info.ModelInfo, *, sim_id2write, nslots=1, n_jobs=1
-):
+) -> Literal[1]:
     start = time.monotonic()
-
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
-
-    loaded_values = None
     if (n_jobs == 1) or (
         modinf.nslots == 1
     ):  # run single process for debugging/profiling purposes
-        for sim_offset in np.arange(nslots):
-            onerun_delayframe_outcomes(
-                sim_id2write=sim_id2writes[sim_offset],
+        for sim_offset in range(nslots):
+            _onerun_delayframe_outcomes_with_random_seed(
+                np.random.randint(1, high=2_147_483_646),
+                sim_id2writes[sim_offset],
                 modinf=modinf,
-                load_ID=False,
-                sim_id2load=None,
             )
-            # onerun_delayframe_outcomes(
-            #    sim_id2loads[sim_offset],
-            #    s,
-            #    sim_id2writes[sim_offset],
-            #    parameters,
-            # )
     else:
+        random_seeds = np.random.randint(
+            1, high=2_147_483_646, size=len(sim_id2writes)
+        ).tolist()
         tqdm.contrib.concurrent.process_map(
-            onerun_delayframe_outcomes,
+            _onerun_delayframe_outcomes_with_random_seed,
+            random_seeds,
             sim_id2writes,
             itertools.repeat(modinf),
             max_workers=n_jobs,
         )
 
     print(
-        f"""
->> {nslots} outcomes simulations completed in {time.monotonic() - start:.1f} seconds
-"""
+        f">> {nslots} outcomes simulations completed "
+        f"in {time.monotonic() - start:.1f} seconds"
     )
     return 1
 
@@ -91,8 +85,6 @@ def onerun_delayframe_outcomes(
     load_ID: bool = False,
     sim_id2load: int = None,
 ):
-    np.random.seed(seed=sim_id2write)
-
     with Timer("buildOutcome.structure"):
         parameters = read_parameters_from_config(modinf)
 
@@ -124,6 +116,34 @@ def onerun_delayframe_outcomes(
             hpar=hpar,
             npi=npi_outcomes,
         )
+
+
+def _onerun_delayframe_outcomes_with_random_seed(
+    random_seed: int,
+    sim_id2write: int,
+    modinf: model_info.ModelInfo,
+    load_ID: bool = False,
+    sim_id2load: int = None,
+) -> None:
+    """
+    Wrapper function to run `onerun_delayframe_outcomes` with a random seed.
+
+    Args:
+        random_seed: Random seed to use for the run.
+        sim_id2write: Simulation ID to write.
+        modinf: ModelInfo object.
+
+    Returns:
+        None
+
+    See Also:
+        `onerun_delayframe_outcomes`
+
+    """
+    np.random.seed(seed=random_seed)
+    onerun_delayframe_outcomes(
+        sim_id2write, modinf, load_ID=load_ID, sim_id2load=sim_id2load
+    )
 
 
 def read_parameters_from_config(modinf: model_info.ModelInfo):
