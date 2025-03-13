@@ -7,12 +7,13 @@ the optional test dependencies must be installed.
 
 __all__ = [
     "change_directory_to_temp_directory",
-    "mock_empty_config",
     "create_confuse_config_from_file",
     "create_confuse_configview_from_dict",
     "create_confuse_config_from_dict",
+    "mock_empty_config",
     "partials_are_similar",
     "sample_fits_distribution",
+    "setup_example_from_tutorials",
     "run_test_in_separate_process",
 ]
 
@@ -360,3 +361,31 @@ def sample_script(directory: Path, executable: bool, name: str = "example") -> P
     if executable:
         script.chmod(script.stat().st_mode | S_IXUSR)
     return script
+
+
+def setup_example_from_tutorials(
+    tmp_path: Path,
+    config: str,
+) -> None:
+    """
+    Setup a tutorial example for testing.
+
+    Args:
+        tmp_path: The temporary directory to create the example in.
+        config: The name of the configuration file to use.
+
+    Returns:
+        The path to the temporary directory.
+    """
+    tutorials_path = (
+        Path(__file__).parent.parent.parent.parent.parent / "examples/tutorials"
+    )
+    for file in [config] + [
+        f.relative_to(tutorials_path)
+        for f in tutorials_path.glob("model_input/*")
+        if f.is_file()
+    ]:
+        source = tutorials_path / file
+        destination = tmp_path / file
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(source, destination)

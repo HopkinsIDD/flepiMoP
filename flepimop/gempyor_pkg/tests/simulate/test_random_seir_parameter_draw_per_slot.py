@@ -1,36 +1,20 @@
-import os
 from pathlib import Path
-import shutil
 
 from click.testing import CliRunner
 import pytest
 
 from gempyor.simulate import _click_simulate
+from gempyor.testing import setup_example_from_tutorials
 from gempyor.utils import read_directory
-
-
-@pytest.fixture
-def setup_sample_2pop_vaccine_scenarios(tmp_path: Path) -> Path:
-    tutorials_path = Path(os.path.dirname(__file__) + "/../../../../examples/tutorials")
-    for file in (
-        "config_sample_2pop_vaccine_scenarios.yml",
-        "model_input/geodata_sample_2pop.csv",
-        "model_input/mobility_sample_2pop.csv",
-        "model_input/ic_2pop.csv",
-    ):
-        source = tutorials_path / file
-        destination = tmp_path / file
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(source, destination)
-    return tmp_path
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
 def test_random_seir_parameter_draw_per_slot(
-    monkeypatch: pytest.MonkeyPatch, setup_sample_2pop_vaccine_scenarios: Path, n_jobs: int
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, n_jobs: int
 ) -> None:
     # Test setup
-    monkeypatch.chdir(setup_sample_2pop_vaccine_scenarios)
+    monkeypatch.chdir(tmp_path)
+    setup_example_from_tutorials(tmp_path, "config_sample_2pop_vaccine_scenarios.yml")
 
     # Test execution of `gempyor-simulate`
     runner = CliRunner()
@@ -40,11 +24,11 @@ def test_random_seir_parameter_draw_per_slot(
     assert result.exit_code == 0
 
     hpar = read_directory(
-        setup_sample_2pop_vaccine_scenarios,
+        tmp_path / "model_output",
         filters=["sample_2pop_pess_vax", "hpar", ".parquet"],
     )
     spar = read_directory(
-        setup_sample_2pop_vaccine_scenarios,
+        tmp_path / "model_output",
         filters=["sample_2pop_pess_vax", "spar", ".parquet"],
     )
 
