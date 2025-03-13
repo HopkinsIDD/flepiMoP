@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import os
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,10 @@ from gempyor.testing import run_test_in_separate_process, setup_example_from_tut
 from gempyor.utils import read_directory
 
 
+@pytest.mark.skipif(
+    os.getenv("FLEPI_PATH") is None,
+    reason="The $FLEPI_PATH environment variable is not set.",
+)
 @pytest.mark.parametrize("n_jobs", (1, 2))
 @pytest.mark.parametrize("start_method", mp.get_all_start_methods())
 def test_run_parallel_outcomes_by_multiprocessing_start_method(

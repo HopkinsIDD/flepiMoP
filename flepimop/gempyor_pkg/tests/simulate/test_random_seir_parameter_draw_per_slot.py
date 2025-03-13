@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -8,6 +9,10 @@ from gempyor.testing import setup_example_from_tutorials
 from gempyor.utils import read_directory
 
 
+@pytest.mark.skipif(
+    os.getenv("FLEPI_PATH") is None,
+    reason="The $FLEPI_PATH environment variable is not set.",
+)
 @pytest.mark.parametrize("n_jobs", [1, 2])
 def test_random_seir_parameter_draw_per_slot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, n_jobs: int

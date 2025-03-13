@@ -376,10 +376,13 @@ def setup_example_from_tutorials(
 
     Returns:
         The path to the temporary directory.
+
+    Raises:
+        ValueError: If the `FLEPI_PATH` environment variable is not set.
     """
-    tutorials_path = (
-        Path(__file__).parent.parent.parent.parent.parent / "examples/tutorials"
-    )
+    if (flepi_path := os.getenv("FLEPI_PATH")) is None:
+        raise ValueError("FLEPI_PATH environment variable is not set.")
+    tutorials_path = Path(flepi_path) / "examples/tutorials"
     for file in [config] + [
         f.relative_to(tutorials_path)
         for f in tutorials_path.glob("model_input/*")
