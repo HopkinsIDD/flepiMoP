@@ -637,6 +637,29 @@ def list_filenames(
     return files
 
 
+def read_directory(
+    directory: str | bytes | os.PathLike, filters: str | list[str] | None = None
+) -> pd.DataFrame:
+    """
+    Read all files in a directory into a single DataFrame.
+
+    Args:
+        directory: The directory to read files from.
+        filters: A string or a list of strings to filter filenames. Only files
+            containing all the provided substrings will be read. Defaults to `None` for
+            no filters.
+
+    Returns:
+        A pandas DataFrame containing the contents of all the files in the directory.
+    """
+    files = [Path(f) for f in list_filenames(folder=directory, filters=filters or [])]
+    dfs: list[pd.DataFrame] | pd.DataFrame = []
+    for i, f in enumerate(sorted(files)):
+        dfs.append(pd.read_parquet(f) if f.suffix == ".parquet" else pd.read_csv(f))
+        dfs[-1]["slot"] = int(f.name.split(".")[0])
+    return pd.concat(dfs)
+
+
 def rolling_mean_pad(
     data: npt.NDArray[np.number],
     window: int,

@@ -3,10 +3,10 @@ from pathlib import Path
 import shutil
 
 from click.testing import CliRunner
-import pandas as pd
 import pytest
 
 from gempyor.simulate import _click_simulate
+from gempyor.utils import read_directory
 
 
 @pytest.fixture
@@ -39,27 +39,14 @@ def test_random_seir_parameter_draw_per_slot(
     )
     assert result.exit_code == 0
 
-    # Get the contents of 'spar' and 'hpar' directories as DataFrames
-    spar_directory: Path | None = None
-    hpar_directory: Path | None = None
-    for p in setup_sample_2pop_vaccine_scenarios.rglob("*"):
-        if p.is_dir() and p.name == "spar":
-            spar_directory = p
-        elif p.is_dir() and p.name == "hpar":
-            hpar_directory = p
-        if spar_directory is not None and hpar_directory is not None:
-            break
-
-    def read_directory(directory: Path) -> list[pd.DataFrame]:
-        dfs: list[pd.DataFrame] | pd.DataFrame = []
-        for i, f in enumerate(sorted(list(directory.glob("*.parquet")))):
-            dfs.append(pd.read_parquet(f))
-            dfs[-1]["slot"] = i
-        dfs = pd.concat(dfs)
-        return dfs
-
-    hpar = read_directory(hpar_directory)
-    spar = read_directory(spar_directory)
+    hpar = read_directory(
+        setup_sample_2pop_vaccine_scenarios,
+        filters=["sample_2pop_pess_vax", "hpar", ".parquet"],
+    )
+    spar = read_directory(
+        setup_sample_2pop_vaccine_scenarios,
+        filters=["sample_2pop_pess_vax", "spar", ".parquet"],
+    )
 
     # Test contents of 'spar'/'hpar' DataFrames
     assert (
