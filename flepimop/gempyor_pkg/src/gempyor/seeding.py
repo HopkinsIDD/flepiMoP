@@ -33,6 +33,9 @@ def _DataFrame2NumbaDict(
     n_days: int,
     ti: date,
 ) -> tuple[nb.typed.Dict, npt.NDArray[np.number]]:
+    # This functions is extremely unsafe and should only be used after the dataframe has
+    # been filtered on dates and subpop according to the limits sets in `modinf`. And
+    # sorted by date.
     if not df["date"].is_monotonic_increasing:
         raise ValueError("The `df` given is not sorted by the 'date' column.")
 
@@ -201,9 +204,11 @@ class Seeding(SimulationComponent):
             raise ValueError(f"Unknown seeding method given, '{method}'.")
 
         # Sorting by date is important for the seeding format
-        seeding = seeding.sort_values(by="date", axis="index").reset_index()
+        seeding = seeding.sort_values(by="date", axis="index").reset_index(drop=True)
         mask = (seeding["date"].dt.date > ti) & (seeding["date"].dt.date <= tf)
-        seeding = seeding.loc[mask].reset_index()
+        seeding = seeding.loc[mask].reset_index(drop=True)
+        mask = seeding["subpop"].isin(subpop_struct.subpop_names)
+        seeding = seeding.loc[mask].reset_index(drop=True)
 
         amounts = np.zeros(len(seeding))
         if method == "PoissonDistributed":

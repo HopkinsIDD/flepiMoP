@@ -17,6 +17,51 @@ from .utils import Timer, read_df
 logger = logging.getLogger(__name__)
 
 
+def check_parameter_positivity(
+    parsed_parameters: np.ndarray,
+    parameter_names: list[str],
+    dates: pd.DatetimeIndex,
+    subpop_names: list[str],
+) -> None:
+    """
+    Identifies and reports earliest negative values for parameters after modifiers have been applied.
+
+    Args:
+        parsed_parameters: An array of parameter values.
+        parameter_names: A list of the names of parameters.
+        dates: A pandas DatetimeIndex containing the dates.
+        subpop_names: A list of the names of subpopulations.
+
+    Raises:
+        ValueError: Negative parameter values were detected.
+
+    Returns:
+        None
+    """
+    if len(negative_index_parameters := np.argwhere(parsed_parameters < 0)) > 0:
+        unique_param_sp_combinations = []
+        row_index = -1
+        redundant_rows = []
+        for row in negative_index_parameters:
+            row_index += 1
+            if (row[0], row[2]) in unique_param_sp_combinations:
+                redundant_rows.append(row_index)
+            if (row[0], row[2]) not in unique_param_sp_combinations:
+                unique_param_sp_combinations.append((row[0], row[2]))
+        non_redundant_negative_parameters = np.delete(
+            negative_index_parameters, (redundant_rows), axis=0
+        )
+
+        neg_subpops = []
+        neg_params = []
+        first_neg_date = dates[0].date()
+        for param_idx, _, sp_idx in non_redundant_negative_parameters:
+            neg_subpops.append(subpop_names[sp_idx])
+            neg_params.append(parameter_names[param_idx])
+        error_message = f"There are negative parameter errors in subpops {neg_subpops}, starting from date {first_neg_date} in parameters {neg_params}."
+        raise ValueError(f"{error_message}")
+
+
 def build_step_source_arg(
     modinf: ModelInfo,
     parsed_parameters,
@@ -120,6 +165,11 @@ def build_step_source_arg(
         "population": modinf.subpop_pop,
         "stochastic_p": modinf.stoch_traj_flag,
     }
+
+    check_parameter_positivity(
+        fnct_args["parameters"], modinf.parameters.pnames, modinf.dates, modinf.subpop_pop
+    )
+
     return fnct_args
 
 
@@ -158,40 +208,25 @@ def steps_SEIR(
             )
         seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
-        from .dev import steps as steps_experimental
-
-        logging.critical("Experimental !!! These methods are not ready for production ! ")
-        if integration_method in [
+        if integration_method in {
             "scipy.solve_ivp",
             "scipy.odeint",
             "scipy.solve_ivp2",
             "scipy.odeint2",
-        ]:
-            if modinf.stoch_traj_flag == True:
-                raise ValueError(
-                    f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
-                )
-            seir_sim = steps_experimental.ode_integration(
-                **fnct_args, integration_method=integration_method
+            "rk4.jit1",
+            "rk4.jit2",
+            "rk4.jit3",
+            "rk4.jit4",
+            "rk4.jit5",
+            "rk4.jit6",
+            "rk4.jit.smart",
+            "rk4_aot",
+        }:
+            logger.critical(
+                "The '%s' integration method is considered experimental, please use the 'rk4_experimental' git branch.",
+                integration_method,
             )
-        elif integration_method == "rk4.jit1":
-            seir_sim = steps_experimental.rk4_integration1(**fnct_args)
-        elif integration_method == "rk4.jit2":
-            seir_sim = steps_experimental.rk4_integration2(**fnct_args)
-        elif integration_method == "rk4.jit3":
-            seir_sim = steps_experimental.rk4_integration3(**fnct_args)
-        elif integration_method == "rk4.jit4":
-            seir_sim = steps_experimental.rk4_integration4(**fnct_args)
-        elif integration_method == "rk4.jit5":
-            seir_sim = steps_experimental.rk4_integration5(**fnct_args)
-        elif integration_method == "rk4.jit6":
-            seir_sim = steps_experimental.rk4_integration6(**fnct_args)
-        elif integration_method == "rk4.jit.smart":
-            seir_sim = steps_experimental.rk4_integration2_smart(**fnct_args)
-        elif integration_method == "rk4_aot":
-            seir_sim = steps_experimental.rk4_aot(**fnct_args)
-        else:
-            raise ValueError(f"Unknown integration method given, '{integration_method}'.")
+        raise ValueError(f"Unknown integration method given, '{integration_method}'.")
 
     # We return an xarray instead of a ndarray now
     compartment_coords = {}

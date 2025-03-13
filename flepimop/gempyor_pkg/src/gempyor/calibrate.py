@@ -1,15 +1,29 @@
+"""
+Facilitates the calibration of the model using the `emcee` MCMC sampler.
+
+Provides CLI options for users to specify simulation parameters.
+
+Functions:
+    calibrate: Reads a configuration file for simulation settings.
+"""
+
 #!/usr/bin/env python
+import os
+import shutil
+import copy
+import pathlib
+import multiprocessing
+
 import click
+import emcee
+import numpy as np
+
+import gempyor
 from gempyor import model_info, file_paths, config, inference_parameter
 from gempyor.inference import GempyorInference
 from gempyor.utils import config, as_list
-import gempyor
-import numpy as np
-import os, shutil, copy
-import emcee
-import pathlib
-import multiprocessing
 import gempyor.postprocess_inference
+
 
 # from .profile import profile_options
 
@@ -113,18 +127,21 @@ os.environ["OMP_NUM_THREADS"] = "1"
 # @profile_options
 # @profile()
 def calibrate(
-    config_filepath,
-    project_path,
-    nwalkers,
-    niter,
-    nsamples,
-    nthin,
-    ncpu,
-    input_run_id,
-    prefix,
-    resume,
-    resume_location,
-):
+    config_filepath: str | pathlib.Path,
+    project_path: str,
+    nwalkers: int,
+    niter: int,
+    nsamples: int,
+    nthin: int | None,
+    ncpu: int,
+    input_run_id: int | None,
+    prefix: str | None,
+    resume: bool,
+    resume_location: str | None,
+) -> None:
+    """
+    Calibrate using an `emcee` sampler to initialize a model based on a config.
+    """
     # Choose a run_id
     if input_run_id is None:
         base_run_id = pathlib.Path(config_filepath).stem.replace("config_", "")

@@ -1,3 +1,18 @@
+"""
+Abstractions for interacting with models as a monolithic object.
+
+Defines the `ModelInfo` class (and associated methods), used for setting up and
+managing the configuration of a simulation. The primary focuses of a `ModelInfo` object
+are parsing and validating config details (including time frames, subpop info,
+model parameters, outcomes) and file handling for input and output data.
+This submodule is intended to serve as a foundational part of flepiMoP's
+infrastructure for conducting simulations and storing results.
+
+Classes:
+    TimeSetup: Handles simulation time frame.
+    ModelInfo: Parses config file, holds model information, and manages file input/output.
+"""
+
 import datetime
 import logging
 import os
@@ -24,7 +39,27 @@ logger = logging.getLogger(__name__)
 
 
 class TimeSetup:
+    """
+    Handles the simulation time frame based on config info.
+
+    `TimeSetup` reads the start and end dates from the config, validates the time frame,
+    and calculates the number of days in the simulation. It also establishes a
+    pd.DatetimeIndex for the entire simulation period.
+
+    Attributes:
+        ti (datetime.date): Start date of simulation.
+        tf (datetime.date): End date of simulation.
+        n_days (int): Total number of days in the simulation time frame.
+        dates (pd.DatetimeIndex): A sequence of dates spanning the simulation time frame (inclusive of the start and end dates).
+    """
+
     def __init__(self, config: confuse.ConfigView):
+        """
+        Initializes a `TimeSetup` object.
+
+        Args:
+            config: A configuration confuse.ConfigView object.
+        """
         self.ti = config["start_date"].as_date()
         self.tf = config["end_date"].as_date()
         if self.tf <= self.ti:
@@ -36,9 +71,60 @@ class TimeSetup:
 
 
 class ModelInfo:
-    # TODO: update this documentation add explaination about the construction of ModelInfo
     """
-    Parse config and hold some results, with main config sections.
+    Parses config file, holds model information, and manages file input/output.
+
+    Attributes:
+        nslots: Number of slots for MCMC.
+        write_csv: Whether to write results to CSV files (default is False).
+        write_parquet: Whether to write results to parquet files (default is False)
+        first_sim_index: Index of first simulation (default is 1).
+        stoch_traj_flag: Whether to run the model stochastically (default is False).
+        seir_modifiers_scenario: seir_modifiers_scenario: SEIR modifier.
+        outcome_modifiers_scenario: Outcomes modifier.
+        setup_name: Name of setup (to override config, if applicable).
+        time_setup: `TimeSetup` object (start/end dates of simulation, as pd.DatetimeIndex).
+        ti: Initial time (time start).
+        tf: Final time (fime finish).
+        n_days: Number of days in simulation.
+        dates: pd.DatetimeIndex sequence of dates that span simulation.
+        subpop_struct: `SubpopulationStructure` object (info about subpops).
+        nsubpops: Number of subpopulations in simulation.
+        subpop_pop: NumPy array containing population of each subpop.
+        mobility: Matrix with values representing movement of people between subpops.
+        path_prefix: Prefix to paths where simulation data files are stored.
+        seir_config: SEIR configuration info, if relevant for simulation.
+        seir_modifiers_library: Modifiers for SEIR model, if relevant for simulation.
+        parameters_config: Parameter information from config.
+        initial_conditions_config: Initial conditions information from config.
+        seeding_config: Seeding config, if relevant.
+        parameters: `Parameter` object containing information about parameters.
+        seeding: Seeding configuration information, if relevant.
+        initial_conditions: Initial condition information for simulation.
+        npi_config_seir: Non-pharmaceutical intervention configurations for SEIR, if relevant.
+        compartments: `Compartments` object contianing information about compartments.
+        outcomes_config: Outcomes configurations, if relevant.
+        npi_config_outcomes: Non-pharmaceutical intervention outcome configurations, if relevant.
+        outcome_modifiers_library: Outcome modifiers, pulled from config.
+        in_run_id: ID for input run (generated if not specified).
+        out_run_id: ID for outputr run (generated if not specified).
+        in_prefix: Path prefix for input directory.
+        out_prefix: Path prefix for output directory.
+        inference_filename_prefix: Path prefix for inference files directory.
+        inference_filepath_suffix: Path suffix for inference files directory.
+        timestamp: Current datetime.
+        extension: File extensions.
+        config_filepath: Path to configuration file.
+
+    Raises:
+        ValueError:
+            If provided configuration information is incompatible with expectations.
+        ValueError:
+            If non-existent sections are referenced.
+        NotImplementedError:
+            If an unimplemented feature is referenced.
+
+    Config sections:
     ```
         subpop_setup                  # Always required
         compartments                  # Required if running seir
@@ -74,6 +160,28 @@ class ModelInfo:
         setup_name=None,  # override config setup_name
         config_filepath="",
     ):
+        """
+        Initializes a `ModelInfo` object.
+
+        Args:
+            config: Config object.
+            nslots: Number of slots for MCMC (default is 1).
+            write_csv: Whether to write results to CSV files (default is False).
+            write_parquet: Whether to write results to parquet files (default is False).
+            first_sim_index : Index of first simulation (default is 1).
+            stoch_traj_flag: Whether to run the model stochastically (default is False).
+            seir_modifiers_scenario: SEIR modifier.
+            outcome_modifiers_scenario: Outcomes modifier.
+            setup_name: Name of setup (to override config, if applicable).
+            path_prefix: Prefix to paths where simulation data files are stored.
+            in_run_id: ID for input run (generated if not specified).
+            out_run_id: ID for outputr run (generated if not specified).
+            in_prefix: Path prefix for input directory.
+            out_prefix: Path prefix for output directory.
+            inference_filename_prefix: Path prefix for inference files directory.
+            inference_filepath_suffix: Path suffix for inference files directory.
+            config_filepath: Path to configuration file.
+        """
         self.nslots = nslots
         self.write_csv = write_csv
         self.write_parquet = write_parquet
@@ -110,10 +218,6 @@ class ModelInfo:
 
         # 3. What about subpopulations
         subpop_config = config["subpop_setup"]
-        if "data_path" in config:
-            raise ValueError(
-                "The config has a `data_path` section. This is no longer supported."
-            )
         self.path_prefix = pathlib.Path(path_prefix)
 
         self.subpop_struct = subpopulation_structure.SubpopulationStructure(
@@ -374,12 +478,15 @@ class ModelInfo:
             ti=self.ti,
             tf=self.tf,
             input_filename=(
-                None
-                if self.seeding_config is None
-                else self.get_input_filename(
+                self.get_input_filename(
                     ftype=self.seeding_config["seeding_file_type"].get(),
                     sim_id=sim_id,
                     extension_override="csv",
                 )
+                if (
+                    self.seeding_config is not None
+                    and self.seeding_config["seeding_file_type"].exists()
+                )
+                else None
             ),
         )

@@ -32,6 +32,10 @@ def test_no_matching_fqdn_found_value_error(fqdn: str) -> None:
         ("longleaf-login07.its.unc.edu", False, "longleaf"),
         ("longleaf-login07.its.unc.edu", True, "longleaf"),
         ("longleaf-login07.its.unc.edu", False, "longleaf"),
+        ("longleaf-login.its.unc.edu", True, "longleaf"),
+        ("longleaf-login.its.unc.edu", False, "longleaf"),
+        ("longleaf.its.unc.edu", True, "longleaf"),
+        ("longleaf.its.unc.edu", False, "longleaf"),
         ("epid-iss-MacBook-Pro.local", False, None),
     ),
 )

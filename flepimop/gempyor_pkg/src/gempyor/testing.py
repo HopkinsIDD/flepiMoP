@@ -22,6 +22,7 @@ import os
 from pathlib import Path
 from shlex import quote
 import shutil
+from stat import S_IXUSR
 import subprocess
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Literal
@@ -333,3 +334,29 @@ def run_test_in_separate_process(
     finally:
         if dest is None and script.exists():
             script.unlink()
+
+
+def sample_script(directory: Path, executable: bool, name: str = "example") -> Path:
+    """
+    Create a sample script for testing functions that require a script.
+
+    Args:
+        directory: The directory to create the script in.
+        executable: If the script should be executable.
+        name: The name of the script.
+
+    Returns:
+        The path to the script.
+
+    Notes:
+        The script is a simple bash script in a file named `name` with contents:
+        ```bash
+        #!/usr/bin/env bash
+        echo 'Hello local!'
+        ```
+    """
+    script = directory / name
+    script.write_text("#!/usr/bin/env bash\necho 'Hello local!'")
+    if executable:
+        script.chmod(script.stat().st_mode | S_IXUSR)
+    return script

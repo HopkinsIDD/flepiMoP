@@ -313,7 +313,7 @@ all_valid_factories = [
 
 
 class TestStatistic:
-    @pytest.mark.parametrize("factory", [(invalid_regularization_factory)])
+    @pytest.mark.parametrize("factory", [invalid_regularization_factory])
     def test_unsupported_regularizations_value_error(
         self, factory: Callable[[], MockStatisticInput]
     ) -> None:
@@ -618,7 +618,7 @@ class TestStatistic:
                 ),
             )
 
-    @pytest.mark.parametrize("factory", [(invalid_misshaped_data_factory)])
+    @pytest.mark.parametrize("factory", [invalid_misshaped_data_factory])
     def test_compute_logloss_data_misshape_value_error(
         self, factory: Callable[[], MockStatisticInput]
     ) -> None:

@@ -124,6 +124,20 @@ config_file_options = {
         help="write parquet output?",
     ),
 }
+verbosity_options = {
+    "verbosity": click.Option(
+        param_decls=["-v", "--verbose", "verbosity"],
+        count=True,
+        help="The verbosity level to use for this command.",
+    ),
+    "dry_run": click.Option(
+        param_decls=["--dry-run", "dry_run"],
+        type=bool,
+        default=False,
+        is_flag=True,
+        help="Should this command be run using dry run?",
+    ),
+}
 
 
 def click_helpstring(

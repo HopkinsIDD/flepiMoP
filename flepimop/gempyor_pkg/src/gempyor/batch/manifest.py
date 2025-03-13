@@ -1,15 +1,4 @@
-"""
-Generate manifest files containing batch run metadata.
-
-This module provides functionality for working with and executing batch jobs, either on
-HPC or AWS environments.
-
-Functions:
-    write_manifest: A utility to generate a manifest json file with metadata for a batch
-        job.
-"""
-
-__all__ = ["write_manifest"]
+__all__ = ("write_manifest",)
 
 
 import json
@@ -17,7 +6,7 @@ from pathlib import Path
 import sys
 from typing import Any
 
-from gempyor.utils import _git_head
+from ..utils import _git_head
 
 
 def write_manifest(

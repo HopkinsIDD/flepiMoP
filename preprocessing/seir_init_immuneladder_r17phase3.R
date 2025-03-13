@@ -11,7 +11,6 @@
 # setup_name: <string>
 # start_date: <date>
 # end_date: <date>
-# data_path: <path to directory>
 
 # subpop_setup:
 #   geodata: <path to file>
@@ -23,7 +22,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
+# * <b>{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
