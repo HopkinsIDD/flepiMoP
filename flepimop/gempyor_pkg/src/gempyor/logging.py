@@ -1,9 +1,9 @@
 """
 Logging utilities for consistent script output.
 
-This module provides functionality for creating consistent outputs from CLI tools 
+This module provides functionality for creating consistent outputs from CLI tools
 provided by this package. Currently exported are:
-- `ClickHandler`: Custom logging handler specifically designed for CLI output using 
+- `ClickHandler`: Custom logging handler specifically designed for CLI output using
     click.
 - `get_script_logger`: Factory for creating a logger instance with a consistent style
     across CLI tools.
