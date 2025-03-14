@@ -2,7 +2,7 @@ name: sample_2pop
 setup_name: minimal
 start_date: 2020-02-01
 end_date: 2020-08-31
-nslots: 1
+nslots: 10
 
 subpop_setup:
   geodata: model_input/geodata_sample_2pop.csv
