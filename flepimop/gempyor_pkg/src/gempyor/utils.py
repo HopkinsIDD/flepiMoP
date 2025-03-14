@@ -657,7 +657,7 @@ def read_directory(
     for i, f in enumerate(sorted(files)):
         dfs.append(pd.read_parquet(f) if f.suffix == ".parquet" else pd.read_csv(f))
         dfs[-1]["slot"] = int(f.name.split(".")[0])
-    return pd.concat(dfs)
+    return pd.concat(dfs).reset_index(drop=True)
 
 
 def rolling_mean_pad(
