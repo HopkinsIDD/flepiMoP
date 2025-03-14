@@ -12,7 +12,6 @@ source /scratch4/struelo1/flepimop-code/slack_credentials.sh
 # export COVID_RESET_CHIMERICS=TRUE
 # export COVID_PATH=/scratch4/struelo1/flepimop-code/$USER/COVIDScenarioPipeline
 
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export FLEPI_PATH=/scratch4/struelo1/flepimop-code/$USER/flepiMoP
 

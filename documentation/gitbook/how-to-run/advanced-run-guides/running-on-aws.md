@@ -92,7 +92,6 @@ NOTE: If you are not running a _resume run_, DO NOT export the environmental var
 
 <pre class="language-bash"><code class="lang-bash">cd ~/drp
 export CENSUS_API_KEY={A CENSUS API KEY}
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export COMPUTE_QUEUE="Compartment-JQ-1588569574"
 

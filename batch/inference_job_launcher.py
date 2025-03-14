@@ -184,13 +184,10 @@ def user_confirmation(question="Continue?", default=False):
     help="The run_id of the run we are restarting from",
 )
 @click.option(
-    "--stochastic/--non-stochastic",
-    "--stochastic/--non-stochastic",
-    "stochastic",
-    envvar="FLEPI_STOCHASTIC_RUN",
+    "-e", "--engine"
+    envvar="FLEPI_ENGINE",
     type=bool,
-    default=False,
-    help="Flag determining whether to run stochastic simulations or not",
+    help="Option to override seir::method",
 )
 @click.option(
     "--resume-discard-seeding/--resume-carry-seeding",
@@ -759,7 +756,6 @@ class BatchJobHandler(object):
                     self.resume_discard_seeding
                 ).lower(),  # lower is import here, this is string-compared to "true" in the run script
             },
-            {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
             {
                 "name": "FLEPI_MEM_PROFILE",

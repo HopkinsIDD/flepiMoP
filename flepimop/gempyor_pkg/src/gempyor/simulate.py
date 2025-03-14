@@ -277,7 +277,7 @@ def simulate(
         >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {cfg["jobs"].get(int)} processes
         >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
         >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-        >> running ***{'STOCHASTIC' if cfg["stoch_traj_flag"].get(bool) else 'DETERMINISTIC'}*** trajectories
+        >> running ***{'STOCHASTIC' if modinf.stoch_traj_flag else 'DETERMINISTIC'}*** trajectories
         """
             )
         # (there should be a run function)
