@@ -200,6 +200,30 @@ class RandomDrawAssertion(NamedTuple):
             ),
         ),
         (
+            "config_sample_2pop_modifiers_test_random_subpop_groups.yml",
+            None,
+            (
+                RandomDrawAssertion(
+                    kind="hnpi",
+                    filters={},
+                    column="value",
+                    nunique=10,
+                ),
+                RandomDrawAssertion(
+                    kind="snpi",
+                    filters={"modifier_name": "Ro_lockdown"},
+                    column="value",
+                    exact_value=0.4,
+                ),
+                RandomDrawAssertion(
+                    kind="snpi",
+                    filters={"modifier_name": "Ro_relax"},
+                    column="value",
+                    nunique=10,
+                ),
+            ),
+        ),
+        (
             "config_sample_2pop_vaccine_scenarios.yml",
             "sample_2pop_pess_vax",
             (
