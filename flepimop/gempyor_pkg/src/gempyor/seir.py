@@ -78,6 +78,9 @@ def build_step_source_arg(
                 integration_method = "rk4.jit"
             if integration_method == "rk4":
                 integration_method = "rk4.jit"
+            if integration_method == "stochastic":
+                integration_method = "legacy"
+                modinf.stoch_traj_flag = True
             if integration_method not in ["rk4.jit", "legacy"]:
                 raise ValueError(
                     f"Unknown integration method given, '{integration_method}'."
@@ -92,7 +95,7 @@ def build_step_source_arg(
         integration_method = "rk4.jit"
         dt = 2.0
         logging.info(
-            f"Integration method not provided, assuming type {integration_method} with dt=2"
+            f"Integration method not provided, assuming type {integration_method} with dt={dt}"
         )
 
     ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
@@ -199,7 +202,7 @@ def steps_SEIR(
     logging.debug(f"Integrating with method {integration_method}")
 
     if integration_method == "legacy":
-        seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
+        seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
     elif integration_method == "rk4.jit":
         if modinf.stoch_traj_flag == True:
             raise ValueError(

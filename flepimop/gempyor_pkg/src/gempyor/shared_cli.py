@@ -107,7 +107,6 @@ config_file_options = {
     ),
     "stoch_traj_flag": click.Option(
         ["--stochastic/--non-stochastic", "stoch_traj_flag"],
-        envvar="FLEPI_STOCHASTIC_RUN",
         default=False,
         help="Run stochastic simulations?",
     ),
