@@ -36,7 +36,6 @@ def rk4_integration(
     mobility_row_indices,  # 13
     mobility_data_indices,  # 14
     population,  # 15
-    stochastic_p,  # 16
     method="rk4",
     silent=False
 ):
@@ -139,18 +138,20 @@ def rk4_integration(
             # number_move has shape (nspatial_nodes)
             if method == "rk4":
                 number_move = source_number * total_rate
-            elif method == "legacy":
+            elif method == "euler":
                 compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
-                if stochastic_p:
-                    number_move = source_number * compound_adjusted_rate  ## to initialize typ
+                number_move = source_number * compound_adjusted_rate  ## to initialize typ
+                if method == "stochastic":
                     for spatial_node in range(nspatial_nodes):
                         number_move[spatial_node] = np.random.binomial(
                             # number_move[spatial_node] = random.binomial(
                             source_number[spatial_node],
                             compound_adjusted_rate[spatial_node],
                         )
+                elif method == "euler":
+                    pass
                 else:
-                    number_move = source_number * compound_adjusted_rate
+                    raise ValueError(f"Did not understand method == {method}")
 
             transition_amounts[transition_index] = number_move
 
@@ -159,7 +160,7 @@ def rk4_integration(
         #    if number_move[spatial_node] > states_current[transitions[transition_source_col][transition_index]][spatial_node]:
         #        number_move[spatial_node] = states_current[transitions[transition_source_col][transition_index]][spatial_node]
 
-    if not (method == "legacy" and stochastic_p):
+    if method == "rk4" or method == "euler":
         rhs = jit(nopython=True)(rhs)
 
     @jit(nopython=True)
@@ -312,13 +313,12 @@ def rk4_integration(
                     mobility_row_indices,
                     mobility_data_indices,
                     population,
-                    stochastic_p,
                     method,
                 ],
                 fn_dump,
             )
         print(
-            "load the name space with: \nwith open('integration_dump.pkl','rb') as fn_dump:\n    states, states_daily_incid, ncompartments, nspatial_nodes, ndays, parameters, dt, transitions, proportion_info,  transition_sum_compartments, initial_conditions, seeding_data, seeding_amounts, mobility_data, mobility_row_indices, mobility_data_indices, population,  stochastic_p,  method = pickle.load(fn_dump)"
+            "load the name space with: \nwith open('integration_dump.pkl','rb') as fn_dump:\n    states, states_daily_incid, ncompartments, nspatial_nodes, ndays, parameters, dt, transitions, proportion_info,  transition_sum_compartments, initial_conditions, seeding_data, seeding_amounts, mobility_data, mobility_row_indices, mobility_data_indices, population, method = pickle.load(fn_dump)"
         )
         print("/!\\ Invalid integration, will cause problems for downstream users /!\\ ")
         # raise ValueError("Invalid Integration...")
