@@ -11,10 +11,10 @@ from gempyor.steps_rk4 import rk4_integration
 
 
 @pytest.mark.parametrize(
-    ("stochastic_p", "method"), ((True, "legacy"), (False, "legacy"), (False, "rk4"))
+    "method", ("euler", "stochastic", "rk4")
 )
 def test_stochastic_simulation_works_with_legacy_integration_method(
-    stochastic_p: bool, method: Literal["legacy", "rk4"]
+    method: Literal["euler", "stochastic", "rk4"]
 ) -> None:
     """Test that the stochastic simulation works with the legacy integration method."""
     # These inputs are modeled after those produced by `config_sample_2pop.yml`.
@@ -54,9 +54,8 @@ def test_stochastic_simulation_works_with_legacy_integration_method(
             mobility_row_indices=np.array([1, 0], dtype=np.int32),
             mobility_data_indices=np.array([0, 1, 2], dtype=np.int32),
             population=np.array([9000, 1000]),
-            stochastic_p=stochastic_p,
             method=method,
             silent=True,
         )
-        assert jit_patch.call_count == (2 if method == "legacy" and stochastic_p else 3)
+        assert jit_patch.call_count == (2 if method == "stochastic" else 3)
     assert isinstance(result, tuple)
