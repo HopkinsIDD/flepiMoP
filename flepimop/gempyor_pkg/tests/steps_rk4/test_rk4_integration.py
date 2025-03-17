@@ -16,7 +16,7 @@ from gempyor.steps_rk4 import rk4_integration
 def test_stochastic_simulation_works_with_legacy_integration_method(
     method: Literal["euler", "stochastic", "rk4"]
 ) -> None:
-    """Test that the stochastic simulation works with the legacy integration method."""
+    """Test that simulation works all the integration engines."""
     # These inputs are modeled after those produced by `config_sample_2pop.yml`.
     seeding_data = nb.typed.Dict.empty(
         key_type=nb.types.unicode_type,

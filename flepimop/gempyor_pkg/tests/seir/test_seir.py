@@ -163,7 +163,8 @@ def test_constant_population_legacy_integration():
         out_run_id=run_id,
         out_prefix=prefix,
     )
-    integration_method = "legacy"
+
+    assert(modinf.get_engine() == "euler")
 
     seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(

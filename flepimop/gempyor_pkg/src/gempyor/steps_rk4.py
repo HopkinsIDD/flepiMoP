@@ -170,7 +170,7 @@ def rk4_integration(
         st_next = np.reshape(st_next, (2, ncompartments, nspatial_nodes))
         if method == "rk4":
             # we move by delta_t * transitions, in case of rk4
-            # when we use legacy, the compound_adjusted_rate  already
+            # when we use euler, the compound_adjusted_rate  already
             # includes the time step
             transition_amounts = transition_amounts.copy() * delta_t
 
@@ -248,7 +248,7 @@ def rk4_integration(
         x_ = np.reshape(x_, x_.size)
         if method == "rk4":
             sol = rk4_integrate(time, x_, today)
-        elif method == "legacy":
+        elif method == "euler":
             sol = update_states(x_, dt, rhs(time, x_, today))
         x_ = np.reshape(sol, (2, ncompartments, nspatial_nodes))
         states_daily_incid[today] += x_[1]
