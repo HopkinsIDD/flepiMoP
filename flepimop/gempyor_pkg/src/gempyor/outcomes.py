@@ -22,19 +22,19 @@ def run_parallel_outcomes(
 ) -> Literal[1]:
     start = time.monotonic()
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
+    random_seeds = np.random.choice(
+        range(nslots + 1, 4 * nslots), size=nslots, replace=False
+    ).tolist()
     if (n_jobs == 1) or (
         modinf.nslots == 1
     ):  # run single process for debugging/profiling purposes
         for sim_offset in range(nslots):
             _onerun_delayframe_outcomes_with_random_seed(
-                np.random.randint(1, high=2_147_483_646),
+                random_seeds[sim_offset],
                 sim_id2writes[sim_offset],
                 modinf=modinf,
             )
     else:
-        random_seeds = np.random.randint(
-            1, high=2_147_483_646, size=len(sim_id2writes)
-        ).tolist()
         tqdm.contrib.concurrent.process_map(
             _onerun_delayframe_outcomes_with_random_seed,
             random_seeds,

@@ -398,7 +398,9 @@ def _onerun_SEIR_with_random_seed(
 def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
-    random_seeds = np.random.randint(1, high=2_147_483_646, size=modinf.nslots).tolist()
+    random_seeds = np.random.choice(
+        range(modinf.nslots + 1, 4 * modinf.nslots), size=modinf.nslots, replace=False
+    ).tolist()
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
             _onerun_SEIR_with_random_seed(
