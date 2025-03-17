@@ -95,13 +95,13 @@ interventions:
 To run this model directly in Python (it can alternatively be run from R, for all details see section [How to Run](broken-reference)), we could use the command line entry
 
 ```
-> gempyor-seir -c sir_control.yml
+> flepimop simulate sir_control.yml
 ```
 
 Alternatively, to run 100 simulations using only 4 of the available processors on our computer, but only running the "" scenario with a deterministic model, and to save the files as .csv (since the model is relatively simple), we could call the model using the command line entry
 
 ```
-/> gempyor-seir -c sir_control.yml -n 100 -j 4 -npi_scenario None --non_stochastic --write_csv
+/> flepimop simulate -n 100 -j 4 -npi_scenario None -m euler --write_csv sir_control.yml
 ```
 
 ## Environmental variables
