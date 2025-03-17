@@ -164,7 +164,7 @@ def test_constant_population_legacy_integration():
         out_prefix=prefix,
     )
 
-    assert(modinf.get_engine() == "euler")
+    assert modinf.get_engine() == "euler"
 
     seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
     initial_conditions = modinf.initial_conditions.get_from_config(
@@ -219,6 +219,7 @@ def test_constant_population_legacy_integration():
                 < states["prevalence"].sum(axis=1)[it, i] + 1e-3
             )
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
+
 
 def test_constant_population_rk4jit_integration():
     # config.set_file(f"{DATA_DIR}/config.yml")

@@ -138,7 +138,7 @@ def rk4_integration(
             # number_move has shape (nspatial_nodes)
             if method == "rk4":
                 number_move = source_number * total_rate
-            elif method == "euler":
+            elif method == "euler" or method == "stochastic":
                 compound_adjusted_rate = 1.0 - np.exp(-dt * total_rate)
                 number_move = source_number * compound_adjusted_rate  ## to initialize typ
                 if method == "stochastic":
@@ -248,7 +248,7 @@ def rk4_integration(
         x_ = np.reshape(x_, x_.size)
         if method == "rk4":
             sol = rk4_integrate(time, x_, today)
-        elif method == "euler":
+        elif method == "euler" or method == "stochastic":
             sol = update_states(x_, dt, rhs(time, x_, today))
         x_ = np.reshape(sol, (2, ncompartments, nspatial_nodes))
         states_daily_incid[today] += x_[1]

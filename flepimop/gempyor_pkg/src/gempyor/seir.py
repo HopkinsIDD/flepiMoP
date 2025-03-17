@@ -84,7 +84,7 @@ def build_step_source_arg(
                 )
         if "dt" in modinf.seir_config["integration"].keys():
             dt = float(
-                eval(str(modinf.seir_config["integration"]["dt"].as_str()))
+                eval(str(modinf.seir_config["integration"]["dt"].get()))
             )  # ugly way to parse string and formulas
         else:
             dt = 2.0

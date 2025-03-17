@@ -184,12 +184,6 @@ def user_confirmation(question="Continue?", default=False):
     help="The run_id of the run we are restarting from",
 )
 @click.option(
-    "-e", "--engine"
-    envvar="FLEPI_ENGINE",
-    type=bool,
-    help="Option to override seir::method",
-)
-@click.option(
     "--resume-discard-seeding/--resume-carry-seeding",
     "--resume-discard-seeding/--resume-carry-seeding",
     "resume_discard_seeding",

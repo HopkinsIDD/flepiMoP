@@ -107,7 +107,8 @@ config_file_options = {
     ),
     "method": click.Option(
         ["-m", "--method"],
-        help="Override SEIR method?",
+        type=click.STRING,
+        help="If provided, overrides seir::integration::method",
     ),
     "write_csv": click.Option(
         ["--write-csv/--no-write-csv"],
@@ -286,7 +287,14 @@ def parse_config_files(
     other_args = parsed_args - config_args - scen_args
 
     if method := kwargs.pop("method", None):
-        cfg["seir"]["integration"]["method"] = _parse_option(config_file_options["method"], method)
+        print(
+            f"saw method! {method} vs {_parse_option(config_file_options['method'], method)}"
+        )
+        cfg["seir"]["integration"]["method"].set(
+            _parse_option(config_file_options["method"], method)
+        )
+        print(f"set method! {cfg['seir']['integration']['method']}")
+        print(f"check exists {cfg['seir']['integration'].exists()}")
 
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
