@@ -181,13 +181,19 @@ class TestParseConfigFiles:
             # when supplied an override, both should have the override
             parse_config_files(mockconfig, config_files=cfg, **goodopt)
             for k, v in goodopt.items():
-                assert mockconfig[k].get(v) == v
+                if k == "method":
+                    assert mockconfig["seir"]["integration"][k].get(v) == v
+                else:
+                    assert mockconfig[k].get(v) == v
             mockconfig.clear()
 
         # the config file with the option set should override the default
         parse_config_files(mockconfig, config_files=tmpconfigfile_wi_ref)
         for k, v in refopt.items():
-            assert mockconfig[k].get(v) == v
+            if k == "method":
+                assert mockconfig["seir"]["integration"][k].get(v) == v
+            else:
+                assert mockconfig[k].get(v) == v
         mockconfig.clear()
 
         # the config file without the option set should adopt the default

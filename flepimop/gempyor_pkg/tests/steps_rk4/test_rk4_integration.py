@@ -10,9 +10,7 @@ import pytest
 from gempyor.steps_rk4 import rk4_integration
 
 
-@pytest.mark.parametrize(
-    "method", ("euler", "stochastic", "rk4")
-)
+@pytest.mark.parametrize("method", ("euler", "stochastic", "rk4"))
 def test_stochastic_simulation_works_with_legacy_integration_method(
     method: Literal["euler", "stochastic", "rk4"]
 ) -> None:

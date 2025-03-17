@@ -233,12 +233,13 @@ class ModelInfo:
         if config["seir"].exists():
             self.seir_config = config["seir"]
             if not self.seir_config["integration"].exists():
-                self.seir_config["integration"] = { "method" : "rk4", "dt" : 2 }
+                self.seir_config["integration"]["method"].set("rk4")
+                self.seir_config["integration"]["dt"].set(2)
             else:
                 if not self.seir_config["integration"]["method"].exists():
-                    self.seir_config["integration"]["method"] = "rk4"
+                    self.seir_config["integration"]["method"].set("rk4")
                 if not self.seir_config["integration"]["dt"].exists():
-                    self.seir_config["integration"]["dt"] = 2
+                    self.seir_config["integration"]["dt"].set(2)
 
             self.parameters_config = config["seir"]["parameters"]
             self.initial_conditions_config = (
@@ -496,6 +497,6 @@ class ModelInfo:
                 else None
             ),
         )
-    
+
     def get_engine(self) -> Literal["rk4", "euler", "stochastic"]:
         return self.seir_config["integration"]["method"].as_str()

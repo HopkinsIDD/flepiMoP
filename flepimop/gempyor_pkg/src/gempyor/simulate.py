@@ -274,7 +274,7 @@ def simulate(
         >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {cfg["jobs"].get(int)} processes
         >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
         >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-        >> using ***{modinf.seir_config["integration"]["method"].as_str()}*** engine for trajectories
+        >> using ***{modinf.get_engine()}*** engine for trajectories
         """
             )
         # (there should be a run function)

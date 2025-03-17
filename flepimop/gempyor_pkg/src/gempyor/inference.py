@@ -446,7 +446,7 @@ class GempyorInference:
         )
 
         print(
-            f"""  gempyor >> Running ***{self.modinf.method}*** engine simulation;\n"""
+            f"""  gempyor >> Running ***{self.modinf.get_engine()}*** engine simulation;\n"""
             f"""  gempyor >> ModelInfo {self.modinf.setup_name}; index: {self.modinf.first_sim_index}; run_id: {in_run_id},\n"""
             f"""  gempyor >> prefix: {self.modinf.in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
