@@ -498,4 +498,4 @@ class ModelInfo:
         )
     
     def get_engine(self) -> Literal["rk4", "euler", "stochastic"]:
-        self.seir_config["integration"]["method"].as_str()
+        return self.seir_config["integration"]["method"].as_str()

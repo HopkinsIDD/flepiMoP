@@ -287,7 +287,6 @@ def launch_batch(
     time_per_sim,
     restart_from_location,
     restart_from_run_id,
-    stochastic,
     resume_discard_seeding,
     max_stacked_interventions,
     last_validation_date,
@@ -378,7 +377,6 @@ def launch_batch(
         time_per_sim,
         restart_from_location,
         restart_from_run_id,
-        stochastic,
         resume_discard_seeding,
         max_stacked_interventions,
         last_validation_date,
@@ -560,7 +558,6 @@ class BatchJobHandler(object):
         time_per_sim,
         restart_from_location,
         restart_from_run_id,
-        stochastic,
         resume_discard_seeding,
         max_stacked_interventions,
         last_validation_date,
@@ -588,7 +585,6 @@ class BatchJobHandler(object):
         self.time_per_sim = time_per_sim
         self.restart_from_location = restart_from_location
         self.restart_from_run_id = restart_from_run_id
-        self.stochastic = stochastic
         self.resume_discard_seeding = resume_discard_seeding
         self.max_stacked_interventions = max_stacked_interventions
         self.last_validation_date = last_validation_date

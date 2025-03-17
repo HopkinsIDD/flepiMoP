@@ -73,7 +73,7 @@ def build_step_source_arg(
 ):
     if "integration" in modinf.seir_config.keys():
         if "method" in modinf.seir_config["integration"].keys():
-            integration_method = modinf.seir_config["integration"]["method"].get()
+            integration_method = modinf.seir_config["integration"]["method"].as_str()
             if integration_method == "best.current":
                 integration_method = "rk4.jit"
             if integration_method == "rk4":
@@ -84,7 +84,7 @@ def build_step_source_arg(
                 )
         if "dt" in modinf.seir_config["integration"].keys():
             dt = float(
-                eval(str(modinf.seir_config["integration"]["dt"].get()))
+                eval(str(modinf.seir_config["integration"]["dt"].as_str()))
             )  # ugly way to parse string and formulas
         else:
             dt = 2.0

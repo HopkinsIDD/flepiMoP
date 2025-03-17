@@ -318,14 +318,14 @@ def log_cli_inputs(kwargs: dict[str, Any], verbosity: int | None = None) -> None
         >>> from pathlib import Path
         >>> kwargs = {
         ...     "input_file": Path("config.in"),
-        ...     "stochastic": True,
+        ...     "method": "stochastic",
         ...     "cluster": "longleaf",
         ...     "verbosity": 3,
         ... }
         >>> log_cli_inputs(kwargs)
         2024-11-05 09:29:21,666:DEBUG:gempyor.shared_cli> CLI was given 4 arguments:
         2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> input_file = /Users/twillard/Desktop/GitHub/HopkinsIDD/flepiMoP/flepimop/gempyor_pkg/config.in.
-        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> stochastic = True.
+        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> stochastic = stochastic.
         2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> cluster    = longleaf.
         2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> verbosity  = 3.
     """
