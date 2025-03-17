@@ -37,7 +37,6 @@ def test_outcome():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
     )
 
     outcomes.onerun_delayframe_outcomes(
@@ -186,7 +185,6 @@ def test_outcome_modifiers_scenario_with_load():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
     )
 
     outcomes.onerun_delayframe_outcomes(
@@ -227,7 +225,6 @@ def test_outcomes_read_write_hpar():
         run_id=2,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=3,
     )
     outcomes.onerun_delayframe_outcomes(
@@ -302,7 +299,6 @@ def test_outcomes_npi():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=105,
     )
     outcomes.onerun_delayframe_outcomes(sim_id2write=1, modinf=inference_simulator.modinf)
@@ -452,7 +448,6 @@ def test_outcomes_read_write_hnpi():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=106,
     )
 
@@ -492,7 +487,6 @@ def test_outcomes_read_write_hnpi2():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=106,
     )
 
@@ -525,7 +519,6 @@ def test_outcomes_read_write_hnpi2():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=107,
     )
     outcomes.onerun_delayframe_outcomes(
@@ -563,7 +556,6 @@ def test_outcomes_npi_custom_pname():
         run_id=1,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=105,
     )
     outcomes.onerun_delayframe_outcomes(
@@ -715,7 +707,6 @@ def test_outcomes_read_write_hnpi_custom_pname():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=106,
     )
 
@@ -768,7 +759,6 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=106,
     )
 
@@ -790,7 +780,6 @@ def test_outcomes_read_write_hnpi2_custom_pname():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=107,
     )
 
@@ -830,7 +819,6 @@ def test_outcomes_pcomp():
         run_id=110,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=111,
     )
     p_compmult = [1, 3]
@@ -1034,7 +1022,6 @@ def test_outcomes_pcomp_read_write():
         run_id=111,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=112,
     )
 

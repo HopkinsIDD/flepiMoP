@@ -34,5 +34,4 @@ def test_outcome_scenario(monkeypatch: pytest.MonkeyPatch) -> None:
         run_id=1,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
     )

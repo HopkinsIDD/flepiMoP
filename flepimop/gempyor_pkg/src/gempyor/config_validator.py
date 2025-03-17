@@ -142,12 +142,7 @@ class SeedingConfig(BaseModel):
 
 
 class IntegrationConfig(BaseModel):
-    method: Annotated[
-        str,
-        AfterValidator(
-            partial(allowed_values, values=["rk4", "rk4.jit", "best.current", "legacy"])
-        ),
-    ] = "rk4"
+    method: Literal["rk4", "rk4.jit", "best.current", "euler", "stochastic"] = "rk4"
     dt: float = 2.0
 
 

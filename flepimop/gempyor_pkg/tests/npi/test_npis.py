@@ -31,7 +31,6 @@ def test_full_npis_read_write():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=105,
     )
     # inference_simulator.one_simulation(sim_id2write=1,load_ID=False)
@@ -68,7 +67,6 @@ def test_full_npis_read_write():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=106,
     )
     # shutil.move('model_output/seir/000000001.105.seir.parquet', 'model_output/seir/000000001.106.seir.parquet')
@@ -98,7 +96,6 @@ def test_full_npis_read_write():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=107,
     )
     # shutil.move('model_output/seir/000000001.106.seir.parquet', 'model_output/seir/000000001.107.seir.parquet')
@@ -129,7 +126,6 @@ def test_spatial_groups():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=105,
     )
 
@@ -219,7 +215,6 @@ def test_spatial_groups():
         run_id=105,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=105,
     )
 
@@ -245,7 +240,6 @@ def test_spatial_groups():
         run_id=106,
         prefix="",
         first_sim_index=1,
-        stoch_traj_flag=False,
         out_run_id=107,
     )
 

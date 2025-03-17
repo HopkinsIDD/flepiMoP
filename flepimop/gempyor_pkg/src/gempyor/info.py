@@ -1,13 +1,13 @@
 """
 Retrieving static information from developer managed yaml files.
 
-Currently, it includes utilities for handling cluster-specific information, but it can 
+Currently, it includes utilities for handling cluster-specific information, but it can
 be extended to other categories as needed.
 
 Classes:
     Module: Represents a software module with a name and optional version.
     PathExport: Represents a path export with a path, prepend flag, and error handling.
-    Cluster: Represents a cluster with a name, list of modules, and list of path 
+    Cluster: Represents a cluster with a name, list of modules, and list of path
         exports.
 
 Functions:
@@ -15,17 +15,17 @@ Functions:
 
 Notes:
     By default the order for search paths is:
-    
+
     1) The current working directory, then
     2) The directory specified by the `$FLEPI_INFO_PATH` environment variable if set,
        and finally
     3) The directory specified by the `$FLEPI_PATH` environment variable if set.
-    
+
     The functions in this module will search for an `info/` directory under the search
     paths with a structure of `info/<category>/<name>.yml` where `<category>` is the
     category of the information and `<name>` is the name of the information. The first
     yaml file found will be used to populate the model.
-    
+
     The default search paths can be overridden by passing a list of paths to the
     function being used via the `search_paths` argument.
 

@@ -22,7 +22,7 @@ compartments:
 
 seir:
   integration:
-    method: legacy
+    method: euler
     dt: 0.2
   parameters:
     alpha:

@@ -480,7 +480,7 @@ def compute_all_multioutcomes(
             # Create new compartment incidence:
             all_data[new_comp] = np.empty_like(source_array)
             # Draw with from source compartment
-            if modinf.stoch_traj_flag:
+            if modinf.get_engine() == "stochastic":
                 all_data[new_comp] = np.random.binomial(
                     source_array.astype(np.int32), probabilities
                 )

@@ -54,7 +54,6 @@ gempyor_inference <- gempyor$GempyorInference(
                           first_sim_index=1,
                           seir_modifiers_scenario="inference",   # NPIs scenario to use
                           outcome_modifiers_scenario="med",        # Outcome scenario to use
-                          stoch_traj_flag=FALSE,      
                           path_prefix = '../tests/npi/' # prefix where to find the folder indicated in subpop_setup
 )
 ```
@@ -65,7 +64,6 @@ Here we specified that the data folder specified in the config lies in the `test
   first_sim_index=1,
   seir_modifiers_scenario="inference",
   outcome_modifiers_scenario="med",
-  stoch_traj_flag=False,
   rng_seed=None,
   nslots=1,
   out_run_id=None,  # if out_run_id should be different from in_run_id, put it here

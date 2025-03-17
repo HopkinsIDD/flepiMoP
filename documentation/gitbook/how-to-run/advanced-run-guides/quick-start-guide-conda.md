@@ -117,7 +117,6 @@ For example, some frequently used environmental variables we recommend setting a
 
 {% code overflow="wrap" %}
 ```bash
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 ```
 {% endcode %}

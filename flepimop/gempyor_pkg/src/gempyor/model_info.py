@@ -1,11 +1,11 @@
 """
 Abstractions for interacting with models as a monolithic object.
 
-Defines the `ModelInfo` class (and associated methods), used for setting up and 
+Defines the `ModelInfo` class (and associated methods), used for setting up and
 managing the configuration of a simulation. The primary focuses of a `ModelInfo` object
-are parsing and validating config details (including time frames, subpop info, 
-model parameters, outcomes) and file handling for input and output data. 
-This submodule is intended to serve as a foundational part of flepiMoP's 
+are parsing and validating config details (including time frames, subpop info,
+model parameters, outcomes) and file handling for input and output data.
+This submodule is intended to serve as a foundational part of flepiMoP's
 infrastructure for conducting simulations and storing results.
 
 Classes:
@@ -17,6 +17,8 @@ import datetime
 import logging
 import os
 import pathlib
+
+from typing import Literal
 
 import confuse
 import numba as nb
@@ -79,7 +81,6 @@ class ModelInfo:
         write_csv: Whether to write results to CSV files (default is False).
         write_parquet: Whether to write results to parquet files (default is False)
         first_sim_index: Index of first simulation (default is 1).
-        stoch_traj_flag: Whether to run the model stochastically (default is False).
         seir_modifiers_scenario: seir_modifiers_scenario: SEIR modifier.
         outcome_modifiers_scenario: Outcomes modifier.
         setup_name: Name of setup (to override config, if applicable).
@@ -154,7 +155,6 @@ class ModelInfo:
         in_prefix=None,
         out_run_id=None,
         out_prefix=None,
-        stoch_traj_flag=False,
         inference_filename_prefix="",
         inference_filepath_suffix="",
         setup_name=None,  # override config setup_name
@@ -169,7 +169,6 @@ class ModelInfo:
             write_csv: Whether to write results to CSV files (default is False).
             write_parquet: Whether to write results to parquet files (default is False).
             first_sim_index : Index of first simulation (default is 1).
-            stoch_traj_flag: Whether to run the model stochastically (default is False).
             seir_modifiers_scenario: SEIR modifier.
             outcome_modifiers_scenario: Outcomes modifier.
             setup_name: Name of setup (to override config, if applicable).
@@ -186,7 +185,6 @@ class ModelInfo:
         self.write_csv = write_csv
         self.write_parquet = write_parquet
         self.first_sim_index = first_sim_index
-        self.stoch_traj_flag = stoch_traj_flag
 
         self.seir_modifiers_scenario = seir_modifiers_scenario
         self.outcome_modifiers_scenario = outcome_modifiers_scenario
@@ -234,6 +232,15 @@ class ModelInfo:
         self.seir_modifiers_library = None
         if config["seir"].exists():
             self.seir_config = config["seir"]
+            if not self.seir_config["integration"].exists():
+                self.seir_config["integration"]["method"].set("rk4")
+                self.seir_config["integration"]["dt"].set(2)
+            else:
+                if not self.seir_config["integration"]["method"].exists():
+                    self.seir_config["integration"]["method"].set("rk4")
+                if not self.seir_config["integration"]["dt"].exists():
+                    self.seir_config["integration"]["dt"].set(2)
+
             self.parameters_config = config["seir"]["parameters"]
             self.initial_conditions_config = (
                 config["initial_conditions"]
@@ -490,3 +497,6 @@ class ModelInfo:
                 else None
             ),
         )
+
+    def get_engine(self) -> Literal["rk4", "euler", "stochastic"]:
+        return self.seir_config["integration"]["method"].as_str()

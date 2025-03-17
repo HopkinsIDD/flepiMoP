@@ -45,7 +45,6 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
         $ flepimop patch config_sample_2pop_modifiers_part.yml config_sample_2pop_outcomes_part.yml > config_sample_2pop_patched.yml
         $ cat config_sample_2pop_patched.yml
         write_csv: false
-        stoch_traj_flag: false
         jobs: 14
         write_parquet: true
         first_sim_index: 1

@@ -83,7 +83,6 @@ else
 fi
 
 # Set correct env vars
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export TODAY=`date --rfc-3339='date'`
 
@@ -137,7 +136,6 @@ Otherwise make sure this diagnostic info looks correct before continuing:
 * R:               $WHICH_R
 * Python arrow:    $PYTHON_ARROW_VERSION
 * R arrow:         $R_ARROW_VERSION
-* Stochastic run:  $FLEPI_STOCHASTIC_RUN
 * Reset chimerics: $FLEPI_RESET_CHIMERICS
 * Today:           $TODAY
 * Config path:     $CONFIG_PATH

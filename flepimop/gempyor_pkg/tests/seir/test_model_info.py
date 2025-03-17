@@ -33,7 +33,6 @@ class TestModelInfo:
             in_prefix=None,
             out_run_id=None,
             out_prefix=None,
-            stoch_traj_flag=False,
             inference_filename_prefix="",
             inference_filepath_suffix="",
             setup_name=None,  # override config setup_name
@@ -63,7 +62,6 @@ class TestModelInfo:
                 in_prefix=None,
                 out_run_id=None,
                 out_prefix=None,
-                stoch_traj_flag=False,
                 inference_filename_prefix="",
                 inference_filepath_suffix="",
                 setup_name=None,  # override config setup_name
@@ -86,7 +84,6 @@ class TestModelInfo:
             in_prefix=None,
             out_run_id=None,
             out_prefix=None,
-            stoch_traj_flag=False,
             inference_filename_prefix="",
             inference_filepath_suffix="",
             setup_name=None,  # override config setup_name
@@ -109,7 +106,6 @@ class TestModelInfo:
             in_prefix=None,
             out_run_id=None,
             out_prefix=None,
-            stoch_traj_flag=False,
             inference_filename_prefix="",
             inference_filepath_suffix="",
             setup_name=TEST_SETUP_NAME,
