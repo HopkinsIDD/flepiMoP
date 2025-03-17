@@ -219,86 +219,6 @@ def test_constant_population_legacy_integration():
             )
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
-
-def test_constant_population_rk4jit_integration_fail():
-    with pytest.raises(
-        ValueError,
-        match=r"'rk4.jit' integration method only supports deterministic integration.*",
-    ):
-        config.set_file(f"{DATA_DIR}/config.yml")
-
-        first_sim_index = 1
-        run_id = "test"
-        prefix = ""
-        modinf = model_info.ModelInfo(
-            config=config,
-            nslots=1,
-            seir_modifiers_scenario="None",
-            write_csv=False,
-            first_sim_index=first_sim_index,
-            in_run_id=run_id,
-            in_prefix=prefix,
-            out_run_id=run_id,
-            out_prefix=prefix,
-            stoch_traj_flag=True,
-        )
-        modinf.seir_config["integration"]["method"] = "rk4.jit"
-
-        seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-        initial_conditions = modinf.initial_conditions.get_from_config(
-            sim_id=100, modinf=modinf
-        )
-
-        npi = NPI.NPIBase.execute(
-            npi_config=modinf.npi_config_seir,
-            modinf_ti=modinf.ti,
-            modinf_tf=modinf.tf,
-            modifiers_library=modinf.seir_modifiers_library,
-            subpops=modinf.subpop_struct.subpop_names,
-            pnames_overlap_operation_sum=modinf.parameters.stacked_modifier_method["sum"],
-            pnames_overlap_operation_reductionprod=modinf.parameters.stacked_modifier_method[
-                "reduction_product"
-            ],
-        )
-
-        params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-        params = modinf.parameters.parameters_reduce(params, npi)
-
-        (
-            unique_strings,
-            transition_array,
-            proportion_array,
-            proportion_info,
-        ) = modinf.compartments.get_transition_array()
-        parsed_parameters = modinf.compartments.parse_parameters(
-            params, modinf.parameters.pnames, unique_strings
-        )
-
-        states = seir.steps_SEIR(
-            modinf,
-            parsed_parameters,
-            transition_array,
-            proportion_array,
-            proportion_info,
-            initial_conditions,
-            seeding_data,
-            seeding_amounts,
-        )
-
-        completepop = modinf.subpop_pop.sum()
-        origpop = modinf.subpop_pop
-        for it in range(modinf.n_days):
-            totalpop = 0
-            for i in range(modinf.nsubpops):
-                totalpop += states["prevalence"].sum(axis=1)[it, i]
-                assert (
-                    states["prevalence"].sum(axis=1)[it, i] - 1e-3
-                    < origpop[i]
-                    < states["prevalence"].sum(axis=1)[it, i] + 1e-3
-                )
-            assert completepop - 1e-3 < totalpop < completepop + 1e-3
-
-
 def test_constant_population_rk4jit_integration():
     # config.set_file(f"{DATA_DIR}/config.yml")
     config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
@@ -316,7 +236,6 @@ def test_constant_population_rk4jit_integration():
         in_prefix=prefix,
         out_run_id=run_id,
         out_prefix=prefix,
-        stoch_traj_flag=False,
     )
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
@@ -665,7 +584,6 @@ def test_continuation_resume():
     first_sim_index = 1
     run_id = "test"
     prefix = ""
-    stoch_traj_flag = True
 
     modinf = model_info.ModelInfo(
         config=config,
@@ -760,9 +678,7 @@ def test_inference_resume():
     first_sim_index = 1
     run_id = "test"
     prefix = ""
-    stoch_traj_flag = True
 
-    spatial_config = config["subpop_setup"]
     modinf = model_info.ModelInfo(
         config=config,
         nslots=nslots,

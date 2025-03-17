@@ -363,7 +363,7 @@ class GempyorInference:
         run_id="test_run_id",
         prefix: str | None = None,
         first_sim_index: int = 1,
-        stoch_traj_flag: bool = False,
+        method_override: None | Literal["rk4", "euler", "stochastic"] = None,
         rng_seed=None,
         nslots: int = 1,
         inference_filename_prefix: str = "",  # usually for {global or chimeric}/{intermediate or final}
@@ -381,7 +381,7 @@ class GempyorInference:
             run_id: ID of the run.
             prefix: Prefix for files.
             first_sim_index: Index of first simulation, default is 1.
-            stoch_traj_flag: Whether to run the model stochastically, default is False.
+            method_override: If provided, which model stepping engine to use.
             rng_seed: Number of slots for parallel computation.
             nslots: Number of slots, default is 1.
             inference_filename_prefix: Prefix for inference-related file paths.
@@ -423,6 +423,10 @@ class GempyorInference:
 
         write_csv = False
         write_parquet = True
+
+        if method_override is not None:
+            config["seir"]["integration"]["method"] = method_override
+
         self.modinf = model_info.ModelInfo(
             config=config,
             nslots=nslots,
@@ -437,13 +441,12 @@ class GempyorInference:
             inference_filepath_suffix=inference_filepath_suffix,
             out_run_id=out_run_id,
             out_prefix=out_prefix,
-            stoch_traj_flag=stoch_traj_flag,
             config_filepath=config_filepath,
             path_prefix=path_prefix,
         )
 
         print(
-            f"""  gempyor >> Running ***{'STOCHASTIC' if stoch_traj_flag else 'DETERMINISTIC'}*** simulation;\n"""
+            f"""  gempyor >> Running ***{self.modinf.method}*** engine simulation;\n"""
             f"""  gempyor >> ModelInfo {self.modinf.setup_name}; index: {self.modinf.first_sim_index}; run_id: {in_run_id},\n"""
             f"""  gempyor >> prefix: {self.modinf.in_prefix};"""  # ti: {s.ti}; tf: {s.tf};
         )
@@ -1028,7 +1031,6 @@ def paramred_parallel(run_spec, snpi_fn):
         first_sim_index=1,
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
-        stoch_traj_flag=False,
         path_prefix=run_spec[
             "geodata"
         ],  # prefix where to find the folder indicated in subpop_setup$
@@ -1058,7 +1060,6 @@ def paramred_parallel_config(run_spec, dummy):
         first_sim_index=1,
         seir_modifiers_scenario="inference",  # NPIs scenario to use
         outcome_modifiers_scenario="med",  # Outcome scenario to use
-        stoch_traj_flag=False,
         path_prefix=run_spec[
             "geodata"
         ],  # prefix where to find the folder indicated in subpop_setup$
