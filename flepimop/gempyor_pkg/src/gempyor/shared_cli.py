@@ -105,10 +105,9 @@ config_file_options = {
         show_default=True,
         help="The index of the first simulation",
     ),
-    "stoch_traj_flag": click.Option(
-        ["--stochastic/--non-stochastic", "stoch_traj_flag"],
-        default=False,
-        help="Run stochastic simulations?",
+    "method": click.Option(
+        ["-m", "--method"],
+        help="Override SEIR method?",
     ),
     "write_csv": click.Option(
         ["--write-csv/--no-write-csv"],
@@ -285,6 +284,10 @@ def parse_config_files(
 
     # update the config with the remaining options
     other_args = parsed_args - config_args - scen_args
+
+    if method := kwargs.pop("method", None):
+        cfg["seir"]["integration"]["method"] = _parse_option(config_file_options["method"], method)
+
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
             # auto box the value if the option expects a multiple

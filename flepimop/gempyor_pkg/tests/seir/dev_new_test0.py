@@ -30,7 +30,6 @@ def test_parameters_from_timeserie_file():
         prefix="",
         first_sim_index=1,
         outcome_scenario="high_death_rate",
-        stoch_traj_flag=False,
     )
 
     p = parameters.Parameters(

@@ -41,7 +41,6 @@ option_list = list(
   optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
   optparse::make_option(c("-i", "--this_slot"), action="store", default=Sys.getenv("FLEPI_SLOT_INDEX", 1), type='integer', help = "id of this slot"),
   optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("FLEPI_BLOCK_INDEX",1), type='integer', help = "id of this block"),
-  optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=FALSE, type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
   optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "First date to include groundtruth for"),
   optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("GT_END_DATE", ""), type = "character", help = "Last date to include groundtruth for"),
   optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP/")),
@@ -447,7 +446,6 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     tryCatch({
       gempyor_inference_runner <- gempyor$GempyorInference(
         config_filepath=opt$config,
-        stoch_traj_flag=opt$stoch_traj_flag,
         run_id=opt$run_id,
         prefix=reticulate::py_none(), # we let gempyor create setup prefix
         inference_filepath_suffix=global_intermediate_filepath_suffix,
@@ -518,7 +516,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       seeding_col_types <- NULL
       suppressMessages(initial_seeding <- readr::read_csv(first_chimeric_files[['seed_filename']], col_types=seeding_col_types))
 
-      if (opt$stoch_traj_flag) {
+      if (gempyor_inference_runner$modinf$get_engine() == "stochastic") {
         initial_seeding$amount <- as.integer(round(initial_seeding$amount))
       }
     }else{
@@ -590,7 +588,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
             date_sd = config$seeding$date_sd,
             date_bounds = c(gt_start_date, gt_end_date),
             amount_sd = config$seeding$amount_sd,
-            continuous = !(opt$stoch_traj_flag)
+            continuous = !(gempyor_inference_runner$modinf$get_engine() == "stochastic")
           )
         } else {
           proposed_seeding <- initial_seeding
