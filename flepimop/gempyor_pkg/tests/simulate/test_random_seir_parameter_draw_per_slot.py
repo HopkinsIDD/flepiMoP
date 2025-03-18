@@ -1,3 +1,4 @@
+import itertools
 import os
 from pathlib import Path
 from typing import Literal, NamedTuple
@@ -263,7 +264,7 @@ class RandomDrawAssertion(NamedTuple):
         ),
     ),
 )
-def test_random_seir_parameter_draw_per_slot(
+def test_parameter_draw_per_slot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     n_jobs: int,
@@ -295,3 +296,55 @@ def test_random_seir_parameter_draw_per_slot(
         # Test contents of DataFrames
         for assertion in assertions:
             assertion.assert_df_passes(dfs)
+
+
+@pytest.mark.xfail(reason="Parameter matching across scenarios is not yet supported.")
+@pytest.mark.skipif(
+    os.getenv("FLEPI_PATH") is None,
+    reason="The $FLEPI_PATH environment variable is not set.",
+)
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_parameter_draws_per_slot_across_scenarios(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, n_jobs: int
+) -> None:
+    # Test setup
+    monkeypatch.chdir(tmp_path)
+    setup_example_from_tutorials(tmp_path, "config_sample_2pop_vaccine_scenarios.yml")
+
+    # Test execution of `gempyor-simulate`
+    runner = CliRunner()
+    result = runner.invoke(
+        _click_simulate, ["config_sample_2pop_vaccine_scenarios.yml", "--jobs", str(n_jobs)]
+    )
+    assert result.exit_code == 0
+
+    # List out scenarios
+    scenario_directories = [
+        directory
+        for directory in (tmp_path / "model_output").iterdir()
+        if directory.is_dir()
+    ]
+
+    # Check that the parameter draws are the same across scenarios
+    for scenario_a, scenario_b in itertools.combinations(scenario_directories, 2):
+        for kind in ("hnpi", "hpar", "snpi", "spar"):
+            scenario_a_df = read_directory(scenario_a, filters=kind)
+            scenario_b_df = read_directory(scenario_b, filters=kind)
+            scenario_a_columns = set(scenario_a_df.columns)
+            scenario_b_columns = set(scenario_b_df.columns)
+            assert scenario_a_columns == scenario_b_columns
+            assert "value" in scenario_a_columns
+            merge_df = pd.merge(
+                scenario_a_df,
+                scenario_b_df,
+                on=list(scenario_a_columns - {"value"}),
+                suffixes=("_a", "_b"),
+                copy=True,
+            )
+            if len(merge_df) == 0:
+                # No shared value types to compare
+                continue
+            value_a = merge_df["value_a"].to_numpy()
+            value_b = merge_df["value_b"].to_numpy()
+            assert np.allclose(value_a, value_b, equal_nan=True)
+            assert np.allclose(value_b, value_a, equal_nan=True)
