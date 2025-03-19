@@ -99,19 +99,6 @@ class StatisticResampleConfig(BaseModel):
             )
         return aggregator
 
-    def apply_resample(self, data: xr.DataArray) -> xr.DataArray:
-        """
-        Resample a data set to the given frequency using the specified aggregation.
-
-        Args:
-            data: An xarray dataset with "date" and "subpop" dimensions.
-
-        Returns:
-            A resample dataset with similar dimensions to `data`.
-        """
-        aggregator_method = getattr(data.resample(date=self.freq), self.aggregator)
-        return aggregator_method(skipna=self.skipna)
-
 
 class StatisticRegularizeConfig(BaseModel):
     """
@@ -204,49 +191,6 @@ class StatisticConfig(BaseModel):
                 "must be a valid numpy function."
             )
         return scale
-
-    def apply_scale(self, data: xr.DataArray) -> xr.DataArray:
-        """
-        Scale a data set using the specified scaling function.
-
-        Args:
-            data: An xarray dataset with "date" and "subpop" dimensions.
-
-        Returns:
-            An xarray dataset of the same shape and dimensions as `data` with the
-            `scale_func` attribute applied.
-        """
-        if self.scale is not None:
-            return getattr(np, self.scale)(data)
-        return data
-
-    def apply_resample(self, data: xr.DataArray) -> xr.DataArray:
-        """
-        Resample a data set to the given frequency using the specified aggregation.
-
-        Args:
-            data: An xarray dataset with "date" and "subpop" dimensions.
-
-        Returns:
-            A resample dataset with similar dimensions to `data`.
-        """
-        if self.resample is not None:
-            return self.resample.apply_resample(data)
-        return data
-
-    def apply_transforms(self, data: xr.DataArray) -> xr.DataArray:
-        """
-        Convenient wrapper for resampling and scaling a data set.
-
-        The resampling is applied *before* scaling which can affect the log-likelihood.
-
-        Args:
-            data: An xarray dataset with "date" and "subpop" dimensions.
-
-        Returns:
-            An scaled and resampled dataset with similar dimensions to `data`.
-        """
-        return self.apply_scale(self.apply_resample(data))
 
 
 class Statistic:
@@ -372,7 +316,9 @@ class Statistic:
         Returns:
             A resample dataset with similar dimensions to `data`.
         """
-        return self._config.apply_resample(data)
+        if (r := self._config.resample) is not None:
+            return getattr(data.resample(date=r.freq), r.aggregator)(skipna=r.skipna)
+        return data
 
     def apply_scale(self, data: xr.DataArray) -> xr.DataArray:
         """
@@ -385,7 +331,9 @@ class Statistic:
             An xarray dataset of the same shape and dimensions as `data` with the
             `scale_func` attribute applied.
         """
-        return self._config.apply_scale(data)
+        if (s := self._config.scale) is not None:
+            return getattr(np, s)(data)
+        return data
 
     def apply_transforms(self, data: xr.DataArray):
         """
@@ -399,7 +347,7 @@ class Statistic:
         Returns:
             An scaled and resampled dataset with similar dimensions to `data`.
         """
-        return self._config.apply_transforms(data)
+        return self.apply_scale(self.apply_resample(data))
 
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray) -> xr.DataArray:
         """
