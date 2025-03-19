@@ -5,14 +5,192 @@ This module provides the `Statistic` class which represents a entry in the infer
 statistics section.
 """
 
-__all__ = ["Statistic"]
+__all__ = (
+    "Statistic",
+    "StatisticConfig",
+    "StatisticLikelihoodConfig",
+    "StatisticRegularizeConfig",
+    "StatisticResampleConfig",
+)
 
+
+import re
+from typing import Final
 
 import confuse
 import numpy as np
+from pandas.tseries.frequencies import to_offset
+from pydantic import BaseModel, ConfigDict, field_validator
 from scipy.special import gammaln
 import scipy.stats
 import xarray as xr
+from xarray.core.resample import DataArrayResample
+
+
+class StatisticLikelihoodConfig(BaseModel):
+    """
+    Configuration for the likelihood function of a statistic.
+
+    Attributes:
+        dist: The name of the distribution to use for calculating log-likelihood.
+        params: Distribution parameters used in the log-likelihood calculation and
+            dependent on `dist`.
+    """
+
+    dist: str
+    params: dict[str, int | float] = {}
+
+
+class StatisticResampleConfig(BaseModel):
+    """
+    Configuration for optional resampling of data before computing a statistic.
+
+    Attributes:
+        freq: The frequency to resample the data to.
+        aggregator: The name of the aggregation function to use.
+        skipna: If NAs should be skipped when aggregating.
+    """
+
+    freq: str
+    aggregator: str
+    skipna: bool = False
+
+    @field_validator("freq", mode="after")
+    @classmethod
+    def validate_freq(cls, freq: str) -> str:
+        """
+        Statistic resample frequency validator.
+
+        This pydantic field validator checks if the given frequency is a valid offset
+        alias by parsing it with `pandas.tseries.frequencies.to_offset`. Pandas does not
+        expose valid offset aliases as a constant.
+
+        Args:
+            freq: The frequency to resample the data to.
+
+        Returns:
+            The validated frequency.
+        """
+        to_offset(freq)
+        return freq
+
+    @field_validator("aggregator", mode="after")
+    @classmethod
+    def validate_aggregator(cls, aggregator: str) -> str:
+        """
+        Statistic resample aggregator validator.
+
+        This pydantic field validator checks if the given aggregator name is a valid by
+        checking if it is an attribute of `xarray.core.resample.DataArrayResample`.
+
+        Args:
+            aggregator: The name of the aggregation function to use.
+
+        Returns:
+            The validated aggregator name.
+
+        Raises:
+            ValueError: If the given aggregator name is not supported.
+        """
+        if not hasattr(DataArrayResample, aggregator):
+            raise ValueError(
+                f"Given an unsupported aggregator name, '{aggregator}', "
+                "must be a valid xarray DataArrayResample method."
+            )
+        return aggregator
+
+
+class StatisticRegularizeConfig(BaseModel):
+    """
+    Configuration for optional regularization of data before computing a statistic.
+
+    Attributes:
+        name: The name of the regularization function to use.
+        extra: Additional configuration for the regularization function, dependent on
+            `name`.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+
+    @field_validator("name", mode="after")
+    @classmethod
+    def validate_name(cls, name: str) -> str:
+        """
+        Statistic regularization name validator.
+
+        This pydantic field validator checks if the given regularization name is a valid
+        by checking if it is a supported regularization name.
+
+        Args:
+            name: The name of the regularization function to use.
+
+        Returns:
+            The validated regularization name.
+
+        Raises:
+            ValueError: If the given regularization name is not supported.
+        """
+        if name not in _AVAILABLE_REGULARIZATIONS:
+            raise ValueError(
+                f"Given an unsupported regularization name, '{name}', "
+                f"must be one of: {_AVAILABLE_REGULARIZATIONS}."
+            )
+        return name
+
+
+class StatisticConfig(BaseModel):
+    """
+    Configuration for a statistic.
+
+    Attributes:
+        name: The human readable name for the statistic.
+        sim_var: The variable in the model data.
+        data_var: The variable in the ground truth data.
+        likelihood: Configuration for the likelihood function of the statistic.
+        resample: Optional configuration for resampling data before computing the
+            statistic.
+        zero_to_one: Should non-zero values be coerced to 1 when calculating
+            log-likelihood.
+        regularize: Optional configuration for regularizations of data before computing
+            the statistic, applied in order given.
+        scale: Optional configuration for scaling data before computing the statistic.
+    """
+
+    name: str
+    sim_var: str
+    data_var: str
+    likelihood: StatisticLikelihoodConfig
+    resample: StatisticResampleConfig | None = None
+    zero_to_one: bool = False
+    regularize: list[StatisticRegularizeConfig] = []
+    scale: str | None = None
+
+    @field_validator("scale", mode="after")
+    @classmethod
+    def validate_scale(cls, scale: str | None) -> str | None:
+        """
+        Statistic scale validator.
+
+        This pydantic field validator checks if the given scale function is a valid
+        numpy function.
+
+        Args:
+            scale: The function to use when rescaling the data.
+
+        Returns:
+            The validated scale function.
+
+        Raises:
+            ValueError: If the given scale function is not supported.
+        """
+        if isinstance(scale, str) and not hasattr(np, scale):
+            raise ValueError(
+                f"Given an unsupported scale function, '{scale}', "
+                "must be a valid numpy function."
+            )
+        return scale
 
 
 class Statistic:
@@ -65,6 +243,8 @@ class Statistic:
                 `statistic_config` arg. Currently only 'forecast' and 'allsubpop' are
                 supported.
         """
+        self._config = StatisticConfig.model_validate(dict(statistic_config.get()))
+
         self.sim_var = statistic_config["sim_var"].as_str()
         self.data_var = statistic_config["data_var"].as_str()
         self.name = name
@@ -194,8 +374,7 @@ class Statistic:
                 data.resample(date=self.resample_freq), self.resample_aggregator_name
             )
             return aggregator_method(skipna=self.resample_skipna)
-        else:
-            return data
+        return data
 
     def apply_scale(self, data: xr.DataArray) -> xr.DataArray:
         """
@@ -210,8 +389,7 @@ class Statistic:
         """
         if self.scale:
             return self.scale_func(data)
-        else:
-            return data
+        return data
 
     def apply_transforms(self, data: xr.DataArray):
         """
@@ -339,3 +517,13 @@ class Statistic:
             )  # Pass config parameters
 
         return self.llik(model_data, gt_data).sum("date"), regularization
+
+
+_REGULARIZATION_NAME_REGEX: Final = re.compile(r"^_([a-z0-9_]+)_regularize$")
+
+# pylint-dev/pylint#8486
+_AVAILABLE_REGULARIZATIONS: Final = {
+    m.group(1)  # pylint: disable=used-before-assignment
+    for attr in dir(Statistic)
+    if (m := _REGULARIZATION_NAME_REGEX.match(attr)) is not None
+}
