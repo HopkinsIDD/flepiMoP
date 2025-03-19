@@ -209,6 +209,9 @@ class StatisticConfig(BaseModel):
         regularize: Optional configuration for regularizations of data before computing
             the statistic, applied in order given.
         scale: Optional configuration for scaling data before computing the statistic.
+        date_skipna: Should NAs be skipped when aggregating over the date dimension.
+        date_min_count: The minimum number of non-NA values required to aggregate over
+            the date dimension.
     """
 
     name: str
@@ -219,6 +222,8 @@ class StatisticConfig(BaseModel):
     zero_to_one: bool = False
     regularize: list[StatisticRegularizeConfig] = []
     scale: str | None = None
+    date_skipna: bool | None = None
+    date_min_count: int | None = None
 
     @field_validator("scale", mode="after")
     @classmethod
@@ -443,7 +448,7 @@ class Statistic:
         self, model_data: xr.Dataset, gt_data: xr.Dataset
     ) -> tuple[xr.DataArray, float]:
         """
-        Compute the logistic loss of observing the ground truth given model output.
+        Compute the log loss of observing the ground truth given model output.
 
         Args:
             model_data: An xarray Dataset of the model data with date and subpop
@@ -452,7 +457,7 @@ class Statistic:
                 dimensions.
 
         Returns:
-            The logistic loss of observing `gt_data` from the model `model_data`
+            The log loss of observing `gt_data` from the model `model_data`
             decomposed into the log-likelihood along the "subpop" dimension and
             regularizations.
 
@@ -477,7 +482,14 @@ class Statistic:
                     model_data=model_data, gt_data=gt_data, **reg_config.extra
                 )
 
-        return self.llik(model_data, gt_data).sum("date"), regularization
+        return (
+            self.llik(model_data, gt_data).sum(
+                "date",
+                skipna=self._config.date_skipna,
+                min_count=self._config.date_min_count,
+            ),
+            regularization,
+        )
 
 
 _REGULARIZATION_NAME_REGEX: Final = re.compile(r"^_([a-z0-9_]+)_regularize$")
