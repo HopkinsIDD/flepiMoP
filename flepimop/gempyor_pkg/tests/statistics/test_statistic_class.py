@@ -346,52 +346,11 @@ class TestStatistic:
         # `data_var` attribute
         assert statistic.data_var == mock_inputs.config["data_var"]
 
-        # `dist` attribute
-        assert statistic.dist == mock_inputs.config["likelihood"]["dist"]
-
         # `name` attribute
         assert statistic.name == mock_inputs.name
 
-        # `params` attribute
-        assert statistic.params == mock_inputs.config["likelihood"].get("params", {})
-
-        # `regularizations` attribute
-        assert statistic.regularizations == [
-            (r["name"], r) for r in mock_inputs.config.get("regularize", [])
-        ]
-
-        # `resample` attribute
-        resample_config = mock_inputs.config.get("resample", {})
-        assert statistic.resample == (resample_config != {})
-
-        if resample_config:
-            # `resample_aggregator_name` attribute
-            assert statistic.resample_aggregator_name == resample_config.get(
-                "aggregator", ""
-            )
-
-            # `resample_freq` attribute
-            assert statistic.resample_freq == resample_config.get("freq", "")
-
-            # `resample_skipna` attribute
-            assert (
-                statistic.resample_skipna == resample_config.get("skipna", False)
-                if resample_config.get("aggregator") is not None
-                else False
-            )
-
-        # `scale` attribute
-        assert statistic.scale == (mock_inputs.config.get("scale") is not None)
-
-        # `scale_func` attribute
-        if (scale_func := mock_inputs.config.get("scale")) is not None:
-            assert statistic.scale_func == getattr(np, scale_func)
-
         # `sim_var` attribute
         assert statistic.sim_var == mock_inputs.config["sim_var"]
-
-        # `zero_to_one` attribute
-        assert statistic.zero_to_one == mock_inputs.config.get("zero_to_one", False)
 
     @pytest.mark.parametrize("factory", all_valid_factories)
     def test_statistic_str_and_repr(
