@@ -410,8 +410,8 @@ class Statistic:
 
         # pydata/xarray#4612
         if self._config.likelihood.dist in ["pois", "nbinom"]:
-            model_data = model_data.fillna(0.0).astype(int)
-            gt_data = gt_data.fillna(0.0).astype(int)
+            model_data = model_data.where(model_data.isnull(), model_data.astype(int))
+            gt_data = gt_data.where(gt_data.isnull(), gt_data.astype(int))
 
         # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
         if self._config.zero_to_one:
