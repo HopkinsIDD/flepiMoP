@@ -27,6 +27,26 @@ import xarray as xr
 from xarray.core.resample import DataArrayResample
 
 
+_DIST_MAP: Final = {
+    "pois": lambda ydata, ymodel: -ymodel + (ydata * np.log(ymodel)) - gammaln(ydata + 1),
+    "norm": lambda ydata, ymodel, scale: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=scale
+    ),
+    "norm_cov": lambda ydata, ymodel, scale: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=scale * ymodel.where(ymodel > 5, 5)
+    ),
+    "norm_homoskedastic": lambda ydata, ymodel, sd: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=sd
+    ),
+    "norm_heteroskedastic": lambda ydata, ymodel, sd: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=sd * ymodel
+    ),
+    "nbinom": lambda ydata, ymodel, n: scipy.stats.nbinom.logpmf(ydata, n=n, p=ymodel),
+    "rmse": lambda ydata, ymodel: -np.log(np.sqrt(np.nansum((ydata - ymodel) ** 2))),
+    "absolute_error": lambda ydata, ymodel: -np.log(np.nansum(np.abs(ydata - ymodel))),
+}
+
+
 class StatisticLikelihoodConfig(BaseModel):
     """
     Configuration for the likelihood function of a statistic.
@@ -39,6 +59,31 @@ class StatisticLikelihoodConfig(BaseModel):
 
     dist: str
     params: dict[str, int | float] = {}
+
+    @field_validator("dist", mode="after")
+    @classmethod
+    def validate_dist(cls, dist: str) -> str:
+        """
+        Statistic likelihood distribution validator.
+
+        This pydantic field validator checks if the given distribution name is a valid
+        by checking if it is a supported distribution name.
+
+        Args:
+            dist: The name of the distribution to use for calculating log-likelihood.
+
+        Returns:
+            The validated distribution name.
+
+        Raises:
+            ValueError: If the given distribution name is not supported.
+        """
+        if dist not in _DIST_MAP:
+            raise ValueError(
+                f"Given an unsupported distribution name, '{dist}', "
+                f"must be one of: {_DIST_MAP.keys()}."
+            )
+        return dist
 
 
 class StatisticResampleConfig(BaseModel):
@@ -363,37 +408,6 @@ class Statistic:
             The log-likelihood of observing `gt_data` from the model `model_data` as an
             xarray DataArray with a "subpop" dimension.
         """
-
-        dist_map = {
-            "pois": lambda ydata, ymodel: -ymodel
-            + (ydata * np.log(ymodel))
-            - gammaln(ydata + 1),
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # OLD: # TODO: Swap out in favor of NEW
-            "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(x, loc=loc, scale=scale),
-            "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=scale * loc.where(loc > 5, 5)
-            ),
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
-            # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
-            "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=sd
-            ),  # scale = standard deviation
-            "norm_heteroskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=sd * loc
-            ),  # scale = standard deviation
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            "nbinom": lambda x, n: scipy.stats.nbinom.logpmf(x, n=n, p=model_data),
-            "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
-            "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
-        }
-        if self._config.likelihood.dist not in dist_map:
-            raise ValueError(
-                f"Invalid distribution specified: '{self._config.likelihood.dist}'. "
-                f"Valid distributions: '{dist_map.keys()}'."
-            )
-
         # pydata/xarray#4612
         if self._config.likelihood.dist in ["pois", "nbinom"]:
             model_data = model_data.where(model_data.isnull(), model_data.astype(int))
@@ -405,7 +419,7 @@ class Statistic:
             gt_data = gt_data.where(gt_data != 0, 1)
 
         # Use stored parameters in the distribution function call
-        likelihood = dist_map[self._config.likelihood.dist](
+        likelihood = _DIST_MAP[self._config.likelihood.dist](
             gt_data, model_data, **self._config.likelihood.params
         )
 
