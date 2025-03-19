@@ -10,7 +10,7 @@ import scipy
 import xarray as xr
 import re
 
-from gempyor.statistics import Statistic
+from gempyor.statistics import _AVAILABLE_REGULARIZATIONS, Statistic
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -323,10 +323,9 @@ class TestStatistic:
             for reg_name in [
                 reg["name"] for reg in mock_inputs.config.get("regularize", [])
             ]
-            if reg_name not in ["forecast", "allsubpop"]
+            if reg_name not in _AVAILABLE_REGULARIZATIONS
         )
         with pytest.raises(
-            # ValueError, match=rf"^Unsupported regularization \[received: 'invalid'\]"
             ValueError,
             match=(
                 f"Given an unsupported regularization name, "
