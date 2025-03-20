@@ -414,6 +414,24 @@ def valid_factory_with_nans_date_skipna() -> MockStatisticInput:
     return mock_input
 
 
+def valid_factory_with_nans_date_min_count() -> MockStatisticInput:
+    mock_input = valid_factory_with_nans()
+    mock_input.config["date_min_count"] = 8
+    mock_input.gt_data["incidH"].loc[
+        {
+            "date": mock_input.gt_data.coords["date"][1],
+            "subpop": mock_input.gt_data.coords["subpop"][2],
+        }
+    ] = np.nan
+    mock_input.gt_data["incidH"].loc[
+        {
+            "date": mock_input.gt_data.coords["date"][3],
+            "subpop": mock_input.gt_data.coords["subpop"][2],
+        }
+    ] = np.nan
+    return mock_input
+
+
 ALL_VALID_FACTORIES: Final = (
     valid_factory,
     valid_resample_factory,
@@ -423,6 +441,7 @@ ALL_VALID_FACTORIES: Final = (
     valid_factory_with_pois_with_some_zeros,
     valid_factory_with_nans,
     valid_factory_with_nans_date_skipna,
+    valid_factory_with_nans_date_min_count,
 )
 
 
@@ -624,7 +643,16 @@ def test_compute_logloss(factory: Callable[[], MockStatisticInput]) -> None:
     if not regularization_config:
         assert regularization == 0.0
     if mock_inputs.config.get("date_skipna", None) in {None, True}:
-        assert not log_likelihood.isnull().any()
+        if mock_inputs.config.get("date_min_count", None) is None:
+            assert not log_likelihood.isnull().any()
+        else:
+            ndates, _ = mock_inputs.model_data[mock_inputs.config["sim_var"]].shape
+            threshold = ndates - mock_inputs.config["date_min_count"]
+            data_meets_threshold = (
+                mock_inputs.model_data[mock_inputs.config["sim_var"]].isnull()
+                | mock_inputs.gt_data[mock_inputs.config["data_var"]].isnull()
+            ).sum("date", skipna=True) > threshold
+            assert log_likelihood.isnull().equals(data_meets_threshold)
     else:
         assert log_likelihood.isnull().any().item() == (
             mock_inputs.model_data[mock_inputs.config["sim_var"]].isnull().any().item()
