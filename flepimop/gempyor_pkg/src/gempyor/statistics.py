@@ -303,12 +303,15 @@ class Statistic:
 
     def __str__(self) -> str:
         return (
-            f"{self.name}: {self._config.likelihood.dist} between "
-            f"{self._config.sim_var} (sim) and {self._config.data_var} (data)."
+            f"{self.name} statistic between {self.data_var} and {self.sim_var} "
+            f"with {self._config.likelihood.dist} likelihood"
         )
 
     def __repr__(self) -> str:
-        return f"A Statistic(): {self.__str__()}"
+        return (
+            f"Statistic(name={self.name!r}, data_var={self.data_var!r}, "
+            f"sim_var={self.sim_var!r})"
+        )
 
     def _forecast_regularize(
         self,
@@ -469,9 +472,8 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(
-                f"`model_data` and `gt_data` do not have "
-                f"the same shape: `model_data.shape` = '{model_data.shape}' != "
-                f"`gt_data.shape` = '{gt_data.shape}'."
+                f"The `model_data` shape, {model_data.shape}, does not match the "
+                f"`gt_data` shape, {gt_data.shape}."
             )
 
         regularization = 0.0
