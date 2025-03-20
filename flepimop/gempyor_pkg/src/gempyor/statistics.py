@@ -5,14 +5,242 @@ This module provides the `Statistic` class which represents a entry in the infer
 statistics section.
 """
 
-__all__ = ["Statistic"]
+__all__ = (
+    "Statistic",
+    "StatisticConfig",
+    "StatisticLikelihoodConfig",
+    "StatisticRegularizeConfig",
+    "StatisticResampleConfig",
+)
 
+
+import re
+from typing import Final
 
 import confuse
 import numpy as np
+from pandas.tseries.frequencies import to_offset
+from pydantic import BaseModel, ConfigDict, field_validator
 from scipy.special import gammaln
 import scipy.stats
 import xarray as xr
+from xarray.core.resample import DataArrayResample
+
+
+_DIST_MAP: Final = {
+    "pois": lambda ydata, ymodel: -ymodel + (ydata * np.log(ymodel)) - gammaln(ydata + 1),
+    "norm": lambda ydata, ymodel, scale: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=scale
+    ),
+    "norm_cov": lambda ydata, ymodel, scale: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=scale * ymodel.where(ymodel > 5, 5)
+    ),
+    "norm_homoskedastic": lambda ydata, ymodel, sd: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=sd
+    ),
+    "norm_heteroskedastic": lambda ydata, ymodel, sd: scipy.stats.norm.logpdf(
+        ydata, loc=ymodel, scale=sd * ymodel
+    ),
+    "nbinom": lambda ydata, ymodel, n: scipy.stats.nbinom.logpmf(ydata, n=n, p=ymodel),
+    "rmse": lambda ydata, ymodel: -np.log(np.sqrt(np.nansum((ydata - ymodel) ** 2))),
+    "absolute_error": lambda ydata, ymodel: -np.log(np.nansum(np.abs(ydata - ymodel))),
+}
+
+
+class StatisticLikelihoodConfig(BaseModel):
+    """
+    Configuration for the likelihood function of a statistic.
+
+    Attributes:
+        dist: The name of the distribution to use for calculating log-likelihood.
+        params: Distribution parameters used in the log-likelihood calculation and
+            dependent on `dist`.
+    """
+
+    dist: str
+    params: dict[str, int | float] = {}
+
+    @field_validator("dist", mode="after")
+    @classmethod
+    def validate_dist(cls, dist: str) -> str:
+        """
+        Statistic likelihood distribution validator.
+
+        This pydantic field validator checks if the given distribution name is a valid
+        by checking if it is a supported distribution name.
+
+        Args:
+            dist: The name of the distribution to use for calculating log-likelihood.
+
+        Returns:
+            The validated distribution name.
+
+        Raises:
+            ValueError: If the given distribution name is not supported.
+        """
+        if dist not in _DIST_MAP:
+            raise ValueError(
+                f"Given an unsupported distribution name, '{dist}', "
+                f"must be one of: {_DIST_MAP.keys()}."
+            )
+        return dist
+
+
+class StatisticResampleConfig(BaseModel):
+    """
+    Configuration for optional resampling of data before computing a statistic.
+
+    Attributes:
+        freq: The frequency to resample the data to.
+        aggregator: The name of the aggregation function to use.
+        skipna: If NAs should be skipped when aggregating.
+    """
+
+    freq: str
+    aggregator: str
+    skipna: bool = False
+
+    @field_validator("freq", mode="after")
+    @classmethod
+    def validate_freq(cls, freq: str) -> str:
+        """
+        Statistic resample frequency validator.
+
+        This pydantic field validator checks if the given frequency is a valid offset
+        alias by parsing it with `pandas.tseries.frequencies.to_offset`. Pandas does not
+        expose valid offset aliases as a constant.
+
+        Args:
+            freq: The frequency to resample the data to.
+
+        Returns:
+            The validated frequency.
+        """
+        to_offset(freq)
+        return freq
+
+    @field_validator("aggregator", mode="after")
+    @classmethod
+    def validate_aggregator(cls, aggregator: str) -> str:
+        """
+        Statistic resample aggregator validator.
+
+        This pydantic field validator checks if the given aggregator name is a valid by
+        checking if it is an attribute of `xarray.core.resample.DataArrayResample`.
+
+        Args:
+            aggregator: The name of the aggregation function to use.
+
+        Returns:
+            The validated aggregator name.
+
+        Raises:
+            ValueError: If the given aggregator name is not supported.
+        """
+        if not hasattr(DataArrayResample, aggregator):
+            raise ValueError(
+                f"Given an unsupported aggregator name, '{aggregator}', "
+                "must be a valid xarray DataArrayResample method."
+            )
+        return aggregator
+
+
+class StatisticRegularizeConfig(BaseModel):
+    """
+    Configuration for optional regularization of data before computing a statistic.
+
+    Attributes:
+        name: The name of the regularization function to use.
+        extra: Additional configuration for the regularization function, dependent on
+            `name`.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+
+    @field_validator("name", mode="after")
+    @classmethod
+    def validate_name(cls, name: str) -> str:
+        """
+        Statistic regularization name validator.
+
+        This pydantic field validator checks if the given regularization name is a valid
+        by checking if it is a supported regularization name.
+
+        Args:
+            name: The name of the regularization function to use.
+
+        Returns:
+            The validated regularization name.
+
+        Raises:
+            ValueError: If the given regularization name is not supported.
+        """
+        if name not in _AVAILABLE_REGULARIZATIONS:
+            raise ValueError(
+                f"Given an unsupported regularization name, '{name}', "
+                f"must be one of: {_AVAILABLE_REGULARIZATIONS}."
+            )
+        return name
+
+
+class StatisticConfig(BaseModel):
+    """
+    Configuration for a statistic.
+
+    Attributes:
+        name: The human readable name for the statistic.
+        sim_var: The variable in the model data.
+        data_var: The variable in the ground truth data.
+        likelihood: Configuration for the likelihood function of the statistic.
+        resample: Optional configuration for resampling data before computing the
+            statistic.
+        zero_to_one: Should non-zero values be coerced to 1 when calculating
+            log-likelihood.
+        regularize: Optional configuration for regularizations of data before computing
+            the statistic, applied in order given.
+        scale: Optional configuration for scaling data before computing the statistic.
+        date_skipna: Should NAs be skipped when aggregating over the date dimension.
+        date_min_count: The minimum number of non-NA values required to aggregate over
+            the date dimension.
+    """
+
+    name: str
+    sim_var: str
+    data_var: str
+    likelihood: StatisticLikelihoodConfig
+    resample: StatisticResampleConfig | None = None
+    zero_to_one: bool = False
+    regularize: list[StatisticRegularizeConfig] = []
+    scale: str | None = None
+    date_skipna: bool | None = None
+    date_min_count: int | None = None
+
+    @field_validator("scale", mode="after")
+    @classmethod
+    def validate_scale(cls, scale: str | None) -> str | None:
+        """
+        Statistic scale validator.
+
+        This pydantic field validator checks if the given scale function is a valid
+        numpy function.
+
+        Args:
+            scale: The function to use when rescaling the data.
+
+        Returns:
+            The validated scale function.
+
+        Raises:
+            ValueError: If the given scale function is not supported.
+        """
+        if isinstance(scale, str) and not hasattr(np, scale):
+            raise ValueError(
+                f"Given an unsupported scale function, '{scale}', "
+                "must be a valid numpy function."
+            )
+        return scale
 
 
 class Statistic:
@@ -24,30 +252,7 @@ class Statistic:
     statistic's log-loss.
 
     Attributes:
-        data_var: The variable in the ground truth data.
-        dist: The name of the distribution to use for calculating log-likelihood.
         name: The human readable name for the statistic given during instantiation.
-        params: Distribution parameters used in the log-likelihood calculation and
-            dependent on `dist`.
-        regularizations: Regularization functions that are added to the log loss of this
-            statistic.
-        resample: If the data should be resampled before computing the statistic.
-            Defaults to `False`.
-        resample_aggregator_name: The name of the aggregation function to use. This
-            attribute is not set when a "resample" section is not defined in the
-            `statistic_config` arg.
-        resample_freq: The frequency to resample the data to if the `resample` attribute
-            is `True`. This attribute is not set when a "resample" section is not
-            defined in the `statistic_config` arg.
-        resample_skipna: If NAs should be skipped when aggregating. `False` by default.
-            This attribute is not set when a "resample" section is not defined in the
-            `statistic_config` arg.
-        scale: If the data should be rescaled before computing the statistic.
-        scale_func: The function to use when rescaling the data. Can be any function
-            exported by `numpy`. This attribute is not set when a "scale" value is not
-            defined in the `statistic_config` arg.
-        zero_to_one: Should non-zero values be coerced to 1 when calculating
-            log-likelihood.
     """
 
     def __init__(self, name: str, statistic_config: confuse.ConfigView) -> None:
@@ -65,62 +270,40 @@ class Statistic:
                 `statistic_config` arg. Currently only 'forecast' and 'allsubpop' are
                 supported.
         """
-        self.sim_var = statistic_config["sim_var"].as_str()
-        self.data_var = statistic_config["data_var"].as_str()
         self.name = name
+        self._config = StatisticConfig.model_validate(dict(statistic_config.get()))
 
-        self.regularizations = []  # A list to hold regularization functions and configs
-        if statistic_config["regularize"].exists():
-            for reg_config in statistic_config["regularize"]:  # Iterate over the list
-                reg_name = reg_config["name"].get()
-                reg_func = getattr(self, f"_{reg_name}_regularize", None)
-                if reg_func is None:
-                    raise ValueError(
-                        f"Unsupported regularization [received: '{reg_name}']. "
-                        f"Currently only `forecast` and `allsubpop` are supported."
-                    )
-                self.regularizations.append((reg_func, reg_config.get()))
+    @property
+    def sim_var(self) -> str:
+        """
+        Accessor for the model output variable name.
 
-        self.resample = False
-        if statistic_config["resample"].exists():
-            self.resample = True
-            resample_config = statistic_config["resample"]
-            self.resample_freq = ""
-            if resample_config["freq"].exists():
-                self.resample_freq = resample_config["freq"].as_str()
-            self.resample_aggregator = ""
-            if resample_config["aggregator"].exists():
-                self.resample_aggregator_name = resample_config["aggregator"].get()
-            self.resample_skipna = False
-            if (
-                resample_config["aggregator"].exists()
-                and resample_config["skipna"].exists()
-            ):
-                self.resample_skipna = resample_config["skipna"].get()
+        Returns:
+            The name of the model output variable.
+        """
+        return self._config.sim_var
 
-        self.scale = False
-        if statistic_config["scale"].exists():
-            self.scale = True
-            self.scale_func = getattr(np, statistic_config["scale"].get())
+    @property
+    def data_var(self) -> str:
+        """
+        Accessor for the ground truth variable name.
 
-        self.dist = statistic_config["likelihood"]["dist"].get()
-        if statistic_config["likelihood"]["params"].exists():
-            self.params = statistic_config["likelihood"]["params"].get()
-        else:
-            self.params = {}
-
-        self.zero_to_one = False
-        if statistic_config["zero_to_one"].exists():
-            self.zero_to_one = statistic_config["zero_to_one"].get()
+        Returns:
+            The name of the ground truth variable.
+        """
+        return self._config.data_var
 
     def __str__(self) -> str:
         return (
-            f"{self.name}: {self.dist} between {self.sim_var} "
-            f"(sim) and {self.data_var} (data)."
+            f"{self.name} statistic between {self.data_var} and {self.sim_var} "
+            f"with {self._config.likelihood.dist} likelihood"
         )
 
     def __repr__(self) -> str:
-        return f"A Statistic(): {self.__str__()}"
+        return (
+            f"Statistic(name={self.name!r}, data_var={self.data_var!r}, "
+            f"sim_var={self.sim_var!r})"
+        )
 
     def _forecast_regularize(
         self,
@@ -144,15 +327,12 @@ class Statistic:
             The log-likelihood of the `last_n` observation up weighted by a factor of
             `mult`.
         """
-        # scale the data so that the latest X items are more important
         last_n = kwargs.get("last_n", 4)
         mult = kwargs.get("mult", 2)
-
         last_n_llik = self.llik(
             model_data.isel(date=slice(-last_n, None)),
             gt_data.isel(date=slice(-last_n, None)),
         )
-
         return mult * last_n_llik.sum().sum().values
 
     def _allsubpop_regularize(
@@ -189,13 +369,9 @@ class Statistic:
         Returns:
             A resample dataset with similar dimensions to `data`.
         """
-        if self.resample:
-            aggregator_method = getattr(
-                data.resample(date=self.resample_freq), self.resample_aggregator_name
-            )
-            return aggregator_method(skipna=self.resample_skipna)
-        else:
-            return data
+        if (r := self._config.resample) is not None:
+            return getattr(data.resample(date=r.freq), r.aggregator)(skipna=r.skipna)
+        return data
 
     def apply_scale(self, data: xr.DataArray) -> xr.DataArray:
         """
@@ -208,10 +384,9 @@ class Statistic:
             An xarray dataset of the same shape and dimensions as `data` with the
             `scale_func` attribute applied.
         """
-        if self.scale:
-            return self.scale_func(data)
-        else:
-            return data
+        if (s := self._config.scale) is not None:
+            return getattr(np, s)(data)
+        return data
 
     def apply_transforms(self, data: xr.DataArray):
         """
@@ -225,8 +400,7 @@ class Statistic:
         Returns:
             An scaled and resampled dataset with similar dimensions to `data`.
         """
-        data_scaled_resampled = self.apply_scale(self.apply_resample(data))
-        return data_scaled_resampled
+        return self.apply_scale(self.apply_resample(data))
 
     def llik(self, model_data: xr.DataArray, gt_data: xr.DataArray) -> xr.DataArray:
         """
@@ -242,55 +416,24 @@ class Statistic:
             The log-likelihood of observing `gt_data` from the model `model_data` as an
             xarray DataArray with a "subpop" dimension.
         """
+        # pydata/xarray#4612
+        if self._config.likelihood.dist in ["pois", "nbinom"]:
+            model_data = model_data.where(model_data.isnull(), model_data.astype(int))
+            gt_data = gt_data.where(gt_data.isnull(), gt_data.astype(int))
 
-        dist_map = {
-            "pois": lambda ydata, ymodel: -ymodel
-            + (ydata * np.log(ymodel))
-            - gammaln(ydata + 1),
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # OLD: # TODO: Swap out in favor of NEW
-            "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=self.params.get("scale", scale)
-            ),
-            "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=scale * loc.where(loc > 5, 5)
-            ),
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
-            # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
-            "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=self.params.get("sd", sd)
-            ),  # scale = standard deviation
-            "norm_heteroskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=self.params.get("sd", sd) * loc
-            ),  # scale = standard deviation
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
-                x, n=self.params.get("n"), p=model_data
-            ),
-            "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
-            "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
-        }
-        if self.dist not in dist_map:
-            raise ValueError(
-                f"Invalid distribution specified: '{self.dist}'. "
-                f"Valid distributions: '{dist_map.keys()}'."
-            )
-        if self.dist in ["pois", "nbinom"]:
-            # pydata/xarray#4612
-            model_data = model_data.fillna(0.0).astype(int)
-            gt_data = gt_data.fillna(0.0).astype(int)
-
-        if self.zero_to_one:
-            # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
+        # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
+        if self._config.zero_to_one:
             model_data = model_data.where(model_data != 0, 1)
             gt_data = gt_data.where(gt_data != 0, 1)
 
         # Use stored parameters in the distribution function call
-        likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
+        likelihood = _DIST_MAP[self._config.likelihood.dist](
+            gt_data, model_data, **self._config.likelihood.params
+        )
+
+        # If the likelihood is a scalar, broadcast it to the shape of the data.
+        # Xarray used to do this, but not anymore after numpy/numpy#26889?
         if len(likelihood.shape) == 0:
-            # If the likelihood is a scalar, broadcast it to the shape of the data.
-            # Xarray used to do this, but not anymore after numpy/numpy#26889?
             likelihood = np.full(gt_data.shape, likelihood)
         likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
@@ -300,7 +443,7 @@ class Statistic:
         self, model_data: xr.Dataset, gt_data: xr.Dataset
     ) -> tuple[xr.DataArray, float]:
         """
-        Compute the logistic loss of observing the ground truth given model output.
+        Compute the log loss of observing the ground truth given model output.
 
         Args:
             model_data: An xarray Dataset of the model data with date and subpop
@@ -309,7 +452,7 @@ class Statistic:
                 dimensions.
 
         Returns:
-            The logistic loss of observing `gt_data` from the model `model_data`
+            The log loss of observing `gt_data` from the model `model_data`
             decomposed into the log-likelihood along the "subpop" dimension and
             regularizations.
 
@@ -321,15 +464,33 @@ class Statistic:
 
         if not model_data.shape == gt_data.shape:
             raise ValueError(
-                f"`model_data` and `gt_data` do not have "
-                f"the same shape: `model_data.shape` = '{model_data.shape}' != "
-                f"`gt_data.shape` = '{gt_data.shape}'."
+                f"The `model_data` shape, {model_data.shape}, does not match the "
+                f"`gt_data` shape, {gt_data.shape}."
             )
 
         regularization = 0.0
-        for reg_func, reg_config in self.regularizations:
-            regularization += reg_func(
-                model_data=model_data, gt_data=gt_data, **reg_config
-            )  # Pass config parameters
+        if self._config.regularize:
+            for reg_config in self._config.regularize:
+                reg_func = getattr(self, f"_{reg_config.name}_regularize")
+                regularization += reg_func(
+                    model_data=model_data, gt_data=gt_data, **reg_config.extra
+                )
 
-        return self.llik(model_data, gt_data).sum("date"), regularization
+        return (
+            self.llik(model_data, gt_data).sum(
+                "date",
+                skipna=self._config.date_skipna,
+                min_count=self._config.date_min_count,
+            ),
+            regularization,
+        )
+
+
+_REGULARIZATION_NAME_REGEX: Final = re.compile(r"^_([a-z0-9_]+)_regularize$")
+
+# pylint-dev/pylint#8486
+_AVAILABLE_REGULARIZATIONS: Final = {
+    m.group(1)  # pylint: disable=used-before-assignment
+    for attr in dir(Statistic)
+    if (m := _REGULARIZATION_NAME_REGEX.match(attr)) is not None
+}
