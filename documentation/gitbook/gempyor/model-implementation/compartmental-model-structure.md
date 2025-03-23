@@ -551,7 +551,7 @@ The mathematics behind each implementation is described in the [Model Descriptio
 | Config item             | Required?  | Type/format       | Description                            |
 |:------------------------|:-----------|:------------------|:---------------------------------------|
 | `method`                | optional   | string: `rk4` (default),`euler`, `stochastic`      | The algorithm used to simulate the model equations.<br><br>If `rk4`, model is simulated deterministically by numerical integration using a 4th order Runge-Kutta algorithm.<br><br>If `euler` or `stochastic`, uses a discrete-time process, with steps proceeding either deterministically (at the average rate) or stochastically. For both of these cases, the algorithm ensures no compartment goes below zero for the requested time step. The `-(-m)ethod` option can be used (see [Other Configuration Options](other-configuration-options.md)) to override this configuration option. |
-| `dt` | optional | positive real number (default: 2) | The timestep used for the numerical integration or discrete time stochastic update. |
+| `dt` | optional | positive real number (default: 2) | The timestep used for the numerical integration or discrete time stochastic update; for `rk4` method, this is a reasonable value, but for other options, this should be `0.2` or less. |
 
 For example, to simulate a model deterministically using the 4th order Runge-Kutta algorithm for numerical integration with a timestep of 1 day:
 
