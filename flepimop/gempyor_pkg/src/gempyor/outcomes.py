@@ -445,17 +445,16 @@ def compute_all_multioutcomes(
                     & (loaded_values["outcome"] == new_comp)
                 ]["value"].to_numpy()
             else:
-                probabilities = parameters[new_comp][
-                    "probability"
-                ].as_random_distribution()(
-                    size=len(modinf.subpop_struct.subpop_names)
-                )  # one draw per subpop
+                probabilities = np.repeat(
+                    parameters[new_comp]["probability"].as_random_distribution()(),
+                    len(modinf.subpop_struct.subpop_names),
+                )
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
-
-                delays = parameters[new_comp]["delay"].as_random_distribution()(
-                    size=len(modinf.subpop_struct.subpop_names)
-                )  # one draw per subpop
+                delays = np.repeat(
+                    parameters[new_comp]["delay"].as_random_distribution()(),
+                    len(modinf.subpop_struct.subpop_names),
+                )
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
             probabilities = np.repeat(
@@ -533,9 +532,10 @@ def compute_all_multioutcomes(
                         & (loaded_values["outcome"] == new_comp)
                     ]["value"].to_numpy()
                 else:
-                    durations = parameters[new_comp]["duration"].as_random_distribution()(
-                        size=len(modinf.subpop_struct.subpop_names)
-                    )  # one draw per subpop
+                    durations = np.repeat(
+                        parameters[new_comp]["duration"].as_random_distribution()(),
+                        len(modinf.subpop_struct.subpop_names),
+                    )
                 durations = np.repeat(
                     durations[:, np.newaxis], len(dates), axis=1
                 ).T  # duplicate in time

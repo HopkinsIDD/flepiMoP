@@ -20,6 +20,7 @@ class RandomDrawAssertion(NamedTuple):
     nunique: int | None = None
     nunique_lower_bound: int | None = None
     exact_value: int | float | None = None
+    all_equal_by: str | None = None
     not_all_equal_by: str | None = None
 
     def assert_df_passes(
@@ -39,13 +40,15 @@ class RandomDrawAssertion(NamedTuple):
         if self.exact_value is not None:
             assert df[self.column].unique() == self.exact_value
             return
-        if self.not_all_equal_by is not None:
-            column_values = df[self.not_all_equal_by].unique().tolist()
+        if self.all_equal_by is not None or self.not_all_equal_by is not None:
+            expected = False if self.not_all_equal_by else True
+            col = self.all_equal_by or self.not_all_equal_by
+            column_values = df[col].unique().tolist()
             x = None
             for column_value in column_values:
-                y = df[df[self.not_all_equal_by] == column_value][self.column].values
+                y = df[df[col] == column_value][self.column].values
                 if x is not None:
-                    assert np.array_equal(x, y) is False
+                    assert np.array_equal(x, y) is expected
                 x = y
             return
         raise ValueError("No assertion was made.")
@@ -156,7 +159,7 @@ class RandomDrawAssertion(NamedTuple):
                         "outcome": "incidDeath",
                     },
                     column="value",
-                    not_all_equal_by="subpop",
+                    all_equal_by="subpop",
                 ),
                 RandomDrawAssertion(
                     kind="snpi",
