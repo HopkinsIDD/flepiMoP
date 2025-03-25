@@ -126,6 +126,10 @@ def test_subpopulation_structure_dulpicate_subpop_names_fail():
         )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_subpopulation_structure_mobility_shape_fail():
     config.clear()
     config.read(user=False)
@@ -240,6 +244,10 @@ def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
         )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
     config.clear()
     config.read(user=False)

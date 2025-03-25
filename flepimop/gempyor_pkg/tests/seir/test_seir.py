@@ -109,6 +109,10 @@ def test_check_parameter_positivity():
         )  # ValueError
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_check_values():
     config.set_file(f"{DATA_DIR}/config.yml")
 
@@ -146,6 +150,10 @@ def test_check_values():
         assert "mobility" in str(w[1].message)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_constant_population_legacy_integration():
     config.set_file(f"{DATA_DIR}/config.yml")
 
@@ -221,6 +229,10 @@ def test_constant_population_legacy_integration():
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_constant_population_rk4jit_integration():
     # config.set_file(f"{DATA_DIR}/config.yml")
     config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
@@ -295,6 +307,10 @@ def test_constant_population_rk4jit_integration():
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -403,6 +419,10 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -483,6 +503,10 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_steps_SEIR_no_spread():
     os.chdir(os.path.dirname(__file__))
     print("test mobility with no spread")
@@ -573,6 +597,10 @@ def test_steps_SEIR_no_spread():
         )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_continuation_resume():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -667,6 +695,10 @@ def test_continuation_resume():
         shutil.rmtree(path)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_inference_resume():
     os.chdir(os.path.dirname(__file__))
     config.clear()
