@@ -10,6 +10,10 @@ os.chdir(os.path.dirname(__file__))
 
 
 class TestSeeding:
+    @pytest.mark.filterwarnings(
+        "ignore:Mobility files as matrices are not recommended. "
+        "Please switch to long form csv files.:PendingDeprecationWarning"
+    )
     def test_Seeding_success(self):
         config.clear()
         config.read(user=False)
@@ -26,6 +30,10 @@ class TestSeeding:
         sic = seeding.SeedingFactory(config=s.seeding_config)
         assert sic.seeding_config == s.seeding_config
 
+    @pytest.mark.filterwarnings(
+        "ignore:Mobility files as matrices are not recommended. "
+        "Please switch to long form csv files.:PendingDeprecationWarning"
+    )
     def test_Seeding_draw_success(self):
         config.clear()
         config.read(user=False)
@@ -56,6 +64,10 @@ class TestSeeding:
         )
         print(seeding_result)
 
+    @pytest.mark.filterwarnings(
+        "ignore:Mobility files as matrices are not recommended. "
+        "Please switch to long form csv files.:PendingDeprecationWarning"
+    )
     def test_seeding_only_requires_seeding_file_type_for_folder_draw(self):
         for seeding_conf in (
             {"method": "FolderDraw", "seeding_file_type": "seed"},
