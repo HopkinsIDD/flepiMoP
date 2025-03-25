@@ -8,6 +8,10 @@ os.chdir(os.path.dirname(__file__))
 
 
 class TestIC:
+    @pytest.mark.filterwarnings(
+        "ignore:Mobility files as matrices are not recommended. "
+        "Please switch to long form csv files.:PendingDeprecationWarning"
+    )
     def test_IC_success(self):
         config.clear()
         config.read(user=False)
@@ -26,6 +30,10 @@ class TestIC:
         )
         assert sic.initial_conditions_config == s.initial_conditions_config
 
+    @pytest.mark.filterwarnings(
+        "ignore:Mobility files as matrices are not recommended. "
+        "Please switch to long form csv files.:PendingDeprecationWarning"
+    )
     def test_IC_allow_missing_node_compartments_success(self):
         config.clear()
         config.read(user=False)
@@ -47,6 +55,10 @@ class TestIC:
         )
         sic.get_from_config(sim_id=100, modinf=s)
 
+    @pytest.mark.filterwarnings(
+        "ignore:Mobility files as matrices are not recommended. "
+        "Please switch to long form csv files.:PendingDeprecationWarning"
+    )
     def test_IC_IC_notImplemented_fail(self):
         with pytest.raises(NotImplementedError, match=r".*Unknown.*initial.*conditions.*"):
             config.clear()

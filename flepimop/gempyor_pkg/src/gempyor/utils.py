@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Iterable
 import datetime
 import functools
@@ -1268,3 +1269,27 @@ def _format_cli_options(
             new_opts.extend(f"{opt_name}={shlex_quote(w)}" for w in v)
         opts.extend(new_opts)
     return opts
+
+
+def _duplicate_strings(it: Iterable[str]) -> list[str]:
+    """
+    Efficiently find duplicate strings in an iterable.
+
+    Args:
+        it: An iterable of strings.
+
+    Returns:
+        A list of strings that appear more than once in `it`.
+
+    Examples:
+        >>> from gempyor.utils import _duplicate_strings
+        >>> _duplicate_strings(["a", "b", "c"])
+        []
+        >>> _duplicate_strings(["a", "b", "c", "b"])
+        ['b']
+        >>> _duplicate_strings(["a", "b", "c", "b", "a"])
+        ['a', 'b']
+        >>> _duplicate_strings("foobar")
+        ['o']
+    """
+    return sorted([k for k, v in Counter(it).items() if v > 1])
