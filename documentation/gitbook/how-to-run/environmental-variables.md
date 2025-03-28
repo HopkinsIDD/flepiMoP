@@ -91,12 +91,6 @@ Below you will find a list of environmental variables (envvars) defined througho
             <td><code>1</code></td>
         </tr>
         <tr>
-            <td><code>FLEPI_CONDA</code></td>
-            <td>N/A</td>
-            <td>Pathway to the conda environment (used only during initial user install).</td>
-            <td>N/A></td>
-        </tr>
-        <tr>
             <td><code>FLEPI_CONTINUATION</code></td>
             <td><code>--continuation</code>/<code>--no-continuation</code></td>
             <td>Flag for whether or not to use the resumed run seir files (or provided initial files bucket) as initial conditions for the next run.</td>
@@ -106,6 +100,18 @@ Below you will find a list of environmental variables (envvars) defined througho
             <td><code>FLEPI_CONTINUATION_FTYPE</code></td>
             <td>N/A</td>
             <td>If running a continuation, the file type of the initial condition files.</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td><code>FLEPI_CONTINUATION_LOCATION</code></td>
+            <td><code>--continuation-location</code></td>
+            <td>The location (folder or an S3 bucket) from which to pull the /init/ files (if not set, uses the resume location seir files).</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td><code>FLEPI_CONTINUATION_RUN_ID</code></td>
+            <td><code>--continuation-run-id</code></td>
+            <td>The ID of run to continue at, if doing a continuation.</td>
             <td>N/A</td>
         </tr>
         <tr>
@@ -143,12 +149,6 @@ Below you will find a list of environmental variables (envvars) defined througho
             <td><code>-j</code>, <code>--jobs</code></td>
             <td>Number of parallel processors used to run the simulation. If there are more slots than jobs, slots will be divided up between processors and run in series on each.</td>
             <td>Number of cores detected as available at computing cluster.</td>
-        </tr>
-        <tr>
-            <td><code>FLEPI_NPI_SCENARIOS</code></td>
-            <td><code></code></td>
-            <td></td>
-            <td><code></code></td>
         </tr>
         <tr>
             <td><code>FLEPI_NUM_SLOTS</code></td>
@@ -389,12 +389,6 @@ Below you will find a list of environmental variables (envvars) defined througho
             <td><code>-S</code>, <code>--save_seir</code></td>
             <td>Whether or not the SEIR output files should be saved for each iteration.</td>
             <td><code>False</code></td>
-        </tr>
-        <tr>
-            <td><code>SCENARIO</code></td>
-            <td><code></code></td>
-            <td></td>
-            <td><code></code></td>
         </tr>
         <tr>
             <td><code>SEED_VARIANTS</code></td>
