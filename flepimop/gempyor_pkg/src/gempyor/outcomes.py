@@ -445,6 +445,7 @@ def compute_all_multioutcomes(
                     & (loaded_values["outcome"] == new_comp)
                 ]["value"].to_numpy()
             else:
+                # One draw for all subpops
                 probabilities = np.repeat(
                     parameters[new_comp]["probability"].as_random_distribution()(),
                     len(modinf.subpop_struct.subpop_names),
