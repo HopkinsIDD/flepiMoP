@@ -51,7 +51,6 @@ Then, export variables for some flags and the census API key (you can use your o
 
 {% code overflow="wrap" %}
 ```bash
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export CENSUS_API_KEY="6a98b751a5a7a6fc365d14fa8e825d5785138935"
 ```
