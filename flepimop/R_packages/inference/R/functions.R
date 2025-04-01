@@ -530,7 +530,7 @@ perturb_hpar <- function(hpar, intervention_settings) {
 
     return(hpar)
 }
-##' Function to go through to accept or reject proposed parameters for each subpop based
+##' Function to go through and accept or reject proposed parameters for each subpop based
 ##' on a subpop specific likelihood.
 ##'
 ##' @param seeding_orig original seeding data frame (must have column subpop)
@@ -541,7 +541,7 @@ perturb_hpar <- function(hpar, intervention_settings) {
 ##' @param hnpi_prop proposal npi data frame  (must have column subpop)
 ##' @param orig_lls original ll data frame  (must have column ll and subpop)
 ##' @param prop_lls proposal ll fata frame (must have column ll and subpop)
-##' @return a new data frame with the confirmed seedin.
+##' @return a list of new data frames (seeding, init, snpi, hnpi, lls) with the same format as the input, but with the accepted values for each subpopulation
 ##' @export
 accept_reject_proposals <- function(
         init_orig,
@@ -568,22 +568,31 @@ accept_reject_proposals <- function(
     }
 
     ##draw accepts/rejects
-    ratio <- exp(prop_lls$ll - orig_lls$ll)
-    accept <- ratio > runif(length(ratio), 0, 1)
+    accept_reject <- inference::iterateAccept(ll_ref = orig_lls$ll, ll_new = prop_lls$ll)
+												
+    orig_lls$ll[accept_reject$accept] <- prop_lls$ll[accept_reject$accept] # update the likelihoods
+    orig_lls$accept <- as.numeric(accept_reject$accept) # added column for acceptance decision
+    orig_lls$accept_prob <- accept_reject$accept_prob        # added column for acceptance probability
 
-    orig_lls$ll[accept] <- prop_lls$ll[accept]
+    ##Loop through subpops and update parameters
+    for (subpop_tmp in orig_lls$subpop[accept_reject$accept]) {
 
-    orig_lls$accept <- as.numeric(accept) # added column for acceptance decision
-    orig_lls$accept_prob <- min(1,ratio) # added column for acceptance decision
+        ## Update Seeding
+        rc_seeding[rc_seeding$subpop == subpop_tmp, ] <- seeding_prop[seeding_prop$subpop == subpop_tmp, ]
 
-    for (subpop in orig_lls$subpop[accept]) {
-        rc_seeding[rc_seeding$subpop == subpop, ] <- seeding_prop[seeding_prop$subpop == subpop, ]
-        if("subpop" %in% colnames(rc_init)){ # ie if initial_conditions$method is FromFile or InitialConditionsFolderDraw
-          rc_init[rc_init$subpop == subpop, ] <- init_prop[init_prop$subpop == subpop, ]
-        }else{rc_init <- init_prop}
-        rc_snpi[rc_snpi$subpop == subpop, ] <- snpi_prop[snpi_prop$subpop == subpop, ]
-        rc_hnpi[rc_hnpi$subpop == subpop, ] <- hnpi_prop[hnpi_prop$subpop == subpop, ]
-        rc_hpar[rc_hpar$subpop == subpop, ] <- hpar_prop[hpar_prop$subpop == subpop, ]
+        ## Update Initial Conditions
+        if ("subpop" %in% colnames(rc_init)) {
+            rc_init[rc_init$subpop == subpop_tmp, ] <- init_prop[init_prop$subpop == subpop_tmp, ]
+        } else if (subpop_tmp %in% colnames(rc_init)){
+            rc_init[[subpop_tmp]] <- init_prop[[subpop_tmp]]
+        } else {
+            rc_init <- init_prop
+        }
+
+        ## Update parameters
+        rc_snpi[rc_snpi$subpop == subpop_tmp, ] <- snpi_prop[snpi_prop$subpop == subpop_tmp, ]
+        rc_hnpi[rc_hnpi$subpop == subpop_tmp, ] <- hnpi_prop[hnpi_prop$subpop == subpop_tmp, ]
+        rc_hpar[rc_hpar$subpop == subpop_tmp, ] <- hpar_prop[hpar_prop$subpop == subpop_tmp, ]
     }
 
     return(list(
@@ -597,23 +606,23 @@ accept_reject_proposals <- function(
 }
 
 
-##' Function accept proposals
+##' Function to accept or reject proposals based on likelihoods, using Metropolis-Hastings algorithm
 ##'
 ##'
-##' @param ll_ref current accepted likelihood
-##' @param ll_new likelihood of proposal
-##' @return boolean whether to accept the likelihood
+##' @param ll_ref current accepted likelihood(s)
+##' @param ll_new likelihood of proposal(s)
+##' @param decide (optional) if decide = TRUE, the function returns both the acceptance probabilities and the actual (random acceptance decisions). If decide = FALSE, then the function only returns the acceptance probabilities but doesn't use them to make any acceptance decisions
+##' @return a list containing two entries: accept : a boolean of whether the proposal was accepted, and accept_prob: the probability the proposal is accepted
+##' @note This function can accept single values or vectors
+##'							   
 ##' @export
-iterateAccept <- function(ll_ref, ll_new) {
-    if (length(ll_ref) != 1 | length(ll_new) !=1) {
-        stop("Iterate accept currently on works with single row data frames")
+iterateAccept <- function(ll_ref, ll_new, decide = TRUE){
+    ll_ratio <- exp(pmin(ll_new - ll_ref, 0)) # probability of acceptance; max(acceptance ratio, 1)
+    if(decide == TRUE){
+      return(list(accept = ll_ratio >= runif(1), accept_prob = ll_ratio))
+    }else{
+      return(list(accept_prob = ll_ratio))
     }
-
-    ll_ratio <- exp(min(c(0, ll_new - ll_ref)))
-    if (ll_ratio >= runif(1)) {
-        return(TRUE)
-    }
-    return(FALSE)
 }
 
 
