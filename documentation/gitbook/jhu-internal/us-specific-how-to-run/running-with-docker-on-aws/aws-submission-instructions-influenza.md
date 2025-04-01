@@ -153,7 +153,7 @@ You will be prompted to enter the following items. These can be found in a file 
 {% tab title="Standard" %}
 <pre><code><strong>export CONFIG_PATH=$CONFIG_NAME &#x26;&#x26;
 </strong><strong>cd $PROJECT_PATH &#x26;&#x26;
-</strong>$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic &#x26;&#x26;
+</strong>$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE &#x26;&#x26;
 printenv CONFIG_NAME
 </code></pre>
 {% endtab %}
@@ -162,7 +162,7 @@ printenv CONFIG_NAME
 ```
 export CONFIG_PATH=$CONFIG_NAME &&
 cd $PROJECT_PATH &&
-$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic -j 1 -k 1 &&
+$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE -j 1 -k 1 &&
 printenv CONFIG_NAME
 ```
 {% endtab %}
@@ -176,7 +176,7 @@ printenv CONFIG_NAME
 
 <pre><code>export CONFIG_PATH=$CONFIG_NAME &#x26;&#x26;
 <strong>cd $PROJECT_PATH &#x26;&#x26;
-</strong>$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID &#x26;&#x26;
+</strong>$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-carry-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID &#x26;&#x26;
 printenv CONFIG_NAME
 </code></pre>
 
@@ -187,7 +187,7 @@ printenv CONFIG_NAME
 ```
 export CONFIG_PATH=$CONFIG_NAME &&  
 cd $PROJECT_PATH &&
-$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-discard-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID &&
+$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-discard-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID &&
 printenv CONFIG_NAME
 ```
 
@@ -198,7 +198,7 @@ printenv CONFIG_NAME
 ```
 export CONFIG_PATH=$CONFIG_NAME &&
 cd $PROJECT_PATH &&
-$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID -j 1 -k 1 &&
+$COVID_PATH/batch/inference_job.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-carry-seeding --restart-from-location=s3://idd-inference-runs/$RESUME_S3 --restart-from-run-id=$RESUME_ID -j 1 -k 1 &&
 printenv CONFIG_NAME
 ```
 {% endtab %}

@@ -156,7 +156,6 @@ module load slurm
 module load anaconda3/2022.05
 conda activate flepimop-env
 export CENSUS_API_KEY={A CENSUS API KEY}
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export FLEPI_PATH=/scratch4/struelo1/flepimop-code/$USER/flepiMoP
 
