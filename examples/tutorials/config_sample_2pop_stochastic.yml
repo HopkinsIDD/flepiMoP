@@ -2,7 +2,7 @@ name: sample_2pop
 setup_name: stochastic
 start_date: 2020-02-01
 end_date: 2020-08-31
-nslots: 1
+nslots: 20
 
 subpop_setup:
   geodata: model_input/geodata_sample_2pop.csv
@@ -20,7 +20,7 @@ compartments:
 seir:
   integration:
     method: stochastic
-    dt: 1
+    dt: 0.2
   parameters:
     sigma:
       value: 1 / 4
