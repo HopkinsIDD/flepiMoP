@@ -266,12 +266,16 @@ class Statistic:
             ),  # scale = standard deviation
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             "nbinom": lambda gt_data, model_data, n, p: scipy.stats.nbinom.logpmf(
-                k = gt_data,
+                k=gt_data,
                 n=1.0 / self.params.get("alpha"),
-                p=1.0 / (1.0 + self.params.get("alpha") * model_data)
+                p=1.0 / (1.0 + self.params.get("alpha") * model_data),
             ),
-            "rmse": lambda gt_data, model_data: -np.log(np.sqrt(np.nansum((gt_data - model_data) ** 2))),
-            "absolute_error": lambda gt_data, model_data: -np.log(np.nansum(np.abs(gt_data - model_data))),
+            "rmse": lambda gt_data, model_data: -np.log(
+                np.sqrt(np.nansum((gt_data - model_data) ** 2))
+            ),
+            "absolute_error": lambda gt_data, model_data: -np.log(
+                np.nansum(np.abs(gt_data - model_data))
+            ),
         }
         if self.dist not in dist_map:
             raise ValueError(
