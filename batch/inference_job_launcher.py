@@ -260,7 +260,7 @@ def user_confirmation(question="Continue?", default=False):
     "continuation_location",
     type=str,
     default=None,
-    envvar="CONTINUATION_LOCATION",
+    envvar="FLEPI_CONTINUATION_LOCATION",
     help="The location (folder or an S3 bucket) from which to pull the /init/ files (if not set, uses the resume location seir files)",
 )
 @click.option(
@@ -269,6 +269,7 @@ def user_confirmation(question="Continue?", default=False):
     "continuation_run_id",
     type=str,
     default=None,
+    envvar="FLEPI_CONTINUATION_RUN_ID",
     help="The run_id of the run we are continuing from",
 )
 def launch_batch(
