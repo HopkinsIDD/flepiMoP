@@ -4,11 +4,12 @@ from pathlib import Path
 import sys
 
 from gempyor.model_info import ModelInfo
+from gempyor.outcomes import run_parallel_outcomes
 from gempyor.seir import run_parallel_SEIR
 from gempyor.shared_cli import parse_config_files
 
 
-def main(setup_sample_2pop_vaccine_scenarios, n_jobs):
+def main(setup_sample_2pop_vaccine_scenarios, n_jobs, do_outcomes):
     cfg = parse_config_files(
         config_filepath=setup_sample_2pop_vaccine_scenarios
         / "config_sample_2pop_vaccine_scenarios.yml",
@@ -44,11 +45,23 @@ def main(setup_sample_2pop_vaccine_scenarios, n_jobs):
 
     assert run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int)) is None
 
+    if do_outcomes:
+        assert (
+            run_parallel_outcomes(
+                sim_id2write=cfg["first_sim_index"].get(int),
+                modinf=modinf,
+                nslots=nchains,
+                n_jobs=cfg["jobs"].get(int),
+            )
+            == 1
+        )
+
 
 if __name__ == "__main__":
     setup_sample_2pop_vaccine_scenarios = Path(sys.argv[1])
     start_method = sys.argv[2]
     n_jobs = int(sys.argv[3])
+    do_outcomes = sys.argv[4].strip().lower() == "true"
     os.chdir(setup_sample_2pop_vaccine_scenarios)
     mp.set_start_method(start_method, force=True)
-    main(setup_sample_2pop_vaccine_scenarios, n_jobs)
+    main(setup_sample_2pop_vaccine_scenarios, n_jobs, do_outcomes)

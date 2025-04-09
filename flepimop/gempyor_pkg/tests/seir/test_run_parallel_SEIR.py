@@ -48,13 +48,14 @@ def test_run_parallel_SEIR_by_multiprocessing_start_method(
     with (tmp_path / config_file).open("r") as f:
         config = yaml.safe_load(f)
     nslots = int(config.get("nslots", 1))
+    script = Path(__file__).parent.parent / "data" / "run_parallel_test_script.py"
 
     # Run a pared down version of `gempyor.simulate.simulate` in a new process
     assert (
         run_test_in_separate_process(
-            Path(__file__).parent / "run_parallel_SEIR_test_script.py",
+            script,
             tmp_path / "test.py",
-            args=[str(tmp_path), start_method, str(n_jobs)],
+            args=[str(tmp_path), start_method, str(n_jobs), "false"],
         )
         == 0
     )

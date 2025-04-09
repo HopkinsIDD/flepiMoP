@@ -17,8 +17,8 @@ from gempyor.utils import read_directory
 @pytest.mark.parametrize("config_file", ("config_sample_2pop_vaccine_scenarios.yml",))
 @pytest.mark.parametrize("start_method", mp.get_all_start_methods())
 def test_run_parallel_outcomes_by_multiprocessing_start_method(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     config_file: str,
     n_jobs: int,
     start_method: str,
@@ -48,13 +48,14 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
     with (tmp_path / config_file).open("r") as f:
         config = yaml.safe_load(f)
     nslots = int(config.get("nslots", 1))
+    script = Path(__file__).parent.parent / "data" / "run_parallel_test_script.py"
 
     # Run a pared down version of `gempyor.simulate.simulate` in a new process
     assert (
         run_test_in_separate_process(
-            Path(__file__).parent / "run_parallel_outcomes_test_script.py",
+            script,
             tmp_path / "test.py",
-            args=[str(tmp_path), start_method, str(n_jobs)],
+            args=[str(tmp_path), start_method, str(n_jobs), "true"],
         )
         == 0
     )
