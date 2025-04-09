@@ -1,6 +1,8 @@
 import itertools
 import logging
+import random
 import time
+from typing import Literal
 
 from numba import jit
 import numpy as np
@@ -9,7 +11,7 @@ import pyarrow as pa
 import tqdm.contrib.concurrent
 import xarray as xr
 
-from .utils import config, Timer, read_df
+from .utils import Timer, _nslots_random_seeds, config, read_df
 from . import NPI, model_info
 
 
@@ -18,40 +20,47 @@ logger = logging.getLogger(__name__)
 
 def run_parallel_outcomes(
     modinf: model_info.ModelInfo, *, sim_id2write, nslots=1, n_jobs=1
-):
+) -> Literal[1]:
+    """
+    Run outcome simulations in parallel.
+
+    Args:
+        modinf: ModelInfo object.
+        sim_id2write: Simulation ID to write.
+        nslots: Number of slots to run in parallel.
+        n_jobs: Number of jobs to run in parallel.
+
+    Returns:
+        Always returns 1.
+
+    Notes:
+        Successive calls to this function will produce different samples for random
+        parameters.
+    """
     start = time.monotonic()
-
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
-
-    loaded_values = None
+    random_seeds = _nslots_random_seeds(nslots)
     if (n_jobs == 1) or (
         modinf.nslots == 1
     ):  # run single process for debugging/profiling purposes
-        for sim_offset in np.arange(nslots):
-            onerun_delayframe_outcomes(
-                sim_id2write=sim_id2writes[sim_offset],
+        for sim_offset in range(nslots):
+            _onerun_delayframe_outcomes_with_random_seed(
+                random_seeds[sim_offset],
+                sim_id2writes[sim_offset],
                 modinf=modinf,
-                load_ID=False,
-                sim_id2load=None,
             )
-            # onerun_delayframe_outcomes(
-            #    sim_id2loads[sim_offset],
-            #    s,
-            #    sim_id2writes[sim_offset],
-            #    parameters,
-            # )
     else:
         tqdm.contrib.concurrent.process_map(
-            onerun_delayframe_outcomes,
+            _onerun_delayframe_outcomes_with_random_seed,
+            random_seeds,
             sim_id2writes,
             itertools.repeat(modinf),
             max_workers=n_jobs,
         )
 
     print(
-        f"""
->> {nslots} outcomes simulations completed in {time.monotonic() - start:.1f} seconds
-"""
+        f">> {nslots} outcomes simulations completed "
+        f"in {time.monotonic() - start:.1f} seconds"
     )
     return 1
 
@@ -122,6 +131,34 @@ def onerun_delayframe_outcomes(
             hpar=hpar,
             npi=npi_outcomes,
         )
+
+
+def _onerun_delayframe_outcomes_with_random_seed(
+    random_seed: int,
+    sim_id2write: int,
+    modinf: model_info.ModelInfo,
+    load_ID: bool = False,
+    sim_id2load: int = None,
+) -> None:
+    """
+    Wrapper function to run `onerun_delayframe_outcomes` with a random seed.
+
+    Args:
+        random_seed: Random seed to use for the run.
+        sim_id2write: Simulation ID to write.
+        modinf: ModelInfo object.
+
+    Returns:
+        None
+
+    See Also:
+        `onerun_delayframe_outcomes`
+
+    """
+    np.random.seed(seed=random_seed)
+    onerun_delayframe_outcomes(
+        sim_id2write, modinf, load_ID=load_ID, sim_id2load=sim_id2load
+    )
 
 
 def read_parameters_from_config(modinf: model_info.ModelInfo):
@@ -423,17 +460,17 @@ def compute_all_multioutcomes(
                     & (loaded_values["outcome"] == new_comp)
                 ]["value"].to_numpy()
             else:
-                probabilities = parameters[new_comp][
-                    "probability"
-                ].as_random_distribution()(
-                    size=len(modinf.subpop_struct.subpop_names)
-                )  # one draw per subpop
+                # One draw for all subpops
+                probabilities = np.repeat(
+                    parameters[new_comp]["probability"].as_random_distribution()(),
+                    len(modinf.subpop_struct.subpop_names),
+                )
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
-
-                delays = parameters[new_comp]["delay"].as_random_distribution()(
-                    size=len(modinf.subpop_struct.subpop_names)
-                )  # one draw per subpop
+                delays = np.repeat(
+                    parameters[new_comp]["delay"].as_random_distribution()(),
+                    len(modinf.subpop_struct.subpop_names),
+                )
             probabilities[probabilities > 1] = 1
             probabilities[probabilities < 0] = 0
             probabilities = np.repeat(
@@ -511,9 +548,10 @@ def compute_all_multioutcomes(
                         & (loaded_values["outcome"] == new_comp)
                     ]["value"].to_numpy()
                 else:
-                    durations = parameters[new_comp]["duration"].as_random_distribution()(
-                        size=len(modinf.subpop_struct.subpop_names)
-                    )  # one draw per subpop
+                    durations = np.repeat(
+                        parameters[new_comp]["duration"].as_random_distribution()(),
+                        len(modinf.subpop_struct.subpop_names),
+                    )
                 durations = np.repeat(
                     durations[:, np.newaxis], len(dates), axis=1
                 ).T  # duplicate in time
