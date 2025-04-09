@@ -50,7 +50,7 @@ def test_run_parallel_SEIR_by_multiprocessing_start_method(
             tmp_path / "test.py",
             args=[str(tmp_path), start_method, str(n_jobs)],
         )
-        is None
+        == 0
     )
 
     spar = read_directory(tmp_path, filters=["spar", ".parquet"])

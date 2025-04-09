@@ -328,10 +328,8 @@ def run_test_in_separate_process(
     try:
         python = _shutil_which("python")
         args = [python, str(script)] + list(quote(a) for a in args)
-        proc = subprocess.run(args, capture_output=True)
-        assert (
-            proc.returncode == 0
-        ), f"Issue running test script returned {proc.returncode}: {proc.stderr.decode()}."
+        proc = subprocess.run(args, capture_output=True, check=True)
+        return proc.returncode
     finally:
         if dest is None and script.exists():
             script.unlink()

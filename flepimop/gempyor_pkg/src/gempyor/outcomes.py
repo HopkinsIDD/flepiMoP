@@ -1,5 +1,6 @@
 import itertools
 import logging
+import random
 import time
 from typing import Literal
 
@@ -10,7 +11,7 @@ import pyarrow as pa
 import tqdm.contrib.concurrent
 import xarray as xr
 
-from .utils import config, Timer, read_df
+from .utils import Timer, _nslots_random_seeds, config, read_df
 from . import NPI, model_info
 
 
@@ -22,9 +23,7 @@ def run_parallel_outcomes(
 ) -> Literal[1]:
     start = time.monotonic()
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
-    random_seeds = np.random.choice(
-        range(nslots + 1, 4 * nslots), size=nslots, replace=False
-    ).tolist()
+    random_seeds = _nslots_random_seeds(nslots)
     if (n_jobs == 1) or (
         modinf.nslots == 1
     ):  # run single process for debugging/profiling purposes

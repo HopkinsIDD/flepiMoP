@@ -5,6 +5,7 @@ import logging
 import numbers
 import os
 from pathlib import Path
+import random
 from shlex import quote as shlex_quote
 import shutil
 import subprocess
@@ -1336,3 +1337,79 @@ def _format_cli_options(
             new_opts.extend(f"{opt_name}={shlex_quote(w)}" for w in v)
         opts.extend(new_opts)
     return opts
+
+
+def _random_seeds_list(a: int, b: int, n: int) -> list[int]:
+    """
+    Generate a list of unique random integers within a specified range.
+
+    Args:
+        a: The lower bound of the range, inclusive.
+        b: The upper bound of the range, inclusive.
+        n: The number of unique random integers to generate.
+
+    Returns:
+        A list of `n` unique integers between `a` and `b`.
+
+    Raises:
+        ValueError: If the lower bound is not less than the upper bound.
+        ValueError: If the range is too small to accommodate `n` unique integers.
+
+    Examples:
+        >>> import random
+        >>> from gempyor.utils import _random_seeds_list
+        >>> random.seed(42)
+        >>> _random_seeds_list(1, 100, 5)
+        [82, 15, 4, 95, 36]
+        >>> _random_seeds_list(1, 100, 5)
+        [32, 29, 18, 95, 14]
+        >>> _random_seeds_list(1, 5, 5)
+        [5, 1, 4, 2, 3]
+        >>> _random_seeds_list(1, 20, 0)
+        []
+        >>> try:
+        ...     _random_seeds_list(1, 5, 6)
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        Range [1, 5] is too small for 6 unique random integers.
+    """
+    random_seeds = []
+    if a >= b:
+        raise ValueError(f"The lower bound, {a}, must be less than the upper bound, {b}.")
+    if n < 0:
+        raise ValueError("The number of random integers to generate must be non-negative.")
+    if (b - a) + 1 < n:
+        raise ValueError(f"Range [{a}, {b}] is too small for {n} unique random integers.")
+    while len(random_seeds) < n:
+        seed = random.randint(a, b)
+        if seed not in random_seeds:
+            random_seeds.append(seed)
+    return random_seeds
+
+
+def _nslots_random_seeds(nslots: int) -> list[int]:
+    """
+    Generate a list of unique random integers for the number of slots.
+
+    This function generates a list of `nslots` unique random integers between
+    [`nslots` + 1, 2^32 + 1]. Intended for use in generating random seeds for individual
+    slots when simulations are done in parallel.
+
+    Args:
+        nslots: The number of slots to generate random integers for.
+
+    Examples:
+        >>> import random
+        >>> from gempyor.utils import _nslots_random_seeds
+        >>> random.seed(42)
+        >>> _nslots_random_seeds(5)
+        [2746317219, 478163333, 107420375, 3184935169, 1181241949]
+        >>> _nslots_random_seeds(5)
+        [1051802518, 958682852, 599310831, 3163119791, 440213421]
+        >>> _nslots_random_seeds(1)
+        [2906402159]
+        >>> _nslots_random_seeds(1)
+        [3181143733]
+    """
+    return _random_seeds_list(nslots + 1, 2**32 - 1, nslots)

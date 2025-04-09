@@ -11,7 +11,7 @@ import xarray as xr
 
 from . import NPI, steps_rk4
 from .model_info import ModelInfo
-from .utils import Timer, read_df
+from .utils import Timer, _nslots_random_seeds, read_df
 
 
 logger = logging.getLogger(__name__)
@@ -398,9 +398,7 @@ def _onerun_SEIR_with_random_seed(
 def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
-    random_seeds = np.random.choice(
-        range(modinf.nslots + 1, 4 * modinf.nslots), size=modinf.nslots, replace=False
-    ).tolist()
+    random_seeds = _nslots_random_seeds(modinf.nslots)
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
             _onerun_SEIR_with_random_seed(

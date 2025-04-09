@@ -50,7 +50,7 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
             tmp_path / "test.py",
             args=[str(tmp_path), start_method, str(n_jobs)],
         )
-        is None
+        == 0
     )
 
     hpar = read_directory(tmp_path, filters=["hpar", ".parquet"])
