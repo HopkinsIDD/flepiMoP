@@ -28,18 +28,21 @@ def test_run_parallel_SEIR_by_multiprocessing_start_method(
 
     This test:
 
-    1. Sets up the test environment by copying the necessary files to a temporary directory.
+    1. Sets up the test environment by copying the necessary files to a temporary
+       directory.
     2. Runs a pared down version of `gempyor.simulate.simulate` in a new process.
     3. Reads the contents of the 'spar' directory as a DataFrame.
-    4. Tests the contents of the 'spar' DataFrame.
+    4. Tests the contents of the 'spar' DataFrame to ensure that quantities drawn from
+       a random distribution are unique across slots.
 
-    The reason for the new process is to control the start method used by multiprocessing.
-    The `run_parallel_SEIR` function behaves differently depending on the start method used.
-    Under the hood `tqdm.contrib.concurrent.process_map` creates a
-    `concurrent.futures.ProcessPoolExecutor` with the default start method (see
+    The reason for the new process is to control the start method used by
+    multiprocessing. The `run_parallel_SEIR` function behaves differently depending on
+    the start method used. Under the hood `tqdm.contrib.concurrent.process_map` creates
+    a `concurrent.futures.ProcessPoolExecutor` with the default start method (see
     [tqdm/tqdm#1265](https://github.com/tqdm/tqdm/pull/1265)), which is 'spawn' on
-    MacOS/Windows and 'fork' on Linux. The work around to this is to force multiprocessing
-    to use the desired start method by setting it in the '__main__' module with
+    MacOS/Windows and 'fork' on Linux. The work around to this is to force
+    multiprocessing to use the desired start method by setting it in the '__main__'
+    module with
     [`multiprocessing.set_start_method`](https://docs.python.org/3.11/library/multiprocessing.html#multiprocessing.set_start_method).
     """
     # Test setup
