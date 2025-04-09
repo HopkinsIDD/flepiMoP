@@ -9,7 +9,7 @@ only be done once per a process. To get around this limitation when testing, thi
 is used to run a pared down version of `gempyor.simulate.simulate` in a new process with
 the desired start method. The script takes the following arguments:
 
-1. `setup_sample_2pop_vaccine_scenarios`: Path to the setup directory.
+1. `tmp_path`: Path to the setup directory.
 2. `start_method`: The start method to use for multiprocessing (e.g., 'spawn', 'fork').
 3. `n_jobs`: Number of jobs to run in parallel.
 4. `do_outcomes`: Whether to run outcomes or not (True/False).
@@ -43,7 +43,12 @@ from gempyor.seir import run_parallel_SEIR
 from gempyor.shared_cli import parse_config_files
 
 
-def main(setup_sample_2pop_vaccine_scenarios: Path, n_jobs: int, do_outcomes: bool) -> None:
+def main(
+    tmp_path: Path,
+    n_jobs: int,
+    do_outcomes: bool,
+    successive_run: bool,
+) -> None:
     """
     Run a pared down version of `gempyor.simulate.simulate` in a new process.
 
@@ -52,13 +57,13 @@ def main(setup_sample_2pop_vaccine_scenarios: Path, n_jobs: int, do_outcomes: bo
     `gempyor.outcomes.run_parallel_outcomes` function.
 
     Args:
-        setup_sample_2pop_vaccine_scenarios: Path to the setup directory.
+        tmp_path: Path to the setup directory.
         n_jobs: Number of jobs to run in parallel.
         do_outcomes: Whether to run outcomes or not.
+        successive_run: Whether this is a successive run or not.
     """
     cfg = parse_config_files(
-        config_filepath=setup_sample_2pop_vaccine_scenarios
-        / "config_sample_2pop_vaccine_scenarios.yml",
+        config_filepath=tmp_path / "config_sample_2pop_vaccine_scenarios.yml",
         id_run_id=None,
         out_run_id=None,
         seir_modifiers_scenarios=[],
@@ -91,7 +96,12 @@ def main(setup_sample_2pop_vaccine_scenarios: Path, n_jobs: int, do_outcomes: bo
 
     assert run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int)) is None
 
-    if do_outcomes:
+    if successive_run and not do_outcomes:
+        (tmp_path / "model_output").rename(tmp_path / "tmp")
+        assert run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int)) is None
+        (tmp_path / "model_output").rename(tmp_path / "model_output_successive")
+        (tmp_path / "tmp").rename(tmp_path / "model_output")
+    elif do_outcomes:
         assert (
             run_parallel_outcomes(
                 sim_id2write=cfg["first_sim_index"].get(int),
@@ -101,20 +111,37 @@ def main(setup_sample_2pop_vaccine_scenarios: Path, n_jobs: int, do_outcomes: bo
             )
             == 1
         )
+        if successive_run:
+            (tmp_path / "model_output").rename(tmp_path / "tmp")
+            assert (
+                run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int)) is None
+            )
+            assert (
+                run_parallel_outcomes(
+                    sim_id2write=cfg["first_sim_index"].get(int),
+                    modinf=modinf,
+                    nslots=nchains,
+                    n_jobs=cfg["jobs"].get(int),
+                )
+                == 1
+            )
+            (tmp_path / "model_output").rename(tmp_path / "model_output_successive")
+            (tmp_path / "tmp").rename(tmp_path / "model_output")
 
 
 if __name__ == "__main__":
     """
-    USAGE: run_parallel_test_script.py <setup_sample_2pop_vaccine_scenarios> <start_method> <n_jobs> <do_outcomes>
-    <setup_sample_2pop_vaccine_scenarios>: Path to the setup directory.
+    USAGE: run_parallel_test_script.py <tmp_path> <start_method> <n_jobs> <do_outcomes>
+    <tmp_path>: Path to the setup directory.
     <start_method>: The start method to use for multiprocessing (e.g., 'spawn', 'fork').
     <n_jobs>: Number of jobs to run in parallel.
     <do_outcomes>: Whether to run outcomes or not (True/False).
     """
-    setup_sample_2pop_vaccine_scenarios = Path(sys.argv[1])
+    tmp_path = Path(sys.argv[1])
     start_method = sys.argv[2]
     n_jobs = int(sys.argv[3])
     do_outcomes = sys.argv[4].strip().lower() == "true"
-    os.chdir(setup_sample_2pop_vaccine_scenarios)
+    successive_run = sys.argv[5].strip().lower() == "true"
+    os.chdir(tmp_path)
     mp.set_start_method(start_method, force=True)
-    main(setup_sample_2pop_vaccine_scenarios, n_jobs, do_outcomes)
+    main(tmp_path, n_jobs, do_outcomes, successive_run)

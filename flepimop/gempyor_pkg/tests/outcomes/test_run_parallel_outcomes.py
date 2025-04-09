@@ -58,27 +58,37 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
         run_test_in_separate_process(
             script,
             tmp_path / "test.py",
-            args=[str(tmp_path), start_method, str(n_jobs), "true"],
+            args=[str(tmp_path), start_method, str(n_jobs), "true", "true"],
         )
         == 0
     )
 
-    hpar = read_directory(tmp_path, filters=["hpar", ".parquet"])
+    hpar = read_directory(tmp_path / "model_output", filters=["hpar", ".parquet"])
+    hpar_successive = read_directory(
+        tmp_path / "model_output_successive", filters=["hpar", ".parquet"]
+    )
 
     # Test contents of 'hpar' DataFrames
-    assert (
-        hpar[
-            (hpar["subpop"] == "large_province")
-            & (hpar["quantity"] == "probability")
-            & (hpar["outcome"] == "incidCase")
-        ]["value"].nunique()
-        == nslots
+    for df in [hpar, hpar_successive]:
+        assert (
+            df[
+                (df["subpop"] == "large_province")
+                & (df["quantity"] == "probability")
+                & (df["outcome"] == "incidCase")
+            ]["value"].nunique()
+            == nslots
+        )
+        assert (
+            df[
+                (df["subpop"] == "small_province")
+                & (df["quantity"] == "probability")
+                & (df["outcome"] == "incidCase")
+            ]["value"].nunique()
+            == nslots
+        )
+    hpar_merged = hpar.merge(
+        hpar_successive,
+        on=["subpop", "quantity", "outcome", "slot"],
+        suffixes=("_original", "_successive"),
     )
-    assert (
-        hpar[
-            (hpar["subpop"] == "small_province")
-            & (hpar["quantity"] == "probability")
-            & (hpar["outcome"] == "incidCase")
-        ]["value"].nunique()
-        == nslots
-    )
+    assert not hpar_merged["value_original"].equals(hpar_merged["value_successive"])

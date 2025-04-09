@@ -58,12 +58,22 @@ def test_run_parallel_SEIR_by_multiprocessing_start_method(
         run_test_in_separate_process(
             script,
             tmp_path / "test.py",
-            args=[str(tmp_path), start_method, str(n_jobs), "false"],
+            args=[str(tmp_path), start_method, str(n_jobs), "false", "true"],
         )
         == 0
     )
 
-    spar = read_directory(tmp_path, filters=["spar", ".parquet"])
+    spar = read_directory(tmp_path / "model_output", filters=["spar", ".parquet"])
+    spar_successive = read_directory(
+        tmp_path / "model_output_successive", filters=["spar", ".parquet"]
+    )
 
     # Test contents of 'spar' DataFrames
-    assert spar[spar["parameter"] == "Ro"]["value"].nunique() == nslots
+    for df in [spar, spar_successive]:
+        assert df[df["parameter"] == "Ro"]["value"].nunique() == nslots
+    merged_spar = spar.merge(
+        spar_successive,
+        on=["parameter", "slot"],
+        suffixes=("_original", "_successive"),
+    )
+    assert not merged_spar["value_original"].equals(merged_spar["value_successive"])
