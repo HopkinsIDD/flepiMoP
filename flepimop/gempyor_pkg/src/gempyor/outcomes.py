@@ -21,6 +21,22 @@ logger = logging.getLogger(__name__)
 def run_parallel_outcomes(
     modinf: model_info.ModelInfo, *, sim_id2write, nslots=1, n_jobs=1
 ) -> Literal[1]:
+    """
+    Run outcome simulations in parallel.
+
+    Args:
+        modinf: ModelInfo object.
+        sim_id2write: Simulation ID to write.
+        nslots: Number of slots to run in parallel.
+        n_jobs: Number of jobs to run in parallel.
+
+    Returns:
+        Always returns 1.
+
+    Notes:
+        Successive calls to this function will produce different samples for random
+        parameters.
+    """
     start = time.monotonic()
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
     random_seeds = _nslots_random_seeds(nslots)

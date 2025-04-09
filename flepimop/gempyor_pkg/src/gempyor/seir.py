@@ -393,6 +393,18 @@ def _onerun_SEIR_with_random_seed(
 
 
 def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
+    """
+    Run SEIR simulations in parallel.
+
+    Args:
+        modinf: The ModelInfo object.
+        config: The configuration.
+        n_jobs: The number of parallel jobs to run. Default is 1 (no parallelization).
+
+    Notes:
+        Successive calls to this function will produce different samples for random
+        parameters.
+    """
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
     random_seeds = _nslots_random_seeds(modinf.nslots)
