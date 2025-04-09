@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import pytest
+import yaml
 
 from gempyor.testing import run_test_in_separate_process, setup_example_from_tutorials
 from gempyor.utils import read_directory
@@ -13,10 +14,12 @@ from gempyor.utils import read_directory
     reason="The $FLEPI_PATH environment variable is not set.",
 )
 @pytest.mark.parametrize("n_jobs", (1, 2))
+@pytest.mark.parametrize("config_file", ("config_sample_2pop_vaccine_scenarios.yml",))
 @pytest.mark.parametrize("start_method", mp.get_all_start_methods())
 def test_run_parallel_outcomes_by_multiprocessing_start_method(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    config_file: str,
     n_jobs: int,
     start_method: str,
 ) -> None:
@@ -41,7 +44,10 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
     """
     # Test setup
     monkeypatch.chdir(tmp_path)
-    setup_example_from_tutorials(tmp_path, "config_sample_2pop_vaccine_scenarios.yml")
+    setup_example_from_tutorials(tmp_path, config_file)
+    with (tmp_path / config_file).open("r") as f:
+        config = yaml.safe_load(f)
+    nslots = int(config.get("nslots", 1))
 
     # Run a pared down version of `gempyor.simulate.simulate` in a new process
     assert (
@@ -62,7 +68,7 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
             & (hpar["quantity"] == "probability")
             & (hpar["outcome"] == "incidCase")
         ]["value"].nunique()
-        == 10
+        == nslots
     )
     assert (
         hpar[
@@ -70,5 +76,5 @@ def test_run_parallel_outcomes_by_multiprocessing_start_method(
             & (hpar["quantity"] == "probability")
             & (hpar["outcome"] == "incidCase")
         ]["value"].nunique()
-        == 10
+        == nslots
     )
