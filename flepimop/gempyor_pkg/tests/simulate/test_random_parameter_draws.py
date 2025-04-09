@@ -1,3 +1,32 @@
+"""
+Unit tests for parameter draws made by the `flepimop simulate` command.
+
+This test file contains two tests:
+
+1. `test_parameter_draw_per_slot`: This test checks the parameter draws made by the
+   `flepimop simulate` command for a specific configuration file. It verifies that the
+   parameter draws are as expected for different scenarios and subpopulations. The test
+   uses the `RandomDrawAssertion` class to define the expected behavior of the
+   parameter draws.
+2. `test_parameter_draws_per_slot_across_scenarios`: This test checks that the parameter
+   draws made by the `flepimop simulate` command across scenarios are consistent. It is
+   currently marked as expected to fail because parameter matching across scenarios is
+   not yet supported.
+
+The tests are parameterized to run with different configuration files, multiprocessing
+start methods, and number of jobs. For the first test in particular we are checking for:
+
+|                             | Varies By Slot | Varies By Location |
+|-----------------------------|----------------|--------------------|
+| `spar`                      | Yes            | No                 |
+| `hpar`                      | Yes            | No                 |
+| `snpi`                      | Yes            | Yes                |
+| `hnpi`                      | Yes            | Yes                |
+| `snpi` with `subpop_groups` | Yes            | No                 |
+| `hnpi` with `subpop_groups` | Yes            | No                 |
+
+"""
+
 import itertools
 import os
 from pathlib import Path
@@ -14,6 +43,25 @@ from gempyor.utils import read_directory
 
 
 class RandomDrawAssertion(NamedTuple):
+    """
+    Represents an assertion to be made on a DataFrame.
+
+    Attributes:
+        kind: The kind of DataFrame to assert on (e.g., "hnpi", "hpar", "snpi", "spar").
+        filters: A dictionary of filters to apply to the DataFrame.
+        column: The column to assert on.
+        nunique: The expected number of unique values in the column or `None` to skip
+            this assertion.
+        nunique_lower_bound: The lower bound for the number of unique values in the
+            column or `None` to skip this assertion.
+        exact_value: The exact value to assert in the column or `None` to skip this
+            assertion.
+        all_equal_by: The column by which all values should be equal or `None` to skip
+            this assertion.
+        not_all_equal_by: The column by which not all values should be equal or `None`
+            to skip this assertion.
+    """
+
     kind: Literal["hnpi", "hpar", "snpi", "spar"]
     filters: dict[str, str]
     column: str
@@ -26,6 +74,16 @@ class RandomDrawAssertion(NamedTuple):
     def assert_df_passes(
         self, dfs: dict[Literal["hnpi", "hpar", "snpi", "spar"], pd.DataFrame]
     ) -> None:
+        """
+        Asserts that the DataFrame passes the specified assertions.
+
+        Args:
+            dfs: A dictionary of DataFrames to assert on, keyed by kind.
+
+        Raises:
+            ValueError: If no data is found for the given filters.
+            ValueError: If no assertion was made.
+        """
         df = dfs[self.kind].copy()
         for key, value in self.filters.items():
             df = df[df[key] == value]
@@ -66,18 +124,27 @@ class RandomDrawAssertion(NamedTuple):
             "config_sample_2pop_modifiers_test_random.yml",
             None,
             (
+                # For the hnpi model output filtered on where subpop is 'large_province'
+                # we expect there to be 10 unique values in the 'value' column (unique
+                # across slots).
                 RandomDrawAssertion(
                     kind="hnpi",
                     filters={"subpop": "large_province"},
                     column="value",
                     nunique=10,
                 ),
+                # For the hnpi model output filtered on where subpop is 'small_province'
+                # we expect there to be 10 unique values in the 'value' column (unique
+                # across slots).
                 RandomDrawAssertion(
                     kind="hnpi",
                     filters={"subpop": "small_province"},
                     column="value",
                     nunique=10,
                 ),
+                # For the hpar model output filtered on where quantity is 'probability'
+                # and outcome is 'incidCase' we expect the value to be 0.5 for all
+                # entries.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -87,6 +154,8 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=0.5,
                 ),
+                # For the hpar model output filtered on where quantity is 'delay' and
+                # outcome is 'incidCase' we expect the value to be 5 for all entries.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -96,6 +165,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=5,
                 ),
+                # For the hpar model output filtered on where quantity is 'probability'
+                # and outcome is 'incidHosp' we expect the value to be 0.05 for all
+                # entries.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -105,6 +177,8 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=0.05,
                 ),
+                # For the hpar model output filtered on where quantity is 'delay' and
+                # outcome is 'incidHosp' we expect the value to be 7 for all entries.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -114,6 +188,8 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=7,
                 ),
+                # For the hpar model output filtered on where quantity is 'duration' and
+                # outcome is 'incidHosp' we expect the value to be 10 for all entries.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -123,6 +199,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=10,
                 ),
+                # For the hpar model output filtered on where quantity is 'probability'
+                # and outcome is 'incidDeath' we expect the value to be 0.2 for all
+                # entries.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -132,6 +211,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=0.2,
                 ),
+                # For the hpar model output filtered on where subpop is
+                # 'small_province', quantity is 'delay', and outcome is 'incidDeath' we
+                # expect the value column to contain more than 1 unique values.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -142,6 +224,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     nunique_lower_bound=1,
                 ),
+                # For the hpar model output filtered on where subpop is
+                # 'large_province', quantity is 'delay', and outcome is 'incidDeath' we
+                # expect the value column to contain more than 1 unique values.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -152,6 +237,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     nunique_lower_bound=1,
                 ),
+                # For the hpar model output filtered on where quantity is 'delay' and
+                # outcome is 'incidDeath' we expect the value column to be the same
+                # across subpop.
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -161,6 +249,8 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     all_equal_by="subpop",
                 ),
+                # For the snpi model output filtered on where modifier_name is
+                # 'Ro_lockdown' we expect the value column to be 0.4 for all entries.
                 RandomDrawAssertion(
                     kind="snpi",
                     filters={
@@ -169,6 +259,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=0.4,
                 ),
+                # For the snpi model output filtered on where modifier_name is
+                # 'Ro_relax' we expect the value column to contain 20 unique values
+                # (unique across slots and subpops).
                 RandomDrawAssertion(
                     kind="snpi",
                     filters={
@@ -177,6 +270,8 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     nunique=20,
                 ),
+                # For the spar model output filtered on where parameter is 'sigma' we
+                # expect the value column to be 0.25 for all entries.
                 RandomDrawAssertion(
                     kind="spar",
                     filters={
@@ -185,6 +280,8 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=0.25,
                 ),
+                # For the spar model output filtered on where parameter is 'gamma' we
+                # expect the value column to be 0.2 for all entries.
                 RandomDrawAssertion(
                     kind="spar",
                     filters={
@@ -193,6 +290,9 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     exact_value=0.2,
                 ),
+                # For the spar model output filtered on where parameter is 'Ro' we
+                # expect the value column to contain 10 unique values (unique across
+                # slots).
                 RandomDrawAssertion(
                     kind="spar",
                     filters={
@@ -207,18 +307,25 @@ class RandomDrawAssertion(NamedTuple):
             "config_sample_2pop_modifiers_test_random_subpop_groups.yml",
             None,
             (
+                # For the hnpi model output with no filters we expect the value column
+                # to contain 10 unique values (unique across slots).
                 RandomDrawAssertion(
                     kind="hnpi",
                     filters={},
                     column="value",
                     nunique=10,
                 ),
+                # For the snpi model output filtered on where modifier_name is
+                # 'Ro_lockdown' we expect the value column to be 0.4 for all entries.
                 RandomDrawAssertion(
                     kind="snpi",
                     filters={"modifier_name": "Ro_lockdown"},
                     column="value",
                     exact_value=0.4,
                 ),
+                # For the snpi model output filtered on where modifier_name is
+                # 'Ro_relax' we expect the value column to contain 10 unique values
+                # (unique across slots).
                 RandomDrawAssertion(
                     kind="snpi",
                     filters={"modifier_name": "Ro_relax"},
@@ -231,6 +338,10 @@ class RandomDrawAssertion(NamedTuple):
             "config_sample_2pop_vaccine_scenarios.yml",
             "sample_2pop_pess_vax",
             (
+                # For the hpar model output filtered on where subpop is
+                # 'small_province', quantity is 'probability', and outcome is
+                # 'incidCase' we expect the value column to contain 10 unique values
+                # (unique across slots).
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -241,6 +352,10 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     nunique=10,
                 ),
+                # For the hpar model output filtered on where subpop is
+                # 'large_province', quantity is 'probability', and outcome is
+                # 'incidCase' we expect the value column to contain 10 unique values
+                # (unique across slots).
                 RandomDrawAssertion(
                     kind="hpar",
                     filters={
@@ -251,12 +366,17 @@ class RandomDrawAssertion(NamedTuple):
                     column="value",
                     nunique=10,
                 ),
+                # For the snpi model output with no filters we expect the value column
+                # to be 0.0 for all entries.
                 RandomDrawAssertion(
                     kind="snpi",
                     filters={},
                     column="value",
                     exact_value=0.0,
                 ),
+                # For the spar model output filtered on where parameter is 'Ro' we
+                # expect the value column to contain 10 unique values (unique across
+                # slots).
                 RandomDrawAssertion(
                     kind="spar",
                     filters={"parameter": "Ro"},
@@ -275,6 +395,7 @@ def test_parameter_draw_per_slot(
     name_filter: str | None,
     assertions: tuple[RandomDrawAssertion, ...] | None,
 ) -> None:
+    """Unit test for parameter draw per slot produced by simulate CLI."""
     # Test setup
     monkeypatch.chdir(tmp_path)
     setup_example_from_tutorials(tmp_path, config)
@@ -310,6 +431,7 @@ def test_parameter_draw_per_slot(
 def test_parameter_draws_per_slot_across_scenarios(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, n_jobs: int
 ) -> None:
+    """Unit test for parameter draw per slot across scenarios."""
     # Test setup
     monkeypatch.chdir(tmp_path)
     setup_example_from_tutorials(tmp_path, "config_sample_2pop_vaccine_scenarios.yml")
