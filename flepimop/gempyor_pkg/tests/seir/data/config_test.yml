@@ -23,7 +23,7 @@ compartments:
 
 seir:
   integration:
-    method: legacy
+    method: euler
     dt: 1/6
   parameters:
     alpha:

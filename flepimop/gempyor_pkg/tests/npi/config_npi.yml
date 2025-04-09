@@ -42,7 +42,7 @@ seeding:
 
 seir:
   integration:
-    method: legacy
+    method: euler
     dt: 2.000
   parameters:
     sigma:
