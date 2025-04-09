@@ -637,6 +637,52 @@ def list_filenames(
     return files
 
 
+def extract_slot(file: Path) -> pd.DataFrame:
+    """
+    Extract the slot number from the filename and add to DataFrame.
+
+    Args:
+        file: The filename to extract the slot number from.
+
+    Returns:
+        A pandas DataFrame containing the contents of `file` along with a column called
+        'slot' that contains the slot number extracted from the filename.
+
+    Raises:
+        ValueError: If the 'slot' column already exists in the DataFrame read in.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> import pandas as pd
+        >>> from gempyor.utils import extract_slot
+        >>> sample = pd.DataFrame(data={"letters": ["a", "b", "c"]})
+        >>> file = Path.cwd() / "00017.foobar.csv"
+        >>> sample.to_csv(file, index=False)
+        >>> extract_slot(file)
+        letters  slot
+        0       a    17
+        1       b    17
+        2       c    17
+        >>> extract_slot(file).info()
+        <class 'pandas.core.frame.DataFrame'>
+        RangeIndex: 3 entries, 0 to 2
+        Data columns (total 2 columns):
+        #   Column   Non-Null Count  Dtype
+        ---  ------   --------------  -----
+        0   letters  3 non-null      object
+        1   slot     3 non-null      int64
+        dtypes: int64(1), object(1)
+        memory usage: 180.0+ bytes
+    """
+    df = pd.read_parquet(file) if file.suffix == ".parquet" else pd.read_csv(file)
+    if "slot" in df.columns:
+        raise ValueError(
+            f"Column 'slot' already exists in the DataFrame from file: {file}."
+        )
+    df["slot"] = int(file.name.split(".")[0])
+    return df
+
+
 def read_directory(
     directory: str | bytes | os.PathLike, filters: str | list[str] | None = None
 ) -> pd.DataFrame:
@@ -652,11 +698,10 @@ def read_directory(
     Returns:
         A pandas DataFrame containing the contents of all the files in the directory.
     """
-    files = [Path(f) for f in list_filenames(folder=directory, filters=filters or [])]
+    files = [Path(file) for file in list_filenames(folder=directory, filters=filters or [])]
     dfs: list[pd.DataFrame] | pd.DataFrame = []
-    for i, f in enumerate(sorted(files)):
-        dfs.append(pd.read_parquet(f) if f.suffix == ".parquet" else pd.read_csv(f))
-        dfs[-1]["slot"] = int(f.name.split(".")[0])
+    for file in sorted(files):
+        dfs.append(extract_slot(file))
     return pd.concat(dfs).reset_index(drop=True)
 
 
