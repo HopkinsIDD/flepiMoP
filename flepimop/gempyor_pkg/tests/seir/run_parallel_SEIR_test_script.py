@@ -22,7 +22,6 @@ def main(setup_sample_2pop_vaccine_scenarios, n_jobs):
         write_csv=False,
         write_parquet=True,
         first_sim_index=1,
-        stoch_traj_flag=False,
         verbose=True,
     )
 
@@ -40,7 +39,6 @@ def main(setup_sample_2pop_vaccine_scenarios, n_jobs):
         first_sim_index=cfg["first_sim_index"].get(int),
         in_run_id=cfg["in_run_id"].get(str) if cfg["in_run_id"].exists() else None,
         out_run_id=cfg["out_run_id"].get(str) if cfg["out_run_id"].exists() else None,
-        stoch_traj_flag=cfg["stoch_traj_flag"].get(bool),
         config_filepath=cfg["config_src"].as_str_seq(),
     )
 
