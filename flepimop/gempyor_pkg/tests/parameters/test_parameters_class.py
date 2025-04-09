@@ -666,35 +666,18 @@ class TestParameters:
         # these NPI objects.
         pass
 
-    def test_reinitialize_parameters(self, tmp_path: pathlib.Path) -> None:
+    @pytest.mark.parametrize("do_reinit", [True, False])
+    def test_reinitialize_parameters(self, tmp_path: pathlib.Path, do_reinit: bool) -> None:
+        """Reinitialization of distributions required for multiprocessing under spawn."""
         mock_inputs = distribution_three_valid_parameter_factory(tmp_path)
-
-        np.random.seed(123)
-
         params = mock_inputs.create_parameters_instance()
-
         with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as ex:
             results = list(
                 ex.map(
                     sample_params,
                     repeat(params, times=6),
-                    repeat(False, times=6),
+                    repeat(do_reinit, times=6),
                 )
             )
-
         for i in range(1, len(results)):
-            assert np.allclose(results[i - 1], results[i])
-
-        np.random.seed(123)
-
-        with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as ex:
-            results_with_reinit = list(
-                ex.map(
-                    sample_params,
-                    repeat(params, times=6),
-                    repeat(True, times=6),
-                )
-            )
-
-        for i in range(1, len(results_with_reinit)):
-            assert not np.allclose(results_with_reinit[i - 1], results_with_reinit[i])
+            assert np.allclose(results[i - 1], results[i]) == (not do_reinit)
