@@ -30,13 +30,12 @@ subpop_setup:
 | ----------- | ------------ | ------------ | ------------------------------------- |
 | geodata     | **required** | path to file | path to geodata file                  |
 | mobility    | **required** | path to file | path to mobility file                 |
-| selected    | **optional** | string       | name of selected location in`geodata` |
+| selected    | **optional** | string or list of strings       | name of selected location in`geodata` |
 
-### `geodata` file
+### `geodata` file and `selected` option
 
 * `geodata` is a .csv with column headers, with at least two columns: `subpop` and `population`.
-* `nodenames` is the name of a column in `geodata` that specifies unique geographical identification strings for each subpopulation.
-* `selected` is the list of selected locations in geodata to be modeled
+* `selected` if provided, is the subset of locations in geodata file (as determined by `subpop` column) to be modeled. Requesting subpopulation(s) that are not present will lead to an error.
 
 #### Example geodata file format
 
@@ -48,7 +47,7 @@ subpop,population
 
 ### `mobility` file
 
-The `mobility` file is a .csv file (it has to contain .csv as extension) with long form comma separated values. Columns have to be named `ori`, `dest`, `amount,` with amount being the average number individuals moving from the origin subpopulation `ori` to destination subpopulation `dest` on any given day. Details on the mathematics of this model of contact are explained in the [Model Description section](../model-description.md#mixing-between-subpopulations). Unassigned relations are assumed to be zero. The location entries in the `ori` and `dest` columns should match exactly the `subpop` column in `geodata.csv`
+The `mobility` file is a .csv file (it has to contain .csv as extension) with long form comma separated values. Columns have to be named `ori`, `dest`, `amount,` with amount being the average number individuals moving from the origin subpopulation `ori` to destination subpopulation `dest` on any given day. Details on the mathematics of this model of contact are explained in the [Model Description section](../model-description.md#mixing-between-subpopulations). Unassigned relations are assumed to be zero. The location entries in the `ori` and `dest` columns should correspond to an entry in the `subpop` column in `geodata.csv`. When using `selected`, the `mobility` data will also be filtered.
 
 #### Example mobility file format
 
