@@ -66,6 +66,7 @@ def good_opt_args(opt: str) -> dict[str, Any]:
             "in_run_id": "foo",
             "out_run_id": "foo",
             "in_prefix": "foo",
+            "populations": "test"
         }[opt]
     }
 
@@ -85,6 +86,7 @@ def ref_cfg_kvs(opt: str) -> dict[str, Any]:
             "in_run_id": "bar",
             "out_run_id": "bar",
             "in_prefix": "bar",
+            "populations": ["reference"]
         }[opt]
     }
 
@@ -192,6 +194,8 @@ class TestParseConfigFiles:
         for k, v in refopt.items():
             if k == "method":
                 assert mockconfig["seir"]["integration"][k].get(v) == v
+            elif k == "populations":
+                assert mockconfig["subpop_setup"]["selected"].get(v) == v
             else:
                 assert mockconfig[k].get(v) == v
         mockconfig.clear()

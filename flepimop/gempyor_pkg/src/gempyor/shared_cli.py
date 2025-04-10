@@ -299,9 +299,10 @@ def parse_config_files(
         )
 
     if (populations := kwargs.pop("populations", None)) is not None:
-        cfg["subpop_setup"]["selected"].set(
-            list(_parse_option(config_file_options["populations"], populations))
-        )
+        if populations:
+            cfg["subpop_setup"]["selected"].set(
+                list(_parse_option(config_file_options["populations"], populations))
+            )
 
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
