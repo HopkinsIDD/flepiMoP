@@ -36,7 +36,8 @@ class SubpopulationStructure:
         nsubpops: Number of subpopulations
         subpop_pop: Population of each subpopulation
         subpop_names: Names of each subpopulation
-        mobility: Mobility matrix
+        mobility: Mobility matrix where the row dimension corresponds to the source and
+            the column dimension corresponds to the destination subpopulation.
     """
 
     def __init__(
@@ -179,28 +180,13 @@ class SubpopulationStructure:
                 f"match geodata shape of {(self.nsubpops, self.nsubpops)}."
             )
 
-        # Make sure mobility values <= the population of src subpop
-        row_idx, _ = np.where((mobility.T - self.subpop_pop).T > 0.0)
+        # Make sure sum of mobility values <= the population of src subpop
+        row_idx = np.where(np.asarray(mobility.sum(axis=1)).ravel() > self.subpop_pop)[0]
         if len(row_idx) > 0:
             subpops_with_mobility_exceeding_pop = {self.subpop_names[r] for r in row_idx}
             raise ValueError(
                 "The following subpopulations have mobility exceeding "
                 f"their population: {', '.join(subpops_with_mobility_exceeding_pop)}."
-            )
-
-        tmp = self.subpop_pop - np.squeeze(np.asarray(mobility.sum(axis=1)))
-        tmp[tmp > 0] = 0
-        if tmp.any():
-            (row,) = np.where(tmp)
-            errmsg = ""
-            for r in row:
-                errmsg += (
-                    f"\n sum across row {r} exceed population of subpop "
-                    f"'{self.subpop_names[r]}' ({self.subpop_pop[r]}), by {-tmp[r]}"
-                )
-            raise ValueError(
-                "The following entries in the mobility data exceed "
-                f"the source subpop populations in geodata:{errmsg}"
             )
 
         return mobility

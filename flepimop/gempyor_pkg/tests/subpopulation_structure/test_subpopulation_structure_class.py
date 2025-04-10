@@ -393,6 +393,46 @@ def mobility_greater_than_two_populations_factory(
     )
 
 
+def mobility_greater_than_three_populations_factory(
+    tmp_path: Path,
+) -> MockSubpopulationStructureInput:
+    """
+    Factory for geodata and mobility where mobility is greater than population.
+
+    Returns:
+        A `MockSubpopulationStructureInput` instance with a geodata file that contains
+        two valid subpopulations and a mobility matrix where mobility is greater than
+        population.
+    """
+    geodata = pd.DataFrame(
+        {
+            "subpop": ["USA", "Canada", "Mexico"],
+            "population": [100, 50, 25],
+        }
+    )
+    with (tmp_path / "geodata.csv").open("w") as f:
+        geodata.to_csv(f, index=False)
+    mobility = pd.DataFrame(
+        {
+            "ori": ["USA", "USA", "Canada"],
+            "dest": ["Canada", "Mexico", "USA"],
+            "amount": [60, 60, 2],
+        }
+    )
+    with (tmp_path / "mobility.csv").open("w") as f:
+        mobility.to_csv(f, index=False)
+    return MockSubpopulationStructureInput(
+        setup_name="test",
+        subpop_config={
+            "geodata": "geodata.csv",
+            "mobility": "mobility.csv",
+        },
+        path_prefix=tmp_path,
+        geodata=geodata,
+        mobility=mobility,
+    )
+
+
 VALID_FACTORIES: Final = [
     valid_2pop_geodata_only_test_factory,
     valid_2pop_with_txt_mobility_test_factory,
@@ -486,6 +526,7 @@ def test_subpopulation_structure_instance_attributes(
     [
         (mobility_greater_than_population_factory, {"USA"}),
         (mobility_greater_than_two_populations_factory, {"Canada", "USA"}),
+        (mobility_greater_than_three_populations_factory, {"USA"}),
     ],
 )
 def test_mobility_greater_than_population_raises_value_error(
