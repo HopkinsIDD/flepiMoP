@@ -180,19 +180,12 @@ class SubpopulationStructure:
             )
 
         # Make sure mobility values <= the population of src subpop
-        tmp = (mobility.T - self.subpop_pop).T
-        tmp[tmp < 0] = 0
-        if tmp.any():
-            rows, cols, values = scipy.sparse.find(tmp)
-            errmsg = ""
-            for r, c, _ in zip(rows, cols, values):
-                errmsg += (
-                    f"\n({r}, {c}) = {mobility[r, c]} > population "
-                    f"of '{self.subpop_names[r]}' = {self.subpop_pop[r]}"
-                )
+        row_idx, _ = np.where((mobility.T - self.subpop_pop).T > 0.0)
+        if len(row_idx) > 0:
+            subpops_with_mobility_exceeding_pop = {self.subpop_names[r] for r in row_idx}
             raise ValueError(
-                "The following entries in the mobility data exceed "
-                f"the source subpop populations in geodata:{errmsg}"
+                "The following subpopulations have mobility exceeding "
+                f"their population: {', '.join(subpops_with_mobility_exceeding_pop)}."
             )
 
         tmp = self.subpop_pop - np.squeeze(np.asarray(mobility.sum(axis=1)))
