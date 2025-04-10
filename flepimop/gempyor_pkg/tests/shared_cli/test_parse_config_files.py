@@ -66,7 +66,7 @@ def good_opt_args(opt: str) -> dict[str, Any]:
             "in_run_id": "foo",
             "out_run_id": "foo",
             "in_prefix": "foo",
-            "populations": "test"
+            "populations": "test",
         }[opt]
     }
 
@@ -86,7 +86,7 @@ def ref_cfg_kvs(opt: str) -> dict[str, Any]:
             "in_run_id": "bar",
             "out_run_id": "bar",
             "in_prefix": "bar",
-            "populations": ["reference"]
+            "populations": ["reference"],
         }[opt]
     }
 
