@@ -237,7 +237,7 @@ def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
 
     with pytest.raises(
         ValueError,
-        match=r"The following entries in the mobility data exceed the source subpop populations.*",
+        match=r"The following subpopulations have mobility exceeding their population.*",
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
@@ -264,7 +264,7 @@ def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
 
     with pytest.raises(
         ValueError,
-        match=r"The following entries in the mobility data exceed the source subpop populations.*",
+        match=r"The following subpopulations have mobility exceeding their population.*",
     ):
         subpop_struct = subpopulation_structure.SubpopulationStructure(
             setup_name=TEST_SETUP_NAME, subpop_config=config["subpop_setup"]
