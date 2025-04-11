@@ -48,7 +48,8 @@ if [ -z "${USERDIR}" ]; then
     echo "Using '$USERDIR' for \$USERDIR."
 fi
 if [ ! -d "$USERDIR" ]; then
-    echo "WARNING: The \$USERDIR directory '$USERDIR' does not exist." >&2
+    echo "The \$USERDIR directory '$USERDIR' does not exist." >&2
+    exit 1
 fi
 
 # Ensure we have a $FLEPI_PATH
@@ -56,10 +57,8 @@ if [ -z "${FLEPI_PATH}" ]; then
     echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
     read FLEPI_PATH
     if [ -z "${FLEPI_PATH}" ]; then
-        export FLEPI_PATH=$( "$USERDIR/flepiMoP" )
-        mkdir -vp "$FLEPI_PATH"
+        export FLEPI_PATH="$USERDIR/flepiMoP"
     fi
-    export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
     echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
 fi
 
