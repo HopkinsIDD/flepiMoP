@@ -615,7 +615,12 @@ class TestStatistic:
                 scipy.stats.nbinom.logpmf(
                     k=mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
                     n=1.0 / alpha,
-                    p=1.0 / (1.0 + alpha * mock_inputs.model_data[mock_inputs.config["sim_var"]].values),
+                    p=1.0
+                    / (
+                        1.0
+                        + alpha
+                        * mock_inputs.model_data[mock_inputs.config["sim_var"]].values
+                    ),
                 ),
             )
 
