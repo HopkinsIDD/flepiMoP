@@ -57,6 +57,7 @@ if [ -z "${FLEPI_PATH}" ]; then
     read FLEPI_PATH
     if [ -z "${FLEPI_PATH}" ]; then
         export FLEPI_PATH=$( "$USERDIR/flepiMoP" )
+        mkdir -vp "$FLEPI_PATH"
     fi
     export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
     echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
