@@ -11,4 +11,5 @@ module load anaconda/2020.07
 module load git/2.42.0
 
 # Run the flepimop-install script
-./flepimop-install -u $USERDIR -f $USERDIR/flepiMoP -g -r
+SCRIPT_PATH=$( realpath "$(dirname "$0")" )
+$SCRIPT_PATH/flepimop-install -u $USERDIR -f $USERDIR/flepiMoP -g -r
