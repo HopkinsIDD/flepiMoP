@@ -25,30 +25,17 @@ This task needs to be ran once to do the initial install of `flepiMoP`.
 On JHU's Rockfish you'll need to run these steps in a slurm interactive job. This can be launched with `/data/apps/helpers/interact -n 4 -m 12GB -t 4:00:00`, but please consult the [Rockfish user guide](https://www.arch.jhu.edu/guide/) for up to date information.
 {% endhint %}
 
-Obtain a temporary clone of the `flepiMoP` repository. The install script will place a permanent clone in the correct location once ran. You may need to take necessary steps to setup git on the HPC cluster being used first before running this step.
+Download and run the the appropriate installation script with the following command:
 
-```
-$ git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1
-Cloning into 'flepiMoP'...
-remote: Enumerating objects: 487, done.
-remote: Counting objects: 100% (487/487), done.
-remote: Compressing objects: 100% (424/424), done.
-remote: Total 487 (delta 59), reused 320 (delta 34), pack-reused 0 (from 0)
-Receiving objects: 100% (487/487), 84.04 MiB | 41.45 MiB/s, done.
-Resolving deltas: 100% (59/59), done.
-Updating files: 100% (411/411), done.
+```shell
+$ curl -LsSf -o flepimop-install https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/refs/heads/main/bin/flepimop-install-<cluster-name> && chmod +x flepimop-install-<cluster-name>
+$ ./flepimop-install-<cluster-name>
 ```
 
-Run the `./bin/flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will prompt the user asking for the location to place the `flepiMoP` clone and the name of the conda environment that it will create. If this is your first time using this script accepting the defaults is the quickest way to get started. Also, expect this script to take a while the first time that you run it.
+Substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will install `flepiMoP` to the correct locations on the cluster. Once the installation is done the script can be removed with:
 
-```
-$ ./flepiMoP/bin/flepimop-install-<cluster-name>
-```
-
-Remove the temporary clone of the `flepiMoP` repository created before. This step is not required, but does help alleviate confusion later.
-
-```
-$ rm -rf flepiMoP/
+```shell
+$ rm flepimop-install-<cluster-name>
 ```
 
 ## Updating `flepiMoP`
