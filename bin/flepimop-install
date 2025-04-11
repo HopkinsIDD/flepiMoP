@@ -39,10 +39,10 @@ fi
 
 # Ensure we have a $USERDIR
 if [ -z "${USERDIR}" ]; then
-    echo -n "An explicit \$USERDIR was not provided, please set one (or press enter to use '$( dirname "$PWD" )'): "
+    echo -n "An explicit \$USERDIR was not provided, please set one (or press enter to use '$( pwd )'): "
     read USERDIR
     if [ -z "${USERDIR}" ]; then
-        export USERDIR=$( dirname "$PWD" )
+        export USERDIR=$( pwd )
     fi
     export USERDIR=$( realpath "$USERDIR" )
     echo "Using '$USERDIR' for \$USERDIR."
@@ -53,10 +53,10 @@ fi
 
 # Ensure we have a $FLEPI_PATH
 if [ -z "${FLEPI_PATH}" ]; then
-    echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$( pwd )'): "
+    echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
     read FLEPI_PATH
     if [ -z "${FLEPI_PATH}" ]; then
-        export FLEPI_PATH=$( pwd )
+        export FLEPI_PATH=$( "$USERDIR/flepiMoP" )
     fi
     export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
     echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
