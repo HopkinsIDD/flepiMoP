@@ -244,32 +244,38 @@ class Statistic:
         """
 
         dist_map = {
-            "pois": lambda ydata, ymodel: -ymodel
-            + (ydata * np.log(ymodel))
-            - gammaln(ydata + 1),
+            "pois": lambda gt_data, model_data: -model_data
+            + (gt_data * np.log(model_data))
+            - gammaln(gt_data + 1),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # OLD: # TODO: Swap out in favor of NEW
-            "norm": lambda x, loc, scale: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=self.params.get("scale", scale)
+            "norm": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
+                gt_data, loc=model_data, scale=self.params.get("scale", scale)
             ),
-            "norm_cov": lambda x, loc, scale: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=scale * loc.where(loc > 5, 5)
+            "norm_cov": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
+                gt_data, loc=model_data, scale=scale * model_data.where(model_data > 5, 5)
             ),
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
             # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
-            "norm_homoskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=self.params.get("sd", sd)
+            "norm_homoskedastic": lambda gt_data, model_data, sd: scipy.stats.norm.logpdf(
+                gt_data, loc=model_data, scale=self.params.get("sd", sd)
             ),  # scale = standard deviation
-            "norm_heteroskedastic": lambda x, loc, sd: scipy.stats.norm.logpdf(
-                x, loc=loc, scale=self.params.get("sd", sd) * loc
+            "norm_heteroskedastic": lambda gt_data, model_data, sd: scipy.stats.norm.logpdf(
+                gt_data, loc=model_data, scale=self.params.get("sd", sd) * model_data
             ),  # scale = standard deviation
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            "nbinom": lambda x, n, p: scipy.stats.nbinom.logpmf(
-                x, n=self.params.get("n"), p=model_data
+            "nbinom": lambda gt_data, model_data, n, p: scipy.stats.nbinom.logpmf(
+                k=gt_data,
+                n=1.0 / self.params.get("alpha"),
+                p=1.0 / (1.0 + self.params.get("alpha") * model_data),
             ),
-            "rmse": lambda x, y: -np.log(np.sqrt(np.nansum((x - y) ** 2))),
-            "absolute_error": lambda x, y: -np.log(np.nansum(np.abs(x - y))),
+            "rmse": lambda gt_data, model_data: -np.log(
+                np.sqrt(np.nansum((gt_data - model_data) ** 2))
+            ),
+            "absolute_error": lambda gt_data, model_data: -np.log(
+                np.nansum(np.abs(gt_data - model_data))
+            ),
         }
         if self.dist not in dist_map:
             raise ValueError(

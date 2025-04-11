@@ -609,12 +609,18 @@ class TestStatistic:
                 ),
             )
         elif dist_name == "nbinom":
+            alpha = mock_inputs.config["likelihood"]["params"]["alpha"]
             assert np.allclose(
                 log_likelihood.values,
                 scipy.stats.nbinom.logpmf(
-                    mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
-                    n=mock_inputs.config["likelihood"]["params"]["n"],
-                    p=mock_inputs.model_data[mock_inputs.config["sim_var"]].values,
+                    k=mock_inputs.gt_data[mock_inputs.config["data_var"]].values,
+                    n=1.0 / alpha,
+                    p=1.0
+                    / (
+                        1.0
+                        + alpha
+                        * mock_inputs.model_data[mock_inputs.config["sim_var"]].values
+                    ),
                 ),
             )
 
