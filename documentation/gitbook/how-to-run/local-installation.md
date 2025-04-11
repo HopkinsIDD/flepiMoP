@@ -37,7 +37,7 @@ Navigate to the `flepiMoP` directory and run the following command:
 
 **Note: This installation script is currently only designed for Mac/Linux operating systems. Windows installation script coming soon.**
 ```bash
-./build/local_install_or_update
+./bin/flepimop-install
 ```
 
 1. Determine `$FLEPI_PATH` and `$FLEPI_CONDA` environment variables
