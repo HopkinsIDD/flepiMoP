@@ -3,11 +3,10 @@
 # Parse options
 GEMPYOR_EXTRAS=false
 FORCE_REINSTALL=false
-UPDATE=false
 HELP=false
-while getopts ":d:f:c:gruh" opt; do
+while getopts ":u:f:c:grh" opt; do
   case $opt in
-    d) USERDIR=$( realpath "$OPTARG" )
+    u) USERDIR=$( realpath "$OPTARG" )
     ;;
     f) FLEPI_PATH="$OPTARG"
     ;;
@@ -16,8 +15,6 @@ while getopts ":d:f:c:gruh" opt; do
     g) GEMPYOR_EXTRAS=true
     ;;
     r) FORCE_REINSTALL=true
-    ;;
-    u) UPDATE=true
     ;;
     h) HELP=true
     ;;
@@ -29,52 +26,39 @@ done
 
 # Help message
 if $HELP; then
-    echo "Usage: $0 [-d USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-u] [-h]"
+    echo "Usage: $0 [-u USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-h]"
     echo "Options:"
-    echo "  -d USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
+    echo "  -u USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
     echo "  -f FLEPI_PATH   Specify the path to the flepiMoP repository (default: \$FLEPI_PATH environment variable)."
-    echo "  -c FLEPI_CONDA  Specify the conda environment name/prefix (default: \$FLEPI_CONDA environment variable)."
+    echo "  -c FLEPI_CONDA  Specify the conda environment name (default: \$FLEPI_CONDA environment variable)."
     echo "  -g              Install gempyor package with all extras."
     echo "  -r              Force reinstall flepiMoP. This will remove the existing conda environment and recreate it."
-    echo "  -u              Update flepiMoP to the latest version with a 'git pull'."
     echo "  -h              Display this help message."
-    echo ""
-    echo "Notes:"
-    echo "  * If flepiMoP is not found at the specified path, you will be prompted to clone the repository."
-    echo "  * If a trailing slash is provided for the conda environment name, it will be treated as a prefix."
-    echo ""
-    echo "Examples:"
-    echo "  $0 -d /path/to/ -f /path/to/flepimop/ -c /path/to/conda_env/"
-    echo "    -> This will set the user directory, flepiMoP path, and conda environment prefix."
-    echo "  $0 -g"
-    echo "    -> This will install the gempyor package with all extras."
-    echo "  $0 -r"
-    echo "    -> This will force reinstall the flepiMoP conda environment."
     exit 0
 fi
 
 # Ensure we have a $USERDIR
-if [ -z "${USERDIR}" ] && [ -z "${FLEPI_PATH}" ]; then
-    echo -n "An explicit \$USERDIR was not provided, please set one (or press enter to use '$( pwd )'): "
+if [ -z "${USERDIR}" ]; then
+    echo -n "An explicit \$USERDIR was not provided, please set one (or press enter to use '$( dirname "$PWD" )'): "
     read USERDIR
     if [ -z "${USERDIR}" ]; then
-        export USERDIR=$( pwd )
+        export USERDIR=$( dirname "$PWD" )
     fi
     export USERDIR=$( realpath "$USERDIR" )
     echo "Using '$USERDIR' for \$USERDIR."
 fi
 if [ ! -d "$USERDIR" ]; then
-    echo "The \$USERDIR directory '$USERDIR' does not exist." >&2
-    exit 1
+    echo "WARNING: The \$USERDIR directory '$USERDIR' does not exist." >&2
 fi
 
 # Ensure we have a $FLEPI_PATH
 if [ -z "${FLEPI_PATH}" ]; then
-    echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
+    echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$( pwd )'): "
     read FLEPI_PATH
     if [ -z "${FLEPI_PATH}" ]; then
-        export FLEPI_PATH="$USERDIR/flepiMoP"
+        export FLEPI_PATH=$( pwd )
     fi
+    export FLEPI_PATH=$( realpath "$FLEPI_PATH" )
     echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
 fi
 
@@ -101,21 +85,6 @@ if [ ! -d "$FLEPI_PATH" ]; then
                 ;;
         esac
     done
-fi
-
-# If we need to do an update
-if $UPDATE; then
-    echo "Updating flepiMoP to the latest version."
-    RETURNTO=$( pwd )
-    cd $FLEPI_PATH
-    git pull
-    if [ $? -ne 0 ]; then
-        echo "Failed to update flepiMoP. Please try running 'git pull' from $FLEPI_PATH to diagnose."
-        exit 1
-    fi
-    GIT_REVISION=$( git rev-parse HEAD )
-    echo "Updated flepiMoP to revision $GIT_REVISION."
-    cd $RETURNTO
 fi
 
 # Setup the conda environment
@@ -173,7 +142,7 @@ fi
 
 # Install the local R packages
 CONDA_R_LIBS=$( realpath "$CONDA_PREFIX/lib/R/library" )
-R -e "install.packages('epidatr', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
+R -e "install.packages('covidcast', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
 RETURNTO=$( pwd )
 cd $FLEPI_PATH/flepimop/R_packages/
 R_PACKAGES=("flepicommon" "flepiconfig" "inference")
@@ -210,7 +179,6 @@ for pkg in "${R_PACKAGES[@]}"; do
     echo "> R $pkg version: $PKG_VERSION"
 done
 cat << EOF
-
 To activate the flepimop conda environment, run:
     conda activate $FLEPI_CONDA
 EOF
