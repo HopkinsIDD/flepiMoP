@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Setup general purpose user variables needed for Longleaf
+USERO=$( echo $USER | awk '{ print substr($0, 1, 1) }' )
+USERN=$( echo $USER | awk '{ print substr($0, 2, 1) }' )
+USERDIR=$( realpath "/work/users/$USERO/$USERN/$USER/" )
+
+# Load required modules
+module purge
+module load gcc/9.1.0
+module load anaconda/2023.03
+module load git
+
+# Run the flepimop-install script
+./flepimop-install -u $USERDIR -f $USERDIR/flepiMoP -g -r
