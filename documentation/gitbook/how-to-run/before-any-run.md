@@ -44,7 +44,7 @@ This installation script is currently only designed for Linux/MacOS operating sy
 To install `flepiMoP` locally navigate to the `flepiMoP` directory and run the following command:
 
 ```bash
-./build/local_install_or_update
+./bin/flepimop-install
 ```
 
 This script will do the following:

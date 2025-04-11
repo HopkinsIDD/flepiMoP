@@ -39,10 +39,10 @@ Resolving deltas: 100% (59/59), done.
 Updating files: 100% (411/411), done.
 ```
 
-Run the `hpc_install_or_update` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will prompt the user asking for the location to place the `flepiMoP` clone and the name of the conda environment that it will create. If this is your first time using this script accepting the defaults is the quickest way to get started. Also, expect this script to take a while the first time that you run it.
+Run the `./bin/flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will prompt the user asking for the location to place the `flepiMoP` clone and the name of the conda environment that it will create. If this is your first time using this script accepting the defaults is the quickest way to get started. Also, expect this script to take a while the first time that you run it.
 
 ```
-$ ./flepiMoP/build/hpc_install_or_update <cluster-name>
+$ ./flepiMoP/build/flepimop-install-<cluster-name>
 ```
 
 Remove the temporary clone of the `flepiMoP` repository created before. This step is not required, but does help alleviate confusion later.
@@ -53,10 +53,10 @@ $ rm -rf flepiMoP/
 
 ## Updating `flepiMoP`
 
-Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. Make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `hpc_install_or_update` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
+Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. Make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
 
 ```
-$ ./flepiMoP/build/hpc_install_or_update <cluster-name>
+$ ./flepiMoP/build/flepimop-install-<cluster-name>
 ```
 
 ## Initialize The Created `flepiMoP` Environment
