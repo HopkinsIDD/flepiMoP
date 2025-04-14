@@ -28,22 +28,24 @@ On JHU's Rockfish you'll need to run these steps in a slurm interactive job. Thi
 Download and run the the appropriate installation script with the following command:
 
 ```shell
-$ curl -LsSf -o flepimop-install https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/refs/heads/main/bin/flepimop-install-<cluster-name> && chmod +x flepimop-install-<cluster-name>
+$ curl -LsSf -o flepimop-install-<cluster-name> https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/refs/heads/main/bin/flepimop-install-<cluster-name>
+$ chmod +x flepimop-install-<cluster-name>
 $ ./flepimop-install-<cluster-name>
 ```
 
-Substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will install `flepiMoP` to the correct locations on the cluster. Once the installation is done the script can be removed with:
+Substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will install `flepiMoP` to the correct locations on the cluster. Once the installation is done the conda environment can be activated and the script can be removed with:
 
 ```shell
-$ rm flepimop-install-<cluster-name>
+$ conda activate flepimop-env
+$ rm flepimop-install-<cluster-name> flepimop-install
 ```
 
 ## Updating `flepiMoP`
 
-Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. Make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
+Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. First change directory to your `flepiMoP` installation and then make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
 
 ```
-$ ./flepiMoP/bin/flepimop-install-<cluster-name>
+$ ./bin/flepimop-install-<cluster-name>
 ```
 
 ## Initialize The Created `flepiMoP` Environment
