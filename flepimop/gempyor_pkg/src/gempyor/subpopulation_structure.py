@@ -54,7 +54,6 @@ class SubpopulationStructure:
     Data container for representing subpopulation structures.
 
     Attributes:
-        setup_name: Name of the setup
         data: DataFrame with subpopulations and populations
         nsubpops: Number of subpopulations
         subpop_pop: Population of each subpopulation
@@ -63,18 +62,11 @@ class SubpopulationStructure:
             the column dimension corresponds to the destination subpopulation.
     """
 
-    def __init__(
-        self,
-        *,
-        setup_name: str,
-        subpop_config: confuse.Subview,
-        path_prefix: Path | None = None,
-    ):
+    def __init__(self, subpop_config: confuse.Subview, path_prefix: Path | None = None):
         """
         Initialize the a subpopulation structure instance.
 
         Args:
-            setup_name: Name of the setup.
             subpop_config: A configuration view containing the subpopulation
                 configuration.
             path_prefix: The path prefix for the geodata and mobility files or `None` to
@@ -86,7 +78,6 @@ class SubpopulationStructure:
             ValueError: If there are subpopulations with zero population.
             ValueError: If there are duplicate subpopulation names.
         """
-        self.setup_name = setup_name
         self._config = SubpopulationSetupConfig.model_validate(dict(subpop_config.get()))
         self._path_prefix = path_prefix if path_prefix is not None else Path.cwd()
 

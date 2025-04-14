@@ -25,12 +25,10 @@ class MockSubpopulationStructureInput:
     Dataclass for creating a `SubpopulationStructure` instance for testing purposes.
 
     Attributes:
-        setup_name: Name of the setup.
         subpop_config: A dictionary containing the subpopulation configuration.
         path_prefix: The path prefix for the geodata and mobility files.
     """
 
-    setup_name: str
     subpop_config: dict[str, Any]
     path_prefix: Path
     geodata: pd.DataFrame
@@ -54,9 +52,7 @@ class MockSubpopulationStructureInput:
             represented by this class.
         """
         return SubpopulationStructure(
-            setup_name=self.setup_name,
-            subpop_config=self.create_confuse_subview(),
-            path_prefix=self.path_prefix,
+            self.create_confuse_subview(), path_prefix=self.path_prefix
         )
 
 
@@ -73,7 +69,6 @@ def geodata_only_test_factory(
     with (tmp_path / "geodata.csv").open("w") as f:
         geodata.to_csv(f, index=False)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
         },
@@ -231,7 +226,6 @@ def valid_2pop_with_txt_mobility_test_factory(
     with (tmp_path / "mobility.txt").open("w") as f:
         np.savetxt(f, mobility)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.txt",
@@ -270,7 +264,6 @@ def valid_2pop_with_csv_mobility_test_factory(
     with (tmp_path / "mobility.csv").open("w") as f:
         mobility.to_csv(f, index=False)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
@@ -302,7 +295,6 @@ def valid_2pop_with_npz_mobility_test_factory(
     mobility = scipy.sparse.csr_matrix([[0, 1], [2, 0]])
     scipy.sparse.save_npz(tmp_path / "mobility.npz", mobility)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.npz",
@@ -342,7 +334,6 @@ def mobility_greater_than_population_factory(
     with (tmp_path / "mobility.csv").open("w") as f:
         mobility.to_csv(f, index=False)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
@@ -382,7 +373,6 @@ def mobility_greater_than_two_populations_factory(
     with (tmp_path / "mobility.csv").open("w") as f:
         mobility.to_csv(f, index=False)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
@@ -422,7 +412,6 @@ def mobility_greater_than_three_populations_factory(
     with (tmp_path / "mobility.csv").open("w") as f:
         mobility.to_csv(f, index=False)
     return MockSubpopulationStructureInput(
-        setup_name="test",
         subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
@@ -504,7 +493,6 @@ def test_subpopulation_structure_instance_attributes(
     """Test that the `SubpopulationStructure` instance has the correct attributes."""
     mock_input = factory(tmp_path)
     subpop_struct = mock_input.create_subpopulation_structure_instance()
-    assert subpop_struct.setup_name == mock_input.setup_name
     assert subpop_struct.nsubpops == len(mock_input.geodata)
     assert (subpop_struct.subpop_pop == mock_input.geodata["population"].to_numpy()).all()
     assert subpop_struct.subpop_names == mock_input.geodata["subpop"].tolist()
