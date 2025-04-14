@@ -17,4 +17,4 @@ if [ ! -f "$SCRIPT_PATH/flepimop-install" ]; then
     curl -LsSf -o "$SCRIPT_PATH/flepimop-install" https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/main/bin/flepimop-install
     chmod +x "$SCRIPT_PATH/flepimop-install"
 fi
-$SCRIPT_PATH/flepimop-install -u $USERDIR -f $USERDIR/flepiMoP -g -r
+$SCRIPT_PATH/flepimop-install -d $USERDIR -f $USERDIR/flepiMoP -g -r
