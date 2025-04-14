@@ -258,6 +258,22 @@ flepimop-inference-main -c config_inference_new.yml
 
 If your run is successful, you should see your output files in the model\_output folder. The structure of the files in this folder is described in the [Model Output](../gempyor/output-files.md) section. By default, all the output files are .parquet format (a compressed format which can be imported as dataframes using R's arrow package `arrow::read_parquet` or using the free desktop application [Tad ](https://www.tadviewer.com/) for quick viewing). However, you can add the option `--write-csv` to the end of the commands to run the code (e.g.,  `flepimop simulate --write-csv config.yml`) to have everything saved as .csv files instead ;
 
+
+## Updating `flepiMoP`
+
+You can use the `flepimop-install` script provided by the `flepiMoP` repository to update your install of `flepiMoP` with:
+
+```shell
+$ cd $FLEPI_PATH
+$ ./bin/flepimop-install -u
+```
+
+Or to reinstall `flepiMoP` from scratch (say if your conda environment is very out of date or in a bad state) you can do so with:
+
+```shell
+$ ./bin/flepimop-install -r -u
+```
+
 ## Next Steps
 
 These configs and notebooks should be a good starting point for getting started with flepiMoP. To explore other running options, see [How to run: Advanced](advanced-run-guides/).

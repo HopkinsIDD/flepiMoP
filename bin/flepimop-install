@@ -3,8 +3,9 @@
 # Parse options
 GEMPYOR_EXTRAS=false
 FORCE_REINSTALL=false
+UPDATE=false
 HELP=false
-while getopts ":d:f:c:grh" opt; do
+while getopts ":d:f:c:gruh" opt; do
   case $opt in
     d) USERDIR=$( realpath "$OPTARG" )
     ;;
@@ -16,6 +17,8 @@ while getopts ":d:f:c:grh" opt; do
     ;;
     r) FORCE_REINSTALL=true
     ;;
+    u) UPDATE=true
+    ;;
     h) HELP=true
     ;;
     \?) echo "Invalid option -$OPTARG" >&2
@@ -26,13 +29,14 @@ done
 
 # Help message
 if $HELP; then
-    echo "Usage: $0 [-d USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-h]"
+    echo "Usage: $0 [-d USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-u] [-h]"
     echo "Options:"
     echo "  -d USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
     echo "  -f FLEPI_PATH   Specify the path to the flepiMoP repository (default: \$FLEPI_PATH environment variable)."
     echo "  -c FLEPI_CONDA  Specify the conda environment name/prefix (default: \$FLEPI_CONDA environment variable)."
     echo "  -g              Install gempyor package with all extras."
     echo "  -r              Force reinstall flepiMoP. This will remove the existing conda environment and recreate it."
+    echo "  -u              Update flepiMoP to the latest version with a 'git pull'."
     echo "  -h              Display this help message."
     echo ""
     echo "Notes:"
@@ -50,7 +54,7 @@ if $HELP; then
 fi
 
 # Ensure we have a $USERDIR
-if [ -z "${USERDIR}" ]; then
+if [ -z "${USERDIR}" ] && [ -z "${FLEPI_PATH}" ]; then
     echo -n "An explicit \$USERDIR was not provided, please set one (or press enter to use '$( pwd )'): "
     read USERDIR
     if [ -z "${USERDIR}" ]; then
@@ -97,6 +101,21 @@ if [ ! -d "$FLEPI_PATH" ]; then
                 ;;
         esac
     done
+fi
+
+# If we need to do an update
+if $UPDATE; then
+    echo "Updating flepiMoP to the latest version."
+    RETURNTO=$( pwd )
+    cd $FLEPI_PATH
+    git pull
+    if [ $? -ne 0 ]; then
+        echo "Failed to update flepiMoP. Please try running 'git pull' from $FLEPI_PATH to diagnose."
+        exit 1
+    fi
+    GIT_REVISION=$( git rev-parse HEAD )
+    echo "Updated flepiMoP to revision $GIT_REVISION."
+    cd $RETURNTO
 fi
 
 # Setup the conda environment
