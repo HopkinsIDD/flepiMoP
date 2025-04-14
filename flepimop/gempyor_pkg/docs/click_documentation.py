@@ -2,7 +2,7 @@
 A script to introspect gempyor's click-based CLI.
 
 Extracts help information for all available flepiMoP commands, subcommands, and options and formats
-the information into a markdown file in the gitbook documentation. 
+the information into a markdown file in the gitbook documentation.
 
 Functions:
     record_click_help: recursively retrieves help info and stores in a data structure
