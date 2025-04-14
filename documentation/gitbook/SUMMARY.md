@@ -45,7 +45,6 @@
 
 ## 🛠️ How To Run
 
-* [Before any run](how-to-run/before-any-run.md)
 * [Quick Start Guide](how-to-run/quick-start-guide.md)
 * [Multiple Configuration Files](multi-configs.md)
 * [Synchronizing Files](how-to-run/synchronization.md)
