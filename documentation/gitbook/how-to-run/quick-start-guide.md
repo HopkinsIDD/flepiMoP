@@ -156,7 +156,7 @@ set PROJECT_PATH=%CD%\examples\tutorials
 
 You can check that the variables have been set by either typing `set` to see all defined environment variables, or typing `echo $FLEPI_PATH$` and `echo $PROJECT_PATH$` to see the values of `FLEPI_PATH` and `PROJECT_PATH`.
 
-For more information on the usage of environment variables with `flepiMoP` please refer to the [Environment Variables](./environmental-variables.md) documentation.
+For more information on the usage of environment variables with `flepiMoP` please refer to the [Environment Variables](./environment-variables.md) documentation.
 
 ## Run `flepiMoP`
 
