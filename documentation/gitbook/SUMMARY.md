@@ -53,6 +53,7 @@
   * [Running locally in a conda environment 🐍](how-to-run/advanced-run-guides/quick-start-guide-conda.md)
   * [Running on AWS 🌳](how-to-run/advanced-run-guides/running-on-aws.md)
   * [Running On A HPC With Slurm](how-to-run/advanced-run-guides/running-on-a-hpc-with-slurm.md)
+* [Environment Variables](./how-to-run/environment-variables.md)
 * [Common errors](how-to-run/common-errors.md)
 * [Useful commands](how-to-run/useful-commands.md)
 * [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)
