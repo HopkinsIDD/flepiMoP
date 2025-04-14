@@ -5,18 +5,25 @@ The `SubpopulationStructure` class is used to represent subpopulation structures
 contains the subpopulation names, populations, and mobility matrix.
 """
 
-__all__ = ("SUBPOP_NAMES_KEY", "SUBPOP_POP_KEY", "SubpopulationStructure")
+__all__ = (
+    "SUBPOP_NAMES_KEY",
+    "SUBPOP_POP_KEY",
+    "SubpopulationStructure",
+    "SubpopulationSetupConfig",
+)
 
 import logging
-import pathlib
+from pathlib import Path
 import typing
 import warnings
 
 import confuse
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, BeforeValidator
 import scipy.sparse
 
+from ._pydantic_ext import _ensure_list
 from .utils import _duplicate_strings
 
 
@@ -24,6 +31,22 @@ logger = logging.getLogger(__name__)
 
 SUBPOP_POP_KEY: typing.Final[str] = "population"
 SUBPOP_NAMES_KEY: typing.Final[str] = "subpop"
+
+
+class SubpopulationSetupConfig(BaseModel):
+    """
+    Configuration for subpopulation setup.
+
+    Attributes:
+        geodata: Path to the geodata file.
+        mobility: Path to the mobility file or `None` for no mobility.
+        selected: List of selected subpopulation names or an empty list to use all
+            subpopulations provided in `geodata`.
+    """
+
+    geodata: Path
+    mobility: Path | None = None
+    selected: typing.Annotated[list[str], BeforeValidator(_ensure_list)] = []
 
 
 class SubpopulationStructure:
@@ -45,7 +68,7 @@ class SubpopulationStructure:
         *,
         setup_name: str,
         subpop_config: confuse.Subview,
-        path_prefix=pathlib.Path("."),
+        path_prefix: Path | None = None,
     ):
         """
         Initialize the a subpopulation structure instance.
@@ -54,7 +77,8 @@ class SubpopulationStructure:
             setup_name: Name of the setup.
             subpop_config: A configuration view containing the subpopulation
                 configuration.
-            path_prefix: The path prefix for the geodata and mobility files.
+            path_prefix: The path prefix for the geodata and mobility files or `None` to
+                use the current working directory.
 
         Raises:
             ValueError: If the geodata file does not contain the 'population' column.
@@ -63,8 +87,10 @@ class SubpopulationStructure:
             ValueError: If there are duplicate subpopulation names.
         """
         self.setup_name = setup_name
+        self._config = SubpopulationSetupConfig.model_validate(dict(subpop_config.get()))
+        self._path_prefix = path_prefix if path_prefix is not None else Path.cwd()
 
-        geodata_file = path_prefix / subpop_config["geodata"].get()
+        geodata_file = self._path_prefix / self._config.geodata
         self.data = pd.read_csv(
             geodata_file,
             converters={SUBPOP_NAMES_KEY: lambda x: str(x).strip()},
@@ -95,9 +121,9 @@ class SubpopulationStructure:
                 f"geodata file '{geodata_file}': {duplicate_subpop_names}."
             )
 
-        if subpop_config["mobility"].exists():
+        if self._config.mobility is not None:
             self.mobility = self._load_mobility_matrix(
-                path_prefix / subpop_config["mobility"].get()
+                self._path_prefix / self._config.mobility
             )
         else:
             logging.critical("No mobility matrix specified -- assuming no one moves")
@@ -105,22 +131,21 @@ class SubpopulationStructure:
                 np.zeros((self.nsubpops, self.nsubpops)), dtype=int
             )
 
-        if subpop_config["selected"].exists():
-            selected = subpop_config["selected"].get()
-            if not isinstance(selected, list):
-                selected = [selected]
+        if self._config.selected:
             # find the indices of the selected subpopulations
-            selected_subpop_indices = [self.subpop_names.index(s) for s in selected]
+            selected_subpop_indices = [
+                self.subpop_names.index(s) for s in self._config.selected
+            ]
             # filter all the lists
             self.data = self.data.iloc[selected_subpop_indices]
             self.subpop_pop = self.subpop_pop[selected_subpop_indices]
-            self.subpop_names = selected
+            self.subpop_names = self._config.selected
             self.nsubpops = len(self.data)
             self.mobility = self.mobility[selected_subpop_indices][
                 :, selected_subpop_indices
             ]
 
-    def _load_mobility_matrix(self, mobility_file: pathlib.Path) -> scipy.sparse.csr_matrix:
+    def _load_mobility_matrix(self, mobility_file: Path) -> scipy.sparse.csr_matrix:
         """
         Load the mobility matrix from a file.
 
