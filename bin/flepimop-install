@@ -30,10 +30,22 @@ if $HELP; then
     echo "Options:"
     echo "  -u USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
     echo "  -f FLEPI_PATH   Specify the path to the flepiMoP repository (default: \$FLEPI_PATH environment variable)."
-    echo "  -c FLEPI_CONDA  Specify the conda environment name (default: \$FLEPI_CONDA environment variable)."
+    echo "  -c FLEPI_CONDA  Specify the conda environment name/prefix (default: \$FLEPI_CONDA environment variable)."
     echo "  -g              Install gempyor package with all extras."
     echo "  -r              Force reinstall flepiMoP. This will remove the existing conda environment and recreate it."
     echo "  -h              Display this help message."
+    echo ""
+    echo "Notes:"
+    echo "  * If flepiMoP is not found at the specified path, you will be prompted to clone the repository."
+    echo "  * If a trailing slash is provided for the conda environment name, it will be treated as a prefix."
+    echo ""
+    echo "Examples:"
+    echo "  $0 -u /path/to/ -f /path/to/flepimop/ -c /path/to/conda_env/"
+    echo "    -> This will set the user directory, flepiMoP path, and conda environment prefix."
+    echo "  $0 -g"
+    echo "    -> This will install the gempyor package with all extras."
+    echo "  $0 -r"
+    echo "    -> This will force reinstall the flepiMoP conda environment."
     exit 0
 fi
 
