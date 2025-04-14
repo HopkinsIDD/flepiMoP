@@ -4,9 +4,9 @@
 GEMPYOR_EXTRAS=false
 FORCE_REINSTALL=false
 HELP=false
-while getopts ":u:f:c:grh" opt; do
+while getopts ":d:f:c:grh" opt; do
   case $opt in
-    u) USERDIR=$( realpath "$OPTARG" )
+    d) USERDIR=$( realpath "$OPTARG" )
     ;;
     f) FLEPI_PATH="$OPTARG"
     ;;
@@ -26,9 +26,9 @@ done
 
 # Help message
 if $HELP; then
-    echo "Usage: $0 [-u USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-h]"
+    echo "Usage: $0 [-d USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-h]"
     echo "Options:"
-    echo "  -u USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
+    echo "  -d USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
     echo "  -f FLEPI_PATH   Specify the path to the flepiMoP repository (default: \$FLEPI_PATH environment variable)."
     echo "  -c FLEPI_CONDA  Specify the conda environment name/prefix (default: \$FLEPI_CONDA environment variable)."
     echo "  -g              Install gempyor package with all extras."
@@ -40,7 +40,7 @@ if $HELP; then
     echo "  * If a trailing slash is provided for the conda environment name, it will be treated as a prefix."
     echo ""
     echo "Examples:"
-    echo "  $0 -u /path/to/ -f /path/to/flepimop/ -c /path/to/conda_env/"
+    echo "  $0 -d /path/to/ -f /path/to/flepimop/ -c /path/to/conda_env/"
     echo "    -> This will set the user directory, flepiMoP path, and conda environment prefix."
     echo "  $0 -g"
     echo "    -> This will install the gempyor package with all extras."
