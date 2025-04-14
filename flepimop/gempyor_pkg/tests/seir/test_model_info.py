@@ -6,8 +6,8 @@ import pytest
 import confuse
 import re
 
-from gempyor.model_info import ModelInfo, subpopulation_structure
-
+from gempyor import subpopulation_structure
+from gempyor.model_info import ModelInfo
 from gempyor.utils import config
 
 TEST_SETUP_NAME = "minimal_test"
