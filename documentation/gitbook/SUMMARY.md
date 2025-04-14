@@ -60,6 +60,7 @@
 
 ## [Development](./development/README.md)
 
+* [Installing `flepiMoP` For Development](./development/installing-flepimop-for-development.md)
 * [Git and GitHub Usage](./development/git-and-github-usage.md)
 * [Guidelines for contributors](development/python-guidelines-for-developers.md)
 
