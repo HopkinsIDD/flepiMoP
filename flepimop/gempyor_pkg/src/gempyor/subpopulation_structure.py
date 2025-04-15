@@ -112,15 +112,11 @@ class SubpopulationStructure:
                 f"geodata file '{geodata_file}': {duplicate_subpop_names}."
             )
 
-        if self._config.mobility is not None:
-            self.mobility = self._load_mobility_matrix(
-                self._path_prefix / self._config.mobility
-            )
-        else:
-            logging.critical("No mobility matrix specified -- assuming no one moves")
-            self.mobility = scipy.sparse.csr_matrix(
-                np.zeros((self.nsubpops, self.nsubpops)), dtype=int
-            )
+        self.mobility = self._load_mobility_matrix(
+            self._path_prefix / self._config.mobility
+            if self._config.mobility is not None
+            else None
+        )
 
         if self._config.selected:
             # find the indices of the selected subpopulations
@@ -136,7 +132,7 @@ class SubpopulationStructure:
                 :, selected_subpop_indices
             ]
 
-    def _load_mobility_matrix(self, mobility_file: Path) -> scipy.sparse.csr_matrix:
+    def _load_mobility_matrix(self, mobility_file: Path | None) -> scipy.sparse.csr_matrix:
         """
         Load the mobility matrix from a file.
 
@@ -156,7 +152,12 @@ class SubpopulationStructure:
             ValueError: If the sum of the mobility data across rows exceeds the source
                 subpopulation populations.
         """
-        if mobility_file.suffix == ".txt":
+        if mobility_file is None:
+            logging.critical("No mobility matrix specified -- assuming no one moves")
+            mobility = scipy.sparse.csr_matrix(
+                np.zeros((self.nsubpops, self.nsubpops)), dtype=int
+            )
+        elif mobility_file.suffix == ".txt":
             warnings.warn(
                 "Mobility files as matrices are not recommended. "
                 "Please switch to long form csv files.",
