@@ -85,7 +85,7 @@ This summary gives a brief overview of the R/python/package versions installed. 
 
 ## Activating A `flepiMoP` Installation
 
-To activate `flepiMoP` you need to activate the conda environment that it is installed to:
+To activate `flepiMoP` you need to activate the conda environment that it is installed to with:
 
 ```shell
 $ conda activate flepimop-env
