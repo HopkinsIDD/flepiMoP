@@ -8,13 +8,13 @@ contains the subpopulation names, populations, and mobility matrix.
 __all__ = (
     "SUBPOP_NAMES_KEY",
     "SUBPOP_POP_KEY",
-    "SubpopulationStructure",
     "SubpopulationSetupConfig",
+    "SubpopulationStructure",
 )
 
 import logging
 from pathlib import Path
-import typing
+from typing import Final, Annotated
 import warnings
 
 import confuse
@@ -24,13 +24,14 @@ from pydantic import BaseModel, BeforeValidator
 import scipy.sparse
 
 from ._pydantic_ext import _ensure_list
+from .file_paths import _regularize_path
 from .utils import _duplicate_strings
 
 
 logger = logging.getLogger(__name__)
 
-SUBPOP_POP_KEY: typing.Final[str] = "population"
-SUBPOP_NAMES_KEY: typing.Final[str] = "subpop"
+SUBPOP_POP_KEY: Final[str] = "population"
+SUBPOP_NAMES_KEY: Final[str] = "subpop"
 
 
 class SubpopulationSetupConfig(BaseModel):
@@ -46,7 +47,7 @@ class SubpopulationSetupConfig(BaseModel):
 
     geodata: Path
     mobility: Path | None = None
-    selected: typing.Annotated[list[str], BeforeValidator(_ensure_list)] = []
+    selected: Annotated[list[str], BeforeValidator(_ensure_list)] = []
 
 
 class SubpopulationStructure:
@@ -79,9 +80,8 @@ class SubpopulationStructure:
             ValueError: If there are duplicate subpopulation names.
         """
         self._config = SubpopulationSetupConfig.model_validate(dict(subpop_config.get()))
-        self._path_prefix = path_prefix if path_prefix is not None else Path.cwd()
 
-        geodata_file = self._path_prefix / self._config.geodata
+        geodata_file = _regularize_path(self._config.geodata, prefix=path_prefix)
         self.data = pd.read_csv(
             geodata_file,
             converters={SUBPOP_NAMES_KEY: lambda x: str(x).strip()},
@@ -113,9 +113,7 @@ class SubpopulationStructure:
             )
 
         self.mobility = self._load_mobility_matrix(
-            self._path_prefix / self._config.mobility
-            if self._config.mobility is not None
-            else None
+            _regularize_path(self._config.mobility, prefix=path_prefix)
         )
 
         if self._config.selected:
