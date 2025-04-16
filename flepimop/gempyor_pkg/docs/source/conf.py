@@ -19,10 +19,11 @@ author = "ACCIDDA"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinx.ext.apidoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autosummary",
+    "sphinx.ext.autosummary"
 ]
 
 templates_path = ["_templates"]
