@@ -45,6 +45,13 @@ config_file_options = {
         multiple=True,
         help="Deprecated: configuration file(s) for this simulation",
     ),
+    "populations": click.Option(
+        ["-p", "--populations", "populations"],
+        type=click.STRING,
+        required=False,
+        multiple=True,
+        help="Population(s) to run use in simulation.",
+    ),
     "seir_modifiers_scenarios": click.Option(
         ["-s", "--seir_modifiers_scenarios"],
         envvar="FLEPI_SEIR_SCENARIOS",
@@ -287,14 +294,15 @@ def parse_config_files(
     other_args = parsed_args - config_args - scen_args
 
     if method := kwargs.pop("method", None):
-        print(
-            f"saw method! {method} vs {_parse_option(config_file_options['method'], method)}"
-        )
         cfg["seir"]["integration"]["method"].set(
             _parse_option(config_file_options["method"], method)
         )
-        print(f"set method! {cfg['seir']['integration']['method']}")
-        print(f"check exists {cfg['seir']['integration'].exists()}")
+
+    if (populations := kwargs.pop("populations", None)) is not None:
+        if populations:
+            cfg["subpop_setup"]["selected"].set(
+                list(_parse_option(config_file_options["populations"], populations))
+            )
 
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
