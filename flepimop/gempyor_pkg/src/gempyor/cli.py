@@ -11,7 +11,9 @@ from .shared_cli import (
 from .utils import _dump_formatted_yaml, config
 
 # register the commands from the other modules
+from .batch._cli import *
 from . import compartments, simulate
+from .sync import sync
 from .NPI import base
 
 # Guidance for extending the CLI:
@@ -43,7 +45,6 @@ def patch(ctx: click.Context = mock_context, **kwargs) -> None:
         $ flepimop patch config_sample_2pop_modifiers_part.yml config_sample_2pop_outcomes_part.yml > config_sample_2pop_patched.yml
         $ cat config_sample_2pop_patched.yml
         write_csv: false
-        stoch_traj_flag: false
         jobs: 14
         write_parquet: true
         first_sim_index: 1

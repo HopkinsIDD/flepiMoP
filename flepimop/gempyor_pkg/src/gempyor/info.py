@@ -109,7 +109,7 @@ _BASE_MODEL_TYPE = TypeVar("T", bound=BaseModel)
 
 
 _CLUSTER_FQDN_REGEXES: tuple[tuple[str, Pattern], ...] = (
-    ("longleaf", re.compile(r"^longleaf\-login[0-9]+\.its\.unc\.edu$")),
+    ("longleaf", re.compile(r"^longleaf(\-login([0-9]+)?)?\.its\.unc\.edu$")),
     ("rockfish", re.compile(r"^login[0-9]+\.cm\.cluster$")),
 )
 

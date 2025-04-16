@@ -14,8 +14,8 @@ suppressMessages(library(doParallel))
 options(readr.num_columns = 0)
 
 # There are multiple ways to specify options when flepimop-inference-main is run, which take the following precedence:
-#  1) (optional) options called along with the script at the command line (ie > flepimop-inference-main -c my_config.yml)
-#  2) (optional) environmental variables set by the user (ie user could set > export CONFIG_PATH = ~/flepimop_sample/my_config.yml to not have t specify it each time the script is run)
+#  1) (optional) options called along with the script at the command line (ie `> flepimop-inference-main -c my_config.yml`)
+#  2) (optional) environmental variables set by the user (ie user could set `> export CONFIG_PATH="$FLEPI_PATH/examples/tutorials/my_config.yml"` to not have t specify it each time the script is run)
 # If neither are specified, then a default value is used, given by the second argument of Sys.getenv() commands below. 
 #  *3) For some options, a default doesn't exist, and the value specified in the config will be used if the option is not specified at the command line or by an environmental variable (iterations_per_slot, slots)
 
@@ -28,7 +28,6 @@ option_list = list(
   optparse::make_option(c("-k", "--iterations_per_slot"), action="store", default=Sys.getenv("FLEPI_ITERATIONS_PER_SLOT", NA), type='integer', help = "number of iterations to run for this slot"),
   optparse::make_option(c("-n", "--slots"), action="store", default=Sys.getenv("FLEPI_NUM_SLOTS", as.numeric(NA)), type='integer', help = "Number of slots to run."),
   optparse::make_option(c("-b", "--this_block"), action="store", default=Sys.getenv("FLEPI_BLOCK_INDEX",1), type='integer', help = "id of this block"),
-  optparse::make_option(c("-t", "--stoch_traj_flag"), action="store", default=Sys.getenv("FLEPI_STOCHASTIC_RUN",FALSE), type='logical', help = "Stochastic SEIR and outcomes trajectories if true"),
   optparse::make_option(c("--ground_truth_start"), action = "store", default = Sys.getenv("GT_START_DATE", ""), type = "character", help = "First date to include groundtruth for"),
   optparse::make_option(c("--ground_truth_end"), action = "store", default = Sys.getenv("GT_END_DATE", ""), type = "character", help = "Last date to include groundtruth for"),
   optparse::make_option(c("-p", "--flepi_path"), action="store", type='character', help="path to the flepiMoP directory", default = Sys.getenv("FLEPI_PATH", "flepiMoP")),
@@ -144,7 +143,6 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
         "-k", opt$iterations_per_slot,
         "-i", flepi_slot,
         "-b", opt$this_block,
-        "-t", opt$stoch_traj_flag,
         ground_truth_start_text,
         ground_truth_end_text,
         "-p", opt$flepi_path,

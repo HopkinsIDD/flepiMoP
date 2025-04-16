@@ -6,28 +6,23 @@ description: Short tutorial on running locally using an "Anaconda" environment.
 
 ### Access model files
 
-As is the case for any run, first see the [Before any run](../before-any-run.md) section to ensure you have access to the correct files needed to run. On your local machine, determine the file paths to:
+Follow all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your model with flepiMoP.
 
-* the directory containing the flepimop code (likely the folder you cloned from Github), which we'll call `FLEPI_PATH`
-* the directory containing your project code including input configuration file and population structure (again likely from Github), which we'll call `DATA_PATH`
+Take note of the location of the directory on your local computer where you cloned the flepiMoP model code (which we'll call `FLEPI_PATH`).
 
 {% hint style="info" %}
-For example, if you clone your Github repositories into a local folder called Github and are using the flepimop\_sample as a project repository, your directory names could be\
+For example, if you cloned your Github repositories into a local folder called `Github` and are using `flepiMoP/examples/tutorials` as a project repository, your directory names could be\
 \
 _**On Mac:**_
 
-\<dir1> = /Users/YourName/Github/flepiMoP
+/Users/YourName/Github/flepiMoP
 
-\<dir2> = /Users/YourName/Github/flepimop\_sample\
+/Users/YourName/Github/fleiMoP/examples/tutorials
 \
 _**On Windows:**_\
-\<dir1> = C:\Users\YourName\Github\flepiMoP
+C:\Users\YourName\Github\flepiMoP
 
-\<dir2> = C:\Users\YourName\Github\flepimop\_sample\\
-
-(hint: if you navigate to a directory like `C:\Users\YourName\Github` using `cd C:\Users\YourName\Github`, modify the above `<dir1>` paths to be `.\flepiMoP` and `.\flepimop_sample)`
-
-:warning: Note again that these are best cloned **flat.**
+C:\Users\YourName\Github\flepiMoP\examples\tutorials
 {% endhint %}
 
 ## 🧱 Setup (do this once)
@@ -80,66 +75,48 @@ In this `conda` environment, commands with R and python will uses this environme
 
 ### Define environment variables
 
-First, you'll need to fill in some variables that are used by the model. This can be done in a script (an example is provided at the end of this page). For your first time, it's better to run each command individually to be sure it exits successfully.
+Since you'll be navigating frequently between the folder that contains your project code and the folder that contains the core flepiMoP model code, it's helpful to define shortcuts for these file paths. You can do this by creating environmental variables that you can then quickly call instead of writing out the whole file path.
 
-First, in `myparentfolder` populate the folder name variables for the paths to the flepimop code folder and the project folder:
-
-```bash
-export FLEPI_PATH=$(pwd)/flepiMoP
-export DATA_PATH=$(pwd)/flepimop_sample
-```
-
-Go into the code directory (making sure it is up to date on your favorite branch) and do the installation required of the repository:
+If you're on a **Mac** or Linux/Unix based operating system, define the FLEPI\_PATH and PROJECT\_PATH environmental variables to be your directory locations, for example
 
 ```bash
-cd $FLEPI_PATH # move to the flepimop directory
-Rscript build/local_install.R # Install R packages
-pip install --no-deps -e flepimop/gempyor_pkg/ # Install Python package gempyor
+export FLEPI_PATH=/Users/YourName/Github/flepiMoP
+export PROJECT_PATH=/Users/YourName/Github/flepiMoP/examples/tutorials
 ```
 
-Each installation step may take a few minutes to run.
+or, if you have already navigated to your flepiMoP directory
+
+```bash
+export FLEPI_PATH=$(pwd)
+export PROJECT_PATH=$(pwd)/examples/tutorials
+```
+
+You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEPI_PATH` to see the value of `FLEPI_PATH`.
+
+If you're on a **Windows** machine
+
+<pre class="language-bash"><code class="lang-bash"><strong>set FLEPI_PATH=C:\Users\YourName\Github\flepiMoP
+</strong>set PROJECT_PATH=C:\Users\YourName\Github\flepiMoP\examples\tutorials
+</code></pre>
+
+or, if you have already navigated to your flepiMoP directory
+
+<pre class="language-bash"><code class="lang-bash"><strong>set FLEPI_PATH=%CD%
+</strong>set PROJECT_PATH=%CD%\examples\tutorials
+</code></pre>
+
+You can check that the variables have been set by either typing `set` to see all defined environmental variables, or typing `echo $FLEPI_PATH$` to see the value of `FLEPI_PATH`.
 
 {% hint style="info" %}
-Note: These installations take place in your conda environment and not the local operating system. They must be made once while in your environment and need not be done for every time you run a model, provided they have been installed once. You will need an active internet connection for installing the R packages (since some are hosted online), but not for other steps of running the model.
+If you choose not to define environment variables, remember to use the full or relative path names for navigating to the right files or folders in future steps.
 {% endhint %}
 
-<details>
+Other environmental variables can be set at any point in process of setting up your model run. These options are listed in ... **ADD ENVAR PAGE**
 
-<summary>Help! I have errors in installation</summary>
-
-If you get an error because no cran mirror is selected, just create in your home directory a `.Rprofile` file:
-
-{% code title="~/.Rprofile" lineNumbers="true" %}
-```r
-local({r <- getOption("repos")
-       r["CRAN"] <- "http://cran.r-project.org" 
-       options(repos=r)
-})
-```
-{% endcode %}
-
-Perhaps this should be added to the top of the local\_install.R script #todo
-
-When running `local_install.R` the first time, you may get an error:
-
-<pre><code><strong>ERROR: dependency ‘report.generation’ is not available for package ‘inference’
-</strong><strong>[...]
-</strong><strong>installation of package ‘./R/pkgs//inference’ had non-zero exit status
-</strong></code></pre>
-
-and the second time it'll finish successfully (no non-zero exit status at the end). That's because there is a circular dependency in this file (inference requires report.generation which is built after) and will hopefully get fixed.
-
-For subsequent runs, once is enough because the package is already installed once.
-
-</details>
-
-Other environmental variables can be set at any point in process of setting up your model run. These options are listed in ... ADD ENVAR PAGE
-
-For example, some frequently used environmental variables which we recommend setting are:
+For example, some frequently used environmental variables we recommend setting are:
 
 {% code overflow="wrap" %}
 ```bash
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 ```
 {% endcode %}
@@ -153,19 +130,19 @@ The next step depends on what sort of simulation you want to run: One that inclu
 In either case, navigate to the project folder and make sure to delete any old model output files that are there.
 
 ```bash
-cd $DATA_PATH       # goes to your project repository
+cd $PROJECT_PATH       # goes to your project repository
 rm -r model_output/ # delete the outputs of past run if there are
 ```
 
 #### Inference run
 
-An inference run requires a configuration file that has an `inference` section. Stay in the `$DATA_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml`). In the example data folder (flepimop\_sample), try out the example config XXX.
+An inference run requires a configuration file that has an `inference` section. Stay in the `$PROJECT_PATH` folder, and run the inference script, providing the name of the configuration file you want to run (ex. `config.yml`). 
 
 ```bash
 flepimop-inference-main.R -c config.yml
 ```
 
-This will run the model and create [a lot of output files](../../gempyor/output-files.md) in `$DATA_PATH/model_output/`.
+This will run the model and create [a lot of output files](../../gempyor/output-files.md) in `$PROJECT_PATH/model_output/`.
 
 The last few lines visible on the command prompt should be:
 
@@ -191,7 +168,7 @@ where:
 
 #### Non-inference run
 
-Stay in the `$DATA_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor`. To do this, call `flepimop simulate` providing the name of the configuration file you want to run (ex. `config.yml`). An example config is provided in `flepimop_sample/config_sample_2pop_interventions.yml.`
+Stay in the `$PROJECT_PATH` folder, and run a simulation directly from forward-simulation Python package `gempyor`. To do this, call `flepimop simulate` providing the name of the configuration file you want to run (ex. `config.yml`). An example config is provided in `$PROJECT_PATH/config_sample_2pop_interventions.yml.`
 
 ```
 flepimop simulate config.yml
@@ -203,23 +180,4 @@ It is currently required that all configuration files have an `interventions` se
 
 You can also try to knit the Rmd file in `flepiMoP/flepimop/gempyor_pkg/docs` which will show you how to analyze these files.
 
-### Do it all with a script
 
-The following script does all the above commands in an easy script. Save it in `myparentfolder` as `quick_setup.sh`. Then, just go to `myparentfolder` and type `source quick_setup_flu.sh` and it'll do everything for you!
-
-{% code title="quick_setup_flu.sh" lineNumbers="true" %}
-```bash
-export FLEPI_PATH=$(pwd)/flepiMoP
-export DATA_PATH=$(pwd)/flepimop_sample
-
-cd $FLEPI_PATH
-Rscript build/local_install.R
-pip install --no-deps -e gempyor_pkg/ # before: python setup.py develop --no-deps
-
-cd $DATA_PATH
-rm -rf model_output
-export CONFIG_PATH=config.yml # set your configuration file path
-
-flepimop-inference-main -j 1 -n 1 -k 1
-```
-{% endcode %}

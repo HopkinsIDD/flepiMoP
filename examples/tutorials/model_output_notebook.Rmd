@@ -9,7 +9,7 @@ output:
     keep_tex: FALSE
 params:
   report_location: offline # if report is being run within an environment in which a model run was already specified and that already has all                                flepmiop packages installed, "online", otherwise, "offline"
-  opt: !r option_list = list(optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"), optparse::make_option(c("-d", "--data_path"), action="store", default=Sys.getenv("DATA_PATH", Sys.getenv("DATA_PATH")), type='character', help="path to the data repo"), optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),  optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH")))) # parameter options that will be used if report ran "online". If "offline", options below will be used
+  opt: !r option_list = list(optparse::make_option(c("-c", "--config"), action="store", default=Sys.getenv("CONFIG_PATH", Sys.getenv("CONFIG_PATH")), type='character', help="path to the config file"), optparse::make_option(c("-d", "--data_path"), action="store", default=Sys.getenv("PROJECT_PATH"), type='character', help="path to the data repo"), optparse::make_option(c("-u","--run-id"), action="store", dest = "run_id", type='character', help="Unique identifier for this run", default = Sys.getenv("FLEPI_RUN_INDEX",flepicommon::run_id())),  optparse::make_option(c("-R", "--results-path"), action="store", dest = "results_path",  type='character', help="Path for model output", default = Sys.getenv("FS_RESULTS_PATH", Sys.getenv("FS_RESULTS_PATH")))) # parameter options that will be used if report ran "online". If "offline", options below will be used
   config: config_sample_2pop_inference.yml #name of configuration file
   model_output_dir: model_output #usually model_output, but if results were moved, might be different
   #results_path:  # path to the project folder within which the model_output directory lies. Comment out if current directory 
@@ -1196,6 +1196,7 @@ llik_outputs_int %>%
   geom_step(aes(iter, value, color = as.factor(slot),linetype = factor(ll_type,levels=c("global","chimeric")))) + 
   facet_wrap(subpop~name, scales = "free")+
   labs(x = 'iterations', y = "llikelihood stats", color = "slot", linetype="likelihood type") +
+  #xlim(0,20)
   theme_bw() + theme_small
 
 ```

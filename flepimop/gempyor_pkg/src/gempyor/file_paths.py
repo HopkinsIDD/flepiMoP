@@ -207,3 +207,51 @@ def create_dir_name(
             create_directory=False,
         )
     )
+
+
+def create_file_name_for_push(
+    flepi_run_index: str, prefix: str, flepi_slot_index: str, flepi_block_index: str
+) -> list[str]:
+    """
+    Generate a list of file names for different types of inference results.
+
+    This function generates a list of file names based on the provided run index, prefix, slot index,
+    and block index. Each file name corresponds to a different type of inference result, such as
+    "seir", "hosp", "llik", etc. The file names are generated using the `create_file_name` function,
+    with specific extensions based on the type: "csv" for "seed" and "parquet" for all other types.
+
+    Args:
+        flepi_run_index :
+            The index of the run. This is used to uniquely identify the run.
+        prefix :
+            A prefix string to be included in the file names. This is typically used to categorize or
+            identify the files.
+        flepi_slot_index :
+            The slot index used in the filename. This is formatted as a zero-padded nine-digit number.
+        flepi_block_index :
+            The block index used in the filename. This typically indicates a specific block or segment
+            of the data being processed.
+
+    Returns:
+        list
+            A list of generated file names, each corresponding to a different type of inference result.
+            The file names include the provided prefix, run index, slot index, block index, type, and
+            the appropriate file extension (either "csv" or "parquet").
+    """
+    type_list = ["seir", "hosp", "llik", "spar", "snpi", "hnpi", "hpar", "init", "seed"]
+    extension_map = {
+        type_name: "csv" if type_name == "seed" else "parquet" for type_name in type_list
+    }
+    name_list = []
+    for type_name, extension in extension_map.items():
+        file_name = create_file_name(
+            run_id=flepi_run_index,
+            prefix=prefix,
+            inference_filename_prefix="{:09d}.".format(int(flepi_slot_index)),
+            inference_filepath_suffix="chimeric/intermediate",
+            index=flepi_block_index,
+            ftype=type_name,
+            extension=extension,
+        )
+        name_list.append(file_name)
+    return name_list

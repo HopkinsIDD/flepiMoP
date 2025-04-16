@@ -48,6 +48,35 @@ jobs:
         with:
           src: ${{ env.BLACK_SRC }}
           options: "--line-length ${{ env.BLACK_LINE_LENGTH }} --extend-exclude '${{ env.BLACK_EXTEND_EXCLUDE }}' --check --verbose"
+  pylint-for-gempyor:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    env: 
+      PYLINT_SRC: 'flepimop/gempyor_pkg/src/gempyor'
+      PYLINT_FAIL_UNDER: '4'
+      PYLINT_RCFILE: 'flepimop/gempyor_pkg/.pylintrc'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            flepimop/gempyor_pkg/
+          sparse-checkout-cone-mode: false
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Pylint
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pylint
+      - name: Linting with Pylint
+        run: |
+          pylint ${{ env.PYLINT_SRC }} \
+            --fail-under ${{ env.PYLINT_FAIL_UNDER }} \
+            --rcfile ${{ env.PYLINT_RCFILE }} \
+            --verbose
   check-info-json-schema:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false

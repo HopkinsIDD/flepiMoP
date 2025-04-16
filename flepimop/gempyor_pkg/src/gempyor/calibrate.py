@@ -175,7 +175,6 @@ def calibrate(
         run_id=run_id,
         prefix=None,
         first_sim_index=1,
-        stoch_traj_flag=False,
         rng_seed=None,
         nslots=1,
         inference_filename_prefix="global/final/",  # usually for {global or chimeric}/{intermediate or final}

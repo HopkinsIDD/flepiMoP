@@ -11,7 +11,6 @@
 # setup_name: <string>
 # start_date: <date>
 # end_date: <date>
-# data_path: <path to directory>
 
 # subpop_setup:
 #   geodata: <path to file>
@@ -24,7 +23,7 @@
 #
 # ## Input Data
 #
-# * <b>{data_path}/{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
+# * <b>{subpop_setup::geodata}</b> is a csv with column {subpop_setup::subpop} that denotes the subpop
 #
 # ## Output Data
 #
@@ -96,18 +95,18 @@ if (is.null(config$seeding$ratio_incidC)) {
 # ~ Load ground truth data ------------------------------------------------
 #  -- this is already saved from running the `build_[X]_data.R` script at the model setup stage.
 #
-data_path <- config$inference$gt_data_path
-if (is.null(data_path)) {
-    data_path <- config$seeding$casedata_file
-    if (is.null(data_path)) {
+gt_data_path <- config$inference$gt_data_path
+if (is.null(gt_data_path)) {
+    gt_data_path <- config$seeding$casedata_file
+    if (is.null(gt_data_path)) {
         stop(paste(
             "Please provide a ground truth file",
             " as inference::gt_data_path or seeding::casedata_file"
         ))
     }
 }
-cases_deaths <- readr::read_csv(data_path)
-print(paste("Successfully loaded data from ", data_path, "for seeding."))
+cases_deaths <- readr::read_csv(gt_data_path)
+print(paste("Successfully loaded data from ", gt_data_path, " for seeding."))
 
 if (is_US_run) {
     cases_deaths <- cases_deaths %>%

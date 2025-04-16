@@ -22,7 +22,7 @@ _jinja_environment = Environment(loader=PackageLoader("gempyor"))
 
 
 # Functions
-def _render_template_to_file(name: str, data: dict[str, Any], file: Path) -> None:
+def _render_template_to_file(name: str, data: dict[str, Any], file: Path) -> Path:
     """
     Render a jinja template and save to a file.
 
@@ -31,15 +31,21 @@ def _render_template_to_file(name: str, data: dict[str, Any], file: Path) -> Non
         data: The data to pass to the template when rendering.
         file: The file to save the rendered template to.
 
+    Returns:
+        The `file` argument given.
+
     Examples:
+        >>> from gempyor._jinja import _render_template_to_file
         >>> from pathlib import Path
         >>> file = Path("hi.txt")
         >>> _render_template_to_file("test_template.j2", {"name": "Jane"}, file)
+        PosixPath('hi.txt')
         >>> file.read_text()
         'Hello Jane!'
     """
     with file.open(mode="w", encoding="utf-8") as f:
         f.write(_jinja_environment.get_template(name).render(data))
+    return file
 
 
 def _render_template_to_temp_file(
@@ -75,5 +81,4 @@ def _render_template_to_temp_file(
     """
     _, tmp = mkstemp(suffix=suffix, prefix=prefix, text=True)
     tmp = Path(tmp)
-    _render_template_to_file(name, data, tmp)
-    return tmp
+    return _render_template_to_file(name, data, tmp)

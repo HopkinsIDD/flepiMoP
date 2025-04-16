@@ -92,7 +92,6 @@ NOTE: If you are not running a _resume run_, DO NOT export the environmental var
 
 <pre class="language-bash"><code class="lang-bash">cd ~/drp
 export CENSUS_API_KEY={A CENSUS API KEY}
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export COMPUTE_QUEUE="Compartment-JQ-1588569574"
 
@@ -110,11 +109,11 @@ export FLEPI_MEM_PROFILE=TRUE
 export FLEPI_MEM_PROF_ITERS=50
 ```
 
-Then prepare the pipeline directory (if you have already done that and the pipeline hasn't been updated (`git pull` says it's up to date). You need to set $DATA\_PATH to your data folder. For a COVID-19 run, do:
+Then prepare the pipeline directory (if you have already done that and the pipeline hasn't been updated (`git pull` says it's up to date). You need to set $PROJECT\_PATH to your data folder. For a COVID-19 run, do:
 
 ```bash
 cd ~/drp
-export DATA_PATH=$(pwd)/COVID19_USA
+export PROJECT_PATH=$(pwd)/COVID19_USA
 export GT_DATA_SOURCE="csse_case, fluview_death, hhs_hosp"
 ```
 
@@ -122,13 +121,13 @@ for Flu do:
 
 ```bash
 cd ~/drp
-export DATA_PATH=$(pwd)/Flu_USA
+export PROJECT_PATH=$(pwd)/Flu_USA
 ```
 
 Now for any type of run:
 
 ```bash
-cd $DATA_PATH
+cd $PROJECT_PATH
 export FLEPI_PATH=$(pwd)/flepiMoP
 cd $FLEPI_PATH
 git checkout main
@@ -153,12 +152,12 @@ For now, just in case: update the `arrow` package from 8.0.0 in the docker to 11
 Now flepiMoP is ready 🎉 ;
 
 ```bash
-cd $DATA_PATH
+cd $PROJECT_PATH
 git pull 
 git checkout main
 ```
 
-Do some clean-up before your run. The fast way is to restore the `$DATA_PATH` git repository to its blank states (⚠️ removes everything that does not come from git):
+Do some clean-up before your run. The fast way is to restore the `$PROJECT_PATH` git repository to its blank states (⚠️ removes everything that does not come from git):
 
 <pre class="language-bash"><code class="lang-bash"><strong>git reset --hard &#x26;&#x26; git clean -f -d  # this deletes everything that is not on github in this repo !!!
 </strong></code></pre>
@@ -178,7 +177,7 @@ rm -rf model_output data/us_data.csv data-truth &&
    rm -rf data/seeding_territories_Level5.csv data/seeding_territories_Level67.csv
 
 # don't delete model_output if you have another run in //
-rm -rf $DATA_PATH/model_output
+rm -rf $PROJECT_PATH/model_output
 ```
 
 </details>
@@ -229,7 +228,7 @@ To launch the whole inference batch job, type the following command:
 
 {% code overflow="wrap" %}
 ```bash
-python $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic 
+python $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE 
 ```
 {% endcode %}
 
@@ -240,7 +239,7 @@ If you'd like to have more control, you can specify the arguments manually:
 <pre class="language-bash"><code class="lang-bash"><strong>python $FLEPI_PATH/batch/inference_job_launcher.py --aws \ ## FIX THIS TO REFLECT AWS OPTIONS
 </strong><strong>                    -c $CONFIG_PATH \
 </strong><strong>                    -p $FLEPI_PATH \
-</strong><strong>                    --data-path $DATA_PATH \
+</strong><strong>                    --data-path $PROJECT_PATH \
 </strong><strong>                    --upload-to-s3 True \
 </strong><strong>                    --id $FLEPI_RUN_INDEX \
 </strong><strong>                    --restart-from-location $RESUME_LOCATION
@@ -250,18 +249,18 @@ We allow for a number of different jobs, with different setups, e.g., you may _n
 
 {% tabs %}
 {% tab title="Standard" %}
-<pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>cd $DATA_PATH 
+<pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>cd $PROJECT_PATH 
 </strong><strong>
-</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic
+</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE
 </code></pre>
 {% endtab %}
 
 {% tab title="Non-inference" %}
 {% code overflow="wrap" %}
 ```bash
-cd $DATA_PATH 
+cd $PROJECT_PATH 
 
-$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic -j 1 -k 1
+$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE -j 1 -k 1
 ```
 {% endcode %}
 {% endtab %}
@@ -271,18 +270,18 @@ $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QU
 
 **Carrying seeding** (_do this to use seeding fits from resumed run_):
 
-<pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>cd $DATA_PATH 
+<pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>cd $PROJECT_PATH
 </strong><strong>
-</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location $RESUME_LOCATION
+</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-carry-seeding --restart-from-location $RESUME_LOCATION
 </code></pre>
 
 **Discarding seeding** (_do this to refit seeding again_)_:_
 
 {% code overflow="wrap" %}
 ```bash
-cd $DATA_PATH 
+cd $PROJECT_PATH 
 
-$COVID_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-discard-seeding --restart-from-location $RESUME_LOCATION
+$COVID_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-discard-seeding --restart-from-location $RESUME_LOCATION
 ```
 {% endcode %}
 
@@ -290,9 +289,9 @@ $COVID_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QU
 
 {% code overflow="wrap" %}
 ```bash
-cd $DATA_PATH 
+cd $PROJECT_PATH 
 
-$COVID_PATH/batch/inference_job_launcher.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location $RESUME_LOCATION
+$COVID_PATH/batch/inference_job_launcher.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-carry-seeding --restart-from-location $RESUME_LOCATION
 ```
 {% endcode %}
 {% endtab %}

@@ -5,6 +5,8 @@ import logging
 import numbers
 import os
 from pathlib import Path
+import random
+from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
@@ -636,6 +638,74 @@ def list_filenames(
     return files
 
 
+def extract_slot(file: Path) -> pd.DataFrame:
+    """
+    Extract the slot number from the filename and add to DataFrame.
+
+    Args:
+        file: The filename to extract the slot number from.
+
+    Returns:
+        A pandas DataFrame containing the contents of `file` along with a column called
+        'slot' that contains the slot number extracted from the filename.
+
+    Raises:
+        ValueError: If the 'slot' column already exists in the DataFrame read in.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> import pandas as pd
+        >>> from gempyor.utils import extract_slot
+        >>> sample = pd.DataFrame(data={"letters": ["a", "b", "c"]})
+        >>> file = Path.cwd() / "00017.foobar.csv"
+        >>> sample.to_csv(file, index=False)
+        >>> extract_slot(file)
+        letters  slot
+        0       a    17
+        1       b    17
+        2       c    17
+        >>> extract_slot(file).info()
+        <class 'pandas.core.frame.DataFrame'>
+        RangeIndex: 3 entries, 0 to 2
+        Data columns (total 2 columns):
+        #   Column   Non-Null Count  Dtype
+        ---  ------   --------------  -----
+        0   letters  3 non-null      object
+        1   slot     3 non-null      int64
+        dtypes: int64(1), object(1)
+        memory usage: 180.0+ bytes
+    """
+    df = pd.read_parquet(file) if file.suffix == ".parquet" else pd.read_csv(file)
+    if "slot" in df.columns:
+        raise ValueError(
+            f"Column 'slot' already exists in the DataFrame from file: {file}."
+        )
+    df["slot"] = int(file.name.split(".")[0])
+    return df
+
+
+def read_directory(
+    directory: str | bytes | os.PathLike, filters: str | list[str] | None = None
+) -> pd.DataFrame:
+    """
+    Read all files in a directory into a single DataFrame.
+
+    Args:
+        directory: The directory to read files from.
+        filters: A string or a list of strings to filter filenames. Only files
+            containing all the provided substrings will be read. Defaults to `None` for
+            no filters.
+
+    Returns:
+        A pandas DataFrame containing the contents of all the files in the directory.
+    """
+    files = [Path(file) for file in list_filenames(folder=directory, filters=filters or [])]
+    dfs: list[pd.DataFrame] | pd.DataFrame = []
+    for file in sorted(files):
+        dfs.append(extract_slot(file))
+    return pd.concat(dfs).reset_index(drop=True)
+
+
 def rolling_mean_pad(
     data: npt.NDArray[np.number],
     window: int,
@@ -944,7 +1014,7 @@ def create_resume_file_names_map(
                 liketype=liketype,
             )
             input_file_name = output_file_name
-            if os.environ.get("FLEPI_BLOCK_INDEX") == "1":
+            if flepi_block_index == "1":
                 input_file_name = create_resume_input_filename(
                     resume_run_index=resume_run_index,
                     flepi_prefix=flepi_prefix,
@@ -1187,3 +1257,159 @@ def _git_head(repository: Path) -> str:
         check=True,
     )
     return proc.stdout.decode().strip()
+
+
+def _git_checkout(repository: Path, branch: str) -> subprocess.CompletedProcess:
+    """
+    Checkout a new branch from a given git repository.
+
+    Args:
+        repository: A directory under version control with git to
+            checkout a new branch in.
+        branch: The name of the new branch to checkout.
+
+    Examples:
+        >>> import os
+        >>> from pathlib import Path
+        >>> _git_checkout(Path(os.environ["FLEPI_PATH"]), "my-new-branch")
+    """
+    git_cmd = _shutil_which("git")
+    return subprocess.run(
+        [git_cmd, "checkout", "-b", shlex_quote(branch)],
+        cwd=repository.expanduser().absolute(),
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def _format_cli_options(
+    options: dict[str, str | Iterable[str]] | None,
+    always_single: bool = False,
+    iterable_formatting: Literal["split", "comma"] = "split",
+) -> list[str]:
+    """
+    Convert a dictionary of CLI options into a formatted list.
+
+    Args:
+        options: A dictionary where the keys correspond to the option name and the
+            values correspond to the option value. Values are escaped for shell.
+        always_single: If `True` all options will be formatted with a single dash prefix
+            always, useful for commands that don't support long options like
+            `pdftotext`. If `False` the option will be formatted with a double dash
+            prefix if the key is longer than one character.
+        iterable_formatting: The formatting to use for iterable values. If 'split' each
+            value will be formatted as a separate option. If 'comma' the values will be
+            joined with a comma and formatted as a single option.
+
+    Returns:
+        A list of options that can be passed to
+        [`subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)
+        or similar functions.
+
+    Examples:
+        >>> from gempyor.utils import _format_cli_options
+        >>> _format_cli_options({"name": "foo bar fizz buzz"})
+        ["--name='foo bar fizz buzz'"]
+        >>> _format_cli_options({"o": "/path/to/output.log"})
+        ['-o=/path/to/output.log']
+        >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
+        ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+        >>> _format_cli_options({"output": "/path/to/output.log"}, always_single=True)
+        ['-output=/path/to/output.log']
+        >>> _format_cli_options({"person": ["Alice", "Bob", "Charlie"]})
+        ['--person=Alice', '--person=Bob', '--person=Charlie']
+        >>> _format_cli_options(
+        ...     {"person": ["Alice", "Bob", "Charlie"]},
+        ...     iterable_formatting="comma",
+        ... )
+        ['--person=Alice,Bob,Charlie']
+    """
+    opts = []
+    for k, v in (options or {}).items():
+        new_opts = []
+        opt_name = f"{'-' if (always_single or len(k) == 1) else '--'}{k}"
+        if isinstance(v, str):
+            new_opts.append(f"{opt_name}={shlex_quote(v)}")
+        elif iterable_formatting == "comma":
+            new_opts.append(f"{opt_name}={','.join(shlex_quote(w) for w in v)}")
+        else:
+            new_opts.extend(f"{opt_name}={shlex_quote(w)}" for w in v)
+        opts.extend(new_opts)
+    return opts
+
+
+def _random_seeds_list(a: int, b: int, n: int) -> list[int]:
+    """
+    Generate a list of unique random integers within a specified range.
+
+    Args:
+        a: The lower bound of the range, inclusive.
+        b: The upper bound of the range, inclusive.
+        n: The number of unique random integers to generate.
+
+    Returns:
+        A list of `n` unique integers between `a` and `b`.
+
+    Raises:
+        ValueError: If the lower bound is not less than the upper bound.
+        ValueError: If the range is too small to accommodate `n` unique integers.
+
+    Examples:
+        >>> import random
+        >>> from gempyor.utils import _random_seeds_list
+        >>> random.seed(42)
+        >>> _random_seeds_list(1, 100, 5)
+        [82, 15, 4, 95, 36]
+        >>> _random_seeds_list(1, 100, 5)
+        [32, 29, 18, 95, 14]
+        >>> _random_seeds_list(1, 5, 5)
+        [5, 1, 4, 2, 3]
+        >>> _random_seeds_list(1, 20, 0)
+        []
+        >>> try:
+        ...     _random_seeds_list(1, 5, 6)
+        ... except Exception as e:
+        ...     print(e)
+        ...
+        Range [1, 5] is too small for 6 unique random integers.
+    """
+    random_seeds = []
+    if a >= b:
+        raise ValueError(f"The lower bound, {a}, must be less than the upper bound, {b}.")
+    if n < 0:
+        raise ValueError("The number of random integers to generate must be non-negative.")
+    if (b - a) + 1 < n:
+        raise ValueError(f"Range [{a}, {b}] is too small for {n} unique random integers.")
+    while len(random_seeds) < n:
+        seed = random.randint(a, b)
+        if seed not in random_seeds:
+            random_seeds.append(seed)
+    return random_seeds
+
+
+def _nslots_random_seeds(nslots: int) -> list[int]:
+    """
+    Generate a list of unique random integers for the number of slots.
+
+    This function generates a list of `nslots` unique random integers between
+    [`nslots` + 1, 2^32 + 1]. Intended for use in generating random seeds for individual
+    slots when simulations are done in parallel.
+
+    Args:
+        nslots: The number of slots to generate random integers for.
+
+    Examples:
+        >>> import random
+        >>> from gempyor.utils import _nslots_random_seeds
+        >>> random.seed(42)
+        >>> _nslots_random_seeds(5)
+        [2746317219, 478163333, 107420375, 3184935169, 1181241949]
+        >>> _nslots_random_seeds(5)
+        [1051802518, 958682852, 599310831, 3163119791, 440213421]
+        >>> _nslots_random_seeds(1)
+        [2906402159]
+        >>> _nslots_random_seeds(1)
+        [3181143733]
+    """
+    return _random_seeds_list(nslots + 1, 2**32 - 1, nslots)

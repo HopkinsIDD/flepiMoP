@@ -47,7 +47,7 @@ config_file_options = {
     ),
     "seir_modifiers_scenarios": click.Option(
         ["-s", "--seir_modifiers_scenarios"],
-        envvar="FLEPI_SEIR_SCENARIO",
+        envvar="FLEPI_SEIR_SCENARIOS",
         type=click.STRING,
         default=[],
         multiple=True,
@@ -55,7 +55,7 @@ config_file_options = {
     ),
     "outcome_modifiers_scenarios": click.Option(
         ["-d", "--outcome_modifiers_scenarios"],
-        envvar="FLEPI_OUTCOME_SCENARIO",
+        envvar="FLEPI_OUTCOME_SCENARIOS",
         type=click.STRING,
         default=[],
         multiple=True,
@@ -105,11 +105,10 @@ config_file_options = {
         show_default=True,
         help="The index of the first simulation",
     ),
-    "stoch_traj_flag": click.Option(
-        ["--stochastic/--non-stochastic", "stoch_traj_flag"],
-        envvar="FLEPI_STOCHASTIC_RUN",
-        default=False,
-        help="Run stochastic simulations?",
+    "method": click.Option(
+        ["-m", "--method"],
+        type=click.STRING,
+        help="If provided, overrides seir::integration::method",
     ),
     "write_csv": click.Option(
         ["--write-csv/--no-write-csv"],
@@ -122,6 +121,20 @@ config_file_options = {
         default=True,
         show_default=True,
         help="write parquet output?",
+    ),
+}
+verbosity_options = {
+    "verbosity": click.Option(
+        param_decls=["-v", "--verbose", "verbosity"],
+        count=True,
+        help="The verbosity level to use for this command.",
+    ),
+    "dry_run": click.Option(
+        param_decls=["--dry-run", "dry_run"],
+        type=bool,
+        default=False,
+        is_flag=True,
+        help="Should this command be run using dry run?",
     ),
 }
 
@@ -272,6 +285,17 @@ def parse_config_files(
 
     # update the config with the remaining options
     other_args = parsed_args - config_args - scen_args
+
+    if method := kwargs.pop("method", None):
+        print(
+            f"saw method! {method} vs {_parse_option(config_file_options['method'], method)}"
+        )
+        cfg["seir"]["integration"]["method"].set(
+            _parse_option(config_file_options["method"], method)
+        )
+        print(f"set method! {cfg['seir']['integration']['method']}")
+        print(f"check exists {cfg['seir']['integration'].exists()}")
+
     for option in other_args:
         if (value := kwargs.get(option)) is not None:
             # auto box the value if the option expects a multiple
@@ -302,14 +326,14 @@ def log_cli_inputs(kwargs: dict[str, Any], verbosity: int | None = None) -> None
         >>> from pathlib import Path
         >>> kwargs = {
         ...     "input_file": Path("config.in"),
-        ...     "stochastic": True,
+        ...     "method": "stochastic",
         ...     "cluster": "longleaf",
         ...     "verbosity": 3,
         ... }
         >>> log_cli_inputs(kwargs)
         2024-11-05 09:29:21,666:DEBUG:gempyor.shared_cli> CLI was given 4 arguments:
         2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> input_file = /Users/twillard/Desktop/GitHub/HopkinsIDD/flepiMoP/flepimop/gempyor_pkg/config.in.
-        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> stochastic = True.
+        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> method = stochastic.
         2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> cluster    = longleaf.
         2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> verbosity  = 3.
     """

@@ -190,7 +190,6 @@ def generate_pdf(
                 run_id=run_id,
                 # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
                 first_sim_index=1,
-                stoch_traj_flag=False,
                 path_prefix="./",  # prefix where to find the folder indicated in subpop_setup$
             )
             run_info.folder_path = f"{fs_results_path}/model_output"
@@ -200,7 +199,7 @@ def generate_pdf(
         # In[5]:
 
         # gempyor.config.set_file(run_info.config_filepath)
-        # gt = pd.read_csv(gempyor.config["inference"]["data_path"].get())
+        # gt = pd.read_csv(gempyor.config["inference"]["gt_data_path"].get())
         # gt
         # statistics = {}
         # Ingoring agreegation and all, assuming by week

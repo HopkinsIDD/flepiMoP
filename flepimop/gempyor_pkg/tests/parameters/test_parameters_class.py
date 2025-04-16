@@ -1,5 +1,8 @@
+from concurrent.futures import ProcessPoolExecutor
 from datetime import date
 from functools import partial
+from itertools import repeat
+import multiprocessing as mp
 import pathlib
 from typing import Any, Callable
 from uuid import uuid4
@@ -189,6 +192,22 @@ def insufficient_dates_parameter_factory(tmp_path: pathlib.Path) -> MockParamete
         tf=date(2024, 1, 6),
         subpop_names=["1", "2"],
     )
+
+
+def sample_params(params: Parameters, reinit: bool) -> np.ndarray:
+    """
+    Helper method for unit testing.
+
+    Args:
+        params: The instance of the Parameters class to sample from.
+        reinit: Whether to reinitialize the parameters.
+
+    Returns:
+        The sampled parameters as a flattened numpy array.
+    """
+    if reinit:
+        params.reinitialize_distributions()
+    return params.parameters_quick_draw(1, 1).flatten()
 
 
 class TestParameters:
@@ -646,3 +665,19 @@ class TestParameters:
         # TODO: Come back and unit test this method after getting a better handle on
         # these NPI objects.
         pass
+
+    @pytest.mark.parametrize("do_reinit", [True, False])
+    def test_reinitialize_parameters(self, tmp_path: pathlib.Path, do_reinit: bool) -> None:
+        """Reinitialization of distributions required for multiprocessing under spawn."""
+        mock_inputs = distribution_three_valid_parameter_factory(tmp_path)
+        params = mock_inputs.create_parameters_instance()
+        with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as ex:
+            results = list(
+                ex.map(
+                    sample_params,
+                    repeat(params, times=6),
+                    repeat(do_reinit, times=6),
+                )
+            )
+        for i in range(1, len(results)):
+            assert np.allclose(results[i - 1], results[i]) == (not do_reinit)

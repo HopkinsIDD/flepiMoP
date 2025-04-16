@@ -184,15 +184,6 @@ def user_confirmation(question="Continue?", default=False):
     help="The run_id of the run we are restarting from",
 )
 @click.option(
-    "--stochastic/--non-stochastic",
-    "--stochastic/--non-stochastic",
-    "stochastic",
-    envvar="FLEPI_STOCHASTIC_RUN",
-    type=bool,
-    default=False,
-    help="Flag determining whether to run stochastic simulations or not",
-)
-@click.option(
     "--resume-discard-seeding/--resume-carry-seeding",
     "--resume-discard-seeding/--resume-carry-seeding",
     "resume_discard_seeding",
@@ -260,7 +251,7 @@ def user_confirmation(question="Continue?", default=False):
     "continuation_location",
     type=str,
     default=None,
-    envvar="CONTINUATION_LOCATION",
+    envvar="FLEPI_CONTINUATION_LOCATION",
     help="The location (folder or an S3 bucket) from which to pull the /init/ files (if not set, uses the resume location seir files)",
 )
 @click.option(
@@ -269,6 +260,7 @@ def user_confirmation(question="Continue?", default=False):
     "continuation_run_id",
     type=str,
     default=None,
+    envvar="FLEPI_CONTINUATION_RUN_ID",
     help="The run_id of the run we are continuing from",
 )
 def launch_batch(
@@ -290,7 +282,6 @@ def launch_batch(
     time_per_sim,
     restart_from_location,
     restart_from_run_id,
-    stochastic,
     resume_discard_seeding,
     max_stacked_interventions,
     last_validation_date,
@@ -381,7 +372,6 @@ def launch_batch(
         time_per_sim,
         restart_from_location,
         restart_from_run_id,
-        stochastic,
         resume_discard_seeding,
         max_stacked_interventions,
         last_validation_date,
@@ -563,7 +553,6 @@ class BatchJobHandler(object):
         time_per_sim,
         restart_from_location,
         restart_from_run_id,
-        stochastic,
         resume_discard_seeding,
         max_stacked_interventions,
         last_validation_date,
@@ -591,7 +580,6 @@ class BatchJobHandler(object):
         self.time_per_sim = time_per_sim
         self.restart_from_location = restart_from_location
         self.restart_from_run_id = restart_from_run_id
-        self.stochastic = stochastic
         self.resume_discard_seeding = resume_discard_seeding
         self.max_stacked_interventions = max_stacked_interventions
         self.last_validation_date = last_validation_date
@@ -759,7 +747,6 @@ class BatchJobHandler(object):
                     self.resume_discard_seeding
                 ).lower(),  # lower is import here, this is string-compared to "true" in the run script
             },
-            {"name": "FLEPI_STOCHASTIC_RUN", "value": str(self.stochastic)},
             {"name": "FLEPI_RESET_CHIMERICS", "value": str(self.reset_chimerics)},
             {
                 "name": "FLEPI_MEM_PROFILE",
