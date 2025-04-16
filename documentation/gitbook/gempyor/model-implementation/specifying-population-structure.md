@@ -27,9 +27,9 @@ subpop_setup:
 ## Items and options
 
 | Config Item | Required?    | Type/Format  | Description                           |
-| ----------- | ------------ | ------------ | ------------------------------------- |
-| geodata     | **required** | path to file | path to geodata file                  |
-| mobility    | **required** | path to file | path to mobility file                 |
+| ----------- | ------------ | ------------------------------- | ------------------------------------- |
+| geodata     | **required** | path to file                    | path to geodata file                  |
+| mobility    | **required** | path to file                    | path to mobility file                 |
 | selected    | **optional** | string or list of strings       | name of selected location in`geodata` |
 
 ### `geodata` file and `selected` option
