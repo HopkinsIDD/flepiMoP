@@ -2,7 +2,7 @@
 Provides abstractions for interacting with the parameters configurations.
 
 Classes:
-    Parameters: 
+    Parameters:
         Encapsulates logic for loading, parsing, and summarizing parameter configurations.
 """
 

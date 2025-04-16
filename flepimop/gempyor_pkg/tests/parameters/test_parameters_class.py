@@ -192,7 +192,7 @@ def insufficient_dates_parameter_factory(tmp_path: pathlib.Path) -> MockParamete
 
 
 class TestParameters:
-    @pytest.mark.parametrize("factory", [(nonunique_invalid_parameter_factory)])
+    @pytest.mark.parametrize("factory", [nonunique_invalid_parameter_factory])
     def test_nonunique_parameter_names_value_error(
         self,
         tmp_path: pathlib.Path,
@@ -208,7 +208,7 @@ class TestParameters:
         ):
             mock_inputs.create_parameters_instance()
 
-    @pytest.mark.parametrize("factory", [(insufficient_columns_parameter_factory)])
+    @pytest.mark.parametrize("factory", [insufficient_columns_parameter_factory])
     def test_timeseries_parameter_has_insufficient_columns_value_error(
         self,
         tmp_path: pathlib.Path,
@@ -244,7 +244,7 @@ class TestParameters:
         ):
             mock_inputs.create_parameters_instance()
 
-    @pytest.mark.parametrize("factory", [(insufficient_dates_parameter_factory)])
+    @pytest.mark.parametrize("factory", [insufficient_dates_parameter_factory])
     def test_timeseries_parameter_has_insufficient_dates_value_error(
         self,
         tmp_path: pathlib.Path,
