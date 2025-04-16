@@ -455,7 +455,7 @@ create_filename_list <- function(
 ##'@param run_id what is the id of this run
 ##'@param global_intermediate_filepath_suffix the suffix to use for global files
 ##'@param chimeric_intermediate_filepath_suffix the suffix to use for chimeric files
-##'@param filename_prefix
+##'@param filename_prefix the prefix to use for all files
 ##'@param gempyor_inference_runner An already initialized copy of python inference runner
 ##'@export
 initialize_mcmc_first_block <- function(
