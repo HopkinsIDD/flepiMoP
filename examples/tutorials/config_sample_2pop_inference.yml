@@ -1,3 +1,5 @@
+# this file runs an inference scenario using simulated data that was generated using the make_test_data.R script with an input config "config_sample_2pop_modifiers.yml" for the forward simulation 
+
 name: sample_2pop
 setup_name: minimal
 start_date: 2020-02-01
@@ -59,9 +61,9 @@ seir_modifiers:
       value: 
         distribution: truncnorm
         mean: 1.0
-        sd: 0.001
+        sd: 0.3
         a: 0
-        b: 1
+        b: 5
       perturbation:
         distribution: truncnorm
         mean: 0
@@ -76,8 +78,8 @@ seir_modifiers:
       subpop: "all"
       value: 
         distribution: truncnorm
-        mean: 0.5
-        sd: 0.001
+        mean: 0.4
+        sd: 0.1
         a: 0
         b: 1
       perturbation:
@@ -95,7 +97,7 @@ seir_modifiers:
       value: 
         distribution: truncnorm
         mean: 0.8
-        sd: 0.001
+        sd: 0.1
         a: 0
         b: 1
       perturbation:
@@ -152,7 +154,7 @@ outcome_modifiers:
       value: 
         distribution: truncnorm
         mean: 0.5
-        sd: 0.001
+        sd: 0.1
         a: 0
         b: 1
       perturbation:
