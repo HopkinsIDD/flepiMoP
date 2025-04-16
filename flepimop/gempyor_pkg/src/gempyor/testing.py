@@ -7,26 +7,32 @@ the optional test dependencies must be installed.
 
 __all__ = [
     "change_directory_to_temp_directory",
-    "mock_empty_config",
     "create_confuse_config_from_file",
     "create_confuse_configview_from_dict",
     "create_confuse_config_from_dict",
+    "mock_empty_config",
     "partials_are_similar",
     "sample_fits_distribution",
+    "setup_example_from_tutorials",
+    "run_test_in_separate_process",
 ]
 
-
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 import functools
 import os
 from pathlib import Path
+from shlex import quote
+import shutil
 from stat import S_IXUSR
-from tempfile import TemporaryDirectory
+import subprocess
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Literal
 
 import confuse
 import numpy as np
 import pytest
+
+from .utils import _shutil_which
 
 
 @pytest.fixture
@@ -275,6 +281,60 @@ def sample_fits_distribution(
         return bool(np.greater(sample, 0.0))
 
 
+def run_test_in_separate_process(
+    script: str | Path, dest: Path | None = None, args: Iterable[str] = ()
+) -> None:
+    """
+    Execute a test script in a separate process.
+
+    This function is useful for testing functionality that requires initialization for
+    the process (i.e. setting the start method for multiprocessing). This method of unit
+    testing is **slow** and should be used sparingly.
+
+    Args:
+        script: The script to run, either a string of the code or a path to the script
+            to use.
+        dest: The destination to write the script to or `None` to use a temporary file.
+        args: The arguments to pass to the script, can be obtained in the script either
+            through `sys.argv` (starting with index 1) or through `argparse`.
+
+    Returns:
+        None
+
+    Examples:
+        Typically this function is used in a test like so:
+
+        >>> assert run_test_in_separate_process(
+        ...     Path(__file__).parent / "external_script.py",
+        ...     tmp_path / "test.py",
+        ...     args=["arg1", "arg2"],
+        ... ) is None
+
+        The `external_script.py` would reside in the same directory as the test file and
+        the `tmp_path` would be a `pytest` fixture.
+    """
+    if not isinstance(script, Path):
+        if dest is None:
+            with NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(script.encode())
+                script = Path(temp_file.name)
+        else:
+            dest.write_text(script)
+            script = dest
+    elif dest is not None:
+        shutil.copy(script, dest)
+        script = dest
+
+    try:
+        python = _shutil_which("python")
+        args = [python, str(script)] + list(quote(a) for a in args)
+        proc = subprocess.run(args, capture_output=True, check=True)
+        return proc.returncode
+    finally:
+        if dest is None and script.exists():
+            script.unlink()
+
+
 def sample_script(directory: Path, executable: bool, name: str = "example") -> Path:
     """
     Create a sample script for testing functions that require a script.
@@ -299,3 +359,34 @@ def sample_script(directory: Path, executable: bool, name: str = "example") -> P
     if executable:
         script.chmod(script.stat().st_mode | S_IXUSR)
     return script
+
+
+def setup_example_from_tutorials(
+    tmp_path: Path,
+    config: str,
+) -> None:
+    """
+    Setup a tutorial example for testing.
+
+    Args:
+        tmp_path: The temporary directory to create the example in.
+        config: The name of the configuration file to use.
+
+    Returns:
+        The path to the temporary directory.
+
+    Raises:
+        ValueError: If the `FLEPI_PATH` environment variable is not set.
+    """
+    if (flepi_path := os.getenv("FLEPI_PATH")) is None:
+        raise ValueError("FLEPI_PATH environment variable is not set.")
+    tutorials_path = Path(flepi_path) / "examples/tutorials"
+    for file in [config] + [
+        f.relative_to(tutorials_path)
+        for f in tutorials_path.glob("model_input/*")
+        if f.is_file()
+    ]:
+        source = tutorials_path / file
+        destination = tmp_path / file
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(source, destination)
