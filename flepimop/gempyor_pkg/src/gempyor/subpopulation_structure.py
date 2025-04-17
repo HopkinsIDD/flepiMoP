@@ -173,6 +173,9 @@ class SubpopulationStructure:
         subpop_names: Names of each subpopulation
         mobility: Mobility matrix where the row dimension corresponds to the source and
             the column dimension corresponds to the destination subpopulation.
+
+    Raises:
+        ValueError: If the selected subpopulations are not in the geodata.
     """
 
     def __init__(self, subpop_config: confuse.Subview, path_prefix: Path | None = None):
@@ -203,15 +206,18 @@ class SubpopulationStructure:
             _regularize_path(self._config.mobility, prefix=path_prefix)
         )
         if self._config.selected:
-            # find the indices of the selected subpopulations
+            if selected_missing := set(self._config.selected) - set(self.subpop_names):
+                raise ValueError(
+                    "The following selected subpopulations are not "
+                    f"in the geodata: {','.join(selected_missing)}."
+                )
             selected_subpop_indices = [
                 self.subpop_names.index(s) for s in self._config.selected
             ]
-            # filter all the lists
             self.data = self.data.iloc[selected_subpop_indices]
+            self.nsubpops = len(self.data)
             self.subpop_pop = self.subpop_pop[selected_subpop_indices]
             self.subpop_names = self._config.selected
-            self.nsubpops = len(self.data)
             self.mobility = self.mobility[selected_subpop_indices][
                 :, selected_subpop_indices
             ]
@@ -274,13 +280,11 @@ class SubpopulationStructure:
                 "Mobility data must either be either a txt, csv, or npz "
                 f"file, but was given mobility file of '{mobility_file}'."
             )
-
         if mobility.shape != (self.nsubpops, self.nsubpops):
             raise ValueError(
                 f"Mobility data has shape of {mobility.shape}, but should "
                 f"match geodata shape of {(self.nsubpops, self.nsubpops)}."
             )
-
         # Make sure sum of mobility values <= the population of src subpop
         row_idx = np.where(np.asarray(mobility.sum(axis=1)).ravel() > self.subpop_pop)[0]
         if len(row_idx) > 0:
@@ -289,5 +293,4 @@ class SubpopulationStructure:
                 "The following subpopulations have mobility exceeding "
                 f"their population: {', '.join(subpops_with_mobility_exceeding_pop)}."
             )
-
         return mobility
