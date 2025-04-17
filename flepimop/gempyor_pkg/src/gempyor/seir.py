@@ -1,5 +1,6 @@
 import itertools
 import logging
+import random
 import time
 
 import numpy as np
@@ -10,7 +11,7 @@ import xarray as xr
 
 from . import NPI, steps_rk4
 from .model_info import ModelInfo
-from .utils import Timer, read_df
+from .utils import Timer, _nslots_random_seeds, read_df
 
 
 logger = logging.getLogger(__name__)
@@ -288,8 +289,7 @@ def onerun_SEIR(
     load_ID: bool = False,
     sim_id2load: int = None,
     config=None,
-):
-    np.random.seed()
+) -> pd.DataFrame:
     npi = None
     if modinf.npi_config_seir:
         npi = build_npi_SEIR(
@@ -359,22 +359,69 @@ def onerun_SEIR(
     return out_df
 
 
+def _onerun_SEIR_with_random_seed(
+    random_seed: int,
+    sim_id2write: int,
+    modinf: ModelInfo,
+    load_ID: bool = False,
+    sim_id2load: int = None,
+    config=None,
+) -> pd.DataFrame:
+    """
+    Wrapper function to `onerun_SEIR` that sets a random seed.
+
+    Args:
+        random_seed: The random seed to use.
+        sim_id2write: The simulation ID to write.
+        modinf: The ModelInfo object.
+        load_ID: Whether to load the simulation ID.
+        sim_id2load: The simulation ID to load.
+        config: The configuration.
+
+    Returns:
+        A pandas DataFrame containing the simulated SEIR output.
+
+    See Also:
+        `onerun_SEIR`
+
+    """
+    np.random.seed(seed=random_seed)
+    modinf.parameters.reinitialize_distributions()
+    return onerun_SEIR(
+        sim_id2write, modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+    )
+
+
 def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
+    """
+    Run SEIR simulations in parallel.
+
+    Args:
+        modinf: The ModelInfo object.
+        config: The configuration.
+        n_jobs: The number of parallel jobs to run. Default is 1 (no parallelization).
+
+    Notes:
+        Successive calls to this function will produce different samples for random
+        parameters.
+    """
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
-
+    random_seeds = _nslots_random_seeds(modinf.nslots)
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
-            onerun_SEIR(
-                sim_id2write=sim_id,
-                modinf=modinf,
+            _onerun_SEIR_with_random_seed(
+                random_seeds[sim_id - 1],
+                sim_id,
+                modinf,
                 load_ID=False,
                 sim_id2load=None,
                 config=config,
             )
     else:
         tqdm.contrib.concurrent.process_map(
-            onerun_SEIR,
+            _onerun_SEIR_with_random_seed,
+            random_seeds,
             sim_ids,
             itertools.repeat(modinf),
             itertools.repeat(False),
@@ -384,7 +431,8 @@ def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
         )
 
     logging.info(
-        f""">> {modinf.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds"""
+        f">> {modinf.nslots} seir simulations completed "
+        f"in {time.monotonic() - start:.1f} seconds"
     )
 
 
