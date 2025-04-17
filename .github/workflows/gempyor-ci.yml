@@ -58,3 +58,9 @@ jobs:
           cd examples
           pytest --exitfirst
         shell: bash
+      - name: Build gempyor documentation with Sphinx
+        run: |
+          if [[ -n "$(git status -s -- flepimop/gempyor_pkg/src/gempyor)" ]]; then
+            cd flepimop/gempyor_pkg/docs
+            make fullbuild
+          fi
