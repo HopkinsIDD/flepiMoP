@@ -17,7 +17,6 @@ import warnings
 
 import confuse
 import numpy as np
-import pandas as pd
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -92,6 +91,76 @@ class GeodataFileTable(RootModel):
             raise ValueError(
                 f"The following subpopulation names are duplicated in the "
                 f"geodata file: {duplicate_subpops}."
+            )
+        return self
+
+
+class MobilityFileRow(BaseModel):
+    """
+    Representation of a row in the mobility file.
+
+    Attributes:
+        ori: Origin subpopulation.
+        dest: Destination subpopulation.
+        amount: Amount of mobility between origin and destination.
+    """
+
+    ori: str
+    dest: str
+    amount: Annotated[int, Field(gt=0)]
+
+    @model_validator(mode="after")
+    def ori_and_dest_are_different(self) -> "MobilityFileRow":
+        """
+        Validate that the origin and destination subpopulation names are different.
+
+        Raises:
+            ValueError: If the origin and destination subpopulation names are the same.
+
+        Returns:
+            The validated instance of `MobilityFileRow`.
+        """
+        if self.ori == self.dest:
+            raise ValueError(
+                f"Origin and destination subpopulations cannot be the same, '{self.ori}'."
+            )
+        return self
+
+
+class MobilityFileTable(RootModel):
+    """
+    Representation of the mobility file as a table.
+
+    Attributes:
+        root: List of rows in the mobility file.
+    """
+
+    root: list[MobilityFileRow]
+
+    @model_validator(mode="after")
+    def ori_and_dest_are_primary_key(self) -> "MobilityFileTable":
+        """
+        Validate that the origin and destination subpopulation names are unique.
+
+        Raises:
+            ValueError: If there are duplicate origin and destination subpopulation
+                names in the mobility file.
+
+        Returns:
+            The validated instance of `MobilityFileTable`.
+        """
+        duplicate_pairs = set()
+        pairs = set()
+        for row in self.root:
+            pair = (row.ori, row.dest)
+            if pair in pairs:
+                duplicate_pairs.add(pair)
+                continue
+            pairs.add(pair)
+        if duplicate_pairs:
+            raise ValueError(
+                "The following origin-destination pairs are duplicated "
+                f"in the mobility file: {duplicate_pairs}."
             )
         return self
 
@@ -182,20 +251,20 @@ class SubpopulationStructure:
                 PendingDeprecationWarning,
             )
             mobility = scipy.sparse.csr_matrix(np.loadtxt(mobility_file), dtype=int)
-        elif mobility_file.suffix == ".csv":
-            mobility_data = pd.read_csv(
-                mobility_file,
-                converters={"ori": str, "dest": str},
-                skipinitialspace=True,
+        elif mobility_file.suffix in {".csv", ".parquet"}:
+            kwargs = (
+                {"converters": {"ori": str, "dest": str}, "skipinitialspace": True}
+                if mobility_file.suffix == ".csv"
+                else {}
             )
-            nn_dict = {v: k for k, v in enumerate(self.subpop_names)}
+            mobility_data = _read_and_validate_dataframe(
+                mobility_file, model=MobilityFileTable, **kwargs
+            )
+            nn_dict = {
+                subpop_name: idx for idx, subpop_name in enumerate(self.subpop_names)
+            }
             mobility_data["ori_idx"] = mobility_data["ori"].apply(nn_dict.__getitem__)
             mobility_data["dest_idx"] = mobility_data["dest"].apply(nn_dict.__getitem__)
-            if any(mobility_data["ori_idx"] == mobility_data["dest_idx"]):
-                raise ValueError(
-                    "Mobility fluxes with same origin and destination "
-                    "in long form matrix. This is not supported."
-                )
             mobility = scipy.sparse.coo_matrix(
                 (mobility_data.amount, (mobility_data.ori_idx, mobility_data.dest_idx)),
                 shape=(self.nsubpops, self.nsubpops),
