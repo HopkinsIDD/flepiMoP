@@ -3,19 +3,17 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final
+import re
+from typing import Any, Final, Literal
 
 import confuse
 import pandas as pd
+from pydantic import ValidationError
 import pytest
 import numpy as np
 import scipy.sparse
 
-from gempyor.subpopulation_structure import (
-    SUBPOP_NAMES_KEY,
-    SUBPOP_POP_KEY,
-    SubpopulationStructure,
-)
+from gempyor.subpopulation_structure import SubpopulationStructure
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -430,30 +428,28 @@ VALID_FACTORIES: Final = [
 ]
 
 
-def test_geodata_missing_subpop_pop_key_raises_value_error(tmp_path: Path) -> None:
-    """Test that a ValueError is raised when the subpopulation population key is missing."""
-    mock_input = subpop_pop_key_not_in_geodata_factory(tmp_path)
-    assert SUBPOP_POP_KEY not in mock_input.geodata.columns
+@pytest.mark.parametrize(
+    ("factory", "field"),
+    [
+        (subpop_pop_key_not_in_geodata_factory, "population"),
+        (subpop_names_key_not_in_geodata_factory, "subpop"),
+    ],
+)
+def test_geodata_missing_required_field_raises_validation_error_error(
+    tmp_path: Path,
+    factory: Callable[[Path], MockSubpopulationStructureInput],
+    field: Literal["population", "subpop"],
+) -> None:
+    """Test that"""
+    mock_input = factory(tmp_path)
+    assert field not in mock_input.geodata.columns
+    raises_match = rf"^{len(mock_input.geodata)} validation errors.*"
+    raises_match += ".*".join(
+        [rf"{i}\.{field}\s+field required" for i in range(len(mock_input.geodata))]
+    )
     with pytest.raises(
-        ValueError,
-        match=(
-            f"^The '{SUBPOP_POP_KEY}' column was not found in the "
-            f"geodata file '.*{mock_input.subpop_config['geodata']}'.$"
-        ),
-    ):
-        mock_input.create_subpopulation_structure_instance()
-
-
-def test_geodata_missing_subpop_names_key_raises_value_error(tmp_path: Path) -> None:
-    """Test that a ValueError is raised when the subpopulation names key is missing."""
-    mock_input = subpop_names_key_not_in_geodata_factory(tmp_path)
-    assert SUBPOP_NAMES_KEY not in mock_input.geodata.columns
-    with pytest.raises(
-        ValueError,
-        match=(
-            f"^The '{SUBPOP_NAMES_KEY}' column was not found in the "
-            f"geodata file '.*{mock_input.subpop_config['geodata']}'.$"
-        ),
+        ValidationError,
+        match=re.compile(raises_match, flags=re.DOTALL + re.IGNORECASE + re.MULTILINE),
     ):
         mock_input.create_subpopulation_structure_instance()
 
@@ -464,7 +460,7 @@ def test_geodata_subpop_with_zero_population_raises_value_error(tmp_path: Path) 
     assert (mock_input.geodata["population"] == 0).any()
     with pytest.raises(
         ValueError,
-        match="^There are [0-9]+ subpops with zero population.$",
+        match=r"1.population\s+Input should be greater than 0",
     ):
         mock_input.create_subpopulation_structure_instance()
 
@@ -475,10 +471,7 @@ def test_geodata_duplicate_subpop_names_raises_value_error(tmp_path: Path) -> No
     assert mock_input.geodata["subpop"].nunique() < len(mock_input.geodata)
     with pytest.raises(
         ValueError,
-        match=(
-            "^The following subpopulation names are duplicated in the "
-            f"geodata file '.*{mock_input.subpop_config['geodata']}': .*$"
-        ),
+        match="The following subpopulation names are duplicated in the geodata file: .*",
     ):
         mock_input.create_subpopulation_structure_instance()
 
