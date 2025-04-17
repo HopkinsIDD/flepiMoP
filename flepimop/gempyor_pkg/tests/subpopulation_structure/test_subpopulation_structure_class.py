@@ -272,6 +272,44 @@ def valid_2pop_with_csv_mobility_test_factory(
     )
 
 
+def valid_2pop_with_parquet_mobility_test_factory(
+    tmp_path: Path,
+) -> MockSubpopulationStructureInput:
+    """
+    Factory for geodata file that contains two valid subpopulations and a mobility matrix.
+
+    Returns:
+        A `MockSubpopulationStructureInput` instance with a geodata file that contains
+        two valid subpopulations and a mobility matrix.
+    """
+    geodata = pd.DataFrame(
+        {
+            "subpop": ["USA", "Canada"],
+            "population": [100, 50],
+        }
+    )
+    with (tmp_path / "geodata.csv").open("w") as f:
+        geodata.to_csv(f, index=False)
+    mobility = pd.DataFrame(
+        {
+            "ori": ["USA", "Canada"],
+            "dest": ["Canada", "USA"],
+            "amount": [2, 1],
+        }
+    )
+    with (tmp_path / "mobility.parquet").open("wb") as f:
+        mobility.to_parquet(f, index=False)
+    return MockSubpopulationStructureInput(
+        subpop_config={
+            "geodata": "geodata.csv",
+            "mobility": "mobility.parquet",
+        },
+        path_prefix=tmp_path,
+        geodata=geodata,
+        mobility=mobility,
+    )
+
+
 def valid_2pop_with_npz_mobility_test_factory(
     tmp_path: Path,
 ) -> MockSubpopulationStructureInput:
@@ -420,10 +458,40 @@ def mobility_greater_than_three_populations_factory(
     )
 
 
+def mobility_zero_or_less_factory(tmp_path: Path) -> MockSubpopulationStructureInput:
+    geodata = pd.DataFrame(
+        {
+            "subpop": ["USA", "Canada"],
+            "population": [100, 50],
+        }
+    )
+    with (tmp_path / "geodata.csv").open("w") as f:
+        geodata.to_csv(f, index=False)
+    mobility = pd.DataFrame(
+        {
+            "ori": ["USA", "Canada"],
+            "dest": ["Canada", "USA"],
+            "amount": [0, -1],
+        }
+    )
+    with (tmp_path / "mobility.csv").open("w") as f:
+        mobility.to_csv(f, index=False)
+    return MockSubpopulationStructureInput(
+        subpop_config={
+            "geodata": "geodata.csv",
+            "mobility": "mobility.csv",
+        },
+        path_prefix=tmp_path,
+        geodata=geodata,
+        mobility=mobility,
+    )
+
+
 VALID_FACTORIES: Final = [
     valid_2pop_geodata_only_test_factory,
     valid_2pop_with_txt_mobility_test_factory,
     valid_2pop_with_csv_mobility_test_factory,
+    valid_2pop_with_parquet_mobility_test_factory,
     valid_2pop_with_npz_mobility_test_factory,
 ]
 
@@ -500,6 +568,21 @@ def test_subpopulation_structure_instance_attributes(
             "Please switch to long form csv files."
         )
     assert len(caplog.records) == int(mock_input.mobility is None)
+
+
+def test_mobility_zero_or_less_raises_validation_error(tmp_path: Path) -> None:
+    """Test that a ValueError is raised when mobility is zero or less."""
+    mock_input = mobility_zero_or_less_factory(tmp_path)
+    assert (zero_or_less := (mock_input.mobility["amount"] <= 0).sum()) > 0
+    raises_match = rf"^{zero_or_less} validation errors.*"
+    raises_match += ".*".join(
+        [rf"{i}\.amount\s+Input should be greater than 0" for i in range(zero_or_less)]
+    )
+    with pytest.raises(
+        ValidationError,
+        match=re.compile(raises_match, flags=re.DOTALL + re.IGNORECASE + re.MULTILINE),
+    ):
+        mock_input.create_subpopulation_structure_instance()
 
 
 @pytest.mark.parametrize(

@@ -144,7 +144,8 @@ def test_subpopulation_structure_mobility_fluxes_same_ori_and_dest_fail():
         config.set_file(temp_file.name)  # Load from the temporary file path
 
     with pytest.raises(
-        ValueError, match=r"Mobility fluxes with same origin and destination.*"
+        ValueError,
+        match=r"Origin and destination subpopulations cannot be the same, '10001'",
     ):
         subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
 
