@@ -6,24 +6,29 @@ contains the subpopulation names, populations, and mobility matrix.
 """
 
 __all__ = (
-    "SUBPOP_NAMES_KEY",
-    "SUBPOP_POP_KEY",
     "SubpopulationSetupConfig",
     "SubpopulationStructure",
 )
 
 import logging
 from pathlib import Path
-from typing import Final, Annotated
+from typing import Annotated, Final
 import warnings
 
 import confuse
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, BeforeValidator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    RootModel,
+    model_validator,
+)
 import scipy.sparse
 
-from ._pydantic_ext import _ensure_list
+from ._pydantic_ext import _ensure_list, _read_and_validate_dataframe
 from .file_paths import _regularize_path
 from .utils import _duplicate_strings
 
@@ -48,6 +53,41 @@ class SubpopulationSetupConfig(BaseModel):
     geodata: Path
     mobility: Path | None = None
     selected: Annotated[list[str], BeforeValidator(_ensure_list)] = []
+
+
+class GeodataFileRow(BaseModel):
+    """
+    Representation of a row in the geodata file.
+
+    Attributes:
+        subpop: Name of the subpopulation.
+        population: Population of the subpopulation.
+    """
+
+    model_config = ConfigDict(coerce_numbers_to_str=True)
+
+    subpop: str
+    population: Annotated[int, Field(gt=0)]
+
+
+class GeodataFileTable(RootModel):
+    """
+    Representation of the geodata file as a table.
+
+    Attributes:
+        root: List of rows in the geodata file.
+    """
+
+    root: list[GeodataFileRow]
+
+    @model_validator(mode="after")
+    def subpop_is_primary_key(self) -> "GeodataFileTable":
+        if duplicate_subpops := _duplicate_strings(r.subpop for r in self.root):
+            raise ValueError(
+                f"The following subpopulation names are duplicated in the "
+                f"geodata file: {duplicate_subpops}."
+            )
+        return self
 
 
 class SubpopulationStructure:
@@ -80,42 +120,16 @@ class SubpopulationStructure:
             ValueError: If there are duplicate subpopulation names.
         """
         self._config = SubpopulationSetupConfig.model_validate(dict(subpop_config.get()))
-
-        geodata_file = _regularize_path(self._config.geodata, prefix=path_prefix)
-        self.data = pd.read_csv(
-            geodata_file,
-            converters={SUBPOP_NAMES_KEY: lambda x: str(x).strip()},
-            skipinitialspace=True,
+        self.data = _read_and_validate_dataframe(
+            _regularize_path(self._config.geodata, prefix=path_prefix),
+            model=GeodataFileTable,
         )
         self.nsubpops = len(self.data)
-
-        if SUBPOP_POP_KEY not in self.data:
-            raise ValueError(
-                f"The '{SUBPOP_POP_KEY}' column was not "
-                f"found in the geodata file '{geodata_file}'."
-            )
-        if SUBPOP_NAMES_KEY not in self.data:
-            raise ValueError(
-                f"The '{SUBPOP_NAMES_KEY}' column was not "
-                f"found in the geodata file '{geodata_file}'."
-            )
-
-        self.subpop_pop = self.data[SUBPOP_POP_KEY].to_numpy()
-        self.subpop_names = self.data[SUBPOP_NAMES_KEY].tolist()
-
-        if (zero_subpops := self.nsubpops - np.count_nonzero(self.subpop_pop)) > 0:
-            raise ValueError(f"There are {zero_subpops} subpops with zero population.")
-
-        if duplicate_subpop_names := _duplicate_strings(self.subpop_names):
-            raise ValueError(
-                "The following subpopulation names are duplicated in the "
-                f"geodata file '{geodata_file}': {duplicate_subpop_names}."
-            )
-
+        self.subpop_pop = self.data["population"].to_numpy()
+        self.subpop_names = self.data["subpop"].tolist()
         self.mobility = self._load_mobility_matrix(
             _regularize_path(self._config.mobility, prefix=path_prefix)
         )
-
         if self._config.selected:
             # find the indices of the selected subpopulations
             selected_subpop_indices = [
