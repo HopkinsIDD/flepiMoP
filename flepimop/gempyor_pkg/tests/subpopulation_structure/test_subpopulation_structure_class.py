@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import ValidationError
 import pytest
 import numpy as np
+import numpy.typing as npt
 import scipy.sparse
 
 from gempyor.subpopulation_structure import SubpopulationStructure
@@ -53,26 +54,56 @@ class MockSubpopulationStructureInput:
             self.create_confuse_subview(), path_prefix=self.path_prefix
         )
 
+    @classmethod
+    def create_mock_input(
+        cls,
+        tmp_path: Path,
+        subpop_config: dict[str, Any],
+        geodata: pd.DataFrame,
+        mobility: (
+            npt.NDArray[np.number] | pd.DataFrame | scipy.sparse.sparray | None
+        ) = None,
+    ) -> "MockSubpopulationStructureInput":
+        """
+        Helper to create mock input with handling for temporary files.
 
-def geodata_only_test_factory(
-    tmp_path: Path, records: list[dict[str, Any]]
-) -> MockSubpopulationStructureInput:
-    """
-    Factory for geodata only test.
+        Args:
+            tmp_path: The temporary path to create files in.
+            subpop_config: The subpopulation configuration dictionary.
+            geodata: The geodata DataFrame.
+            mobility: The mobility DataFrame or matrix.
 
-    Returns:
-        A `MockSubpopulationStructureInput` instance with the given geodata.
-    """
-    geodata = pd.DataFrame.from_records(records)
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
-            "geodata": "geodata.csv",
-        },
-        path_prefix=tmp_path,
-        geodata=geodata,
-    )
+        Returns:
+            A `MockSubpopulationStructureInput` instance.
+        """
+        geodata_file = tmp_path / subpop_config["geodata"]
+        with geodata_file.open(
+            "w" + ("b" if geodata_file.suffix == ".parquet" else "")
+        ) as f:
+            if geodata_file.suffix == ".parquet":
+                geodata.to_parquet(f, index=False)
+            else:
+                geodata.to_csv(f, index=False)
+        if mobility is not None:
+            mobility_file = tmp_path / subpop_config["mobility"]
+            if mobility_file.suffix == ".npz":
+                scipy.sparse.save_npz(mobility_file, mobility)
+            else:
+                with mobility_file.open(
+                    "w" + ("b" if mobility_file.suffix == ".parquet" else "")
+                ) as f:
+                    if mobility_file.suffix == ".parquet":
+                        mobility.to_parquet(f, index=False)
+                    elif mobility_file.suffix == ".csv":
+                        mobility.to_csv(f, index=False)
+                    elif mobility_file.suffix == ".txt":
+                        np.savetxt(f, mobility)
+        return cls(
+            subpop_config=subpop_config,
+            path_prefix=tmp_path,
+            geodata=geodata,
+            mobility=mobility,
+        )
 
 
 def subpop_pop_key_not_in_geodata_factory(
@@ -85,18 +116,23 @@ def subpop_pop_key_not_in_geodata_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that does not
         contain the subpopulation population key.
     """
-    return geodata_only_test_factory(
+    return MockSubpopulationStructureInput.create_mock_input(
         tmp_path,
-        [
-            {
-                "subpop": "USA",
-                "people": 100,
-            },
-            {
-                "subpop": "Canada",
-                "people": 0,
-            },
-        ],
+        {
+            "geodata": "geodata.csv",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "people": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "people": 0,
+                },
+            ]
+        ),
     )
 
 
@@ -110,18 +146,23 @@ def subpop_names_key_not_in_geodata_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that does not
         contain the subpopulation names key.
     """
-    return geodata_only_test_factory(
+    return MockSubpopulationStructureInput.create_mock_input(
         tmp_path,
-        [
-            {
-                "country": "USA",
-                "population": 100,
-            },
-            {
-                "country": "Canada",
-                "population": 50,
-            },
-        ],
+        {
+            "geodata": "geodata.csv",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "country": "USA",
+                    "population": 100,
+                },
+                {
+                    "country": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
     )
 
 
@@ -135,18 +176,23 @@ def subpop_with_zero_population_in_geodata_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         subpopulations with zero population.
     """
-    return geodata_only_test_factory(
+    return MockSubpopulationStructureInput.create_mock_input(
         tmp_path,
-        [
-            {
-                "subpop": "USA",
-                "population": 100,
-            },
-            {
-                "subpop": "Canada",
-                "population": 0,
-            },
-        ],
+        {
+            "geodata": "geodata.csv",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 0,
+                },
+            ],
+        ),
     )
 
 
@@ -158,26 +204,31 @@ def duplicate_subpops_in_geodata_factory(tmp_path: Path) -> MockSubpopulationStr
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         duplicate subpopulation names.
     """
-    return geodata_only_test_factory(
+    return MockSubpopulationStructureInput.create_mock_input(
         tmp_path,
-        [
-            {
-                "subpop": "USA",
-                "population": 100,
-            },
-            {
-                "subpop": "Canada",
-                "population": 50,
-            },
-            {
-                "subpop": "USA",
-                "population": 75,
-            },
-        ],
+        {
+            "geodata": "geodata.csv",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+                {
+                    "subpop": "USA",
+                    "population": 75,
+                },
+            ],
+        ),
     )
 
 
-def valid_2pop_geodata_only_test_factory(
+def valid_2pop_geodata_csv_only_test_factory(
     tmp_path: Path,
 ) -> MockSubpopulationStructureInput:
     """
@@ -187,18 +238,53 @@ def valid_2pop_geodata_only_test_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         two valid subpopulations.
     """
-    return geodata_only_test_factory(
+    return MockSubpopulationStructureInput.create_mock_input(
         tmp_path,
-        [
-            {
-                "subpop": "USA",
-                "population": 100,
-            },
-            {
-                "subpop": "Canada",
-                "population": 50,
-            },
-        ],
+        {
+            "geodata": "geodata.csv",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+    )
+
+
+def valid_2pop_geodata_parquet_only_test_factory(
+    tmp_path: Path,
+) -> MockSubpopulationStructureInput:
+    """
+    Factory for geodata file that contains two valid subpopulations.
+
+    Returns:
+        A `MockSubpopulationStructureInput` instance with a geodata file that contains
+        two valid subpopulations.
+    """
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
+        {
+            "geodata": "populations.parquet",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
     )
 
 
@@ -212,25 +298,25 @@ def valid_2pop_with_txt_mobility_test_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         two valid subpopulations and a mobility matrix.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = np.array([[0, 1], [2, 0]])
-    with (tmp_path / "mobility.txt").open("w") as f:
-        np.savetxt(f, mobility)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.txt",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+        mobility=np.array([[0, 1], [2, 0]]),
     )
 
 
@@ -244,31 +330,38 @@ def valid_2pop_with_csv_mobility_test_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         two valid subpopulations and a mobility matrix.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = pd.DataFrame(
-        {
-            "ori": ["USA", "Canada"],
-            "dest": ["Canada", "USA"],
-            "amount": [2, 1],
-        }
-    )
-    with (tmp_path / "mobility.csv").open("w") as f:
-        mobility.to_csv(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+        mobility=pd.DataFrame.from_records(
+            [
+                {
+                    "ori": "USA",
+                    "dest": "Canada",
+                    "amount": 1,
+                },
+                {
+                    "ori": "Canada",
+                    "dest": "USA",
+                    "amount": 2,
+                },
+            ]
+        ),
     )
 
 
@@ -282,31 +375,38 @@ def valid_2pop_with_parquet_mobility_test_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         two valid subpopulations and a mobility matrix.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = pd.DataFrame(
-        {
-            "ori": ["USA", "Canada"],
-            "dest": ["Canada", "USA"],
-            "amount": [2, 1],
-        }
-    )
-    with (tmp_path / "mobility.parquet").open("wb") as f:
-        mobility.to_parquet(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.parquet",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+        mobility=pd.DataFrame.from_records(
+            [
+                {
+                    "ori": "USA",
+                    "dest": "Canada",
+                    "amount": 1,
+                },
+                {
+                    "ori": "Canada",
+                    "dest": "USA",
+                    "amount": 2,
+                },
+            ]
+        ),
     )
 
 
@@ -320,24 +420,25 @@ def valid_2pop_with_npz_mobility_test_factory(
         A `MockSubpopulationStructureInput` instance with a geodata file that contains
         two valid subpopulations and a mobility matrix.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = scipy.sparse.csr_matrix([[0, 1], [2, 0]])
-    scipy.sparse.save_npz(tmp_path / "mobility.npz", mobility)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.npz",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+        mobility=scipy.sparse.csr_matrix([[0, 1], [2, 0]]),
     )
 
 
@@ -352,31 +453,25 @@ def mobility_greater_than_population_factory(
         two valid subpopulations and a mobility matrix where mobility is greater than
         population.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = pd.DataFrame(
-        {
-            "ori": ["USA", "Canada"],
-            "dest": ["Canada", "USA"],
-            "amount": [101, 1],
-        }
-    )
-    with (tmp_path / "mobility.csv").open("w") as f:
-        mobility.to_csv(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame(
+            data={
+                "subpop": ["USA", "Canada"],
+                "population": [100, 50],
+            }
+        ),
+        mobility=pd.DataFrame(
+            data={
+                "ori": ["USA", "Canada"],
+                "dest": ["Canada", "USA"],
+                "amount": [101, 1],
+            }
+        ),
     )
 
 
@@ -391,31 +486,25 @@ def mobility_greater_than_two_populations_factory(
         two valid subpopulations and a mobility matrix where mobility is greater than
         population.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = pd.DataFrame(
-        {
-            "ori": ["USA", "Canada"],
-            "dest": ["Canada", "USA"],
-            "amount": [101, 51],
-        }
-    )
-    with (tmp_path / "mobility.csv").open("w") as f:
-        mobility.to_csv(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame(
+            data={
+                "subpop": ["USA", "Canada"],
+                "population": [100, 50],
+            },
+        ),
+        mobility=pd.DataFrame(
+            data={
+                "ori": ["USA", "Canada"],
+                "dest": ["Canada", "USA"],
+                "amount": [101, 51],
+            },
+        ),
     )
 
 
@@ -430,65 +519,54 @@ def mobility_greater_than_three_populations_factory(
         two valid subpopulations and a mobility matrix where mobility is greater than
         population.
     """
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada", "Mexico"],
-            "population": [100, 50, 25],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = pd.DataFrame(
-        {
-            "ori": ["USA", "USA", "Canada"],
-            "dest": ["Canada", "Mexico", "USA"],
-            "amount": [60, 60, 2],
-        }
-    )
-    with (tmp_path / "mobility.csv").open("w") as f:
-        mobility.to_csv(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
             "geodata": "geodata.csv",
             "mobility": "mobility.csv",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame(
+            data={
+                "subpop": ["USA", "Canada", "Mexico"],
+                "population": [100, 50, 25],
+            },
+        ),
+        mobility=pd.DataFrame(
+            data={
+                "ori": ["USA", "USA", "Canada"],
+                "dest": ["Canada", "Mexico", "USA"],
+                "amount": [60, 60, 2],
+            },
+        ),
     )
 
 
 def mobility_zero_or_less_factory(tmp_path: Path) -> MockSubpopulationStructureInput:
-    geodata = pd.DataFrame(
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
         {
-            "subpop": ["USA", "Canada"],
-            "population": [100, 50],
-        }
-    )
-    with (tmp_path / "geodata.csv").open("w") as f:
-        geodata.to_csv(f, index=False)
-    mobility = pd.DataFrame(
-        {
-            "ori": ["USA", "Canada"],
-            "dest": ["Canada", "USA"],
-            "amount": [0, -1],
-        }
-    )
-    with (tmp_path / "mobility.csv").open("w") as f:
-        mobility.to_csv(f, index=False)
-    return MockSubpopulationStructureInput(
-        subpop_config={
-            "geodata": "geodata.csv",
-            "mobility": "mobility.csv",
+            "geodata": "geodata.parquet",
+            "mobility": "mobility.parquet",
         },
-        path_prefix=tmp_path,
-        geodata=geodata,
-        mobility=mobility,
+        pd.DataFrame(
+            data={
+                "subpop": ["USA", "Canada"],
+                "population": [100, 50],
+            },
+        ),
+        mobility=pd.DataFrame(
+            data={
+                "ori": ["USA", "Canada"],
+                "dest": ["Canada", "USA"],
+                "amount": [0, -1],
+            },
+        ),
     )
 
 
 VALID_FACTORIES: Final = [
-    valid_2pop_geodata_only_test_factory,
+    valid_2pop_geodata_csv_only_test_factory,
+    valid_2pop_geodata_parquet_only_test_factory,
     valid_2pop_with_txt_mobility_test_factory,
     valid_2pop_with_csv_mobility_test_factory,
     valid_2pop_with_parquet_mobility_test_factory,
