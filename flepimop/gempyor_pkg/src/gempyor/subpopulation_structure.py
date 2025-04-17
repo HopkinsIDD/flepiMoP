@@ -21,7 +21,6 @@ import pandas as pd
 from pydantic import (
     BaseModel,
     BeforeValidator,
-    ConfigDict,
     Field,
     RootModel,
     model_validator,
@@ -64,8 +63,6 @@ class GeodataFileRow(BaseModel):
         population: Population of the subpopulation.
     """
 
-    model_config = ConfigDict(coerce_numbers_to_str=True)
-
     subpop: str
     population: Annotated[int, Field(gt=0)]
 
@@ -82,6 +79,15 @@ class GeodataFileTable(RootModel):
 
     @model_validator(mode="after")
     def subpop_is_primary_key(self) -> "GeodataFileTable":
+        """
+        Validate that the subpopulation names are unique.
+
+        Raises:
+            ValueError: If there are duplicate subpopulation names in the geodata file.
+
+        Returns:
+            The validated instance of `GeodataFileTable`.
+        """
         if duplicate_subpops := _duplicate_strings(r.subpop for r in self.root):
             raise ValueError(
                 f"The following subpopulation names are duplicated in the "
@@ -112,17 +118,17 @@ class SubpopulationStructure:
                 configuration.
             path_prefix: The path prefix for the geodata and mobility files or `None` to
                 use the current working directory.
-
-        Raises:
-            ValueError: If the geodata file does not contain the 'population' column.
-            ValueError: If the geodata file does not contain the 'subpop' column.
-            ValueError: If there are subpopulations with zero population.
-            ValueError: If there are duplicate subpopulation names.
         """
         self._config = SubpopulationSetupConfig.model_validate(dict(subpop_config.get()))
+        kwargs = (
+            {"converters": {"subpop": lambda x: str(x).strip()}, "skipinitialspace": True}
+            if self._config.geodata.suffix == ".csv"
+            else {}
+        )
         self.data = _read_and_validate_dataframe(
             _regularize_path(self._config.geodata, prefix=path_prefix),
             model=GeodataFileTable,
+            **kwargs,
         )
         self.nsubpops = len(self.data)
         self.subpop_pop = self.data["population"].to_numpy()
