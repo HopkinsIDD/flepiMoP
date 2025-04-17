@@ -11,7 +11,6 @@ __all__ = ()
 from pathlib import Path
 from typing import Any, TypeVar, overload
 
-import csv
 import pyarrow.parquet as pq
 import pandas as pd
 from pydantic import BaseModel, RootModel
@@ -105,6 +104,14 @@ def _read_and_validate_dataframe(
     Returns:
         A DataFrame containing the data read from the file.
 
+    Notes:
+        The function supports reading CSV and Parquet files. The file type is
+        determined by the file extension. The supported file types are:
+        - CSV: The file must have a `.csv` extension and uses `pandas.read_csv` to read
+            the file.
+        - Parquet: The file must have a `.parquet` extension and uses
+            `pyarrow.parquet.read_table` to read the file.
+
     Raises:
         ValueError: If the file type is not supported.
 
@@ -163,7 +170,7 @@ def _read_and_validate_dataframe(
     """
     if file.suffix == ".csv":
         with file.open("r") as f:
-            data = list(csv.DictReader(f, **kwargs))
+            data = pd.read_csv(f, **kwargs).to_dict(orient="records")
     elif file.suffix == ".parquet":
         data = pq.read_table(file, **kwargs).to_pylist()
     else:
