@@ -74,7 +74,11 @@ def test_subpopulation_structure_subpop_population_zero_fail():
         config.set_file(temp_file.name)  # Load from the temporary file path
 
     with pytest.raises(
-        ValueError, match=r"^There are [0-9]+ subpops with zero population.$"
+        ValueError,
+        match=(
+            r"Input should be greater than 0 "
+            r"\[type\=greater\_than\, input\_value\=0\, input\_type\=int]"
+        ),
     ):
         subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
 
@@ -95,7 +99,7 @@ def test_subpopulation_structure_dulpicate_subpop_names_fail():
 
     with pytest.raises(
         ValueError,
-        match=r"^The following subpopulation names are duplicated in the geodata file '.*': .*.$",
+        match=r"The following subpopulation names are duplicated in the geodata file: .*",
     ):
         subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
 
