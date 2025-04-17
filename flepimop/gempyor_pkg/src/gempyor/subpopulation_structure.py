@@ -12,7 +12,7 @@ __all__ = (
 
 import logging
 from pathlib import Path
-from typing import Annotated, Final
+from typing import Annotated
 import warnings
 
 import confuse
@@ -32,9 +32,6 @@ from .utils import _duplicate_strings
 
 
 logger = logging.getLogger(__name__)
-
-SUBPOP_POP_KEY: Final[str] = "population"
-SUBPOP_NAMES_KEY: Final[str] = "subpop"
 
 
 class SubpopulationSetupConfig(BaseModel):
