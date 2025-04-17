@@ -564,6 +564,28 @@ def mobility_zero_or_less_factory(tmp_path: Path) -> MockSubpopulationStructureI
     )
 
 
+def selected_missing_from_geodata(tmp_path: Path) -> MockSubpopulationStructureInput:
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
+        {
+            "geodata": "geodata.csv",
+            "selected": "Mexico",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+    )
+
+
 VALID_FACTORIES: Final = [
     valid_2pop_geodata_csv_only_test_factory,
     valid_2pop_geodata_parquet_only_test_factory,
@@ -683,4 +705,21 @@ def test_mobility_greater_than_population_raises_value_error(
         match_regex += f"(?:{',' if i > 0 else ''} (?:{'|'.join(subpopulations)}))"
     match_regex += ".$"
     with pytest.raises(ValueError, match=match_regex):
+        mock_input.create_subpopulation_structure_instance()
+
+
+def test_selected_subpop_not_in_geodata_raises_value_error(tmp_path: Path) -> None:
+    """Test `ValueError` is raised when the selected subpopulation is not in the geodata."""
+    mock_input = selected_missing_from_geodata(tmp_path)
+    selected = mock_input.subpop_config["selected"]
+    selected = selected if isinstance(selected, list) else [selected]
+    missing_subpops = [s for s in selected if s not in mock_input.geodata["subpop"].values]
+    raises_match = r"The following selected subpopulations are not in the geodata:"
+    for i in range(len(missing_subpops)):
+        raises_match += f"(?:{'' if i == 0 else ','} {'|'.join(missing_subpops)})"
+    raises_match += r"\.$"
+    with pytest.raises(
+        ValueError,
+        match=re.compile(raises_match),
+    ):
         mock_input.create_subpopulation_structure_instance()
