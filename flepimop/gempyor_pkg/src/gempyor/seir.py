@@ -1,3 +1,7 @@
+"""
+Abstractions for interacting with the SEIR compartments of the model.
+"""
+
 import itertools
 import logging
 import random
