@@ -1,3 +1,10 @@
+"""
+Functionality for handling subpopulation structures.
+
+The `SubpopulationStructure` class is used to represent subpopulation structures. It
+contains the subpopulation names, populations, and mobility matrix.
+"""
+
 import logging
 import pathlib
 

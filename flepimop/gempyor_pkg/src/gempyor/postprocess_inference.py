@@ -1,3 +1,7 @@
+"""
+Visualization tools for model evaluation.
+"""
+
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
