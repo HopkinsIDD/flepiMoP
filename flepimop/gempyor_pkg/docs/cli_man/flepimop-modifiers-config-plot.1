@@ -1,0 +1,37 @@
+.TH "FLEPIMOP MODIFIERS CONFIG-PLOT" "1" "2025-04-21" "2.1" "flepimop modifiers config-plot Manual"
+.SH NAME
+flepimop\-modifiers\-config-plot \- Plot the seir/outcome modifiers affects on...
+.SH SYNOPSIS
+.B flepimop modifiers config-plot
+[OPTIONS]
+.SH DESCRIPTION
+.PP
+    Plot the seir/outcome modifiers affects on the parameters.
+.PP
+    This command will plot the activation of the modifiers and the parsed parameters
+    from the config file. This command will produce several PDF files in the current
+    directory contain the plots:
+.PP
+    1. {outocmes/seir}_modifiers_activation_{subpop}.pdf: Contains plots of the
+       activation of the modifiers for the given subpopulation vs time.
+    2. unique_parsed_parameters_{run_id}.pdf: Contains plots of the parsed transition
+       rates with modifiers applied vs time.
+    3. outcomesNPIcaveat.pdf: Contains plots of the outcomes affected by modifiers vs
+       time.
+    
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-config PATH
+configuration file for this simulation
+.TP
+\fB\-p,\fP \-\-project_path PATH
+path to the flepiMoP directory  [required]
+.TP
+\fB\-\-id,\fP \-\-id TEXT
+Unique identifier for this run
+.TP
+\fB\-\-nsamples\fP INTEGER
+Number of samples to draw
+.TP
+\fB\-\-subpop\fP TEXT
+Subpopulation to plot, if not set then all are plotted
