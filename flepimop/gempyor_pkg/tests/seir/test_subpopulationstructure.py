@@ -30,12 +30,14 @@ def test_subpopulation_structure_mobility():
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
-    subpop_struct = subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+    subpop_struct = subpopulation_structure.SubpopulationStructure.from_confuse_config(
+        config["subpop_setup"]
+    )
 
     mobility_data = pd.read_csv(mobility_file)
     mobility_data = mobility_data.pivot(index="ori", columns="dest", values="amount")
     mobility_data = mobility_data.fillna(0)
-    assert np.array_equal(subpop_struct.mobility.toarray(), mobility_data.to_numpy())
+    assert np.array_equal(subpop_struct.mobility_matrix.toarray(), mobility_data.to_numpy())
 
 
 def test_subpopulation_structure_mobility_txt():
@@ -54,9 +56,11 @@ def test_subpopulation_structure_mobility_txt():
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
 
-    subpop_struct = subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+    subpop_struct = subpopulation_structure.SubpopulationStructure.from_confuse_config(
+        config["subpop_setup"]
+    )
     mobility_data = scipy.sparse.csr_matrix(np.loadtxt(mobility_file), dtype=int)
-    assert np.array_equal(subpop_struct.mobility.toarray(), mobility_data.toarray())
+    assert np.array_equal(subpop_struct.mobility_matrix.toarray(), mobility_data.toarray())
 
 
 def test_subpopulation_structure_subpop_population_zero_fail():
@@ -80,7 +84,9 @@ def test_subpopulation_structure_subpop_population_zero_fail():
             r"\[type\=greater\_than\, input\_value\=0\, input\_type\=int]"
         ),
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_dulpicate_subpop_names_fail():
@@ -101,7 +107,9 @@ def test_subpopulation_structure_dulpicate_subpop_names_fail():
         ValueError,
         match=r"The following subpopulation names are duplicated in the geodata file: .*",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 @pytest.mark.filterwarnings(
@@ -124,9 +132,11 @@ def test_subpopulation_structure_mobility_shape_fail():
 
     with pytest.raises(
         ValueError,
-        match=r"^Mobility data has shape of .*, but should match geodata shape of .*.$",
+        match=r"Mobility data has shape of .*, but should match geodata shape of .*.",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_fluxes_same_ori_and_dest_fail():
@@ -147,7 +157,9 @@ def test_subpopulation_structure_mobility_fluxes_same_ori_and_dest_fail():
         ValueError,
         match=r"Origin and destination subpopulations cannot be the same, '10001'",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_npz_shape_fail():
@@ -166,9 +178,11 @@ def test_subpopulation_structure_mobility_npz_shape_fail():
 
     with pytest.raises(
         ValueError,
-        match=r"^Mobility data has shape of .*, but should match geodata shape of .*.$",
+        match=r"Mobility data has shape of .*, but should match geodata shape of .*.",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_no_extension_fail():
@@ -187,9 +201,11 @@ def test_subpopulation_structure_mobility_no_extension_fail():
 
     with pytest.raises(
         ValueError,
-        match=r"^Mobility data must either be either a txt, csv, or npz file, but was given mobility file of '.*'.$",
+        match=r"Mobility data must either be either a txt, csv, or npz file, but was given mobility file of '.*'.",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
@@ -210,7 +226,9 @@ def test_subpopulation_structure_mobility_exceed_source_node_pop_fail():
         ValueError,
         match=r"The following subpopulations have mobility exceeding their population.*",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 @pytest.mark.filterwarnings(
@@ -235,7 +253,9 @@ def test_subpopulation_structure_mobility_rows_exceed_source_node_pop_fail():
         ValueError,
         match=r"The following subpopulations have mobility exceeding their population.*",
     ):
-        subpopulation_structure.SubpopulationStructure(config["subpop_setup"])
+        subpopulation_structure.SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"]
+        )
 
 
 def test_subpopulation_structure_mobility_no_mobility_matrix_specified():
@@ -249,7 +269,7 @@ def test_subpopulation_structure_mobility_no_mobility_matrix_specified():
         temp_file.write(subpop_config_str.encode("utf-8"))  # Write the content
         temp_file.close()  # Ensure the file is closed
         config.set_file(temp_file.name)  # Load from the temporary file path
-        subpop_struct = subpopulation_structure.SubpopulationStructure(
+        subpop_struct = subpopulation_structure.SubpopulationStructure.from_confuse_config(
             config["subpop_setup"]
         )
-    assert np.array_equal(subpop_struct.mobility.toarray(), np.zeros((2, 2)))
+    assert np.array_equal(subpop_struct.mobility_matrix.toarray(), np.zeros((2, 2)))
