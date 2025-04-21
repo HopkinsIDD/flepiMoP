@@ -50,7 +50,7 @@ class MockSubpopulationStructureInput:
             A `SubpopulationStructure` instance corresponding to the input data
             represented by this class.
         """
-        return SubpopulationStructure(
+        return SubpopulationStructure.from_confuse_config(
             self.create_confuse_subview(), path_prefix=self.path_prefix
         )
 
@@ -779,6 +779,10 @@ def test_subpopulation_structure_instance_attributes(
     subpop_struct = mock_input.create_subpopulation_structure_instance()
     selected = mock_input.subpop_config.get("selected", [])
     selected = selected if isinstance(selected, list) else [selected]
+    assert isinstance(subpop_struct.geodata, Path) and subpop_struct.geodata.is_absolute()
+    assert (subpop_struct.mobility is None) or (
+        isinstance(subpop_struct.mobility, Path) and subpop_struct.mobility.is_absolute()
+    )
     assert subpop_struct.nsubpops == len(selected) or len(mock_input.geodata)
     geodata = (
         mock_input.geodata[mock_input.geodata["subpop"].isin(selected)]
@@ -788,19 +792,21 @@ def test_subpopulation_structure_instance_attributes(
     assert (subpop_struct.subpop_pop == geodata["population"].to_numpy()).all()
     assert subpop_struct.subpop_names == geodata["subpop"].tolist()
     assert subpop_struct.data.equals(geodata)
-    assert scipy.sparse.issparse(subpop_struct.mobility)
-    assert subpop_struct.mobility.shape == (
+    assert isinstance(subpop_struct.mobility_matrix, scipy.sparse.csr_matrix)
+    assert subpop_struct.mobility_matrix.shape == (
         len(selected) or len(mock_input.geodata),
         len(selected) or len(mock_input.geodata),
     )
     if mock_input.mobility is None:
-        assert subpop_struct.mobility.nnz == 0
+        assert subpop_struct.mobility_matrix.nnz == 0
     if mock_input.subpop_config.get("mobility", "").endswith(".txt"):
         warn = recwarn.pop(PendingDeprecationWarning)
         assert str(warn.message) == (
             "Mobility files as matrices are not recommended. "
             "Please switch to long form csv files."
         )
+    else:
+        assert not recwarn
     assert len(caplog.records) == int(mock_input.mobility is None)
 
 
@@ -834,10 +840,10 @@ def test_mobility_greater_than_population_raises_value_error(
 ) -> None:
     """Test that a ValueError is raised when mobility is greater than population."""
     mock_input = factory(tmp_path)
-    match_regex = "^The following subpopulations have mobility exceeding their population:"
+    match_regex = "The following subpopulations have mobility exceeding their population:"
     for i in range(len(subpopulations)):
         match_regex += f"(?:{',' if i > 0 else ''} (?:{'|'.join(subpopulations)}))"
-    match_regex += ".$"
+    match_regex += "."
     with pytest.raises(ValueError, match=match_regex):
         mock_input.create_subpopulation_structure_instance()
 
@@ -851,7 +857,7 @@ def test_selected_subpop_not_in_geodata_raises_value_error(tmp_path: Path) -> No
     raises_match = r"The following selected subpopulations are not in the geodata:"
     for i in range(len(missing_subpops)):
         raises_match += f"(?:{'' if i == 0 else ','} {'|'.join(missing_subpops)})"
-    raises_match += r"\.$"
+    raises_match += r"\."
     with pytest.raises(
         ValueError,
         match=re.compile(raises_match),

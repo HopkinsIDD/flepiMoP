@@ -5,10 +5,7 @@ The `SubpopulationStructure` class is used to represent subpopulation structures
 contains the subpopulation names, populations, and mobility matrix.
 """
 
-__all__ = (
-    "SubpopulationSetupConfig",
-    "SubpopulationStructure",
-)
+__all__ = ("SubpopulationStructure",)
 
 import logging
 from pathlib import Path
@@ -17,11 +14,15 @@ import warnings
 
 import confuse
 import numpy as np
+import numpy.typing as npt
+import pandas as pd
 from pydantic import (
     BaseModel,
     BeforeValidator,
+    ConfigDict,
     Field,
     RootModel,
+    computed_field,
     model_validator,
 )
 import scipy.sparse
@@ -34,20 +35,78 @@ from .utils import _duplicate_strings
 logger = logging.getLogger(__name__)
 
 
-class SubpopulationSetupConfig(BaseModel):
+def _load_mobility_matrix(
+    mobility_file: Path | None,
+    nsubpops: int,
+    subpop_names: list[str],
+    subpop_pop: npt.NDArray[np.int64],
+) -> scipy.sparse.csr_matrix:
     """
-    Configuration for subpopulation setup.
+    Load the mobility matrix from a file.
 
-    Attributes:
-        geodata: Path to the geodata file.
-        mobility: Path to the mobility file or `None` for no mobility.
-        selected: List of selected subpopulation names or an empty list to use all
-            subpopulations provided in `geodata`.
+    Args:
+        mobility_file: Path to the mobility file. Must be a txt, csv, or npz file.
+        nsubpops: Number of subpopulations.
+        subpop_names: List of subpopulation names.
+        subpop_pop: Population of each subpopulation.
+
+    Returns:
+        The mobility matrix as a sparse matrix.
+
+    Raises:
+        ValueError: If the mobility data is not a txt, csv, or npz file.
+        ValueError: If the mobility data has the wrong shape.
+        ValueError: If the sum of the mobility data across rows exceeds the source
+            subpopulation populations.
     """
-
-    geodata: Path
-    mobility: Path | None = None
-    selected: Annotated[list[str], BeforeValidator(_ensure_list)] = []
+    if mobility_file is None:
+        logging.critical("No mobility matrix specified -- assuming no one moves")
+        mobility = scipy.sparse.csr_matrix(np.zeros((nsubpops, nsubpops)), dtype=int)
+    elif mobility_file.suffix == ".txt":
+        warnings.warn(
+            "Mobility files as matrices are not recommended. "
+            "Please switch to long form csv files.",
+            PendingDeprecationWarning,
+        )
+        mobility = scipy.sparse.csr_matrix(np.loadtxt(mobility_file), dtype=int)
+    elif mobility_file.suffix in {".csv", ".parquet"}:
+        kwargs = (
+            {"converters": {"ori": str, "dest": str}, "skipinitialspace": True}
+            if mobility_file.suffix == ".csv"
+            else {}
+        )
+        mobility_data = _read_and_validate_dataframe(
+            mobility_file, model=MobilityFileTable, **kwargs
+        )
+        nn_dict = {subpop_name: idx for idx, subpop_name in enumerate(subpop_names)}
+        mobility_data["ori_idx"] = mobility_data["ori"].apply(nn_dict.__getitem__)
+        mobility_data["dest_idx"] = mobility_data["dest"].apply(nn_dict.__getitem__)
+        mobility = scipy.sparse.coo_matrix(
+            (mobility_data.amount, (mobility_data.ori_idx, mobility_data.dest_idx)),
+            shape=(nsubpops, nsubpops),
+            dtype=int,
+        ).tocsr()
+    elif mobility_file.suffix == ".npz":
+        mobility = scipy.sparse.load_npz(mobility_file).astype(int).tocsr()
+    else:
+        raise ValueError(
+            "Mobility data must either be either a txt, csv, or npz "
+            f"file, but was given mobility file of '{mobility_file}'."
+        )
+    if mobility.shape != (nsubpops, nsubpops):
+        raise ValueError(
+            f"Mobility data has shape of {mobility.shape}, but should "
+            f"match geodata shape of {(nsubpops, nsubpops)}."
+        )
+    # Make sure sum of mobility values <= the population of src subpop
+    row_idx = np.where(np.asarray(mobility.sum(axis=1)).ravel() > subpop_pop)[0]
+    if len(row_idx) > 0:
+        subpops_with_mobility_exceeding_pop = {subpop_names[r] for r in row_idx}
+        raise ValueError(
+            "The following subpopulations have mobility exceeding "
+            f"their population: {', '.join(subpops_with_mobility_exceeding_pop)}."
+        )
+    return mobility
 
 
 class GeodataFileRow(BaseModel):
@@ -162,135 +221,145 @@ class MobilityFileTable(RootModel):
         return self
 
 
-class SubpopulationStructure:
+class SubpopulationStructure(BaseModel):
     """
     Data container for representing subpopulation structures.
 
     Attributes:
-        data: DataFrame with subpopulations and populations
-        nsubpops: Number of subpopulations
-        subpop_pop: Population of each subpopulation
-        subpop_names: Names of each subpopulation
-        mobility: Mobility matrix where the row dimension corresponds to the source and
-            the column dimension corresponds to the destination subpopulation.
+        path_prefix: Path prefix for the geodata and mobility files.
+        geodata: Path to the geodata file.
+        mobility: Path to the mobility file or `None` if not specified.
+        selected: List of selected subpopulation names.
 
-    Raises:
-        ValueError: If the selected subpopulations are not in the geodata.
     """
 
-    def __init__(self, subpop_config: confuse.Subview, path_prefix: Path | None = None):
-        """
-        Initialize the a subpopulation structure instance.
+    path_prefix: Path | None = None
+    geodata: Path
+    mobility: Path | None = None
+    selected: Annotated[list[str], BeforeValidator(_ensure_list)] = []
 
-        Args:
-            subpop_config: A configuration view containing the subpopulation
-                configuration.
-            path_prefix: The path prefix for the geodata and mobility files or `None` to
-                use the current working directory.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @model_validator(mode="after")
+    def initialize_subpopulation_structure(self) -> "SubpopulationStructure":
         """
-        self._config = SubpopulationSetupConfig.model_validate(dict(subpop_config.get()))
+        Initialize the subpopulation structure by loading the geodata and mobility.
+
+        This method reads the geodata and mobility files, validates the data, and
+        initializes the subpopulation structure.
+
+        Returns:
+            The initialized instance of `SubpopulationStructure`.
+        """
+        # pylint: disable=attribute-defined-outside-init
+        # Regularize paths
+        self.geodata = _regularize_path(self.geodata, prefix=self.path_prefix)
+        if self.mobility is not None:
+            self.mobility = _regularize_path(self.mobility, prefix=self.path_prefix)
+        # Read and validate geodata
         kwargs = (
             {"converters": {"subpop": lambda x: str(x).strip()}, "skipinitialspace": True}
-            if self._config.geodata.suffix == ".csv"
+            if self.geodata.suffix == ".csv"
             else {}
         )
-        self.data = _read_and_validate_dataframe(
-            _regularize_path(self._config.geodata, prefix=path_prefix),
-            model=GeodataFileTable,
-            **kwargs,
+        self._data = _read_and_validate_dataframe(
+            self.geodata, model=GeodataFileTable, **kwargs
         )
-        self.nsubpops = len(self.data)
-        self.subpop_pop = self.data["population"].to_numpy()
-        self.subpop_names = self.data["subpop"].tolist()
-        self.mobility = self._load_mobility_matrix(
-            _regularize_path(self._config.mobility, prefix=path_prefix)
+        # Extra attributes
+        self._nsubpops = len(self._data)
+        self._subpop_pop = self._data["population"].to_numpy()
+        self._subpop_names = self._data["subpop"].tolist()
+        # Load mobility matrix
+        self._mobility_matrix = _load_mobility_matrix(
+            self.mobility, self._nsubpops, self._subpop_names, self._subpop_pop
         )
-        if self._config.selected:
-            if selected_missing := set(self._config.selected) - set(self.subpop_names):
+        # Apply selected subpopulations
+        if self.selected:
+            if selected_missing := set(self.selected) - set(self._subpop_names):
                 raise ValueError(
                     "The following selected subpopulations are not "
                     f"in the geodata: {','.join(selected_missing)}."
                 )
-            selected_subpop_indices = [
-                self.subpop_names.index(s) for s in self._config.selected
-            ]
-            self.data = self.data.iloc[selected_subpop_indices]
-            self.nsubpops = len(self.data)
-            self.subpop_pop = self.subpop_pop[selected_subpop_indices]
-            self.subpop_names = self._config.selected
-            self.mobility = self.mobility[selected_subpop_indices][
+            selected_subpop_indices = [self._subpop_names.index(s) for s in self.selected]
+            self._data = self._data.iloc[selected_subpop_indices]
+            self._nsubpops = len(self._data)
+            self._subpop_pop = self._subpop_pop[selected_subpop_indices]
+            self._subpop_names = self.selected
+            self._mobility_matrix = self._mobility_matrix[selected_subpop_indices][
                 :, selected_subpop_indices
             ]
+        # pylint: enable=attribute-defined-outside-init
+        return self
 
-    def _load_mobility_matrix(self, mobility_file: Path | None) -> scipy.sparse.csr_matrix:
+    @computed_field
+    @property
+    def data(self) -> pd.DataFrame:
         """
-        Load the mobility matrix from a file.
+        Get the geodata attribute as a pandas DataFrame.
 
-        Args:
-            mobility_file: Path to the mobility file. Must be a txt, csv, or npz file.
+        Returns:
+            The geodata file as a DataFrame.
+        """
+        return self._data
+
+    @computed_field
+    @property
+    def nsubpops(self) -> int:
+        """
+        Get the number of subpopulations.
+
+        Returns:
+            The number of subpopulations.
+        """
+        return self._nsubpops
+
+    @computed_field
+    @property
+    def subpop_pop(self) -> npt.NDArray[np.int64]:
+        """
+        Get the populations of the subpopulations.
+
+        Returns:
+            The populations of the subpopulations as a numpy array.
+        """
+        return self._subpop_pop
+
+    @computed_field
+    @property
+    def subpop_names(self) -> list[str]:
+        """
+        Get the names of the subpopulations.
+
+        Returns:
+            The names of the subpopulations as a list.
+        """
+        return self._subpop_names
+
+    @computed_field
+    @property
+    def mobility_matrix(self) -> scipy.sparse.csr_matrix:
+        """
+        Get the mobility matrix.
 
         Returns:
             The mobility matrix as a sparse matrix.
-
-        Raises:
-            ValueError: If the mobility data is not a txt, csv, or npz file.
-            ValueError: If the mobility data has the same origin and destination and is
-                in csv long form.
-            ValueError: If the mobility data has the wrong shape.
-            ValueError: If the mobility data has entries that exceed the source
-                subpopulation populations.
-            ValueError: If the sum of the mobility data across rows exceeds the source
-                subpopulation populations.
         """
-        if mobility_file is None:
-            logging.critical("No mobility matrix specified -- assuming no one moves")
-            mobility = scipy.sparse.csr_matrix(
-                np.zeros((self.nsubpops, self.nsubpops)), dtype=int
-            )
-        elif mobility_file.suffix == ".txt":
-            warnings.warn(
-                "Mobility files as matrices are not recommended. "
-                "Please switch to long form csv files.",
-                PendingDeprecationWarning,
-            )
-            mobility = scipy.sparse.csr_matrix(np.loadtxt(mobility_file), dtype=int)
-        elif mobility_file.suffix in {".csv", ".parquet"}:
-            kwargs = (
-                {"converters": {"ori": str, "dest": str}, "skipinitialspace": True}
-                if mobility_file.suffix == ".csv"
-                else {}
-            )
-            mobility_data = _read_and_validate_dataframe(
-                mobility_file, model=MobilityFileTable, **kwargs
-            )
-            nn_dict = {
-                subpop_name: idx for idx, subpop_name in enumerate(self.subpop_names)
-            }
-            mobility_data["ori_idx"] = mobility_data["ori"].apply(nn_dict.__getitem__)
-            mobility_data["dest_idx"] = mobility_data["dest"].apply(nn_dict.__getitem__)
-            mobility = scipy.sparse.coo_matrix(
-                (mobility_data.amount, (mobility_data.ori_idx, mobility_data.dest_idx)),
-                shape=(self.nsubpops, self.nsubpops),
-                dtype=int,
-            ).tocsr()
-        elif mobility_file.suffix == ".npz":
-            mobility = scipy.sparse.load_npz(mobility_file).astype(int)
-        else:
-            raise ValueError(
-                "Mobility data must either be either a txt, csv, or npz "
-                f"file, but was given mobility file of '{mobility_file}'."
-            )
-        if mobility.shape != (self.nsubpops, self.nsubpops):
-            raise ValueError(
-                f"Mobility data has shape of {mobility.shape}, but should "
-                f"match geodata shape of {(self.nsubpops, self.nsubpops)}."
-            )
-        # Make sure sum of mobility values <= the population of src subpop
-        row_idx = np.where(np.asarray(mobility.sum(axis=1)).ravel() > self.subpop_pop)[0]
-        if len(row_idx) > 0:
-            subpops_with_mobility_exceeding_pop = {self.subpop_names[r] for r in row_idx}
-            raise ValueError(
-                "The following subpopulations have mobility exceeding "
-                f"their population: {', '.join(subpops_with_mobility_exceeding_pop)}."
-            )
-        return mobility
+        return self._mobility_matrix
+
+    @classmethod
+    def from_confuse_config(
+        cls, config: confuse.Subview, path_prefix: Path | None = None
+    ) -> "SubpopulationStructure":
+        """
+        Create a `SubpopulationStructure` instance from a confuse configuration view.
+
+        Args:
+            config: A configuration view containing the subpopulation
+                configuration.
+            path_prefix: The path prefix for the geodata and mobility files or `None` to
+                use the current working directory.
+
+        Returns:
+            An instance of `SubpopulationStructure`.
+        """
+        return cls.model_validate(dict(config.get()) | {"path_prefix": path_prefix})
