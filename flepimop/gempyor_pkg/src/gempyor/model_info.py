@@ -218,12 +218,12 @@ class ModelInfo:
 
         # 3. What about subpopulations
         self.path_prefix = pathlib.Path(path_prefix)
-        self.subpop_struct = SubpopulationStructure(
+        self.subpop_struct = SubpopulationStructure.from_confuse_config(
             config["subpop_setup"], path_prefix=self.path_prefix
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
-        self.mobility = self.subpop_struct.mobility
+        self.mobility = self.subpop_struct.mobility_matrix
 
         # 4. the SEIR structure
         self.seir_config = None
