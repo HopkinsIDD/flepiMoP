@@ -86,8 +86,9 @@ jobs:
         shell: bash
       - name: Check for changes
         run: |
-          CHANGED_FILES=$(git status --porcelain -- flepimop/gempyor_pkg/docs/source/ | wc -l)
+          CHANGED_FILES=$(git status --porcelain --untracked-files=no -- flepimop/gempyor_pkg/docs/source/ | wc -l)
           if [ "$CHANGED_FILES" -gt 0 ]; then
+            git status -- flepimop/gempyor_pkg/docs/source/ 
             exit 1
           fi
         shell: bash
