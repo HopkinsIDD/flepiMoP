@@ -4,11 +4,6 @@
 .. automodule:: gempyor.inference
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -19,21 +14,9 @@
       paramred_parallel_config
       simulation_atomic
    
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       GempyorInference
    
-   
-
-   
-   
-   
-
-
-

@@ -4,11 +4,6 @@
 .. automodule:: gempyor.file_paths
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -19,15 +14,3 @@
       create_file_name_without_extension
       run_id
    
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-

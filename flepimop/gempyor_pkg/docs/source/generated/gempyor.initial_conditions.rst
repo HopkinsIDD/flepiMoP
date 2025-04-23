@@ -4,11 +4,6 @@
 .. automodule:: gempyor.initial_conditions
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -18,21 +13,9 @@
       read_initial_condition_from_seir_output
       read_initial_condition_from_tidydataframe
    
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       InitialConditions
    
-   
-
-   
-   
-   
-
-
-
