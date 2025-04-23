@@ -1,4 +1,4 @@
-vppname: gempyor CI
+name: gempyor CI
 
 on:
   workflow_dispatch:
