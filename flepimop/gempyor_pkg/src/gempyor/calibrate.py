@@ -57,7 +57,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
     "--nwalkers",
     "nwalkers",
     envvar="FLEPI_NUM_SLOTS",
-    type=click.IntRange(min=1),
+    type=click.IntRange(min=2),
     help="override the # of walkers simulation runs in the config file",
 )
 @click.option(
