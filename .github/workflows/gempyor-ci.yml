@@ -91,6 +91,13 @@ jobs:
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git add flepimop/gempyor_pkg/docs/source/
             git commit -m "auto-update Sphinx docs [ci skip]"
-            git push origin HEAD:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
+            BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+            git fetch origin "$BRANCH_NAME"
+            if git rebase origin/"$BRANCH_NAME"; then
+              git push origin HEAD:"$BRANCH_NAME"
+            else
+              echo "Rebase error when updatomg docs onto $BRANCH_NAME."
+              exit 1
+            fi
           fi
         shell: bash
