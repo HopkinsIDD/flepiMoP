@@ -65,6 +65,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           lfs: true
           sparse-checkout: |
             *
@@ -92,12 +93,6 @@ jobs:
             git add flepimop/gempyor_pkg/docs/source/
             git commit -m "auto-update Sphinx docs [ci skip]"
             BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-            git fetch origin "$BRANCH_NAME"
-            if git merge origin/"$BRANCH_NAME"; then
-              git push origin HEAD:"$BRANCH_NAME"
-            else
-              echo "Merge conflict detected during docs update. Skipping `Sphinx` doc push."
-              exit 0 
-            fi
+            git push origin HEAD:$BRANCH_NAME
           fi
         shell: bash
