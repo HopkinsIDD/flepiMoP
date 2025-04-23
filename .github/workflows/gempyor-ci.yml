@@ -1,4 +1,4 @@
-name: gempyor CI
+vppname: gempyor CI
 
 on:
   workflow_dispatch:
@@ -84,11 +84,13 @@ jobs:
           cd flepimop/gempyor_pkg/docs
           make fullbuild
         shell: bash
-      - name: Check for changes
+      - name: Commit/push any changed docs
         run: |
-          CHANGED_FILES=$(git status --porcelain --untracked-files=no -- flepimop/gempyor_pkg/docs/source/ | wc -l)
-          if [ "$CHANGED_FILES" -gt 0 ]; then
-            git status -- flepimop/gempyor_pkg/docs/source/ 
-            exit 1
+          if [[ $(git status --porcelain --untracked-files=no flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 ]]; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add flepimop/gempyor_pkg/docs/source/
+            git commit -m "auto-update Sphinx docs [ci skip]"
+            git push
           fi
         shell: bash
