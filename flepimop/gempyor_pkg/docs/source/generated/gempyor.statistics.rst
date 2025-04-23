@@ -4,26 +4,9 @@
 .. automodule:: gempyor.statistics
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       Statistic
    
-   
-
-   
-   
-   
-
-
-

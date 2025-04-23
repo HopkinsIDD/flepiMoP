@@ -4,11 +4,6 @@
 .. automodule:: gempyor.outcomes
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -27,15 +22,3 @@
       run_parallel_outcomes
       shift
    
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-

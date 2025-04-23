@@ -4,11 +4,6 @@
 .. automodule:: gempyor.compartments
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -18,21 +13,9 @@
       list_access_element_safe
       list_recursive_convert_to_string
    
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       Compartments
    
-   
-
-   
-   
-   
-
-
-

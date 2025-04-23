@@ -4,11 +4,6 @@
 .. automodule:: gempyor.utils
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -38,10 +33,6 @@
       search_and_import_plugins_class
       write_df
    
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
@@ -49,11 +40,3 @@
       ISO8601Date
       Timer
    
-   
-
-   
-   
-   
-
-
-

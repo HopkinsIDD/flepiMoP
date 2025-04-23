@@ -4,26 +4,9 @@
 .. automodule:: gempyor.inference_parameter
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       InferenceParameters
    
-   
-
-   
-   
-   
-
-
-

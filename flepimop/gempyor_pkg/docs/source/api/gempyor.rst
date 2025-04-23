@@ -20,221 +20,221 @@ gempyor.calibrate module
 
 .. automodule:: gempyor.calibrate
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.cli module
 ------------------
 
 .. automodule:: gempyor.cli
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.compartments module
 ---------------------------
 
 .. automodule:: gempyor.compartments
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.config\_validator module
 --------------------------------
 
 .. automodule:: gempyor.config_validator
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.constants module
 ------------------------
 
 .. automodule:: gempyor.constants
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.file\_paths module
 --------------------------
 
 .. automodule:: gempyor.file_paths
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.inference module
 ------------------------
 
 .. automodule:: gempyor.inference
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.inference\_parameter module
 -----------------------------------
 
 .. automodule:: gempyor.inference_parameter
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.info module
 -------------------
 
 .. automodule:: gempyor.info
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.initial\_conditions module
 ----------------------------------
 
 .. automodule:: gempyor.initial_conditions
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.logging module
 ----------------------
 
 .. automodule:: gempyor.logging
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.logloss module
 ----------------------
 
 .. automodule:: gempyor.logloss
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.model\_info module
 --------------------------
 
 .. automodule:: gempyor.model_info
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.outcomes module
 -----------------------
 
 .. automodule:: gempyor.outcomes
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.parameters module
 -------------------------
 
 .. automodule:: gempyor.parameters
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.postprocess\_inference module
 -------------------------------------
 
 .. automodule:: gempyor.postprocess_inference
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.profile\_old module
 ---------------------------
 
 .. automodule:: gempyor.profile_old
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.seeding module
 ----------------------
 
 .. automodule:: gempyor.seeding
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.seir module
 -------------------
 
 .. automodule:: gempyor.seir
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.shared\_cli module
 --------------------------
 
 .. automodule:: gempyor.shared_cli
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.simulate module
 -----------------------
 
 .. automodule:: gempyor.simulate
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.simulation\_component module
 ------------------------------------
 
 .. automodule:: gempyor.simulation_component
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.statistics module
 -------------------------
 
 .. automodule:: gempyor.statistics
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.steps\_rk4 module
 -------------------------
 
 .. automodule:: gempyor.steps_rk4
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.subpopulation\_structure module
 ---------------------------------------
 
 .. automodule:: gempyor.subpopulation_structure
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.testing module
 ----------------------
 
 .. automodule:: gempyor.testing
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gempyor.utils module
 --------------------
 
 .. automodule:: gempyor.utils
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: gempyor
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

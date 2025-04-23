@@ -4,26 +4,9 @@
 .. automodule:: gempyor.simulate
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
    
       simulate
    
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-
