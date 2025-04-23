@@ -4,20 +4,11 @@
 .. automodule:: gempyor.info
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
    
       get_cluster_info
-   
-   
-
-   
    
    .. rubric:: Classes
 
@@ -27,11 +18,3 @@
       Module
       PathExport
    
-   
-
-   
-   
-   
-
-
-

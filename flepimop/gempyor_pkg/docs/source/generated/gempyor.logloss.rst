@@ -4,26 +4,9 @@
 .. automodule:: gempyor.logloss
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       LogLoss
    
-   
-
-   
-   
-   
-
-
-

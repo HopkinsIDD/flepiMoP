@@ -4,11 +4,6 @@
 .. automodule:: gempyor.postprocess_inference
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -17,15 +12,3 @@
       plot_chains
       plot_fit
    
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-

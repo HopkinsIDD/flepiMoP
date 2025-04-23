@@ -4,11 +4,6 @@
 .. automodule:: gempyor.seir
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -24,15 +19,3 @@
       write_seir
       write_spar_snpi
    
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-
