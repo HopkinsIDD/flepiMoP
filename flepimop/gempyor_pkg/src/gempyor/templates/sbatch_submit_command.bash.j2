@@ -19,6 +19,9 @@
 {{- sbatch("ntasks", 1) }}
 {{- sbatch("cpus-per-task", job_resources_cpus) }}
 {{- sbatch("mem", job_resources_memory) }}
+{%- if job_dependency is defined and job_dependency is not none -%}
+{{- sbatch("dependency", "afterok:{}".format(job_dependency)) }}
+{%- endif %}
 
 {% if debug -%}
 # Debugging

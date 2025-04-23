@@ -148,6 +148,28 @@ from gempyor._jinja import _jinja_environment
                 "do-rsv-analysis",
             ],
         ),
+        (
+            {
+                "job_name": "measles_2024",
+                "job_dependency": 12345,
+                "command": "do-measles-analysis",
+            },
+            [
+                "#!/usr/bin/env bash",
+                '#SBATCH --job-name="measles_2024"',
+                '#SBATCH --ntasks="1"',
+                '#SBATCH --dependency="afterok:12345"',
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "do-measles-analysis",
+            ],
+        ),
     ),
 )
 def test_exact_results_for_select_inputs(data: dict[str, Any], expected: list[str]) -> None:

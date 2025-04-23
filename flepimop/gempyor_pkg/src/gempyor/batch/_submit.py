@@ -94,7 +94,7 @@ def _submit_scenario_job(
         **{k: v for k, v in template_data.items() if k not in {"inference", "job_size"}},
     )
 
-    # Submit
+    # Submit inference job
     submission = batch_system.submit_command(
         inference_command,
         options,
@@ -106,4 +106,21 @@ def _submit_scenario_job(
             if k not in {"command", "options", "verbosity", "dry_run"}
         },
     )
+
+    if template_data.get("sync") is not None:
+        batch_system.submit_command(
+            f"flepimop sync --protocol {template_data['sync']} {template_data['config']}",
+            options,
+            verbosity,
+            dry_run,
+            **(
+                {
+                    k: v
+                    for k, v in template_data.items()
+                    if k not in {"command", "options", "verbosity", "dry_run"}
+                }
+                | {"job_dependency": submission.job_id}
+            ),
+        )
+
     return submission
