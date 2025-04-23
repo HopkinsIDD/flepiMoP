@@ -93,11 +93,11 @@ jobs:
             git commit -m "auto-update Sphinx docs [ci skip]"
             BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
             git fetch origin "$BRANCH_NAME"
-            if git rebase origin/"$BRANCH_NAME"; then
+            if git merge origin/"$BRANCH_NAME"; then
               git push origin HEAD:"$BRANCH_NAME"
             else
-              echo "Rebase error when updatomg docs onto $BRANCH_NAME."
-              exit 1
+              echo "Merge conflict detected during docs update. Skipping `Sphinx` doc push."
+              exit 0 
             fi
           fi
         shell: bash
