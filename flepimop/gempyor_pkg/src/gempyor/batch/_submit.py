@@ -3,12 +3,44 @@ __all__ = ()
 
 from collections.abc import Iterable
 from datetime import timedelta
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 from ..logging import get_script_logger
 from ._inference import _create_inference_command
 from .systems import BatchSystem
 from .types import JobResources, JobSize, JobSubmission
+
+
+@overload
+def _submit_scenario_job(
+    name: str,
+    job_name: str,
+    inference: Literal["emcee", "r"],
+    job_size: JobSize,
+    batch_system: BatchSystem,
+    outcome_modifiers_scenario: str,
+    seir_modifiers_scenario: str,
+    options: None,
+    template_data: dict[str, Any],
+    verbosity: int,
+    dry_run: Literal[False],
+) -> JobSubmission: ...
+
+
+@overload
+def _submit_scenario_job(
+    name: str,
+    job_name: str,
+    inference: Literal["emcee", "r"],
+    job_size: JobSize,
+    batch_system: BatchSystem,
+    outcome_modifiers_scenario: str,
+    seir_modifiers_scenario: str,
+    options: None,
+    template_data: dict[str, Any],
+    verbosity: int,
+    dry_run: Literal[True],
+) -> JobSubmission: ...
 
 
 def _submit_scenario_job(
@@ -28,23 +60,23 @@ def _submit_scenario_job(
     Submit a job for a scenario.
 
     Args:
+        name: The name of the config file used as a prefix for the job name.
+        job_name: The name of the job to submit.
+        inference: The inference method to use.
+        job_size: The size of the job to submit.
+        batch_system: The batch system to submit the job to.
         outcome_modifiers_scenario: The outcome modifiers scenario to use.
         seir_modifiers_scenario: The SEIR modifiers scenario to use.
-        name: The name of the config file used as a prefix for the job name.
-        batch_system: The batch system to submit the job to.
-        inference_method: The inference method being used.
-        config_out: The path to the config file to use.
-        job_name: The name of the job to submit.
-        job_size: The size of the job to submit.
-        job_time_limit: The time limit of the job to submit.
-        job_resources: The resources required for the job to submit.
-        cluster: The cluster information to use for submitting the job.
-        kwargs: Additional options provided to the submit job CLI as keyword arguments.
+        options: The options to use for the job submission.
+        template_data: The template data to use for the job submission.
         verbosity: A integer verbosity level to enable logging or `None` for no logging.
         dry_run: A boolean indicating if this is a dry run or not, if set to `True` this
             function will not actually submit/run a job.
-        now: The current UTC timestamp.
+
+    Returns:
+        A JobSubmission object if `dry_run` is `False`, otherwise `None`.
     """
+
     # Get logger
     if verbosity is not None:
         logger = get_script_logger(__name__, verbosity)
@@ -108,6 +140,7 @@ def _submit_scenario_job(
         },
     )
 
+    # Optionally submit sync job
     if template_data.get("sync") is not None:
         sync_time_limit = timedelta(hours=1)
         sync_resources = JobResources(
