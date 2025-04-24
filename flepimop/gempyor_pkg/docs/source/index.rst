@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to `gempyor`'s documentation!
-===================================
+=====================================
 
 `gempyor` is the core python package for `flepiMoP`.
 
