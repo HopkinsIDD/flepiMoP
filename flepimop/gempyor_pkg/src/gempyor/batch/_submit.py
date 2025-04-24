@@ -2,12 +2,13 @@ __all__ = ()
 
 
 from collections.abc import Iterable
+from datetime import timedelta
 from typing import Any, Literal
 
 from ..logging import get_script_logger
 from ._inference import _create_inference_command
 from .systems import BatchSystem
-from .types import JobSize, JobSubmission
+from .types import JobResources, JobSize, JobSubmission
 
 
 def _submit_scenario_job(
@@ -108,6 +109,21 @@ def _submit_scenario_job(
     )
 
     if template_data.get("sync") is not None:
+        sync_time_limit = timedelta(hours=1)
+        sync_resources = JobResources(
+            nodes=1,
+            cpus=2,
+            memory=1024,
+        )
+        sync_template_data = template_data | {
+            "array_capable": False,
+            "job_name": f"{template_data['job_name']}_sync",
+            "job_time_limit": batch_system.format_time_limit(sync_time_limit),
+            "job_comment": f"Sync {template_data['job_comment']}",
+            "job_resources_nodes": batch_system.format_nodes(sync_resources),
+            "job_resources_cpus": batch_system.format_cpus(sync_resources),
+            "job_resources_memory": batch_system.format_memory(sync_resources),
+        }
         batch_system.submit_command(
             f"flepimop sync --protocol {template_data['sync']} {template_data['config']}",
             options,
@@ -116,7 +132,7 @@ def _submit_scenario_job(
             **(
                 {
                     k: v
-                    for k, v in template_data.items()
+                    for k, v in sync_template_data.items()
                     if k not in {"command", "options", "verbosity", "dry_run"}
                 }
                 | {"job_dependency": submission.job_id}
