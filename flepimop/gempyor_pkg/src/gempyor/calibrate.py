@@ -57,7 +57,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
     "--nwalkers",
     "nwalkers",
     envvar="FLEPI_NUM_SLOTS",
-    type=click.IntRange(min=2),
+    type=click.IntRange(min=1),
     help="override the # of walkers simulation runs in the config file",
 )
 @click.option(
@@ -200,7 +200,7 @@ def calibrate(
             ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
     if not nwalkers:
-        nwalkers = config["nslots"].as_number()  # TODO
+        nwalkers = config["nslots"].as_number()  
     print(f"Number of walkers be run: {nwalkers}")
 
     test_run = True
@@ -214,23 +214,25 @@ def calibrate(
                 [
                     (p0[0],),
                     (p0[0],),
-                    (p0[1],),
                 ],
             )
         if lliks[0] != lliks[1]:
             print(
-                f"Test run failed, logloss with the same parameters is different: {lliks[0]} != {lliks[1]} ❌"
+                f"Test run failed, logloss with the same parameters "
+                f"is different: {lliks[0]} != {lliks[1]} ❌"
             )
             print(
                 "This means that there is config variability not captured in the emcee fits"
             )
             return
-            # TODO THIS Test in fact does nnot work.
-        else:
-            print(
-                f"Test run done, logloss with same parameters: {lliks[0]}=={lliks[1]} ✅ "
-            )
-        # assert lliks[1] != lliks[2], "Test run failed, logloss with different parameters is the same, perturbation are not taken into account"
+        print(
+            f"Test run done, logloss with same parameters: "
+            f"{lliks[0]}=={lliks[1]} ✅ "
+        )
+
+        # assert lliks[1] != lliks[2]: 
+        # "Test run failed, logloss with different parameters is the same, 
+        # perturbation are not taken into account"
 
     # Make a plot of the runs directly from config
     n_config_samples = min(30, nwalkers // 2)
