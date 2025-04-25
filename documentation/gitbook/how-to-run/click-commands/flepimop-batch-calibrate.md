@@ -182,7 +182,7 @@ config_sample_2pop_inference.yml \`\`\`
 :   The job size fields to vary for estimating the resources needed for
     the job. This should be a subset of the job size fields.
 
-**\--estimate-factors** \[samples_per_chain\|blocks\|chains\|samples\|total_samples\|total_simulations\|simulations_per_chain\|simulations\]
+**\--estimate-factors** \[simulations\|samples_per_chain\|total_simulations\|simulations_per_chain\|chains\|total_samples\|blocks\|samples\]
 
 :   The factors to use for estimating the resources needed for the job.
     This should be a subset of the job size fields. Also keep in mind to

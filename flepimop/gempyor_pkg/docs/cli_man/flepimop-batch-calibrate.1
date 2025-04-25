@@ -1,4 +1,4 @@
-.TH "FLEPIMOP BATCH-CALIBRATE" "1" "2025-04-21" "2.1" "flepimop batch-calibrate Manual"
+.TH "FLEPIMOP BATCH-CALIBRATE" "1" "2025-04-25" "2.1" "flepimop batch-calibrate Manual"
 .SH NAME
 flepimop\-batch-calibrate \- Submit a calibration job to a batch system.
 .SH SYNOPSIS
@@ -154,7 +154,7 @@ The size of the prediction interval to use for estimating the required resources
 \fB\-\-estimate\-vary\fP [blocks|chains|simulations]
 The job size fields to vary for estimating the resources needed for the job. This should be a subset of the job size fields.
 .TP
-\fB\-\-estimate\-factors\fP [samples_per_chain|blocks|chains|samples|total_samples|total_simulations|simulations_per_chain|simulations]
+\fB\-\-estimate\-factors\fP [simulations|samples_per_chain|total_simulations|simulations_per_chain|chains|total_samples|blocks|samples]
 The factors to use for estimating the resources needed for the job. This should be a subset of the job size fields. Also keep in mind to avoid using colinear factors, i.e. blocks and simulations per a block. Doing so can lead to unstable estimates.
 .TP
 \fB\-\-estimate\-measurements\fP [cpu|memory|time]
