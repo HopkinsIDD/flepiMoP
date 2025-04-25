@@ -200,7 +200,7 @@ def calibrate(
             ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
 
     if not nwalkers:
-        nwalkers = config["nslots"].as_number()  
+        nwalkers = config["nslots"].as_number()
     print(f"Number of walkers be run: {nwalkers}")
 
     test_run = True
@@ -226,12 +226,11 @@ def calibrate(
             )
             return
         print(
-            f"Test run done, logloss with same parameters: "
-            f"{lliks[0]}=={lliks[1]} ✅ "
+            f"Test run done, logloss with same parameters: " f"{lliks[0]}=={lliks[1]} ✅ "
         )
 
-        # assert lliks[1] != lliks[2]: 
-        # "Test run failed, logloss with different parameters is the same, 
+        # assert lliks[1] != lliks[2]:
+        # "Test run failed, logloss with different parameters is the same,
         # perturbation are not taken into account"
 
     # Make a plot of the runs directly from config
