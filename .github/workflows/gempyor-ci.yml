@@ -87,7 +87,7 @@ jobs:
         shell: bash
       - name: Commit/push any changed docs
         run: |
-          if [[ $(git status --porcelain --untracked-files=no flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 ]]; then
+          if [[ $(git status --porcelain flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 ]]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git add flepimop/gempyor_pkg/docs/source/
