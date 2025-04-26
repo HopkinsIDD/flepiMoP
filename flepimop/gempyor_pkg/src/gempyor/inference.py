@@ -158,7 +158,6 @@ def get_static_arguments(modinf: model_info.ModelInfo):
             "The `modinf` is required to have a parsed `compartments` attribute."
         )
 
-    real_simulation = False
     (
         unique_strings,
         transition_array,
@@ -196,45 +195,33 @@ def get_static_arguments(modinf: model_info.ModelInfo):
         parameters, modinf.parameters.pnames, unique_strings
     )
 
-    if real_simulation:
-        states = seir.steps_SEIR(
-            modinf,
-            parsed_parameters,
-            transition_array,
-            proportion_array,
-            proportion_info,
-            initial_conditions,
-            seeding_data,
-            seeding_amounts,
-        )
-    else:
-        # To avoid doing a simulation, but since we still need to run outcomes to get the hpar file,
-        # we create a fake state array is all zero
-        compartment_coords = {}
-        compartment_df = modinf.compartments.get_compartments_explicitDF()
-        # Iterate over columns of the DataFrame and populate the dictionary
-        for column in compartment_df.columns:
-            compartment_coords[column] = ("compartment", compartment_df[column].tolist())
+    # To avoid doing a simulation, but since we still need to run outcomes to get the hpar file,
+    # we create a fake state array is all zero
+    compartment_coords = {}
+    compartment_df = modinf.compartments.get_compartments_explicitDF()
+    # Iterate over columns of the DataFrame and populate the dictionary
+    for column in compartment_df.columns:
+        compartment_coords[column] = ("compartment", compartment_df[column].tolist())
 
-        coords = dict(
-            date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
-            **compartment_coords,
-            subpop=modinf.subpop_struct.subpop_names,
-        )
+    coords = dict(
+        date=pd.date_range(modinf.ti, modinf.tf, freq="D"),
+        **compartment_coords,
+        subpop=modinf.subpop_struct.subpop_names,
+    )
 
-        zeros = np.zeros(
-            (len(coords["date"]), len(coords["mc_name"][1]), len(coords["subpop"]))
-        )
-        states = xr.Dataset(
-            data_vars=dict(
-                prevalence=(["date", "compartment", "subpop"], zeros),
-                incidence=(["date", "compartment", "subpop"], zeros),
-            ),
-            coords=coords,
-            attrs=dict(
-                description="Dynamical simulation results", run_id=modinf.in_run_id
-            ),  # TODO add more information
-        )
+    zeros = np.zeros(
+        (len(coords["date"]), len(coords["mc_name"][1]), len(coords["subpop"]))
+    )
+    states = xr.Dataset(
+        data_vars=dict(
+            prevalence=(["date", "compartment", "subpop"], zeros),
+            incidence=(["date", "compartment", "subpop"], zeros),
+        ),
+        coords=coords,
+        attrs=dict(
+            description="Dynamical simulation results", run_id=modinf.in_run_id
+        ),  # TODO add more information
+    )
 
     snpi_df_ref = npi_seir.getReductionDF() if npi_seir is not None else pd.DataFrame()
 

@@ -199,11 +199,11 @@ def steps_SEIR(
     logging.debug(f"Integrating with method {integration_method}")
 
     if integration_method == "euler":
-        seir_sim = steps_rk4.rk4_integration(**fnct_args, method="euler")
+        fnct_args["method"] = integration_method
     elif integration_method == "stochastic":
-        seir_sim = steps_rk4.rk4_integration(**fnct_args, method="stochastic")
+        fnct_args["method"] = integration_method
     elif integration_method == "rk4.jit":
-        seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
+        fnct_args["silent"] = True
     else:
         if integration_method in {
             "scipy.solve_ivp",
@@ -224,6 +224,8 @@ def steps_SEIR(
                 integration_method,
             )
         raise ValueError(f"Unknown integration method given, '{integration_method}'.")
+
+    seir_sim = steps_rk4.rk4_integration(**fnct_args, method="euler")
 
     # We return an xarray instead of a ndarray now
     compartment_coords = {}

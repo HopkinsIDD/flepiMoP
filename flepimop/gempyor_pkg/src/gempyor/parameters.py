@@ -13,17 +13,56 @@ import copy
 import datetime
 import logging
 import os
-from typing import Any, Literal
+from typing import Any, Literal, Annotated, Union
 
 import confuse
 import numpy as np
 from numpy import ndarray
 import pandas as pd
 
-from . import NPI, utils
+import yaml
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    BeforeValidator,
+    computed_field,
+    model_validator,
+)
 
+
+from . import NPI, utils
+from ._pydantic_ext import _ensure_list, _override_or_val
 
 logger = logging.getLogger(__name__)
+
+class Par(BaseModel):
+    pname : str
+    long_name : str = ""
+
+class DistributionPar(Par):
+    type : Literal["constant"]
+    pass
+
+class ConstantPar(Par):
+    type : Literal["constant"]
+    pass
+
+class TimeseriesPar(Par):
+    type : Literal["timeseries"]
+    pass
+
+class ComputedPar(Par):
+    type : Literal["computed"]
+    pass
+
+Parameter = Annotated[Union[ConstantPar, TimeseriesPar, ComputedPar, DistributionPar], Field(discriminator="type")]
+
+class Parameters:
+    pdata : Annotated[list[Parameter], BeforeValidator(_ensure_list)]
+
+    def npar(self):
+        self.len(self.pdata)
 
 
 class Parameters:
