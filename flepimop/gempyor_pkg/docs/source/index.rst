@@ -16,26 +16,7 @@ Modules
 .. autosummary::
    :toctree: generated
 
-   gempyor.calibrate
-   gempyor.compartments
-   gempyor.config_validator
-   gempyor.file_paths
-   gempyor.inference
-   gempyor.inference_parameter
-   gempyor.info
-   gempyor.initial_conditions
-   gempyor.logloss
-   gempyor.model_info
-   gempyor.outcomes
-   gempyor.parameters
-   gempyor.postprocess_inference
-   gempyor.seeding
-   gempyor.seir
-   gempyor.simulate
-   gempyor.statistics
-   gempyor.steps_rk4
-   gempyor.subpopulation_structure
-   gempyor.utils
+   gempyor
 
 
 API Reference
