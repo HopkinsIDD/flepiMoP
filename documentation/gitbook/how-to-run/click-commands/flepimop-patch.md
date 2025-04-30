@@ -1,12 +1,15 @@
-# NAME
+NAME
+====
 
 flepimop-patch - Merge configuration files.
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop patch** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Merge configuration files.
 
@@ -20,7 +23,7 @@ files from the \`examples/tutorials\` directory. The command will merge
 the two files together and print the resulting configuration to the
 console.
 
-\`\`\`bash \$ flepimop patch config_sample_2pop_modifiers_part.yml
+ \`\`\`bash \$ flepimop patch config_sample_2pop_modifiers_part.yml
 config_sample_2pop_outcomes_part.yml \> config_sample_2pop_patched.yml
 \$ cat config_sample_2pop_patched.yml write_csv: false stoch_traj_flag:
 false jobs: 14 write_parquet: true first_sim_index: 1 config_src:
@@ -41,7 +44,8 @@ source: incidence: infection_stage: I probability: value: 0.05 delay:
 value: 7 duration: value: 10 name: currHosp incidDeath: source:
 incidHosp probability: value: 0.2 delay: value: 14 \`\`\`
 
-# OPTIONS
+OPTIONS
+=======
 
 **-c,** \--config PATH
 
