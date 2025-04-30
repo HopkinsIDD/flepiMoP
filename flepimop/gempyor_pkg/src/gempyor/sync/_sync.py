@@ -38,6 +38,9 @@ def _echo_failed(cmd: list[str]) -> CompletedProcess:
         A completed process object either with the result of the command or echoing the
         command on failure.
 
+    Raises:
+        ValueError: If the command list is empty.
+
     Examples:
         >>> from gempyor.sync._sync import _echo_failed
         >>> _echo_failed(["which", "ls"])
@@ -51,16 +54,13 @@ def _echo_failed(cmd: list[str]) -> CompletedProcess:
         `. / d o e s - n o t - e x i s t` failed with return code 127
         CompletedProcess(args=['echo', '`. / d o e s - n o t - e x i s t` failed with return code 127'], returncode=0)
     """
+    if not cmd:
+        raise ValueError("The command cannot be empty.")
     try:
-        res = run(" ".join(cmd), shell=True)
+        res = run(cmd, shell=True)
         if res.returncode != 0:
             return run(
-                [
-                    "echo",
-                    f"`{' '.join(res.args)}` failed with return code {res.returncode}",
-                ],
-                stdout=res.stdout,
-                stderr=res.stderr,
+                ["echo", f"`{' '.join(res.args)}` failed with return code {res.returncode}"]
             )
         return res
     except FileNotFoundError:
