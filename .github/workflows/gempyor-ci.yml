@@ -85,9 +85,9 @@ jobs:
           cd flepimop/gempyor_pkg/docs
           make fullbuild
         shell: bash
-      - name: Check importlib-metadata version (debug)
+      - name: Check for flepimop (debug)
         run: |
-          pip show importlib-metadata
+          which flepimop
       - name: Build click documentation with click-man
         run: |
           cd flepimop/gempyor_pkg

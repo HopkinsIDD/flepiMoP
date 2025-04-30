@@ -1,4 +1,4 @@
-.TH "FLEPIMOP COMPARTMENTS PLOT" "1" "2025-04-25" "2.1" "flepimop compartments plot Manual"
+.TH "FLEPIMOP COMPARTMENTS PLOT" "1" "2025-04-30" "2.1" "flepimop compartments plot Manual"
 .SH NAME
 flepimop\-compartments\-plot \- Command to generate a plot representing...
 .SH SYNOPSIS
@@ -12,6 +12,9 @@ flepimop\-compartments\-plot \- Command to generate a plot representing...
 .TP
 \fB\-c,\fP \-\-config PATH
 Deprecated: configuration file(s) for this simulation
+.TP
+\fB\-p,\fP \-\-populations TEXT
+Population(s) to run use in simulation.
 .TP
 \fB\-s,\fP \-\-seir_modifiers_scenarios TEXT
 override/select the transmission scenario(s) to run
@@ -37,8 +40,8 @@ unique identifier for the run
 \fB\-i,\fP \-\-first_sim_index INTEGER RANGE
 The index of the first simulation  [default: 1; x>=1]
 .TP
-\fB\-\-stochastic\fP / \-\-non\-stochastic
-Run stochastic simulations?
+\fB\-m,\fP \-\-method TEXT
+If provided, overrides seir::integration::method
 .TP
 \fB\-\-write\-csv\fP / \-\-no\-write\-csv
 write csv output?  [default: no-write-csv]

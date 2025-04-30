@@ -1,4 +1,4 @@
-.TH "FLEPIMOP PATCH" "1" "2025-04-25" "2.1" "flepimop patch Manual"
+.TH "FLEPIMOP PATCH" "1" "2025-04-30" "2.1" "flepimop patch Manual"
 .SH NAME
 flepimop\-patch \- Merge configuration files.
 .SH SYNOPSIS
@@ -21,7 +21,6 @@ flepimop\-patch \- Merge configuration files.
         $ flepimop patch config_sample_2pop_modifiers_part.yml config_sample_2pop_outcomes_part.yml > config_sample_2pop_patched.yml
         $ cat config_sample_2pop_patched.yml
         write_csv: false
-        stoch_traj_flag: false
         jobs: 14
         write_parquet: true
         first_sim_index: 1
@@ -91,6 +90,9 @@ flepimop\-patch \- Merge configuration files.
 \fB\-c,\fP \-\-config PATH
 Deprecated: configuration file(s) for this simulation
 .TP
+\fB\-p,\fP \-\-populations TEXT
+Population(s) to run use in simulation.
+.TP
 \fB\-s,\fP \-\-seir_modifiers_scenarios TEXT
 override/select the transmission scenario(s) to run
 .TP
@@ -115,8 +117,8 @@ unique identifier for the run
 \fB\-i,\fP \-\-first_sim_index INTEGER RANGE
 The index of the first simulation  [default: 1; x>=1]
 .TP
-\fB\-\-stochastic\fP / \-\-non\-stochastic
-Run stochastic simulations?
+\fB\-m,\fP \-\-method TEXT
+If provided, overrides seir::integration::method
 .TP
 \fB\-\-write\-csv\fP / \-\-no\-write\-csv
 write csv output?  [default: no-write-csv]
