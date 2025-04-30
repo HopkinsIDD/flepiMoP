@@ -1,3 +1,7 @@
+"""
+Tools to forward simulate a model with `gempyor`.
+"""
+
 #!/usr/bin/env python
 
 ##
@@ -190,7 +194,6 @@ def simulate(
     write_csv: bool = False,
     write_parquet: bool = True,
     first_sim_index: int = 1,
-    stoch_traj_flag: bool = False,
     verbose: bool = True,
 ) -> int:
     """
@@ -209,7 +212,6 @@ def simulate(
         write_csv: write output to csv?
         write_parquet: write output to parquet?
         first_sim_index: index of the first simulation
-        stoch_traj_flag: stochastic trajectories?
         verbose: print output to console?
 
     Returns: exit code (side effect: writes output to disk)
@@ -266,7 +268,6 @@ def simulate(
             # in_prefix=config["name"].get() + "/",
             out_run_id=cfg["out_run_id"].get(str) if cfg["out_run_id"].exists() else None,
             # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
-            stoch_traj_flag=cfg["stoch_traj_flag"].get(bool),
             config_filepath=cfg["config_src"].as_str_seq(),
         )
 
@@ -277,7 +278,7 @@ def simulate(
         >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {cfg["jobs"].get(int)} processes
         >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
         >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-        >> running ***{'STOCHASTIC' if cfg["stoch_traj_flag"].get(bool) else 'DETERMINISTIC'}*** trajectories
+        >> using ***{modinf.get_engine()}*** engine for trajectories
         """
             )
         # (there should be a run function)

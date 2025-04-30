@@ -1,27 +1,49 @@
 ---
 description: >-
-  Instructions to get started with using gempyor and flepiMoP.
-  Executing a simple run with provided example configs.
+  Instructions to get started with using gempyor and flepiMoP, directly following the 
+  steps described in "Before Any Run", by activating your install and running some 
+  sample commands.
 ---
 
 # Quick Start Guide
 
-## 🧱 Set up
+## 🧱 Set Up
 
-Before completing this **Quick Start Guide**, make sureyou have followed all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your model with flepiMoP.
+Before completing this **Quick Start Guide**, make sure you have followed all the steps in the [Before any run](before-any-run.md) section to ensure you have access to the correct files needed to run your model with flepiMoP.
 
-### Define environment variables (optional)
+## Activating The Conda Environment
 
-Since you'll be navigating frequently between the folder that contains your project code and the folder that contains the core flepiMoP model code, it's helpful to define shortcuts for these file paths. You can do this by creating environmental variables that you can then quickly call instead of writing out the whole file path.
+First step in using `flepiMoP` is activating the conda environment that it has been installed in:
+
+```bash
+conda activate flepimop-env
+```
+
+Assuming that you installed `flepiMoP` to the default conda environment name, but if you choose to install elsewhere please adjust the above command accordingly.
+
+### Define Environment Variables (Optional)
+
+{% hint style="info" %}
+If you choose not to define environment variables, remember to use the full or relative path names for navigating to the right directories and provide appropriate flepi/project path arguments in future steps.
+{% endhint %}
+
+`flepiMoP` frequently uses two environment variables to refer to specific directories both as a default for CLI arguments and throughout the documentation:
+
+1. `FLEPI_PATH`: Refers to the directory where `flepiMoP` is installed to, and
+2. `PROJECT_PATH`: Refers to the directory where `flepiMoP` is being ran from.
+
+Furthermore, you'll likely be navigating between these directories frequently in production usage so having these environment variables set can save some typing.
 
 For example, if you're on a **Mac** or Linux/Unix based operating system and storing the `flepiMoP` code in a directory called `Github`, you define the FLEPI\_PATH and PROJECT\_PATH environmental variables to be your directory locations as follows:
 
+On Linux/MacOS or in linux shells on windows setting an environment variable can be done by:
+
 ```bash
-export FLEPI_PATH=/Users/YourName/Github/flepiMoP
-export PROJECT_PATH=/Users/YourName/Github/flepiMoP/examples/tutorials
+export FLEPI_PATH=/your/path/to/flepiMoP
+export PROJECT_PATH=/your/path/to/flepiMoP/examples/tutorials
 ```
 
-or, if you have already navigated to your flepiMoP directory
+Where `/your/path/to` is the directory containing `flepiMoP`. If you have already navigated to your flepiMoP directory you can just do:
 
 ```bash
 export FLEPI_PATH=$(pwd)
@@ -30,23 +52,21 @@ export PROJECT_PATH=$(pwd)/examples/tutorials
 
 You can check that the variables have been set by either typing `env` to see all defined environmental variables, or typing `echo $FLEPI_PATH` to see the value of `FLEPI_PATH`.
 
-If you're on a **Windows** machine:
+However, if you're on Windows:
 
-<pre class="language-bash"><code class="lang-bash"><strong>set FLEPI_PATH=C:\Users\YourName\Github\flepiMoP
-</strong>set PROJECT_PATH=C:\Users\YourName\Github\flepiMoP\examples\tutorials
-</code></pre>
+```bash
+set FLEPI_PATH=C:\your\path\to\flepiMoP
+set PROJECT_PATH=C:\your\path\to\flepiMoP\examples\tutorials
+```
 
-or, if you have already navigated to your flepiMoP directory
+Where `/your/path/to` is the directory containing `flepiMoP`. If you have already navigated to your flepiMoP directory you can just do:
 
-<pre class="language-bash"><code class="lang-bash"><strong>set FLEPI_PATH=%CD%
-</strong>set PROJECT_PATH=%CD%\examples\tutorials
-</code></pre>
+```bash
+set FLEPI_PATH=%CD%
+set PROJECT_PATH=%CD%\examples\tutorials
+```
 
 You can check that the variables have been set by either typing `set` to see all defined environmental variables, or typing `echo $FLEPI_PATH$` to see the value of `FLEPI_PATH`.
-
-{% hint style="info" %}
-If you choose not to define environment variables, remember to use the full or relative path names for navigating to the right files or folders in future steps.
-{% endhint %}
 
 ## 🚀 Run the code
 

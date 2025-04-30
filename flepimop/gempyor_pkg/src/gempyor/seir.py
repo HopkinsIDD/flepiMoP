@@ -1,5 +1,10 @@
+"""
+Abstractions for interacting with the SEIR compartments of the model.
+"""
+
 import itertools
 import logging
+import random
 import time
 
 import numpy as np
@@ -10,7 +15,7 @@ import xarray as xr
 
 from . import NPI, steps_rk4
 from .model_info import ModelInfo
-from .utils import Timer, read_df
+from .utils import Timer, _nslots_random_seeds, read_df
 
 
 logger = logging.getLogger(__name__)
@@ -73,12 +78,12 @@ def build_step_source_arg(
 ):
     if "integration" in modinf.seir_config.keys():
         if "method" in modinf.seir_config["integration"].keys():
-            integration_method = modinf.seir_config["integration"]["method"].get()
+            integration_method = modinf.seir_config["integration"]["method"].as_str()
             if integration_method == "best.current":
                 integration_method = "rk4.jit"
             if integration_method == "rk4":
                 integration_method = "rk4.jit"
-            if integration_method not in ["rk4.jit", "legacy"]:
+            if integration_method not in ["rk4.jit", "euler", "stochastic"]:
                 raise ValueError(
                     f"Unknown integration method given, '{integration_method}'."
                 )
@@ -92,7 +97,7 @@ def build_step_source_arg(
         integration_method = "rk4.jit"
         dt = 2.0
         logging.info(
-            f"Integration method not provided, assuming type {integration_method} with dt=2"
+            f"Integration method not provided, assuming type {integration_method} with dt={dt}"
         )
 
     ## The type is very important for the call to the compiled function, and e.g mixing an int64 for an int32 can
@@ -162,7 +167,6 @@ def build_step_source_arg(
         "mobility_row_indices": modinf.mobility.indices,
         "mobility_data_indices": modinf.mobility.indptr,
         "population": modinf.subpop_pop,
-        "stochastic_p": modinf.stoch_traj_flag,
     }
 
     check_parameter_positivity(
@@ -198,13 +202,11 @@ def steps_SEIR(
 
     logging.debug(f"Integrating with method {integration_method}")
 
-    if integration_method == "legacy":
-        seir_sim = seir_sim = steps_rk4.rk4_integration(**fnct_args, method="legacy")
+    if integration_method == "euler":
+        seir_sim = steps_rk4.rk4_integration(**fnct_args, method="euler")
+    elif integration_method == "stochastic":
+        seir_sim = steps_rk4.rk4_integration(**fnct_args, method="stochastic")
     elif integration_method == "rk4.jit":
-        if modinf.stoch_traj_flag == True:
-            raise ValueError(
-                f"'{integration_method}' integration method only supports deterministic integration, but `stoch_straj_flag` is '{modinf.stoch_traj_flag}'."
-            )
         seir_sim = steps_rk4.rk4_integration(**fnct_args, silent=True)
     else:
         if integration_method in {
@@ -291,8 +293,7 @@ def onerun_SEIR(
     load_ID: bool = False,
     sim_id2load: int = None,
     config=None,
-):
-    np.random.seed()
+) -> pd.DataFrame:
     npi = None
     if modinf.npi_config_seir:
         npi = build_npi_SEIR(
@@ -362,22 +363,69 @@ def onerun_SEIR(
     return out_df
 
 
+def _onerun_SEIR_with_random_seed(
+    random_seed: int,
+    sim_id2write: int,
+    modinf: ModelInfo,
+    load_ID: bool = False,
+    sim_id2load: int = None,
+    config=None,
+) -> pd.DataFrame:
+    """
+    Wrapper function to `onerun_SEIR` that sets a random seed.
+
+    Args:
+        random_seed: The random seed to use.
+        sim_id2write: The simulation ID to write.
+        modinf: The ModelInfo object.
+        load_ID: Whether to load the simulation ID.
+        sim_id2load: The simulation ID to load.
+        config: The configuration.
+
+    Returns:
+        A pandas DataFrame containing the simulated SEIR output.
+
+    See Also:
+        `onerun_SEIR`
+
+    """
+    np.random.seed(seed=random_seed)
+    modinf.parameters.reinitialize_distributions()
+    return onerun_SEIR(
+        sim_id2write, modinf, load_ID=load_ID, sim_id2load=sim_id2load, config=config
+    )
+
+
 def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
+    """
+    Run SEIR simulations in parallel.
+
+    Args:
+        modinf: The ModelInfo object.
+        config: The configuration.
+        n_jobs: The number of parallel jobs to run. Default is 1 (no parallelization).
+
+    Notes:
+        Successive calls to this function will produce different samples for random
+        parameters.
+    """
     start = time.monotonic()
     sim_ids = np.arange(1, modinf.nslots + 1)
-
+    random_seeds = _nslots_random_seeds(modinf.nslots)
     if n_jobs == 1:  # run single process for debugging/profiling purposes
         for sim_id in tqdm.tqdm(sim_ids):
-            onerun_SEIR(
-                sim_id2write=sim_id,
-                modinf=modinf,
+            _onerun_SEIR_with_random_seed(
+                random_seeds[sim_id - 1],
+                sim_id,
+                modinf,
                 load_ID=False,
                 sim_id2load=None,
                 config=config,
             )
     else:
         tqdm.contrib.concurrent.process_map(
-            onerun_SEIR,
+            _onerun_SEIR_with_random_seed,
+            random_seeds,
             sim_ids,
             itertools.repeat(modinf),
             itertools.repeat(False),
@@ -387,7 +435,8 @@ def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
         )
 
     logging.info(
-        f""">> {modinf.nslots} seir simulations completed in {time.monotonic() - start:.1f} seconds"""
+        f">> {modinf.nslots} seir simulations completed "
+        f"in {time.monotonic() - start:.1f} seconds"
     )
 
 

@@ -40,7 +40,7 @@ version = "2.1"
 
 [project.optional-dependencies]
 aws = ["boto3", "botocore"]
-dev = ["pytest", "mock", "pylint", "black", "click-man"]
+dev = ["pytest", "mock", "pylint", "black", "sphinx", "click-man"]
 
 [project.urls]
 Homepage = "https://www.flepimop.org/"

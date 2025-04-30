@@ -15,7 +15,7 @@ from pydantic import (
     model_validator,
 )
 
-from .._pydantic_ext import *
+from .._pydantic_ext import _override_or_val
 from ._sync_filter import ListSyncFilter, WithFilters, FilterParts
 
 __all__ = ["sync_from_yaml", "sync_from_dict"]

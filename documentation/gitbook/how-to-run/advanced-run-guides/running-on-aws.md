@@ -92,7 +92,6 @@ NOTE: If you are not running a _resume run_, DO NOT export the environmental var
 
 <pre class="language-bash"><code class="lang-bash">cd ~/drp
 export CENSUS_API_KEY={A CENSUS API KEY}
-export FLEPI_STOCHASTIC_RUN=false
 export FLEPI_RESET_CHIMERICS=TRUE
 export COMPUTE_QUEUE="Compartment-JQ-1588569574"
 
@@ -229,7 +228,7 @@ To launch the whole inference batch job, type the following command:
 
 {% code overflow="wrap" %}
 ```bash
-python $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic 
+python $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE 
 ```
 {% endcode %}
 
@@ -252,7 +251,7 @@ We allow for a number of different jobs, with different setups, e.g., you may _n
 {% tab title="Standard" %}
 <pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>cd $PROJECT_PATH 
 </strong><strong>
-</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic
+</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE
 </code></pre>
 {% endtab %}
 
@@ -261,7 +260,7 @@ We allow for a number of different jobs, with different setups, e.g., you may _n
 ```bash
 cd $PROJECT_PATH 
 
-$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic -j 1 -k 1
+$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE -j 1 -k 1
 ```
 {% endcode %}
 {% endtab %}
@@ -273,7 +272,7 @@ $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QU
 
 <pre class="language-bash" data-overflow="wrap"><code class="lang-bash"><strong>cd $PROJECT_PATH
 </strong><strong>
-</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location $RESUME_LOCATION
+</strong>$FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-carry-seeding --restart-from-location $RESUME_LOCATION
 </code></pre>
 
 **Discarding seeding** (_do this to refit seeding again_)_:_
@@ -282,7 +281,7 @@ $FLEPI_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QU
 ```bash
 cd $PROJECT_PATH 
 
-$COVID_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-discard-seeding --restart-from-location $RESUME_LOCATION
+$COVID_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-discard-seeding --restart-from-location $RESUME_LOCATION
 ```
 {% endcode %}
 
@@ -292,7 +291,7 @@ $COVID_PATH/batch/inference_job_launcher.py --aws -c $CONFIG_PATH -q $COMPUTE_QU
 ```bash
 cd $PROJECT_PATH 
 
-$COVID_PATH/batch/inference_job_launcher.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --non-stochastic --resume-carry-seeding --restart-from-location $RESUME_LOCATION
+$COVID_PATH/batch/inference_job_launcher.py -c $CONFIG_PATH -q $COMPUTE_QUEUE --resume-carry-seeding --restart-from-location $RESUME_LOCATION
 ```
 {% endcode %}
 {% endtab %}

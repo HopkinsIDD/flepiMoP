@@ -25,7 +25,7 @@ other_single_opt_args = [
     "first_sim_index",
     "jobs",
     "nslots",
-    "stoch_traj_flag",
+    "method",
     "in_run_id",
     "out_run_id",
     "in_prefix",
@@ -43,7 +43,7 @@ def bad_opt_args(opt: str) -> dict[str, Any]:
             "outcome_modifiers_scenario": 1,
             "jobs": -1,
             "nslots": -1,
-            "stoch_traj_flag": "foo",
+            "method": "foo",
             "in_run_id": -1,
             "out_run_id": -1,
             "in_prefix": [42],
@@ -62,10 +62,11 @@ def good_opt_args(opt: str) -> dict[str, Any]:
             "outcome_modifiers_scenario": "example",
             "jobs": 10,
             "nslots": 10,
-            "stoch_traj_flag": False,
+            "method": "euler",
             "in_run_id": "foo",
             "out_run_id": "foo",
             "in_prefix": "foo",
+            "populations": "test",
         }[opt]
     }
 
@@ -81,10 +82,11 @@ def ref_cfg_kvs(opt: str) -> dict[str, Any]:
             "outcome_modifiers_scenario": ["example", "ibid"],
             "jobs": 1,
             "nslots": 1,
-            "stoch_traj_flag": True,
+            "method": "rk4",
             "in_run_id": "bar",
             "out_run_id": "bar",
             "in_prefix": "bar",
+            "populations": ["reference"],
         }[opt]
     }
 
@@ -181,13 +183,21 @@ class TestParseConfigFiles:
             # when supplied an override, both should have the override
             parse_config_files(mockconfig, config_files=cfg, **goodopt)
             for k, v in goodopt.items():
-                assert mockconfig[k].get(v) == v
+                if k == "method":
+                    assert mockconfig["seir"]["integration"][k].get(v) == v
+                else:
+                    assert mockconfig[k].get(v) == v
             mockconfig.clear()
 
         # the config file with the option set should override the default
         parse_config_files(mockconfig, config_files=tmpconfigfile_wi_ref)
         for k, v in refopt.items():
-            assert mockconfig[k].get(v) == v
+            if k == "method":
+                assert mockconfig["seir"]["integration"][k].get(v) == v
+            elif k == "populations":
+                assert mockconfig["subpop_setup"]["selected"].get(v) == v
+            else:
+                assert mockconfig[k].get(v) == v
         mockconfig.clear()
 
         # the config file without the option set should adopt the default

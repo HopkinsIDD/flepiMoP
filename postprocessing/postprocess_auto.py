@@ -190,7 +190,6 @@ def generate_pdf(
                 run_id=run_id,
                 # prefix=f"USA/inference/med/{run_id}/global/intermediate/000000001.",
                 first_sim_index=1,
-                stoch_traj_flag=False,
                 path_prefix="./",  # prefix where to find the folder indicated in subpop_setup$
             )
             run_info.folder_path = f"{fs_results_path}/model_output"

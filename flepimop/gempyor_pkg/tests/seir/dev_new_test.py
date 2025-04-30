@@ -29,7 +29,6 @@ os.chdir(os.path.dirname(__file__))
 #        run_id=1,
 #        prefix="",
 #        first_sim_index=1,
-#        stoch_traj_flag=False,
 #    )
 #
 #    # p = parameters.Parameters(
