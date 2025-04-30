@@ -1,16 +1,20 @@
-# NAME
+NAME
+====
 
 flepimop-simulate - Forward simulate a model using gempyor.
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop simulate** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Forward simulate a model using gempyor.
 
-# OPTIONS
+OPTIONS
+=======
 
 **-c,** \--config PATH
 

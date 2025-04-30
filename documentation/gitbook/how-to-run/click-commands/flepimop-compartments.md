@@ -1,16 +1,20 @@
-# NAME
+NAME
+====
 
 flepimop-compartments - Add commands for working with FlepiMoP\...
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop compartments** \[OPTIONS\] COMMAND \[ARGS\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Add commands for working with FlepiMoP compartments.
 
-# COMMANDS
+COMMANDS
+========
 
 **plot** Command to generate a plot representing\... See **flepimop
 compartments-plot(1)** for full documentation on the **plot** command.

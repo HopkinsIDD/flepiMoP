@@ -1,17 +1,21 @@
-# NAME
+NAME
+====
 
 flepimop-compartments-export - Export compartment information to a CSV
 file.
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop compartments export** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Export compartment information to a CSV file.
 
-# OPTIONS
+OPTIONS
+=======
 
 **-c,** \--config PATH
 

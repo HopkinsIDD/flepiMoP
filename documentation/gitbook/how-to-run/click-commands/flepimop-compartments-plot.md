@@ -1,17 +1,21 @@
-# NAME
+NAME
+====
 
 flepimop-compartments-plot - Command to generate a plot representing\...
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop compartments plot** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Command to generate a plot representing transitions between
 compartments.
 
-# OPTIONS
+OPTIONS
+=======
 
 **-c,** \--config PATH
 

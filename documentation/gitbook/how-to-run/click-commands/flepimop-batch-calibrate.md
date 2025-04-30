@@ -1,12 +1,15 @@
-# NAME
+NAME
+====
 
 flepimop-batch-calibrate - Submit a calibration job to a batch system.
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop batch-calibrate** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Submit a calibration job to a batch system. This job makes it
 straightforward to submit a calibration job to a batch system. The job
@@ -33,11 +36,12 @@ job \--time-limit 8hr \# The batch system to use, equivalent to
 \`\--batch-system slurm\` \--slurm \# Resource options \--nodes 50
 \--cpus 2 \--memory 4GB \# Batch system specific options can be provided
 via \`\--extra\` \--extra partition=normal \--extra
-email=bob@example.edu \# Only run a dry run to see what would be
+email=bob\@example.edu \# Only run a dry run to see what would be
 submitted for the config \--dry-run -vvv
 config_sample_2pop_inference.yml \`\`\`
 
-# OPTIONS
+OPTIONS
+=======
 
 **-c,** \--config PATH
 

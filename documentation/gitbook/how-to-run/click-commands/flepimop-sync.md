@@ -1,12 +1,15 @@
-# NAME
+NAME
+====
 
 flepimop-sync - Sync flepimop files between local and\...
 
-# SYNOPSIS
+SYNOPSIS
+========
 
 **flepimop sync** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-# DESCRIPTION
+DESCRIPTION
+===========
 
 Sync flepimop files between local and remote locations. For the filter
 options, see \`man rsync\` for more information - sync supports basic
@@ -21,7 +24,8 @@ foo\" -a \"- bar\"\` adds \[\`+ foo\`, \`- bar\`\] to the beginning of
 the filter list, meaning the include filter \`+ a\` has higher
 precedence than the exclude filter \`- bar\`.
 
-# OPTIONS
+OPTIONS
+=======
 
 **-p,** \--protocol TEXT
 
