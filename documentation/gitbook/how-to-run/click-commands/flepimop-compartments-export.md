@@ -1,25 +1,25 @@
-NAME
-====
+# NAME
 
 flepimop-compartments-export - Export compartment information to a CSV
 file.
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 **flepimop compartments export** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Export compartment information to a CSV file.
 
-OPTIONS
-=======
+# OPTIONS
 
 **-c,** \--config PATH
 
 :   Deprecated: configuration file(s) for this simulation
+
+**-p,** \--populations TEXT
+
+:   Population(s) to run use in simulation.
 
 **-s,** \--seir_modifiers_scenarios TEXT
 
@@ -53,9 +53,9 @@ OPTIONS
 
 :   The index of the first simulation \[default: 1; x\>=1\]
 
-**\--stochastic** / \--non-stochastic
+**-m,** \--method TEXT
 
-:   Run stochastic simulations?
+:   If provided, overrides seir::integration::method
 
 **\--write-csv** / \--no-write-csv
 

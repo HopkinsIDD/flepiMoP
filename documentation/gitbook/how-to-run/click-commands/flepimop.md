@@ -1,20 +1,16 @@
-NAME
-====
+# NAME
 
 flepimop - Flexible Epidemic Modeling Platform\...
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 **flepimop** \[OPTIONS\] COMMAND \[ARGS\]\...
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Flexible Epidemic Modeling Platform (FlepiMoP) Command Line Interface
 
-COMMANDS
-========
+# COMMANDS
 
 **modifiers** .PP See **flepimop-modifiers(1)** for full documentation
 on the **modifiers** command.

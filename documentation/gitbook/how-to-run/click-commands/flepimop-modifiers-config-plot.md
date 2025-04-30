@@ -1,16 +1,13 @@
-NAME
-====
+# NAME
 
 flepimop-modifiers-config-plot - Plot the seir/outcome modifiers affects
 on\...
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 **flepimop modifiers config-plot** \[OPTIONS\]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Plot the seir/outcome modifiers affects on the parameters.
 
@@ -25,8 +22,7 @@ transition rates with modifiers applied vs time. 3.
 outcomesNPIcaveat.pdf: Contains plots of the outcomes affected by
 modifiers vs time.
 
-OPTIONS
-=======
+# OPTIONS
 
 **-c,** \--config PATH
 

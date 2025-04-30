@@ -1,15 +1,12 @@
-NAME
-====
+# NAME
 
 flepimop-batch-calibrate - Submit a calibration job to a batch system.
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 **flepimop batch-calibrate** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Submit a calibration job to a batch system. This job makes it
 straightforward to submit a calibration job to a batch system. The job
@@ -36,16 +33,19 @@ job \--time-limit 8hr \# The batch system to use, equivalent to
 \`\--batch-system slurm\` \--slurm \# Resource options \--nodes 50
 \--cpus 2 \--memory 4GB \# Batch system specific options can be provided
 via \`\--extra\` \--extra partition=normal \--extra
-email=bob\@example.edu \# Only run a dry run to see what would be
+email=bob@example.edu \# Only run a dry run to see what would be
 submitted for the config \--dry-run -vvv
 config_sample_2pop_inference.yml \`\`\`
 
-OPTIONS
-=======
+# OPTIONS
 
 **-c,** \--config PATH
 
 :   Deprecated: configuration file(s) for this simulation
+
+**-p,** \--populations TEXT
+
+:   Population(s) to run use in simulation.
 
 **-s,** \--seir_modifiers_scenarios TEXT
 
@@ -79,9 +79,9 @@ OPTIONS
 
 :   The index of the first simulation \[default: 1; x\>=1\]
 
-**\--stochastic** / \--non-stochastic
+**-m,** \--method TEXT
 
-:   Run stochastic simulations?
+:   If provided, overrides seir::integration::method
 
 **\--write-csv** / \--no-write-csv
 
@@ -186,7 +186,7 @@ OPTIONS
 :   The job size fields to vary for estimating the resources needed for
     the job. This should be a subset of the job size fields.
 
-**\--estimate-factors** \[simulations\|samples_per_chain\|total_simulations\|simulations_per_chain\|chains\|total_samples\|blocks\|samples\]
+**\--estimate-factors** \[blocks\|total_samples\|simulations_per_chain\|samples\|total_simulations\|simulations\|samples_per_chain\|chains\]
 
 :   The factors to use for estimating the resources needed for the job.
     This should be a subset of the job size fields. Also keep in mind to
