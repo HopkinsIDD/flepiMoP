@@ -1,24 +1,24 @@
-NAME
-====
+# NAME
 
 flepimop-simulate - Forward simulate a model using gempyor.
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 **flepimop simulate** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Forward simulate a model using gempyor.
 
-OPTIONS
-=======
+# OPTIONS
 
 **-c,** \--config PATH
 
 :   Deprecated: configuration file(s) for this simulation
+
+**-p,** \--populations TEXT
+
+:   Population(s) to run use in simulation.
 
 **-s,** \--seir_modifiers_scenarios TEXT
 
@@ -52,9 +52,9 @@ OPTIONS
 
 :   The index of the first simulation \[default: 1; x\>=1\]
 
-**\--stochastic** / \--non-stochastic
+**-m,** \--method TEXT
 
-:   Run stochastic simulations?
+:   If provided, overrides seir::integration::method
 
 **\--write-csv** / \--no-write-csv
 

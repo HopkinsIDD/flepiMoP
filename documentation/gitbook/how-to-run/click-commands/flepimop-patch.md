@@ -1,15 +1,12 @@
-NAME
-====
+# NAME
 
 flepimop-patch - Merge configuration files.
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 **flepimop patch** \[OPTIONS\] \[CONFIG_FILES\]\...
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Merge configuration files.
 
@@ -23,10 +20,10 @@ files from the \`examples/tutorials\` directory. The command will merge
 the two files together and print the resulting configuration to the
 console.
 
- \`\`\`bash \$ flepimop patch config_sample_2pop_modifiers_part.yml
+\`\`\`bash \$ flepimop patch config_sample_2pop_modifiers_part.yml
 config_sample_2pop_outcomes_part.yml \> config_sample_2pop_patched.yml
-\$ cat config_sample_2pop_patched.yml write_csv: false stoch_traj_flag:
-false jobs: 14 write_parquet: true first_sim_index: 1 config_src:
+\$ cat config_sample_2pop_patched.yml write_csv: false jobs: 14
+write_parquet: true first_sim_index: 1 config_src:
 \[config_sample_2pop_modifiers_part.yml,
 config_sample_2pop_outcomes_part.yml\] seir_modifiers: scenarios:
 \[Ro_lockdown, Ro_all\] modifiers: Ro_lockdown: method:
@@ -44,12 +41,15 @@ source: incidence: infection_stage: I probability: value: 0.05 delay:
 value: 7 duration: value: 10 name: currHosp incidDeath: source:
 incidHosp probability: value: 0.2 delay: value: 14 \`\`\`
 
-OPTIONS
-=======
+# OPTIONS
 
 **-c,** \--config PATH
 
 :   Deprecated: configuration file(s) for this simulation
+
+**-p,** \--populations TEXT
+
+:   Population(s) to run use in simulation.
 
 **-s,** \--seir_modifiers_scenarios TEXT
 
@@ -83,9 +83,9 @@ OPTIONS
 
 :   The index of the first simulation \[default: 1; x\>=1\]
 
-**\--stochastic** / \--non-stochastic
+**-m,** \--method TEXT
 
-:   Run stochastic simulations?
+:   If provided, overrides seir::integration::method
 
 **\--write-csv** / \--no-write-csv
 
