@@ -86,13 +86,10 @@ jobs:
           cd flepimop/gempyor_pkg/docs
           make fullbuild
         shell: bash
-      - name: Check for flepimop (debug)
-        run: |
-          which flepimop
       - name: Build click documentation with click-man
         run: |
           cd flepimop/gempyor_pkg
-          click-man flepimop --target docs/cli_man
+          click-man flepimop --target docs/cli_man --man-version 1
           python docs/click-man_parsing.py
       - name: Commit/push any changed docs
         run: |
