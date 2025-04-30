@@ -14,7 +14,9 @@ def main():
     # Path to find man pages, path to output files
     script_dir = Path(__file__).resolve().parent
     folder_path = script_dir / "cli_man"
-    output_dir = (script_dir / "../../../documentation/gitbook/how-to-run/click-commands").resolve()
+    output_dir = (
+        script_dir / "../../../documentation/gitbook/how-to-run/click-commands"
+    ).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for file in folder_path.rglob("*.1"):
