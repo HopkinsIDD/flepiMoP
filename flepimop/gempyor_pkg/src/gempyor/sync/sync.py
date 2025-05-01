@@ -29,6 +29,20 @@ _SYNC_OPTIONS: Final = {
         type=click.Path(),
         help="target directory to 'push' changes to",
     ),
+    "sourceappend": click.Option(
+        ["--source-append", "source_append"],
+        type=click.Path(),
+        default=None,
+        show_default=True,
+        help="Append to the source instead of replacing it.",
+    ),
+    "targetappend": click.Option(
+        ["--target-append", "target_append"],
+        type=click.Path(),
+        default=None,
+        show_default=True,
+        help="Append to the target instead of replacing it.",
+    ),
     "sfilter": click.Option(
         ["-e", "--fsuffix", "filter_suffix"],
         type=click.STRING,
@@ -110,9 +124,8 @@ def sync(  # pylint: disable=inconsistent-return-statements
                 )
             else:
                 kwargs["filter_override"] = []
-        else:
-            if not kwargs["filter_override"]:
-                kwargs["filter_override"] = None
+        elif not kwargs["filter_override"]:
+            kwargs["filter_override"] = None
         try:
             verbosity = kwargs.pop("verbosity")
             return sync_from_yaml(config_files, kwargs, verbosity).returncode

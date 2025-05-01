@@ -74,8 +74,10 @@ class SyncOptions(BaseModel):
 
     Attributes:
         protocol: The sync protocol to override if not `None`.
-        target_override: Override for the sync target if not `None`.
         source_override: Override for the sync source if not `None`.
+        target_override: Override for the sync target if not `None`.
+        source_append: Append to the source path if not `None`.
+        target_append: Append to the target path if not `None`.
         filter_override: Override the sync filters. This is strict override, not an
             append/prepend.
         filter_prefix: Filters to prepend to the filter list.
@@ -88,8 +90,10 @@ class SyncOptions(BaseModel):
     """
 
     protocol: str | None = None
-    target_override: Path | None = None
     source_override: Path | None = None
+    target_override: Path | None = None
+    source_append: Path | None = None
+    target_append: Path | None = None
     filter_override: ListSyncFilter | None = None
     filter_prefix: ListSyncFilter = []
     filter_suffix: ListSyncFilter = []
@@ -101,6 +105,46 @@ class SyncOptions(BaseModel):
 
     # allow potentially other fields for external modules
     model_config = ConfigDict(extra="allow")
+
+    @staticmethod
+    def _true_path(original: Path, override: Path | None, append: Path | None) -> Path:
+        """
+        Determine the true path based on the original, override, and append paths.
+
+        This method will swap the `original` with the `override` if the `override`
+        is not `None`. If the `append` is not `None`, it will be appended to the
+        resulting path.
+
+        Args:
+            original: The original path.
+            override: The override path.
+            append: The append path.
+
+        Returns:
+            The true path based on the original, override, and append paths.
+        """
+        path = original if override is None else override
+        if append is not None:
+            path = path / append
+        return path
+
+    def source(self, source: Path) -> Path:
+        """
+        Get the source path based on the override and append options.
+
+        Returns:
+            The resolved source path.
+        """
+        return self._true_path(source, self.source_override, self.source_append)
+
+    def target(self, target: Path) -> Path:
+        """
+        Get the target path based on the override and append options.
+
+        Returns:
+            The resolved target path.
+        """
+        return self._true_path(target, self.target_override, self.target_append)
 
 
 class SyncABC(BaseModel, ABC):
@@ -176,23 +220,23 @@ class RsyncModel(SyncABC, WithFilters):
     def _cmd(self) -> list[str]:
         return ["rsync", "-avz"]
 
-    def _ensure_path(self, target: Path, dry_run: bool) -> CompletedProcess:
+    def _ensure_path(self, target: str, dry_run: bool) -> CompletedProcess:
         """
         Ensure the target path exists
         """
         echo = ["echo", "(DRY RUN):"] if dry_run else []
         cmd = ["mkdir", "-p"]
-        if tarmatch := _RSYNC_HOST_REGEX.match(str(target)):
+        if tarmatch := _RSYNC_HOST_REGEX.match(target):
             cmd = cmd + [tarmatch.group("path")]
             return run(echo + ["ssh", tarmatch.group("host")] + cmd)
-        return run(echo + cmd + [str(target)])
+        return run(echo + cmd + [target])
 
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
         inner_paths = [
-            str(_override_or_val(sync_options.source_override, self.source)) + "/",
-            str(_override_or_val(sync_options.target_override, self.target)) + "/",
+            f"{p}/"
+            for p in (sync_options.source(self.source), sync_options.target(self.target))
         ]
         if sync_options.reverse:
             inner_paths.reverse()
@@ -200,7 +244,6 @@ class RsyncModel(SyncABC, WithFilters):
             proc = self._ensure_path(inner_paths[1], sync_options.dry_run)
             if proc.returncode != 0:
                 return proc
-
         inner_filter = self.format_filters(
             sync_options.filter_override,
             sync_options.filter_prefix,
@@ -273,8 +316,8 @@ class S3SyncModel(SyncABC, WithFilters):
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
         inner_paths = [
-            str(_override_or_val(sync_options.source_override, self.source)) + "/",
-            str(_override_or_val(sync_options.target_override, self.target)) + "/",
+            f"{p}/"
+            for p in (sync_options.source(self.source), sync_options.target(self.target))
         ]
         match self.s3:
             case "source":
@@ -283,7 +326,6 @@ class S3SyncModel(SyncABC, WithFilters):
                 inner_paths[1] = "s3:" + inner_paths[1]
             case "both":
                 inner_paths = ["s3:" + p for p in inner_paths]
-
         if sync_options.reverse:
             inner_paths.reverse()
         inner_filter = self.format_filters(
