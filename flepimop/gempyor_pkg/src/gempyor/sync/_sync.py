@@ -20,7 +20,7 @@ from pydantic import (
     model_validator,
 )
 
-from .._pydantic_ext import _override_or_val
+from ..logging import get_script_logger
 from ..utils import _trim_s3_path
 from ._sync_filter import FilterParts, ListSyncFilter, WithFilters
 
@@ -213,48 +213,57 @@ class RsyncModel(SyncABC, WithFilters):
     def _formatter(f: FilterParts) -> list[str]:
         return [f"-f'{f[0]} {f[1]}'"]
 
-    @staticmethod
-    def _dry_run(dry: bool) -> list[str]:
-        return ["-v", "--dry-run"] if dry else []
-
-    def _cmd(self) -> list[str]:
-        return ["rsync", "-avz"]
-
-    def _ensure_path(self, target: str, dry_run: bool) -> CompletedProcess:
+    def _ensure_path(self, target: str, verbosity: int, dry_run: bool) -> CompletedProcess:
         """
         Ensure the target path exists
         """
+        logger = get_script_logger(__name__, verbosity)
         echo = ["echo", "(DRY RUN):"] if dry_run else []
         cmd = ["mkdir", "-p"]
         if tarmatch := _RSYNC_HOST_REGEX.match(target):
             cmd = cmd + [tarmatch.group("path")]
+            logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
             return run(echo + ["ssh", tarmatch.group("host")] + cmd)
-        return run(echo + cmd + [target])
+        cmd = echo + cmd + [target]
+        logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
+        return run(cmd)
 
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
+        logger = get_script_logger(__name__, verbosity)
         inner_paths = [
             f"{p}/"
             for p in (sync_options.source(self.source), sync_options.target(self.target))
         ]
+        logger.debug("Resolved paths: %s", str(inner_paths))
         if sync_options.reverse:
             inner_paths.reverse()
+            logger.debug("Reversed paths, now resolved: %s", str(inner_paths))
         if sync_options.mkpath:
-            proc = self._ensure_path(inner_paths[1], sync_options.dry_run)
+            proc = self._ensure_path(inner_paths[1], verbosity, sync_options.dry_run)
             if proc.returncode != 0:
+                logger.error(
+                    "Failed to ensure target directory exists with command, "
+                    "received return code %u with output: %s",
+                    proc.returncode,
+                    proc.stdout,
+                )
                 return proc
         inner_filter = self.format_filters(
             sync_options.filter_override,
             sync_options.filter_prefix,
             sync_options.filter_suffix,
         )
-        testcmd = (
-            self._cmd() + inner_filter + self._dry_run(sync_options.dry_run) + inner_paths
+        logger.debug("Resolved filters: %s", str(inner_filter))
+        cmd = (
+            ["rsync", "-avz"]
+            + inner_filter
+            + (["-v", "--dry-run"] if sync_options.dry_run else [])
+            + inner_paths
         )
-        if verbosity > 0:
-            print(" ".join(["executing: "] + testcmd))
-        return _echo_failed(testcmd)
+        logger.info("Executing command: %s", str(cmd))
+        return _echo_failed(cmd)
 
 
 class S3SyncModel(SyncABC, WithFilters):
