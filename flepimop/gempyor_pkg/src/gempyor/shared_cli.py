@@ -242,13 +242,7 @@ def parse_config_files(
     # (only if they are identical)
     cfp1 = kwargs.get("config_files")
     cfp2 = kwargs.get("config_filepath")
-    if (
-        cfp1
-        and cfp2
-        and isinstance(cfp1, (list, tuple))
-        and isinstance(cfp2, (list, tuple))
-        and set(cfp1) == set(cfp2)
-    ):
+    if cfp1 and cfp2 and set(cfp1) == set(cfp2):
         del kwargs["config_filepath"]  # delete option-set config path
 
     # initialize the config, including handling missing / double-specified config files
