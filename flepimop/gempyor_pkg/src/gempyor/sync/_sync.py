@@ -58,7 +58,7 @@ def _echo_failed(cmd: list[str]) -> CompletedProcess:
     if not cmd:
         raise ValueError("The command cannot be empty.")
     try:
-        res = run(cmd, shell=True)
+        res = run(cmd)
         if res.returncode != 0:
             return run(
                 ["echo", f"`{' '.join(res.args)}` failed with return code {res.returncode}"]
@@ -257,9 +257,10 @@ class RsyncModel(SyncABC, WithFilters):
         )
         logger.debug("Resolved filters: %s", str(inner_filter))
         cmd = (
-            ["rsync", "-avz"]
+            ["rsync", "--archive", "--compress"]
             + inner_filter
-            + (["-v", "--dry-run"] if sync_options.dry_run else [])
+            + (["--verbose"] if verbosity > 1 else [])
+            + (["--dry-run"] if sync_options.dry_run else [])
             + inner_paths
         )
         logger.info("Executing command: %s", str(cmd))
