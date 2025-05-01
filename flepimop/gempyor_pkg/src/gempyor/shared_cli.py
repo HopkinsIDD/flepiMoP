@@ -238,11 +238,24 @@ def parse_config_files(
     ]:
         warnings.warn(f"Unused arguments: {unknownargs}")
 
+    # Reconcile redundancy betwee config_files argument and config_filepath option
+    # (only if they are identical)
+    cfp1 = kwargs.get("config_files")
+    cfp2 = kwargs.get("config_filepath")
+    if (
+        cfp1
+        and cfp2
+        and isinstance(cfp1, (list, tuple))
+        and isinstance(cfp2, (list, tuple))
+        and set(cfp1) == set(cfp2)
+    ):
+        del kwargs["config_filepath"]  # delete option-set config path
+
     # initialize the config, including handling missing / double-specified config files
     config_args = {k for k in parsed_args if k.startswith("config")}
     found_configs = [k for k in config_args if kwargs.get(k)]
     config_src = []
-    if len(found_configs) != 1:
+    if len(found_configs) != 1:  # if more than one config still found:
         if not found_configs:
             click.echo("No configuration provided! See help for required usage:\n")
             click.echo(ctx.get_help())
