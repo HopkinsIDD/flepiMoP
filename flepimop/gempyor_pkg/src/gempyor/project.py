@@ -156,11 +156,12 @@ def project(
 
     p0 = backend.get_parameters()
 
-    n_config_samples = p0.shape
     with multiprocessing.Pool(ncpu) as pool:
         results = pool.starmap(
-            gempyor_inference.simulate_proposal, [(p0[i],) for i in range(n_config_samples)]
+            gempyor_inference.simulate_proposal, [(p0[i],) for i in range(p0.shape[2])]
         )
+    
+    return 0
 
 if __name__ == "__main__":
     project()
