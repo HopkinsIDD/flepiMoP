@@ -21,6 +21,7 @@ from pydantic import (
 )
 
 from .._pydantic_ext import _override_or_val
+from ..utils import _trim_s3_path
 from ._sync_filter import FilterParts, ListSyncFilter, WithFilters
 
 
@@ -211,12 +212,6 @@ class RsyncModel(SyncABC, WithFilters):
         if verbosity > 0:
             print(" ".join(["executing: "] + testcmd))
         return _echo_failed(testcmd)
-
-
-def _trim_s3_path(path: str | Path) -> str | Path:
-    if isinstance(path, str):
-        return path.lstrip("s3:")
-    return path
 
 
 class S3SyncModel(SyncABC, WithFilters):
