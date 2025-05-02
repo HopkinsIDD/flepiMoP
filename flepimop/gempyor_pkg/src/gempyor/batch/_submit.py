@@ -157,8 +157,16 @@ def _submit_scenario_job(
             "job_resources_cpus": batch_system.format_cpus(sync_resources),
             "job_resources_memory": batch_system.format_memory(sync_resources),
         }
+        command = "\n".join(
+            [
+                "flepimop sync \\",
+                f"   --protocol {template_data['sync']} \\",
+                f"  --target-append {template_data['job_name']} \\",
+                f"  {template_data['config']}",
+            ]
+        )
         batch_system.submit_command(
-            f"flepimop sync --protocol {template_data['sync']} {template_data['config']}",
+            command,
             options,
             verbosity,
             dry_run,
