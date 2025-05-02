@@ -13,6 +13,7 @@ def config_file(
     config_dict: dict[str, Any] = {},
     filename: str = "config.yaml",
 ) -> pathlib.Path:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     config_file = tmp_path / filename
     with open(config_file, "w") as f:
         f.write(create_confuse_config_from_dict(config_dict).dump())
@@ -123,13 +124,34 @@ class TestParseConfigFiles:
         self,
         tmp_path: pathlib.Path,
     ) -> None:
-        """Check that both -c and argument style config file raise an error."""
+        """
+        Check that different configs passed through -c and argument style config file raise an error.
+        Check that same configs passed through -c and argument style config file dos not raise an error.
+        """
+
+        # Identical config_filepath and config_files (should result in no error)
         testdict = {"foo": "bar", "test": 123}
-        tmpconfigfile = config_file(tmp_path, testdict)
+        configpath1 = config_file(tmp_path / "config1", testdict)
         mockconfig = mock_empty_config()
+
+        try:
+            parse_config_files(
+                mockconfig,
+                config_filepath=configpath1,
+                config_files=configpath1,  # same path
+            )
+        except ValueError:
+            pytest.fail(
+                "shared_cli.parse_config_files() not resolving references to identical config paths."
+            )
+
+        # Different config_filepath and config_files (should raise ValueError)
+        configpath2 = config_file(tmp_path / "config2", {"foo": 1})
+        mockconfig = mock_empty_config()
+
         with pytest.raises(ValueError):
             parse_config_files(
-                mockconfig, config_filepath=tmpconfigfile, config_files=tmpconfigfile
+                mockconfig, config_filepath=configpath1, config_files=configpath2
             )
 
     def test_multifile_config(
