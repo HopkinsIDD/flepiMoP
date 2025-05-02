@@ -28,46 +28,6 @@ from ._sync_filter import FilterParts, ListSyncFilter, WithFilters
 _RSYNC_HOST_REGEX: Final = re.compile(r"^(?P<host>[^:]+):(?P<path>.+)$")
 
 
-def _echo_failed(cmd: list[str]) -> CompletedProcess:
-    """
-    Runs a command and returns the result, echoing the command on failure.
-
-    Args:
-        cmd: The command to run.
-
-    Returns:
-        A completed process object either with the result of the command or echoing the
-        command on failure.
-
-    Raises:
-        ValueError: If the command list is empty.
-
-    Examples:
-        >>> from gempyor.sync._sync import _echo_failed
-        >>> _echo_failed(["which", "ls"])
-        /bin/ls
-        CompletedProcess(args='which ls', returncode=0)
-        >>> _echo_failed(["which", "does-not-exist"])
-        `w h i c h   d o e s - n o t - e x i s t` failed with return code 1
-        CompletedProcess(args=['echo', '`w h i c h   d o e s - n o t - e x i s t` failed with return code 1'], returncode=0)
-        >>> _echo_failed(["./does-not-exist"])
-        /bin/sh: ./does-not-exist: No such file or directory
-        `. / d o e s - n o t - e x i s t` failed with return code 127
-        CompletedProcess(args=['echo', '`. / d o e s - n o t - e x i s t` failed with return code 127'], returncode=0)
-    """
-    if not cmd:
-        raise ValueError("The command cannot be empty.")
-    try:
-        res = run(cmd)
-        if res.returncode != 0:
-            return run(
-                ["echo", f"`{' '.join(res.args)}` failed with return code {res.returncode}"]
-            )
-        return res
-    except FileNotFoundError:
-        return run(["echo", f"command `{cmd[0]}` not found"])
-
-
 class SyncOptions(BaseModel):
     """
     Override options for sync protocols.
@@ -223,10 +183,10 @@ class RsyncModel(SyncABC, WithFilters):
         if tarmatch := _RSYNC_HOST_REGEX.match(str(target)):
             cmd = cmd + [tarmatch.group("path")]
             logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
-            return run(echo + ["ssh", tarmatch.group("host")] + cmd)
+            return run(echo + ["ssh", tarmatch.group("host")] + cmd, check=True)
         cmd = echo + cmd + [str(target)]
         logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
-        return run(cmd)
+        return run(cmd, check=True)
 
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
@@ -263,7 +223,7 @@ class RsyncModel(SyncABC, WithFilters):
             + [str(ip) for ip in inner_paths]
         )
         logger.info("Executing command: %s", str(cmd))
-        return _echo_failed(cmd)
+        return run(cmd, check=True)
 
 
 class S3SyncModel(SyncABC, WithFilters):
@@ -348,7 +308,7 @@ class S3SyncModel(SyncABC, WithFilters):
         )
         if verbosity > 0:
             print(" ".join(["executing: "] + testcmd))
-        return _echo_failed(testcmd)
+        return run(testcmd, check=True)
 
 
 class GitModel(SyncABC):
@@ -378,7 +338,7 @@ class GitModel(SyncABC):
         testcmd = ["git", inner_mode] + self._dry_run(sync_options.dry_run)
         if verbosity > 0:
             print(" ".join(testcmd))
-        return _echo_failed(testcmd)
+        return run(testcmd, check=True)
 
 
 SyncModel = Annotated[RsyncModel | S3SyncModel | GitModel, Field(discriminator="type")]
@@ -401,7 +361,7 @@ class SyncProtocols(SyncABC):
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
         if not self.sync:
-            return run(["echo", "No protocols to sync"])
+            return run(["echo", "No protocols to sync"], check=True)
         tarproto = (
             sync_options.protocol if sync_options.protocol else list(self.sync.keys())[0]
         )
@@ -412,7 +372,8 @@ class SyncProtocols(SyncABC):
                 "echo",
                 f"No protocol `{tarproto}` to sync;",
                 f"available protocols are: {', '.join(self.sync.keys())}",
-            ]
+            ],
+            check=True,
         )
 
 
