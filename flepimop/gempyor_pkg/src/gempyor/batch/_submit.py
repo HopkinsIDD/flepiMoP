@@ -160,8 +160,9 @@ def _submit_scenario_job(
         command = "\n".join(
             [
                 "flepimop sync \\",
-                f"   --protocol {template_data['sync']} \\",
+                f"  --protocol {template_data['sync']} \\",
                 f"  --target-append {template_data['job_name']} \\",
+                "  --mkpath \\",
                 f"  {template_data['config']}",
             ]
         )
