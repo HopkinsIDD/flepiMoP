@@ -162,11 +162,14 @@ def _submit_scenario_job(
             f"  --protocol {template_data['sync']} \\",
             f"  --target-append {template_data['job_name']} \\",
             "  --mkpath \\",
+            "  --fprefix '+ */'\\",
+            f"  --fprefix '+ */{template_data['job_name']}/***' \\",
+            "  --fsuffix '- */'\\",
             f"  {template_data['config']}",
             "",
         ]
         if not template_data.get("skip_manifest", False):
-            command += command[:2] + ["  --source manifest.json \\"] + command[2:]
+            command += command[:3] + ["  --source manifest.json \\"] + command[7:]
         batch_system.submit_command(
             "\n".join(command),
             options,
