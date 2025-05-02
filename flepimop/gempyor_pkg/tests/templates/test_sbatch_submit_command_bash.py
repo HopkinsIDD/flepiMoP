@@ -40,6 +40,7 @@ from gempyor._jinja import _jinja_environment
                 "",
                 "",
                 "echo 'Hello, world!'",
+                "",
             ],
         ),
         (
@@ -58,6 +59,7 @@ from gempyor._jinja import _jinja_environment
                 "",
                 "",
                 "echo 'Foobar'",
+                "",
             ],
         ),
         (
@@ -88,6 +90,7 @@ from gempyor._jinja import _jinja_environment
                 "",
                 "",
                 "do-analysis-cmd",
+                "",
             ],
         ),
         (
@@ -114,6 +117,7 @@ from gempyor._jinja import _jinja_environment
                 "    --flag-two 'def' \\",
                 "    --flag-three 'ghi' \\",
                 "    > /dev/null",
+                "",
             ],
         ),
         (
@@ -146,6 +150,7 @@ from gempyor._jinja import _jinja_environment
                 "",
                 "",
                 "do-rsv-analysis",
+                "",
             ],
         ),
         (
@@ -168,6 +173,7 @@ from gempyor._jinja import _jinja_environment
                 "",
                 "",
                 "do-measles-analysis",
+                "",
             ],
         ),
     ),
