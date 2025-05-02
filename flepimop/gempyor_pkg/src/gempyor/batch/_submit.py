@@ -150,7 +150,7 @@ def _submit_scenario_job(
         )
         sync_template_data = template_data | {
             "array_capable": False,
-            "job_name": f"{template_data['job_name']}_sync",
+            "job_name": f"sync_{template_data['job_name']}",
             "job_time_limit": batch_system.format_time_limit(sync_time_limit),
             "job_comment": f"Sync {template_data['job_comment']}",
             "job_resources_nodes": batch_system.format_nodes(sync_resources),
