@@ -18,7 +18,9 @@ from jinja2 import Environment, PackageLoader
 
 
 # Globals
-_jinja_environment = Environment(loader=PackageLoader("gempyor"))
+_jinja_environment = Environment(
+    loader=PackageLoader("gempyor"), keep_trailing_newline=True
+)
 
 
 # Functions
