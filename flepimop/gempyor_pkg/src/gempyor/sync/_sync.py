@@ -216,7 +216,7 @@ class RsyncModel(SyncABC, WithFilters):
         )
         logger.debug("Resolved filters: %s", str(inner_filter))
         cmd = (
-            ["rsync", "--archive", "--compress"]
+            ["rsync", "--archive", "--compress", "--prune-empty-dirs"]
             + inner_filter
             + (["--verbose"] if verbosity > 1 else [])
             + (["--dry-run"] if sync_options.dry_run else [])
