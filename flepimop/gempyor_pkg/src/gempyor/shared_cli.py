@@ -239,11 +239,11 @@ def parse_config_files(
         warnings.warn(f"Unused arguments: {unknownargs}")
 
     # Reconcile redundancy betwee config_files argument and config_filepath option
-    # (only if they are identical)
+    # Delete option-set config path if paths are identical
     cfp1 = kwargs.get("config_files")
     cfp2 = kwargs.get("config_filepath")
-    if cfp1 and cfp2 and set(as_list(cfp1)) == set(as_list(cfp2)):
-        del kwargs["config_filepath"]  # delete option-set config path
+    if cfp1 and cfp2 and (as_list(cfp1) == as_list(cfp2)):
+        del kwargs["config_filepath"]
 
     # initialize the config, including handling missing / double-specified config files
     config_args = {k for k in parsed_args if k.startswith("config")}
