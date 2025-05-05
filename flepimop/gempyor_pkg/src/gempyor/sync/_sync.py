@@ -171,7 +171,7 @@ class RsyncModel(SyncABC, WithFilters):
 
     @staticmethod
     def _formatter(f: FilterParts) -> list[str]:
-        return [f"-f'{f[0]} {f[1]}'"]
+        return ["--filter", f"{f[0]} {f[1]}"]
 
     def _ensure_path(self, target: Path, verbosity: int, dry_run: bool) -> CompletedProcess:
         """
