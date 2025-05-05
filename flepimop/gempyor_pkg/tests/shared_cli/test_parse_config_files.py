@@ -120,38 +120,74 @@ class TestParseConfigFiles:
             assert mockconfig[k].get(v) == v
         assert mockconfig["config_src"].as_str_seq() == [str(tmpconfigfile)]
 
-    def test_conflict_config_opts_error(
+    def test_conflict_config_via_arg_and_opts_error(
         self,
         tmp_path: pathlib.Path,
     ) -> None:
         """
-        Check that different configs passed through -c and argument style config file raise an error.
-        Check that same configs passed through -c and argument style config file dos not raise an error.
+        Check that different configs passed through -c and argument-style config file raises an error.
         """
-
-        # Identical config_filepath and config_files (should result in no error)
-        testdict = {"foo": "bar", "test": 123}
-        configpath1 = config_file(tmp_path / "config1", testdict)
         mockconfig = mock_empty_config()
 
+        # Just one conflicting config file given at each
+        configpath1 = config_file(tmp_path / "config1", {"foo": "bar", "test": 123})
+        configpath2 = config_file(tmp_path / "config2", {"foo": 1})
+        with pytest.raises(ValueError):
+            parse_config_files(
+                mockconfig, config_filepath=configpath1, config_files=configpath2
+            )
+
+        # More than one conflicting config file given at each (some overlap)
+        configpath3 = [
+            config_file(tmp_path / "configA", {"foo": "bar", "test": 123}),
+            config_file(tmp_path / "configB", {"foo": "bar", "test": 123}),
+        ]
+        configpath4 = [
+            config_file(tmp_path / "configA", {"foo": "bar", "test": 123}),
+            config_file(tmp_path / "configX", {"foo": "bar", "test": 123}),
+            config_file(tmp_path / "configY", {"foo": "bar", "test": 123}),
+        ]
+        with pytest.raises(ValueError):
+            parse_config_files(
+                mockconfig, config_filepath=configpath3, config_files=configpath4
+            )
+
+    def test_resolve_same_config_given_via_arg_and_opts(
+        self,
+        tmp_path: pathlib.Path,
+    ) -> None:
+        """
+        Check that identical config paths passed through -c and argument-style config file doesn't raise an error.
+        """
+        # Just one config given for each (identical)
+        configpath1 = config_file(tmp_path / "config1", {"foo": "bar", "test": 123})
+        mockconfig = mock_empty_config()
         try:
             parse_config_files(
                 mockconfig,
                 config_filepath=configpath1,
-                config_files=configpath1,  # same path
+                config_files=configpath1,
             )
         except ValueError:
             pytest.fail(
                 "shared_cli.parse_config_files() not resolving references to identical config paths."
             )
 
-        # Different config_filepath and config_files (should raise ValueError)
-        configpath2 = config_file(tmp_path / "config2", {"foo": 1})
-        mockconfig = mock_empty_config()
-
-        with pytest.raises(ValueError):
+        # Multiple configs given for each (identical)
+        configpath2 = [
+            config_file(tmp_path / "configA", {"alpha": 1}),
+            config_file(tmp_path / "configB", {"beta": 2}),
+            config_file(tmp_path / "configC", {"charlie": 3}),
+        ]
+        try:
             parse_config_files(
-                mockconfig, config_filepath=configpath1, config_files=configpath2
+                mockconfig,
+                config_filepath=configpath2,
+                config_files=configpath2,
+            )
+        except ValueError:
+            pytest.fail(
+                "shared_cli.parse_config_files() not resolving references to identical config paths."
             )
 
     def test_multifile_config(
