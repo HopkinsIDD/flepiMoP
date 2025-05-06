@@ -1,3 +1,7 @@
+"""
+Provides functionality for handling initial conditions.
+"""
+
 from typing import Dict
 
 import numpy as np

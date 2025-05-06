@@ -1,3 +1,7 @@
+"""
+Helper functions for interacting with model I/O.
+"""
+
 from collections.abc import Iterable
 import datetime
 import functools

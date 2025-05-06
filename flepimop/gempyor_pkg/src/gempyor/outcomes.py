@@ -1,3 +1,7 @@
+"""
+Handles the execution of outcome simulations in parallel, builds outcome modifiers, and processes simulation outcomes
+"""
+
 import itertools
 import logging
 import random

@@ -58,3 +58,40 @@ jobs:
           cd examples
           pytest --exitfirst
         shell: bash
+  sphinx-docs:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+          lfs: true
+          sparse-checkout: |
+            *
+            !tests/
+          sparse-checkout-cone-mode: false
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install gempyor
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "flepimop/gempyor_pkg[dev]"
+        shell: bash
+      - name: Build gempyor documentation with Sphinx
+        run: |
+          cd flepimop/gempyor_pkg/docs
+          make fullbuild
+        shell: bash
+      - name: Commit/push any changed docs
+        run: |
+          if [[ $(git status --porcelain flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 ]]; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add flepimop/gempyor_pkg/docs/source/
+            git commit -m "auto-update Sphinx docs [ci skip]"
+            git push origin "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          fi
+        shell: bash
