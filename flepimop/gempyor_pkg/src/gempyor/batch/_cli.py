@@ -255,6 +255,17 @@ from .types import EstimationSettings, JobSize
             ),
         ),
         click.Option(
+            param_decls=["--sync", "sync"],
+            type=str,
+            default=None,
+            help=(
+                "The sync protocol to use for saving the model outputs to an external "
+                "storage system. If given a dependent job will be submitted to sync "
+                "the model outputs to the given protocol after the calibration job "
+                "successfully completes."
+            ),
+        ),
+        click.Option(
             param_decls=["--debug", "debug"],
             type=bool,
             default=False,
@@ -472,6 +483,22 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "Dumped the job config for this batch submission to %s", job_config.absolute()
         )
 
+    # Ensure that sync protocol if given is valid
+    if kwargs.get("sync") is not None:
+        sync_protocols = dict(cfg["sync"].get()) if cfg["sync"].exists() else {}
+        if kwargs["sync"] not in sync_protocols:
+            raise ValueError(
+                f"Sync protocol '{kwargs['sync']}' not found in the config file. "
+                f"Valid protocols are: {', '.join(sync_protocols.keys())}."
+            )
+        logger.info(
+            "Using sync protocol '%s' with options '%s' to sync the model outputs.",
+            kwargs["sync"],
+            sync_protocols[kwargs["sync"]],
+        )
+    else:
+        logger.info("No sync protocol given, skipping syncing of model outputs.")
+
     # Construct template data
     general_template_data = {
         **kwargs,
@@ -493,6 +520,13 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
 
     # Switch to estimation
     if kwargs.get("estimate", False):
+        if kwargs.get("sync") is not None:
+            logger.warning(
+                "Syncing results for estimation jobs is not supported, "
+                "the `--sync` argument given, '%s' will be ignored.",
+                kwargs["sync"],
+            )
+            kwargs["sync"] = None
         estimation_settings = EstimationSettings(
             runs=kwargs.get("estimate_runs"),
             interval=kwargs.get("estimate_interval"),
