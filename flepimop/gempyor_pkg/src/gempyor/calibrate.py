@@ -197,40 +197,44 @@ def calibrate(
         for i in range(nwalkers):
             assert gempyor_inference.inferpar.check_in_bound(
                 proposal=p0[i]
-            ), "The initial parameter draw is not within the bounds, check the perturbation distributions"
+            ), "The initial parameter draw is not within the bounds, "
+            "check the perturbation distributions"
 
     if not nwalkers:
-        nwalkers = config["nslots"].as_number()  # TODO
+        nwalkers = config["nslots"].as_number()
     print(f"Number of walkers be run: {nwalkers}")
 
     test_run = True
 
     if test_run:
+        p_test = gempyor_inference.inferpar.draw_initial(n_draw=2)
         # test on single core so that errors are well reported
         gempyor_inference.perform_test_run()
         with multiprocessing.Pool(ncpu) as pool:
             lliks = pool.starmap(
                 gempyor_inference.get_logloss_as_single_number,
                 [
-                    (p0[0],),
-                    (p0[0],),
-                    (p0[1],),
+                    (p_test[0],),
+                    (p_test[0],),
+                    (p_test[1],),
                 ],
             )
         if lliks[0] != lliks[1]:
             print(
-                f"Test run failed, logloss with the same parameters is different: {lliks[0]} != {lliks[1]} ❌"
+                f"Test run failed, logloss with the same parameters "
+                f"is different: {lliks[0]} != {lliks[1]} ❌"
             )
             print(
                 "This means that there is config variability not captured in the emcee fits"
             )
             return
-            # TODO THIS Test in fact does nnot work.
-        else:
-            print(
-                f"Test run done, logloss with same parameters: {lliks[0]}=={lliks[1]} ✅ "
-            )
-        # assert lliks[1] != lliks[2], "Test run failed, logloss with different parameters is the same, perturbation are not taken into account"
+        print(
+            f"Test run done, logloss with same parameters: " f"{lliks[0]}=={lliks[1]} ✅ "
+        )
+
+        # assert lliks[1] != lliks[2]:
+        # "Test run failed, logloss with different parameters is the same,
+        # perturbation are not taken into account"
 
     # Make a plot of the runs directly from config
     n_config_samples = min(30, nwalkers // 2)
