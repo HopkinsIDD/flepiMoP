@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gempyor.NPI.base &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for gempyor.NPI.base</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="kn">import</span> <span class="nn">pyarrow</span> <span class="k">as</span> <span class="nn">pa</span>
+<span class="kn">import</span> <span class="nn">click</span>
+
+<span class="kn">from</span> <span class="nn">..shared_cli</span> <span class="kn">import</span> <span class="n">cli</span>
+
+
+<div class="viewcode-block" id="NPIBase">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.NPIBase">[docs]</a>
+<span class="k">class</span> <span class="nc">NPIBase</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="n">__plugins__</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">NPIBase</span><span class="o">.</span><span class="n">__plugins__</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+<div class="viewcode-block" id="NPIBase.getReduction">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.NPIBase.getReduction">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">getReduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="c1"># Returns dataframe with columns: &lt;subpops&gt;, time, parameter, name. Index is sequential.</span>
+<div class="viewcode-block" id="NPIBase.getReductionToWrite">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.NPIBase.getReductionToWrite">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">getReductionToWrite</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NPIBase.getReductionDF">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.NPIBase.getReductionDF">[docs]</a>
+    <span class="k">def</span> <span class="nf">getReductionDF</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getReductionToWrite</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NPIBase.execute">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.NPIBase.execute">[docs]</a>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">npi_config</span><span class="p">,</span>
+        <span class="n">modinf_ti</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">modinf_tf</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">modifiers_library</span><span class="p">,</span>
+        <span class="n">subpops</span><span class="p">,</span>
+        <span class="n">loaded_df</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pnames_overlap_operation_sum</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">pnames_overlap_operation_reductionprod</span><span class="o">=</span><span class="p">[],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI</span>
+<span class="sd">        modinf_ti: the initial time from a ModelInfo object,</span>
+<span class="sd">        modinf_tf: the final time from a ModelInfo object</span>
+<span class="sd">        modifiers_library: a config bit that contains the other modifiers that could be called by this Modifier. Note</span>
+<span class="sd">            that the confuse library&#39;s config resolution mechanism makes slicing the configuration object expensive;</span>
+<span class="sd">            instead give the preloaded settings from .get()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">npi_config</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_str</span><span class="p">()</span>
+        <span class="n">npi_class</span> <span class="o">=</span> <span class="n">NPIBase</span><span class="o">.</span><span class="n">__plugins__</span><span class="p">[</span><span class="n">method</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">npi_class</span><span class="p">(</span>
+            <span class="n">npi_config</span><span class="o">=</span><span class="n">npi_config</span><span class="p">,</span>
+            <span class="n">modinf_ti</span><span class="o">=</span><span class="n">modinf_ti</span><span class="p">,</span>
+            <span class="n">modinf_tf</span><span class="o">=</span><span class="n">modinf_tf</span><span class="p">,</span>
+            <span class="n">modifiers_library</span><span class="o">=</span><span class="n">modifiers_library</span><span class="p">,</span>
+            <span class="n">subpops</span><span class="o">=</span><span class="n">subpops</span><span class="p">,</span>
+            <span class="n">loaded_df</span><span class="o">=</span><span class="n">loaded_df</span><span class="p">,</span>
+            <span class="n">pnames_overlap_operation_sum</span><span class="o">=</span><span class="n">pnames_overlap_operation_sum</span><span class="p">,</span>
+            <span class="n">pnames_overlap_operation_reductionprod</span><span class="o">=</span><span class="n">pnames_overlap_operation_reductionprod</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<span class="nd">@click</span><span class="o">.</span><span class="n">group</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">modifiers</span><span class="p">():</span>
+    <span class="k">pass</span>
+
+
+<span class="c1"># TODO: CLI arguments</span>
+<span class="nd">@modifiers</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--config&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;config_filepath&quot;</span><span class="p">,</span>
+    <span class="n">envvar</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CONFIG_PATH&quot;</span><span class="p">],</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;configuration file for this simulation&quot;</span><span class="p">,</span>
+<span class="p">)</span>  <span class="c1"># This is very bad because already set in cli.py, but ok....</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;-p&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--project_path&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;project_path&quot;</span><span class="p">,</span>
+    <span class="n">envvar</span><span class="o">=</span><span class="s2">&quot;PROJECT_PATH&quot;</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="n">default</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
+    <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;path to the flepiMoP directory&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--id&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--id&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;run_id&quot;</span><span class="p">,</span>
+    <span class="n">envvar</span><span class="o">=</span><span class="s2">&quot;FLEPI_RUN_INDEX&quot;</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Unique identifier for this run&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--nsamples&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of samples to draw&quot;</span><span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--subpop&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Subpopulation to plot, if not set then all are plotted&quot;</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">config_plot</span><span class="p">(</span><span class="n">config_filepath</span><span class="p">,</span> <span class="n">project_path</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">subpop</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot the seir/outcome modifiers affects on the parameters.</span>
+
+<span class="sd">    This command will plot the activation of the modifiers and the parsed parameters</span>
+<span class="sd">    from the config file. This command will produce several PDF files in the current</span>
+<span class="sd">    directory contain the plots:</span>
+
+<span class="sd">    1. {outocmes/seir}_modifiers_activation_{subpop}.pdf: Contains plots of the</span>
+<span class="sd">       activation of the modifiers for the given subpopulation vs time.</span>
+<span class="sd">    2. unique_parsed_parameters_{run_id}.pdf: Contains plots of the parsed transition</span>
+<span class="sd">       rates with modifiers applied vs time.</span>
+<span class="sd">    3. outcomesNPIcaveat.pdf: Contains plots of the outcomes affected by modifiers vs</span>
+<span class="sd">       time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">gempyor.inference</span> <span class="kn">import</span> <span class="n">GempyorInference</span>
+    <span class="kn">import</span> <span class="nn">gempyor</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">from</span> <span class="nn">gempyor.utils</span> <span class="kn">import</span> <span class="n">config</span>
+
+    <span class="k">if</span> <span class="n">run_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">pathlib</span>
+
+        <span class="n">base_run_id</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">config_filepath</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;config_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_run_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">gempyor</span><span class="o">.</span><span class="n">file_paths</span><span class="o">.</span><span class="n">run_id</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Config prep</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">config</span><span class="o">.</span><span class="n">set_file</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_path</span><span class="p">,</span> <span class="n">config_filepath</span><span class="p">))</span>
+    <span class="n">gempyor_inference</span> <span class="o">=</span> <span class="n">GempyorInference</span><span class="p">(</span>
+        <span class="n">config_filepath</span><span class="o">=</span><span class="n">config_filepath</span><span class="p">,</span>
+        <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">first_sim_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">rng_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">nslots</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">inference_filename_prefix</span><span class="o">=</span><span class="s2">&quot;global/final/&quot;</span><span class="p">,</span>  <span class="c1"># usually for {global or chimeric}/{intermediate or final}</span>
+        <span class="n">inference_filepath_suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>  <span class="c1"># usually for the slot_id</span>
+        <span class="n">out_run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># if out_run_id is different from in_run_id, fill this</span>
+        <span class="n">out_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># if out_prefix is different from in_prefix, fill this</span>
+        <span class="n">path_prefix</span><span class="o">=</span><span class="n">project_path</span><span class="p">,</span>  <span class="c1"># in case the data folder is on another directory</span>
+        <span class="n">autowrite_seir</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">static_sim_arguments</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">static_sim_arguments</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;unique_strings&quot;</span><span class="p">:</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">compartments</span><span class="o">.</span><span class="n">get_transition_array</span><span class="p">()[</span>
+                <span class="mi">0</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">seir_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">npi_config_seir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">npi_seir</span> <span class="o">=</span> <span class="n">gempyor</span><span class="o">.</span><span class="n">seir</span><span class="o">.</span><span class="n">build_npi_SEIR</span><span class="p">(</span>
+            <span class="n">modinf</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="p">,</span> <span class="n">load_ID</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sim_id2load</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">outcomes_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">npi_config_outcomes</span>
+    <span class="p">):</span>
+        <span class="n">npi_outcomes</span> <span class="o">=</span> <span class="n">gempyor</span><span class="o">.</span><span class="n">outcomes</span><span class="o">.</span><span class="n">build_outcome_modifiers</span><span class="p">(</span>
+            <span class="n">modinf</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="p">,</span>
+            <span class="n">load_ID</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">sim_id2load</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting modifiers activation&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">subpop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">subpop</span> <span class="o">=</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subpop</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">subpop</span> <span class="o">=</span> <span class="p">[</span><span class="n">subpop</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">subpop</span><span class="p">:</span>
+        <span class="n">plot_modifers_activation</span><span class="p">(</span>
+            <span class="n">npi_seir</span><span class="o">=</span><span class="n">npi_seir</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;seir_modifiers_activation_</span><span class="si">{</span><span class="n">sp</span><span class="si">}</span><span class="s2">.pdf&quot;</span><span class="p">,</span> <span class="n">subpop</span><span class="o">=</span><span class="n">sp</span>
+        <span class="p">)</span>
+        <span class="n">plot_modifers_activation</span><span class="p">(</span>
+            <span class="n">npi_seir</span><span class="o">=</span><span class="n">npi_outcomes</span><span class="p">,</span>
+            <span class="n">filename</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;outcomes_modifiers_activation_</span><span class="si">{</span><span class="n">sp</span><span class="si">}</span><span class="s2">.pdf&quot;</span><span class="p">,</span>
+            <span class="n">subpop</span><span class="o">=</span><span class="n">sp</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">all_parsed_params_seir</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsamples</span><span class="p">):</span>
+        <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">p_draw</span> <span class="o">=</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters_quick_draw</span><span class="p">(</span>
+                <span class="n">n_days</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">n_days</span><span class="p">,</span>
+                <span class="n">nsubpops</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">nsubpops</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">npi_seir</span> <span class="o">=</span> <span class="n">gempyor</span><span class="o">.</span><span class="n">seir</span><span class="o">.</span><span class="n">build_npi_SEIR</span><span class="p">(</span>
+                <span class="n">modinf</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="p">,</span>
+                <span class="n">load_ID</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">sim_id2load</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">npi_outcomes</span> <span class="o">=</span> <span class="n">gempyor</span><span class="o">.</span><span class="n">outcomes</span><span class="o">.</span><span class="n">build_outcome_modifiers</span><span class="p">(</span>
+                <span class="n">modinf</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="p">,</span>
+                <span class="n">load_ID</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">sim_id2load</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p_draw</span> <span class="o">=</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">get_seir_parameters</span><span class="p">(</span>
+                <span class="n">bypass_FN</span><span class="o">=</span><span class="n">fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;snpi&quot;</span><span class="p">,</span> <span class="s2">&quot;spar&quot;</span><span class="p">),</span> <span class="n">load_ID</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">npi_seir</span> <span class="o">=</span> <span class="n">gempyor</span><span class="o">.</span><span class="n">seir</span><span class="o">.</span><span class="n">build_npi_SEIR</span><span class="p">(</span>
+                <span class="n">modinf</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="p">,</span>
+                <span class="n">load_ID</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">bypass_FN</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span>
+                <span class="n">sim_id2load</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters_reduce</span><span class="p">(</span><span class="n">p_draw</span><span class="p">,</span> <span class="n">npi_seir</span><span class="p">)</span>
+        <span class="n">parsed_parameters</span> <span class="o">=</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">compartments</span><span class="o">.</span><span class="n">parse_parameters</span><span class="p">(</span>
+            <span class="n">parameters</span><span class="p">,</span>
+            <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">pnames</span><span class="p">,</span>
+            <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">static_sim_arguments</span><span class="p">[</span><span class="s2">&quot;unique_strings&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">all_parsed_params_seir</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parsed_parameters</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting parameter timeseries from config&quot;</span><span class="p">)</span>
+    <span class="n">plot_parameter_timeseries</span><span class="p">(</span>
+        <span class="n">all_parsed_params</span><span class="o">=</span><span class="n">all_parsed_params_seir</span><span class="p">,</span>
+        <span class="n">gempyor_inference</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;unique_parsed_parameters_</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">.pdf&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">npi_outcomes</span> <span class="o">=</span> <span class="n">gempyor</span><span class="o">.</span><span class="n">outcomes</span><span class="o">.</span><span class="n">build_outcome_modifiers</span><span class="p">(</span>
+        <span class="n">modinf</span><span class="o">=</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="p">,</span>
+        <span class="n">load_ID</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sim_id2load</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">plot_npi_timeseries</span><span class="p">(</span>
+        <span class="n">npi_outcomes</span><span class="p">,</span>
+        <span class="n">gempyor_inference</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;outcomesNPIcaveat.pdf&quot;</span><span class="p">,</span>
+        <span class="n">nsamples</span><span class="o">=</span><span class="n">nsamples</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="n">cli</span><span class="o">.</span><span class="n">add_command</span><span class="p">(</span><span class="n">modifiers</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="plot_modifers_activation">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.plot_modifers_activation">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_modifers_activation</span><span class="p">(</span><span class="n">npi_seir</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subpop</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># TODO should return axes and all</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="k">as</span> <span class="nn">mdates</span>
+    <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="kn">import</span> <span class="n">PdfPages</span>
+
+    <span class="c1"># Helper function to convert date strings to datetime objects</span>
+    <span class="k">def</span> <span class="nf">date_to_datetime</span><span class="p">(</span><span class="n">date_str</span><span class="p">):</span>
+        <span class="n">date_format</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_str</span><span class="p">,</span> <span class="n">date_format</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">pdf</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">infodict</span><span class="p">()</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;FlepiMoP Inference Fit&quot;</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Author&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;FlepiMoP Inference&quot;</span>
+
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">npi_seir</span><span class="o">.</span><span class="n">getReductionDF</span><span class="p">()[</span><span class="s2">&quot;parameter&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">npi_seir</span><span class="o">.</span><span class="n">getReductionDF</span><span class="p">()</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;parameter&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">param</span><span class="p">)]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">subpop</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Parse the data into lists of datetime objects</span>
+            <span class="n">parsed_data</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">starts</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="n">ends</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="n">parsed_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;modifier_name&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;modifier_name&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;start_times&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">date_to_datetime</span><span class="p">(</span><span class="n">date</span><span class="p">)</span> <span class="k">for</span> <span class="n">date</span> <span class="ow">in</span> <span class="n">starts</span><span class="p">],</span>
+                        <span class="s2">&quot;end_times&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">date_to_datetime</span><span class="p">(</span><span class="n">date</span><span class="p">)</span> <span class="k">for</span> <span class="n">date</span> <span class="ow">in</span> <span class="n">ends</span><span class="p">],</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Create the figure and axis</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>  <span class="c1"># Adjust figure size as needed</span>
+
+            <span class="c1"># Define the y-axis positions for each element (equal spacing for each element)</span>
+            <span class="n">elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;modifier_name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">parsed_data</span><span class="p">]</span>
+            <span class="n">y_positions</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">))</span>  <span class="c1"># Y positions for each element</span>
+
+            <span class="c1"># Plot horizontal lines for each element&#39;s active periods</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">element_data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parsed_data</span><span class="p">):</span>
+                <span class="n">starts</span> <span class="o">=</span> <span class="n">element_data</span><span class="p">[</span><span class="s2">&quot;start_times&quot;</span><span class="p">]</span>
+                <span class="n">ends</span> <span class="o">=</span> <span class="n">element_data</span><span class="p">[</span><span class="s2">&quot;end_times&quot;</span><span class="p">]</span>
+
+                <span class="c1"># Plot each active period as a horizontal line</span>
+                <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">xmin</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">xmax</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+            <span class="c1"># Set the y-ticks to show element names (modifiers)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">y_positions</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+
+            <span class="c1"># Format the x-axis to show dates</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span>
+                <span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="p">)</span>  <span class="c1"># Date format for x-axis</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">mdates</span><span class="o">.</span><span class="n">MonthLocator</span><span class="p">())</span>  <span class="c1"># Show one tick per month</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">autofmt_xdate</span><span class="p">()</span>  <span class="c1"># Rotate date labels for better visibility</span>
+
+            <span class="c1"># Add labels and grid</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Date&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Modifier&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Activation Time Periods of Modifiers for </span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">subpop</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Add grid for clarity</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_parameter_timeseries">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.plot_parameter_timeseries">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_parameter_timeseries</span><span class="p">(</span><span class="n">all_parsed_params</span><span class="p">,</span> <span class="n">gempyor_inference</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># TODO should return axes and all</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="k">as</span> <span class="nn">mdates</span>
+    <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="kn">import</span> <span class="n">PdfPages</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">infodict</span><span class="p">()</span>
+    <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;parsed parameters&quot;</span>
+    <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Author&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;jlemaitre&quot;</span>
+    <span class="kn">import</span> <span class="nn">tqdm</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">uniq_pname</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+        <span class="nb">enumerate</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">static_sim_arguments</span><span class="p">[</span><span class="s2">&quot;unique_strings&quot;</span><span class="p">])</span>
+    <span class="p">):</span>
+        <span class="c1"># if &#39;r0*gamma*phi_latino*theta1_IOTA*chi_IOTA*1*phi_white&#39; in uniq_pname:</span>
+        <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>  <span class="c1"># we need to add filtering and prine here.</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">),</span>
+                <span class="mi">1</span><span class="p">,</span>
+                <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span><span class="p">),</span>
+                <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">uniq_pname</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">22</span><span class="p">)</span>
+            <span class="c1"># print(uniq_pname)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">geoid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">geoid</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">all_parsed_params</span><span class="p">)):</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                        <span class="n">all_parsed_params</span><span class="p">[</span><span class="n">l</span><span class="p">][</span><span class="n">k</span><span class="p">,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">],</span>
+                        <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
+                            <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">ti</span><span class="p">,</span>
+                            <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">tf</span><span class="p">,</span>
+                            <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">,</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># df[:&#39;2021-12-31&#39;]</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">autofmt_xdate</span><span class="p">()</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="plot_npi_timeseries">
+<a class="viewcode-back" href="../../../api/gempyor.NPI.html#gempyor.NPI.base.plot_npi_timeseries">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_npi_timeseries</span><span class="p">(</span><span class="n">npi</span><span class="p">,</span> <span class="n">gempyor_inference</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="c1"># TODO should return axes and all</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="k">as</span> <span class="nn">mdates</span>
+    <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="kn">import</span> <span class="n">PdfPages</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+    <span class="kn">from</span> <span class="nn">gempyor.NPI.helpers</span> <span class="kn">import</span> <span class="n">reduce_parameter</span>
+
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">infodict</span><span class="p">()</span>
+    <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;parsed parameters&quot;</span>
+    <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Author&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;jlemaitre&quot;</span>
+    <span class="kn">import</span> <span class="nn">tqdm</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">uniq_pname</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">npi</span><span class="o">.</span><span class="n">getReductionDF</span><span class="p">()[</span><span class="s2">&quot;parameter&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())):</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">),</span>
+            <span class="mi">1</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span><span class="p">),</span>
+            <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">uniq_pname</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">22</span><span class="p">)</span>
+        <span class="c1"># print(uniq_pname)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">geoid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">geoid</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsamples</span><span class="p">):</span>
+                <span class="c1"># todo nothing is correct here</span>
+                <span class="n">rd</span> <span class="o">=</span> <span class="n">reduce_parameter</span><span class="p">(</span>
+                    <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">modification</span><span class="o">=</span><span class="n">npi</span><span class="o">.</span><span class="n">getReduction</span><span class="p">(</span><span class="n">uniq_pname</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="n">rd</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span>
+                    <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
+                        <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">ti</span><span class="p">,</span> <span class="n">gempyor_inference</span><span class="o">.</span><span class="n">modinf</span><span class="o">.</span><span class="n">tf</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># df[:&#39;2021-12-31&#39;]</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">autofmt_xdate</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/gempyor.html">gempyor package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
