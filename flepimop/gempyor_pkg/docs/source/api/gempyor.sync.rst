@@ -11,11 +11,13 @@ gempyor.sync.sync module
    :members:
    :undoc-members:
    :show-inheritance:
+   :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: gempyor.sync
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
