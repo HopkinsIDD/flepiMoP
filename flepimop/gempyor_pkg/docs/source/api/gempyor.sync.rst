@@ -9,8 +9,6 @@ gempyor.sync.sync module
 
 .. automodule:: gempyor.sync.sync
    :members:
-   :undoc-members:
-   :show-inheritance:
    :show-inheritance:
    :undoc-members:
 
