@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gempyor.model_info &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for gempyor.model_info</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Abstractions for interacting with models as a monolithic object.</span>
+
+<span class="sd">Defines the `ModelInfo` class (and associated methods), used for setting up and</span>
+<span class="sd">managing the configuration of a simulation. The primary focuses of a `ModelInfo` object</span>
+<span class="sd">are parsing and validating config details (including time frames, subpop info,</span>
+<span class="sd">model parameters, outcomes) and file handling for input and output data.</span>
+<span class="sd">This submodule is intended to serve as a foundational part of flepiMoP&#39;s</span>
+<span class="sd">infrastructure for conducting simulations and storing results.</span>
+
+<span class="sd">Classes:</span>
+<span class="sd">    TimeSetup: Handles simulation time frame.</span>
+<span class="sd">    ModelInfo: Parses config file, holds model information, and manages file input/output.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span> <span class="nn">confuse</span>
+<span class="kn">import</span> <span class="nn">numba</span> <span class="k">as</span> <span class="nn">nb</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">seeding</span><span class="p">,</span>
+    <span class="n">subpopulation_structure</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="p">,</span>
+    <span class="n">compartments</span><span class="p">,</span>
+    <span class="n">file_paths</span><span class="p">,</span>
+    <span class="n">initial_conditions</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">read_df</span><span class="p">,</span> <span class="n">write_df</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TimeSetup">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.TimeSetup">[docs]</a>
+<span class="k">class</span> <span class="nc">TimeSetup</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handles the simulation time frame based on config info.</span>
+
+<span class="sd">    `TimeSetup` reads the start and end dates from the config, validates the time frame,</span>
+<span class="sd">    and calculates the number of days in the simulation. It also establishes a</span>
+<span class="sd">    pd.DatetimeIndex for the entire simulation period.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        ti (datetime.date): Start date of simulation.</span>
+<span class="sd">        tf (datetime.date): End date of simulation.</span>
+<span class="sd">        n_days (int): Total number of days in the simulation time frame.</span>
+<span class="sd">        dates (pd.DatetimeIndex): A sequence of dates spanning the simulation time frame (inclusive of the start and end dates).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">confuse</span><span class="o">.</span><span class="n">ConfigView</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a `TimeSetup` object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: A configuration confuse.ConfigView object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ti</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_date</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tf</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_date</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tf</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ti</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Final time (&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tf</span><span class="si">}</span><span class="s2">&#39;) is less than or equal to initial time (&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ti</span><span class="si">}</span><span class="s2">&#39;).&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_days</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tf</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ti</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ti</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tf</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ModelInfo">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo">[docs]</a>
+<span class="k">class</span> <span class="nc">ModelInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parses config file, holds model information, and manages file input/output.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        nslots: Number of slots for MCMC.</span>
+<span class="sd">        write_csv: Whether to write results to CSV files (default is False).</span>
+<span class="sd">        write_parquet: Whether to write results to parquet files (default is False)</span>
+<span class="sd">        first_sim_index: Index of first simulation (default is 1).</span>
+<span class="sd">        seir_modifiers_scenario: seir_modifiers_scenario: SEIR modifier.</span>
+<span class="sd">        outcome_modifiers_scenario: Outcomes modifier.</span>
+<span class="sd">        setup_name: Name of setup (to override config, if applicable).</span>
+<span class="sd">        time_setup: `TimeSetup` object (start/end dates of simulation, as pd.DatetimeIndex).</span>
+<span class="sd">        ti: Initial time (time start).</span>
+<span class="sd">        tf: Final time (fime finish).</span>
+<span class="sd">        n_days: Number of days in simulation.</span>
+<span class="sd">        dates: pd.DatetimeIndex sequence of dates that span simulation.</span>
+<span class="sd">        subpop_struct: `SubpopulationStructure` object (info about subpops).</span>
+<span class="sd">        nsubpops: Number of subpopulations in simulation.</span>
+<span class="sd">        subpop_pop: NumPy array containing population of each subpop.</span>
+<span class="sd">        mobility: Matrix with values representing movement of people between subpops.</span>
+<span class="sd">        path_prefix: Prefix to paths where simulation data files are stored.</span>
+<span class="sd">        seir_config: SEIR configuration info, if relevant for simulation.</span>
+<span class="sd">        seir_modifiers_library: Modifiers for SEIR model, if relevant for simulation.</span>
+<span class="sd">        parameters_config: Parameter information from config.</span>
+<span class="sd">        initial_conditions_config: Initial conditions information from config.</span>
+<span class="sd">        seeding_config: Seeding config, if relevant.</span>
+<span class="sd">        parameters: `Parameter` object containing information about parameters.</span>
+<span class="sd">        seeding: Seeding configuration information, if relevant.</span>
+<span class="sd">        initial_conditions: Initial condition information for simulation.</span>
+<span class="sd">        npi_config_seir: Non-pharmaceutical intervention configurations for SEIR, if relevant.</span>
+<span class="sd">        compartments: `Compartments` object contianing information about compartments.</span>
+<span class="sd">        outcomes_config: Outcomes configurations, if relevant.</span>
+<span class="sd">        npi_config_outcomes: Non-pharmaceutical intervention outcome configurations, if relevant.</span>
+<span class="sd">        outcome_modifiers_library: Outcome modifiers, pulled from config.</span>
+<span class="sd">        in_run_id: ID for input run (generated if not specified).</span>
+<span class="sd">        out_run_id: ID for outputr run (generated if not specified).</span>
+<span class="sd">        in_prefix: Path prefix for input directory.</span>
+<span class="sd">        out_prefix: Path prefix for output directory.</span>
+<span class="sd">        inference_filename_prefix: Path prefix for inference files directory.</span>
+<span class="sd">        inference_filepath_suffix: Path suffix for inference files directory.</span>
+<span class="sd">        timestamp: Current datetime.</span>
+<span class="sd">        extension: File extensions.</span>
+<span class="sd">        config_filepath: Path to configuration file.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            If provided configuration information is incompatible with expectations.</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            If non-existent sections are referenced.</span>
+<span class="sd">        NotImplementedError:</span>
+<span class="sd">            If an unimplemented feature is referenced.</span>
+
+<span class="sd">    Config sections:</span>
+<span class="sd">    ```</span>
+<span class="sd">        subpop_setup                  # Always required</span>
+<span class="sd">        compartments                  # Required if running seir</span>
+<span class="sd">        parameters                    # required if running seir</span>
+<span class="sd">        seir                          # Required if running seir</span>
+<span class="sd">        initial_conditions            # One of seeding or initial_conditions is required when running seir</span>
+<span class="sd">        seeding                       # One of seeding or initial_conditions is required when running seir</span>
+<span class="sd">        outcomes                      # Required if running outcomes</span>
+<span class="sd">        seir_modifiers                # Not required. If exists, every modifier will be applied to seir parameters</span>
+<span class="sd">        outcomes_modifiers            # Not required. If exists, every modifier will be applied to outcomes</span>
+<span class="sd">        inference                     # Required if running inference</span>
+<span class="sd">    ```</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">,</span>
+        <span class="n">nslots</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">seir_modifiers_scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">outcome_modifiers_scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">path_prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">write_csv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">write_parquet</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">first_sim_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">in_run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">in_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">inference_filename_prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">inference_filepath_suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">setup_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># override config setup_name</span>
+        <span class="n">config_filepath</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a `ModelInfo` object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Config object.</span>
+<span class="sd">            nslots: Number of slots for MCMC (default is 1).</span>
+<span class="sd">            write_csv: Whether to write results to CSV files (default is False).</span>
+<span class="sd">            write_parquet: Whether to write results to parquet files (default is False).</span>
+<span class="sd">            first_sim_index : Index of first simulation (default is 1).</span>
+<span class="sd">            seir_modifiers_scenario: SEIR modifier.</span>
+<span class="sd">            outcome_modifiers_scenario: Outcomes modifier.</span>
+<span class="sd">            setup_name: Name of setup (to override config, if applicable).</span>
+<span class="sd">            path_prefix: Prefix to paths where simulation data files are stored.</span>
+<span class="sd">            in_run_id: ID for input run (generated if not specified).</span>
+<span class="sd">            out_run_id: ID for outputr run (generated if not specified).</span>
+<span class="sd">            in_prefix: Path prefix for input directory.</span>
+<span class="sd">            out_prefix: Path prefix for output directory.</span>
+<span class="sd">            inference_filename_prefix: Path prefix for inference files directory.</span>
+<span class="sd">            inference_filepath_suffix: Path suffix for inference files directory.</span>
+<span class="sd">            config_filepath: Path to configuration file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nslots</span> <span class="o">=</span> <span class="n">nslots</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_csv</span> <span class="o">=</span> <span class="n">write_csv</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_parquet</span> <span class="o">=</span> <span class="n">write_parquet</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_sim_index</span> <span class="o">=</span> <span class="n">first_sim_index</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_scenario</span> <span class="o">=</span> <span class="n">seir_modifiers_scenario</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span> <span class="o">=</span> <span class="n">outcome_modifiers_scenario</span>
+
+        <span class="c1"># Auto-detect old config</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;interventions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;This config has an intervention section, which is only compatible with a previous version (v1.1) of flepiMoP. &quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># 1. Create a setup name that contains every scenario.</span>
+        <span class="k">if</span> <span class="n">setup_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span> <span class="o">+=</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_scenario</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span> <span class="o">+=</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span> <span class="o">=</span> <span class="n">setup_name</span>
+
+        <span class="c1"># 2. What about time:</span>
+        <span class="c1"># Maybe group time_setup and subpop_struct into one argument for classes</span>
+        <span class="c1"># make the import object first level attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_setup</span> <span class="o">=</span> <span class="n">TimeSetup</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ti</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_setup</span><span class="o">.</span><span class="n">ti</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_setup</span><span class="o">.</span><span class="n">tf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_days</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_setup</span><span class="o">.</span><span class="n">n_days</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_setup</span><span class="o">.</span><span class="n">dates</span>
+
+        <span class="c1"># 3. What about subpopulations</span>
+        <span class="n">subpop_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;subpop_setup&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path_prefix</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">subpop_struct</span> <span class="o">=</span> <span class="n">subpopulation_structure</span><span class="o">.</span><span class="n">SubpopulationStructure</span><span class="p">(</span>
+            <span class="n">setup_name</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;setup_name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span>
+            <span class="n">subpop_config</span><span class="o">=</span><span class="n">subpop_config</span><span class="p">,</span>
+            <span class="n">path_prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nsubpops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">nsubpops</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subpop_pop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_pop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mobility</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">mobility</span>
+
+        <span class="c1"># 4. the SEIR structure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_library</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;rk4&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;dt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;rk4&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;dt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;dt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir&quot;</span><span class="p">][</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_conditions_config</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">config</span><span class="p">[</span><span class="s2">&quot;initial_conditions&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;initial_conditions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seeding_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seeding&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seeding&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeding_config</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_conditions_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                    <span class="s2">&quot;The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed&quot;</span>
+                <span class="p">)</span>
+                <span class="c1"># raise ValueError(&quot;The config has a seir: section but no initial_conditions: nor seeding: sections. At least one of them is needed&quot;)</span>
+
+            <span class="c1"># Think if we really want to hold this up.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">Parameters</span><span class="p">(</span>
+                <span class="n">parameter_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters_config</span><span class="p">,</span>
+                <span class="n">ti</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ti</span><span class="p">,</span>
+                <span class="n">tf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tf</span><span class="p">,</span>
+                <span class="n">subpop_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subpop_struct</span><span class="o">.</span><span class="n">subpop_names</span><span class="p">,</span>
+                <span class="n">path_prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seeding</span> <span class="o">=</span> <span class="n">seeding</span><span class="o">.</span><span class="n">SeedingFactory</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seeding_config</span><span class="p">,</span> <span class="n">path_prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_conditions</span> <span class="o">=</span> <span class="n">initial_conditions</span><span class="o">.</span><span class="n">InitialConditionsFactory</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_conditions_config</span><span class="p">,</span> <span class="n">path_prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span>
+            <span class="p">)</span>
+
+            <span class="c1"># SEIR modifiers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">npi_config_seir</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">][</span><span class="s2">&quot;scenarios&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">npi_config_seir</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">][</span><span class="s2">&quot;modifiers&quot;</span><span class="p">][</span>
+                        <span class="n">seir_modifiers_scenario</span>
+                    <span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_library</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">][</span>
+                        <span class="s2">&quot;modifiers&quot;</span>
+                    <span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_library</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">][</span>
+                        <span class="s2">&quot;modifiers&quot;</span>
+                    <span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                        <span class="s2">&quot;This feature has not been implemented yet.&quot;</span>
+                    <span class="p">)</span>  <span class="c1"># TODO create a Stacked from all</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;A `seir_modifiers_scenario` argument was provided to `ModelInfo` but there is no `seir_modifiers` section in the config.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running `ModelInfo` with seir but without SEIR Modifiers&quot;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_modifiers_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;A `seir_modifiers_scenario` argument was provided to `ModelInfo` but there is no `seir` section in the config.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Running ModelInfo without SEIR&quot;</span><span class="p">)</span>
+
+        <span class="c1"># really ugly references to the config globally here.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compartments</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">compartments</span><span class="o">.</span><span class="n">Compartments</span><span class="p">(</span>
+                <span class="n">seir_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">,</span> <span class="n">compartments_config</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;compartments&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;compartments&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="c1"># 5. Outcomes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcomes_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcomes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcomes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npi_config_outcomes</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcomes_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">][</span><span class="s2">&quot;scenarios&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">npi_config_outcomes</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">][</span><span class="s2">&quot;modifiers&quot;</span><span class="p">][</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span>
+                    <span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_library</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">][</span>
+                        <span class="s2">&quot;modifiers&quot;</span>
+                    <span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_library</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">][</span>
+                        <span class="s2">&quot;modifiers&quot;</span>
+                    <span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                        <span class="s2">&quot;This feature has not been implemented yet.&quot;</span>
+                    <span class="p">)</span>  <span class="c1"># TODO create a Stacked from all</span>
+
+            <span class="c1">## NEED TO IMPLEMENT THIS -- CURRENTLY CANNOT USE outcome modifiers</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;A `outcome_modifiers_scenario` argument was provided to `ModelInfo` but there is no `outcome_modifiers` section in the config.&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Running `ModelInfo` with outcomes but without Outcomes Modifiers&quot;</span>
+                <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcome_modifiers_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;A `outcome_modifiers_scenario` argument was provided to `ModelInfo` but there is no `outcomes` section in the config.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running `ModelInfo` without outcomes.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># 6. Inputs and outputs</span>
+        <span class="k">if</span> <span class="n">in_run_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_run_id</span> <span class="o">=</span> <span class="n">file_paths</span><span class="o">.</span><span class="n">run_id</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_run_id</span> <span class="o">=</span> <span class="n">in_run_id</span>
+
+        <span class="k">if</span> <span class="n">out_run_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out_run_id</span> <span class="o">=</span> <span class="n">in_run_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_run_id</span> <span class="o">=</span> <span class="n">out_run_id</span>
+
+        <span class="k">if</span> <span class="n">in_prefix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_run_id</span><span class="si">}</span><span class="s2">/&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_prefix</span> <span class="o">=</span> <span class="n">in_prefix</span>
+        <span class="k">if</span> <span class="n">out_prefix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">out_run_id</span><span class="si">}</span><span class="s2">/&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_prefix</span> <span class="o">=</span> <span class="n">out_prefix</span>
+
+        <span class="c1"># make the inference paths:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inference_filename_prefix</span> <span class="o">=</span> <span class="n">inference_filename_prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inference_filepath_suffix</span> <span class="o">=</span> <span class="n">inference_filepath_suffix</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_csv</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_parquet</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">-%H%M%S&quot;</span><span class="p">)</span>
+            <span class="n">ftypes</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;seir&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">ftypes</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;seir&quot;</span><span class="p">,</span> <span class="s2">&quot;spar&quot;</span><span class="p">,</span> <span class="s2">&quot;snpi&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;outcomes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">ftypes</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;hosp&quot;</span><span class="p">,</span> <span class="s2">&quot;hpar&quot;</span><span class="p">,</span> <span class="s2">&quot;hnpi&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">ftype</span> <span class="ow">in</span> <span class="n">ftypes</span><span class="p">:</span>
+                <span class="n">datadir</span> <span class="o">=</span> <span class="n">file_paths</span><span class="o">.</span><span class="n">create_dir_name</span><span class="p">(</span>
+                    <span class="n">run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">out_run_id</span><span class="p">,</span>
+                    <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">out_prefix</span><span class="p">,</span>
+                    <span class="n">ftype</span><span class="o">=</span><span class="n">ftype</span><span class="p">,</span>
+                    <span class="n">inference_filename_prefix</span><span class="o">=</span><span class="n">inference_filename_prefix</span><span class="p">,</span>
+                    <span class="n">inference_filepath_suffix</span><span class="o">=</span><span class="n">inference_filepath_suffix</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">datadir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_parquet</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_csv</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;Confused between reading .csv or parquet. Assuming input file is .parquet&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_parquet</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">=</span> <span class="s2">&quot;parquet&quot;</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_csv</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">=</span> <span class="s2">&quot;csv&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_filepath</span> <span class="o">=</span> <span class="n">config_filepath</span>  <span class="c1"># useful for plugins</span>
+
+<div class="viewcode-block" id="ModelInfo.get_input_filename">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.get_input_filename">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_input_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sim_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">extension_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span>
+            <span class="n">ftype</span><span class="o">=</span><span class="n">ftype</span><span class="p">,</span>
+            <span class="n">sim_id</span><span class="o">=</span><span class="n">sim_id</span><span class="p">,</span>
+            <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">extension_override</span><span class="o">=</span><span class="n">extension_override</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.get_output_filename">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.get_output_filename">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_output_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sim_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">extension_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span>
+            <span class="n">ftype</span><span class="o">=</span><span class="n">ftype</span><span class="p">,</span>
+            <span class="n">sim_id</span><span class="o">=</span><span class="n">sim_id</span><span class="p">,</span>
+            <span class="nb">input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">extension_override</span><span class="o">=</span><span class="n">extension_override</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.get_filename">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.get_filename">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_filename</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sim_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">extension_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_prefix</span> <span class="o">/</span> <span class="n">file_paths</span><span class="o">.</span><span class="n">create_file_name</span><span class="p">(</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_run_id</span> <span class="k">if</span> <span class="nb">input</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_run_id</span><span class="p">,</span>
+            <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_prefix</span> <span class="k">if</span> <span class="nb">input</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_prefix</span><span class="p">,</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">sim_id</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_sim_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">ftype</span><span class="o">=</span><span class="n">ftype</span><span class="p">,</span>
+            <span class="n">extension</span><span class="o">=</span><span class="n">extension_override</span> <span class="k">if</span> <span class="n">extension_override</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension</span><span class="p">,</span>
+            <span class="n">inference_filepath_suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inference_filepath_suffix</span><span class="p">,</span>
+            <span class="n">inference_filename_prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inference_filename_prefix</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.get_setup_name">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.get_setup_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_setup_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_name</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.read_simID">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.read_simID">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_simID</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sim_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">extension_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="p">):</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span>
+            <span class="n">ftype</span><span class="o">=</span><span class="n">ftype</span><span class="p">,</span>
+            <span class="n">sim_id</span><span class="o">=</span><span class="n">sim_id</span><span class="p">,</span>
+            <span class="nb">input</span><span class="o">=</span><span class="nb">input</span><span class="p">,</span>
+            <span class="n">extension_override</span><span class="o">=</span><span class="n">extension_override</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># print(f&quot;Readings {fname}&quot;)</span>
+        <span class="k">return</span> <span class="n">read_df</span><span class="p">(</span><span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.write_simID">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.write_simID">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_simID</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">sim_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="nb">input</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">extension_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span>
+            <span class="n">ftype</span><span class="o">=</span><span class="n">ftype</span><span class="p">,</span>
+            <span class="n">sim_id</span><span class="o">=</span><span class="n">sim_id</span><span class="p">,</span>
+            <span class="nb">input</span><span class="o">=</span><span class="nb">input</span><span class="p">,</span>
+            <span class="n">extension_override</span><span class="o">=</span><span class="n">extension_override</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># create the directory if it does exists:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">fname</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># print(f&quot;Writing {fname}&quot;)</span>
+        <span class="n">write_df</span><span class="p">(</span>
+            <span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">,</span>
+            <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fname</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.get_seeding_data">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.get_seeding_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_seeding_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sim_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">nb</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Pull the seeding data for the info represented by this model info instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sim_id: The simulation ID to pull seeding data for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple containing the seeding data dictionary and the seeding data array.</span>
+
+<span class="sd">        See Also:</span>
+<span class="sd">            `gempyor.seeding.Seeding.get_from_config`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeding</span><span class="o">.</span><span class="n">get_from_config</span><span class="p">(</span>
+            <span class="n">compartments</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compartments</span><span class="p">,</span>
+            <span class="n">subpop_struct</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subpop_struct</span><span class="p">,</span>
+            <span class="n">n_days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_days</span><span class="p">,</span>
+            <span class="n">ti</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ti</span><span class="p">,</span>
+            <span class="n">tf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tf</span><span class="p">,</span>
+            <span class="n">input_filename</span><span class="o">=</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_input_filename</span><span class="p">(</span>
+                    <span class="n">ftype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seeding_config</span><span class="p">[</span><span class="s2">&quot;seeding_file_type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span>
+                    <span class="n">sim_id</span><span class="o">=</span><span class="n">sim_id</span><span class="p">,</span>
+                    <span class="n">extension_override</span><span class="o">=</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seeding_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeding_config</span><span class="p">[</span><span class="s2">&quot;seeding_file_type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelInfo.get_engine">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.model_info.ModelInfo.get_engine">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_engine</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;rk4&quot;</span><span class="p">,</span> <span class="s2">&quot;euler&quot;</span><span class="p">,</span> <span class="s2">&quot;stochastic&quot;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">seir_config</span><span class="p">[</span><span class="s2">&quot;integration&quot;</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_str</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/gempyor.html">gempyor package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

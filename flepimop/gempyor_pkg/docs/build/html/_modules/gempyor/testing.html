@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gempyor.testing &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for gempyor.testing</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Unit testing utilities for `gempyor`</span>
+
+<span class="sd">This module contains unit testing utilities, mostly pytest fixtures. To use this module</span>
+<span class="sd">the optional test dependencies must be installed.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;change_directory_to_temp_directory&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;create_confuse_config_from_file&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;create_confuse_configview_from_dict&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;create_confuse_config_from_dict&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mock_empty_config&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;partials_are_similar&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sample_fits_distribution&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;setup_example_from_tutorials&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;run_test_in_separate_process&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">shlex</span> <span class="kn">import</span> <span class="n">quote</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">stat</span> <span class="kn">import</span> <span class="n">S_IXUSR</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">NamedTemporaryFile</span><span class="p">,</span> <span class="n">TemporaryDirectory</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">import</span> <span class="nn">confuse</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pytest</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">_shutil_which</span>
+
+
+<div class="viewcode-block" id="change_directory_to_temp_directory">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.change_directory_to_temp_directory">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span> <span class="nf">change_directory_to_temp_directory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Change test working directory to a temporary directory</span>
+
+<span class="sd">    Pytest fixture that will create a temporary directory and change the working</span>
+<span class="sd">    directory to that temporary directory. This fixture also cleans up after itself by</span>
+<span class="sd">    resetting the working directory and removing the temporary directory on test end.</span>
+<span class="sd">    Useful for testing functions that create files relative to the working directory.</span>
+
+<span class="sd">    Yields:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">current_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">TemporaryDirectory</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">yield</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">current_dir</span><span class="p">)</span>
+    <span class="n">temp_dir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="mock_empty_config">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.mock_empty_config">[docs]</a>
+<span class="k">def</span> <span class="nf">mock_empty_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">confuse</span><span class="o">.</span><span class="n">Configuration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a `confuse.Configuration` (akin to `gempyor.utils.config`) with no data for</span>
+<span class="sd">    unit testing configurations.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A `confuse.Configuration`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">confuse</span><span class="o">.</span><span class="n">Configuration</span><span class="p">(</span><span class="s2">&quot;flepiMoPMock&quot;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="create_confuse_config_from_file">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.create_confuse_config_from_file">[docs]</a>
+<span class="k">def</span> <span class="nf">create_confuse_config_from_file</span><span class="p">(</span>
+    <span class="n">data_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">confuse</span><span class="o">.</span><span class="n">Configuration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a `confuse.Configuration` (akin to `gempyor.utils.config`) from a file for</span>
+<span class="sd">    unit testing configurations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data_file: The file to populate the confuse ConfigView with.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A `confuse.Configuration`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cv</span> <span class="o">=</span> <span class="n">mock_empty_config</span><span class="p">()</span>
+    <span class="n">cv</span><span class="o">.</span><span class="n">set_file</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cv</span></div>
+
+
+
+<div class="viewcode-block" id="create_confuse_configview_from_dict">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.create_confuse_configview_from_dict">[docs]</a>
+<span class="k">def</span> <span class="nf">create_confuse_configview_from_dict</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">confuse</span><span class="o">.</span><span class="n">ConfigView</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a ConfigView from a dictionary for unit testing confuse parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: The data to populate the confuse ConfigView with.</span>
+<span class="sd">        name: The name of the Subview being created or if is `None` a RootView is</span>
+<span class="sd">            created instead.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Either a confuse Subview or RootView depending on the value of `name`.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        This example gives a brief demonstration of how to represent this yaml:</span>
+<span class="sd">        ```yaml</span>
+<span class="sd">        foo: bar</span>
+<span class="sd">        fizz: 123</span>
+<span class="sd">        alphabet: [a, b, c]</span>
+<span class="sd">        mapping:</span>
+<span class="sd">            x: 1</span>
+<span class="sd">            y: 2</span>
+<span class="sd">        ```</span>
+<span class="sd">        with this function as a python dict for unit testing purposes.</span>
+<span class="sd">        &gt;&gt;&gt; data = {</span>
+<span class="sd">        ...     &quot;foo&quot;: &quot;bar&quot;,</span>
+<span class="sd">        ...     &quot;fizz&quot;: 123,</span>
+<span class="sd">        ...     &quot;alphabet&quot;: [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;],</span>
+<span class="sd">        ...     &quot;mapping&quot;: {&quot;x&quot;: 1, &quot;y&quot;: 2},</span>
+<span class="sd">        ... }</span>
+<span class="sd">        &gt;&gt;&gt; rv = create_confuse_configview_from_dict(data)</span>
+<span class="sd">        &gt;&gt;&gt; rv</span>
+<span class="sd">        &lt;RootView: root&gt;</span>
+<span class="sd">        &gt;&gt;&gt; rv.keys()</span>
+<span class="sd">        [&#39;foo&#39;, &#39;fizz&#39;, &#39;alphabet&#39;, &#39;mapping&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; rv.get()</span>
+<span class="sd">        {&#39;foo&#39;: &#39;bar&#39;, &#39;fizz&#39;: 123, &#39;alphabet&#39;: [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;], &#39;mapping&#39;: {&#39;x&#39;: 1, &#39;y&#39;: 2}}</span>
+<span class="sd">        &gt;&gt;&gt; rv == rv.root()</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; rv.name</span>
+<span class="sd">        &#39;root&#39;</span>
+<span class="sd">        &gt;&gt;&gt; sv = create_confuse_configview_from_dict(data, &quot;params&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; sv</span>
+<span class="sd">        &lt;Subview: params&gt;</span>
+<span class="sd">        &gt;&gt;&gt; sv.keys()</span>
+<span class="sd">        [&#39;foo&#39;, &#39;fizz&#39;, &#39;alphabet&#39;, &#39;mapping&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; sv.get()</span>
+<span class="sd">        {&#39;foo&#39;: &#39;bar&#39;, &#39;fizz&#39;: 123, &#39;alphabet&#39;: [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;], &#39;mapping&#39;: {&#39;x&#39;: 1, &#39;y&#39;: 2}}</span>
+<span class="sd">        &gt;&gt;&gt; sv == sv.root()</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; sv.name</span>
+<span class="sd">        &#39;params&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">data</span><span class="p">}</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span>
+    <span class="n">cv</span> <span class="o">=</span> <span class="n">confuse</span><span class="o">.</span><span class="n">RootView</span><span class="p">([</span><span class="n">confuse</span><span class="o">.</span><span class="n">ConfigSource</span><span class="o">.</span><span class="n">of</span><span class="p">(</span><span class="n">data</span><span class="p">)])</span>
+    <span class="n">cv</span> <span class="o">=</span> <span class="n">cv</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cv</span>
+    <span class="k">return</span> <span class="n">cv</span></div>
+
+
+
+<div class="viewcode-block" id="create_confuse_config_from_dict">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.create_confuse_config_from_dict">[docs]</a>
+<span class="k">def</span> <span class="nf">create_confuse_config_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">confuse</span><span class="o">.</span><span class="n">Configuration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a Configuration from a dictionary for unit testing confuse parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: The data to populate the confuse ConfigView with.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        confuse Configuration</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">mock_empty_config</span><span class="p">()</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">set_args</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cfg</span></div>
+
+
+
+<div class="viewcode-block" id="partials_are_similar">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.partials_are_similar">[docs]</a>
+<span class="k">def</span> <span class="nf">partials_are_similar</span><span class="p">(</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">,</span>
+    <span class="n">g</span><span class="p">:</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">,</span>
+    <span class="n">check_func</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">check_args</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">check_keywords</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if two partials are &#39;similar&#39; enough to be equal.</span>
+
+<span class="sd">    For most unit testing purposes python&#39;s default `__eq__` method does not have the</span>
+<span class="sd">    desired behavior for `functools.partial`. For unit testing purposes it is usually</span>
+<span class="sd">    sufficient that two partials are similar enough. See python/cpython#47814 for more</span>
+<span class="sd">    details on why `__eq__` is tricky for `functools.partial`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        f: A partial function to test.</span>
+<span class="sd">        g: A partial function to test.</span>
+<span class="sd">        check_func: If the `func` attributes of `f` and `g` should be checked for</span>
+<span class="sd">            equality.</span>
+<span class="sd">        check_args: If the `args` attributes of `f` and `g` should be checked for</span>
+<span class="sd">            equality.</span>
+<span class="sd">        check_keywords: If the `keywords` attributes of `f` and `g` should be checked</span>
+<span class="sd">            for equality.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A boolean indicating if `f` and `g` are similar.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; from functools import partial</span>
+<span class="sd">        &gt;&gt;&gt; a = lambda x, y: x + y</span>
+<span class="sd">        &gt;&gt;&gt; b = partial(a, 1)</span>
+<span class="sd">        &gt;&gt;&gt; c = partial(a, 1.)</span>
+<span class="sd">        &gt;&gt;&gt; b == c</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; partials_are_similar(b, c)</span>
+<span class="sd">        True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">check_func</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">func</span> <span class="o">!=</span> <span class="n">g</span><span class="o">.</span><span class="n">func</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">check_args</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">args</span> <span class="o">!=</span> <span class="n">g</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">check_keywords</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">keywords</span> <span class="o">!=</span> <span class="n">g</span><span class="o">.</span><span class="n">keywords</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="sample_fits_distribution">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.sample_fits_distribution">[docs]</a>
+<span class="k">def</span> <span class="nf">sample_fits_distribution</span><span class="p">(</span>
+    <span class="n">sample</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">distribution</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span>
+        <span class="s2">&quot;fixed&quot;</span><span class="p">,</span> <span class="s2">&quot;uniform&quot;</span><span class="p">,</span> <span class="s2">&quot;poisson&quot;</span><span class="p">,</span> <span class="s2">&quot;binomial&quot;</span><span class="p">,</span> <span class="s2">&quot;truncnorm&quot;</span><span class="p">,</span> <span class="s2">&quot;lognorm&quot;</span>
+    <span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test if a sample fits a distribution with a given set of parameters.</span>
+
+<span class="sd">    This function tests if the given `sample` could possibly be drawn from the</span>
+<span class="sd">    distribution given with its parameters, but it does not test if it could reasonably</span>
+<span class="sd">    be drawn from that distribution.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sample: The value to test.</span>
+<span class="sd">        distribution: The name of the distribution to test against.</span>
+<span class="sd">        **kwargs: Further arguments to specify the parameters of a distribution.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A boolean indicating if the sample given could be from the distribution.</span>
+
+<span class="sd">    See Also:</span>
+<span class="sd">        gempyor.utils.random_distribution_sampler</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; sample_fits_distribution(0.0, &quot;fixed&quot;, value=0.0)</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; sample_fits_distribution(0.0, &quot;fixed&quot;, value=0.5)</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; sample_fits_distribution(0.5, &quot;poisson&quot;, lam=3.0)</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; sample_fits_distribution(</span>
+<span class="sd">        ...     -3.5, &quot;truncnorm&quot;, a=-5.5, b=3.4, mean=-1.4, sd=1.1</span>
+<span class="sd">        ... )</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; sample_fits_distribution(100000000, &quot;lognorm&quot;, meanlog=1.0, sdlog=1.0)</span>
+<span class="sd">        True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Poisson and binomial only have support on a subset of the integers</span>
+    <span class="k">if</span> <span class="n">distribution</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;poisson&quot;</span><span class="p">,</span> <span class="s2">&quot;binomial&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sample</span><span class="o">.</span><span class="n">is_integer</span><span class="p">())</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="c1"># Now check distribution constraints</span>
+    <span class="k">if</span> <span class="n">distribution</span> <span class="o">==</span> <span class="s2">&quot;fixed&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">)))</span>
+    <span class="k">elif</span> <span class="n">distribution</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+        <span class="c1"># Uniform is on [low,high), but want uniform to match fixed when low == high.</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;high&quot;</span><span class="p">),</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;low&quot;</span><span class="p">))</span>
+                <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;low&quot;</span><span class="p">))</span>
+            <span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;low&quot;</span><span class="p">))</span>
+                <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;high&quot;</span><span class="p">))</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distribution</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">distribution</span> <span class="o">==</span> <span class="s2">&quot;binomial&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">less_equal</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n&quot;</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distribution</span> <span class="o">==</span> <span class="s2">&quot;truncnorm&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">))</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distribution</span> <span class="o">==</span> <span class="s2">&quot;lognorm&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="run_test_in_separate_process">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.run_test_in_separate_process">[docs]</a>
+<span class="k">def</span> <span class="nf">run_test_in_separate_process</span><span class="p">(</span>
+    <span class="n">script</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Execute a test script in a separate process.</span>
+
+<span class="sd">    This function is useful for testing functionality that requires initialization for</span>
+<span class="sd">    the process (i.e. setting the start method for multiprocessing). This method of unit</span>
+<span class="sd">    testing is **slow** and should be used sparingly.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        script: The script to run, either a string of the code or a path to the script</span>
+<span class="sd">            to use.</span>
+<span class="sd">        dest: The destination to write the script to or `None` to use a temporary file.</span>
+<span class="sd">        args: The arguments to pass to the script, can be obtained in the script either</span>
+<span class="sd">            through `sys.argv` (starting with index 1) or through `argparse`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Typically this function is used in a test like so:</span>
+
+<span class="sd">        &gt;&gt;&gt; assert run_test_in_separate_process(</span>
+<span class="sd">        ...     Path(__file__).parent / &quot;external_script.py&quot;,</span>
+<span class="sd">        ...     tmp_path / &quot;test.py&quot;,</span>
+<span class="sd">        ...     args=[&quot;arg1&quot;, &quot;arg2&quot;],</span>
+<span class="sd">        ... ) is None</span>
+
+<span class="sd">        The `external_script.py` would reside in the same directory as the test file and</span>
+<span class="sd">        the `tmp_path` would be a `pytest` fixture.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">script</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">dest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">temp_file</span><span class="p">:</span>
+                <span class="n">temp_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+                <span class="n">script</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dest</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">script</span><span class="p">)</span>
+            <span class="n">script</span> <span class="o">=</span> <span class="n">dest</span>
+    <span class="k">elif</span> <span class="n">dest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">script</span><span class="p">,</span> <span class="n">dest</span><span class="p">)</span>
+        <span class="n">script</span> <span class="o">=</span> <span class="n">dest</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">python</span> <span class="o">=</span> <span class="n">_shutil_which</span><span class="p">(</span><span class="s2">&quot;python&quot;</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">python</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">script</span><span class="p">)]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">quote</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+        <span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">script</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">script</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">sample_script</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">executable</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;example&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a sample script for testing functions that require a script.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        directory: The directory to create the script in.</span>
+<span class="sd">        executable: If the script should be executable.</span>
+<span class="sd">        name: The name of the script.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The path to the script.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        The script is a simple bash script in a file named `name` with contents:</span>
+<span class="sd">        ```bash</span>
+<span class="sd">        #!/usr/bin/env bash</span>
+<span class="sd">        echo &#39;Hello local!&#39;</span>
+<span class="sd">        ```</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">script</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">name</span>
+    <span class="n">script</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;#!/usr/bin/env bash</span><span class="se">\n</span><span class="s2">echo &#39;Hello local!&#39;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">executable</span><span class="p">:</span>
+        <span class="n">script</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mode</span> <span class="o">|</span> <span class="n">S_IXUSR</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">script</span>
+
+
+<div class="viewcode-block" id="setup_example_from_tutorials">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.testing.setup_example_from_tutorials">[docs]</a>
+<span class="k">def</span> <span class="nf">setup_example_from_tutorials</span><span class="p">(</span>
+    <span class="n">tmp_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Setup a tutorial example for testing.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tmp_path: The temporary directory to create the example in.</span>
+<span class="sd">        config: The name of the configuration file to use.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The path to the temporary directory.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the `FLEPI_PATH` environment variable is not set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">flepi_path</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FLEPI_PATH&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;FLEPI_PATH environment variable is not set.&quot;</span><span class="p">)</span>
+    <span class="n">tutorials_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">flepi_path</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;examples/tutorials&quot;</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="p">[</span><span class="n">config</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">tutorials_path</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tutorials_path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;model_input/*&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
+    <span class="p">]:</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">tutorials_path</span> <span class="o">/</span> <span class="n">file</span>
+        <span class="n">destination</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="n">file</span>
+        <span class="n">destination</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/gempyor.html">gempyor package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
