@@ -13,15 +13,13 @@ from typing import Annotated, Any, Final, Literal, Pattern
 import yaml
 from pydantic import (
     BaseModel,
-    BeforeValidator,
     ConfigDict,
     Field,
-    computed_field,
     model_validator,
 )
 
 from ..logging import get_script_logger
-from ..utils import _trim_s3_path, _shutil_which
+from ..utils import _shutil_which
 from ._sync_filter import FilterParts, ListSyncFilter, WithFilters
 
 
@@ -254,81 +252,78 @@ class S3SyncModel(SyncABC, WithFilters):
         type: The type of sync protocol, which is always "s3sync".
         target: The target S3 bucket or path.
         source: The source S3 bucket or path.
+
+    Examples:
+        >>> from gempyor.sync._sync import S3SyncModel
+        >>> s3_sync = S3SyncModel(
+        ...     type="s3sync",
+        ...     target="s3://mybucket/target/",
+        ...     source="s3://mybucket/source/",
+        ... )
+        >>> s3_sync.type
+        's3sync'
+        >>> s3_sync.target
+        's3://mybucket/target/'
+        >>> s3_sync.source
+        's3://mybucket/source/'
+        >>> S3SyncModel(type="s3sync", target="target", source="source")
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for S3SyncModel
+        Value error, At least one of `source` or `target` must be an s3 bucket, as indicated by a `s3://` prefix [type=value_error, input_value={'type': 's3sync', 'targe...et', 'source': 'source'}, input_type=dict]
+            For further information visit https://errors.pydantic.dev/2.11/v/value_error
     """
 
     type: Literal["s3sync"]
-    target: Annotated[Path, BeforeValidator(_trim_s3_path)]
-    source: Annotated[Path, BeforeValidator(_trim_s3_path)]
+    target: str
+    source: str
 
     @model_validator(mode="after")
-    def _check_at_least_one_bucket(self):
-        srcs3 = self.source.root == "//"
-        tars3 = self.target.root == "//"
-        if srcs3 or tars3:
+    def _check_at_least_one_bucket(self) -> "S3SyncModel":
+        """
+        Check that one of the source or target is an S3 bucket.
+
+        Raises:
+            ValueError: If neither source nor target is an S3 bucket.
+        """
+        if self.target.startswith("s3://") or self.source.startswith("s3://"):
             return self
         raise ValueError(
             "At least one of `source` or `target` must be "
-            "an s3 bucket, as indicated by a `//` prefix"
+            "an s3 bucket, as indicated by a `s3://` prefix"
         )
-
-    @computed_field
-    @property
-    def s3(self) -> Literal["source", "target", "both"]:
-        """
-        Determine which of the source or target is an S3 bucket.
-
-        Returns:
-            "source" if the source is an S3 bucket, "target" if the target is an S3
-            bucket, or "both" if both are S3 buckets.
-        """
-        srcs3 = self.source.root == "//"
-        tars3 = self.target.root == "//"
-        if srcs3 and tars3:
-            return "both"
-        if srcs3:
-            return "source"
-        return "target"
 
     @staticmethod
     def _formatter(f: FilterParts) -> list[str]:
         return ["--exclude" if f[0] == "-" else "--include", f'"{f[1]}"']
 
-    @staticmethod
-    def _dry_run(dry: bool) -> list[str]:
-        return ["--dryrun"] if dry else []
-
-    @staticmethod
-    def _cmd() -> list[str]:
-        return ["aws", "s3", "sync"]
-
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
+        logger = get_script_logger(__name__, verbosity)
         inner_paths = [
-            f"{p}/"
+            (p if p.endswith("/") else f"{p}/")
             for p in (sync_options.source(self.source), sync_options.target(self.target))
         ]
-        match self.s3:
-            case "source":
-                inner_paths[0] = "s3:" + inner_paths[0]
-            case "target":
-                inner_paths[1] = "s3:" + inner_paths[1]
-            case "both":
-                inner_paths = ["s3:" + p for p in inner_paths]
+        logger.debug("Resolved paths: %s", str(inner_paths))
         if sync_options.reverse:
             inner_paths.reverse()
+            logger.debug("Reversed paths, now resolved: %s", str(inner_paths))
         inner_filter = self.format_filters(
             sync_options.filter_override,
             sync_options.filter_prefix,
             sync_options.filter_suffix,
             reverse=True,
         )
-        testcmd = (
-            self._cmd() + self._dry_run(sync_options.dry_run) + inner_filter + inner_paths
+        logger.debug("Resolved filters: %s", str(inner_filter))
+        cmd = (
+            [_shutil_which("aws"), "s3", "sync"]
+            + (["--dryrun"] if sync_options.dry_run else [])
+            + inner_filter
+            + inner_paths
         )
-        if verbosity > 0:
-            print(" ".join(["executing: "] + testcmd))
-        return run(testcmd, check=True)
+        logger.info("Executing command: %s", str(cmd))
+        return run(cmd, check=True)
 
 
 class GitModel(SyncABC):

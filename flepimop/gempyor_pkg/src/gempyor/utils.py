@@ -1413,36 +1413,3 @@ def _nslots_random_seeds(nslots: int) -> list[int]:
         [3181143733]
     """
     return _random_seeds_list(nslots + 1, 2**32 - 1, nslots)
-
-
-@overload
-def _trim_s3_path(path: str) -> str: ...
-
-
-@overload
-def _trim_s3_path(path: Path) -> Path: ...
-
-
-def _trim_s3_path(path: str | Path) -> str | Path:
-    """
-    Strips the 's3:' prefix from a given path.
-
-    Args:
-        path: The path to be trimmed. Can be a string or a Path object.
-
-    Returns:
-        The trimmed path as the same type as the input.
-
-    Examples:
-        >>> from pathlib import Path
-        >>> from gempyor.utils import _trim_s3_path
-        >>> _trim_s3_path("/abc/def/ghi.txt")
-        '/abc/def/ghi.txt'
-        >>> _trim_s3_path(Path("/abc/def/ghi.txt"))
-        PosixPath('/abc/def/ghi.txt')
-        >>> _trim_s3_path("s3://foo/bar.txt")
-        '//foo/bar.txt'
-        >>> _trim_s3_path(Path("s3://foo/bar.txt"))
-        PosixPath('s3:/foo/bar.txt')
-    """
-    return path.lstrip("s3:") if isinstance(path, str) else path
