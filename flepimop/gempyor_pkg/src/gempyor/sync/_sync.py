@@ -338,22 +338,18 @@ class GitModel(SyncABC):
     type: Literal["git"]
     mode: Literal["push", "pull"]
 
-    @staticmethod
-    def _dry_run(dry: bool) -> list[str]:
-        return ["--dry-run"] if dry else []
-
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
-        inner_mode = (
-            self.mode
-            if not sync_options.reverse
-            else ("push" if self.mode == "pull" else "pull")
-        )
-        testcmd = ["git", inner_mode] + self._dry_run(sync_options.dry_run)
-        if verbosity > 0:
-            print(" ".join(testcmd))
-        return run(testcmd, check=True)
+        logger = get_script_logger(__name__, verbosity)
+        mode = self.mode
+        logger.debug("Resolved mode: %s", str(mode))
+        if sync_options.reverse:
+            mode = "pull" if self.mode == "push" else "push"
+            logger.debug("Reversed mode, now resolved: %s", str(mode))
+        cmd = ["git", mode] + (["--dry-run"] if sync_options.dry_run else [])
+        logger.info("Executing command: %s", str(cmd))
+        return run(cmd, check=True)
 
 
 SyncModel = Annotated[RsyncModel | S3SyncModel | GitModel, Field(discriminator="type")]
