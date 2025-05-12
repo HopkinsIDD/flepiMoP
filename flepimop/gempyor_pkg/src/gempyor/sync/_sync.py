@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from functools import singledispatchmethod
 from pathlib import Path
 from subprocess import CompletedProcess, run
-from typing import Annotated, Any, Final, Literal
+from typing import Annotated, Any, Final, Literal, Pattern
 
 import yaml
 from pydantic import (
@@ -21,11 +21,11 @@ from pydantic import (
 )
 
 from ..logging import get_script_logger
-from ..utils import _trim_s3_path
+from ..utils import _trim_s3_path, _shutil_which
 from ._sync_filter import FilterParts, ListSyncFilter, WithFilters
 
 
-_RSYNC_HOST_REGEX: Final = re.compile(r"^(?P<host>[^:]+):(?P<path>.+)$")
+_RSYNC_HOST_REGEX: Final[Pattern[str]] = re.compile(r"^(?P<host>[^:]+):(?P<path>.+)$")
 
 
 class SyncOptions(BaseModel):
@@ -50,10 +50,10 @@ class SyncOptions(BaseModel):
     """
 
     protocol: str | None = None
-    source_override: Path | None = None
-    target_override: Path | None = None
-    source_append: Path | None = None
-    target_append: Path | None = None
+    source_override: str | None = None
+    target_override: str | None = None
+    source_append: str | None = None
+    target_append: str | None = None
     filter_override: ListSyncFilter | None = None
     filter_prefix: ListSyncFilter = []
     filter_suffix: ListSyncFilter = []
@@ -62,12 +62,12 @@ class SyncOptions(BaseModel):
     dry_run: bool = False
     reverse: bool = False
     mkpath: bool = False
+    sep: str = "/"
 
     # allow potentially other fields for external modules
     model_config = ConfigDict(extra="allow")
 
-    @staticmethod
-    def _true_path(original: Path, override: Path | None, append: Path | None) -> Path:
+    def _true_path(self, original: str, override: str | None, append: str | None) -> str:
         """
         Determine the true path based on the original, override, and append paths.
 
@@ -85,10 +85,10 @@ class SyncOptions(BaseModel):
         """
         path = original if override is None else override
         if append is not None:
-            path = path / append
+            path += append if path.endswith(self.sep) else f"{self.sep}{append}"
         return path
 
-    def source(self, source: Path) -> Path:
+    def source(self, source: str) -> str:
         """
         Get the source path based on the override and append options.
 
@@ -97,7 +97,7 @@ class SyncOptions(BaseModel):
         """
         return self._true_path(source, self.source_override, self.source_append)
 
-    def target(self, target: Path) -> Path:
+    def target(self, target: str) -> str:
         """
         Get the target path based on the override and append options.
 
@@ -155,6 +155,41 @@ class SyncABC(BaseModel, ABC):
         """
 
 
+def _rsync_ensure_path(target: str, verbosity: int, dry_run: bool) -> CompletedProcess:
+    """
+    Ensure the target path exists for rsync.
+
+    Args:
+        target: The target path to ensure exists.
+        verbosity: The verbosity level of the sync operation.
+        dry_run: If `True`, perform a dry run of the command.
+
+    Returns:
+        A completed process object with the result of the command executed.
+
+    Examples:
+        >>> from gempyor.sync._sync import _rsync_ensure_path
+        >>> _rsync_ensure_path("/foo/bar", 0, True)
+        (DRY RUN): mkdir -p /foo/bar
+        CompletedProcess(args=['echo', '(DRY RUN): mkdir -p /foo/bar'], returncode=0)
+        >>> _rsync_ensure_path("user@host:/fizz/buzz", 0, True)
+        (DRY RUN): ssh user@host mkdir -p /fizz/buzz
+        CompletedProcess(args=['echo', '(DRY RUN): ssh user@host mkdir -p /fizz/buzz'], returncode=0)
+    """
+    logger = get_script_logger(__name__, verbosity)
+    cmd = ["mkdir", "-p"]
+    if (tarmatch := _RSYNC_HOST_REGEX.match(target)) is not None:
+        cmd = ["ssh", tarmatch.group("host")] + cmd + [tarmatch.group("path")]
+        logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
+    else:
+        cmd += [target]
+        logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
+    if dry_run:
+        cmd = ["echo", " ".join(["(DRY RUN):"] + cmd)]
+        logger.debug("Executing command %s instead since dry run.", str(cmd))
+    return run(cmd, check=True)
+
+
 class RsyncModel(SyncABC, WithFilters):
     """
     `SyncABC` Implementation of `rsync` based approach to synchronization.
@@ -166,27 +201,12 @@ class RsyncModel(SyncABC, WithFilters):
     """
 
     type: Literal["rsync"]
-    target: Path
-    source: Path
+    target: str
+    source: str
 
     @staticmethod
     def _formatter(f: FilterParts) -> list[str]:
         return ["--filter", f"{f[0]} {f[1]}"]
-
-    def _ensure_path(self, target: Path, verbosity: int, dry_run: bool) -> CompletedProcess:
-        """
-        Ensure the target path exists
-        """
-        logger = get_script_logger(__name__, verbosity)
-        echo = ["echo", "(DRY RUN):"] if dry_run else []
-        cmd = ["mkdir", "--parents"]
-        if tarmatch := _RSYNC_HOST_REGEX.match(str(target)):
-            cmd = cmd + [tarmatch.group("path")]
-            logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
-            return run(echo + ["ssh", tarmatch.group("host")] + cmd, check=True)
-        cmd = echo + cmd + [str(target)]
-        logger.info("Ensuring target directory %s exists with command: %s", target, cmd)
-        return run(cmd, check=True)
 
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
@@ -200,7 +220,7 @@ class RsyncModel(SyncABC, WithFilters):
         if not inner_paths[0].exists():
             logger.error("Source path %s does not exist", inner_paths[0])
         if sync_options.mkpath:
-            proc = self._ensure_path(inner_paths[1], verbosity, sync_options.dry_run)
+            proc = _rsync_ensure_path(inner_paths[1], verbosity, sync_options.dry_run)
             if proc.returncode != 0:
                 logger.error(
                     "Failed to ensure target directory exists with command, "
@@ -216,7 +236,7 @@ class RsyncModel(SyncABC, WithFilters):
         )
         logger.debug("Resolved filters: %s", str(inner_filter))
         cmd = (
-            ["rsync", "--archive", "--compress", "--prune-empty-dirs"]
+            [_shutil_which("rsync"), "--archive", "--compress", "--prune-empty-dirs"]
             + inner_filter
             + (["--verbose"] if verbosity > 1 else [])
             + (["--dry-run"] if sync_options.dry_run else [])
