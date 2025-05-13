@@ -6,6 +6,7 @@ __all__ = ("sync_from_yaml", "sync_from_dict")
 import re
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
+import os
 from pathlib import Path
 from subprocess import CompletedProcess, run
 from typing import Annotated, Any, Final, Literal, Pattern
@@ -353,7 +354,15 @@ class S3SyncModel(SyncABC, WithFilters):
         )
         logger.debug("Resolved filters: %s", str(inner_filter))
         cmd = (
-            [_shutil_which("aws"), "s3", "sync"]
+            [
+                _shutil_which("aws"),
+                "s3",
+                (
+                    "cp"
+                    if any(os.path.exists(p) and os.path.isfile(p) for p in inner_paths)
+                    else "sync"
+                ),
+            ]
             + (["--dryrun"] if sync_options.dry_run else [])
             + inner_filter
             + inner_paths
