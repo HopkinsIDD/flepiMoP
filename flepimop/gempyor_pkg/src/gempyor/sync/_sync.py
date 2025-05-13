@@ -244,6 +244,41 @@ class RsyncModel(SyncABC, WithFilters):
         return run(cmd, check=True)
 
 
+def _resolve_s3_inner_paths(inner_paths: list[str, str]) -> list[str, str]:
+    """
+    Resolve S3 paths to ensure they are in the correct format.
+
+    This function does light edits to the inner paths for S3 to replicate the behavior
+    of `rsync`'s trailing slashes. This behavior is:
+    1. If the source path is a directory with a trailing slash the contents of the
+        source will be copied to the target path.
+    2. If the source path is a directory without a trailing slash, the directory itself
+        will be copied to the target path.
+
+    Args:
+        inner_paths: A list of two strings representing the source and target paths.
+
+    Returns:
+        A list of two strings representing the resolved source and target paths.
+
+    Examples:
+        >>> from gempyor.sync._sync import _resolve_s3_inner_paths
+        >>> _resolve_s3_inner_paths(["model_output", "s3://external-backup"])
+        ['model_output', 's3://external-backup/model_output']
+        >>> _resolve_s3_inner_paths(["model_output/", "s3://external-backup"])
+        ['model_output/', 's3://external-backup']
+        >>> _resolve_s3_inner_paths(["s3://model_output", "s3://external-backup/"])
+        ['s3://model_output', 's3://external-backup/model_output']
+    """
+    new_inner_paths = inner_paths.copy()
+    for i, j in ((0, 1), (1, 0)):
+        if inner_paths[j].startswith("s3://") and not inner_paths[i].endswith("/"):
+            if not inner_paths[j].endswith("/"):
+                new_inner_paths[j] += "/"
+            new_inner_paths[j] += inner_paths[i].split("/")[-1]
+    return new_inner_paths
+
+
 class S3SyncModel(SyncABC, WithFilters):
     """
     Implementation of `aws s3 sync` based approach to synchronization.
@@ -301,10 +336,11 @@ class S3SyncModel(SyncABC, WithFilters):
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
         logger = get_script_logger(__name__, verbosity)
-        inner_paths = [
-            (p if p.endswith("/") else f"{p}/")
-            for p in (sync_options.source(self.source), sync_options.target(self.target))
-        ]
+        inner_paths = list(
+            _resolve_s3_inner_paths(
+                [sync_options.source(self.source), sync_options.target(self.target)]
+            )
+        )
         logger.debug("Resolved paths: %s", str(inner_paths))
         if sync_options.reverse:
             inner_paths.reverse()
