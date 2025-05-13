@@ -412,12 +412,19 @@ def sync_from_yaml(
     Returns:
         A completed process object with the result of the sync operation.
     """
+    logger = get_script_logger(__name__, verbosity)
+    logger.debug("Parsing YAML files for sync protocols: %s", str(yamlfiles))
     syncdef: dict[Literal["sync"], dict[str, Any]] = {"sync": {}}
     for yamlfile in yamlfiles:
         with yamlfile.open("r") as f:
             look = yaml.safe_load(f)
-        if "sync" in look:
-            syncdef["sync"].update(look["sync"])
+        if (sync := look.get("sync")) is not None:
+            logger.debug("Found %u sync protocols in %s.", len(sync), str(yamlfile))
+            syncdef["sync"].update(sync)
+    logger.info(
+        "Parsed %u sync protocols from %u YAML files.", len(syncdef["sync"]), len(yamlfiles)
+    )
+    logger.debug("Parsed sync protocols: %s", ", ".join(syncdef["sync"].keys()))
     return sync_from_dict(syncdef, opts, verbosity)
 
 
