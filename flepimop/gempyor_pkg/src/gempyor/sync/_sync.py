@@ -215,7 +215,7 @@ class RsyncModel(SyncABC, WithFilters):
         if sync_options.reverse:
             inner_paths.reverse()
             logger.debug("Reversed paths, now resolved: %s", str(inner_paths))
-        if not inner_paths[0].exists():
+        if not Path(inner_paths[0]).exists():
             logger.error("Source path %s does not exist", inner_paths[0])
         if sync_options.mkpath:
             proc = _rsync_ensure_path(inner_paths[1], verbosity, sync_options.dry_run)
