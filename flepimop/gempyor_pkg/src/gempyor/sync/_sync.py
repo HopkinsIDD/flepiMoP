@@ -371,18 +371,27 @@ class SyncProtocols(SyncABC):
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
     ) -> CompletedProcess:
+        logger = get_script_logger(__name__, verbosity)
         if not self.sync:
+            logger.info("No protocols to sync.")
             return run(["echo", "No protocols to sync"], check=True)
-        tarproto = (
+        target_protocol = (
             sync_options.protocol if sync_options.protocol else list(self.sync.keys())[0]
         )
-        if proto := self.sync.get(tarproto):
+        logger.debug("Resolved protocol: %s.", str(target_protocol))
+        if proto := self.sync.get(target_protocol):
+            logger.info("Executing protocol: %s.", str(proto))
             return proto.execute(sync_options, verbosity)
+        logger.error(
+            "Protocol '%s' not found, available protocols are: %s.",
+            target_protocol,
+            ", ".join(self.sync.keys()),
+        )
         return run(
             [
                 "echo",
-                f"No protocol `{tarproto}` to sync;",
-                f"available protocols are: {', '.join(self.sync.keys())}",
+                f"Protocol '{target_protocol}' not found, available "
+                f"protocols are: {', '.join(self.sync.keys())}.",
             ],
             check=True,
         )
