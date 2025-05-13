@@ -1,3 +1,8 @@
+"""
+Oversees use of the rk4 algorithim for simulation.
+"""
+
+
 import logging
 import numpy as np
 from numba import jit

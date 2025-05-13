@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gempyor.file_paths &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for gempyor.file_paths</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains utilities for interacting with and generating file paths</span>
+<span class="sd">in the context of this package, which saves its output to a very particular</span>
+<span class="sd">directory structure.</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">    - create_file_name: Creates a full file name with extension.</span>
+<span class="sd">    - create_file_name_without_extension: Creates a file name without extension.</span>
+<span class="sd">    - run_id: Generates a run ID based on the current or provided timestamp.</span>
+<span class="sd">    - create_dir_name: Creates a directory name based on given parameters.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+
+<div class="viewcode-block" id="create_file_name">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.file_paths.create_file_name">[docs]</a>
+<span class="k">def</span> <span class="nf">create_file_name</span><span class="p">(</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">index</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inference_filepath_suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">inference_filename_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">create_directory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a full file name with the given parameters and extension.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        run_id: The unique identifier for the run.</span>
+<span class="sd">        prefix: A prefix for the file path.</span>
+<span class="sd">        index: An index to include in the file name.</span>
+<span class="sd">        ftype: The type of file being created.</span>
+<span class="sd">        extension: The file extension, without the leading period.</span>
+<span class="sd">        inference_filepath_suffix: Suffix for the inference file path. Defaults to &quot;&quot;.</span>
+<span class="sd">        inference_filename_prefix: Prefix for the inference file name. Defaults to &quot;&quot;.</span>
+<span class="sd">        create_directory: Whether to create the parent directory if it doesn&#39;t exist.</span>
+<span class="sd">            Defaults to True.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The full file name with extension.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; from gempyor.file_paths import create_file_name</span>
+<span class="sd">        &gt;&gt;&gt; create_file_name(</span>
+<span class="sd">        ...     &quot;20240101_000000&quot;,</span>
+<span class="sd">        ...     &quot;abc&quot;,</span>
+<span class="sd">        ...     1,</span>
+<span class="sd">        ...     &quot;hosp&quot;,</span>
+<span class="sd">        ...     &quot;parquet&quot;,</span>
+<span class="sd">        ...     &quot;global&quot;,</span>
+<span class="sd">        ...     &quot;jkl&quot;,</span>
+<span class="sd">        ...     create_directory=False,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        PosixPath(&#39;model_output/abc/hosp/global/jkl000000001.20240101_000000.hosp.parquet&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">create_directory</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span>
+            <span class="n">create_dir_name</span><span class="p">(</span>
+                <span class="n">run_id</span><span class="p">,</span>
+                <span class="n">prefix</span><span class="p">,</span>
+                <span class="n">ftype</span><span class="p">,</span>
+                <span class="n">inference_filepath_suffix</span><span class="p">,</span>
+                <span class="n">inference_filename_prefix</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">fn_no_ext</span> <span class="o">=</span> <span class="n">create_file_name_without_extension</span><span class="p">(</span>
+        <span class="n">run_id</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="p">,</span>
+        <span class="n">index</span><span class="p">,</span>
+        <span class="n">ftype</span><span class="p">,</span>
+        <span class="n">inference_filepath_suffix</span><span class="p">,</span>
+        <span class="n">inference_filename_prefix</span><span class="p">,</span>
+        <span class="n">create_directory</span><span class="o">=</span><span class="n">create_directory</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fn_no_ext</span><span class="si">}</span><span class="s2">.%s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">extension</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="create_file_name_without_extension">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.file_paths.create_file_name_without_extension">[docs]</a>
+<span class="k">def</span> <span class="nf">create_file_name_without_extension</span><span class="p">(</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">index</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inference_filepath_suffix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inference_filename_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">create_directory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a file name without the extension.</span>
+
+<span class="sd">    This function will return the file name to use, but does not actually create the</span>
+<span class="sd">    file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        run_id: The unique identifier for the run.</span>
+<span class="sd">        prefix: A prefix for the file path.</span>
+<span class="sd">        index: An index to include in the file name.</span>
+<span class="sd">        ftype: The type of file being created.</span>
+<span class="sd">        inference_filepath_suffix: Suffix for the inference file path.</span>
+<span class="sd">        inference_filename_prefix: Prefix for the inference file name.</span>
+<span class="sd">        create_directory: Whether to create the file&#39;s parent directory if it doesn&#39;t</span>
+<span class="sd">            exist. Defaults to True.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file name without extension as a Path object.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; from gempyor.file_paths import create_file_name_without_extension</span>
+<span class="sd">        &gt;&gt;&gt; create_file_name_without_extension(</span>
+<span class="sd">        ...     &quot;20240101_000000&quot;,</span>
+<span class="sd">        ...     &quot;abc&quot;,</span>
+<span class="sd">        ...     1,</span>
+<span class="sd">        ...     &quot;hosp&quot;,</span>
+<span class="sd">        ...     &quot;global&quot;,</span>
+<span class="sd">        ...     &quot;jkl&quot;,</span>
+<span class="sd">        ...     create_directory=False,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        PosixPath(&#39;model_output/abc/hosp/global/jkl000000001.20240101_000000.hosp&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">create_directory</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span>
+            <span class="n">create_dir_name</span><span class="p">(</span>
+                <span class="n">run_id</span><span class="p">,</span>
+                <span class="n">prefix</span><span class="p">,</span>
+                <span class="n">ftype</span><span class="p">,</span>
+                <span class="n">inference_filepath_suffix</span><span class="p">,</span>
+                <span class="n">inference_filename_prefix</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span>
+        <span class="s2">&quot;model_output&quot;</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="p">,</span>
+        <span class="n">ftype</span><span class="p">,</span>
+        <span class="n">inference_filepath_suffix</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">inference_filename_prefix</span><span class="si">}{</span><span class="n">index</span><span class="si">:</span><span class="s2">&gt;09</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">ftype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">filename</span></div>
+
+
+
+<div class="viewcode-block" id="run_id">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.file_paths.run_id">[docs]</a>
+<span class="k">def</span> <span class="nf">run_id</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">datetime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a run ID based on the current or provided timestamp.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        timestamp: A specific timestamp to use. If `None` this function will use the</span>
+<span class="sd">            current timestamp.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The generated run ID.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; from datetime import datetime, timezone</span>
+<span class="sd">        &gt;&gt;&gt; from gempyor.file_paths import run_id</span>
+<span class="sd">        &gt;&gt;&gt; run_id()</span>
+<span class="sd">        &#39;20240711_160059&#39;</span>
+<span class="sd">        &gt;&gt;&gt; run_id(timestamp=datetime(2024, 1, 1))</span>
+<span class="sd">        &#39;20240101_000000&#39;</span>
+<span class="sd">        &gt;&gt;&gt; run_id(timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc))</span>
+<span class="sd">        &#39;20240101_000000UTC&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">timestamp</span><span class="p">:</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S%Z&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="create_dir_name">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.file_paths.create_dir_name">[docs]</a>
+<span class="k">def</span> <span class="nf">create_dir_name</span><span class="p">(</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ftype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inference_filepath_suffix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inference_filename_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a directory name based on the given parameters.</span>
+
+<span class="sd">    This function will return the directory name to use, but does not actually create</span>
+<span class="sd">    the directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        run_id: The unique identifier for the run.</span>
+<span class="sd">        prefix: A prefix for the file path.</span>
+<span class="sd">        ftype: The type of file being created.</span>
+<span class="sd">        inference_filepath_suffix: Suffix for the inference file path.</span>
+<span class="sd">        inference_filename_prefix: Prefix for the inference file name.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The directory name.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; from gempyor.file_paths import create_dir_name</span>
+<span class="sd">        &gt;&gt;&gt; create_dir_name(&quot;20240101_000000&quot;, &quot;abc&quot;, &quot;hosp&quot;, &quot;def&quot;, &quot;jkl&quot;)</span>
+<span class="sd">        &#39;model_output/abc/hosp/def&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span>
+        <span class="n">create_file_name_without_extension</span><span class="p">(</span>
+            <span class="n">run_id</span><span class="p">,</span>
+            <span class="n">prefix</span><span class="p">,</span>
+            <span class="mi">1</span><span class="p">,</span>
+            <span class="n">ftype</span><span class="p">,</span>
+            <span class="n">inference_filepath_suffix</span><span class="p">,</span>
+            <span class="n">inference_filename_prefix</span><span class="p">,</span>
+            <span class="n">create_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="create_file_name_for_push">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.file_paths.create_file_name_for_push">[docs]</a>
+<span class="k">def</span> <span class="nf">create_file_name_for_push</span><span class="p">(</span>
+    <span class="n">flepi_run_index</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">flepi_slot_index</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">flepi_block_index</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a list of file names for different types of inference results.</span>
+
+<span class="sd">    This function generates a list of file names based on the provided run index, prefix, slot index,</span>
+<span class="sd">    and block index. Each file name corresponds to a different type of inference result, such as</span>
+<span class="sd">    &quot;seir&quot;, &quot;hosp&quot;, &quot;llik&quot;, etc. The file names are generated using the `create_file_name` function,</span>
+<span class="sd">    with specific extensions based on the type: &quot;csv&quot; for &quot;seed&quot; and &quot;parquet&quot; for all other types.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        flepi_run_index :</span>
+<span class="sd">            The index of the run. This is used to uniquely identify the run.</span>
+<span class="sd">        prefix :</span>
+<span class="sd">            A prefix string to be included in the file names. This is typically used to categorize or</span>
+<span class="sd">            identify the files.</span>
+<span class="sd">        flepi_slot_index :</span>
+<span class="sd">            The slot index used in the filename. This is formatted as a zero-padded nine-digit number.</span>
+<span class="sd">        flepi_block_index :</span>
+<span class="sd">            The block index used in the filename. This typically indicates a specific block or segment</span>
+<span class="sd">            of the data being processed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list</span>
+<span class="sd">            A list of generated file names, each corresponding to a different type of inference result.</span>
+<span class="sd">            The file names include the provided prefix, run index, slot index, block index, type, and</span>
+<span class="sd">            the appropriate file extension (either &quot;csv&quot; or &quot;parquet&quot;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">type_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;seir&quot;</span><span class="p">,</span> <span class="s2">&quot;hosp&quot;</span><span class="p">,</span> <span class="s2">&quot;llik&quot;</span><span class="p">,</span> <span class="s2">&quot;spar&quot;</span><span class="p">,</span> <span class="s2">&quot;snpi&quot;</span><span class="p">,</span> <span class="s2">&quot;hnpi&quot;</span><span class="p">,</span> <span class="s2">&quot;hpar&quot;</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;seed&quot;</span><span class="p">]</span>
+    <span class="n">extension_map</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">type_name</span><span class="p">:</span> <span class="s2">&quot;csv&quot;</span> <span class="k">if</span> <span class="n">type_name</span> <span class="o">==</span> <span class="s2">&quot;seed&quot;</span> <span class="k">else</span> <span class="s2">&quot;parquet&quot;</span> <span class="k">for</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="n">type_list</span>
+    <span class="p">}</span>
+    <span class="n">name_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">type_name</span><span class="p">,</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">extension_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">create_file_name</span><span class="p">(</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">flepi_run_index</span><span class="p">,</span>
+            <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">,</span>
+            <span class="n">inference_filename_prefix</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{:09d}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">flepi_slot_index</span><span class="p">)),</span>
+            <span class="n">inference_filepath_suffix</span><span class="o">=</span><span class="s2">&quot;chimeric/intermediate&quot;</span><span class="p">,</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">flepi_block_index</span><span class="p">,</span>
+            <span class="n">ftype</span><span class="o">=</span><span class="n">type_name</span><span class="p">,</span>
+            <span class="n">extension</span><span class="o">=</span><span class="n">extension</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">name_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name_list</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/gempyor.html">gempyor package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,3 +1,7 @@
+"""
+Provdides abstractions for parsing/processing seeding data.
+"""
+
 # Exports
 __all__ = ("Seeding", "SeedingFactory")
 
