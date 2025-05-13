@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+USERDIR=$( dirname "$PWD" )
+FLEPI_PATH=$( pwd )
+FLEPI_CONDA="$FLEPI_PATH/venv/"
+SCRIPT_PATH=$( realpath "$(dirname "$0")" )
+$SCRIPT_PATH/flepimop-install -d $USERDIR -f $FLEPI_PATH -c $FLEPI_CONDA -g -r
