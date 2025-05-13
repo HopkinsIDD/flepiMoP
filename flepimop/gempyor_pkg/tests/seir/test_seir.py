@@ -63,9 +63,11 @@ def test_check_parameter_positivity():
         (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
     )
     for _ in range(5):
-        test_array2[randint(0, len(parameter_names) - 1)][randint(0, len(dates) - 1)][
-            randint(0, len(subpop_names) - 1)
-        ] = -1
+        param_idx = np.random.randint(0, test_array2.shape[0])
+        date_idx = np.random.randint(0, test_array2.shape[1])
+        subpop_idx = np.random.randint(0, test_array2.shape[2])
+        test_array2[param_idx, date_idx, subpop_idx] = -1
+
     test_2_negative_index_parameters = np.argwhere(test_array2 < 0)
     test_2_neg_params = []
     test_2_neg_subpops = []
