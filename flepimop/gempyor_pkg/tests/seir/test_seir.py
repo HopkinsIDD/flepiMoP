@@ -3,7 +3,6 @@ import os
 import pytest
 import warnings
 import shutil
-from random import randint
 import pandas as pd
 import re
 
@@ -108,7 +107,7 @@ def test_check_parameter_positivity():
     ):
         seir.check_parameter_positivity(
             test_array3, parameter_names, dates, subpop_names
-        )  # ValueError
+        )  
 
 
 def test_check_values():
