@@ -1,0 +1,53 @@
+.TH "FLEPIMOP SYNC" "1" "2025-05-14" "2.1" "flepimop sync Manual"
+.SH NAME
+flepimop\-sync \- Sync flepimop files between local and...
+.SH SYNOPSIS
+.B flepimop sync
+[OPTIONS] [CONFIG_FILES]...
+.SH DESCRIPTION
+.PP
+    Sync flepimop files between local and remote locations. For the filter options,
+    see `man rsync` for more information - sync supports basic include / exclude filters,
+    and follows the rsync precendence rules: earlier filters have higher precedence.
+.PP
+    All of the filter options (-a, -e, -f) can be specified multiple times to add multiple filters.
+    For the prefix and suffix filters, they are first assembled into a list in the order specified
+    and then added to the beginning or end of the filter list in the config file. So e.g. `-a "+ foo" -a "- bar"`
+    adds [`+ foo`, `- bar`] to the beginning of the filter list, meaning the include filter `+ a` has higher precedence
+    than the exclude filter `- bar`.
+.PP
+    
+.SH OPTIONS
+.TP
+\fB\-p,\fP \-\-protocol TEXT
+sync protocol to use from CONFIG_FILES
+.TP
+\fB\-s,\fP \-\-source PATH
+source directory to 'push' changes from
+.TP
+\fB\-t,\fP \-\-target PATH
+target directory to 'push' changes to
+.TP
+\fB\-e,\fP \-\-fsuffix TEXT
+Add a filter to the end of the filter list in CONFIG_FILES (same as `-f` if that list is empty)
+.TP
+\fB\-a,\fP \-\-fprefix TEXT
+Add a filter to the beginning of the filter list in CONFIG_FILES (same as `-f` if that list is empty)
+.TP
+\fB\-f,\fP \-\-filter TEXT
+replace the filter list in CONFIG_FILES; can be specified multiple times
+.TP
+\fB\-\-no\-filter\fP
+ignore all filters in config file
+.TP
+\fB\-\-reverse\fP
+reverse the source and target directories
+.TP
+\fB\-\-mkpath\fP
+Before syncing, manually ensure destination directory exists.
+.TP
+\fB\-n,\fP \-\-dry\-run
+perform a dry run of the sync operation
+.TP
+\fB\-v,\fP \-\-verbose
+The verbosity level to use for this command.

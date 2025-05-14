@@ -105,9 +105,7 @@ def test_check_parameter_positivity():
             rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
         ),
     ):
-        seir.check_parameter_positivity(
-            test_array3, parameter_names, dates, subpop_names
-        )  
+        seir.check_parameter_positivity(test_array3, parameter_names, dates, subpop_names)
 
 
 def test_check_values():

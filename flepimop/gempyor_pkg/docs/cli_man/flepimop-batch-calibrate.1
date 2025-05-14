@@ -1,0 +1,188 @@
+.TH "FLEPIMOP BATCH-CALIBRATE" "1" "2025-05-14" "2.1" "flepimop batch-calibrate Manual"
+.SH NAME
+flepimop\-batch-calibrate \- Submit a calibration job to a batch system.
+.SH SYNOPSIS
+.B flepimop batch-calibrate
+[OPTIONS] [CONFIG_FILES]...
+.SH DESCRIPTION
+.PP
+    Submit a calibration job to a batch system.
+    
+    This job makes it straightforward to submit a calibration job to a batch system. The
+    job will be submitted with the given configuration file and additional options. The
+    general steps this tool follows are:
+    
+    
+    1) Generate a unique job name from the configuration and timestamp,
+    2) Determine the outcome/SEIR modifier scenarios to use,
+    3) Determine the batch system to use and required job size/resources/time limit,
+    4) Write a 'manifest.json' with job metadata, write the config used to a file, and
+       checkout a new branch in the project git repository,
+    5) Loop over the outcome/SEIR modifier scenarios and submit a job for each scenario.
+    
+    To get a better understanding of this tool you can use the `--dry-run` flag which
+    will complete all of steps described above except for submitting the jobs. Or if you
+    would like to test run the batch scripts without submitting to slurm or other batch 
+    systems you can use the `--local` flag which will run the "batch" job locally (only 
+    use for small test jobs).
+    
+    Here is an example of how to use this tool with the `examples/tutorials/` directory:
+    
+    
+    ```bash
+    $ flepimop batch-calibrate \
+        # The paths and conda environment to use
+        --flepi-path $FLEPI_PATH \
+        --project-path $FLEPI_PATH/examples/tutorials \
+        --conda-env flepimop-env \ 
+        # The size of the job to run
+        --blocks 1 \
+        --chains 50 \
+        --samples 100 \
+        --simulations 500 \
+        # The time limit for the job
+        --time-limit 8hr \
+        # The batch system to use, equivalent to `--batch-system slurm`
+        --slurm \
+        # Resource options
+        --nodes 50 \
+        --cpus 2 \
+        --memory 4GB \
+        # Batch system specific options can be provided via `--extra`
+        --extra partition=normal \
+        --extra email=bob@example.edu \
+        # Only run a dry run to see what would be submitted for the config
+        --dry-run \
+        -vvv config_sample_2pop_inference.yml
+    ```
+    
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-config PATH
+Deprecated: configuration file(s) for this simulation
+.TP
+\fB\-p,\fP \-\-populations TEXT
+Population(s) to run use in simulation.
+.TP
+\fB\-s,\fP \-\-seir_modifiers_scenarios TEXT
+override/select the transmission scenario(s) to run
+.TP
+\fB\-d,\fP \-\-outcome_modifiers_scenarios TEXT
+override/select the outcome scenario(s) to run
+.TP
+\fB\-j,\fP \-\-jobs INTEGER RANGE
+the parallelization factor  [default: 4; x>=1]
+.TP
+\fB\-n,\fP \-\-nslots INTEGER RANGE
+override the # of simulation runs in the config file  [x>=1]
+.TP
+\fB\-\-in\-id\fP TEXT
+Unique identifier for the run
+.TP
+\fB\-\-out\-id\fP TEXT
+Unique identifier for the run
+.TP
+\fB\-\-in\-prefix\fP TEXT
+unique identifier for the run
+.TP
+\fB\-i,\fP \-\-first_sim_index INTEGER RANGE
+The index of the first simulation  [default: 1; x>=1]
+.TP
+\fB\-m,\fP \-\-method TEXT
+If provided, overrides seir::integration::method
+.TP
+\fB\-\-write\-csv\fP / \-\-no\-write\-csv
+write csv output?  [default: no-write-csv]
+.TP
+\fB\-\-write\-parquet\fP / \-\-no\-write\-parquet
+write parquet output?  [default: write-parquet]
+.TP
+\fB\-\-flepi\-path\fP PATH
+Path to the flepiMoP directory being used.  [required]
+.TP
+\fB\-\-project\-path\fP PATH
+Path to the project directory being used.  [required]
+.TP
+\fB\-\-conda\-env\fP TEXT
+The conda environment to use for the job.
+.TP
+\fB\-\-blocks\fP INTEGER RANGE
+The number of sequential blocks to run per a chain.  [x>=1; required]
+.TP
+\fB\-\-chains\fP INTEGER RANGE
+The number of chains or walkers, depending on inference method, to run.  [x>=1; required]
+.TP
+\fB\-\-samples\fP INTEGER RANGE
+The number of samples per a block.  [x>=1; required]
+.TP
+\fB\-\-simulations\fP INTEGER RANGE
+The number of simulations per a block.  [x>=1; required]
+.TP
+\fB\-\-time\-limit\fP DURATION
+The time limit for the job. If units are not specified, minutes are assumed.
+.TP
+\fB\-\-batch\-system\fP TEXT
+The name of the batch system being used.
+.TP
+\fB\-\-local\fP
+Flag to use the local batch system. Equivalent to `--batch-system local`.
+.TP
+\fB\-\-slurm\fP
+Flag to use the slurm batch system. Equivalent to `--batch-system slurm`.
+.TP
+\fB\-\-cluster\fP TEXT
+The name of the cluster being used, only needed if cluster info is required.
+.TP
+\fB\-\-nodes\fP INTEGER RANGE
+Override for the number of nodes to use.  [x>=1]
+.TP
+\fB\-\-cpus\fP INTEGER RANGE
+Override for the number of CPUs per node to use.  [x>=1]
+.TP
+\fB\-\-memory\fP MEMORY
+Override for the amount of memory per node to use in MB.
+.TP
+\fB\-\-from\-estimate\fP PATH
+The path to a previous estimation file to use for the job. This will override the job resources and time limit given.
+.TP
+\fB\-\-estimate\fP
+Should this be submitted as an estimation job? If this flag is given then several jobs will be submitted with smaller sizes to estimate the time and resources needed for the full job. A time limit and memory requirement must still be given, but act as upper bounds on estimation jobs.
+.TP
+\fB\-\-estimate\-runs\fP INTEGER RANGE
+The number of estimation runs to perform. Must be at least 6 due to the estimation method, but more runs will provide a better estimate.  [x>=6]
+.TP
+\fB\-\-estimate\-interval\fP FLOAT RANGE
+The size of the prediction interval to use for estimating the required resources. Must be between 0 and 1.  [0.0<=x<=1.0]
+.TP
+\fB\-\-estimate\-vary\fP [blocks|chains|simulations]
+The job size fields to vary for estimating the resources needed for the job. This should be a subset of the job size fields.
+.TP
+\fB\-\-estimate\-factors\fP [simulations_per_chain|simulations|chains|blocks|total_simulations|samples|samples_per_chain|total_samples]
+The factors to use for estimating the resources needed for the job. This should be a subset of the job size fields. Also keep in mind to avoid using colinear factors, i.e. blocks and simulations per a block. Doing so can lead to unstable estimates.
+.TP
+\fB\-\-estimate\-measurements\fP [cpu|memory|time]
+The measurements to use for estimating the resources needed for the job. 
+.TP
+\fB\-\-estimate\-scale\-upper\fP FLOAT
+The upper scale to use for estimating the resources needed for the job. This is the factor to scale the job size by to get the upper bound for the estimation job sizes.
+.TP
+\fB\-\-estimate\-scale\-lower\fP FLOAT
+The lower scale to use for estimating the resources needed for the job. This is the factor to scale the job size by to get the lower bound for the estimation job sizes.
+.TP
+\fB\-\-skip\-manifest\fP
+Flag to skip writing a manifest file, useful in dry runs.
+.TP
+\fB\-\-skip\-checkout\fP
+Flag to skip checking out a new branch in the git repository, useful in dry runs.
+.TP
+\fB\-\-debug\fP
+Flag to enable debugging in batch submission scripts.
+.TP
+\fB\-\-extra\fP TEXT
+Extra options to pass to the batch system. Please consult the batch system documentation for valid options.
+.TP
+\fB\-v,\fP \-\-verbose
+The verbosity level to use for this command.
+.TP
+\fB\-\-dry\-run\fP
+Should this command be run using dry run?

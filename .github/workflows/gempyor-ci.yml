@@ -58,7 +58,7 @@ jobs:
           cd examples
           pytest --exitfirst
         shell: bash
-  sphinx-docs:
+  doc-updates:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     steps:
@@ -85,13 +85,23 @@ jobs:
           cd flepimop/gempyor_pkg/docs
           make fullbuild
         shell: bash
+      - name: Install pandoc 
+        run: |
+          sudo apt-get update && sudo apt-get install -y pandoc
+      - name: Build click documentation with click-man
+        run: |
+          cd flepimop/gempyor_pkg
+          click-man flepimop --target docs/cli_man --man-version 1
+          python docs/click-man_parsing.py
       - name: Commit/push any changed docs
         run: |
-          if [[ $(git status --porcelain flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 ]]; then
+          if [[ $(git status --porcelain flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 || \
+                $(git status --porcelain documentation/gitbook/how-to-run/click-commands/ | wc -l) -gt 0 ]]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git add flepimop/gempyor_pkg/docs/source/
-            git commit -m "auto-update Sphinx docs [ci skip]"
+            git add documentation/gitbook/how-to-run/click-commands/
+            git commit -m "auto-update Sphinx and click-man docs [ci skip]"
             git push origin "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           fi
         shell: bash

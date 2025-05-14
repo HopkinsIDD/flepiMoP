@@ -1,0 +1,50 @@
+.TH "FLEPIMOP COMPARTMENTS EXPORT" "1" "2025-05-14" "2.1" "flepimop compartments export Manual"
+.SH NAME
+flepimop\-compartments\-export \- Export compartment information to a CSV file.
+.SH SYNOPSIS
+.B flepimop compartments export
+[OPTIONS] [CONFIG_FILES]...
+.SH DESCRIPTION
+.PP
+    Export compartment information to a CSV file.
+    
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-config PATH
+Deprecated: configuration file(s) for this simulation
+.TP
+\fB\-p,\fP \-\-populations TEXT
+Population(s) to run use in simulation.
+.TP
+\fB\-s,\fP \-\-seir_modifiers_scenarios TEXT
+override/select the transmission scenario(s) to run
+.TP
+\fB\-d,\fP \-\-outcome_modifiers_scenarios TEXT
+override/select the outcome scenario(s) to run
+.TP
+\fB\-j,\fP \-\-jobs INTEGER RANGE
+the parallelization factor  [default: 4; x>=1]
+.TP
+\fB\-n,\fP \-\-nslots INTEGER RANGE
+override the # of simulation runs in the config file  [x>=1]
+.TP
+\fB\-\-in\-id\fP TEXT
+Unique identifier for the run
+.TP
+\fB\-\-out\-id\fP TEXT
+Unique identifier for the run
+.TP
+\fB\-\-in\-prefix\fP TEXT
+unique identifier for the run
+.TP
+\fB\-i,\fP \-\-first_sim_index INTEGER RANGE
+The index of the first simulation  [default: 1; x>=1]
+.TP
+\fB\-m,\fP \-\-method TEXT
+If provided, overrides seir::integration::method
+.TP
+\fB\-\-write\-csv\fP / \-\-no\-write\-csv
+write csv output?  [default: no-write-csv]
+.TP
+\fB\-\-write\-parquet\fP / \-\-no\-write\-parquet
+write parquet output?  [default: write-parquet]
