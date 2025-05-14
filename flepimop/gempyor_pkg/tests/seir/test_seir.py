@@ -3,7 +3,6 @@ import os
 import pytest
 import warnings
 import shutil
-from random import randint
 import pandas as pd
 import re
 
@@ -63,9 +62,11 @@ def test_check_parameter_positivity():
         (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
     )
     for _ in range(5):
-        test_array2[randint(0, len(parameter_names) - 1)][randint(0, len(dates) - 1)][
-            randint(0, len(subpop_names) - 1)
-        ] = -1
+        param_idx = np.random.randint(0, test_array2.shape[0])
+        date_idx = np.random.randint(0, test_array2.shape[1])
+        subpop_idx = np.random.randint(0, test_array2.shape[2])
+        test_array2[param_idx, date_idx, subpop_idx] = -1
+
     test_2_negative_index_parameters = np.argwhere(test_array2 < 0)
     test_2_neg_params = []
     test_2_neg_subpops = []
@@ -104,9 +105,7 @@ def test_check_parameter_positivity():
             rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
         ),
     ):
-        seir.check_parameter_positivity(
-            test_array3, parameter_names, dates, subpop_names
-        )  # ValueError
+        seir.check_parameter_positivity(test_array3, parameter_names, dates, subpop_names)
 
 
 def test_check_values():
