@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gempyor.parameters &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for gempyor.parameters</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides abstractions for interacting with the parameters configurations.</span>
+
+<span class="sd">Classes:</span>
+<span class="sd">    Parameters:</span>
+<span class="sd">        Encapsulates logic for loading, parsing, and summarizing parameter configurations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Parameters&quot;</span><span class="p">]</span>
+
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">import</span> <span class="nn">confuse</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">NPI</span><span class="p">,</span> <span class="n">utils</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Parameters">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters">[docs]</a>
+<span class="k">class</span> <span class="nc">Parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Encapsulates logic for loading, parsing, and summarizing parameter configurations.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        npar: The number of parameters contained within the given configuration.</span>
+<span class="sd">        pconfig: A view subsetting to the parameters section of a given config file.</span>
+<span class="sd">        pdata: A dictionary containing a processed and reformatted view of the `pconfig`</span>
+<span class="sd">            attribute.</span>
+<span class="sd">        pnames: The names of the parameters given.</span>
+<span class="sd">        pnames2pindex: A mapping parameter names to their location in the `pnames`</span>
+<span class="sd">            attribute.</span>
+<span class="sd">        stacked_modifier_method: A mapping of modifier method to the parameters to which</span>
+<span class="sd">            that modifier method is relevant for.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">parameter_config</span><span class="p">:</span> <span class="n">confuse</span><span class="o">.</span><span class="n">ConfigView</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">ti</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">tf</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">subpop_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">path_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a `Parameters` instance from a parameter config view.</span>
+
+<span class="sd">        Encapsulates logic for loading, parsing, and summarizing parameter configurations.</span>
+<span class="sd">        Parameters can be defined or drawn from distributions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            parameter_config: A view of the overall configuration object focused on the parameters</span>
+<span class="sd">                section of a given config file.</span>
+<span class="sd">            ti: An initial date for simulation.</span>
+<span class="sd">            tf: A final date for simulation.</span>
+<span class="sd">            subpop_names: A list of subpopulation names.</span>
+<span class="sd">            path_prefix: A file path prefix to directory containing parameter values.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: The parameter names for the SEIR model are not unique.</span>
+<span class="sd">            ValueError: The dataframe file found for a given parameter contains an</span>
+<span class="sd">                insufficient number of columns for the subpopulations being considered.</span>
+<span class="sd">            ValueError: The dataframe file found for a given parameter does not have</span>
+<span class="sd">                enough date entries to cover the time span being considered by the given</span>
+<span class="sd">                `ti` and `tf`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">:</span> <span class="n">confuse</span><span class="o">.</span><span class="n">ConfigView</span> <span class="o">=</span> <span class="n">parameter_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pnames2pindex</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacked_modifier_method</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
+            <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span> <span class="s2">&quot;product&quot;</span><span class="p">,</span> <span class="s2">&quot;reduction_product&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sum&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;product&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;reduction_product&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pnames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">])):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Parameters of the SEIR model have the same &quot;</span>
+                <span class="s2">&quot;name (remember that case is not sufficient!)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Attributes of dictionary</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pnames2pindex</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;idx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+
+            <span class="c1"># Parameter characterized by it&#39;s distribution</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;dist&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_random_distribution</span><span class="p">()</span>
+
+            <span class="c1"># Parameter given as a file</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;timeseries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">fn_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_prefix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;timeseries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">read_df</span><span class="p">(</span><span class="n">fn_name</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;date&quot;</span><span class="p">)</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># if only one ts, assume it applies to all subpops</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                        <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">subpop_names</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                        <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+                        <span class="n">columns</span><span class="o">=</span><span class="n">subpop_names</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">subpop_names</span><span class="p">):</span>  <span class="c1"># one ts per subpop</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span>
+                        <span class="n">subpop_names</span>
+                    <span class="p">]</span>  <span class="c1"># make sure the order of subpops is the same as the reference</span>
+                    <span class="c1"># (subpop_names from spatial setup) and select the columns</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loaded col :&quot;</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)))</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;geodata col:&quot;</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">subpop_names</span><span class="p">))</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Issue loading file &#39;</span><span class="si">{</span><span class="n">fn_name</span><span class="si">}</span><span class="s2">&#39; for parameter &#39;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;the number of non-&#39;date&#39; columns is &#39;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;, &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;expected &#39;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">subpop_names</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39; (number of subpopulations) or one.&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">ti</span><span class="p">)</span> <span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">tf</span><span class="p">)]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span> <span class="n">tf</span><span class="p">))):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;config dates:&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span> <span class="n">tf</span><span class="p">))</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loaded dates:&quot;</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Issue loading file &#39;</span><span class="si">{</span><span class="n">fn_name</span><span class="si">}</span><span class="s2">&#39; for parameter &#39;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Provided file dates span &#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2">&#39; to &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s2">&#39;, but the config dates &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;span &#39;</span><span class="si">{</span><span class="n">ti</span><span class="si">}</span><span class="s2">&#39; to &#39;</span><span class="si">{</span><span class="n">tf</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span> <span class="n">tf</span><span class="p">)</span> <span class="o">==</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;config dates:&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span> <span class="n">tf</span><span class="p">))</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loaded dates:&quot;</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Issue loading file &#39;</span><span class="si">{</span><span class="n">fn_name</span><span class="si">}</span><span class="s2">&#39; for parameter &#39;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Provided file dates span &#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2">&#39; to &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s2">&#39;, but the config dates &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;span &#39;</span><span class="si">{</span><span class="n">ti</span><span class="si">}</span><span class="s2">&#39; to &#39;</span><span class="si">{</span><span class="n">tf</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;stacked_modifier_method&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;stacked_modifier_method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span>
+                    <span class="s2">&quot;stacked_modifier_method&quot;</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">as_str</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;stacked_modifier_method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;product&quot;</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;No &#39;stacked_modifier_method&#39; for parameter </span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="s2">&quot;assuming multiplicative NPIs.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;rolling_mean_windows&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;rolling_mean_windows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span>
+                    <span class="s2">&quot;rolling_mean_windows&quot;</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">stacked_modifier_method</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;stacked_modifier_method&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">pn</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;We have </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="si">}</span><span class="s2"> parameter: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data to sample is: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Index in arrays are: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames2pindex</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NPI overlap operation is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stacked_modifier_method</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Parameters.reinitialize_distributions">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters.reinitialize_distributions">[docs]</a>
+    <span class="k">def</span> <span class="nf">reinitialize_distributions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reinitialize all random distributions.</span>
+
+<span class="sd">        This method reinitializes all random distributions for the parameters contained</span>
+<span class="sd">        within this class. The random seed for each distribution is captured on</span>
+<span class="sd">        initialization so this method will change those seeds.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;dist&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;dist&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pconfig</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_random_distribution</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Parameters.get_pnames2pindex">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters.get_pnames2pindex">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_pnames2pindex</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read the `pnames2pindex` attribute.</span>
+
+<span class="sd">        This redundant method returns the `pnames2pindex` attribute of this class.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A mapping parameter names to their location in the `pnames` attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pnames2pindex</span></div>
+
+
+<div class="viewcode-block" id="Parameters.parameters_quick_draw">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters.parameters_quick_draw">[docs]</a>
+    <span class="k">def</span> <span class="nf">parameters_quick_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_days</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Format all parameters as a numpy array including sampling.</span>
+
+<span class="sd">        The entries in the output array are filled based on the input given in the</span>
+<span class="sd">        parameters section of a yaml config file. If the given parameter is pulled from</span>
+<span class="sd">        a distribution rather than fixed the values will be pulled from that</span>
+<span class="sd">        distribution. If an appropriate value cannot be found for an entry then a</span>
+<span class="sd">        `np.nan` is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            n_days: The number of days to generate an array for.</span>
+<span class="sd">            nsubpops: The number of subpopulations to generate an array for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A numpy array of size (`npar`, `n_days`, `nsubpops`) where `npar`</span>
+<span class="sd">            corresponds to the `npar` attribute of this class.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            If any of the parameters are &#39;timeseries&#39; type parameters then `n_days` and</span>
+<span class="sd">            `nsubpops` must be equal to the number of days between `ti` and `tf` given</span>
+<span class="sd">            when initializing this class and the number of subpopulations given to this</span>
+<span class="sd">            class via `subpop_names`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">param_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">,</span> <span class="n">n_days</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">)</span>
+        <span class="n">param_arr</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>  <span class="c1"># fill with NaNs so we don&#39;t fail silently</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;dist&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]:</span>
+                <span class="n">param_arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_days</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;dist&quot;</span><span class="p">]())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">param_arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="c1"># we don&#39;t store it as a member because this object needs to be small to be pickable</span>
+        <span class="k">return</span> <span class="n">param_arr</span></div>
+
+
+<div class="viewcode-block" id="Parameters.parameters_load">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters.parameters_load">[docs]</a>
+    <span class="k">def</span> <span class="nf">parameters_load</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">param_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">n_days</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Format all parameters as a numpy array including sampling and overrides.</span>
+
+<span class="sd">        This method serves largely the same purpose as the `parameters_quick_draw`, but</span>
+<span class="sd">        has the ability to override the parameter specifications contained by this class</span>
+<span class="sd">        with a given dataframe.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            param_df: A DataFrame containing the columns &#39;parameter&#39; and &#39;value&#39;. If</span>
+<span class="sd">                more than one entry for a given parameter is given then only the first</span>
+<span class="sd">                value will be taken.</span>
+<span class="sd">            n_days: The number of days to generate an array for.</span>
+<span class="sd">            nsubpops: The number of subpopulations to generate an array for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A numpy array of size (`npar`, `n_days`, `nsubpops`) where `npar`</span>
+<span class="sd">            corresponds to the `npar` attribute of this class.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            If any of the parameters are &#39;timeseries&#39; type parameters and are not being</span>
+<span class="sd">            overridden then `n_days` and `nsubpops` must be equal to the number of days</span>
+<span class="sd">            between `ti` and `tf` given when initializing this class and the number of</span>
+<span class="sd">            subpopulations given to this class via `subpop_names`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">param_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">,</span> <span class="n">n_days</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">)</span>
+        <span class="n">param_arr</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>  <span class="c1"># fill with NaNs so we don&#39;t fail silently</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">param_df</span><span class="p">[</span><span class="s2">&quot;parameter&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+                <span class="n">pval</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">param_df</span><span class="p">[</span><span class="n">param_df</span><span class="p">[</span><span class="s2">&quot;parameter&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">pn</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">param_arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_days</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">),</span> <span class="n">pval</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;ts&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]:</span>
+                <span class="n">param_arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;PARAM: parameter </span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2"> NOT found in loadID file. &quot;</span>
+                    <span class="s2">&quot;Drawing from config distribution&quot;</span>
+                <span class="p">)</span>
+                <span class="n">pval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;dist&quot;</span><span class="p">]()</span>
+                <span class="n">param_arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_days</span><span class="p">,</span> <span class="n">nsubpops</span><span class="p">),</span> <span class="n">pval</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">param_arr</span></div>
+
+
+<div class="viewcode-block" id="Parameters.getParameterDF">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters.getParameterDF">[docs]</a>
+    <span class="k">def</span> <span class="nf">getParameterDF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_draw</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serialize a parameter draw as a pandas `DataFrame`.</span>
+
+<span class="sd">        This method only considers distribution parameters, which does include fixed</span>
+<span class="sd">        parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            p_draw: A numpy array of shape (`npar`, `n_days`, `nsubpops`) like that</span>
+<span class="sd">                returned by `parameters_quick_draw`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A pandas `DataFrame` with the columns &#39;parameter&#39; and &#39;value&#39; corresponding</span>
+<span class="sd">            to the parameter name and value as well as an index containing the parameter</span>
+<span class="sd">            name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># we don&#39;t write to disk time series parameters.</span>
+        <span class="n">out_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">p_draw</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;dist&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span>
+            <span class="p">],</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">],</span>
+            <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">pn</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;dist&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]],</span>
+        <span class="p">)</span>
+        <span class="n">out_df</span><span class="p">[</span><span class="s2">&quot;parameter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_df</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">return</span> <span class="n">out_df</span></div>
+
+
+<div class="viewcode-block" id="Parameters.parameters_reduce">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.parameters.Parameters.parameters_reduce">[docs]</a>
+    <span class="k">def</span> <span class="nf">parameters_reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_draw</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">npi</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Params reduced according to the NPI provided.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            p_draw: A numpy array of shape (`npar`, `n_days`, `nsubpops`) like that</span>
+<span class="sd">                returned by `parameters_quick_draw`.</span>
+<span class="sd">            npi: An NPI object describing the parameter reduction to perform.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An array the same shape as `p_draw` with the prescribed reductions</span>
+<span class="sd">            performed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">p_reduced</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">p_draw</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">npi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pnames</span><span class="p">):</span>
+                <span class="n">npi_val</span> <span class="o">=</span> <span class="n">NPI</span><span class="o">.</span><span class="n">reduce_parameter</span><span class="p">(</span>
+                    <span class="n">parameter</span><span class="o">=</span><span class="n">p_draw</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                    <span class="n">modification</span><span class="o">=</span><span class="n">npi</span><span class="o">.</span><span class="n">getReduction</span><span class="p">(</span><span class="n">pn</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span>
+                    <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;stacked_modifier_method&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="n">p_reduced</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">npi_val</span>
+                <span class="k">if</span> <span class="s2">&quot;rolling_mean_windows&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">]:</span>
+                    <span class="n">p_reduced</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">rolling_mean_pad</span><span class="p">(</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">npi_val</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">pn</span><span class="p">][</span><span class="s2">&quot;rolling_mean_windows&quot;</span><span class="p">]</span>
+                    <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">p_reduced</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/gempyor.html">gempyor package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
