@@ -14,7 +14,7 @@ from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, overload
 
 import confuse
 import numpy as np
