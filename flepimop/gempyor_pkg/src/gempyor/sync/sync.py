@@ -9,7 +9,14 @@ from typing import Final
 import click
 from pydantic import ValidationError
 
-from ..shared_cli import cli, config_files_argument, mock_context, verbosity_options
+from ..logging import get_script_logger
+from ..shared_cli import (
+    cli,
+    config_files_argument,
+    log_cli_inputs,
+    mock_context,
+    verbosity_options,
+)
 from ._sync import sync_from_yaml
 
 
@@ -107,6 +114,8 @@ def sync(  # pylint: disable=inconsistent-return-statements
     the beginning of the filter list, meaning the include filter `+ a` has higher
     precedence than the exclude filter `- bar`.
     """
+    logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
+    log_cli_inputs(kwargs)
     config_files: list[Path] = kwargs.pop("config_files")
     if not config_files:
         ctx.fail("No configuration files provided." + "\n" + ctx.get_help())

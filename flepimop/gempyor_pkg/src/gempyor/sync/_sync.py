@@ -487,4 +487,7 @@ def sync_from_dict(
     Returns:
         A completed process object with the result of the sync operation.
     """
-    return SyncProtocols(**syncdef).execute(SyncOptions(**opts), verbosity)
+    logger = get_script_logger(__name__, verbosity)
+    sync_options = SyncOptions(**opts)
+    logger.info("Parsed sync options: %s", str(sync_options))
+    return SyncProtocols(**syncdef).execute(sync_options, verbosity)
