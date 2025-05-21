@@ -9,6 +9,8 @@
 # function terminated successfully
 
 """
+Ecnapsulates the process of model inference.
+
 Classes:
     GempyorInference:
         Encapsulates the process of simulation. Provides functionality for parameter

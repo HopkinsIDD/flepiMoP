@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gempyor.simulate &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for gempyor.simulate</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1">##</span>
+<span class="c1"># @file</span>
+<span class="c1"># @brief Runs hospitalization model</span>
+<span class="c1">#</span>
+<span class="c1"># @details</span>
+<span class="c1">#</span>
+<span class="c1"># ## Configuration Items</span>
+<span class="c1">#</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># name: &lt;string&gt;</span>
+<span class="c1"># setup_name: &lt;string&gt;</span>
+<span class="c1"># start_date: &lt;date&gt;</span>
+<span class="c1"># end_date: &lt;date&gt;</span>
+<span class="c1"># dt: float</span>
+<span class="c1"># nslots: &lt;integer&gt; overridden by the -n/--nslots script parameter</span>
+<span class="c1"># subpop_setup:</span>
+<span class="c1">#   geodata: &lt;path to file&gt;</span>
+<span class="c1">#   mobility: &lt;path to file&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># seir:</span>
+<span class="c1">#   parameters</span>
+<span class="c1">#     alpha: &lt;float&gt;</span>
+<span class="c1">#     sigma: &lt;float&gt;</span>
+<span class="c1">#     gamma: &lt;random distribution&gt;</span>
+<span class="c1">#     R0s: &lt;random distribution&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># seir_modifiers:</span>
+<span class="c1">#   scenarios:</span>
+<span class="c1">#     - &lt;scenario 1 name&gt;</span>
+<span class="c1">#     - &lt;scenario 2 name&gt;</span>
+<span class="c1">#     - ...</span>
+<span class="c1">#   settings:</span>
+<span class="c1">#     &lt;scenario 1 name&gt;:</span>
+<span class="c1">#       method: choose one - &quot;SinglePeriodModifier&quot;, &quot;, &quot;StackedModifier&quot;</span>
+<span class="c1">#       ...</span>
+<span class="c1">#     &lt;scenario 2 name&gt;:</span>
+<span class="c1">#       method: choose one - &quot;SinglePeriodModifier&quot;, &quot;&quot;, &quot;StackedModifier&quot;</span>
+<span class="c1">#       ...</span>
+<span class="c1">#</span>
+<span class="c1"># seeding:</span>
+<span class="c1">#   method: choose one - &quot;PoissonDistributed&quot;, &quot;FolderDraw&quot;</span>
+<span class="c1"># ```</span>
+<span class="c1">#</span>
+<span class="c1"># ### seir_modifiers::scenarios::settings::&lt;scenario name&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># If {method} is</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># seir_modifiers:</span>
+<span class="c1">#   scenarios:</span>
+<span class="c1">#     &lt;scenario name&gt;:</span>
+<span class="c1">#       method: SinglePeriodModifier</span>
+<span class="c1">#       parameter: choose one - &quot;alpha, sigma, gamma, r0&quot;</span>
+<span class="c1">#       period_start_date: &lt;date&gt;</span>
+<span class="c1">#       period_end_date: &lt;date&gt;</span>
+<span class="c1">#       value: &lt;random distribution&gt;</span>
+<span class="c1">#       subpop: &lt;list of strings&gt; optional</span>
+<span class="c1"># ```</span>
+<span class="c1">#</span>
+<span class="c1"># If {method} is</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># seir_modifiers:</span>
+<span class="c1">#   scenarios:</span>
+<span class="c1">#     &lt;scenario name&gt;:</span>
+<span class="c1">#       method:</span>
+<span class="c1">#       period_start_date: &lt;date&gt;</span>
+<span class="c1">#       period_end_date: &lt;date&gt;</span>
+<span class="c1">#       value: &lt;random distribution&gt;</span>
+<span class="c1">#       subpop: &lt;list of strings&gt; optional</span>
+<span class="c1"># ```</span>
+<span class="c1">#</span>
+<span class="c1"># If {method} is StackedModifier</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># seir_modifiers:</span>
+<span class="c1">#   scenarios:</span>
+<span class="c1">#     &lt;scenario name&gt;:</span>
+<span class="c1">#       method: StackedModifier</span>
+<span class="c1">#       scenarios: &lt;list of scenario names&gt;</span>
+<span class="c1"># ```</span>
+<span class="c1">#</span>
+<span class="c1"># ### seeding</span>
+<span class="c1">#</span>
+<span class="c1"># If {seeding::method} is PoissonDistributed</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># seeding:</span>
+<span class="c1">#   method: PoissonDistributed</span>
+<span class="c1">#   lambda_file: &lt;path to file&gt;</span>
+<span class="c1"># ```</span>
+<span class="c1">#</span>
+<span class="c1"># If {seeding::method} is FolderDraw</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># seeding:</span>
+<span class="c1">#   method: FolderDraw</span>
+<span class="c1">#   folder_path: \&lt;path to dir\&gt;; make sure this ends in a &#39;/&#39;</span>
+<span class="c1"># ```</span>
+<span class="c1">#</span>
+<span class="c1"># ## Input Data</span>
+<span class="c1">#</span>
+<span class="c1"># * &lt;b&gt;{subpop_setup::geodata}&lt;/b&gt; is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::subpop_pop}</span>
+<span class="c1"># * &lt;b&gt;{subpop_setup::mobility}&lt;/b&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># If {seeding::method} is PoissonDistributed</span>
+<span class="c1"># * {seeding::lambda_file}</span>
+<span class="c1">#</span>
+<span class="c1"># If {seeding::method} is FolderDraw</span>
+<span class="c1"># * {seeding::folder_path}/[simulation ID].impa.csv</span>
+<span class="c1">#</span>
+<span class="c1"># ## Output Data</span>
+<span class="c1">#</span>
+<span class="c1"># * model_output/{setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]</span>
+<span class="c1"># * model_parameters/{setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]</span>
+<span class="c1"># * model_parameters/{setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]</span>
+<span class="c1"># ## Configuration Items</span>
+<span class="c1">#</span>
+<span class="c1"># ```yaml</span>
+<span class="c1"># outcomes:</span>
+<span class="c1">#  method: delayframe                   # Only fast is supported atm. Makes fast delay_table computations. Later agent-based method ?</span>
+<span class="c1">#  paths:</span>
+<span class="c1">#    param_from_file: TRUE               #</span>
+<span class="c1">#    param_subpop_file: &lt;path.csv&gt;       # OPTIONAL: File with param per csv. For each param in this file</span>
+<span class="c1">#  scenarios:                           # Outcomes scenarios to run</span>
+<span class="c1">#    - low_death_rate</span>
+<span class="c1">#    - mid_death_rate</span>
+<span class="c1">#  settings:                            # Setting for each scenario</span>
+<span class="c1">#    low_death_rate:</span>
+<span class="c1">#      new_comp1:                               # New compartement name</span>
+<span class="c1">#        source: incidence                      # Source of the new compartement: either an previously defined compartement or &quot;incidence&quot; for diffI of the SEIR</span>
+<span class="c1">#        probability:  &lt;random distribution&gt;           # Branching probability from source</span>
+<span class="c1">#        delay: &lt;random distribution&gt;                  # Delay from incidence of source to incidence of new_compartement</span>
+<span class="c1">#        duration: &lt;random distribution&gt;               # OPTIONAL ! Duration in new_comp. If provided, the model add to it&#39;s</span>
+<span class="c1">#                                                      #output &quot;new_comp1_curr&quot; with current amount in new_comp1</span>
+<span class="c1">#      new_comp2:                               # Example for a second compatiment</span>
+<span class="c1">#        source: new_comp1</span>
+<span class="c1">#        probability: &lt;random distribution&gt;</span>
+<span class="c1">#        delay: &lt;random distribution&gt;</span>
+<span class="c1">#        duration: &lt;random distribution&gt;</span>
+<span class="c1">#      death_tot:                               # Possibility to combine compartements for death.</span>
+<span class="c1">#        sum: [&#39;death_hosp&#39;, &#39;death_ICU&#39;, &#39;death_incid&#39;]</span>
+<span class="c1">#</span>
+<span class="c1">#    mid_death_rate:</span>
+<span class="c1">#      ...</span>
+<span class="c1">#</span>
+<span class="c1"># ## Input Data</span>
+<span class="c1">#</span>
+<span class="c1"># * &lt;b&gt;{param_subpop_file}&lt;/b&gt; is a csv with columns subpop, parameter, value. Parameter is constructed as, e.g for comp1:</span>
+<span class="c1">#                probability: Pnew_comp1|source</span>
+<span class="c1">#                delay:       Dnew_comp1</span>
+<span class="c1">#                duration:    Lnew_comp1</span>
+
+
+<span class="c1"># ## Output Data</span>
+<span class="c1"># * {output_path}/model_output/{setup_name}_[scenario]/[simulation ID].hosp.parquet</span>
+
+
+<span class="c1">## @cond</span>
+
+<span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">warnings</span><span class="o">,</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span> <span class="nn">confuse</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<span class="kn">from</span> <span class="nn">click</span> <span class="kn">import</span> <span class="n">Context</span><span class="p">,</span> <span class="n">pass_context</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">seir</span><span class="p">,</span> <span class="n">outcomes</span><span class="p">,</span> <span class="n">model_info</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">.shared_cli</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">config_files_argument</span><span class="p">,</span>
+    <span class="n">config_file_options</span><span class="p">,</span>
+    <span class="n">parse_config_files</span><span class="p">,</span>
+    <span class="n">cli</span><span class="p">,</span>
+    <span class="n">click_helpstring</span><span class="p">,</span>
+    <span class="n">mock_context</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># from .profile import profile_options</span>
+
+
+<span class="c1"># @profile_options</span>
+<span class="c1"># @profile()</span>
+<div class="viewcode-block" id="simulate">
+<a class="viewcode-back" href="../../api/gempyor.html#gempyor.simulate.simulate">[docs]</a>
+<span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span>
+    <span class="n">config_filepath</span><span class="p">:</span> <span class="n">Configuration</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span>
+    <span class="n">id_run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">out_run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">seir_modifiers_scenarios</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">outcome_modifiers_scenarios</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">in_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nslots</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">write_csv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">write_parquet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">first_sim_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Forward simulate a model using gempyor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config_filepath: Either a Configuration (in which case: ALL other arguments will be silently ignored) OR</span>
+<span class="sd">            file path(s) for configuration file(s) (in which case other arguments will be used to override the configuration)</span>
+<span class="sd">        id_run_id: run_id for the simulation</span>
+<span class="sd">        out_run_id: run_id for the output</span>
+<span class="sd">        seir_modifiers_scenarios: scenarios for the SEIR model - if present, used to subset the scenarios in the configuration</span>
+<span class="sd">        outcome_modifiers_scenarios: scenarios for the outcomes model - if present, used to subset the scenarios in the configuration</span>
+<span class="sd">        in_prefix: prefix for the input files</span>
+<span class="sd">        nslots: number of simulation chains</span>
+<span class="sd">        jobs: amount of parallelization</span>
+<span class="sd">        write_csv: write output to csv?</span>
+<span class="sd">        write_parquet: write output to parquet?</span>
+<span class="sd">        first_sim_index: index of the first simulation</span>
+<span class="sd">        verbose: print output to console?</span>
+
+<span class="sd">    Returns: exit code (side effect: writes output to disk)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config_filepath</span><span class="p">,</span> <span class="n">Configuration</span><span class="p">):</span>
+        <span class="n">largs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+        <span class="n">largs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
+        <span class="n">largs</span><span class="p">[</span><span class="s2">&quot;config_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">largs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;config_filepath&quot;</span><span class="p">)</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">parse_config_files</span><span class="p">(</span><span class="o">**</span><span class="n">largs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">config_filepath</span>
+
+    <span class="n">scenarios_combinations</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">d</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">][</span><span class="s2">&quot;scenarios&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_str_seq</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;seir_modifiers&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+            <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">][</span><span class="s2">&quot;scenarios&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_str_seq</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;outcome_modifiers&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+            <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Combination of modifiers scenarios to be run: &quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">scenarios_combinations</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">seir_modifiers_scenario</span><span class="p">,</span> <span class="n">outcome_modifiers_scenario</span> <span class="ow">in</span> <span class="n">scenarios_combinations</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;seir_modifier: </span><span class="si">{</span><span class="n">seir_modifiers_scenario</span><span class="si">}</span><span class="s2">, outcomes_modifier: </span><span class="si">{</span><span class="n">outcome_modifiers_scenario</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">nchains</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;nslots&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_number</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Simulations to be run: </span><span class="si">{</span><span class="n">nchains</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">seir_modifiers_scenario</span><span class="p">,</span> <span class="n">outcome_modifiers_scenario</span> <span class="ow">in</span> <span class="n">scenarios_combinations</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running </span><span class="si">{</span><span class="n">seir_modifiers_scenario</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">outcome_modifiers_scenario</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">modinf</span> <span class="o">=</span> <span class="n">model_info</span><span class="o">.</span><span class="n">ModelInfo</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span>
+            <span class="n">nslots</span><span class="o">=</span><span class="n">nchains</span><span class="p">,</span>
+            <span class="n">seir_modifiers_scenario</span><span class="o">=</span><span class="n">seir_modifiers_scenario</span><span class="p">,</span>
+            <span class="n">outcome_modifiers_scenario</span><span class="o">=</span><span class="n">outcome_modifiers_scenario</span><span class="p">,</span>
+            <span class="n">write_csv</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;write_csv&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">bool</span><span class="p">),</span>
+            <span class="n">write_parquet</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;write_parquet&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">bool</span><span class="p">),</span>
+            <span class="n">first_sim_index</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;first_sim_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
+            <span class="n">in_run_id</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;in_run_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;in_run_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="c1"># in_prefix=config[&quot;name&quot;].get() + &quot;/&quot;,</span>
+            <span class="n">out_run_id</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;out_run_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;out_run_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="c1"># out_prefix=config[&quot;name&quot;].get() + &quot;/&quot; + str(seir_modifiers_scenario) + &quot;/&quot; + out_run_id + &quot;/&quot;,</span>
+            <span class="n">config_filepath</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;config_src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_str_seq</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        &gt;&gt; Running from config </span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;config_src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_str_seq</span><span class="p">()</span><span class="si">}</span>
+<span class="s2">        &gt;&gt; Starting </span><span class="si">{</span><span class="n">modinf</span><span class="o">.</span><span class="n">nslots</span><span class="si">}</span><span class="s2"> model runs beginning from </span><span class="si">{</span><span class="n">modinf</span><span class="o">.</span><span class="n">first_sim_index</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;jobs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="si">}</span><span class="s2"> processes</span>
+<span class="s2">        &gt;&gt; ModelInfo *** </span><span class="si">{</span><span class="n">modinf</span><span class="o">.</span><span class="n">setup_name</span><span class="si">}</span><span class="s2"> *** from </span><span class="si">{</span><span class="n">modinf</span><span class="o">.</span><span class="n">ti</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">modinf</span><span class="o">.</span><span class="n">tf</span><span class="si">}</span>
+<span class="s2">        &gt;&gt; Running scenario </span><span class="si">{</span><span class="n">seir_modifiers_scenario</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">outcome_modifiers_scenario</span><span class="si">}</span>
+<span class="s2">        &gt;&gt; using ***</span><span class="si">{</span><span class="n">modinf</span><span class="o">.</span><span class="n">get_engine</span><span class="p">()</span><span class="si">}</span><span class="s2">*** engine for trajectories</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># (there should be a run function)</span>
+        <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;seir&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">seir</span><span class="o">.</span><span class="n">run_parallel_SEIR</span><span class="p">(</span><span class="n">modinf</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;jobs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;outcomes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">outcomes</span><span class="o">.</span><span class="n">run_parallel_outcomes</span><span class="p">(</span>
+                <span class="n">sim_id2write</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;first_sim_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
+                <span class="n">modinf</span><span class="o">=</span><span class="n">modinf</span><span class="p">,</span>
+                <span class="n">nslots</span><span class="o">=</span><span class="n">nchains</span><span class="p">,</span>
+                <span class="n">n_jobs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;jobs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&gt;&gt;&gt; </span><span class="si">{</span><span class="n">seir_modifiers_scenario</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">outcome_modifiers_scenario</span><span class="si">}</span><span class="s2"> completed in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> seconds&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="mi">0</span></div>
+
+
+
+<span class="nd">@cli</span><span class="o">.</span><span class="n">command</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;simulate&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="n">config_files_argument</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">config_file_options</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+    <span class="n">context_settings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">help_option_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-h&quot;</span><span class="p">,</span> <span class="s2">&quot;--help&quot;</span><span class="p">]),</span>
+<span class="p">)</span>
+<span class="nd">@pass_context</span>
+<span class="k">def</span> <span class="nf">_click_simulate</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Forward simulate a model using gempyor.&quot;&quot;&quot;</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">parse_config_files</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">simulate</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+
+<span class="c1"># will all be removed upon deprecated endpoint removal</span>
+
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+
+<span class="k">def</span> <span class="nf">_deprecated_simulate</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">argv</span><span class="p">:</span>
+        <span class="n">argv</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">clickcmd</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;flepimop&quot;</span><span class="p">,</span> <span class="s2">&quot;simulate&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">argv</span><span class="p">)</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;This command is deprecated, use the CLI instead: `</span><span class="si">{</span><span class="n">clickcmd</span><span class="si">}</span><span class="s2">`&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">clickcmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">returncode</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">argv</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">clickcmd</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;flepimop&quot;</span><span class="p">,</span> <span class="s2">&quot;simulate&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">argv</span><span class="p">)</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Use the CLI instead: `</span><span class="si">{</span><span class="n">clickcmd</span><span class="si">}</span><span class="s2">`&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
+    <span class="n">_deprecated_simulate</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+
+<span class="c1">## @endcond</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/gempyor.html">gempyor package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

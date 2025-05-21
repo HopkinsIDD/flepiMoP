@@ -1,3 +1,7 @@
+"""
+Tools to forward simulate a model with `gempyor`.
+"""
+
 #!/usr/bin/env python
 
 ##

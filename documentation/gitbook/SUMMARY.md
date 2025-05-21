@@ -78,3 +78,6 @@
     * [AWS Submission Instructions: COVID-19](jhu-internal/us-specific-how-to-run/running-with-docker-on-aws/aws-submission-instructions-covid-19.md)
   * [Running with RStudio Server on AWS EC2](jhu-internal/us-specific-how-to-run/running-with-rstudio-server-on-aws-ec2.md)
 * [Inference scratch](jhu-internal/inference-scratch.md)
+
+## Technical Reference
+* [click commands](user-interface-guide/click-commands/)

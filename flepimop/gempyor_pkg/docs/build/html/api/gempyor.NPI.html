@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>gempyor.NPI package &#8212; gempyor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gempyor.batch package" href="gempyor.batch.html" />
+    <link rel="prev" title="gempyor package" href="gempyor.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="gempyor-npi-package">
+<h1>gempyor.NPI package<a class="headerlink" href="#gempyor-npi-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-gempyor.NPI.MultiPeriodModifier">
+<span id="gempyor-npi-multiperiodmodifier-module"></span><h2>gempyor.NPI.MultiPeriodModifier module<a class="headerlink" href="#module-gempyor.NPI.MultiPeriodModifier" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gempyor.NPI.MultiPeriodModifier.</span></span><span class="sig-name descname"><span class="pre">MultiPeriodModifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npi_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_ti</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_tf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modifiers_library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subpops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loaded_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_reductionprod</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sanitize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/MultiPeriodModifier.html#MultiPeriodModifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gempyor.NPI.base.NPIBase" title="gempyor.NPI.base.NPIBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">NPIBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier.getReduction">
+<span class="sig-name descname"><span class="pre">getReduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/MultiPeriodModifier.html#MultiPeriodModifier.getReduction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier.getReduction" title="Link to this definition">¶</a></dt>
+<dd><p>Return the reduction for this param, <cite>default</cite> if no reduction defined</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier.getReductionToWrite">
+<span class="sig-name descname"><span class="pre">getReductionToWrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/MultiPeriodModifier.html#MultiPeriodModifier.getReductionToWrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier.getReductionToWrite" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier.get_default">
+<span class="sig-name descname"><span class="pre">get_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/MultiPeriodModifier.html#MultiPeriodModifier.get_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.MultiPeriodModifier.MultiPeriodModifier.get_default" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gempyor.NPI.SinglePeriodModifier">
+<span id="gempyor-npi-singleperiodmodifier-module"></span><h2>gempyor.NPI.SinglePeriodModifier module<a class="headerlink" href="#module-gempyor.NPI.SinglePeriodModifier" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gempyor.NPI.SinglePeriodModifier.</span></span><span class="sig-name descname"><span class="pre">SinglePeriodModifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npi_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_ti</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_tf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modifiers_library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subpops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loaded_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_reductionprod</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/SinglePeriodModifier.html#SinglePeriodModifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gempyor.NPI.base.NPIBase" title="gempyor.NPI.base.NPIBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">NPIBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier.getReduction">
+<span class="sig-name descname"><span class="pre">getReduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/SinglePeriodModifier.html#SinglePeriodModifier.getReduction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier.getReduction" title="Link to this definition">¶</a></dt>
+<dd><p>Return the reduction for this param, <cite>default</cite> if no reduction defined</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier.getReductionToWrite">
+<span class="sig-name descname"><span class="pre">getReductionToWrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/SinglePeriodModifier.html#SinglePeriodModifier.getReductionToWrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier.getReductionToWrite" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier.get_default">
+<span class="sig-name descname"><span class="pre">get_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/SinglePeriodModifier.html#SinglePeriodModifier.get_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.SinglePeriodModifier.SinglePeriodModifier.get_default" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gempyor.NPI.StackedModifier">
+<span id="gempyor-npi-stackedmodifier-module"></span><h2>gempyor.NPI.StackedModifier module<a class="headerlink" href="#module-gempyor.NPI.StackedModifier" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gempyor.NPI.StackedModifier.StackedModifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gempyor.NPI.StackedModifier.</span></span><span class="sig-name descname"><span class="pre">StackedModifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npi_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_ti</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_tf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modifiers_library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subpops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loaded_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_reductionprod</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/StackedModifier.html#StackedModifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.StackedModifier.StackedModifier" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gempyor.NPI.base.NPIBase" title="gempyor.NPI.base.NPIBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">NPIBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.StackedModifier.StackedModifier.getReduction">
+<span class="sig-name descname"><span class="pre">getReduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/StackedModifier.html#StackedModifier.getReduction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.StackedModifier.StackedModifier.getReduction" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.StackedModifier.StackedModifier.getReductionToWrite">
+<span class="sig-name descname"><span class="pre">getReductionToWrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/StackedModifier.html#StackedModifier.getReductionToWrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.StackedModifier.StackedModifier.getReductionToWrite" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.StackedModifier.StackedModifier.get_default">
+<span class="sig-name descname"><span class="pre">get_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/StackedModifier.html#StackedModifier.get_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.StackedModifier.StackedModifier.get_default" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="gempyor.NPI.StackedModifier.debug_print">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.StackedModifier.</span></span><span class="sig-name descname"><span class="pre">debug_print</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#gempyor.NPI.StackedModifier.debug_print" title="Link to this definition">¶</a></dt>
+<dd><p>Cap on # of reduction metadata entries to store in memory</p>
+</dd></dl>
+
+</section>
+<section id="module-gempyor.NPI.base">
+<span id="gempyor-npi-base-module"></span><h2>gempyor.NPI.base module<a class="headerlink" href="#module-gempyor.NPI.base" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gempyor.NPI.base.NPIBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gempyor.NPI.base.</span></span><span class="sig-name descname"><span class="pre">NPIBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.NPIBase" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.base.NPIBase.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_ti</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_tf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modifiers_library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subpops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loaded_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_reductionprod</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.NPIBase.execute" title="Link to this definition">¶</a></dt>
+<dd><p>npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI
+modinf_ti: the initial time from a ModelInfo object,
+modinf_tf: the final time from a ModelInfo object
+modifiers_library: a config bit that contains the other modifiers that could be called by this Modifier. Note</p>
+<blockquote>
+<div><p>that the confuse library’s config resolution mechanism makes slicing the configuration object expensive;
+instead give the preloaded settings from .get()</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.base.NPIBase.getReduction">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getReduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.getReduction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.NPIBase.getReduction" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.base.NPIBase.getReductionDF">
+<span class="sig-name descname"><span class="pre">getReductionDF</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.getReductionDF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.NPIBase.getReductionDF" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.base.NPIBase.getReductionToWrite">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getReductionToWrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.getReductionToWrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.NPIBase.getReductionToWrite" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.base.plot_modifers_activation">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.base.</span></span><span class="sig-name descname"><span class="pre">plot_modifers_activation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">npi_seir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subpop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#plot_modifers_activation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.plot_modifers_activation" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.base.plot_npi_timeseries">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.base.</span></span><span class="sig-name descname"><span class="pre">plot_npi_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">npi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gempyor_inference</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#plot_npi_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.plot_npi_timeseries" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.base.plot_parameter_timeseries">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.base.</span></span><span class="sig-name descname"><span class="pre">plot_parameter_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_parsed_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gempyor_inference</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#plot_parameter_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.base.plot_parameter_timeseries" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-gempyor.NPI.helpers">
+<span id="gempyor-npi-helpers-module"></span><h2>gempyor.NPI.helpers module<a class="headerlink" href="#module-gempyor.NPI.helpers" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.helpers.flatten_list_of_lists">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.helpers.</span></span><span class="sig-name descname"><span class="pre">flatten_list_of_lists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_lists</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/helpers.html#flatten_list_of_lists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.helpers.flatten_list_of_lists" title="Link to this definition">¶</a></dt>
+<dd><p>flatten a list of lists into a single list, or return the original list if it is not a list of lists</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.helpers.get_spatial_groups">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.helpers.</span></span><span class="sig-name descname"><span class="pre">get_spatial_groups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grp_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">affected_subpops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/gempyor/NPI/helpers.html#get_spatial_groups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.helpers.get_spatial_groups" title="Link to this definition">¶</a></dt>
+<dd><p>Spatial groups are defined in the config file as a list (of lists).
+They have the same value.
+grouped is a list of lists of subpops
+ungrouped is a list of subpops
+the list are ordered, and this is important so we can get back and forth
+from the written to disk part that is comma separated</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.helpers.make_list_of_list">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.helpers.</span></span><span class="sig-name descname"><span class="pre">make_list_of_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">this_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/helpers.html#make_list_of_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.helpers.make_list_of_list" title="Link to this definition">¶</a></dt>
+<dd><p>if the list contains its’ values, nest it into another list</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gempyor.NPI.helpers.reduce_parameter">
+<span class="sig-prename descclassname"><span class="pre">gempyor.NPI.helpers.</span></span><span class="sig-name descname"><span class="pre">reduce_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modification</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'product'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="../_modules/gempyor/NPI/helpers.html#reduce_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.helpers.reduce_parameter" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-gempyor.NPI">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gempyor.NPI" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gempyor.NPI.NPIBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gempyor.NPI.</span></span><span class="sig-name descname"><span class="pre">NPIBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.NPIBase" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.NPIBase.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_ti</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modinf_tf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modifiers_library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subpops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loaded_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnames_overlap_operation_reductionprod</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.NPIBase.execute" title="Link to this definition">¶</a></dt>
+<dd><p>npi_config: config of the Modifier we are building, usually a StackedModifiers that will call other NPI
+modinf_ti: the initial time from a ModelInfo object,
+modinf_tf: the final time from a ModelInfo object
+modifiers_library: a config bit that contains the other modifiers that could be called by this Modifier. Note</p>
+<blockquote>
+<div><p>that the confuse library’s config resolution mechanism makes slicing the configuration object expensive;
+instead give the preloaded settings from .get()</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.NPIBase.getReduction">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getReduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.getReduction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.NPIBase.getReduction" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.NPIBase.getReductionDF">
+<span class="sig-name descname"><span class="pre">getReductionDF</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.getReductionDF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.NPIBase.getReductionDF" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gempyor.NPI.NPIBase.getReductionToWrite">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getReductionToWrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gempyor/NPI/base.html#NPIBase.getReductionToWrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gempyor.NPI.NPIBase.getReductionToWrite" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">gempyor</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../generated/gempyor.html">gempyor</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="gempyor.html">gempyor package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="gempyor.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gempyor.NPI package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gempyor.NPI.MultiPeriodModifier">gempyor.NPI.MultiPeriodModifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gempyor.NPI.SinglePeriodModifier">gempyor.NPI.SinglePeriodModifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gempyor.NPI.StackedModifier">gempyor.NPI.StackedModifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gempyor.NPI.base">gempyor.NPI.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gempyor.NPI.helpers">gempyor.NPI.helpers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gempyor.NPI">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gempyor.batch.html">gempyor.batch package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gempyor.sync.html">gempyor.sync package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gempyor.templates.html">gempyor.templates package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.calibrate">gempyor.calibrate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.cli">gempyor.cli module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.compartments">gempyor.compartments module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#gempyor-config-validator-module">gempyor.config_validator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.constants">gempyor.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.file_paths">gempyor.file_paths module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.inference">gempyor.inference module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.inference_parameter">gempyor.inference_parameter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.info">gempyor.info module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.initial_conditions">gempyor.initial_conditions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.logging">gempyor.logging module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.logloss">gempyor.logloss module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.model_info">gempyor.model_info module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.outcomes">gempyor.outcomes module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.parameters">gempyor.parameters module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.postprocess_inference">gempyor.postprocess_inference module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.profile_old">gempyor.profile_old module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.seeding">gempyor.seeding module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.seir">gempyor.seir module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.shared_cli">gempyor.shared_cli module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.simulate">gempyor.simulate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.simulation_component">gempyor.simulation_component module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.statistics">gempyor.statistics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.steps_rk4">gempyor.steps_rk4 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.subpopulation_structure">gempyor.subpopulation_structure module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.testing">gempyor.testing module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor.utils">gempyor.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gempyor.html#module-gempyor">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="gempyor.html">gempyor package</a><ul>
+      <li>Previous: <a href="gempyor.html" title="previous chapter">gempyor package</a></li>
+      <li>Next: <a href="gempyor.batch.html" title="next chapter">gempyor.batch package</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, ACCIDDA.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="../_sources/api/gempyor.NPI.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
