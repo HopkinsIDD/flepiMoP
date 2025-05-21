@@ -14,7 +14,7 @@ from .._pydantic_ext import _ensure_list, _override_or_val
 
 # filters can begin with a `+` or `-` followed by a space,
 # but not just those symbols or a space
-_FRCOMPILED: Final = re.compile(r"^([\+\-] )?")
+_FRCOMPILED: Final = re.compile(r"^([\+\-s] )?")
 
 SyncFilter = Annotated[str, Field(pattern=r"^([\+\-] |[^\+\- ])")]
 
@@ -22,10 +22,11 @@ ListSyncFilter = Annotated[list[SyncFilter], BeforeValidator(_ensure_list)]
 _LIST_SYNC_FILTER_ADAPTER: Final = TypeAdapter(ListSyncFilter)
 
 # mode, pattern, whole specification (for debugging)
-FilterParts = tuple[Literal["+", "-"], str, str]
+FilterMode = Literal["+", "-", "s"]
+FilterParts = tuple[FilterMode, str, str]
 
 
-def _filter_mode(filter_: SyncFilter) -> Literal["+", "-"]:
+def _filter_mode(filter_: SyncFilter) -> FilterMode:
     """
     Returns the mode of a filter.
 
@@ -33,7 +34,7 @@ def _filter_mode(filter_: SyncFilter) -> Literal["+", "-"]:
         filter: The sync filter string to parse.
 
     Returns:
-        A string representing the mode, either `+` or `-`.
+        A string representing the mode, either '+', '-', or 's'.
 
     Examples:
         >>> from gempyor.sync._sync_filter import _filter_mode
@@ -43,9 +44,15 @@ def _filter_mode(filter_: SyncFilter) -> Literal["+", "-"]:
         '-'
         >>> _filter_mode("/a/b/c.txt")
         '+'
+        >>> _filter_mode("s /a/b/c.txt")
+        's'
 
     """
-    return "-" if filter_.startswith("- ") else "+"
+    if filter_.startswith("s "):
+        return "s"
+    if filter_.startswith("- "):
+        return "-"
+    return "+"
 
 
 def _filter_pattern(filter_: SyncFilter) -> str:
@@ -65,6 +72,8 @@ def _filter_pattern(filter_: SyncFilter) -> str:
         >>> _filter_pattern("- /fizz/buzz.txt")
         '/fizz/buzz.txt'
         >>> _filter_pattern("/a/b/c.txt")
+        '/a/b/c.txt'
+        >>> _filter_pattern("s /a/b/c.txt")
         '/a/b/c.txt'
 
     """
