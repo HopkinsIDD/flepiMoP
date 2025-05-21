@@ -205,7 +205,36 @@ class RsyncModel(SyncABC, WithFilters):
 
     @staticmethod
     def _formatter(f: FilterParts) -> list[str]:
+        if f[0] == "s":
+            return [
+                "--recursive",
+                "--include",
+                "*/",
+                "--include",
+                f"*{f[1]}*",
+                "--exclude",
+                "*",
+            ]
         return ["--filter", f"{f[0]} {f[1]}"]
+
+    def format_filters(
+        self,
+        overrides: ListSyncFilter | None = None,
+        prefix: ListSyncFilter | None = None,
+        suffix: ListSyncFilter | None = None,
+        reverse: bool = False,
+    ) -> list[str]:
+        inner_filters = super().format_filters(
+            overrides=overrides, prefix=prefix, suffix=suffix, reverse=reverse
+        )
+        if "--recursive" in inner_filters:
+            first_occurrence = inner_filters.index("--recursive")
+            inner_filters = [
+                f
+                for i, f in enumerate(inner_filters)
+                if i == first_occurrence or f != "--recursive"
+            ]
+        return inner_filters
 
     def _sync_pydantic(
         self, sync_options: SyncOptions, verbosity: int = 0
@@ -229,9 +258,9 @@ class RsyncModel(SyncABC, WithFilters):
                 )
                 return proc
         inner_filter = self.format_filters(
-            sync_options.filter_override,
-            sync_options.filter_prefix,
-            sync_options.filter_suffix,
+            overrides=sync_options.filter_override,
+            prefix=sync_options.filter_prefix,
+            suffix=sync_options.filter_suffix,
         )
         logger.debug("Resolved filters: %s", str(inner_filter))
         cmd = (
@@ -331,6 +360,8 @@ class S3SyncModel(SyncABC, WithFilters):
 
     @staticmethod
     def _formatter(f: FilterParts) -> list[str]:
+        if f[0] == "s":
+            return ["--exclude", "*", "--include", f"*{f[1]}*"]
         return ["--exclude" if f[0] == "-" else "--include", f'"{f[1]}"']
 
     def _sync_pydantic(
@@ -347,9 +378,9 @@ class S3SyncModel(SyncABC, WithFilters):
             inner_paths.reverse()
             logger.debug("Reversed paths, now resolved: %s", str(inner_paths))
         inner_filter = self.format_filters(
-            sync_options.filter_override,
-            sync_options.filter_prefix,
-            sync_options.filter_suffix,
+            overrides=sync_options.filter_override,
+            prefix=sync_options.filter_prefix,
+            suffix=sync_options.filter_suffix,
             reverse=True,
         )
         logger.debug("Resolved filters: %s", str(inner_filter))
