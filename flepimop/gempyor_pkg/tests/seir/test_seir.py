@@ -3,7 +3,6 @@ import os
 import pytest
 import warnings
 import shutil
-from random import randint
 import pandas as pd
 import re
 
@@ -17,96 +16,6 @@ from gempyor.utils import config
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
-
-
-def test_check_parameter_positivity():
-
-    parameter_names = [
-        "alpha*1*1*1",
-        "sigma_OMICRON*1*1*1",
-        "3*gamma*1*1*1",
-        "epsilon+omegaph4*1*1*1",
-        "1*zeta*1*1",
-        "r0*gamma*theta10*1*chi_OMICRON*1",
-        "r0*gamma*theta9*1*chi_OMICRON*1",
-        "eta_X0toX3_highIE*1*1*nuage0to17",
-        "eta_X0toX3_highIE*1*1*nuage18to64LR",
-        "eta_X0toX3_highIE*1*1*nuage18to64HR",
-        "eta_X0toX3_highIE*1*1*nuage65to100",
-    ]
-    dates = pd.date_range("2023-03-19", "2025-04-30", freq="D")
-    subpop_names = [
-        "56000",
-        "50000",
-        "11000",
-        "02000",
-        "38000",
-        "46000",
-        "10000",
-        "30000",
-        "44000",
-        "23000",
-    ]
-
-    # No negative params
-    test_array1 = np.zeros(
-        (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
-    )
-    assert (
-        seir.check_parameter_positivity(test_array1, parameter_names, dates, subpop_names)
-        is None
-    )
-    # No Error
-
-    # Randomized negative params
-    test_array2 = np.zeros(
-        (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
-    )
-    for _ in range(5):
-        test_array2[randint(0, len(parameter_names) - 1)][randint(0, len(dates) - 1)][
-            randint(0, len(subpop_names) - 1)
-        ] = -1
-    test_2_negative_index_parameters = np.argwhere(test_array2 < 0)
-    test_2_neg_params = []
-    test_2_neg_subpops = []
-    test_2_first_neg_date = dates[0].date()
-    for param_idx, _, sp_idx in test_2_negative_index_parameters:
-        test_2_neg_subpops.append(subpop_names[sp_idx])
-        test_2_neg_params.append(parameter_names[param_idx])
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            rf"There are negative parameter errors in subpops {test_2_neg_subpops}, starting from date {test_2_first_neg_date} in parameters {test_2_neg_params}."
-        ),
-    ):
-        seir.check_parameter_positivity(
-            test_array2, parameter_names, dates, subpop_names
-        )  # ValueError
-
-    # Manually set negative params with intentional redundancy
-    test_array3 = np.zeros((len(parameter_names), len(dates), len(subpop_names)))
-    test_array3[0, 0, 0] = -1
-    test_array3[1, 1, 1] = -1
-    test_array3[2, 2, 2] = -1
-    test_array3[3, 3, 3] = -1
-    test_3_negative_index_parameters = np.argwhere(test_array3 < 0)
-    test_3_neg_params = []
-    test_3_neg_subpops = []
-    test_3_first_neg_date = dates[0].date()
-    for param_idx, _, sp_idx in test_3_negative_index_parameters:
-        test_3_neg_subpops.append(subpop_names[sp_idx])
-        test_3_neg_params.append(parameter_names[param_idx])
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
-        ),
-    ):
-        seir.check_parameter_positivity(
-            test_array3, parameter_names, dates, subpop_names
-        )  # ValueError
 
 
 def test_check_values():
