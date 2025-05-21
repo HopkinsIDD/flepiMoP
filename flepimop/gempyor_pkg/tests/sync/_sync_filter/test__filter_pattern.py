@@ -7,11 +7,11 @@ import pytest
 from gempyor.sync._sync_filter import _filter_pattern
 
 
-@pytest.mark.parametrize("mode", ["- ", "+ ", ""])
+@pytest.mark.parametrize("mode", ["- ", "+ ", "s ", ""])
 @pytest.mark.parametrize(
     "path", ["/foo/bar.txt", "/fizz/buzz.txt", "/a/b/c.txt", "x/y/z.txt"]
 )
-def test_filter_pattern(mode: Literal["- ", "+ ", ""], path: str) -> None:
+def test_filter_pattern(mode: Literal["- ", "+ ", "s ", ""], path: str) -> None:
     """
     Test the `_filter_pattern` function with various filter strings.
 
