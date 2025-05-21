@@ -249,7 +249,8 @@ def parse_config_files(
     config_args = {k for k in parsed_args if k.startswith("config")}
     found_configs = [k for k in config_args if kwargs.get(k)]
     config_src = []
-    if len(found_configs) != 1:  # if more than one config still found:
+    # if more than one config still found
+    if len(found_configs) != 1:
         if not found_configs:
             click.echo("No configuration provided! See help for required usage:\n")
             click.echo(ctx.get_help())
