@@ -18,6 +18,10 @@ DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_parameters_from_config_plus_read_write():
     config.clear()
     config.read(user=False)
@@ -72,6 +76,10 @@ def test_parameters_from_config_plus_read_write():
     assert (p_draw == p_load).all()
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_parameters_quick_draw_old():
     config.clear()
     config.read(user=False)
@@ -133,6 +141,10 @@ def test_parameters_quick_draw_old():
     assert len(np.unique(gamma)) == 1
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 def test_parameters_from_timeseries_file():
     config.clear()
     config.read(user=False)
