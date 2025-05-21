@@ -89,7 +89,6 @@ def modifiers():
 )
 @click.option(
     "--id",
-    "--id",
     "run_id",
     envvar="FLEPI_RUN_INDEX",
     type=str,
