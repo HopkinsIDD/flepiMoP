@@ -274,7 +274,7 @@ class RsyncModel(SyncABC, WithFilters):
         return run(cmd, check=True)
 
 
-def _resolve_s3_inner_paths(inner_paths: list[str, str]) -> list[str, str]:
+def _resolve_s3_inner_paths(inner_paths: list[str]) -> list[str]:
     """
     Resolve S3 paths to ensure they are in the correct format.
 
