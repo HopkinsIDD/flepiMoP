@@ -185,3 +185,81 @@ $ flepimop batch-calibrate \
     -vvv \
     simple_usa_statelevel.yml
 ```
+
+### Saving Model Outputs On Batch Inference Job Finish
+
+For production runs it is particularly helpful to save the calibration results after a successful run to long term storage for safe keeping. To accomplish this `flepimop batch-calibrate` can chain a call to `flepimop sync` after a successful run via the `--sync` option. For more details on the `flepimop sync` command in general please refer to the [Synchronizing files: Syntax and Applications](../synchronization.md) guide.
+
+For a quick demonstration of how to use this option start with the `config_sample_2pop_inference.yml` configuration file and add the following section:
+
+```yaml
+sync:
+  rsync-model-output:
+    type: rsync
+    source: model_output
+    target: /path/to/an/example-folder
+  s3-model-output:
+    type: s3sync
+    source: model_output
+    target: s3://my-bucket/and-sub-bucket
+```
+
+Where `/path/to/an/example-folder` and `s3://my-bucket/and-sub-bucket` are place holders for paths to your desired location. Importantly, note that there is no trailing slash on the `model_output` directory name. This will cause `flepimop sync` to sync the `model_output` directory itself and not just it's contents. You can also apply additional filters to the sync protocols here, say to limit the backed up model outputs to certain folders or exclude `llik` outputs, but the `--sync` option will add filters to limit the synced directories to those corresponding to the run submitted.
+
+Modifying the first `flepimop batch-calibrate` command from before:
+
+```
+$ export PROJECT_PATH="$FLEPI_PATH/examples/tutorials/"
+$ cd $PROJECT_PATH
+$ flepimop batch-calibrate \
+    --blocks 1 \
+    --chains 4 \
+    --samples 20 \
+    --simulations 100 \
+    --time-limit 30min \
+    --slurm \
+    --nodes 4 \
+    --cpus 1 \
+    --memory 1G \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
+    --skip-checkout \
+    --sync <your sync protocol, either rsync-model-output or s3-model-output in this case> \
+    -vvv \
+    config_sample_2pop_inference.yml
+```
+
+This command will submit an array job just like before, but will also add a dependent job with the same name prefixed with 'sync_'. This should looks like:
+
+```
+[twillard@longleaf-login6 tutorials]$ squeue -p jlessler
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+           2374868  jlessler sync_sam twillard PD       0:00      1 (Dependency)
+         2374867_1  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+         2374867_2  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+         2374867_3  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+         2374867_4  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+```
+
+After those jobs finish the results can be found in a subdirectory named after the job and whose contents will look like:
+
+```
+[twillard@longleaf-login6 sample_2pop-20250521T190823_Ro_all_test_limits]$ tree -L 4
+.
+├── manifest.json
+└── model_output
+    └── sample_2pop_Ro_all_test_limits
+        └── sample_2pop-20250521T190823_Ro_all_test_limits
+            ├── hnpi
+            ├── hosp
+            ├── hpar
+            ├── init
+            ├── llik
+            ├── seir
+            ├── snpi
+            └── spar
+
+11 directories, 1 file
+```
+
+Note that this contains the `model_output` directory but only limited to the batch run named 'sample_2pop-20250521T190823_Ro_all_test_limits' as well as a file called `manifest.json` which can be used to reproduce the run from scratch if needed.
