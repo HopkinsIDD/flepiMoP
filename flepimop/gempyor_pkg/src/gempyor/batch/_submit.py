@@ -157,6 +157,9 @@ def _submit_scenario_job(
             "job_resources_cpus": batch_system.format_cpus(sync_resources),
             "job_resources_memory": batch_system.format_memory(sync_resources),
         }
+        project_path = str(template_data.get("project_path"))
+        if not project_path.endswith("/"):
+            project_path += "/"
         command = [
             "flepimop sync \\",
             f"  --protocol {template_data['sync']} \\",
@@ -170,7 +173,7 @@ def _submit_scenario_job(
             f"  --target-append {template_data['job_name']} \\",
             "  --mkpath \\",
             f"  --fprefix '+ {template_data['job_name']}*.pdf' \\",
-            "  --source '.' \\",
+            f"  --source {project_path} \\",
             f"  {template_data['config']}",
             "",
             "flepimop sync \\",
@@ -178,7 +181,7 @@ def _submit_scenario_job(
             f"  --target-append {template_data['job_name']} \\",
             "  --mkpath \\",
             f"  --fprefix '+ {template_data['job_name']}*.h5' \\",
-            "  --source '.' \\",
+            f"  --source {project_path} \\",
             f"  {template_data['config']}",
             "",
         ]
