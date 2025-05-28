@@ -209,13 +209,13 @@ class RsyncModel(SyncABC, WithFilters):
             return [
                 "--recursive",
                 "--include",
-                "*/",
+                '"*/"',
                 "--include",
-                f"*{f[1]}*",
+                f'"*{f[1]}*"',
                 "--exclude",
-                "*",
+                '"*"',
             ]
-        return ["--filter", f"{f[0]} {f[1]}"]
+        return ["--filter", f'"{f[0]} {f[1]}"']
 
     def format_filters(
         self,
@@ -361,7 +361,7 @@ class S3SyncModel(SyncABC, WithFilters):
     @staticmethod
     def _formatter(f: FilterParts) -> list[str]:
         if f[0] == "s":
-            return ["--exclude", "*", "--include", f"*{f[1]}*"]
+            return ["--exclude", '"*"', "--include", f'"*{f[1]}*"']
         return ["--exclude" if f[0] == "-" else "--include", f'"{f[1]}"']
 
     def _sync_pydantic(
