@@ -271,7 +271,7 @@ class RsyncModel(SyncABC, WithFilters):
             + [str(ip) for ip in inner_paths]
         )
         logger.info("Executing command: %s", str(cmd))
-        return run(cmd, check=True)
+        return run(" ".join(cmd), check=True, shell=True)
 
 
 def _resolve_s3_inner_paths(inner_paths: list[str]) -> list[str]:
@@ -399,7 +399,7 @@ class S3SyncModel(SyncABC, WithFilters):
             + inner_paths
         )
         logger.info("Executing command: %s", str(cmd))
-        return run(cmd, check=True)
+        return run(" ".join(cmd), check=True, shell=True)
 
 
 class GitModel(SyncABC):
