@@ -165,9 +165,33 @@ def _submit_scenario_job(
             f"  --fprefix 's {template_data['job_name']}' \\",
             f"  {template_data['config']}",
             "",
+            "flepimop sync \\",
+            f"  --protocol {template_data['sync']} \\",
+            f"  --target-append {template_data['job_name']} \\",
+            "  --mkpath \\",
+            f"  --fprefix '+ {template_data['job_name']}*.pdf' \\",
+            "  --source '.' \\",
+            f"  {template_data['config']}",
+            "",
+            "flepimop sync \\",
+            f"  --protocol {template_data['sync']} \\",
+            f"  --target-append {template_data['job_name']} \\",
+            "  --mkpath \\",
+            f"  --fprefix '+ {template_data['job_name']}*.h5' \\",
+            "  --source '.' \\",
+            f"  {template_data['config']}",
+            "",
         ]
         if not template_data.get("skip_manifest", False):
-            command += command[:4] + ["  --source manifest.json \\"] + command[5:]
+            command += [
+                "flepimop sync \\",
+                f"  --protocol {template_data['sync']} \\",
+                f"  --target-append {template_data['job_name']} \\",
+                "  --mkpath \\",
+                "  --source manifest.json \\",
+                f"  {template_data['config']}",
+                "",
+            ]
         batch_system.submit_command(
             "\n".join(command),
             options,
