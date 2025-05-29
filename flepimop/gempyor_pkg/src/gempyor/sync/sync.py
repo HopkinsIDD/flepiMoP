@@ -114,7 +114,6 @@ def sync(  # pylint: disable=inconsistent-return-statements
     the beginning of the filter list, meaning the include filter `+ a` has higher
     precedence than the exclude filter `- bar`.
     """
-    logger = get_script_logger(__name__, kwargs.get("verbosity", 0))
     log_cli_inputs(kwargs)
     config_files: list[Path] = kwargs.pop("config_files")
     if not config_files:
