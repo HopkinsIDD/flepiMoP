@@ -5,6 +5,7 @@ __all__: tuple[str, ...] = (
     "Distribution",
     "DistributionABC",
     "FixedDistribution",
+    "LognormalDistribution",
     "NormalDistribution",
     "PoissonDistribution",
     "UniformDistribution",
@@ -133,6 +134,38 @@ class UniformDistribution(DistributionABC):
         return self
 
 
+class LognormalDistribution(DistributionABC):
+    """
+    Represents a Lognormal distribution.
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import LognormalDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = LognormalDistribution(meanlog=0.0, sdlog=1.0)
+        >>> dist
+        LognormalDistribution(distribution='lognorm', meanlog=0.0, sdlog=1.0)
+        >>> dist.sample(rng=rng)
+        array([1.35624124])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[0.3534603 , 2.11795541, 2.56142749, 0.14212687, 0.27193845],
+               [1.13637163, 0.72888261, 0.98333919, 0.42611589, 2.40944872],
+               [2.17666075, 1.06825951, 3.08712799, 1.59601411, 0.42346159]])
+    """
+
+    distribution: Literal["lognorm"] = "lognorm"
+    meanlog: float
+    sdlog: float
+
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.int64]:
+        """Sample from the Lognormal distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        return rng.lognormal(mean=self.meanlog, sigma=self.sdlog, size=size)
+
+
 class PoissonDistribution(DistributionABC):
     """
     Represents a Poisson distribution.
@@ -199,6 +232,7 @@ class BinomialDistribution(DistributionABC):
 Distribution = Annotated[
     BinomialDistribution
     | FixedDistribution
+    | LognormalDistribution
     | NormalDistribution
     | PoissonDistribution
     | UniformDistribution,
