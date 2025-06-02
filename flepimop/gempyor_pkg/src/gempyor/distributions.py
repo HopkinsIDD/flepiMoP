@@ -1,20 +1,22 @@
 """Representations of distributions used for modifiers, likelihoods, etc."""
 
 __all__: tuple[str, ...] = (
+    "Distribution",
     "DistributionABC",
     "FixedDistribution",
     "NormalDistribution",
-    "Distribution",
+    "UniformDistribution",
 )
 
 
 from abc import ABC, abstractmethod
+from math import isclose
 from typing import Annotated, Literal
 
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class DistributionABC(ABC, BaseModel):
@@ -87,6 +89,49 @@ class NormalDistribution(DistributionABC):
         return rng.normal(loc=self.mu, scale=self.sigma, size=size)
 
 
+class UniformDistribution(DistributionABC):
+    """
+    Represents a uniform distribution.
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import UniformDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = UniformDistribution(low=-0.5, high=1.5)
+        >>> dist
+        UniformDistribution(distribution='uniform', low=-0.5, high=1.5)
+        >>> dist.sample(rng=rng)
+        array([1.0479121])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[ 0.37775688,  1.21719584,  0.89473606, -0.3116453 ,  1.4512447 ],
+               [ 1.0222794 ,  1.07212861, -0.24377273,  0.40077188,  0.24159605],
+               [ 1.35352998,  0.78773024,  1.14552323,  0.3868284 , -0.04552256]])
+    """
+
+    distribution: Literal["uniform"] = "uniform"
+    low: float
+    high: float
+
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.float64]:
+        """Sample from the uniform distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        return rng.uniform(low=self.low, high=self.high, size=size)
+
+    @model_validator(mode="after")
+    def _ensure_high_greater_than_low(self) -> "UniformDistribution":
+        """Ensure that high is greater than low."""
+        if self.high < self.low or isclose(self.high, self.low):
+            raise ValueError(
+                f"The 'high' value, {self.high}, must be "
+                f"greater than the 'low' value, {self.low}."
+            )
+        return self
+
+
 Distribution = Annotated[
-    FixedDistribution | NormalDistribution, Field(discriminator="distribution")
+    FixedDistribution | NormalDistribution | UniformDistribution,
+    Field(discriminator="distribution"),
 ]
