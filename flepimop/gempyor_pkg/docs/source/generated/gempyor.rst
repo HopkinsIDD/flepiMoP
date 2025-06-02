@@ -1,6 +1,0 @@
-﻿gempyor
-=======
-
-.. automodule:: gempyor
-
-   
