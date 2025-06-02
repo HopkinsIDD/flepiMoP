@@ -3,6 +3,7 @@ from typing import Any
 
 import pytest
 import click
+import itertools
 
 from gempyor.shared_cli import parse_config_files, config_file_options
 from gempyor.testing import *
@@ -13,6 +14,7 @@ def config_file(
     config_dict: dict[str, Any] = {},
     filename: str = "config.yaml",
 ) -> pathlib.Path:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     config_file = tmp_path / filename
     with open(config_file, "w") as f:
         f.write(create_confuse_config_from_dict(config_dict).dump())
@@ -119,17 +121,73 @@ class TestParseConfigFiles:
             assert mockconfig[k].get(v) == v
         assert mockconfig["config_src"].as_str_seq() == [str(tmpconfigfile)]
 
-    def test_conflict_config_opts_error(
+    @pytest.mark.parametrize(
+        ("option_configs", "argument_configs"),
+        itertools.combinations([["A"], ["B", "C"], ["D", "E", "F"], ["G", "H", "I"]], 2),
+    )
+    def test_conflict_config_via_arg_and_opts_error(
         self,
         tmp_path: pathlib.Path,
+        option_configs: list[str],
+        argument_configs: list[str],
     ) -> None:
-        """Check that both -c and argument style config file raise an error."""
-        testdict = {"foo": "bar", "test": 123}
-        tmpconfigfile = config_file(tmp_path, testdict)
+        """
+        Check that different configs passed through -c and argument-style config file raises an error.
+        """
         mockconfig = mock_empty_config()
-        with pytest.raises(ValueError):
+        option_configs = [
+            config_file(tmp_path / f"config{c}", {"foo": 1}) for c in option_configs
+        ]
+        argument_configs = [
+            config_file(tmp_path / f"config{c}", {"bar": 1}) for c in argument_configs
+        ]
+        assert option_configs != argument_configs
+        with pytest.raises(
+            ValueError, match=r"^Exactly one config file source option must be provided"
+        ):
             parse_config_files(
-                mockconfig, config_filepath=tmpconfigfile, config_files=tmpconfigfile
+                mockconfig, config_filepath=option_configs, config_files=argument_configs
+            )
+
+    @pytest.mark.parametrize(
+        ("option_configs", "argument_configs"),
+        [
+            (["A"], ["A"]),
+            (["X", "Y"], ["X", "Y"]),
+            (["alpha", "beta", "gamma"], ["alpha", "beta", "gamma"]),
+            (["only_opt"], None),
+            (None, ["only_arg"]),
+        ],
+    )
+    def test_resolve_same_config_given_via_arg_and_opts(
+        self,
+        tmp_path: pathlib.Path,
+        option_configs: list[str] | None,
+        argument_configs: list[str] | None,
+    ) -> None:
+        """
+        Check that identical config paths passed through -c and argument-style config file doesn't raise an error.
+        """
+        mockconfig = mock_empty_config()
+        if option_configs is not None:
+            option_configs = [
+                config_file(tmp_path / f"config_{c}", {f"shared_key_{c}": 1})
+                for c in option_configs
+            ]
+        if argument_configs is not None:
+            argument_configs = [
+                config_file(tmp_path / f"config_{c}", {f"shared_key_{c}": 1})
+                for c in argument_configs
+            ]
+        try:
+            parse_config_files(
+                mockconfig,
+                config_filepath=option_configs,
+                config_files=argument_configs,
+            )
+        except ValueError:
+            pytest.fail(
+                "shared_cli.parse_config_files() not resolving references to identical config paths."
             )
 
     def test_multifile_config(
