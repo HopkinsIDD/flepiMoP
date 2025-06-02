@@ -5,6 +5,7 @@ __all__: tuple[str, ...] = (
     "DistributionABC",
     "FixedDistribution",
     "NormalDistribution",
+    "PoissonDistribution",
     "UniformDistribution",
 )
 
@@ -131,7 +132,38 @@ class UniformDistribution(DistributionABC):
         return self
 
 
+class PoissonDistribution(DistributionABC):
+    """
+    Represents a Poisson distribution.
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import PoissonDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = PoissonDistribution(lam=3.0)
+        >>> dist
+        PoissonDistribution(distribution='poisson', lam=3.0)
+        >>> dist.sample(rng=rng)
+        array([4])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[4, 5, 1, 7, 1],
+               [4, 2, 2, 5, 4],
+               [1, 6, 2, 5, 0]])
+    """
+
+    distribution: Literal["poisson"] = "poisson"
+    lam: float
+
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.int64]:
+        """Sample from the Poisson distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        return rng.poisson(lam=self.lam, size=size)
+
+
 Distribution = Annotated[
-    FixedDistribution | NormalDistribution | UniformDistribution,
+    FixedDistribution | NormalDistribution | PoissonDistribution | UniformDistribution,
     Field(discriminator="distribution"),
 ]
