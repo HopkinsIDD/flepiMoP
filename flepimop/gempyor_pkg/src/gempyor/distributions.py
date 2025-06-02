@@ -8,6 +8,7 @@ __all__: tuple[str, ...] = (
     "LognormalDistribution",
     "NormalDistribution",
     "PoissonDistribution",
+    "TruncatedNormalDistribution",
     "UniformDistribution",
 )
 
@@ -20,6 +21,7 @@ import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
 from pydantic import BaseModel, Field, model_validator
+from scipy.stats import truncnorm
 
 
 class DistributionABC(ABC, BaseModel):
@@ -166,6 +168,51 @@ class LognormalDistribution(DistributionABC):
         return rng.lognormal(mean=self.meanlog, sigma=self.sdlog, size=size)
 
 
+class TruncatedNormalDistribution(DistributionABC):
+    # pylint: disable=line-too-long
+    """
+    Represents a truncated normal distribution.
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import TruncatedNormalDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = TruncatedNormalDistribution(mean=1.0, sd=1.0, a=0.0, b=10.0)
+        >>> dist
+        TruncatedNormalDistribution(distribution='truncnorm', mean=1.0, sd=1.0, a=0.0, b=10.0)
+        >>> dist.sample(rng=rng)
+        array([1.87722989])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[1.07000038, 2.18016199, 1.66002835, 0.28689654, 3.04332767],
+               [1.83818339, 1.9153892 , 0.37639339, 1.09435167, 0.92629918],
+               [2.54134935, 1.52545861, 2.04022114, 1.07959285, 0.6142512 ]])
+    """
+    # pylint: enable=line-too-long
+
+    distribution: Literal["truncnorm"] = "truncnorm"
+    mean: float
+    sd: float
+    a: float
+    b: float
+
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.float64]:
+        """Sample from the truncated normal distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        lower = (self.a - self.mean) / self.sd
+        upper = (self.b - self.mean) / self.sd
+        return truncnorm.rvs(
+            a=lower,
+            b=upper,
+            loc=self.mean,
+            scale=self.sd,
+            size=size,
+            random_state=rng,
+        )
+
+
 class PoissonDistribution(DistributionABC):
     """
     Represents a Poisson distribution.
@@ -235,6 +282,7 @@ Distribution = Annotated[
     | LognormalDistribution
     | NormalDistribution
     | PoissonDistribution
+    | TruncatedNormalDistribution
     | UniformDistribution,
     Field(discriminator="distribution"),
 ]
