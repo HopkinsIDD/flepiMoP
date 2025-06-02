@@ -93,6 +93,9 @@ jobs:
           cd flepimop/gempyor_pkg
           click-man flepimop --target docs/cli_man --man-version 1
           python docs/click-man_parsing.py
+      - name: Remove temporal metadata from man page headers
+        run: |
+          sed -i 's/^\(\.TH [^"]* \)"[^"]*" "\(.*\)"/\1"" "\2"/' flepimop/gempyor_pkg/docs/cli_man/*.1
       - name: Commit/push any changed docs
         run: |
           if [[ $(git status --porcelain flepimop/gempyor_pkg/docs/source/ | wc -l) -gt 0 || \
