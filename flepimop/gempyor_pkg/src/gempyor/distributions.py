@@ -1,6 +1,7 @@
 """Representations of distributions used for modifiers, likelihoods, etc."""
 
 __all__: tuple[str, ...] = (
+    "BinomialDistribution",
     "Distribution",
     "DistributionABC",
     "FixedDistribution",
@@ -163,7 +164,43 @@ class PoissonDistribution(DistributionABC):
         return rng.poisson(lam=self.lam, size=size)
 
 
+class BinomialDistribution(DistributionABC):
+    """
+    Represents a binomial distribution.
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import BinomialDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = BinomialDistribution(n=10, p=0.5)
+        >>> dist
+        BinomialDistribution(distribution='binomial', n=10, p=0.5)
+        >>> dist.sample(rng=rng)
+        array([6])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[5, 7, 6, 3, 8],
+               [6, 6, 3, 5, 4],
+               [7, 6, 6, 5, 4]])
+    """
+
+    distribution: Literal["binomial"] = "binomial"
+    n: int
+    p: float
+
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.int64]:
+        """Sample from the binomial distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        return rng.binomial(n=self.n, p=self.p, size=size)
+
+
 Distribution = Annotated[
-    FixedDistribution | NormalDistribution | PoissonDistribution | UniformDistribution,
+    BinomialDistribution
+    | FixedDistribution
+    | NormalDistribution
+    | PoissonDistribution
+    | UniformDistribution,
     Field(discriminator="distribution"),
 ]
