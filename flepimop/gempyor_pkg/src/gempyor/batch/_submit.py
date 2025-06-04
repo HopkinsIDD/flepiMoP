@@ -125,14 +125,14 @@ def _submit_scenario_job(
             project_path += "/"
         command = [
             "flepimop sync \\",
-            f"  --protocol {template_data['sync']} \\",
+            f"  --protocol {template_data['sync_protocol']} \\",
             f"  --target-append {template_data['job_name']} \\",
             "  --mkpath \\",
             f"  --fprefix 's {template_data['job_name']}' \\",
             f"  {template_data['config']}",
             "",
             "flepimop sync \\",
-            f"  --protocol {template_data['sync']} \\",
+            f"  --protocol {template_data['sync_protocol']} \\",
             f"  --target-append {template_data['job_name']} \\",
             "  --mkpath \\",
             f"  --fprefix '+ {template_data['job_name']}*.pdf' \\",
@@ -140,7 +140,7 @@ def _submit_scenario_job(
             f"  {template_data['config']}",
             "",
             "flepimop sync \\",
-            f"  --protocol {template_data['sync']} \\",
+            f"  --protocol {template_data['sync_protocol']} \\",
             f"  --target-append {template_data['job_name']} \\",
             "  --mkpath \\",
             f"  --fprefix '+ {template_data['job_name']}*.h5' \\",
@@ -151,7 +151,7 @@ def _submit_scenario_job(
         if not template_data.get("skip_manifest", False):
             command += [
                 "flepimop sync \\",
-                f"  --protocol {template_data['sync']} \\",
+                f"  --protocol {template_data['sync_protocol']} \\",
                 f"  --target-append {template_data['job_name']} \\",
                 "  --mkpath \\",
                 "  --source manifest.json \\",
