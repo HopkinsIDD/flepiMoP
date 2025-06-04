@@ -256,6 +256,21 @@ from .types import EstimationSettings, JobSize
         ),
         click.Option(
             param_decls=["--sync", "sync"],
+            type=bool,
+            default=False,
+            is_flag=True,
+            help=(
+                "Flag to enable syncing the model outputs to an external storage "
+                "system after the calibration job successfully completes. If this flag "
+                "is given then a dependent job will be submitted to sync the model "
+                "outputs to the given protocol after the calibration job successfully "
+                "completes. The sync protocol must be given via the `--sync-protocol` "
+                "or if not given the default protocol to sync to "
+                "`s3://idd-inference-runs` will be used."
+            ),
+        ),
+        click.Option(
+            param_decls=["--sync-protocol", "sync_protocol"],
             type=str,
             default=None,
             help=(
@@ -475,6 +490,45 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     )
     logger.info("Using cluster info of %s", cluster)
 
+    # Ensure that sync protocol if given is valid
+    cfg_sync_protocols = dict(cfg["sync"].get()) if cfg["sync"].exists() else {}
+    if (sync_protocol := kwargs.get("sync_protocol", None)) is not None:
+        # --sync-protocol was given, implicit --sync
+        logger.info("User provided explicit sync protocol of '%s'", sync_protocol)
+        if sync_protocol not in cfg_sync_protocols:
+            raise ValueError(
+                f"Sync protocol '{kwargs['sync']}' not found in the config file. "
+                f"Valid protocols are: {', '.join(cfg_sync_protocols.keys())}."
+            )
+        kwargs["sync"] = True
+        logger.info(
+            "Using sync protocol '%s' with options '%s' to sync the model outputs.",
+            sync_protocol,
+            cfg_sync_protocols[sync_protocol],
+        )
+    elif kwargs.get("sync", False):
+        # --sync was given, but no --sync-protocol
+        logger.info("User provided implicit sync protocol of '%s'", "default")
+        if "default" in cfg_sync_protocols:
+            raise ValueError(
+                "Using implicit sync protocol of 'default', but it is already "
+                "defined in the config file. Will not override it."
+            )
+        kwargs["sync_protocol"] = "default"
+        cfg_sync_protocols["default"] = {
+            "type": "s3sync",
+            "source": "model_output",
+            "target": "s3://idd-inference-runs",
+        }
+        cfg["sync"].set(cfg_sync_protocols)
+        logger.info(
+            "Using sync protocol 'default' with options '%s' to sync the model outputs.",
+            cfg_sync_protocols["default"],
+        )
+    else:
+        # Neither --sync nor --sync-protocol was given
+        logger.warning("No sync protocol given, skipping syncing of model outputs.")
+
     # Job config
     job_config = Path(f"config_{job_name}.yml").absolute()
     job_config.write_text(_dump_formatted_yaml(cfg))
@@ -482,22 +536,6 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
         logger.info(
             "Dumped the job config for this batch submission to %s", job_config.absolute()
         )
-
-    # Ensure that sync protocol if given is valid
-    if kwargs.get("sync") is not None:
-        sync_protocols = dict(cfg["sync"].get()) if cfg["sync"].exists() else {}
-        if kwargs["sync"] not in sync_protocols:
-            raise ValueError(
-                f"Sync protocol '{kwargs['sync']}' not found in the config file. "
-                f"Valid protocols are: {', '.join(sync_protocols.keys())}."
-            )
-        logger.info(
-            "Using sync protocol '%s' with options '%s' to sync the model outputs.",
-            kwargs["sync"],
-            sync_protocols[kwargs["sync"]],
-        )
-    else:
-        logger.info("No sync protocol given, skipping syncing of model outputs.")
 
     # Construct template data
     general_template_data = {
