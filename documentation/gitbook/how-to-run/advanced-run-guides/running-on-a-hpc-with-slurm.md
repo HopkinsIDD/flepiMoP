@@ -188,7 +188,7 @@ $ flepimop batch-calibrate \
 
 ### Saving Model Outputs On Batch Inference Job Finish
 
-For production runs it is particularly helpful to save the calibration results after a successful run to long term storage for safe keeping. To accomplish this `flepimop batch-calibrate` can chain a call to `flepimop sync` after a successful run via the `--sync` option. For more details on the `flepimop sync` command in general please refer to the [Synchronizing files: Syntax and Applications](../synchronization.md) guide.
+For production runs it is particularly helpful to save the calibration results after a successful run to long term storage for safe keeping. To accomplish this `flepimop batch-calibrate` can chain a call to `flepimop sync` after a successful run via the `--sync-protocol` option. For more details on the `flepimop sync` command in general please refer to the [Synchronizing files: Syntax and Applications](../synchronization.md) guide.
 
 For a quick demonstration of how to use this option start with the `config_sample_2pop_inference.yml` configuration file and add the following section:
 
@@ -204,7 +204,7 @@ sync:
     target: s3://my-bucket/and-sub-bucket
 ```
 
-Where `/path/to/an/example-folder` and `s3://my-bucket/and-sub-bucket` are place holders for paths to your desired location. Importantly, note that there is no trailing slash on the `model_output` directory name. This will cause `flepimop sync` to sync the `model_output` directory itself and not just it's contents. You can also apply additional filters to the sync protocols here, say to limit the backed up model outputs to certain folders or exclude `llik` outputs, but the `--sync` option will add filters to limit the synced directories to those corresponding to the run submitted.
+Where `/path/to/an/example-folder` and `s3://my-bucket/and-sub-bucket` are place holders for paths to your desired location. Importantly, note that there is no trailing slash on the `model_output` directory name. This will cause `flepimop sync` to sync the `model_output` directory itself and not just it's contents. You can also apply additional filters to the sync protocols here, say to limit the backed up model outputs to certain folders or exclude `llik` outputs, but the `--sync-protocol` option will add filters to limit the synced directories to those corresponding to the run submitted.
 
 Modifying the first `flepimop batch-calibrate` command from before:
 
@@ -224,7 +224,7 @@ $ flepimop batch-calibrate \
     --extra 'partition=<your partition, if relevant>' \
     --extra 'email=<your email, if relevant>' \
     --skip-checkout \
-    --sync <your sync protocol, either rsync-model-output or s3-model-output in this case> \
+    --sync-protocol <your sync protocol, either rsync-model-output or s3-model-output in this case> \
     -vvv \
     config_sample_2pop_inference.yml
 ```
@@ -262,4 +262,6 @@ After those jobs finish the results can be found in a subdirectory named after t
 11 directories, 1 file
 ```
 
-Note that this contains the `model_output` directory but only limited to the batch run named 'sample_2pop-20250521T190823_Ro_all_test_limits' as well as a file called `manifest.json` which can be used to reproduce the run from scratch if needed.
+Note that this contains the `model_output` directory but only limited to the batch run named 'sample_2pop-20250521T190823_Ro_all_test_limits' as well as a file called `manifest.json` which can be used to reproduce the run from scratch if needed. 
+
+For Hopkins affiliated users there is also the `--sync` flag which will add a sync protocol called 'default' that will save the results to the default s3 bucket of `s3://idd-inference-runs`. Using this flag does require that the user have write access to that bucket and that the configuration file used not have a sync protocol named 'default'.
