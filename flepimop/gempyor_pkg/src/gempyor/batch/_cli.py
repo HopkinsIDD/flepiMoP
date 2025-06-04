@@ -514,7 +514,10 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "job_resources_memory": batch_system.format_memory(job_resources),
             "cluster": None if cluster is None else cluster.model_dump(),
             "config": job_config,
+            "inference_method": inference_method,
             "array_capable": _inference_is_array_capable(inference_method),
+            "verbosity": kwargs.get("verbosity", 0),
+            "dry_run": kwargs.get("dry_run", False),
         },
     }
 
@@ -582,18 +585,18 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     for outcome_modifiers_scenario, seir_modifiers_scenario in product(
         outcome_modifiers_scenarios, seir_modifiers_scenarios
     ):
+        template_data = {
+            **general_template_data,
+            **{
+                "outcome_modifiers_scenario": outcome_modifiers_scenario,
+                "seir_modifiers_scenario": seir_modifiers_scenario,
+            },
+        }
         _submit_scenario_job(
-            name,
-            job_name,
-            inference_method,
             job_size,
             batch_system,
-            outcome_modifiers_scenario,
-            seir_modifiers_scenario,
             batch_system.options_from_config_and_cli(
                 cfg, kwargs, kwargs.get("verbosity", 0)
             ),
-            general_template_data,
-            kwargs.get("verbosity", 0),
-            kwargs.get("dry_run", False),
+            template_data,
         )
