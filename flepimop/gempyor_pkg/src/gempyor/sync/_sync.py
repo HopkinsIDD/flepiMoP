@@ -155,6 +155,7 @@ class SyncABC(BaseModel, ABC):
 
 
 def _rsync_ensure_path(target: str, verbosity: int, dry_run: bool) -> CompletedProcess:
+    # pylint: disable=line-too-long
     """
     Ensure the target path exists for rsync.
 
@@ -175,6 +176,7 @@ def _rsync_ensure_path(target: str, verbosity: int, dry_run: bool) -> CompletedP
         (DRY RUN): ssh user@host mkdir -p /fizz/buzz
         CompletedProcess(args=['echo', '(DRY RUN): ssh user@host mkdir -p /fizz/buzz'], returncode=0)
     """
+    # pylint: enable=line-too-long
     logger = get_script_logger(__name__, verbosity)
     cmd = ["mkdir", "-p"]
     if (tarmatch := _RSYNC_HOST_REGEX.match(target)) is not None:
@@ -310,6 +312,7 @@ def _resolve_s3_inner_paths(inner_paths: list[str]) -> list[str]:
 
 
 class S3SyncModel(SyncABC, WithFilters):
+    # pylint: disable=line-too-long
     """
     Implementation of `aws s3 sync` based approach to synchronization.
 
@@ -338,6 +341,7 @@ class S3SyncModel(SyncABC, WithFilters):
         Value error, At least one of `source` or `target` must be an s3 bucket, as indicated by a `s3://` prefix [type=value_error, input_value={'type': 's3sync', 'targe...et', 'source': 'source'}, input_type=dict]
             For further information visit https://errors.pydantic.dev/2.11/v/value_error
     """
+    # pylint: enable=line-too-long
 
     type: Literal["s3sync"]
     target: str
