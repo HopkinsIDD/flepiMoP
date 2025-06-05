@@ -25,7 +25,7 @@ class TestIC:
             outcome_modifiers_scenario=None,
             write_csv=False,
         )
-        sic = initial_conditions.InitialConditionsFactory(
+        sic = initial_conditions.initial_conditions_factory(
             config=s.initial_conditions_config
         )
         assert sic.initial_conditions_config == s.initial_conditions_config
@@ -50,7 +50,7 @@ class TestIC:
 
         s.initial_conditions_config["allow_missing_nodes"] = True
         s.initial_conditions_config["allow_missing_compartments"] = True
-        sic = initial_conditions.InitialConditionsFactory(
+        sic = initial_conditions.initial_conditions_factory(
             config=s.initial_conditions_config
         )
         sic.get_from_config(sim_id=100, modinf=s)
@@ -74,7 +74,7 @@ class TestIC:
                 write_csv=False,
             )
             s.initial_conditions_config["method"] = "unknown"
-            sic = initial_conditions.InitialConditionsFactory(
+            sic = initial_conditions.initial_conditions_factory(
                 config=s.initial_conditions_config
             )
 
