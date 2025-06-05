@@ -2,8 +2,8 @@
 
 __all__ = (
     "InitialConditions",
-    "InitialConditionsFactory",
     "check_population",
+    "initial_conditions_factory",
     "read_initial_condition_from_seir_output",
     "read_initial_condition_from_tidydataframe",
 )
@@ -154,7 +154,7 @@ class InitialConditions:
         return self.get_from_config(sim_id=sim_id, modinf=modinf)
 
 
-def InitialConditionsFactory(
+def initial_conditions_factory(
     config: confuse.ConfigView, path_prefix: str = "."
 ) -> InitialConditions:
     """
