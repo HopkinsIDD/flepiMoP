@@ -1,44 +1,43 @@
-"""
-Provides functionality for handling initial conditions.
-"""
+"""Provides functionality for handling initial conditions."""
 
-from typing import Dict
+__all__ = (
+    "InitialConditions",
+    "check_population",
+    "initial_conditions_factory",
+    "read_initial_condition_from_seir_output",
+    "read_initial_condition_from_tidydataframe",
+)
 
-import numpy as np
-import pandas as pd
-from numba.typed import Dict
-import confuse
 import logging
-from .simulation_component import SimulationComponent
-from . import utils
-from .utils import read_df
 import warnings
-import os
+
+import confuse
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+
+from .utils import read_df, search_and_import_plugins_class
+
 
 logger = logging.getLogger(__name__)
 
-## TODO: ideally here path_prefix should not be used and all files loaded from modinf
 
+class InitialConditions:
+    """Represents the initial conditions for a simulation."""
 
-def InitialConditionsFactory(config: confuse.ConfigView, path_prefix: str = "."):
-    if config is not None and "method" in config.keys():
-        if config["method"].as_str() == "plugin":
-            klass = utils.search_and_import_plugins_class(
-                plugin_file_path=config["plugin_file_path"].as_str(),
-                class_name="InitialConditions",
-                config=config,
-                path_prefix=path_prefix,
-            )
-            return klass
-    return InitialConditions(config, path_prefix=path_prefix)
-
-
-class InitialConditions(SimulationComponent):
     def __init__(
         self,
         config: confuse.ConfigView,
         path_prefix: str = ".",
     ):
+        """
+        Initialize an initial conditions object from configuration.
+
+        Args:
+            config: A confuse configuration object containing initial conditions
+                settings.
+            path_prefix: The prefix path for file paths in the configuration.
+        """
         self.initial_conditions_config = config
         self.path_prefix = path_prefix
 
@@ -61,14 +60,22 @@ class InitialConditions(SimulationComponent):
                 self.allow_missing_compartments = self.initial_conditions_config[
                     "allow_missing_compartments"
                 ].get(bool)
-
-            # TODO: add check, this option onlywork with tidy dataframe
             if "proportional" in self.initial_conditions_config.keys():
                 self.proportional_ic = self.initial_conditions_config["proportional"].get(
                     bool
                 )
 
     def get_from_config(self, sim_id: int, modinf) -> np.ndarray:
+        """
+        Produce an array of initial conditions from the configuration.
+
+        Args:
+            sim_id: The simulation ID.
+            modinf: The model information object.
+
+        Returns:
+            A numpy array of initial conditions for the simulation.
+        """
         method = "Default"
         if (
             self.initial_conditions_config is not None
@@ -80,10 +87,9 @@ class InitialConditions(SimulationComponent):
             ## JK : This could be specified in the config
             y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
             y0[0, :] = modinf.subpop_pop
-            return y0  # we finish here: no rest and not proportionallity applies
+            return y0  # we finish here: no rest and not proportionality applies
 
-        if method == "SetInitialConditions" or method == "SetInitialConditionsFolderDraw":
-            #  TODO Think about     - Does not support the new way of doing compartment indexing
+        if method in {"SetInitialConditions", "SetInitialConditionsFolderDraw"}:
             if method == "SetInitialConditionsFolderDraw":
                 ic_df = modinf.read_simID(
                     ftype=self.initial_conditions_config["initial_file_type"], sim_id=sim_id
@@ -101,7 +107,7 @@ class InitialConditions(SimulationComponent):
                 proportional_ic=self.proportional_ic,
             )
 
-        elif method == "InitialConditionsFolderDraw" or method == "FromFile":
+        elif method in {"InitialConditionsFolderDraw", "FromFile"}:
             if method == "InitialConditionsFolderDraw":
                 ic_df = modinf.read_simID(
                     ftype=self.initial_conditions_config["initial_file_type"].get(),
@@ -124,49 +130,136 @@ class InitialConditions(SimulationComponent):
                 f"Unknown initial conditions method [received: '{method}']."
             )
 
-        # check that the inputed values sums to the subpop population:
+        # check that the inputted values sums to the subpop population:
         check_population(
-            y0=y0, modinf=modinf, ignore_population_checks=self.ignore_population_checks
+            y0,
+            modinf.subpop_struct.subpop_names,
+            modinf.subpop_pop,
+            ignore_population_checks=self.ignore_population_checks,
         )
-
         return y0
 
     def get_from_file(self, sim_id: int, modinf) -> np.ndarray:
+        """
+        Produce an array of initial conditions from the configuration.
+
+        This method is a wrapper around `get_from_config` to maintain compatibility
+        with existing code that expects this method. Direct usage of this method is
+        deprecated in favor of `get_from_config`.
+
+        Args:
+            sim_id: The simulation ID.
+            modinf: The model information object.
+
+        Returns:
+            A numpy array of initial conditions for the simulation.
+        """
         return self.get_from_config(sim_id=sim_id, modinf=modinf)
 
 
-# TODO: rename config to initial_conditions_config as it shadows the global config
+def initial_conditions_factory(
+    config: confuse.ConfigView, path_prefix: str = "."
+) -> InitialConditions:
+    """
+    Create an initial conditions object from config or plugin.
+
+    Args:
+        config: The configuration object containing initial conditions settings.
+        path_prefix: The prefix path for file paths in the configuration.
+
+    Returns:
+        An instance of the `InitialConditions` class created from configuration or a
+        plugin subclass.
+    """
+    if config is not None and "method" in config.keys():
+        if config["method"].as_str() == "plugin":
+            klass = search_and_import_plugins_class(
+                plugin_file_path=config["plugin_file_path"].as_str(),
+                class_name="InitialConditions",
+                config=config,
+                path_prefix=path_prefix,
+            )
+            return klass
+    return InitialConditions(config, path_prefix=path_prefix)
 
 
-def check_population(y0, modinf, ignore_population_checks=False):
-    # check that the inputed values sums to the subpop population:
+def check_population(
+    y0: np.ndarray,
+    subpop_names: list[str],
+    subpop_pop: npt.NDArray[np.int64],
+    ignore_population_checks: bool = False,
+) -> None:
+    """
+    Check that the initial conditions match the population sizes in the model.
+
+    Args:
+        y0: The initial conditions array where the row dimension corresponds to the
+            compartments and the column dimension corresponds to the subpopulations.
+        subpop_names: A list of subpopulation names.
+        subpop_pop: A numpy array containing the population sizes for each
+            subpopulation.
+        ignore_population_checks: If `True`, ignore population checks.
+
+    Raises:
+        ValueError: If the initial conditions do not match the population sizes and
+            `ignore_population_checks` is `False`.
+    """
     error = False
-    for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):
+    for pl_idx, pl in enumerate(subpop_names):
         n_y0 = y0[:, pl_idx].sum()
-        n_pop = modinf.subpop_pop[pl_idx]
+        n_pop = subpop_pop[pl_idx]
         if abs(n_y0 - n_pop) > 1:
             error = True
             warnings.warn(
-                f"`subpop_names` '{pl}' (idx: plx_idx) has a population from  initial condition of '{n_y0}' "
-                f"while population geodata is '{n_pop}'. "
+                f"`subpop_names` '{pl}' (idx: plx_idx) has a population from initial "
+                f"condition of '{n_y0}' while population geodata is '{n_pop}'. "
                 f"(absolute difference should be <1, here is '{abs(n_y0-n_pop)}')."
             )
-
-    if error and not ignore_population_checks:
-        raise ValueError(
-            "Geodata and initial condition do not agree on population size. Use `ignore_population_checks: True` to ignore."
-        )
-    elif error and ignore_population_checks:
+    if error:
+        if not ignore_population_checks:
+            raise ValueError(
+                "Geodata and initial condition do not agree on population size. "
+                "Use `ignore_population_checks: True` to ignore."
+            )
         warnings.warn(
-            "Population mismatch errors ignored because `ignore_population_checks` is set to `True`. "
-            "Execution will continue, but this is not recommended.",
+            "Population mismatch errors ignored because `ignore_population_checks` is "
+            "set to `True`. Execution will continue, but this is not recommended.",
             UserWarning,
         )
 
 
 def read_initial_condition_from_tidydataframe(
-    ic_df, modinf, allow_missing_subpops, allow_missing_compartments, proportional_ic=False
+    ic_df: pd.DataFrame,
+    modinf,
+    allow_missing_subpops: bool,
+    allow_missing_compartments: bool,
+    proportional_ic: bool = False,
 ):
+    """
+    Read the initial conditions from a tidy formatted DataFrame.
+
+    Args:
+        ic_df: The DataFrame containing the initial conditions.
+        modinf: The model information object.
+        allow_missing_subpops: Flag indicating whether missing subpopulations are
+            allowed.
+        allow_missing_compartments: Flag indicating whether missing compartments are
+            allowed.
+        proportional_ic: If `True`, the initial conditions will be set proportionally
+            to the subpopulation sizes.
+
+    Returns:
+        The initial conditions array.
+
+    Raises:
+        ValueError: If the compartment filters in the initial conditions DataFrame
+            are not unique.
+        ValueError: If the compartments are not unique in the initial conditions
+            DataFrame.
+        RuntimeError: If `allow_missing_subpops` is `True`.
+        ValueError: If a subpopulation does not exist in the initial conditions
+            DataFrame and `allow_missing_subpops` is `False`.
+    """
     rests = []  # Places to allocate the rest of the population
     y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
     for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):  #
@@ -186,15 +279,19 @@ def read_initial_condition_from_tidydataframe(
                         ]["amount"]
                 if len(ic_df_compartment_val) > 1:
                     raise ValueError(
-                        f"Several ('{len(ic_df_compartment_val)}') rows are matches for compartment '{comp_name}' in init file: filters returned '{ic_df_compartment_val}'"
+                        f"Several ('{len(ic_df_compartment_val)}') rows are matches "
+                        f"for compartment '{comp_name}' in init file: filters "
+                        f"returned '{ic_df_compartment_val}'"
                     )
-                elif ic_df_compartment_val.empty:
+                if ic_df_compartment_val.empty:
                     if allow_missing_compartments:
                         ic_df_compartment_val = 0.0
                     else:
                         raise ValueError(
-                            f"Multiple rows match for compartment '{comp_name}' in the initial conditions file; ensure each compartment has a unique entry. "
-                            f"Filters used: '{filters.to_dict()}'. Matches: '{ic_df_compartment_val.tolist()}'."
+                            f"Multiple rows match for compartment '{comp_name}' in the "
+                            "initial conditions file; ensure each compartment has a "
+                            f"unique entry. Filters used: '{filters.to_dict()}'. "
+                            f"Matches: '{ic_df_compartment_val.tolist()}'."
                         )
                 if "rest" in str(ic_df_compartment_val).strip().lower():
                     rests.append([comp_idx, pl_idx])
@@ -206,19 +303,15 @@ def read_initial_condition_from_tidydataframe(
                     y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
         elif allow_missing_subpops:
             logger.critical(
-                f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartment ({modinf.compartments.compartments['name'].iloc[0]})"
+                "No initial conditions for for subpop %s, assuming everyone"
+                "(n=%u) in the first meta-compartment (%s)",
+                pl,
+                modinf.subpop_pop[pl_idx],
+                modinf.compartments.compartments["name"].iloc[0],
             )
             raise RuntimeError(
-                "There is a bug; report this message. Past implemenation was buggy."
+                "There is a bug; report this message. Past implementation was buggy."
             )
-            # TODO: this is probably ok but highlighting for consistency
-            if "proportional" in self.initial_conditions_config.keys():
-                if self.initial_conditions_config["proportional"].get():
-                    y0[0, pl_idx] = 1.0
-                else:
-                    y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
-            else:
-                y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
         else:
             raise ValueError(
                 f"Subpop '{pl}' does not exist in `initial_conditions::states_file`. "
@@ -237,25 +330,33 @@ def read_initial_condition_from_tidydataframe(
 
 
 def read_initial_condition_from_seir_output(
-    ic_df, modinf, allow_missing_subpops, allow_missing_compartments
-):
+    ic_df: pd.DataFrame,
+    modinf,
+    allow_missing_subpops: bool,
+    allow_missing_compartments: bool,
+) -> np.ndarray:
     """
     Read the initial conditions from the SEIR output.
 
     Args:
-        ic_df (pandas.DataFrame): The dataframe containing the initial conditions.
+        ic_df: The dataframe containing the initial conditions.
         modinf: The model information object.
-        allow_missing_subpops (bool): Flag indicating whether missing subpopulations are allowed.
-        allow_missing_compartments (bool): Flag indicating whether missing compartments are allowed.
+        allow_missing_subpops: Flag indicating whether missing subpopulations are
+            allowed.
+        allow_missing_compartments: Flag indicating whether missing compartments are
+            allowed.
 
     Returns:
-        numpy.ndarray: The initial conditions array.
+        The initial conditions array.
 
     Raises:
-        ValueError: If there is no entry for the initial time ti in the provided initial_conditions::states_file.
-        ValueError: If there are multiple rows matching the compartment in the init file.
+        ValueError: If there is no entry for the initial time ti in the provided
+            initial_conditions::states_file.
+        ValueError: If there are multiple rows matching the compartment in the init
+            file.
         ValueError: If the compartment cannot be set in the subpopulation.
-        ValueError: If the subpopulation does not exist in initial_conditions::states_file.
+        ValueError: If the subpopulation does not exist in
+            initial_conditions::states_file.
 
     """
     # annoying conversion because sometime the parquet columns get attributed a timezone...
@@ -268,8 +369,8 @@ def read_initial_condition_from_seir_output(
     ]
     if ic_df.empty:
         raise ValueError(
-            f"No entry provided for initial time `ti` in the `initial_conditions::states_file.` "
-            f"`ti`: '{modinf.ti}'."
+            f"No entry provided for initial time `ti` in the "
+            f"`initial_conditions::states_file.` `ti`: '{modinf.ti}'."
         )
     y0 = np.zeros((modinf.compartments.compartments.shape[0], modinf.nsubpops))
 
@@ -287,23 +388,24 @@ def read_initial_condition_from_seir_output(
         if len(ic_df_compartment) > 1:
             # ic_df_compartment = ic_df_compartment.iloc[0]
             raise ValueError(
-                f"Several ('{len(ic_df_compartment)}') rows are matches for compartment '{mc_name}' in init file: "
-                f"filter '{filters}'. "
+                f"Several ('{len(ic_df_compartment)}') rows are matches for "
+                f"compartment '{comp_name}' in init file: filter '{filters}'. "
                 f"returned: '{ic_df_compartment}'."
             )
-        elif ic_df_compartment.empty:
-            if allow_missing_compartments:
-                ic_df_compartment = pd.DataFrame(
-                    0, columns=ic_df_compartment.columns, index=[0]
-                )
-            else:
+        if ic_df_compartment.empty:
+            if not allow_missing_compartments:
                 raise ValueError(
-                    f"Initial Conditions: could not set compartment '{comp_name}' (id: '{comp_idx}') in subpop '{pl}' (id: '{pl_idx}'). "
-                    f"The data from the init file is '{ic_df_compartment[pl]}'."
+                    f"Initial Conditions: could not set compartment '{comp_name}' "
+                    f"(id: '{comp_idx}') in subpop '{pl}' (id: '{pl_idx}'). The data "
+                    f"from the init file is '{ic_df_compartment[pl]}'."
                 )
+            ic_df_compartment = pd.DataFrame(
+                0, columns=ic_df_compartment.columns, index=[0]
+            )
         elif ic_df_compartment["mc_name"].iloc[0] != comp_name:
             warnings.warn(
-                f"{ic_df_compartment['mc_name'].iloc[0]} does not match compartment `mc_name` {comp_name}."
+                f"{ic_df_compartment['mc_name'].iloc[0]} does not match "
+                f"compartment `mc_name` {comp_name}."
             )
 
         for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):
@@ -311,16 +413,8 @@ def read_initial_condition_from_seir_output(
                 y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
             elif allow_missing_subpops:
                 raise RuntimeError(
-                    "There is a bug; report this message. Past implemenation was buggy"
+                    "There is a bug; report this message. Past implementation was buggy"
                 )
-                # TODO this should set the full subpop, not just the 0th commpartment
-                logger.critical(
-                    f"No initial conditions for for subpop {pl}, assuming everyone (n={modinf.subpop_pop[pl_idx]}) in the first metacompartments ({modinf.compartments.compartments['name'].iloc[0]})"
-                )
-                if "proportion" in self.initial_conditions_config.keys():
-                    if self.initial_conditions_config["proportion"].get():
-                        y0[0, pl_idx] = 1.0
-                y0[0, pl_idx] = modinf.subpop_pop[pl_idx]
             else:
                 raise ValueError(
                     f"Subpop '{pl}' does not exist in `initial_conditions::states_file`. "
