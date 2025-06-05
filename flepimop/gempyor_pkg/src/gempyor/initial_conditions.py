@@ -13,6 +13,7 @@ import warnings
 
 import confuse
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from .utils import read_df, search_and_import_plugins_class
@@ -131,9 +132,11 @@ class InitialConditions:
 
         # check that the inputted values sums to the subpop population:
         check_population(
-            y0=y0, modinf=modinf, ignore_population_checks=self.ignore_population_checks
+            y0,
+            modinf.subpop_struct.subpop_names,
+            modinf.subpop_pop,
+            ignore_population_checks=self.ignore_population_checks,
         )
-
         return y0
 
     def get_from_file(self, sim_id: int, modinf) -> np.ndarray:
@@ -180,13 +183,21 @@ def initial_conditions_factory(
     return InitialConditions(config, path_prefix=path_prefix)
 
 
-def check_population(y0, modinf, ignore_population_checks: bool = False) -> None:
+def check_population(
+    y0: np.ndarray,
+    subpop_names: list[str],
+    subpop_pop: npt.NDArray[np.int64],
+    ignore_population_checks: bool = False,
+) -> None:
     """
     Check that the initial conditions match the population sizes in the model.
 
     Args:
-        y0: The initial conditions array.
-        modinf: The model information object.
+        y0: The initial conditions array where the row dimension corresponds to the
+            compartments and the column dimension corresponds to the subpopulations.
+        subpop_names: A list of subpopulation names.
+        subpop_pop: A numpy array containing the population sizes for each
+            subpopulation.
         ignore_population_checks: If `True`, ignore population checks.
 
     Raises:
@@ -194,9 +205,9 @@ def check_population(y0, modinf, ignore_population_checks: bool = False) -> None
             `ignore_population_checks` is `False`.
     """
     error = False
-    for pl_idx, pl in enumerate(modinf.subpop_struct.subpop_names):
+    for pl_idx, pl in enumerate(subpop_names):
         n_y0 = y0[:, pl_idx].sum()
-        n_pop = modinf.subpop_pop[pl_idx]
+        n_pop = subpop_pop[pl_idx]
         if abs(n_y0 - n_pop) > 1:
             error = True
             warnings.warn(
