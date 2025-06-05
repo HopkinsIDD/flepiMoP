@@ -264,7 +264,7 @@ class ModelInfo:
             self.seeding = seeding.SeedingFactory(
                 config=self.seeding_config, path_prefix=self.path_prefix
             )
-            self.initial_conditions = initial_conditions.InitialConditionsFactory(
+            self.initial_conditions = initial_conditions.initial_conditions_factory(
                 config=self.initial_conditions_config, path_prefix=self.path_prefix
             )
 
