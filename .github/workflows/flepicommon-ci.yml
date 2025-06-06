@@ -72,7 +72,7 @@ jobs:
             pkg = "flepimop/R_packages/flepicommon",
             dependencies = TRUE
           )
-          install.packages("covidcast", repos = "https://cloud.r-project.org")
+          install.packages("epidatr", repos = "https://cloud.r-project.org")
         shell: Rscript {0}
       - name: Install The flepicommon Package
         run: |

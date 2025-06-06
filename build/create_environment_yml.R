@@ -24,7 +24,7 @@ dependencies <- sapply(rpkgs, function(rpkg) {
 dependencies <- sort(unique(unlist(dependencies)))
 dependencies <- setdiff(
   dependencies,
-  c("arrow", "covidcast", "methods", basename(rpkgs))
+  c("arrow", "epidatr", "methods", basename(rpkgs))
 )
 dependencies <- dependencies[!grepl("^R(\\(.*\\))?$", dependencies)]
 
