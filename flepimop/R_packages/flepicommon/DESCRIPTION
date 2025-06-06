@@ -22,7 +22,7 @@ Imports:
     foreach,
     jsonlite,
     httr,
-    epidatr,
+    covidcast,
     tidygraph,
     tibble,
     tidyselect
