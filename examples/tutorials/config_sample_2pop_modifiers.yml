@@ -4,6 +4,11 @@ start_date: 2020-02-01
 end_date: 2020-08-31
 nslots: 1
 
+process:
+  formatdata:
+    type: rscript
+    script: model_input/make_ground_truth.R
+
 subpop_setup:
   geodata: model_input/geodata_sample_2pop.csv
   mobility: model_input/mobility_sample_2pop.csv
@@ -19,8 +24,8 @@ compartments:
 
 seir:
   integration:
-    method: rk4
-    dt: 1
+    method: stochastic
+    dt: 0.2
   parameters:
     sigma:
       value: 1 / 4

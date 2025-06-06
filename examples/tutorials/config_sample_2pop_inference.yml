@@ -4,7 +4,12 @@ name: sample_2pop
 setup_name: minimal
 start_date: 2020-02-01
 end_date: 2020-08-31
-nslots: 1
+nslots: 10
+
+process:
+  plotresults:
+    type: rscript
+    script: model_input/plot_inference.R
 
 subpop_setup:
   geodata: model_input/geodata_sample_2pop.csv
@@ -165,7 +170,7 @@ outcome_modifiers:
         b: 0.1
 
 inference:
-  iterations_per_slot: 1
+  iterations_per_slot: 10
   do_inference: TRUE
   gt_data_path: data/sample_2pop_cases.csv 
   statistics:

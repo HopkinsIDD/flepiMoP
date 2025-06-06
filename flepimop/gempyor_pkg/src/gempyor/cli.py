@@ -14,6 +14,7 @@ from .utils import _dump_formatted_yaml, config
 from .batch._cli import *
 from . import compartments, simulate
 from .sync import sync
+from .process import process
 from .NPI import base
 
 # Guidance for extending the CLI:

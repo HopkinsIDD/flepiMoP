@@ -1,0 +1,10 @@
+process:
+  fetchdata:
+    type: bash
+    command: wget something
+  plotting:
+    type: rmarkdown
+    notebook: model_output_notebook.Rmd
+  pyplotting:
+    type: ipynb
+    notebook: model_output_notebook.ipynb
