@@ -7,7 +7,7 @@ local({r <- getOption("repos")
 # Installs the custom-made packages in this repository
 
 
-install.packages(c("data.table","vroom","dplyr"), quiet=TRUE) # removed "covidcast"
+install.packages(c("data.table","vroom","dplyr"), quiet=TRUE) 
 # devtools::install_github("hrbrmstr/cdcfluview")
 
 # To run if operating in the container -----
