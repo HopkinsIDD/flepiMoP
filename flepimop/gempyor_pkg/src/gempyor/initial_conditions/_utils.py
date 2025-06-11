@@ -30,18 +30,16 @@ def check_population(
         ValueError: If the initial conditions do not match the population sizes and
             `ignore_population_checks` is `False`.
     """
-    error = False
-    for pl_idx, pl in enumerate(subpop_names):
-        n_y0 = y0[:, pl_idx].sum()
-        n_pop = subpop_pop[pl_idx]
-        if abs(n_y0 - n_pop) > 1:
-            error = True
+    y0_by_subpopulation = y0.sum(axis=0)
+    delta = np.abs(y0_by_subpopulation - subpop_pop)
+    if len(indexes := np.where(delta > 1)[0]):
+        for idx in indexes:
             warnings.warn(
-                f"`subpop_names` '{pl}' (idx: plx_idx) has a population from initial "
-                f"condition of '{n_y0}' while population geodata is '{n_pop}'. "
-                f"(absolute difference should be <1, here is '{abs(n_y0-n_pop)}')."
+                f"`subpop_names` '{subpop_names[idx]}' (idx: plx_idx) has a "
+                f"population from initial condition of '{y0_by_subpopulation[idx]}' "
+                f"while population geodata is '{subpop_pop[idx]}'. "
+                f"(absolute difference should be <1, here is '{delta[idx]}')."
             )
-    if error:
         if not ignore_population_checks:
             raise ValueError(
                 "Geodata and initial condition do not agree on population size. "
