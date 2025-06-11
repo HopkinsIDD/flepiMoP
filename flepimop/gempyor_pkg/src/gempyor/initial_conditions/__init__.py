@@ -16,7 +16,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from .utils import read_df, search_and_import_plugins_class
+from ..utils import read_df, search_and_import_plugins_class
 
 
 logger = logging.getLogger(__name__)
