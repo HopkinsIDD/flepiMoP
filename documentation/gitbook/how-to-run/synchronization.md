@@ -24,7 +24,7 @@ sync:
 
 All of these tools have push vs pull modes, so protocols need to define that direction. We distinguish these by setting source and target locations for `rsync` and `s3sync` or by setting mode for `git`. The directionality can be flipped with the `--reverse` flag.
 
-Both `rsync` and `s3sync` protocols support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition, and if the source is a directory, it will be recursively crawled. For the `git` protocol which does not support filters users can take advantage of [`gitignore` files provided by `git`](https://git-scm.com/docs/gitignore). To modify this behavior, you can use filters either as part of the protocol definition OR with options provided when invoking sync. See the (Filters)[#filters] section below for details about filtering, but in general `sync` uses the `rsync` conventions for including/excluding files.
+Both `rsync` and `s3sync` protocols support filters to include or exclude files. By default, all `sync` actions will include everything within the source definition, and if the source is a directory, it will be recursively crawled. For the `git` protocol which does not support filters users can take advantage of [`.gitignore` files provided by `git`](https://git-scm.com/docs/gitignore). To modify this behavior for other protocols, you can use filters either as part of the protocol definition OR with options provided when invoking sync. See the (Filters)[#filters] section below for details about filtering, but in general `sync` uses the `rsync` conventions for including/excluding files.
 
 ## Protocols
 
@@ -36,15 +36,17 @@ A template for configuring an `rsync` protocol is:
 
 ```yaml
 sync:
-  <potocol name>:              # User supplied name for referencing protocol explicitly
+  <protocol name>:              # User supplied name for referencing protocol explicitly
     type: rsync
     source: <path to source>   # A path to a source, can be a local directory like `/abc/def` or `~/ghi` or a remote directory like `user@machine:~/xyz
     target: <path to target>   # A path to a target with the same format as source
-    filters:                   # An optional set of filters to apply, if not provided then no filters are used.
+    filters:                   # An optional set of filters to apply in order, if not provided then no filters are used.
       - <optional filter one>
       - <optional filter two>
       ...
 ```
+
+While the `source` and `target` values should have the same format, they should not be the same value as this would result in a no-op. Typically one of `source` or `target` will be a remote directory on an HPC environment and the other will be a local directory so the sync protocol can be used to move model inputs/outputs from compute environment to local environments, or vise versa. The examples below will help guide you through the details of how to set this up with some concrete applications.
 
 #### Example: Pushing Inputs
 
@@ -156,13 +158,17 @@ When invoked on the command line, you can also specify changes to the filters in
  - `-e|--fsuffix` and `-a|--fprefix` option(s) to prefix and/or suffix filter(s) to the core filter (which can be from the configuration file, or an via override `-f`s). If there are no configuration-based filters, these are equivalent to just using `-f` filters.
  - `--no-filter` overrides specified configuration filter(s) to be an empty list; cannot be combined with `-f|a|e` options.
 
+## Troubleshooting
+
+Before running a `flepimop sync` command for the first time it is helpful to take advantage of the `--dry-run` flag to see what the command would do without actually running the command. The output of this can be quite verbose, especially when using `-vvv` for full verbosity, so it can be helpful to pipe the output of the dry run to a text file for inspection.
+
 ## Applications: `gempyor` resume and continue operations
 
 The `gempyor` approaches to projection and inference support resuming from previously completed work.
 
 ### Resuming Inference
 
-### Communication Between Iterations
+#### Communication Between Iterations
 
 The pipeline uses files to communicate between different iterations. Currently, the following file types exist:
 
@@ -178,11 +184,11 @@ The pipeline uses files to communicate between different iterations. Currently, 
 
 During each iteration, inference uses these files to communicate with the compartmental model and outcomes. The intent is that inference should only need to read and write these files, and that the compartmental model can handle everything else. In addition to the `global` versions of these files actually passed to the compartmental/reporting model, there exist `chimeric` versions used internally by inference and stored in memory. These copies are what inference interacts with when it needs to perturb values. While this design was chosen primarily to support modularity (a fixed communication boundary makes it easy to swap out the compartmental model), it has had a number of additional benefits.
 
-### Bootstrapping
+#### Bootstrapping
 
 The first iteration of an MCMC algorithm is a special case, because we need to pull initial conditions for our parameters. We originally developed the model without inference in mind, so the compartmental model is already set up to read parameter distributions from the configuration file, and to draw values from those distributions, and record those parameters to file. We take advantage of this to bootstrap our MCMC parameters by running the model one time, and reading the parameters it generated from file.
 
-### Resume from previous run
+#### Resume from previous run
 
 Instead of bootstrapping our first iteration, flepiMoP supports reading in final values of a previous iteration. This allows us to resume from runs to save computational time and effectively continue iterating on the same chain. We call these **resumes**, in which inferred parameters are taken from a previous run and allowed to continue being inferred.
 
@@ -203,7 +209,7 @@ sync:
     filters: ["*hnpi*", "*snpi*", "*seed*", "- *"]
 ```
 
-### Continuing projection
+#### Continuing projection
 
 In addition to resuming parameters, we can also perform a **continuation resume**. In addition to resuming parameters and seeding, continuations also use the compartmental fits from previous runs. For a config starting at time $$t_s$$ continuing and resuming from a previous run, the compartmental states of the previous run at time $$t_s$$are used as the initial conditions of the continuation resume.
 
