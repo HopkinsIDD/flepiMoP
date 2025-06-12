@@ -24,31 +24,17 @@ _SYNC_OPTIONS: Final = {
     "protocol": click.Option(
         ["-p", "--protocol", "protocol"],
         type=click.STRING,
-        help="sync protocol to use from CONFIG_FILES",
+        help="Sync protocol to use from CONFIG_FILES.",
     ),
     "source": click.Option(
         ["-s", "--source", "source_override"],
         type=click.STRING,
-        help="source directory to 'push' changes from",
+        help="Either a source override or a source append if prefixed with '+ '.",
     ),
     "target": click.Option(
         ["-t", "--target", "target_override"],
         type=click.STRING,
-        help="target directory to 'push' changes to",
-    ),
-    "sourceappend": click.Option(
-        ["--source-append", "source_append"],
-        type=click.STRING,
-        default=None,
-        show_default=True,
-        help="Append to the source instead of replacing it.",
-    ),
-    "targetappend": click.Option(
-        ["--target-append", "target_append"],
-        type=click.STRING,
-        default=None,
-        show_default=True,
-        help="Append to the target instead of replacing it.",
+        help="Either a target override or a target append if prefixed with '+ '.",
     ),
     "sfilter": click.Option(
         ["-e", "--fsuffix", "filter_suffix"],
