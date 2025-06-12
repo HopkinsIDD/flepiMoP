@@ -158,6 +158,20 @@ When invoked on the command line, you can also specify changes to the filters in
  - `-e|--fsuffix` and `-a|--fprefix` option(s) to prefix and/or suffix filter(s) to the core filter (which can be from the configuration file, or an via override `-f`s). If there are no configuration-based filters, these are equivalent to just using `-f` filters.
  - `--no-filter` overrides specified configuration filter(s) to be an empty list; cannot be combined with `-f|a|e` options.
 
+## Overrides And Appends
+
+Similarly to the filtering options above, `flepimop sync` provides the `--source` and `--target` options for overriding or appending to the source and target of a protocol. By providing `--source` or `--target` with a new path will outright override the value provided by the sync protocol configuration. If the value provided to `--source` or `--target` starts with '+ ' then this override will be appended. The appends will respect if the source/target being appended to ends or does not end with a separator. Consider the following example where the columns correspond to the affect of `--source` or `--target` and the rows correspond to the value of the source or target in the configuration:
+
+|                             | `source: '/a/b/c'` | `source: '/a/b/c/'` | `target: '/d/e/f'` | `target: '/d/e/f/'` |
+|-----------------------------|--------------------|---------------------|--------------------|---------------------|
+| No `--source` or `--target` | `/a/b/c`           | `/a/b/c/`           | `/d/e/f`           | `/d/e/f/`           |
+| `--source /g/h/i`           | `/g/h/i`           | `/g/h/i`            | `/d/e/f`           | `/d/e/f/`           |
+| `--source '+ g/h/i'`        | `/a/b/c/g/h/i`     | `/a/b/c/g/h/i/`     | `/d/e/f`           | `/d/e/f/`           |
+| `--source '+ g/h/i/'`       | `/a/b/c/g/h/i`     | `/a/b/c/g/h/i/`     | `/d/e/f`           | `/d/e/f/`           |
+| `--target /j/k/l`           | `/a/b/c`           | `/a/b/c/`           | `/j/k/l`           | `/j/k/l`            |
+| `--target '+ j/k/l'`        | `/a/b/c`           | `/a/b/c/`           | `/d/e/f/j/k/l`     | `/d/e/f/j/k/l/`     |
+| `--target '+ j/k/l/'`       | `/a/b/c`           | `/a/b/c/`           | `/d/e/f/j/k/l`     | `/d/e/f/j/k/l/`     |
+
 ## Troubleshooting
 
 Before running a `flepimop sync` command for the first time it is helpful to take advantage of the `--dry-run` flag to see what the command would do without actually running the command. The output of this can be quite verbose, especially when using `-vvv` for full verbosity, so it can be helpful to pipe the output of the dry run to a text file for inspection.

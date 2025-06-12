@@ -27,6 +27,39 @@ from ._sync_filter import FilterParts, ListSyncFilter, WithFilters
 _RSYNC_HOST_REGEX: Final[Pattern[str]] = re.compile(r"^(?P<host>[^:]+):(?P<path>.+)$")
 
 
+def _true_path(original: str, override: str | None, sep: str) -> str:
+    """
+    Determine the true path based on the original and override paths.
+
+    This method will append `override` to `original` if `override` starts with
+    "+ ". This override append will respect if the `original` path ended with a
+    path separate or not. If `override` does not start with "+ ", it will replace
+    `original` with `override` outright and not respect the path separator of the
+    `original` path. Finally if `override` is `None`, it will return the
+    `original` path as is.
+
+    Args:
+        original: The original path to potentially override or append to.
+        override: The override path, which can be `None`. If it starts with
+            "+ ", it will be appended to the `original` path, otherwise it will
+            replace the `original` path.
+        sep: The path separator to use.
+
+    Returns:
+        The true path based on the `original` and `override` paths.
+    """
+    path = original
+    if override is not None:
+        if not override.startswith("+ "):
+            return override
+        override = re.sub("\\" + sep + "$", "", override[2:])
+        if path.endswith(sep):
+            path += f"{override}{sep}"
+        else:
+            path += f"{sep}{override}"
+    return path
+
+
 class SyncOptions(BaseModel):
     """
     Override options for sync protocols.
@@ -51,8 +84,6 @@ class SyncOptions(BaseModel):
     protocol: str | None = None
     source_override: str | None = None
     target_override: str | None = None
-    source_append: str | None = None
-    target_append: str | None = None
     filter_override: ListSyncFilter | None = None
     filter_prefix: ListSyncFilter = []
     filter_suffix: ListSyncFilter = []
@@ -66,27 +97,6 @@ class SyncOptions(BaseModel):
     # allow potentially other fields for external modules
     model_config = ConfigDict(extra="allow")
 
-    def _true_path(self, original: str, override: str | None, append: str | None) -> str:
-        """
-        Determine the true path based on the original, override, and append paths.
-
-        This method will swap the `original` with the `override` if the `override`
-        is not `None`. If the `append` is not `None`, it will be appended to the
-        resulting path.
-
-        Args:
-            original: The original path.
-            override: The override path.
-            append: The append path.
-
-        Returns:
-            The true path based on the original, override, and append paths.
-        """
-        path = original if override is None else override
-        if append is not None:
-            path += append if path.endswith(self.sep) else f"{self.sep}{append}"
-        return path
-
     def source(self, source: str) -> str:
         """
         Get the source path based on the override and append options.
@@ -94,7 +104,7 @@ class SyncOptions(BaseModel):
         Returns:
             The resolved source path.
         """
-        return self._true_path(source, self.source_override, self.source_append)
+        return _true_path(source, self.source_override, self.sep)
 
     def target(self, target: str) -> str:
         """
@@ -103,7 +113,7 @@ class SyncOptions(BaseModel):
         Returns:
             The resolved target path.
         """
-        return self._true_path(target, self.target_override, self.target_append)
+        return _true_path(target, self.target_override, self.sep)
 
 
 class SyncABC(BaseModel, ABC):
