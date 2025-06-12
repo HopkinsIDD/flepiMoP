@@ -1,4 +1,4 @@
-# Fri Jun 06 17:03:38 2025 UTC
+# Thu Jun 12 18:27:07 2025 UTC
 channels:
 - conda-forge
 - defaults
@@ -14,7 +14,6 @@ dependencies:
 - r-data.table
 - r-doParallel
 - r-dplyr
-- r-epidatr
 - r-foreach
 - r-ggplot2
 - r-ggraph
