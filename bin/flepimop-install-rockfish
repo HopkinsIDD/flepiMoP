@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# Setup general purpose user variables needed for RockFish
+USERDIR=$( realpath "/scratch4/struelo1/flepimop-code/$USER/"  )
+mkdir -vp $USERDIR
+
+# Load required modules
+module purge
+module load gcc/9.3.0
+module load anaconda/2020.07
+module load git/2.42.0
+
+# Run the flepimop-install script
+SCRIPT_PATH=$( realpath "$(dirname "$0")" )
+if [ ! -f "$SCRIPT_PATH/flepimop-install" ]; then
+    curl -LsSf -o "$SCRIPT_PATH/flepimop-install" https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/main/bin/flepimop-install
+    chmod +x "$SCRIPT_PATH/flepimop-install"
+fi
+$SCRIPT_PATH/flepimop-install -d $USERDIR -f $USERDIR/flepiMoP -g -r

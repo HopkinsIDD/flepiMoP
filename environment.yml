@@ -11,10 +11,10 @@ dependencies:
 - pyarrow=17.0.0
 - r-arrow=17.0.0
 - r-sf
-- r-covidcast
 - r-data.table
 - r-doParallel
 - r-dplyr
+- r-epidatr
 - r-foreach
 - r-ggplot2
 - r-ggraph

@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+
+# Parse options
+GEMPYOR_EXTRAS=false
+FORCE_REINSTALL=false
+UPDATE=false
+HELP=false
+while getopts ":d:f:c:gruh" opt; do
+  case $opt in
+    d) USERDIR=$( realpath "$OPTARG" )
+    ;;
+    f) FLEPI_PATH="$OPTARG"
+    ;;
+    c) FLEPI_CONDA="$OPTARG"
+    ;;
+    g) GEMPYOR_EXTRAS=true
+    ;;
+    r) FORCE_REINSTALL=true
+    ;;
+    u) UPDATE=true
+    ;;
+    h) HELP=true
+    ;;
+    \?) echo "Invalid option -$OPTARG" >&2
+       exit 1
+    ;;
+  esac
+done
+
+# Help message
+if $HELP; then
+    echo "Usage: $0 [-d USERDIR] [-f FLEPI_PATH] [-c FLEPI_CONDA] [-g] [-r] [-u] [-h]"
+    echo "Options:"
+    echo "  -d USERDIR      Specify the user directory (default: \$USERDIR environment variable)."
+    echo "  -f FLEPI_PATH   Specify the path to the flepiMoP repository (default: \$FLEPI_PATH environment variable)."
+    echo "  -c FLEPI_CONDA  Specify the conda environment name/prefix (default: \$FLEPI_CONDA environment variable)."
+    echo "  -g              Install gempyor package with all extras."
+    echo "  -r              Force reinstall flepiMoP. This will remove the existing conda environment and recreate it."
+    echo "  -u              Update flepiMoP to the latest version with a 'git pull'."
+    echo "  -h              Display this help message."
+    echo ""
+    echo "Notes:"
+    echo "  * If flepiMoP is not found at the specified path, you will be prompted to clone the repository."
+    echo "  * If a trailing slash is provided for the conda environment name, it will be treated as a prefix."
+    echo ""
+    echo "Examples:"
+    echo "  $0 -d /path/to/ -f /path/to/flepimop/ -c /path/to/conda_env/"
+    echo "    -> This will set the user directory, flepiMoP path, and conda environment prefix."
+    echo "  $0 -g"
+    echo "    -> This will install the gempyor package with all extras."
+    echo "  $0 -r"
+    echo "    -> This will force reinstall the flepiMoP conda environment."
+    exit 0
+fi
+
+# Ensure we have a $USERDIR
+if [ -z "${USERDIR}" ] && [ -z "${FLEPI_PATH}" ]; then
+    echo -n "An explicit \$USERDIR was not provided, please set one (or press enter to use '$( pwd )'): "
+    read USERDIR
+    if [ -z "${USERDIR}" ]; then
+        export USERDIR=$( pwd )
+    fi
+    export USERDIR=$( realpath "$USERDIR" )
+    echo "Using '$USERDIR' for \$USERDIR."
+fi
+if [ ! -d "$USERDIR" ]; then
+    echo "The \$USERDIR directory '$USERDIR' does not exist." >&2
+    exit 1
+fi
+
+# Ensure we have a $FLEPI_PATH
+if [ -z "${FLEPI_PATH}" ]; then
+    echo -n "An explicit \$FLEPI_PATH was not provided, please set one (or press enter to use '$USERDIR/flepiMoP'): "
+    read FLEPI_PATH
+    if [ -z "${FLEPI_PATH}" ]; then
+        export FLEPI_PATH="$USERDIR/flepiMoP"
+    fi
+    echo "Using '$FLEPI_PATH' for \$FLEPI_PATH."
+fi
+
+# Test that flepiMoP is located there
+if [ ! -d "$FLEPI_PATH" ]; then
+    while true; do
+        read -p "Did not find flepiMoP at '$FLEPI_PATH', do you want to clone the repo? (y/n) " resp
+        case "$resp" in
+            [yY])
+                echo "Cloning on your behalf."
+                if ! command -v git >/dev/null 2>&1; then
+                    echo "git is not installed or not in \$PATH, cannot clone flepiMoP."
+                    exit 1
+                fi
+                git clone git@github.com:HopkinsIDD/flepiMoP.git $FLEPI_PATH
+                break
+                ;;
+            [nN])
+                echo "Then you need to set a \$FLEPI_PATH before running, cannot proceed with install."
+                exit 1
+                ;;
+            *)
+                echo "Invalid input. Please enter 'y' or 'n'. "
+                ;;
+        esac
+    done
+fi
+
+# If we need to do an update
+if $UPDATE; then
+    echo "Updating flepiMoP to the latest version."
+    RETURNTO=$( pwd )
+    cd $FLEPI_PATH
+    git pull
+    if [ $? -ne 0 ]; then
+        echo "Failed to update flepiMoP. Please try running 'git pull' from $FLEPI_PATH to diagnose."
+        exit 1
+    fi
+    GIT_REVISION=$( git rev-parse HEAD )
+    echo "Updated flepiMoP to revision $GIT_REVISION."
+    cd $RETURNTO
+fi
+
+# Setup the conda environment
+if [ -z "${FLEPI_CONDA}" ]; then
+    echo -n "An explicit \$FLEPI_CONDA was not provided, please set one (or press enter to use 'flepimop-env'): "
+    read FLEPI_CONDA
+    if [ -z "${FLEPI_CONDA}" ]; then
+        export FLEPI_CONDA="flepimop-env"
+    fi
+fi
+if ! command -v conda >/dev/null 2>&1; then
+    echo "conda is not installed or not in \$PATH, cannot create conda environment."
+    exit 1
+fi
+if [[ "$FLEPI_CONDA" == */ ]]; then
+    echo "Using '$FLEPI_CONDA' prefix for \$FLEPI_CONDA."
+    if [ -d "$FLEPI_CONDA" ] && [ "$FORCE_REINSTALL" = "true" ]; then
+        echo "Removing existing conda environment at '$FLEPI_CONDA'."
+        conda env remove --prefix "$FLEPI_CONDA"
+    fi
+    if [ ! -d "$FLEPI_CONDA" ]; then
+        conda env create --prefix "$FLEPI_CONDA" --file "$FLEPI_PATH/environment.yml"
+    fi
+    export FLEPI_CONDA=$( realpath "$FLEPI_CONDA" )
+else
+    echo "Using '$FLEPI_CONDA' name for \$FLEPI_CONDA."
+    FLEPI_CONDA_ENV_MATCHES=$( conda info --envs | awk '{print $1}' | grep -x "$FLEPI_CONDA" | wc -l )
+    if [ "$FLEPI_CONDA_ENV_MATCHES" -eq 1 ] && [ "$FORCE_REINSTALL" = "true" ]; then
+        echo "Removing existing conda environment '$FLEPI_CONDA'."
+        conda env remove --name "$FLEPI_CONDA"
+        FLEPI_CONDA_ENV_MATCHES=0
+    fi
+    if [ "$FLEPI_CONDA_ENV_MATCHES" -eq 0 ]; then
+        conda env create --name "$FLEPI_CONDA" --file $FLEPI_PATH/environment.yml
+    fi
+fi
+
+# Activate the conda environment
+eval "$(conda shell.bash hook)"
+conda activate $FLEPI_CONDA
+
+# Pin the arrow version across R/Python
+[ -e "$CONDA_PREFIX/conda-meta/pinned" ] && rm $CONDA_PREFIX/conda-meta/pinned
+cat << EOF > $CONDA_PREFIX/conda-meta/pinned
+r-arrow==17.0.0
+arrow==17.0.0
+EOF
+
+# Install the gempyor package from local
+if $GEMPYOR_EXTRAS; then
+    pip install --editable $FLEPI_PATH/flepimop/gempyor_pkg[dev,aws]
+else
+    pip install --editable $FLEPI_PATH/flepimop/gempyor_pkg
+fi
+
+# Install the local R packages
+CONDA_R_LIBS=$( realpath "$CONDA_PREFIX/lib/R/library" )
+R -e "install.packages('epidatr', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
+RETURNTO=$( pwd )
+cd $FLEPI_PATH/flepimop/R_packages/
+R_PACKAGES=("flepicommon" "flepiconfig" "inference")
+for pkg in "${R_PACKAGES[@]}"; do
+    if [ -d "$pkg" ]; then
+        R_LIBS=$CONDA_R_LIBS R CMD INSTALL $pkg
+    else
+        echo "WARNING: The R package '$pkg' does not exist in '$FLEPI_PATH/flepimop/R_packages/'. Skipping installation." >&2
+    fi
+done
+cd $RETURNTO
+R -e "library(inference); inference::install_cli()"
+
+# Output a summary of the installation
+WHICH_R=$( which R )
+WHICH_PYTHON=$( which python )
+CONDA_VERSION=$( conda --version | cut -d' ' -f2 )
+R_VERSION=$( R --version | head -n 1 | cut -d' ' -f3 )
+PYTHON_VERSION=$( python --version | cut -d' ' -f2 )
+GEMPYOR_VERSION=$( pip show gempyor | grep Version | cut -d' ' -f2 )
+
+cat << EOF
+flepiMoP installation summary:
+> flepiMoP version: $( git -C $FLEPI_PATH rev-parse HEAD )
+> flepiMoP path: $FLEPI_PATH
+> flepiMoP conda env: $FLEPI_CONDA
+> conda: $CONDA_VERSION
+> R $R_VERSION: $WHICH_R
+> Python $PYTHON_VERSION: $WHICH_PYTHON
+> gempyor version: $GEMPYOR_VERSION
+EOF
+for pkg in "${R_PACKAGES[@]}"; do
+    PKG_VERSION=$( R -s -e "print(packageVersion('$pkg'))" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" )
+    echo "> R $pkg version: $PKG_VERSION"
+done
+cat << EOF
+
+To activate the flepimop conda environment, run:
+    conda activate $FLEPI_CONDA
+EOF
