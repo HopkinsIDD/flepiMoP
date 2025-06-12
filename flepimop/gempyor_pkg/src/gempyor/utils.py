@@ -2,6 +2,7 @@
 Helper functions for interacting with model I/O.
 """
 
+from collections import Counter
 from collections.abc import Iterable
 import datetime
 import functools
@@ -1417,3 +1418,27 @@ def _nslots_random_seeds(nslots: int) -> list[int]:
         [3181143733]
     """
     return _random_seeds_list(nslots + 1, 2**32 - 1, nslots)
+
+
+def _duplicate_strings(it: Iterable[str]) -> list[str]:
+    """
+    Efficiently find duplicate strings in an iterable.
+
+    Args:
+        it: An iterable of strings.
+
+    Returns:
+        A list of strings that appear more than once in `it`.
+
+    Examples:
+        >>> from gempyor.utils import _duplicate_strings
+        >>> _duplicate_strings(["a", "b", "c"])
+        []
+        >>> _duplicate_strings(["a", "b", "c", "b"])
+        ['b']
+        >>> _duplicate_strings(["a", "b", "c", "b", "a"])
+        ['a', 'b']
+        >>> _duplicate_strings("foobar")
+        ['o']
+    """
+    return sorted([k for k, v in Counter(it).items() if v > 1])
