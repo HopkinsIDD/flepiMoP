@@ -1,4 +1,4 @@
-# Mon Jun 16 20:49:13 2025 UTC
+# Mon Jun 16 21:15:32 2025 UTC
 channels:
 - conda-forge
 - defaults
@@ -37,4 +37,3 @@ dependencies:
 - r-vroom
 - r-xts
 - r-yaml
-- libgit2
