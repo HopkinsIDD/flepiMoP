@@ -37,5 +37,5 @@ Encoding: UTF-8
 Suggests: 
     testthat (>= 2.1.0),
     vctrs
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 LazyData: true
