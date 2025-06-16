@@ -1,0 +1,5 @@
+sync:
+  s3-idd-inference-runs:
+    type: s3sync
+    source: model_output
+    target: s3://idd-inference-runs
