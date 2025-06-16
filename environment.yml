@@ -37,3 +37,4 @@ dependencies:
 - r-vroom
 - r-xts
 - r-yaml
+- libgit2
