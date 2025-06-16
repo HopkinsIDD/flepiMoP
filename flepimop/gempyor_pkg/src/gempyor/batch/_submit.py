@@ -104,7 +104,7 @@ def _submit_scenario_job(
     )
 
     # Optionally submit sync job
-    if template_data.get("sync") is not None:
+    if template_data.get("sync_protocol") is not None:
         sync_time_limit = timedelta(hours=1)
         sync_resources = JobResources(
             nodes=1,

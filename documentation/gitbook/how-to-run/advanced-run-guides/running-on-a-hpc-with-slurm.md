@@ -204,7 +204,7 @@ sync:
     target: s3://my-bucket/and-sub-bucket
 ```
 
-Where `/path/to/an/example-folder` and `s3://my-bucket/and-sub-bucket` are place holders for paths to your desired location. Importantly, note that there is no trailing slash on the `model_output` directory name. This will cause `flepimop sync` to sync the `model_output` directory itself and not just it's contents. You can also apply additional filters to the sync protocols here, say to limit the backed up model outputs to certain folders or exclude `llik` outputs, but the `--sync-protocol` option will add filters to limit the synced directories to those corresponding to the run submitted.
+Where `/path/to/an/example-folder` and `s3://my-bucket/and-sub-bucket` are place holders for paths to your desired location. Importantly, note that there is no trailing slash on the `model_output` directory name. This will cause `flepimop sync` to sync the `model_output` directory itself and not just it's contents. You can also apply additional filters to the sync protocols here, say to limit the backed up model outputs to certain folders or exclude `llik` outputs, but the `--sync-protocol` option will add filters to limit the synced directories to those corresponding to the run submitted. Note that users do not need to specify run/job ids or configuration file names in the sync protocol. The `flepimop batch-calibrate` CLI will take advantage of `flepimop sync`'s options to set paths appropriately to accommodate for run/job ids.
 
 Modifying the first `flepimop batch-calibrate` command from before:
 
@@ -264,4 +264,27 @@ After those jobs finish the results can be found in a subdirectory named after t
 
 Note that this contains the `model_output` directory but only limited to the batch run named 'sample_2pop-20250521T190823_Ro_all_test_limits' as well as a file called `manifest.json` which can be used to reproduce the run from scratch if needed. 
 
-For Hopkins affiliated users there is also the `--sync` flag which will add a sync protocol called 'default' that will save the results to the default s3 bucket of `s3://idd-inference-runs`. Using this flag does require that the user have write access to that bucket and that the configuration file used not have a sync protocol named 'default'.
+#### Saving Model Outputs To S3 For Hopkins Users
+
+For Hopkins affiliated users there is a configuration file patch included with `flepiMoP` that can be used to add S3 syncing for model outputs to `s3://idd-inference-runs`. Taking the example before of running the `config_sample_2pop_inference.yml` configuration we can slightly modify the command to:
+
+```
+$ flepimop batch-calibrate \
+    --blocks 1 \
+    --chains 4 \
+    --samples 20 \
+    --simulations 100 \
+    --time-limit 30min \
+    --slurm \
+    --nodes 4 \
+    --cpus 1 \
+    --memory 1G \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
+    --skip-checkout \
+    --sync-protocol s3-idd-inference-runs \
+    -vvv \
+    config_sample_2pop_inference.yml $FLEPI_PATH/common/s3-idd-inference-runs.yml
+```
+
+This will take advantage of the patching abilities of the `flepimop batch-calibrate` to add a sync protocol named `s3-idd-inference-runs` that will save the results to the `s3://idd-inference-runs` bucket.
