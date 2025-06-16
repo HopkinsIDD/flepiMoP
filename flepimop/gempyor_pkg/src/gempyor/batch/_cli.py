@@ -24,6 +24,7 @@ from ..shared_cli import (
     parse_config_files,
     verbosity_options,
 )
+from ..sync._sync import _get_sync_protocol
 from ..utils import _dump_formatted_yaml, _git_checkout, config
 from ._estimate import _estimate_job_resources, _format_resource_bounds
 from ._helpers import _job_name, _parse_extra_options
@@ -478,13 +479,9 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     # Ensure that sync protocol if given is valid
     cfg_sync_protocols = dict(cfg["sync"].get()) if cfg["sync"].exists() else {}
     if (sync_protocol := kwargs.get("sync_protocol", None)) is not None:
-        # --sync-protocol was given, implicit --sync
+        # --sync-protocol was given
         logger.info("User provided explicit sync protocol of '%s'", sync_protocol)
-        if sync_protocol not in cfg_sync_protocols:
-            raise ValueError(
-                f"Sync protocol '{sync_protocol}' not found in the config file. "
-                f"Valid protocols are: {', '.join(cfg_sync_protocols.keys())}."
-            )
+        _get_sync_protocol(cfg_sync_protocols, sync_protocol)
         logger.info(
             "Using sync protocol '%s' with options '%s' to sync the model outputs.",
             sync_protocol,
