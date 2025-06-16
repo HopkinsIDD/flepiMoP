@@ -16,6 +16,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    TypeAdapter,
     model_validator,
 )
 
@@ -443,6 +444,36 @@ class GitModel(SyncABC):
 
 
 SyncModel = Annotated[RsyncModel | S3SyncModel | GitModel, Field(discriminator="type")]
+sync_model_adapter = TypeAdapter(SyncModel)
+
+
+def _get_sync_protocol(sync: dict[str, dict | SyncABC], protocol: str | None) -> SyncModel:
+    """
+    Get the sync protocol model from the provided dictionary.
+
+    Args:
+        sync: A dictionary of sync protocols, where the keys are protocol names and
+            the values are `SyncModel` instances or dictionaries that can be validated
+            into a `SyncModel`.
+        protocol: The name of the protocol to retrieve. If `None`, the first protocol
+            in the dictionary will be used.
+
+    Returns:
+        The sync protocol model corresponding to the provided protocol name.
+
+    Raises:
+        ValueError: If the specified protocol is not found in the dictionary.
+    """
+    protocol_names = sync.keys()
+    target_protocol = protocol_names[0] if protocol is None else protocol
+    if (sync_model := sync.get(target_protocol)) is None:
+        raise ValueError(
+            f"Protocol '{target_protocol}' not found, available protocols are: "
+            f"{', '.join(protocol_names)}."
+        )
+    if not issubclass(sync_model, SyncABC):
+        sync_model = sync_model_adapter.validate_python(sync_model)
+    return sync_model
 
 
 class SyncProtocols(SyncABC):
@@ -465,26 +496,12 @@ class SyncProtocols(SyncABC):
         if not self.sync:
             logger.info("No protocols to sync.")
             return run(["echo", "No protocols to sync"], check=True)
-        target_protocol = (
-            sync_options.protocol if sync_options.protocol else list(self.sync.keys())[0]
-        )
-        logger.debug("Resolved protocol: %s.", str(target_protocol))
-        if proto := self.sync.get(target_protocol):
-            logger.info("Executing protocol: %s.", str(proto))
-            return proto.execute(sync_options, verbosity)
-        logger.error(
-            "Protocol '%s' not found, available protocols are: %s.",
-            target_protocol,
-            ", ".join(self.sync.keys()),
-        )
-        return run(
-            [
-                "echo",
-                f"Protocol '{target_protocol}' not found, available "
-                f"protocols are: {', '.join(self.sync.keys())}.",
-            ],
-            check=True,
-        )
+        try:
+            sync_model = _get_sync_protocol(self.sync, sync_options.protocol)
+        except ValueError as e:
+            logger.critical(str(e))
+            return run(["echo", str(e)], check=True)
+        return sync_model.execute(sync_options, verbosity)
 
 
 def sync_from_yaml(
