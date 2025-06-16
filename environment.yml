@@ -14,7 +14,6 @@ dependencies:
 - r-data.table
 - r-doParallel
 - r-dplyr
-- r-epidatr
 - r-foreach
 - r-ggplot2
 - r-ggraph
@@ -38,3 +37,4 @@ dependencies:
 - r-vroom
 - r-xts
 - r-yaml
+- libgit2
