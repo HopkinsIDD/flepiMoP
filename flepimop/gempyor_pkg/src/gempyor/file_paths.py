@@ -13,6 +13,7 @@ Functions:
 from datetime import datetime
 import os
 from pathlib import Path
+from typing import overload
 
 
 def create_file_name(
@@ -255,3 +256,39 @@ def create_file_name_for_push(
         )
         name_list.append(file_name)
     return name_list
+
+
+@overload
+def _regularize_path(path: None, prefix: Path | None = None) -> None: ...
+
+
+@overload
+def _regularize_path(path: Path, prefix: Path | None = None) -> Path: ...
+
+
+def _regularize_path(path: Path | None, prefix: Path | None = None) -> Path | None:
+    """
+    Regularize a user provided path.
+
+    Args:
+        path: The path to regularize. If `None`, return `None`.
+        prefix: The prefix to use if the path is not absolute. If `None`, use the
+            current working directory.
+
+    Returns:
+        The regularized path. If the input path is `None`, return `None`.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from gempyor.file_paths import _regularize_path
+        >>> _regularize_path(None) is None
+        True
+        >>> _regularize_path(Path("/abc/def/ghi.txt"))
+        PosixPath('/abc/def/ghi.txt')
+        >>> _regularize_path(Path("foo.txt"), prefix=Path("/bar"))
+        PosixPath('/bar/foo.txt')
+    """
+    if path is None:
+        return None
+    prefix = prefix or Path.cwd()
+    return path if path.is_absolute() else prefix / path
