@@ -17,7 +17,6 @@ import datetime
 import logging
 import os
 import pathlib
-
 from typing import Literal
 
 import confuse
@@ -27,15 +26,14 @@ import numpy.typing as npt
 import pandas as pd
 
 from . import (
-    seeding,
-    parameters,
     compartments,
     file_paths,
     initial_conditions,
+    parameters,
+    seeding,
 )
-
+from .model_meta import ModelMeta
 from .subpopulation_structure import SubpopulationStructure
-
 from .utils import read_df, write_df
 
 
@@ -183,29 +181,45 @@ class ModelInfo:
             inference_filepath_suffix: Path suffix for inference files directory.
             config_filepath: Path to configuration file.
         """
-        self.nslots = nslots
-        self.write_csv = write_csv
-        self.write_parquet = write_parquet
-        self.first_sim_index = first_sim_index
-
-        self.seir_modifiers_scenario = seir_modifiers_scenario
-        self.outcome_modifiers_scenario = outcome_modifiers_scenario
-
-        # Auto-detect old config
+        # Quick heuristic to check if the config is compatible
+        # with this version of flepiMoP. Early exit if not.
         if config["interventions"].exists():
-            raise ValueError(
-                "This config has an intervention section, which is only compatible with a previous version (v1.1) of flepiMoP. "
+            msg = (
+                "This config has an 'intervention' section, which is only "
+                "compatible with a previous version (v1.1) of flepiMoP."
             )
+            raise ValueError(msg)
 
-        # 1. Create a setup name that contains every scenario.
-        if setup_name is None:
-            self.setup_name = config["name"].get()
-            if self.seir_modifiers_scenario is not None:
-                self.setup_name += "_" + str(self.seir_modifiers_scenario)
-            if self.outcome_modifiers_scenario is not None:
-                self.setup_name += "_" + str(self.outcome_modifiers_scenario)
-        else:
-            self.setup_name = setup_name
+        # Config filepath for plugins to reference
+        self.config_filepath = config_filepath
+
+        # Create a `ModelMeta` object to hold the core model metadata, then
+        # assign to attributes of this instance to be backwards compatible.
+        self.meta = ModelMeta.from_confuse_config(
+            config=config,
+            nslots=nslots,
+            write_csv=write_csv,
+            write_parquet=write_parquet,
+            first_sim_index=first_sim_index,
+            seir_modifiers_scenario=seir_modifiers_scenario,
+            outcome_modifiers_scenario=outcome_modifiers_scenario,
+            setup_name_=setup_name,
+            path_prefix=path_prefix,
+            in_run_id=in_run_id,
+            in_prefix=in_prefix,
+            out_run_id=out_run_id,
+            out_prefix=out_prefix,
+            inference_filename_prefix=inference_filename_prefix,
+            inference_filepath_suffix=inference_filepath_suffix,
+        )
+        if any((write_csv, write_parquet)):
+            self.meta.create_model_output_directories(
+                (["seir", "spar", "snpi"] if config["seir"].exists() else [])
+                + (["hosp", "hpar", "hnpi"] if config["outcomes"].exists() else []),
+                "out",
+            )
+        for key, value in self.meta.model_dump().items():
+            setattr(self, key, value)
 
         # 2. What about time:
         # Maybe group time_setup and subpop_struct into one argument for classes
@@ -346,54 +360,6 @@ class ModelInfo:
             )
         else:
             logging.info("Running `ModelInfo` without outcomes.")
-
-        # 6. Inputs and outputs
-        if in_run_id is None:
-            in_run_id = file_paths.run_id()
-        self.in_run_id = in_run_id
-
-        if out_run_id is None:
-            out_run_id = in_run_id
-        self.out_run_id = out_run_id
-
-        if in_prefix is None:
-            in_prefix = f"{self.setup_name}/{self.in_run_id}/"
-        self.in_prefix = in_prefix
-        if out_prefix is None:
-            out_prefix = f"{self.setup_name}/{self.out_run_id}/"
-        self.out_prefix = out_prefix
-
-        # make the inference paths:
-        self.inference_filename_prefix = inference_filename_prefix
-        self.inference_filepath_suffix = inference_filepath_suffix
-
-        if self.write_csv or self.write_parquet:
-            self.timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            ftypes = []
-            if config["seir"].exists():
-                ftypes.extend(["seir", "spar", "snpi"])
-            if config["outcomes"].exists():
-                ftypes.extend(["hosp", "hpar", "hnpi"])
-            for ftype in ftypes:
-                datadir = file_paths.create_dir_name(
-                    run_id=self.out_run_id,
-                    prefix=self.out_prefix,
-                    ftype=ftype,
-                    inference_filename_prefix=inference_filename_prefix,
-                    inference_filepath_suffix=inference_filepath_suffix,
-                )
-                os.makedirs(datadir, exist_ok=True)
-
-            if self.write_parquet and self.write_csv:
-                print(
-                    "Confused between reading .csv or parquet. Assuming input file is .parquet"
-                )
-            if self.write_parquet:
-                self.extension = "parquet"
-            elif self.write_csv:
-                self.extension = "csv"
-
-        self.config_filepath = config_filepath  # useful for plugins
 
     def get_input_filename(self, ftype: str, sim_id: int, extension_override: str = ""):
         return self.path_prefix / self.get_filename(
