@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 import warnings
 
+from confuse import ConfigView
 import pandas as pd
 from pydantic import (
     AliasChoices,
@@ -18,7 +19,7 @@ from pydantic import (
     model_validator,
 )
 
-from .file_paths import create_file_name, run_id
+from .file_paths import create_dir_name, create_file_name, run_id
 from .utils import read_df, write_df
 
 
@@ -155,10 +156,18 @@ class ModelMeta(BaseModel):
     inference_filepath_suffix: str = ""
     timestamp: str = Field(default_factory=lambda: datetime.now().strftime("%Y%m%d-%H%M%S"))
     path_prefix: Path = Field(default_factory=Path.cwd)
-    in_run_id: str = Field(default_factory=run_id)
-    out_run_id: str = Field(default_factory=lambda data: data["in_run_id"])
-    in_prefix: str = Field(default_factory=lambda data: _construct_prefix(data, "in"))
-    out_prefix: str = Field(default_factory=lambda data: _construct_prefix(data, "out"))
+    in_run_id: str = Field(default_factory=run_id, coerce_numbers_to_str=True)
+    out_run_id: str = Field(
+        default_factory=lambda data: data["in_run_id"], coerce_numbers_to_str=True
+    )
+    in_prefix: str = Field(
+        default_factory=lambda data: _construct_prefix(data, "in"),
+        coerce_numbers_to_str=True,
+    )
+    out_prefix: str = Field(
+        default_factory=lambda data: _construct_prefix(data, "out"),
+        coerce_numbers_to_str=True,
+    )
 
     @model_validator(mode="after")
     def _validate_write_attributes(self) -> "ModelMeta":
@@ -189,6 +198,65 @@ class ModelMeta(BaseModel):
             )
             self.write_csv = False
         return self
+
+    @classmethod
+    def from_confuse_config(
+        cls,
+        config: ConfigView,
+        **kwargs: dict[
+            Literal[
+                "name",
+                "nslots",
+                "write_csv",
+                "write_parquet",
+                "first_sim_index",
+                "seir_modifiers_scenario",
+                "outcome_modifiers_scenario",
+                "setup_name_",
+                "inference_filename_prefix",
+                "inference_filepath_suffix",
+                "timestamp",
+                "path_prefix",
+                "in_run_id",
+                "out_run_id",
+                "in_prefix",
+                "out_prefix",
+            ],
+            Any,
+        ],
+    ) -> "ModelMeta":
+        """
+        Create a `ModelMeta` instance from a confuse configuration view.
+
+        Args:
+            config: A configuration view containing the model metadata.
+            **kwargs: Additional keyword arguments to pass to the model validation.
+
+        Returns:
+            A `ModelMeta` instance.
+        """
+        obj = {"name": config["name"].as_str()}
+        for key in (
+            "name",
+            "nslots",
+            "write_csv",
+            "write_parquet",
+            "first_sim_index",
+            "seir_modifiers_scenario",
+            "outcome_modifiers_scenario",
+            "setup_name_",
+            "inference_filename_prefix",
+            "inference_filepath_suffix",
+            "timestamp",
+            "path_prefix",
+            "in_run_id",
+            "out_run_id",
+            "in_prefix",
+            "out_prefix",
+        ):
+            if (val := kwargs.get(key)) is not None:
+                obj[key] = val
+        return cls.model_validate(obj)
 
     @computed_field
     @property
@@ -232,6 +300,23 @@ class ModelMeta(BaseModel):
             outcome_modifiers_scenario=self.outcome_modifiers_scenario,
         )
 
+    def _run_id_and_prefix(self, kind: Literal["in", "out"]) -> tuple[str, str]:
+        """
+        Get the run ID and prefix for input or output based on the kind.
+
+        Args:
+            kind: Either "in" or "out" to specify the type of run ID and
+                prefix to retrieve.
+
+        Returns:
+            A tuple containing the run ID and prefix for the specified kind.
+        """
+        return (
+            (self.in_run_id, self.in_prefix)
+            if kind == "in"
+            else (self.out_run_id, self.out_prefix)
+        )
+
     def filename(
         self,
         ftype: str,
@@ -250,11 +335,7 @@ class ModelMeta(BaseModel):
         Returns:
             A string representing the filename for the model output.
         """
-        run_id_, prefix = (
-            (self.in_run_id, self.in_prefix)
-            if kind == "in"
-            else (self.out_run_id, self.out_prefix)
-        )
+        run_id_, prefix = self._run_id_and_prefix(kind)
         return self.path_prefix / create_file_name(
             run_id_,
             prefix,
@@ -304,3 +385,25 @@ class ModelMeta(BaseModel):
         )
         filename.parent.mkdir(parents=True, exist_ok=True)
         write_df(filename, df)
+
+    def create_model_output_directories(
+        self, ftypes: list[str], kind: Literal["in", "out"]
+    ) -> None:
+        """
+        Create the model output directories.
+
+        Args:
+            ftypes: A list of file types for which to create directories.
+            kind: Either "in" or "out" to specify the type of directories to create.
+        """
+        run_id_, prefix = self._run_id_and_prefix(kind)
+        for ftype in ftypes:
+            Path(
+                create_dir_name(
+                    run_id_,
+                    prefix,
+                    ftype,
+                    self.inference_filename_prefix,
+                    self.inference_filepath_suffix,
+                )
+            ).mkdir(parents=True, exist_ok=True)
