@@ -11,7 +11,7 @@ __all__: tuple[str, ...] = (
     "PoissonDistribution",
     "TruncatedNormalDistribution",
     "UniformDistribution",
-    "WeibullDistribution"
+    "WeibullDistribution",
 )
 
 
@@ -85,7 +85,7 @@ class NormalDistribution(DistributionABC):
 
     distribution: Literal["norm"] = "norm"
     mu: float
-    sigma: float
+    sigma: float = Field(..., gt=0)
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
@@ -276,11 +276,11 @@ class BinomialDistribution(DistributionABC):
         if rng is None:
             rng = np.random.default_rng()
         return rng.binomial(n=self.n, p=self.p, size=size)
-    
+
 
 class GammaDistribution(DistributionABC):
     """
-    Represents a gamma distribution. 
+    Represents a gamma distribution.
 
     Examples:
         >>> import numpy as np
@@ -302,16 +302,17 @@ class GammaDistribution(DistributionABC):
     scale: float
 
     def sample(
-            self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the gamma distribution."""
         if rng is None:
             rng = np.random.default_rng()
         return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
+
 class WeibullDistribution(DistributionABC):
     """
-    Represents a weibull distribution. 
+    Represents a weibull distribution.
 
     Examples:
         >>> import numpy as np
@@ -328,20 +329,19 @@ class WeibullDistribution(DistributionABC):
            [6.29525049, 5.03450379, 6.88371131, 5.65602432, 3.99307222]])
     """
 
-
     distribution: Literal["weibull"] = "weibull"
     shape: float
     scale: float
 
     def sample(
-            self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the Weibull distribution."""
         if rng is None:
             rng = np.random.default_rng()
         # Multiply by scale b/c rng.weibull assumes standard weibull dist (scale of 1)
         return self.scale * rng.weibull(a=self.shape, size=size)
-    
+
 
 Distribution = Annotated[
     BinomialDistribution
