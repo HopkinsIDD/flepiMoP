@@ -57,9 +57,7 @@ class FixedDistribution(DistributionABC):
     distribution: Literal["fixed"] = "fixed"
     value: float
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1
-    ) -> npt.NDArray[np.float64]:
+    def sample(self, size: int | tuple[int, ...] = 1) -> npt.NDArray[np.float64]:
         """Sample from the fixed distribution."""
         return np.full(size, self.value)
 
