@@ -57,7 +57,9 @@ class FixedDistribution(DistributionABC):
     distribution: Literal["fixed"] = "fixed"
     value: float
 
-    def sample(self, size: int | tuple[int, ...] = 1) -> npt.NDArray[np.float64]:
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.float64]:
         """Sample from the fixed distribution."""
         return np.full(size, self.value)
 
@@ -157,7 +159,7 @@ class LognormalDistribution(DistributionABC):
 
     distribution: Literal["lognorm"] = "lognorm"
     meanlog: float
-    sdlog: float
+    sdlog: float = Field(..., gt=0)
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None

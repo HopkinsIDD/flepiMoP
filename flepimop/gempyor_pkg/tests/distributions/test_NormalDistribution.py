@@ -22,7 +22,7 @@ def test_normal_distribution_init(mu: float, sigma: float) -> None:
 def test_normal_distribution_sample_raises_error_for_invalid_sigma(
     invalid_sigma: float,
 ) -> None:
-    with pytest.raises(ValidationError, match="Input should be greater than 0") as e:
+    with pytest.raises(ValidationError, match="Input should be greater than 0"):
         NormalDistribution(mu=10.0, sigma=invalid_sigma)
 
 

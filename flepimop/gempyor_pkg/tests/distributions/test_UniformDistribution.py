@@ -30,12 +30,6 @@ def test_uniform_distribution_init_valid(low: float, high: float) -> None:
     ids=["high_less_than_low", "high_equals_low"],
 )
 def test_uniform_distribution_init_invalid_bounds(low: float, high: float) -> None:
-    """
-    Tests that creating a UniformDistribution with invalid bounds (high <= low)
-    raises a Pydantic ValidationError, triggering the custom validator.
-    """
-    # The custom validator raises a ValueError, which Pydantic wraps.
-    # We can match the custom error message.
     with pytest.raises(ValidationError, match="must be greater than the 'low' value"):
         UniformDistribution(low=low, high=high)
 
@@ -43,9 +37,9 @@ def test_uniform_distribution_init_invalid_bounds(low: float, high: float) -> No
 @pytest.mark.parametrize(
     "size, expected_shape",
     [
-        ((6, 4), (6, 4)),  # Case for the default size
-        (20, (20,)),  # Case for an integer size
-        ((4, 5), (4, 5)),  # Case for a tuple size
+        ((6, 4), (6, 4)),
+        (20, (20,)),
+        ((4, 5), (4, 5)),
     ],
     ids=["default_size", "integer_size", "tuple_size"],
 )
