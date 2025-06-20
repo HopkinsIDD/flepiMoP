@@ -21,7 +21,7 @@ def test_fixed_distribution_ini(value: float) -> None:
         (5, (5,)),
         ((2, 3), (2, 3)),
     ],
-    ids=["default_size", "integer_size", "tuple_size"],
+    ids=["tuple_size1", "integer_size", "tuple_size2"],
 )
 @pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
 def test_fixed_distribution_sample_properties(
