@@ -5,6 +5,7 @@ __all__: tuple[str, ...] = (
     "Distribution",
     "DistributionABC",
     "FixedDistribution",
+    "GammaDistribution",
     "LognormalDistribution",
     "NormalDistribution",
     "PoissonDistribution",
@@ -274,11 +275,44 @@ class BinomialDistribution(DistributionABC):
         if rng is None:
             rng = np.random.default_rng()
         return rng.binomial(n=self.n, p=self.p, size=size)
+    
+
+class GammaDistribution(DistributionABC):
+    """
+    Represents a gamma distribution. 
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import GammaDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = GammaDistribution(shape=2.0, scale=1.5)
+        >>> dist
+        GammaDistribution(distribution='gamma', shape=2.0, scale=1.5)
+        >>> dist.sample(rng=rng)
+        array([2.78453141])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[1.0116844 , 5.1632733 , 6.51682397, 0.49053229, 0.82522731],
+               [2.45524838, 1.4870423 , 1.95460596, 0.94191942, 5.92679803],
+               [5.08819234, 2.21976694, 7.82570081, 3.42761858, 1.1070266 ]])
+    """
+
+    distribution: Literal["gamma"] = "gamma"
+    shape: float
+    scale: float
+
+    def sample(
+            self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.float64]:
+        """Sample from the gamma distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
 
 Distribution = Annotated[
     BinomialDistribution
     | FixedDistribution
+    | GammaDistribution
     | LognormalDistribution
     | NormalDistribution
     | PoissonDistribution
