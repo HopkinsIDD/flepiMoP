@@ -11,6 +11,7 @@ __all__: tuple[str, ...] = (
     "PoissonDistribution",
     "TruncatedNormalDistribution",
     "UniformDistribution",
+    "WeibullDistribution"
 )
 
 
@@ -162,7 +163,7 @@ class LognormalDistribution(DistributionABC):
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
-    ) -> npt.NDArray[np.int64]:
+    ) -> npt.NDArray[np.float64]:
         """Sample from the Lognormal distribution."""
         if rng is None:
             rng = np.random.default_rng()
@@ -308,6 +309,39 @@ class GammaDistribution(DistributionABC):
             rng = np.random.default_rng()
         return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
+class WeibullDistribution(DistributionABC):
+    """
+    Represents a weibull distribution. 
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import WeibullDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = WeibullDistribution(shape=2.5, scale=5.0)
+        >>> dist
+        WeibullDistribution(distribution='weibull', shape=2.5, scale=5.0)
+        >>> dist.sample(rng=rng)
+        array([5.18664161])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[4.09267151, 6.25764353, 6.57560416, 2.72348545, 3.73147743],
+           [5.08637841, 4.63044996, 4.96639599, 3.99658252, 6.42564251],
+           [6.29525049, 5.03450379, 6.88371131, 5.65602432, 3.99307222]])
+    """
+
+
+    distribution: Literal["weibull"] = "weibull"
+    shape: float
+    scale: float
+
+    def sample(
+            self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.float64]:
+        """Sample from the Weibull distribution."""
+        if rng is None:
+            rng = np.random.default_rng()
+        # Multiply by scale b/c rng.weibull assumes standard weibull dist (scale of 1)
+        return self.scale * rng.weibull(a=self.shape, size=size)
+    
 
 Distribution = Annotated[
     BinomialDistribution
@@ -317,6 +351,7 @@ Distribution = Annotated[
     | NormalDistribution
     | PoissonDistribution
     | TruncatedNormalDistribution
-    | UniformDistribution,
+    | UniformDistribution
+    | WeibullDistribution,
     Field(discriminator="distribution"),
 ]
