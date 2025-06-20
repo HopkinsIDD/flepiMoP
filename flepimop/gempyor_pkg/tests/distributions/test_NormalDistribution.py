@@ -41,9 +41,9 @@ def test_normal_distribution_sample_rng_reproducibility() -> None:
 @pytest.mark.parametrize(
     "size, expected_shape",
     [
-        ((3, 2), (3, 2)),  
-        (10, (10,)),  
-        ((3, 4), (3, 4)),  
+        ((3, 2), (3, 2)),
+        (10, (10,)),
+        ((3, 4), (3, 4)),
     ],
     ids=["tuple_size1", "integer_size", "tuple_size2"],
 )
