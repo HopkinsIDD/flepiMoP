@@ -184,13 +184,8 @@ class ModelMeta(BaseModel):
             ValueError: If neither `write_csv` nor `write_parquet` is set to `True`.
         """
         if not (self.write_csv or self.write_parquet):
-            warnings.warn(
-                "Neither `write_csv` nor `write_parquet` is set to `True`. "
-                "Defaulting to `write_parquet=True`.",
-                UserWarning,
-            )
             self.write_parquet = True
-        if self.write_csv and self.write_parquet:
+        elif self.write_csv and self.write_parquet:
             warnings.warn(
                 "Both `write_csv` and `write_parquet` are set to `True`. Only one "
                 "format is used for writing output files, assuming `write_parquet`.",

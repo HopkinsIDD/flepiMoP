@@ -9,28 +9,15 @@ import pytest
 from gempyor.model_meta import ModelMeta, _construct_setup_name
 
 
-ignore_write_parquet_or_csv_warning = pytest.mark.filterwarnings(
-    "ignore:Neither `write_csv` nor `write_parquet` is set to `True`. "
-    "Defaulting to `write_parquet=True`.:UserWarning",
-)
-
-
 def test_neither_write_csv_nor_write_parquet_is_true() -> None:
-    """Warning is raised when neither `write_csv` nor `write_parquet` is set to `True`."""
-    with pytest.warns(
-        UserWarning,
-        match=(
-            r"^Neither `write_csv` nor `write_parquet` is set to `True`. "
-            r"Defaulting to `write_parquet=True`.$"
-        ),
-    ):
-        meta = ModelMeta.model_validate(
-            {
-                "name": "test-model",
-                "write_csv": False,
-                "write_parquet": False,
-            }
-        )
+    """The `ModelMeta` class overrides user input to set `write_parquet` to `True`."""
+    meta = ModelMeta.model_validate(
+        {
+            "name": "test-model",
+            "write_csv": False,
+            "write_parquet": False,
+        }
+    )
     assert meta.write_parquet == True
     assert meta.write_csv == False
 
@@ -55,7 +42,6 @@ def test_both_write_csv_and_write_parquet_are_true() -> None:
     assert meta.write_csv == False
 
 
-@ignore_write_parquet_or_csv_warning
 @pytest.mark.parametrize(
     "obj",
     [
@@ -111,7 +97,6 @@ def test_initialization_and_specific_attributes(obj: dict[str, Any]) -> None:
     )
 
 
-@ignore_write_parquet_or_csv_warning
 @pytest.mark.parametrize("obj", [{"name": "test-model"}])
 @pytest.mark.parametrize(
     "ftype", ["hnpi", "hosp", "hpar", "init", "llik", "seir", "snpi", "spar"]

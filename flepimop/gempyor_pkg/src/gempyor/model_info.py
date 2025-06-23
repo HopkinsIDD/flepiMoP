@@ -218,24 +218,8 @@ class ModelInfo:
                 + (["hosp", "hpar", "hnpi"] if config["outcomes"].exists() else []),
                 "out",
             )
-        for attribute in (
-            "nslots",
-            "write_csv",
-            "write_parquet",
-            "first_sim_index",
-            "seir_modifiers_scenario",
-            "outcome_modifiers_scenario",
-            "setup_name",
-            "in_run_id",
-            "out_run_id",
-            "in_prefix",
-            "out_prefix",
-            "inference_filename_prefix",
-            "inference_filepath_suffix",
-            "timestamp",
-            "extension",
-        ):
-            setattr(self, attribute, getattr(meta, attribute))
+        for key, value in meta.model_dump().items():
+            setattr(self, key, value)
 
         # 2. What about time:
         # Maybe group time_setup and subpop_struct into one argument for classes
