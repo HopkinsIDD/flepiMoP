@@ -1,0 +1,60 @@
+import numpy as np
+import pytest
+from pydantic import ValidationError
+
+from gempyor.distributions import PoissonDistribution
+
+@pytest.mark.parametrize(
+    "valid_lam",
+    [
+        (0.0),
+        (1.0),
+        (25.5),
+    ],
+    ids=["zero_rate", "unit_rate", "positive_rate"],
+)
+def test_poisson_distribution_init_valid(valid_lam: float) -> None:
+    dist = PoissonDistribution(lam=valid_lam)
+    assert dist.lam == valid_lam
+    assert dist.distribution == "poisson"
+
+
+@pytest.mark.parametrize(
+    "invalid_lam", [-0.1, -10.0], ids=["small_negative", "large_negative"]
+)
+def test_poisson_distribution_init_invalid_lam(invalid_lam: float) -> None:
+    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
+        PoissonDistribution(lam=invalid_lam)
+
+
+@pytest.mark.parametrize(
+    "size, expected_shape",
+    [
+        ((2, 5), (2, 5)),
+        (15, (15,)),
+        ((2, 3, 2), (2, 3, 2)),
+    ],
+    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+)
+@pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
+def test_poisson_distribution_sample_properties(
+    size, expected_shape, use_rng
+) -> None:
+    dist = PoissonDistribution(lam=5.0)
+    kwargs = {"size": size}
+    if use_rng:
+        kwargs["rng"] = np.random.default_rng()
+    sample = dist.sample(**kwargs)
+    assert isinstance(sample, np.ndarray)
+    assert sample.shape == expected_shape
+    assert sample.dtype == np.int64
+    assert np.all(sample >= 0)
+
+
+def test_poisson_distribution_sample_rng_reproducibility() -> None:
+    dist = PoissonDistribution(lam=10.0)
+    rng1 = np.random.default_rng(seed=100)
+    sample1 = dist.sample(size=(5, 5), rng=rng1)
+    rng2 = np.random.default_rng(seed=100)
+    sample2 = dist.sample(size=(5, 5), rng=rng2)
+    np.testing.assert_array_equal(sample1, sample2)

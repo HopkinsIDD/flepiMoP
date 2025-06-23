@@ -245,7 +245,7 @@ class PoissonDistribution(DistributionABC):
     """
 
     distribution: Literal["poisson"] = "poisson"
-    lam: float
+    lam: float = Field(..., ge=0)
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None

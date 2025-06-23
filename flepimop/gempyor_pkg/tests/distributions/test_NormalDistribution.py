@@ -26,21 +26,12 @@ def test_normal_distribution_sample_raises_error_for_invalid_sigma(
         NormalDistribution(mu=10.0, sigma=invalid_sigma)
 
 
-def test_normal_distribution_sample_rng_reproducibility() -> None:
-    dist = NormalDistribution(mu=10.0, sigma=1.5)
-    rng1 = np.random.default_rng(seed=100)
-    sample1 = dist.sample(size=(2, 2), rng=rng1)
-    rng2 = np.random.default_rng(seed=100)
-    sample2 = dist.sample(size=(2, 2), rng=rng2)
-    assert np.array_equal(sample1, sample2)
-
-
 @pytest.mark.parametrize(
     "size, expected_shape",
     [
         ((3, 2), (3, 2)),
         (10, (10,)),
-        ((3, 4), (3, 4)),
+        ((2, 3, 4), (2, 3, 4)),
     ],
     ids=["tuple_size1", "integer_size", "tuple_size2"],
 )
@@ -55,3 +46,12 @@ def test_normal_distribution_sample_properties(size, expected_shape, use_rng) ->
     assert isinstance(sample, np.ndarray)
     assert sample.shape == expected_shape
     assert sample.dtype == np.float64
+
+
+def test_normal_distribution_sample_rng_reproducibility() -> None:
+    dist = NormalDistribution(mu=10.0, sigma=1.5)
+    rng1 = np.random.default_rng(seed=100)
+    sample1 = dist.sample(size=(2, 2), rng=rng1)
+    rng2 = np.random.default_rng(seed=100)
+    sample2 = dist.sample(size=(2, 2), rng=rng2)
+    assert np.array_equal(sample1, sample2)
