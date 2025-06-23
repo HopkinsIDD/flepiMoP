@@ -34,42 +34,11 @@ from . import (
 )
 from .model_meta import ModelMeta
 from .subpopulation_structure import SubpopulationStructure
+from .time_setup import TimeSetup
 from .utils import read_df, write_df
 
 
 logger = logging.getLogger(__name__)
-
-
-class TimeSetup:
-    """
-    Handles the simulation time frame based on config info.
-
-    `TimeSetup` reads the start and end dates from the config, validates the time frame,
-    and calculates the number of days in the simulation. It also establishes a
-    pd.DatetimeIndex for the entire simulation period.
-
-    Attributes:
-        ti (datetime.date): Start date of simulation.
-        tf (datetime.date): End date of simulation.
-        n_days (int): Total number of days in the simulation time frame.
-        dates (pd.DatetimeIndex): A sequence of dates spanning the simulation time frame (inclusive of the start and end dates).
-    """
-
-    def __init__(self, config: confuse.ConfigView):
-        """
-        Initializes a `TimeSetup` object.
-
-        Args:
-            config: A configuration confuse.ConfigView object.
-        """
-        self.ti = config["start_date"].as_date()
-        self.tf = config["end_date"].as_date()
-        if self.tf <= self.ti:
-            raise ValueError(
-                f"Final time ('{self.tf}') is less than or equal to initial time ('{self.ti}')."
-            )
-        self.n_days = (self.tf - self.ti).days + 1
-        self.dates = pd.date_range(start=self.ti, end=self.tf, freq="D")
 
 
 class ModelInfo:
@@ -224,7 +193,9 @@ class ModelInfo:
         # 2. What about time:
         # Maybe group time_setup and subpop_struct into one argument for classes
         # make the import object first level attributes
-        self.time_setup = TimeSetup(config)
+        self.time_setup = TimeSetup(
+            start_date=config["start_date"].as_date(), end_date=config["end_date"].as_date()
+        )
         self.ti = self.time_setup.ti
         self.tf = self.time_setup.tf
         self.n_days = self.time_setup.n_days
