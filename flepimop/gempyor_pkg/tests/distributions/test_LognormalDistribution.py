@@ -33,7 +33,7 @@ def test_lognormal_distribution_init_raises_error_for_invalid_sdlog(
     [
         ((2, 3), (2, 3)),
         (25, (25,)),
-        ((5, 5), (5, 5)),
+        ((2, 3, 4), (2, 3, 4)),
     ],
     ids=["tuple_size1", "integer_size", "tuple_size2"],
 )
@@ -53,11 +53,8 @@ def test_lognormal_distribution_sample_properties(size, expected_shape, use_rng)
 
 def test_lognormal_distribution_sample_rng_reproducibility() -> None:
     dist = LognormalDistribution(meanlog=2.0, sdlog=0.5)
-
-    rng1 = np.random.default_rng(seed=42)
+    rng1 = np.random.default_rng(seed=100)
     sample1 = dist.sample(size=(3, 3), rng=rng1)
-
-    rng2 = np.random.default_rng(seed=42)
+    rng2 = np.random.default_rng(seed=100)
     sample2 = dist.sample(size=(3, 3), rng=rng2)
-
     np.testing.assert_array_equal(sample1, sample2)

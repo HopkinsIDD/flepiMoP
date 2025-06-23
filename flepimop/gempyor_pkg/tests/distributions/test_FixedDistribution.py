@@ -19,7 +19,7 @@ def test_fixed_distribution_ini(value: float) -> None:
     [
         ((2, 5), (2, 5)),
         (5, (5,)),
-        ((2, 3), (2, 3)),
+        ((2, 3, 4), (2, 3, 4)),
     ],
     ids=["tuple_size1", "integer_size", "tuple_size2"],
 )

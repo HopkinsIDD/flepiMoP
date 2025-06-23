@@ -39,7 +39,7 @@ def test_uniform_distribution_init_invalid_bounds(low: float, high: float) -> No
     [
         ((6, 4), (6, 4)),
         (20, (20,)),
-        ((4, 5), (4, 5)),
+        ((2, 3, 4), (2, 3, 4)),
     ],
     ids=["default_size", "integer_size", "tuple_size"],
 )
@@ -61,8 +61,8 @@ def test_uniform_distribution_sample_properties(size, expected_shape, use_rng) -
 
 def test_uniform_distribution_sample_rng_reproducibility() -> None:
     dist = UniformDistribution(low=-10.0, high=10.0)
-    rng1 = np.random.default_rng(seed=123)
+    rng1 = np.random.default_rng(seed=100)
     sample1 = dist.sample(size=(3, 3), rng=rng1)
-    rng2 = np.random.default_rng(seed=123)
+    rng2 = np.random.default_rng(seed=100)
     sample2 = dist.sample(size=(3, 3), rng=rng2)
     assert np.array_equal(sample1, sample2)
