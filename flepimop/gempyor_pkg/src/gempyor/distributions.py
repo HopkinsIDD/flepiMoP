@@ -340,8 +340,8 @@ class WeibullDistribution(DistributionABC):
     """
 
     distribution: Literal["weibull"] = "weibull"
-    shape: float
-    scale: float
+    shape: float = Field(..., gt=0)
+    scale: float = Field(..., gt=0)
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None

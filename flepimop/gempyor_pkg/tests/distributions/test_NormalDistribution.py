@@ -33,7 +33,7 @@ def test_normal_distribution_sample_raises_error_for_invalid_sigma(
         (10, (10,)),
         ((2, 3, 4), (2, 3, 4)),
     ],
-    ids=["tuple_size1", "integer_size", "tuple_size2"],
+    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
 )
 @pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
 def test_normal_distribution_sample_properties(size, expected_shape, use_rng) -> None:
