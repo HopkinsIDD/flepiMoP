@@ -41,7 +41,7 @@ def test_uniform_distribution_init_invalid_bounds(low: float, high: float) -> No
         (20, (20,)),
         ((2, 3, 4), (2, 3, 4)),
     ],
-    ids=["default_size", "integer_size", "tuple_size"],
+    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
 )
 @pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
 def test_uniform_distribution_sample_properties(size, expected_shape, use_rng) -> None:

@@ -35,7 +35,7 @@ def test_lognormal_distribution_init_raises_error_for_invalid_sdlog(
         (25, (25,)),
         ((2, 3, 4), (2, 3, 4)),
     ],
-    ids=["tuple_size1", "integer_size", "tuple_size2"],
+    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
 )
 @pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
 def test_lognormal_distribution_sample_properties(size, expected_shape, use_rng) -> None:
