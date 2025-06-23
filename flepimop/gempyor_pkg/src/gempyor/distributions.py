@@ -193,7 +193,7 @@ class TruncatedNormalDistribution(DistributionABC):
 
     distribution: Literal["truncnorm"] = "truncnorm"
     mean: float
-    sd: float
+    sd: float = Field(..., gt=0)
     a: float
     b: float
 
@@ -213,6 +213,16 @@ class TruncatedNormalDistribution(DistributionABC):
             size=size,
             random_state=rng,
         )
+
+    @model_validator(mode="after")
+    def _ensure_b_greater_than_a(self) -> "TruncatedNormalDistribution":
+        """Ensure that the upper bound 'b' is strictly greater than the lower bound 'a'."""
+        if self.b < self.a or isclose(self.b, self.a):
+            raise ValueError(
+                f"The upper bound 'b' ({self.b}) must be strictly "
+                f"greater than the lower bound 'a' ({self.a})."
+            )
+        return self
 
 
 class PoissonDistribution(DistributionABC):
