@@ -2,6 +2,7 @@
 
 __all__ = (
     "DefaultInitialConditions",
+    "FileOrFolderDrawInitialConditions",
     "InitialConditions",
     "InitialConditionsABC",
     "check_population",
@@ -13,6 +14,7 @@ __all__ = (
 from ._base import InitialConditionsABC
 from ._default import DefaultInitialConditions
 from ._factory import initial_conditions_factory
+from ._file_or_folder_draw import FileOrFolderDrawInitialConditions
 from ._initial_conditions import InitialConditions
 from ._utils import check_population
 from ._readers import (

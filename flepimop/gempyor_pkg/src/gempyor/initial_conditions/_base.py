@@ -12,7 +12,9 @@ import numpy.typing as npt
 from pydantic import BaseModel, field_validator
 
 from ..compartments import Compartments
+from ..model_meta import ModelMeta
 from ..subpopulation_structure import SubpopulationStructure
+from ..time_setup import TimeSetup
 from ._utils import check_population
 
 
@@ -33,6 +35,8 @@ class InitialConditionsABC(ABC, BaseModel):
 
     method: str
     path_prefix: Path
+    meta: ModelMeta | None = None
+    time_setup: TimeSetup | None = None
 
     @overload
     @classmethod
@@ -63,7 +67,7 @@ class InitialConditionsABC(ABC, BaseModel):
 
     @classmethod
     def from_confuse_config(
-        cls, config: confuse.Subview, path_prefix: Path | str | None = None
+        cls, config: confuse.Subview, path_prefix: Path | str | None = None, **kwargs: Any
     ) -> "InitialConditionsABC":
         """
         Create a `SubpopulationStructure` instance from a confuse configuration view.
@@ -71,13 +75,17 @@ class InitialConditionsABC(ABC, BaseModel):
         Args:
             config: A configuration view containing the subpopulation
                 configuration.
-            path_prefix: The path prefix for the geodata and mobility files or `None` to
-                use the current working directory.
+            path_prefix: The path prefix for the geodata and mobility files or `None`
+                to use the current working directory.
+            **kwargs: Additional keyword arguments to pass to the model validation.
 
         Returns:
-            An instance of `SubpopulationStructure`.
+            An instance of `SubpopulationStructure` created from a confuse
+            configuration view.
         """
-        return cls.model_validate(dict(config.get()) | {"path_prefix": path_prefix})
+        return cls.model_validate(
+            dict(config.get()) | {"path_prefix": path_prefix} | kwargs
+        )
 
     @abstractmethod
     def create_initial_conditions(
