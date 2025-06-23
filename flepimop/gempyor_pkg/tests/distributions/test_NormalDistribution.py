@@ -28,13 +28,10 @@ def test_normal_distribution_sample_raises_error_for_invalid_sigma(
 
 def test_normal_distribution_sample_rng_reproducibility() -> None:
     dist = NormalDistribution(mu=10.0, sigma=1.5)
-
     rng1 = np.random.default_rng(seed=100)
     sample1 = dist.sample(size=(2, 2), rng=rng1)
-
     rng2 = np.random.default_rng(seed=100)
     sample2 = dist.sample(size=(2, 2), rng=rng2)
-
     assert np.array_equal(sample1, sample2)
 
 
