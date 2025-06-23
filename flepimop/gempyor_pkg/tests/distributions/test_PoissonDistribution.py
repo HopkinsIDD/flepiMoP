@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from gempyor.distributions import PoissonDistribution
 
+
 @pytest.mark.parametrize(
     "valid_lam",
     [
@@ -37,9 +38,7 @@ def test_poisson_distribution_init_invalid_lam(invalid_lam: float) -> None:
     ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
 )
 @pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
-def test_poisson_distribution_sample_properties(
-    size, expected_shape, use_rng
-) -> None:
+def test_poisson_distribution_sample_properties(size, expected_shape, use_rng) -> None:
     dist = PoissonDistribution(lam=5.0)
     kwargs = {"size": size}
     if use_rng:
