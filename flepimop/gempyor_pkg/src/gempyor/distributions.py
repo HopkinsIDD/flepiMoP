@@ -276,8 +276,8 @@ class BinomialDistribution(DistributionABC):
     """
 
     distribution: Literal["binomial"] = "binomial"
-    n: int
-    p: float
+    n: int = Field(..., ge=0)
+    p: float = Field(..., ge=0, le=1)
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
