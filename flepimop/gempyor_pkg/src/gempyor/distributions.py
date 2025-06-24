@@ -35,7 +35,13 @@ class DistributionABC(ABC, BaseModel):
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64 | np.int64]:
-        """Sample from the distribution."""
+        """
+        Draw random sample(s) from the distribution.
+
+        Args:
+            size: The desired output size of samples to be drawn.
+            rng: A NumPy random number generator instance used for sampling to ensure reproducibility.
+        """
         raise NotImplementedError
 
 
