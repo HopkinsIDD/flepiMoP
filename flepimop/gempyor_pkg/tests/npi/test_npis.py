@@ -120,7 +120,7 @@ def test_full_npis_read_write():
     assert (hnpi_read == hnpi_wrote).all().all()
 
 
-def test_spatial_groups():
+def test_spatial_groups_creation_logic():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
@@ -161,7 +161,7 @@ def test_spatial_groups():
     assert npi.getReduction("r4").isna().sum().sum() == 0
     assert len(npi.getReduction("r4").loc[["01000", "02000"], "2020-04-15"].unique()) == 1
     assert len(npi.getReduction("r4").loc[["04000", "06000"], "2020-04-15"].unique()) == 2
-    assert (npi.getReduction("r4").loc[["05000", "08000"], "2020-04-15"] == 0).all()
+    assert (npi.getReduction("r4").loc[["05000", "08000"], "2020-04-15"] == 1).all()
 
     # mtr group: r5
     assert npi.getReduction("r5").isna().sum().sum() == 0
@@ -209,7 +209,7 @@ def test_spatial_groups():
     )
 
 
-def test_spatial_groups():
+def test_spatial_groups_read_write_pipeline():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
         run_id=105,
