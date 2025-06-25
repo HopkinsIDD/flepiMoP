@@ -42,7 +42,7 @@ $ rm flepimop-install-<cluster-name> flepimop-install
 
 ## Updating `flepiMoP`
 
-Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. First change directory to your `flepiMoP` installation and then make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
+Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. First change directory to your `flepiMoP` installation and then make sure that your clone of the `flepiMoP` repository is set to the branch you are working with (if doing development or operations work) and then run the `flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
 
 ```
 $ ./bin/flepimop-install-<cluster-name>
