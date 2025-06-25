@@ -41,6 +41,10 @@ class DistributionABC(ABC, BaseModel):
         Args:
             size: The desired output size of samples to be drawn.
             rng: A NumPy random number generator instance used for sampling to ensure reproducibility.
+
+        Returns:
+            A numpy array of either floats/ints (depending on distribution)
+            with shape `size` drawn from the distribution.
         """
         raise NotImplementedError
 
