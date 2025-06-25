@@ -173,7 +173,7 @@ fi
 
 # Install the local R packages
 CONDA_R_LIBS=$( realpath "$CONDA_PREFIX/lib/R/library" )
-R -e "install.packages('covidcast', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
+R -e "install.packages('epidatr', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
 RETURNTO=$( pwd )
 cd $FLEPI_PATH/flepimop/R_packages/
 R_PACKAGES=("flepicommon" "flepiconfig" "inference")
