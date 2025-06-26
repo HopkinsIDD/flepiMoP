@@ -52,7 +52,7 @@ $ ./bin/flepimop-install-<cluster-name>
 
 These steps to initialize the environment need to run on a per run or as needed basis.
 
-Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about a project directory and config, if this is your first time initializing `flepiMoP` it might be helpful to use configs out of `flepiMoP/examples/tutorials` directory as a test.
+Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about the path to your `flepiMoP` installation and project directory. It will also ask if you would like to set a default configuration file, if you plan to use the `flepimop batch-calibrate` command below we recommend pressing enter to skip setting this environment variable. If this is your first time initializing `flepiMoP` it might be helpful to use configs out of `flepiMoP/examples/tutorials` directory as a test.
 
 ```
 $ ./batch/hpc_init <cluster-name>
