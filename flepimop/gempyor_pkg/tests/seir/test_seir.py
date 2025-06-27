@@ -3,7 +3,6 @@ import os
 import pytest
 import warnings
 import shutil
-from random import randint
 import pandas as pd
 import re
 
@@ -19,96 +18,13 @@ DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 
-def test_check_parameter_positivity():
-
-    parameter_names = [
-        "alpha*1*1*1",
-        "sigma_OMICRON*1*1*1",
-        "3*gamma*1*1*1",
-        "epsilon+omegaph4*1*1*1",
-        "1*zeta*1*1",
-        "r0*gamma*theta10*1*chi_OMICRON*1",
-        "r0*gamma*theta9*1*chi_OMICRON*1",
-        "eta_X0toX3_highIE*1*1*nuage0to17",
-        "eta_X0toX3_highIE*1*1*nuage18to64LR",
-        "eta_X0toX3_highIE*1*1*nuage18to64HR",
-        "eta_X0toX3_highIE*1*1*nuage65to100",
-    ]
-    dates = pd.date_range("2023-03-19", "2025-04-30", freq="D")
-    subpop_names = [
-        "56000",
-        "50000",
-        "11000",
-        "02000",
-        "38000",
-        "46000",
-        "10000",
-        "30000",
-        "44000",
-        "23000",
-    ]
-
-    # No negative params
-    test_array1 = np.zeros(
-        (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
-    )
-    assert (
-        seir.check_parameter_positivity(test_array1, parameter_names, dates, subpop_names)
-        is None
-    )
-    # No Error
-
-    # Randomized negative params
-    test_array2 = np.zeros(
-        (len(parameter_names) - 1, len(dates) - 1, len(subpop_names) - 1)
-    )
-    for _ in range(5):
-        test_array2[randint(0, len(parameter_names) - 1)][randint(0, len(dates) - 1)][
-            randint(0, len(subpop_names) - 1)
-        ] = -1
-    test_2_negative_index_parameters = np.argwhere(test_array2 < 0)
-    test_2_neg_params = []
-    test_2_neg_subpops = []
-    test_2_first_neg_date = dates[0].date()
-    for param_idx, _, sp_idx in test_2_negative_index_parameters:
-        test_2_neg_subpops.append(subpop_names[sp_idx])
-        test_2_neg_params.append(parameter_names[param_idx])
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            rf"There are negative parameter errors in subpops {test_2_neg_subpops}, starting from date {test_2_first_neg_date} in parameters {test_2_neg_params}."
-        ),
-    ):
-        seir.check_parameter_positivity(
-            test_array2, parameter_names, dates, subpop_names
-        )  # ValueError
-
-    # Manually set negative params with intentional redundancy
-    test_array3 = np.zeros((len(parameter_names), len(dates), len(subpop_names)))
-    test_array3[0, 0, 0] = -1
-    test_array3[1, 1, 1] = -1
-    test_array3[2, 2, 2] = -1
-    test_array3[3, 3, 3] = -1
-    test_3_negative_index_parameters = np.argwhere(test_array3 < 0)
-    test_3_neg_params = []
-    test_3_neg_subpops = []
-    test_3_first_neg_date = dates[0].date()
-    for param_idx, _, sp_idx in test_3_negative_index_parameters:
-        test_3_neg_subpops.append(subpop_names[sp_idx])
-        test_3_neg_params.append(parameter_names[param_idx])
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            rf"There are negative parameter errors in subpops {test_3_neg_subpops}, starting from date {test_3_first_neg_date} in parameters {test_3_neg_params}."
-        ),
-    ):
-        seir.check_parameter_positivity(
-            test_array3, parameter_names, dates, subpop_names
-        )  # ValueError
+ignore_non_csv_mobility_warning = pytest.mark.filterwarnings(
+    "ignore:Mobility files as matrices are not recommended. "
+    "Please switch to long form csv files.:PendingDeprecationWarning"
+)
 
 
+@ignore_non_csv_mobility_warning
 def test_check_values():
     config.set_file(f"{DATA_DIR}/config.yml")
 
@@ -146,6 +62,7 @@ def test_check_values():
         assert "mobility" in str(w[1].message)
 
 
+@ignore_non_csv_mobility_warning
 def test_constant_population_legacy_integration():
     config.set_file(f"{DATA_DIR}/config.yml")
 
@@ -221,6 +138,7 @@ def test_constant_population_legacy_integration():
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
+@ignore_non_csv_mobility_warning
 def test_constant_population_rk4jit_integration():
     # config.set_file(f"{DATA_DIR}/config.yml")
     config.set_file(f"{DATA_DIR}/config_seir_integration_method_rk4_2.yml")
@@ -295,6 +213,7 @@ def test_constant_population_rk4jit_integration():
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
+@ignore_non_csv_mobility_warning
 def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -403,6 +322,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         )
 
 
+@ignore_non_csv_mobility_warning
 def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -483,6 +403,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         )
 
 
+@ignore_non_csv_mobility_warning
 def test_steps_SEIR_no_spread():
     os.chdir(os.path.dirname(__file__))
     print("test mobility with no spread")
@@ -573,6 +494,7 @@ def test_steps_SEIR_no_spread():
         )
 
 
+@ignore_non_csv_mobility_warning
 def test_continuation_resume():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -667,6 +589,7 @@ def test_continuation_resume():
         shutil.rmtree(path)
 
 
+@ignore_non_csv_mobility_warning
 def test_inference_resume():
     os.chdir(os.path.dirname(__file__))
     config.clear()

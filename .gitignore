@@ -1,5 +1,7 @@
 flepimop/gempyor_pkg/docs/Rinterface.nb.html
-flepimop/gempyor_pkg/build/
+flepimop/gempyor_pkg/docs/build/
+flepimop/gempyor_pkg/docs/source/api/
+flepimop/gempyor_pkg/docs/source/generated/
 .DS_Store
 .Rhistory
 .Rproj.user/

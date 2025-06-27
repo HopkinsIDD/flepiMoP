@@ -1,9 +1,13 @@
+"""
+Abstractions for interacting with the SEIR compartments of the model.
+"""
+
 import itertools
 import logging
-import random
 import time
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import scipy
 import tqdm.contrib.concurrent
@@ -18,48 +22,72 @@ logger = logging.getLogger(__name__)
 
 
 def check_parameter_positivity(
-    parsed_parameters: np.ndarray,
+    parsed_parameters: npt.NDArray[np.float64],
     parameter_names: list[str],
     dates: pd.DatetimeIndex,
     subpop_names: list[str],
 ) -> None:
     """
-    Identifies and reports earliest negative values for parameters after modifiers have been applied.
+    Identify earliest negative values for parameters after modifiers have been applied.
 
     Args:
-        parsed_parameters: An array of parameter values.
-        parameter_names: A list of the names of parameters.
-        dates: A pandas DatetimeIndex containing the dates.
-        subpop_names: A list of the names of subpopulations.
+        parsed_parameters: An array of parameter values with shape
+            (n_parameters, n_days, n_subpops).
+        parameter_names: A list of parameter names which correspond to the first
+            dimension of `parsed_parameters`.
+        dates: A pandas DatetimeIndex representing the dates of the parameters and
+            correspond to the second dimension of `parsed_parameters`.
+        subpop_names: A list of subpopulation names which correspond to the third
+            dimension of `parsed_parameters`.
 
     Raises:
-        ValueError: Negative parameter values were detected.
+        ValueError: If `parsed_parameters` contains negative values.
 
     Returns:
         None
+
+    Examples:
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> from gempyor.seir import check_parameter_positivity
+        >>> parsed_parameters = np.ones((3, 5, 2))
+        >>> parameter_names = ["param1", "param2", "param3"]
+        >>> dates = pd.date_range("2023-01-01", periods=5)
+        >>> subpop_names = ["subpop1", "subpop2"]
+        >>> check_parameter_positivity(
+        ...     parsed_parameters, parameter_names, dates, subpop_names
+        ... ) is None
+        True
+        >>> parsed_parameters[1, 1, 1] = -1
+        >>> check_parameter_positivity(
+        ...     parsed_parameters, parameter_names, dates, subpop_names
+        ... )
+        Traceback (most recent call last):
+            ...
+        ValueError: There are negative parameter errors in subpops subpop2, starting from date 2023-01-02 in parameters param2.
+        >>> parsed_parameters[2, 2, 1] = -1
+        >>> check_parameter_positivity(
+        ...     parsed_parameters, parameter_names, dates, subpop_names
+        ... )
+        Traceback (most recent call last):
+            ...
+        ValueError: There are negative parameter errors in subpops subpop2, starting from date 2023-01-02 in parameters param2, param3.
     """
     if len(negative_index_parameters := np.argwhere(parsed_parameters < 0)) > 0:
-        unique_param_sp_combinations = []
-        row_index = -1
-        redundant_rows = []
-        for row in negative_index_parameters:
-            row_index += 1
-            if (row[0], row[2]) in unique_param_sp_combinations:
-                redundant_rows.append(row_index)
-            if (row[0], row[2]) not in unique_param_sp_combinations:
-                unique_param_sp_combinations.append((row[0], row[2]))
-        non_redundant_negative_parameters = np.delete(
-            negative_index_parameters, (redundant_rows), axis=0
+        neg_params = set()
+        neg_subpops = set()
+        first_neg_date_j = len(dates) + 1
+        for i, j, k in negative_index_parameters:
+            neg_params.add(parameter_names[i])
+            neg_subpops.add(subpop_names[k])
+            first_neg_date_j = min(first_neg_date_j, j)
+        first_neg_date = dates[first_neg_date_j].date()
+        raise ValueError(
+            "There are negative parameter errors in subpops "
+            f"{', '.join(sorted(neg_subpops))}, starting from "
+            f"date {first_neg_date} in parameters "
+            f"{', '.join(sorted(neg_params))}."
         )
-
-        neg_subpops = []
-        neg_params = []
-        first_neg_date = dates[0].date()
-        for param_idx, _, sp_idx in non_redundant_negative_parameters:
-            neg_subpops.append(subpop_names[sp_idx])
-            neg_params.append(parameter_names[param_idx])
-        error_message = f"There are negative parameter errors in subpops {neg_subpops}, starting from date {first_neg_date} in parameters {neg_params}."
-        raise ValueError(f"{error_message}")
 
 
 def build_step_source_arg(

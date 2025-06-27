@@ -700,7 +700,7 @@ get_CSSE_global_data <- function(case_data_filename = "data/case_data/jhucsse_ca
 #' @param run_parallel
 #' @param n_cores
 #'
-#' @import covidcast dplyr lubridate doParallel foreach vroom purrr
+#' @import epidatr dplyr lubridate doParallel foreach vroom purrr
 #' @return
 #' @export
 #'
@@ -767,7 +767,7 @@ get_covidcast_data <- function(
 
     res <- foreach::foreach(x = signals,
                             .combine = rbind,
-                            .packages = c("covidcast","dplyr","lubridate", "doParallel","foreach","vroom","purrr"),
+                            .packages = c("epidatr","dplyr","lubridate", "doParallel","foreach","vroom","purrr"),
                             .verbose = TRUE) %do_fun% {
 
                                 start_dates_ <- start_dates
@@ -778,11 +778,13 @@ get_covidcast_data <- function(
                                 # Call API to generate gold standard data from COVIDCast
                                 df <- lapply(1:length(start_dates),
                                              FUN = function(y=x){
-                                                 covidcast::covidcast_signal(data_source = ifelse(grepl("admissions", x), "hhs", "jhu-csse"),
-                                                                             signal = x,
+                                                 epidatr::pub_covidcast(source = ifelse(grepl("admissions", x), "hhs", "jhu-csse"),
+                                                                             signals = x,
                                                                              geo_type = geo_level,
-                                                                             start_day = lubridate::as_date(start_dates_[y]),
-                                                                             end_day = lubridate::as_date(end_dates[y]))})
+                                                                             time_type = "day",
+                                                                             geo_values = "*",
+                                                                             time_values = epidatr::epirange(lubridate::as_date(start_dates_[y]), lubridate::as_date(end_dates[y]))
+                                                                             )})
                                 df <- data.table::rbindlist(df)
 
                                 if (geo_level=="state"){

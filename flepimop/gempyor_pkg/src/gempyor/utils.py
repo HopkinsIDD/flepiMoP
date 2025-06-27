@@ -1,3 +1,8 @@
+"""
+Helper functions for interacting with model I/O.
+"""
+
+from collections import Counter
 from collections.abc import Iterable
 import datetime
 import functools
@@ -10,7 +15,7 @@ from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, overload
 
 import confuse
 import numpy as np
@@ -1413,3 +1418,60 @@ def _nslots_random_seeds(nslots: int) -> list[int]:
         [3181143733]
     """
     return _random_seeds_list(nslots + 1, 2**32 - 1, nslots)
+
+
+def _duplicate_strings(it: Iterable[str]) -> list[str]:
+    """
+    Efficiently find duplicate strings in an iterable.
+
+    Args:
+        it: An iterable of strings.
+
+    Returns:
+        A list of strings that appear more than once in `it`.
+
+    Examples:
+        >>> from gempyor.utils import _duplicate_strings
+        >>> _duplicate_strings(["a", "b", "c"])
+        []
+        >>> _duplicate_strings(["a", "b", "c", "b"])
+        ['b']
+        >>> _duplicate_strings(["a", "b", "c", "b", "a"])
+        ['a', 'b']
+        >>> _duplicate_strings("foobar")
+        ['o']
+    """
+    return sorted([k for k, v in Counter(it).items() if v > 1])
+
+
+@overload
+def _trim_s3_path(path: str) -> str: ...
+
+
+@overload
+def _trim_s3_path(path: Path) -> Path: ...
+
+
+def _trim_s3_path(path: str | Path) -> str | Path:
+    """
+    Strips the 's3:' prefix from a given path.
+
+    Args:
+        path: The path to be trimmed. Can be a string or a Path object.
+
+    Returns:
+        The trimmed path as the same type as the input.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from gempyor.utils import _trim_s3_path
+        >>> _trim_s3_path("/abc/def/ghi.txt")
+        '/abc/def/ghi.txt'
+        >>> _trim_s3_path(Path("/abc/def/ghi.txt"))
+        PosixPath('/abc/def/ghi.txt')
+        >>> _trim_s3_path("s3://foo/bar.txt")
+        '//foo/bar.txt'
+        >>> _trim_s3_path(Path("s3://foo/bar.txt"))
+        PosixPath('s3:/foo/bar.txt')
+    """
+    return path.lstrip("s3:") if isinstance(path, str) else path

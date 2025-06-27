@@ -1,12 +1,12 @@
 --- 
 description: >-
-    A library of environmental variables in the flepiMoP codebase.
+    A library of environment variables in the flepiMoP codebase.
     These variables may be updated or deprecated as the project evolves.
 ---
 
-# Environmental Variables 🌍
+# Environment Variables
 
-Below you will find a list of environmental variables (envvars) defined throughout the flepiMoP codebase. Often, these variables are set in reponse to command-line argument input. Though, some are set by `flepiMoP` without direct user input (these are denoted by a 'Not a CL option' note in the **Argument** column.)
+Below you will find a list of environment variables (envvars) defined throughout the flepiMoP codebase. Often, these variables are set in response to command-line argument input. Though, some are set by `flepiMoP` without direct user input (these are denoted by a 'Not a CLI option' note in the **Argument** column.)
 
 <table>
     <thead>
@@ -22,7 +22,7 @@ Below you will find a list of environmental variables (envvars) defined througho
     <tbody>
         <tr>
             <td><code>BATCH_SYSTEM</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>System you are running on (e.g., aws, SLURM, local).</td>
             <td>N/A</td>
             <td>e.g., <code>aws</code>, <code>slurm</code></td>
@@ -30,7 +30,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>CENSUS_API_KEY</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>A unique key to the API for census data.</td>
             <td>N/A</td>
             <td><a href="https://api.census.gov/data/key_signup.html">Get your own API key</a></td>
@@ -70,7 +70,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>DVC_OUTPUTS</code></td>
-            <td>Not a CL option, but defined using <code>--output</code></td>
+            <td>Not a CLI option, but defined using <code>--output</code></td>
             <td>The names of the directories with outputs to save in S3 (separated by a space).</td>
             <td><code>model_output model_parameters importation hospitalization</code></td>
             <td>e.g., <code>model_output model_parameters importation hospitalization</code></td>
@@ -78,7 +78,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>FILENAME</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Filenames for output files, determined dynamically during inference.</td>
             <td>N/A</td>
             <td><code>file.parquet</code>, <code>plot.pdf</code></td>
@@ -110,7 +110,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>FLEPI_CONTINUATION_FTYPE</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>If running a continuation, the file type of the initial condition files.</td>
             <td><code>config['initial_conditions']['initial_file_type']</code></td>
             <td>e.g., <code>.csv</code></td>
@@ -134,7 +134,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>FLEPI_INFO_PATH</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td><i>pending</i></td>
             <td><i>pending</i></td>
             <td><i>pending</i></td>
@@ -182,7 +182,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>FLEPI_NUM_SLOTS</code></td>
-            <td><code>-n</code, <code>--slots</code></td>
+            <td><code>-n</code>, <code>--slots</code></td>
             <td>Number of independent simulations of the model to be run.</td>
             <td>--</td>
             <td><code>int >=1</code></td>
@@ -310,7 +310,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>IN_FILENAME</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Name of input files.</td>
             <td>N/A</td>
             <td><code>file_1.csv</code> <code>file_2.csv</code>, etc.</td> 
@@ -342,7 +342,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>LAST_JOB_OUTPUT</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Path to output of last job.</td>
             <td>N/A</td>
             <td><code>path/to/last_job/output</code></td>
@@ -350,7 +350,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>OLD_FLEPI_RUN_INDEX</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Run ID of old flepiMoP run.</td>
             <td>N/A</td>
             <td><code>int</code></td>
@@ -358,7 +358,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>OUT_FILENAME</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Name of output files.</td>
             <td>N/A</td>
             <td><code>file_1.csv</code> <code>file_2.csv</code>, etc.</td>
@@ -366,7 +366,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>OUT_FILENAME_DIR</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Directory for output files.</td>
             <td>N/A</td>
             <td><code>path/to/output/files</code></td>
@@ -382,7 +382,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>PARQUET_TYPES</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Parquet files.</td>
             <td><code>'seed spar snpi seir hpar hnpi hosp llik init'</code></td>
             <td><code>seed spar snpi seir hpar hnpi hosp llik init</code></td>
@@ -390,7 +390,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>PATH</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Path relating to AWS installation. Used during SLURM runs.</td>
             <td>N/A</td>
             <td>set with <code>export PATH=~/aws-cli/bin:$PATH</code> in <code>SLURM_inference_job.run</code></td>
@@ -462,7 +462,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>RESUME_RUN_INDEX</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Index of resumed run.</td>
             <td>set by <code>OLD_FLEPI_RUN_INDEX</code></td>
             <td><code>int</code></td>
@@ -510,7 +510,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>SIMS_PER_JOB</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Simulations per job.</td>
             <td>N/A</td>
             <td><code>int >=1</code></td>
@@ -542,7 +542,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>S3_MODEL_PROJECT_PATH</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Location in S3 bucket with the code, data, and dvc pipeline.</td>
             <td>N/A</td>
             <td><code>path/to/code_data_dvc</code></td>
@@ -550,7 +550,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>S3_RESULTS_PATH</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Location in S3 to store results.</td>
             <td>N/A</td>
             <td><code>path/to/s3/results</code></td>
@@ -558,7 +558,7 @@ Below you will find a list of environmental variables (envvars) defined througho
         </tr>
         <tr>
             <td><code>S3_UPLOAD</code></td>
-            <td>Not a CL option.</td>
+            <td>Not a CLI option.</td>
             <td>Whether or not we also save runs to S3 for slurm runs</td>
             <td><code>TRUE</code></td>
             <td><code>TRUE</code>, <code>FALSE</code></td>

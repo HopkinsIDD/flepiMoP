@@ -1,49 +1,58 @@
-from pathlib import Path
+"""The entry point for the `flepimop sync` command."""
 
-import yaml
+__all__ = ("sync",)
+
+
+from pathlib import Path
+from typing import Final
+
 import click
 from pydantic import ValidationError
 
+from ..logging import get_script_logger
 from ..shared_cli import (
-    config_files_argument,
-    parse_config_files,
     cli,
+    config_files_argument,
+    log_cli_inputs,
     mock_context,
+    verbosity_options,
 )
-from ..utils import config
-from ..file_paths import create_file_name_for_push
-
 from ._sync import sync_from_yaml
 
-__all__ = ["sync"]
 
-sync_options = {
+_SYNC_OPTIONS: Final = {
     "protocol": click.Option(
         ["-p", "--protocol", "protocol"],
         type=click.STRING,
-        help="sync protocol to use from CONFIG_FILES",
+        help="Sync protocol to use from CONFIG_FILES.",
     ),
     "source": click.Option(
         ["-s", "--source", "source_override"],
-        type=click.Path(),
-        help="source directory to 'push' changes from",
+        type=click.STRING,
+        help="Either a source override or a source append if prefixed with '+ '.",
     ),
     "target": click.Option(
         ["-t", "--target", "target_override"],
-        type=click.Path(),
-        help="target directory to 'push' changes to",
+        type=click.STRING,
+        help="Either a target override or a target append if prefixed with '+ '.",
     ),
     "sfilter": click.Option(
         ["-e", "--fsuffix", "filter_suffix"],
         type=click.STRING,
         multiple=True,
-        help="Add a filter to the end of the filter list in CONFIG_FILES (same as `-f` if that list is empty)",
+        help=(
+            "Add a filter to the end of the filter list in "
+            "CONFIG_FILES (same as `-f` if that list is empty)"
+        ),
     ),
     "pfilter": click.Option(
         ["-a", "--fprefix", "filter_prefix"],
         type=click.STRING,
         multiple=True,
-        help="Add a filter to the beginning of the filter list in CONFIG_FILES (same as `-f` if that list is empty)",
+        help=(
+            "Add a filter to the beginning of the filter list in "
+            "CONFIG_FILES (same as `-f` if that list is empty)"
+        ),
     ),
     "filter": click.Option(
         ["-f", "--filter", "filter_override"],
@@ -66,39 +75,32 @@ sync_options = {
         is_flag=True,
         help="Before syncing, manually ensure destination directory exists.",
     ),
-    "dryrun": click.Option(
-        ["-n", "--dry-run", "dryrun"],
-        is_flag=True,
-        help="perform a dry run of the sync operation",
-    ),
-    "verbosity": click.Option(
-        ["-v", "--verbose", "verbosity"],
-        count=True,
-        help="The verbosity level to use for this command.",
-    ),
-}
+} | verbosity_options
 
 
 @cli.command(
     name="sync",
-    params=[config_files_argument] + list(sync_options.values()),
-    context_settings=dict(help_option_names=["-h", "--help"]),
+    params=[config_files_argument] + list(_SYNC_OPTIONS.values()),
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 @click.pass_context
-def sync(ctx: click.Context = mock_context, **kwargs) -> int:
+def sync(  # pylint: disable=inconsistent-return-statements
+    ctx: click.Context = mock_context, **kwargs
+) -> int:
     """
     Sync flepimop files between local and remote locations. For the filter options,
-    see `man rsync` for more information - sync supports basic include / exclude filters,
-    and follows the rsync precendence rules: earlier filters have higher precedence.
+    see `man rsync` for more information - sync supports basic include / exclude
+    filters and follows the rsync precedence rules: earlier filters have higher
+    precedence.
 
-    All of the filter options (-a, -e, -f) can be specified multiple times to add multiple filters.
-    For the prefix and suffix filters, they are first assembled into a list in the order specified
-    and then added to the beginning or end of the filter list in the config file. So e.g. `-a "+ foo" -a "- bar"`
-    adds [`+ foo`, `- bar`] to the beginning of the filter list, meaning the include filter `+ a` has higher precedence
-    than the exclude filter `- bar`.
-
+    All of the filter options (-a, -e, -f) can be specified multiple times to add
+    multiple filters. For the prefix and suffix filters, they are first assembled into a
+    list in the order specified and then added to the beginning or end of the filter
+    list in the config file. So e.g. `-a "+ foo" -a "- bar"` adds [`+ foo`, `- bar`] to
+    the beginning of the filter list, meaning the include filter `+ a` has higher
+    precedence than the exclude filter `- bar`.
     """
-
+    log_cli_inputs(kwargs)
     config_files: list[Path] = kwargs.pop("config_files")
     if not config_files:
         ctx.fail("No configuration files provided." + "\n" + ctx.get_help())
@@ -116,10 +118,8 @@ def sync(ctx: click.Context = mock_context, **kwargs) -> int:
                 )
             else:
                 kwargs["filter_override"] = []
-        else:
-            if not kwargs["filter_override"]:
-                kwargs["filter_override"] = None
-
+        elif not kwargs["filter_override"]:
+            kwargs["filter_override"] = None
         try:
             verbosity = kwargs.pop("verbosity")
             return sync_from_yaml(config_files, kwargs, verbosity).returncode

@@ -45,21 +45,21 @@
 
 ## 🛠️ How To Run
 
-* [Before any run](how-to-run/before-any-run.md)
 * [Quick Start Guide](how-to-run/quick-start-guide.md)
 * [Multiple Configuration Files](multi-configs.md)
 * [Synchronizing Files](how-to-run/synchronization.md)
 * [Advanced run guides](how-to-run/advanced-run-guides/README.md)
-  * [Running with Docker locally 🛳](how-to-run/advanced-run-guides/running-with-docker-locally.md)
-  * [Running locally in a conda environment 🐍](how-to-run/advanced-run-guides/quick-start-guide-conda.md)
-  * [Running on AWS 🌳](how-to-run/advanced-run-guides/running-on-aws.md)
   * [Running On A HPC With Slurm](how-to-run/advanced-run-guides/running-on-a-hpc-with-slurm.md)
+  * [Running with Docker locally 🛳](how-to-run/advanced-run-guides/running-with-docker-locally.md)
+  * [Running on AWS 🌳](how-to-run/advanced-run-guides/running-on-aws.md)
+* [Environment Variables](./how-to-run/environment-variables.md)
 * [Common errors](how-to-run/common-errors.md)
 * [Useful commands](how-to-run/useful-commands.md)
 * [Tips, tricks, FAQ](how-to-run/tips-tricks-faq.md)
 
 ## [Development](./development/README.md)
 
+* [Installing `flepiMoP` For Development](./development/installing-flepimop-for-development.md)
 * [Git and GitHub Usage](./development/git-and-github-usage.md)
 * [Guidelines for contributors](development/python-guidelines-for-developers.md)
 
@@ -78,3 +78,6 @@
     * [AWS Submission Instructions: COVID-19](jhu-internal/us-specific-how-to-run/running-with-docker-on-aws/aws-submission-instructions-covid-19.md)
   * [Running with RStudio Server on AWS EC2](jhu-internal/us-specific-how-to-run/running-with-rstudio-server-on-aws-ec2.md)
 * [Inference scratch](jhu-internal/inference-scratch.md)
+
+## Technical Reference
+* [click commands](user-interface-guide/click-commands/)
