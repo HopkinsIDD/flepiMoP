@@ -24,6 +24,7 @@ from ..shared_cli import (
     parse_config_files,
     verbosity_options,
 )
+from ..sync._sync import _get_sync_protocol
 from ..utils import _dump_formatted_yaml, _git_checkout, config
 from ._estimate import _estimate_job_resources, _format_resource_bounds
 from ._helpers import _job_name, _parse_extra_options
@@ -255,6 +256,17 @@ from .types import EstimationSettings, JobSize
             ),
         ),
         click.Option(
+            param_decls=["--sync-protocol", "sync_protocol"],
+            type=str,
+            default=None,
+            help=(
+                "The sync protocol to use for saving the model outputs to an external "
+                "storage system. If given a dependent job will be submitted to sync "
+                "the model outputs to the given protocol after the calibration job "
+                "successfully completes."
+            ),
+        ),
+        click.Option(
             param_decls=["--debug", "debug"],
             type=bool,
             default=False,
@@ -464,6 +476,21 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     )
     logger.info("Using cluster info of %s", cluster)
 
+    # Ensure that sync protocol if given is valid
+    cfg_sync_protocols = dict(cfg["sync"].get()) if cfg["sync"].exists() else {}
+    if (sync_protocol := kwargs.get("sync_protocol", None)) is not None:
+        # --sync-protocol was given
+        logger.info("User provided explicit sync protocol of '%s'", sync_protocol)
+        _get_sync_protocol(cfg_sync_protocols, sync_protocol)
+        logger.info(
+            "Using sync protocol '%s' with options '%s' to sync the model outputs.",
+            sync_protocol,
+            cfg_sync_protocols[sync_protocol],
+        )
+    else:
+        # Neither --sync nor --sync-protocol was given
+        logger.warning("No sync protocol given, skipping syncing of model outputs.")
+
     # Job config
     job_config = Path(f"config_{job_name}.yml").absolute()
     job_config.write_text(_dump_formatted_yaml(cfg))
@@ -487,12 +514,22 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
             "job_resources_memory": batch_system.format_memory(job_resources),
             "cluster": None if cluster is None else cluster.model_dump(),
             "config": job_config,
+            "inference_method": inference_method,
             "array_capable": _inference_is_array_capable(inference_method),
+            "verbosity": kwargs.get("verbosity", 0),
+            "dry_run": kwargs.get("dry_run", False),
         },
     }
 
     # Switch to estimation
     if kwargs.get("estimate", False):
+        if kwargs.get("sync_protocol") is not None:
+            logger.warning(
+                "Syncing results for estimation jobs is not supported, "
+                "the `--sync_protocol` argument given, '%s' will be ignored.",
+                kwargs["sync_protocol"],
+            )
+            kwargs["sync_protocol"] = None
         estimation_settings = EstimationSettings(
             runs=kwargs.get("estimate_runs"),
             interval=kwargs.get("estimate_interval"),
@@ -548,18 +585,18 @@ def _click_batch_calibrate(ctx: click.Context = mock_context, **kwargs: Any) -> 
     for outcome_modifiers_scenario, seir_modifiers_scenario in product(
         outcome_modifiers_scenarios, seir_modifiers_scenarios
     ):
+        template_data = {
+            **general_template_data,
+            **{
+                "outcome_modifiers_scenario": outcome_modifiers_scenario,
+                "seir_modifiers_scenario": seir_modifiers_scenario,
+            },
+        }
         _submit_scenario_job(
-            name,
-            job_name,
-            inference_method,
             job_size,
             batch_system,
-            outcome_modifiers_scenario,
-            seir_modifiers_scenario,
             batch_system.options_from_config_and_cli(
                 cfg, kwargs, kwargs.get("verbosity", 0)
             ),
-            general_template_data,
-            kwargs.get("verbosity", 0),
-            kwargs.get("dry_run", False),
+            template_data,
         )

@@ -123,15 +123,15 @@ pull_covidcast_deaths <- function(
 
     res <- foreach::foreach(x = 1:length(signals),
                             .combine = rbind,
-                            .packages = c("covidcast","dplyr","lubridate", "doParallel","foreach","vroom","purrr"),
+                            .packages = c("epidatr","dplyr","lubridate", "doParallel","foreach","vroom","purrr"),
                             .verbose = TRUE) %do_fun% {
 
-                                df <- covidcast::covidcast_signal(data_source = data_source[x],
-                                                                  signal = signals[x],
+                                df <- epidatr::pub_covidcast(source = data_source[x],
+                                                                  signals = signals[x],
                                                                   geo_type = geo_level,
-                                                                  start_day = lubridate::as_date(start_dates),
-                                                                  end_day = lubridate::as_date(end_dates),
-                                                                  time_type = time_type[x]) %>%
+                                                                  time_type = time_type[x],
+                                                                  geo_values = "*",
+                                                                  time_values = epidatr::epirange(lubridate::as_date(start_dates), lubridate::as_date(end_dates))) %>%
                                     as_tibble()
 
                                 if (geo_level=="state"){
@@ -226,12 +226,14 @@ get_covidcast_hhs_hosp <- function(
     start_dates_ <- start_dates
     start_dates_[1] <- lubridate::as_date("2020-02-01")
 
-    df <- covidcast::covidcast_signal(
-        data_source = "hhs",
-        signal = "confirmed_admissions_covid_1d",
+    df <- epidatr::pub_covidcast(
+        source = "hhs",
+        signals = "confirmed_admissions_covid_1d",
         geo_type = geo_level,
-        start_day = lubridate::as_date(start_dates_),
-        end_day = lubridate::as_date(end_dates))
+        time_type = "day",
+        geo_values = "*",
+        time_values = epidatr::epirange(lubridate::as_date(start_dates_), lubridate::as_date(end_dates))
+        )
 
     df <- df %>% mutate(state_abbr = toupper(geo_value)) %>%
         dplyr::select(-geo_value) %>%

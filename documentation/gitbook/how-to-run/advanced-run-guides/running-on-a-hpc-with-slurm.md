@@ -25,45 +25,34 @@ This task needs to be ran once to do the initial install of `flepiMoP`.
 On JHU's Rockfish you'll need to run these steps in a slurm interactive job. This can be launched with `/data/apps/helpers/interact -n 4 -m 12GB -t 4:00:00`, but please consult the [Rockfish user guide](https://www.arch.jhu.edu/guide/) for up to date information.
 {% endhint %}
 
-Obtain a temporary clone of the `flepiMoP` repository. The install script will place a permanent clone in the correct location once ran. You may need to take necessary steps to setup git on the HPC cluster being used first before running this step.
+Download and run the the appropriate installation script with the following command:
 
-```
-$ git clone git@github.com:HopkinsIDD/flepiMoP.git --depth 1
-Cloning into 'flepiMoP'...
-remote: Enumerating objects: 487, done.
-remote: Counting objects: 100% (487/487), done.
-remote: Compressing objects: 100% (424/424), done.
-remote: Total 487 (delta 59), reused 320 (delta 34), pack-reused 0 (from 0)
-Receiving objects: 100% (487/487), 84.04 MiB | 41.45 MiB/s, done.
-Resolving deltas: 100% (59/59), done.
-Updating files: 100% (411/411), done.
+```shell
+$ curl -LsSf -o flepimop-install-<cluster-name> https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/refs/heads/main/bin/flepimop-install-<cluster-name>
+$ chmod +x flepimop-install-<cluster-name>
+$ ./flepimop-install-<cluster-name>
 ```
 
-Run the `hpc_install_or_update` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will prompt the user asking for the location to place the `flepiMoP` clone and the name of the conda environment that it will create. If this is your first time using this script accepting the defaults is the quickest way to get started. Also, expect this script to take a while the first time that you run it.
+Substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will install `flepiMoP` to the correct locations on the cluster. Once the installation is done the conda environment can be activated and the script can be removed with:
 
-```
-$ ./flepiMoP/build/hpc_install_or_update <cluster-name>
-```
-
-Remove the temporary clone of the `flepiMoP` repository created before. This step is not required, but does help alleviate confusion later.
-
-```
-$ rm -rf flepiMoP/
+```shell
+$ conda activate flepimop-env
+$ rm flepimop-install-<cluster-name> flepimop-install
 ```
 
 ## Updating `flepiMoP`
 
-Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. Make sure that your clone of the `flepiMoP` repository is set to the branch your working with (if doing development or operations work) and then run the `hpc_install_or_update` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
+Updating `flepiMoP` is designed to work just the same as installing `flepiMoP`. First change directory to your `flepiMoP` installation and then make sure that your clone of the `flepiMoP` repository is set to the branch you are working with (if doing development or operations work) and then run the `flepimop-install-<cluster-name>` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`.
 
 ```
-$ ./flepiMoP/build/hpc_install_or_update <cluster-name>
+$ ./bin/flepimop-install-<cluster-name>
 ```
 
 ## Initialize The Created `flepiMoP` Environment
 
 These steps to initialize the environment need to run on a per run or as needed basis.
 
-Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about a project directory and config, if this is your first time initializing `flepiMoP` it might be helpful to use configs out of `flepiMoP/examples/tutorials` directory as a test.
+Change directory to where a full clone of the `flepiMoP` repository was placed (it will state the location in the output of the script above). And then run the `hpc_init` script, substituting `<cluster-name>` with either `rockfish` or `longleaf`. This script will assume the same defaults as the script before for where the `flepiMoP` clone is and the name of the conda environment. This script will also ask about the path to your `flepiMoP` installation and project directory. It will also ask if you would like to set a default configuration file, if you plan to use the `flepimop batch-calibrate` command below we recommend pressing enter to skip setting this environment variable. If this is your first time initializing `flepiMoP` it might be helpful to use configs out of `flepiMoP/examples/tutorials` directory as a test.
 
 ```
 $ ./batch/hpc_init <cluster-name>
@@ -196,3 +185,106 @@ $ flepimop batch-calibrate \
     -vvv \
     simple_usa_statelevel.yml
 ```
+
+### Saving Model Outputs On Batch Inference Job Finish
+
+For production runs it is particularly helpful to save the calibration results after a successful run to long term storage for safe keeping. To accomplish this `flepimop batch-calibrate` can chain a call to `flepimop sync` after a successful run via the `--sync-protocol` option. For more details on the `flepimop sync` command in general please refer to the [Synchronizing files: Syntax and Applications](../synchronization.md) guide.
+
+For a quick demonstration of how to use this option start with the `config_sample_2pop_inference.yml` configuration file and add the following section:
+
+```yaml
+sync:
+  rsync-model-output:
+    type: rsync
+    source: model_output
+    target: /path/to/an/example-folder
+  s3-model-output:
+    type: s3sync
+    source: model_output
+    target: s3://my-bucket/and-sub-bucket
+```
+
+Where `/path/to/an/example-folder` and `s3://my-bucket/and-sub-bucket` are place holders for paths to your desired location. Importantly, note that there is no trailing slash on the `model_output` directory name. This will cause `flepimop sync` to sync the `model_output` directory itself and not just it's contents. You can also apply additional filters to the sync protocols here, say to limit the backed up model outputs to certain folders or exclude `llik` outputs, but the `--sync-protocol` option will add filters to limit the synced directories to those corresponding to the run submitted. Note that users do not need to specify run/job ids or configuration file names in the sync protocol. The `flepimop batch-calibrate` CLI will take advantage of `flepimop sync`'s options to set paths appropriately to accommodate for run/job ids.
+
+Modifying the first `flepimop batch-calibrate` command from before:
+
+```
+$ export PROJECT_PATH="$FLEPI_PATH/examples/tutorials/"
+$ cd $PROJECT_PATH
+$ flepimop batch-calibrate \
+    --blocks 1 \
+    --chains 4 \
+    --samples 20 \
+    --simulations 100 \
+    --time-limit 30min \
+    --slurm \
+    --nodes 4 \
+    --cpus 1 \
+    --memory 1G \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
+    --skip-checkout \
+    --sync-protocol <your sync protocol, either rsync-model-output or s3-model-output in this case> \
+    -vvv \
+    config_sample_2pop_inference.yml
+```
+
+This command will submit an array job just like before, but will also add a dependent job with the same name prefixed with 'sync_'. This should looks like:
+
+```
+[twillard@longleaf-login6 tutorials]$ squeue -p jlessler
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+           2374868  jlessler sync_sam twillard PD       0:00      1 (Dependency)
+         2374867_1  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+         2374867_2  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+         2374867_3  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+         2374867_4  jlessler sample_2 twillard  R       2:26      1 g1803jles01
+```
+
+After those jobs finish the results can be found in a subdirectory named after the job and whose contents will look like:
+
+```
+[twillard@longleaf-login6 sample_2pop-20250521T190823_Ro_all_test_limits]$ tree -L 4
+.
+├── manifest.json
+└── model_output
+    └── sample_2pop_Ro_all_test_limits
+        └── sample_2pop-20250521T190823_Ro_all_test_limits
+            ├── hnpi
+            ├── hosp
+            ├── hpar
+            ├── init
+            ├── llik
+            ├── seir
+            ├── snpi
+            └── spar
+
+11 directories, 1 file
+```
+
+Note that this contains the `model_output` directory but only limited to the batch run named 'sample_2pop-20250521T190823_Ro_all_test_limits' as well as a file called `manifest.json` which can be used to reproduce the run from scratch if needed. 
+
+#### Saving Model Outputs To S3 For Hopkins Users
+
+For Hopkins affiliated users there is a configuration file patch included with `flepiMoP` that can be used to add S3 syncing for model outputs to `s3://idd-inference-runs`. Taking the example before of running the `config_sample_2pop_inference.yml` configuration we can slightly modify the command to:
+
+```
+$ flepimop batch-calibrate \
+    --blocks 1 \
+    --chains 4 \
+    --samples 20 \
+    --simulations 100 \
+    --time-limit 30min \
+    --slurm \
+    --nodes 4 \
+    --cpus 1 \
+    --memory 1G \
+    --extra 'partition=<your partition, if relevant>' \
+    --extra 'email=<your email, if relevant>' \
+    --skip-checkout \
+    --sync-protocol s3-idd-inference-runs \
+    -vvv \
+    config_sample_2pop_inference.yml $FLEPI_PATH/common/s3-idd-inference-runs.yml
+```
+
+This will take advantage of the patching abilities of the `flepimop batch-calibrate` to add a sync protocol named `s3-idd-inference-runs` that will save the results to the `s3://idd-inference-runs` bucket.

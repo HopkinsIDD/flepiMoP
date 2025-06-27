@@ -28,12 +28,14 @@ import pandas as pd
 
 from . import (
     seeding,
-    subpopulation_structure,
     parameters,
     compartments,
     file_paths,
     initial_conditions,
 )
+
+from .subpopulation_structure import SubpopulationStructure
+
 from .utils import read_df, write_df
 
 
@@ -215,17 +217,13 @@ class ModelInfo:
         self.dates = self.time_setup.dates
 
         # 3. What about subpopulations
-        subpop_config = config["subpop_setup"]
         self.path_prefix = pathlib.Path(path_prefix)
-
-        self.subpop_struct = subpopulation_structure.SubpopulationStructure(
-            setup_name=config["setup_name"].get(),
-            subpop_config=subpop_config,
-            path_prefix=self.path_prefix,
+        self.subpop_struct = SubpopulationStructure.from_confuse_config(
+            config["subpop_setup"], path_prefix=self.path_prefix
         )
         self.nsubpops = self.subpop_struct.nsubpops
         self.subpop_pop = self.subpop_struct.subpop_pop
-        self.mobility = self.subpop_struct.mobility
+        self.mobility = self.subpop_struct.mobility_matrix
 
         # 4. the SEIR structure
         self.seir_config = None

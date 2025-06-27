@@ -51,17 +51,14 @@ source(file.path(opt$path, "datasetup/data_setup_source.R"))
 if (any(grepl("nchs|hhs", opt$gt_data_source))){
     if (!is.null(config$inference$gt_api_key)){
         cat(paste0("Using Config variable for Delphi API key: ", config$inference$gt_api_key))
-        options(covidcast.auth = config$inference$gt_api_key)
+        Sys.setenv(DELPHI_EPIDATA_KEY = config$inference$gt_api_key)
     } else if (!is.null(opt$delphi_api_key)){
         cat(paste0("Using Environment variable for Delphi API key: ", opt$delphi_api_key))
-        options(covidcast.auth = opt$delphi_api_key)
+        Sys.setenv(DELPHI_EPIDATA_KEY = opt$delphi_api_key)
     } else {
         newkey <- readline(prompt = "Please enter your Delphi API key before proceeding:")
         #check
         key_correct_len <- nchar(newkey) > 10 & nchar(newkey) < 20
-        # cli <- covidcast::covidcast_signal(data_source = "fb-survey", signal = "smoothed_cli",
-        #                 start_day = "2020-05-01", end_day = "2020-05-01",
-        #                 geo_type = "state")
         if (!key_correct_len){
             cat(paste0("**Incorrect API Key.**\n
                        Please register for a Delphi Epidata API key before proceeding.\n
@@ -69,7 +66,7 @@ if (any(grepl("nchs|hhs", opt$gt_data_source))){
             stop()
         } else {
             cat(paste0("Using Input variable for Delphi API key: ", newkey))
-            options(covidcast.auth = newkey)
+            Sys.setenv(DELPHI_EPIDATA_KEY = newkey)
         }
     }
 }
