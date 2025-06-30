@@ -15,7 +15,7 @@ from pydantic import model_validator
 
 from ..compartments import Compartments
 from ..subpopulation_structure import SubpopulationStructure
-from ..utils import read_df
+from ..utils import ConfigurationWarning, read_df
 from ._base import InitialConditionsABC
 
 
@@ -267,14 +267,19 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
                 "The `initial_conditions_file` attribute must be set when using "
                 "'SetInitialConditions' or 'FromFile'."
             )
-        if (
-            self.method in {"FromFile", "InitialConditionsFolderDraw"}
-            and self.time_setup is None
-        ):
-            raise ValueError(
-                "The `time_setup` attribute must be set when using "
-                "'FromFile' or 'InitialConditionsFolderDraw'."
-            )
+        if self.method in {"FromFile", "InitialConditionsFolderDraw"}:
+            if self.time_setup is None:
+                raise ValueError(
+                    "The `time_setup` attribute must be set when using "
+                    "'FromFile' or 'InitialConditionsFolderDraw'."
+                )
+            if self.proportional_ic is True:
+                warnings.warn(
+                    "The `proportional_ic` attribute as been intentionally set to a "
+                    "non-default value but is not used when initial conditions method "
+                    f"is {self.method}.",
+                    ConfigurationWarning,
+                )
         return self
 
     def create_initial_conditions(
