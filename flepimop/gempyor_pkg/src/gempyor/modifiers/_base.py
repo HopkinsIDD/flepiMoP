@@ -4,7 +4,6 @@ __all__: tuple[str, ...] = ()
 
 import numpy as np
 import pandas as pd
-import typing
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
@@ -29,7 +28,6 @@ class ModifierABC(ABC, BaseModel):
     def apply(
         self,
         parameter: np.ndarray,
-
         modification: pd.DataFrame | float,
         method: str = "product",
     ) -> np.ndarray:

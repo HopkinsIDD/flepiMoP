@@ -5,7 +5,7 @@ __all__: tuple[str, ...] = ()
 import numpy as np
 import pandas as pd
 from datetime import date
-from typing import Literal, Union
+from typing import Literal
 
 from pydantic import field_validator, model_validator
 
@@ -27,7 +27,7 @@ class SinglePeriodModifier(ModifierABC):
     def apply(
         self,
         parameter: np.ndarray,
-        modification: Union[pd.DataFrame, float],
+        modification: pd.DataFrame | float,
         method: str = "product",
     ) -> np.ndarray:
         """
