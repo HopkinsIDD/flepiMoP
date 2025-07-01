@@ -17,12 +17,14 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import pyarrow as pa
 from gempyor import file_paths, outcomes, seir
+from gempyor.testing import ignore_initial_conditions_missing_method_warning
 
 config_filepath_prefix = ""
 
 os.chdir(os.path.dirname(__file__))
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_full_npis_read_write():
     os.chdir(os.path.dirname(__file__))
 
@@ -120,6 +122,7 @@ def test_full_npis_read_write():
     assert (hnpi_read == hnpi_wrote).all().all()
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_spatial_groups():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
@@ -209,6 +212,7 @@ def test_spatial_groups():
     )
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_spatial_groups():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",

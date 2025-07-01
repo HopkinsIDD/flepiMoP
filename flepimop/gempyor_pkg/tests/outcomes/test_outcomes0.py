@@ -17,6 +17,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import pyarrow as pa
 from gempyor import file_paths, model_info, outcomes
+from gempyor.testing import ignore_initial_conditions_missing_method_warning
 
 ### To generate files for this test, see notebook Test Outcomes  playbook.ipynb in COVID19_Maryland
 
@@ -27,6 +28,7 @@ date_data = datetime.date(2020, 4, 15)
 os.chdir(os.path.dirname(__file__))
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcome_scenario(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(os.path.dirname(__file__))
     inference_simulator = gempyor.GempyorInference(
