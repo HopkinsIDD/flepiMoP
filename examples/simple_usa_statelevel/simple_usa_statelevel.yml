@@ -11,8 +11,7 @@ subpop_setup:
   #selected: ["06000"]
 
 initial_conditions:
-  method: plugin
-  plugin_file_path: model_input/my_initial_conditions.py
+  method: Default
 
 compartments:
   infection_stage: ["S", "E", "I", "R"]

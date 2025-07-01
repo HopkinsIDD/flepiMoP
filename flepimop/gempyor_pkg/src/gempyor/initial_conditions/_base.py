@@ -83,9 +83,11 @@ class InitialConditionsABC(ABC, BaseModel):
             An instance of `SubpopulationStructure` created from a confuse
             configuration view.
         """
-        return cls.model_validate(
-            dict(config.get()) | {"path_prefix": path_prefix} | kwargs
-        )
+        try:
+            conf = dict(config.get())
+        except confuse.NotFoundError:
+            conf = {"method": "Default"}
+        return cls.model_validate(conf | {"path_prefix": path_prefix} | kwargs)
 
     @abstractmethod
     def create_initial_conditions(

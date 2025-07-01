@@ -28,10 +28,10 @@ import pandas as pd
 from . import (
     compartments,
     file_paths,
-    initial_conditions,
     parameters,
     seeding,
 )
+from .initial_conditions import initial_conditions_from_plugin
 from .model_meta import ModelMeta
 from .subpopulation_structure import SubpopulationStructure
 from .time_setup import TimeSetup
@@ -249,8 +249,11 @@ class ModelInfo:
             self.seeding = seeding.SeedingFactory(
                 config=self.seeding_config, path_prefix=self.path_prefix
             )
-            self.initial_conditions = initial_conditions.initial_conditions_factory(
-                config=self.initial_conditions_config, path_prefix=self.path_prefix
+            self.initial_conditions = initial_conditions_from_plugin(
+                config["initial_conditions"],
+                path_prefix=self.path_prefix,
+                meta=self.meta,
+                time_setup=self.time_setup,
             )
 
             # SEIR modifiers
@@ -435,3 +438,19 @@ class ModelInfo:
 
     def get_engine(self) -> Literal["rk4", "euler", "stochastic"]:
         return self.seir_config["integration"]["method"].as_str()
+
+    def get_initial_conditions_data(self, sim_id: int) -> npt.NDArray[np.int64]:
+        """
+        Pull the initial conditions data fro the info represented by this instance.
+
+        Args:
+            sim_id: The simulation ID to pull initial conditions data for.
+
+        Returns:
+            A two dimensional numpy array of integers with shape of
+            (compartments, subpopulations).
+
+        """
+        return self.initial_conditions.get_initial_conditions(
+            sim_id, self.compartments, self.subpop_struct
+        )

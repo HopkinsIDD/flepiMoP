@@ -333,17 +333,9 @@ def onerun_SEIR(
         ) = modinf.compartments.get_transition_array()
 
     with Timer("onerun_SEIR.seeding"):
-        if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(
-                sim_id2load, modinf=modinf
-            )
-        else:
-            initial_conditions = modinf.initial_conditions.get_from_config(
-                sim_id2write, modinf=modinf
-            )
-        seeding_data, seeding_amounts = modinf.get_seeding_data(
-            sim_id=sim_id2load if load_ID else sim_id2write
-        )
+        sim_id = sim_id2load if load_ID else sim_id2write
+        initial_conditions = modinf.get_initial_conditions_data(sim_id)
+        seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id)
 
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters

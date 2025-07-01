@@ -11,6 +11,7 @@ import numpy.typing as npt
 from ..compartments import Compartments
 from ..subpopulation_structure import SubpopulationStructure
 from ._base import InitialConditionsABC
+from ._plugins import register_initial_conditions_plugin
 
 
 class DefaultInitialConditions(InitialConditionsABC):
@@ -38,3 +39,6 @@ class DefaultInitialConditions(InitialConditionsABC):
         y0 = np.zeros((len(compartments.compartments), subpopulation_structure.nsubpops))
         y0[0, :] = subpopulation_structure.subpop_pop
         return y0
+
+
+register_initial_conditions_plugin(DefaultInitialConditions)

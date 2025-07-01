@@ -35,6 +35,11 @@ import pytest
 from .utils import _shutil_which
 
 
+ignore_initial_conditions_missing_method_warning = pytest.mark.filterwarnings(
+    "ignore:Initial conditions plugin 'method' " "was not specified, assuming 'Default'."
+)
+
+
 @pytest.fixture
 def change_directory_to_temp_directory() -> Generator[None, None, None]:
     """Change test working directory to a temporary directory
