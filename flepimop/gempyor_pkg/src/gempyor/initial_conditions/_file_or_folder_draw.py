@@ -5,7 +5,7 @@ __all__: tuple[str, ...] = ()
 
 from datetime import date
 from pathlib import Path
-from typing import Literal
+from typing import Final, Literal
 import warnings
 
 import numpy as np
@@ -18,6 +18,10 @@ from ..subpopulation_structure import SubpopulationStructure
 from ..utils import read_df
 from ..warnings import ConfigurationWarning
 from ._base import InitialConditionsABC
+from ._plugins import register_initial_conditions_plugin
+
+
+_SEIR_OUTPUT_REQUIRED_COLUMNS: Final[set[str]] = {"date", "mc_value_type"}
 
 
 def _read_initial_condition_from_tidydataframe(
@@ -116,8 +120,8 @@ def _read_initial_condition_from_tidydataframe(
 
 
 def _read_initial_condition_from_seir_output(
-    ic_df: pd.DataFrame,
-    compartments: Compartments,
+    seir_output: pd.DataFrame,
+    compartments: pd.DataFrame,
     subpopulation_structure: SubpopulationStructure,
     start_date: date,
     allow_missing_subpops: bool,
@@ -127,8 +131,10 @@ def _read_initial_condition_from_seir_output(
     Read the initial conditions from the SEIR output.
 
     Args:
-        ic_df: The dataframe containing the initial conditions.
-        compartments: The compartments object.
+        seir_output: The dataframe containing the seir output to build initial
+            conditions from.
+        compartments: The compartments DataFrame, which is the `compartments` attribute
+            of the `gempyor.compartments.Compartments` class.
         subpopulation_structure: The subpopulation structure object.
         start_date: The start date for the simulation, determines the date to filter
             the given DataFrame from.
@@ -141,75 +147,85 @@ def _read_initial_condition_from_seir_output(
         The initial conditions array.
 
     Raises:
-        ValueError: If there is no entry for the initial time ti in the provided
-            initial_conditions::states_file.
-        ValueError: If there are multiple rows matching the compartment in the init
-            file.
-        ValueError: If the compartment cannot be set in the subpopulation.
-        ValueError: If the subpopulation does not exist in
-            initial_conditions::states_file.
+        ValueError: If there are required columns missing from the SEIR output.
+        ValueError: If there are no entries in the SEIR output with the date
+            `start_date` and 'mc_value_type' of 'prevalence'.
+        ValueError: If there are more than one match for the compartments found
+            in the SEIR output.
+        ValueError: If there are not matches found for a given set of compartment
+            filters in the SEIR output and `allow_missing_compartments` is `False`.
+        NotImplementedError: If `allow_missing_subpops` is `True` and there are
+            missing subpopulations in the SEIR output.
 
     """
-    # annoying conversion because sometime the parquet columns get attributed a timezone...
-    ic_df["date"] = pd.to_datetime(ic_df["date"], utc=True)  # force date to be UTC
-    ic_df["date"] = ic_df["date"].dt.date
-    ic_df["date"] = ic_df["date"].astype(str)
-
-    ic_df = ic_df[
-        (ic_df["date"] == str(start_date)) & (ic_df["mc_value_type"] == "prevalence")
-    ]
-    if ic_df.empty:
+    # Validation
+    required_columns = _SEIR_OUTPUT_REQUIRED_COLUMNS | (
+        {} if allow_missing_subpops else set(subpopulation_structure.subpop_names)
+    )
+    if missing_columns := required_columns - (columns := set(seir_output.columns.tolist())):
         raise ValueError(
-            f"No entry provided for initial time `ti` in the "
-            f"`initial_conditions::states_file.` `ti`: '{start_date}'."
+            "The SEIR output initial conditions are missing required columns "
+            f"{', '.join(sorted(missing_columns))}. Instead its columns "
+            f"are {', '.join(sorted(columns))}."
         )
-    y0 = np.zeros((compartments.compartments.shape[0], subpopulation_structure.nsubpops))
-
-    for comp_idx, comp_name in compartments.compartments["name"].items():
-        # rely on all the mc's instead of mc_name to avoid errors due to e.g order.
-        # before: only
-        # ic_df_compartment = ic_df[ic_df["mc_name"] == comp_name]
-        filters = compartments.compartments.iloc[comp_idx].drop("name")
-        ic_df_compartment = ic_df.copy()
-        for mc_name, mc_value in filters.items():
-            ic_df_compartment = ic_df_compartment[
-                ic_df_compartment["mc_" + mc_name] == mc_value
-            ]
-
-        if len(ic_df_compartment) > 1:
-            # ic_df_compartment = ic_df_compartment.iloc[0]
+    # Wrangling
+    start_date = start_date.strftime("%Y-%m-%d")
+    seir_output["date"] = pd.Series(
+        data=pd.to_datetime(seir_output["date"], utc=True), dtype="datetime64[ns, UTC]"
+    ).dt.strftime("%Y-%m-%d")
+    seir_output = seir_output[
+        (seir_output["date"] == start_date) & (seir_output["mc_value_type"] == "prevalence")
+    ]
+    if seir_output.empty:
+        raise ValueError(
+            "No entries were found in the SEIR output initial conditions with "
+            f"a date '{start_date}' and an MC value type of 'prevalence'."
+        )
+    # Loop over compartments & subpopulations
+    y0 = np.zeros((len(compartments), subpopulation_structure.nsubpops))
+    for row in compartments.itertuples():
+        # Extract out a subset for this compartment & validate
+        query = " & ".join(
+            f"mc_{k}=='{v}'"
+            for k, v in zip(["Index"] + compartments.columns.tolist(), row)
+            if k not in {"Index", "name"}
+        )
+        initial_conditions_subset = seir_output.query(query)
+        if (len_initial_conditions_subset := len(initial_conditions_subset)) > 1:
             raise ValueError(
-                f"Several ('{len(ic_df_compartment)}') rows are matches for "
-                f"compartment '{comp_name}' in init file: filter '{filters}'. "
-                f"returned: '{ic_df_compartment}'."
+                f"There were {len_initial_conditions_subset} matches found in "
+                f"the SEIR output initial conditions for the filters {row}."
             )
-        if ic_df_compartment.empty:
+        if initial_conditions_subset.empty:
             if not allow_missing_compartments:
                 raise ValueError(
-                    f"Initial Conditions: could not set compartment '{comp_name}' "
-                    f"(id: '{comp_idx}') in subpop '{pl}' (id: '{pl_idx}'). The data "
-                    f"from the init file is '{ic_df_compartment[pl]}'."
+                    "There were no matches found in the SEIR output initial "
+                    f"conditions for the filters {row}. Please specify or set "
+                    "`allow_missing_compartments=True` in the configuration."
                 )
-            ic_df_compartment = pd.DataFrame(
-                0, columns=ic_df_compartment.columns, index=[0]
+            initial_conditions_subset = pd.DataFrame(
+                data=0, columns=initial_conditions_subset.columns, index=[0]
             )
-        elif ic_df_compartment["mc_name"].iloc[0] != comp_name:
+        elif (compartment_name := initial_conditions_subset["mc_name"].item()) != row.name:
             warnings.warn(
-                f"{ic_df_compartment['mc_name'].iloc[0]} does not match "
-                f"compartment `mc_name` {comp_name}."
+                "The SEIR output initial conditions compartment name, "
+                f"'{compartment_name}', does not match the filtered "
+                f"compartment MC name '{row.name}'.",
+                RuntimeWarning,
             )
-
-        for pl_idx, pl in enumerate(subpopulation_structure.subpop_names):
-            if pl in ic_df.columns:
-                y0[comp_idx, pl_idx] = float(ic_df_compartment[pl].iloc[0])
-            elif allow_missing_subpops:
-                raise RuntimeError(
-                    "There is a bug; report this message. Past implementation was buggy"
+        # Loop over the subpopulations for this compartment
+        for subpopulation_idx, subpopulation_name in enumerate(
+            subpopulation_structure.subpop_names
+        ):
+            if subpopulation_name in columns:
+                y0[row.Index, subpopulation_idx] = float(
+                    initial_conditions_subset[subpopulation_name].item()
                 )
-            else:
-                raise ValueError(
-                    f"Subpop '{pl}' does not exist in `initial_conditions::states_file`. "
-                    f"You can set `allow_missing_subpops=TRUE` to bypass this error."
+            if allow_missing_subpops:
+                raise NotImplementedError(
+                    "Allowing missing subpopulations with SEIR output initial "
+                    "conditions is currently not supported. If this is needed "
+                    "for your use case please create a feature request."
                 )
     return y0
 
@@ -315,9 +331,12 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
             )
         return _read_initial_condition_from_seir_output(
             initial_conditions,
-            compartments,
+            compartments.compartments,
             subpopulation_structure,
             self.time_setup.start_date,
             self.allow_missing_subpops,
             self.allow_missing_compartments,
         )
+
+
+register_initial_conditions_plugin(FileOrFolderDrawInitialConditions)
