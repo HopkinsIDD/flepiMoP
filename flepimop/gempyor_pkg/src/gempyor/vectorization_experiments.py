@@ -153,3 +153,72 @@ def build_rhs(
         return dy_dt
 
     return rhs
+
+import numpy as np
+from scipy.interpolate import interp1d
+from tqdm import tqdm
+
+# === Solver Interface ===
+
+def run_solver(
+    rhs_fn,
+    y0,
+    t_grid,
+    method="rk4",
+    record_daily=False,
+    ncompartments=None,
+    nspatial_nodes=None
+):
+    n_steps = len(t_grid)
+    y = y0.copy().flatten()
+    state_shape = y0.shape
+    state_size = y.size
+
+    # Output containers
+    states = np.zeros((n_steps, *state_shape))
+    incid = np.zeros((n_steps, *state_shape)) if record_daily else None
+
+    def update(y, delta_t, dy):
+        return y + delta_t * dy
+
+    def rk4_step(t, y, dt):
+        k1 = rhs_fn(t, y)
+        k2 = rhs_fn(t + dt / 2, update(y, dt / 2, k1))
+        k3 = rhs_fn(t + dt / 2, update(y, dt / 2, k2))
+        k4 = rhs_fn(t + dt, update(y, dt, k3))
+        return update(y, dt / 6, k1 + 2 * k2 + 2 * k3 + k4)
+
+    # Time loop
+    for i, t in enumerate(t_grid):
+        today = int(np.floor(t))
+
+        # Save prevalence (and incidence if needed)
+        y_matrix = y.reshape(state_shape)
+        states[i] = y_matrix
+
+        if record_daily and method != "rk4":
+            dy = rhs_fn(t, y).reshape(state_shape)
+            incid[i] = np.maximum(dy, 0.0)  # simple proxy for incidence
+
+        # Step forward
+        if i < n_steps - 1:
+            dt = t_grid[i + 1] - t
+            if method == "rk4":
+                y = rk4_step(t, y, dt)
+            elif method in {"euler", "stochastic"}:
+                dy = rhs_fn(t, y)
+                y = update(y, dt, dy)
+            else:
+                raise ValueError(f"Unknown method: {method}")
+
+    # Optional smoothing for dt == 2.0
+    if t_grid[1] - t_grid[0] == 2.0:
+        t_half = np.arange(states.shape[0])
+        interp = interp1d(t_half[::2], states[::2], axis=0, kind="linear", fill_value="extrapolate")
+        states = interp(t_half)
+        if record_daily:
+            incid /= 2
+            incid[1::2] = incid[:-1:2]
+
+    return states, incid
+
