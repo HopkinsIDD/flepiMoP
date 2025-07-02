@@ -1,6 +1,7 @@
 """Representations of distributions used for modifiers, likelihoods, etc."""
 
 __all__: tuple[str, ...] = (
+    "BetaDistribution",
     "BinomialDistribution",
     "Distribution",
     "DistributionABC",
@@ -30,6 +31,10 @@ class DistributionABC(ABC, BaseModel):
     """Base class for distributions used in modifiers, likelihoods, etc."""
 
     distribution: str
+
+    def _rng(self, rng: Generator | None = None) -> Generator:
+        """Return the provided rng or a default NumPy Generator"""
+        return rng if rng is not None else np.random.default_rng()
 
     @abstractmethod
     def sample(
@@ -101,8 +106,7 @@ class NormalDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the normal distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         return rng.normal(loc=self.mu, scale=self.sigma, size=size)
 
 
@@ -133,8 +137,7 @@ class UniformDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the uniform distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         return rng.uniform(low=self.low, high=self.high, size=size)
 
     @model_validator(mode="after")
@@ -175,8 +178,7 @@ class LognormalDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the Lognormal distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         return rng.lognormal(mean=self.meanlog, sigma=self.sdlog, size=size)
 
 
@@ -211,8 +213,7 @@ class TruncatedNormalDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the truncated normal distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         lower = (self.a - self.mean) / self.sd
         upper = (self.b - self.mean) / self.sd
         return truncnorm.rvs(
@@ -261,8 +262,7 @@ class PoissonDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.int64]:
         """Sample from the Poisson distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         return rng.poisson(lam=self.lam, size=size)
 
 
@@ -293,8 +293,7 @@ class BinomialDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.int64]:
         """Sample from the binomial distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         return rng.binomial(n=self.n, p=self.p, size=size)
 
 
@@ -325,8 +324,7 @@ class GammaDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the gamma distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
 
@@ -357,14 +355,45 @@ class WeibullDistribution(DistributionABC):
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64]:
         """Sample from the Weibull distribution."""
-        if rng is None:
-            rng = np.random.default_rng()
+        rng = self._rng(rng)
         # Multiply by scale b/c rng.weibull assumes standard weibull dist (scale of 1)
         return self.scale * rng.weibull(a=self.shape, size=size)
 
 
+class BetaDistribution(DistributionABC):
+    """
+    Represents a beta distribution.
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.distributions import BetaDistribution
+        >>> rng = np.random.default_rng(42)
+        >>> dist = BetaDistribution(alpha=2.0, beta=5.0)
+        >>> dist
+        BetaDistribution(distribution='beta', alpha=2.0, beta=5.0)
+        >>> dist.sample(rng=rng)
+        array([0.31153835])
+        >>> dist.sample(size=(3, 5), rng=rng)
+        array([[0.18343469, 0.43545995, 0.48512838, 0.08625927, 0.22223849],
+               [0.34020943, 0.28014294, 0.3069152 , 0.201726  , 0.4729195 ],
+               [0.44331908, 0.32357912, 0.5282496 , 0.38318282, 0.20141687]])
+    """
+
+    distribution: Literal["beta"] = "beta"
+    alpha: float = Field(..., gt=0)
+    beta: float = Field(..., gt=0)
+
+    def sample(
+        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    ) -> npt.NDArray[np.float64]:
+        """Sample from the beta distribution."""
+        rng = self._rng(rng)
+        return rng.beta(a=self.alpha, b=self.beta, size=size)
+
+
 Distribution = Annotated[
-    BinomialDistribution
+    BetaDistribution
+    | BinomialDistribution
     | FixedDistribution
     | GammaDistribution
     | LognormalDistribution

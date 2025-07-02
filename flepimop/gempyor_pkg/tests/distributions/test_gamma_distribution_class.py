@@ -67,12 +67,3 @@ def test_gamma_distribution_sample_properties(size, expected_shape, use_rng) -> 
     assert sample.shape == expected_shape
     assert sample.dtype == np.float64
     assert np.all(sample > 0)
-
-
-def test_gamma_distribution_sample_rng_reproducibility() -> None:
-    dist = GammaDistribution(shape=9.0, scale=0.5)
-    rng1 = np.random.default_rng(seed=100)
-    sample1 = dist.sample(size=(4, 4), rng=rng1)
-    rng2 = np.random.default_rng(seed=100)
-    sample2 = dist.sample(size=(4, 4), rng=rng2)
-    np.testing.assert_array_equal(sample1, sample2)

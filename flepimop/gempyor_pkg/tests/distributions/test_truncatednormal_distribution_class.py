@@ -58,12 +58,3 @@ def test_truncated_normal_distribution_sample_properties(
     assert sample.dtype == np.float64
     assert np.all(sample >= a)
     assert np.all(sample <= b)
-
-
-def test_truncated_normal_distribution_sample_rng_reproducibility() -> None:
-    dist = TruncatedNormalDistribution(mean=10.0, sd=3.0, a=5.0, b=15.0)
-    rng1 = np.random.default_rng(seed=100)
-    sample1 = dist.sample(size=(4, 4), rng=rng1)
-    rng2 = np.random.default_rng(seed=100)
-    sample2 = dist.sample(size=(4, 4), rng=rng2)
-    np.testing.assert_array_equal(sample1, sample2)

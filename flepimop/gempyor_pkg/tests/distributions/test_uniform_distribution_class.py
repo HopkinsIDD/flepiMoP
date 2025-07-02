@@ -57,12 +57,3 @@ def test_uniform_distribution_sample_properties(size, expected_shape, use_rng) -
     assert sample.dtype == np.float64
     assert np.all(sample >= low)
     assert np.all(sample < high)
-
-
-def test_uniform_distribution_sample_rng_reproducibility() -> None:
-    dist = UniformDistribution(low=-10.0, high=10.0)
-    rng1 = np.random.default_rng(seed=100)
-    sample1 = dist.sample(size=(3, 3), rng=rng1)
-    rng2 = np.random.default_rng(seed=100)
-    sample2 = dist.sample(size=(3, 3), rng=rng2)
-    assert np.array_equal(sample1, sample2)

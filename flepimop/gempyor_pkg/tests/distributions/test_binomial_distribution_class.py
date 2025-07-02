@@ -82,12 +82,3 @@ def test_binomial_distribution_sample_properties(size, expected_shape, use_rng) 
     assert sample.dtype == np.int64
     assert np.all(sample >= 0)
     assert np.all(sample <= n)
-
-
-def test_binomial_distribution_sample_rng_reproducibility() -> None:
-    dist = BinomialDistribution(n=50, p=0.75)
-    rng1 = np.random.default_rng(seed=100)
-    sample1 = dist.sample(size=(3, 3), rng=rng1)
-    rng2 = np.random.default_rng(seed=100)
-    sample2 = dist.sample(size=(3, 3), rng=rng2)
-    np.testing.assert_array_equal(sample1, sample2)

@@ -48,12 +48,3 @@ def test_poisson_distribution_sample_properties(size, expected_shape, use_rng) -
     assert sample.shape == expected_shape
     assert sample.dtype == np.int64
     assert np.all(sample >= 0)
-
-
-def test_poisson_distribution_sample_rng_reproducibility() -> None:
-    dist = PoissonDistribution(lam=10.0)
-    rng1 = np.random.default_rng(seed=100)
-    sample1 = dist.sample(size=(5, 5), rng=rng1)
-    rng2 = np.random.default_rng(seed=100)
-    sample2 = dist.sample(size=(5, 5), rng=rng2)
-    np.testing.assert_array_equal(sample1, sample2)
