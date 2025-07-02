@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gempyor.initial_conditions import read_initial_condition_from_tidydataframe
+from gempyor.initial_conditions._file_or_folder_draw import (
+    _read_initial_condition_from_tidydataframe,
+)
 
 
 def create_mock_model_info(
@@ -72,7 +74,14 @@ def test_setting_allow_missing_subpops_to_true_is_not_supported() -> None:
         RuntimeError,
         match=r"^There is a bug; report this message. Past implementation was buggy.$",
     ):
-        read_initial_condition_from_tidydataframe(ic_df, model_info, True, False)
+        _read_initial_condition_from_tidydataframe(
+            ic_df,
+            model_info.compartments.compartments,
+            model_info.subpop_struct,
+            True,
+            False,
+            False,
+        )
 
 
 @pytest.mark.parametrize(
@@ -142,7 +151,14 @@ def test_missing_subpops_value_error(
             r"You can set `allow_missing_subpops=TRUE` to bypass this error.$"
         ),
     ):
-        read_initial_condition_from_tidydataframe(ic_df, model_info, False, False)
+        _read_initial_condition_from_tidydataframe(
+            ic_df,
+            model_info.compartments.compartments,
+            model_info.subpop_struct,
+            False,
+            False,
+            False,
+        )
 
 
 @pytest.mark.parametrize(
@@ -199,12 +215,13 @@ def test_exact_results_for_select_inputs(
         subpop_names=subpop_names,
         subpop_pop=subpop_pop,
     )
-    y0 = read_initial_condition_from_tidydataframe(
+    y0 = _read_initial_condition_from_tidydataframe(
         ic_df,
-        model_info,
+        model_info.compartments.compartments,
+        model_info.subpop_struct,
         False,
         allow_missing_compartments,
-        proportional_ic=proportional_ic,
+        proportional_ic,
     )
     assert y0.shape == (len(compartments), len(subpop_names))
     assert np.allclose(y0.sum(axis=0), subpop_pop)
