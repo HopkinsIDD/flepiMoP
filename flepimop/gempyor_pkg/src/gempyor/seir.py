@@ -332,19 +332,6 @@ def onerun_SEIR(
             proportion_info,
         ) = modinf.compartments.get_transition_array()
 
-    with Timer("onerun_SEIR.seeding"):
-        if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(
-                sim_id2load, modinf=modinf
-            )
-        else:
-            initial_conditions = modinf.initial_conditions.get_from_config(
-                sim_id2write, modinf=modinf
-            )
-        seeding_data, seeding_amounts = modinf.get_seeding_data(
-            sim_id=sim_id2load if load_ID else sim_id2write
-        )
-
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
         if load_ID:
@@ -367,6 +354,11 @@ def onerun_SEIR(
             parameters, modinf.parameters.pnames, unique_strings
         )
         log_debug_parameters(parsed_parameters, "Unique Parameters used by transitions")
+
+    with Timer("onerun_SEIR.seeding"):
+        sim_id = sim_id2load if load_ID else sim_id2write
+        initial_conditions = modinf.get_initial_conditions_data(sim_id)
+        seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id)
 
     with Timer("onerun_SEIR.compute"):
         states = steps_SEIR(
