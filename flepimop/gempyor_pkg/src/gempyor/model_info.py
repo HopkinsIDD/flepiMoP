@@ -251,7 +251,6 @@ class ModelInfo:
             )
             self.initial_conditions = initial_conditions_from_plugin(
                 config["initial_conditions"],
-                path_prefix=self.path_prefix,
                 meta=self.meta,
                 time_setup=self.time_setup,
             )
