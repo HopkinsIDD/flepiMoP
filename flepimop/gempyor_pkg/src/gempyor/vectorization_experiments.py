@@ -160,6 +160,29 @@ from tqdm import tqdm
 
 # === Solver Interface ===
 
+import numpy as np
+from scipy.interpolate import interp1d
+
+# === Update helpers ===
+
+def update(y, delta_t, dy):
+    return y + delta_t * dy
+
+
+def rk4_step(rhs_fn, y, t, dt):
+    k1 = rhs_fn(t, y)
+    k2 = rhs_fn(t + dt / 2, update(y, dt / 2, k1))
+    k3 = rhs_fn(t + dt / 2, update(y, dt / 2, k2))
+    k4 = rhs_fn(t + dt, update(y, dt, k3))
+    return update(y, dt / 6, k1 + 2 * k2 + 2 * k3 + k4)
+
+
+def euler_or_stochastic_step(rhs_fn, y, t, dt):
+    return update(y, dt, rhs_fn(t, y))
+
+
+# === Main interface ===
+
 def run_solver(
     rhs_fn,
     y0,
@@ -169,49 +192,32 @@ def run_solver(
     ncompartments=None,
     nspatial_nodes=None
 ):
-    n_steps = len(t_grid)
-    y = y0.copy().flatten()
     state_shape = y0.shape
-    state_size = y.size
+    y = y0.copy().flatten()
 
-    # Output containers
+    n_steps = len(t_grid)
     states = np.zeros((n_steps, *state_shape))
     incid = np.zeros((n_steps, *state_shape)) if record_daily else None
 
-    def update(y, delta_t, dy):
-        return y + delta_t * dy
-
-    def rk4_step(t, y, dt):
-        k1 = rhs_fn(t, y)
-        k2 = rhs_fn(t + dt / 2, update(y, dt / 2, k1))
-        k3 = rhs_fn(t + dt / 2, update(y, dt / 2, k2))
-        k4 = rhs_fn(t + dt, update(y, dt, k3))
-        return update(y, dt / 6, k1 + 2 * k2 + 2 * k3 + k4)
-
-    # Time loop
     for i, t in enumerate(t_grid):
         today = int(np.floor(t))
-
-        # Save prevalence (and incidence if needed)
         y_matrix = y.reshape(state_shape)
         states[i] = y_matrix
 
         if record_daily and method != "rk4":
             dy = rhs_fn(t, y).reshape(state_shape)
-            incid[i] = np.maximum(dy, 0.0)  # simple proxy for incidence
+            incid[i] = np.maximum(dy, 0.0)
 
-        # Step forward
         if i < n_steps - 1:
             dt = t_grid[i + 1] - t
             if method == "rk4":
-                y = rk4_step(t, y, dt)
+                y = rk4_step(rhs_fn, y, t, dt)
             elif method in {"euler", "stochastic"}:
-                dy = rhs_fn(t, y)
-                y = update(y, dt, dy)
+                y = euler_or_stochastic_step(rhs_fn, y, t, dt)
             else:
                 raise ValueError(f"Unknown method: {method}")
 
-    # Optional smoothing for dt == 2.0
+    # Optional smoothing for dt = 2.0
     if t_grid[1] - t_grid[0] == 2.0:
         t_half = np.arange(states.shape[0])
         interp = interp1d(t_half[::2], states[::2], axis=0, kind="linear", fill_value="extrapolate")
@@ -221,4 +227,5 @@ def run_solver(
             incid[1::2] = incid[:-1:2]
 
     return states, incid
+
 
