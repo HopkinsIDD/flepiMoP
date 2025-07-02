@@ -3,13 +3,12 @@
 __all__: tuple[str, ...] = ()
 
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, overload
+from typing import Any
 
 import confuse
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 from ..compartments import Compartments
 from ..model_meta import ModelMeta
@@ -29,45 +28,20 @@ class InitialConditionsABC(ABC, BaseModel):
     Attributes:
         method: The method name used for generating initial conditions, used as a type
             discriminator when instantiating initial conditions from a configuration.
-        path_prefix: The path prefix for the geodata and mobility files, defaults to
-            the current working directory.
+        meta: Either an instance of `gempyor.model_meta.ModelMeta` or `None` for
+            interacting with the filesystem.
+        time_setup: Meta information about the time range of the simulation as
+            represented by `gempyor.time_setup.TimeSetup` or `None` if not available.
+
     """
 
     method: str
-    path_prefix: Path
     meta: ModelMeta | None = None
     time_setup: TimeSetup | None = None
 
-    @overload
-    @classmethod
-    def _validate_path_prefix(cls, value: Path | str | None) -> Path: ...
-
-    @overload
-    @classmethod
-    def _validate_path_prefix(cls, value: Any) -> Any: ...
-
-    @field_validator("path_prefix", mode="before")
-    @classmethod
-    def _validate_path_prefix(cls, value: Path | str | None | Any) -> Path | Any:
-        """
-        Validate and convert the path prefix to a Path object.
-
-        Args:
-            value: The path prefix to validate.
-
-        Returns:
-            A Path object representing the path prefix if `value` is `None`, a string,
-            or a Path otherwise returns the value unchanged.
-        """
-        if value is None:
-            return Path.cwd()
-        if isinstance(value, str | Path):
-            return Path(value).resolve()
-        return value
-
     @classmethod
     def from_confuse_config(
-        cls, config: confuse.Subview, path_prefix: Path | str | None = None, **kwargs: Any
+        cls, config: confuse.Subview, **kwargs: Any
     ) -> "InitialConditionsABC":
         """
         Create a `SubpopulationStructure` instance from a confuse configuration view.
@@ -75,8 +49,6 @@ class InitialConditionsABC(ABC, BaseModel):
         Args:
             config: A configuration view containing the subpopulation
                 configuration.
-            path_prefix: The path prefix for the geodata and mobility files or `None`
-                to use the current working directory.
             **kwargs: Additional keyword arguments to pass to the model validation.
 
         Returns:
@@ -87,7 +59,7 @@ class InitialConditionsABC(ABC, BaseModel):
             conf = dict(config.get())
         except confuse.NotFoundError:
             conf = {"method": "Default"}
-        return cls.model_validate(conf | {"path_prefix": path_prefix} | kwargs)
+        return cls.model_validate(conf | kwargs)
 
     @abstractmethod
     def create_initial_conditions(

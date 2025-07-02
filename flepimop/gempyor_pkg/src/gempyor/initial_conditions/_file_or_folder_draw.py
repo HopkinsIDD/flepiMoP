@@ -260,8 +260,7 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
         Validate that the attributes required by the `method` are set.
 
         Raises:
-            ValueError: When `method` is 'SetInitialConditionsFolderDraw' or
-                'InitialConditionsFolderDraw' and `meta` is not set.
+            ValueError: If `meta` is not set.
             ValueError: When `method` is 'SetInitialConditionsFolderDraw' or
                 'InitialConditionsFolderDraw' and `initial_file_type` is not set.
             ValueError: When `method` is 'SetInitialConditions' or 'FromFile' and
@@ -269,18 +268,24 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
             ValueError: When `method` is 'FromFile' or 'InitialConditionsFolderDraw'
                 and `time_setup` is not set.
         """
-        if self.method in {"SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"}:
-            if self.meta is None:
-                raise ValueError(
-                    "The `meta` attribute must be set when using "
-                    "'SetInitialConditionsFolderDraw' or 'InitialConditionsFolderDraw'."
-                )
-            if self.initial_file_type is None:
-                raise ValueError(
-                    "The `initial_file_type` attribute must be set when using "
-                    "'SetInitialConditionsFolderDraw' or 'InitialConditionsFolderDraw'."
-                )
-        elif self.initial_conditions_file is None:
+        if self.meta is None:
+            raise ValueError(
+                "The `meta` attribute must be set when using one of the following "
+                "methods: 'SetInitialConditions', 'SetInitialConditionsFolderDraw', "
+                "'FromFile', 'InitialConditionsFolderDraw'."
+            )
+        if (
+            self.method in {"SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"}
+            and self.initial_file_type is None
+        ):
+            raise ValueError(
+                "The `initial_file_type` attribute must be set when using "
+                "'SetInitialConditionsFolderDraw' or 'InitialConditionsFolderDraw'."
+            )
+        if (
+            self.method in {"SetInitialConditions", "FromFile"}
+            and self.initial_conditions_file is None
+        ):
             raise ValueError(
                 "The `initial_conditions_file` attribute must be set when using "
                 "'SetInitialConditions' or 'FromFile'."
@@ -320,7 +325,9 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
         if self.method in {"SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"}:
             initial_conditions = self.meta.read_sim_id(self.initial_file_type, sim_id)
         else:
-            initial_conditions = read_df(self.path_prefix / self.initial_conditions_file)
+            initial_conditions = read_df(
+                self.meta.path_prefix / self.initial_conditions_file
+            )
         if self.method in {"SetInitialConditions", "SetInitialConditionsFolderDraw"}:
             return _read_initial_condition_from_tidydataframe(
                 initial_conditions,
