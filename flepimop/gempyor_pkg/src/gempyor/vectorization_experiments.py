@@ -1,10 +1,14 @@
 import numpy as np
+from numba import njit, prange
+from scipy.interpolate import interp1d
 
 # === Constants ===
 FLOAT_TOLERANCE = 1e-9
+_PARALLEL_THRESHOLD = 1e7  # configurable workload cutoff
 
-# === Core helpers ===
+# === 1. Core Proportion Logic ===
 
+@njit(fastmath=True)
 def compute_proportion_sums_exponents(
     states_current, transitions, proportion_info,
     transition_sum_compartments, parameters, today
@@ -15,22 +19,19 @@ def compute_proportion_sums_exponents(
 
     total_rates = np.ones((n_transitions, n_nodes))
     source_numbers = np.zeros((n_transitions, n_nodes))
-
-    proportion_contribs = np.zeros((n_props, n_nodes))  # upper bound
+    proportion_contribs = np.zeros((n_props, n_nodes))
 
     for t_idx in range(n_transitions):
         p_start = transitions[3, t_idx]
         p_stop = transitions[4, t_idx]
         n_p = p_stop - p_start
-
         first = True
+
         for i, p_idx in enumerate(range(p_start, p_stop)):
             sum_start = proportion_info[0, p_idx]
             sum_stop = proportion_info[1, p_idx]
             expnt = parameters[proportion_info[2, p_idx], today]
-
-            comps = transition_sum_compartments[sum_start:sum_stop]
-            summed = states_current[comps, :].sum(axis=0)
+            summed = states_current[transition_sum_compartments[sum_start:sum_stop], :].sum(axis=0)
             summed_exp = summed ** expnt
 
             if first:
@@ -46,11 +47,14 @@ def compute_proportion_sums_exponents(
 
     return total_rates, source_numbers
 
+# === 2. Transition Rate Computation ===
 
+@njit(fastmath=True)
 def compute_transition_rates(
     total_rates_base, source_numbers, transitions, parameters, today,
-    percent_day_away, proportion_who_move, mobility_data,
-    mobility_data_indices, mobility_row_indices, population
+    percent_day_away, proportion_who_move,
+    mobility_data, mobility_data_indices,
+    mobility_row_indices, population
 ):
     n_transitions, n_nodes = total_rates_base.shape
     total_rates = total_rates_base.copy()
@@ -63,64 +67,84 @@ def compute_transition_rates(
             total_rates[t_idx] *= parameters[transitions[2, t_idx], today]
         else:
             for node in range(n_nodes):
-                prop_keep = 1 - percent_day_away * proportion_who_move[node]
-                visitors_idx = slice(
-                    mobility_data_indices[node],
-                    mobility_data_indices[node + 1]
-                )
+                prop_keep = 1.0 - percent_day_away * proportion_who_move[node]
+                visitors_idx = slice(mobility_data_indices[node], mobility_data_indices[node + 1])
                 visitors = mobility_row_indices[visitors_idx]
-                prop_change = (percent_day_away *
-                               mobility_data[visitors_idx] / population[node])
+                prop_change = percent_day_away * mobility_data[visitors_idx] / population[node]
 
-                rate_keep = (prop_keep *
-                             source_numbers[t_idx, node] *
-                             parameters[transitions[2, t_idx], today][node] /
-                             population[node])
+                rate_keep = (
+                    prop_keep * source_numbers[t_idx, node] *
+                    parameters[transitions[2, t_idx], today][node] / population[node]
+                )
 
-                rate_change = (prop_change *
-                               source_numbers[t_idx, visitors] /
-                               population[visitors] *
-                               parameters[transitions[2, t_idx], today][visitors])
+                rate_change = 0.0
+                for i in range(visitors.size):
+                    v = visitors[i]
+                    rate_change += (
+                        prop_change[i] * source_numbers[t_idx, v] *
+                        parameters[transitions[2, t_idx], today][v] / population[v]
+                    )
 
-                total_rates[t_idx, node] *= rate_keep + rate_change.sum()
+                total_rates[t_idx, node] *= rate_keep + rate_change
 
     return total_rates
 
+# === 3. Transition Amount Dispatch ===
 
-def compute_transition_amounts(source_numbers, total_rates, method, dt):
+def compute_transition_amounts_meta(source_numbers, total_rates, method, dt):
+    workload = np.prod(source_numbers.shape)
+    if method == "stochastic" and workload >= _PARALLEL_THRESHOLD:
+        return compute_transition_amounts_parallel(source_numbers, total_rates, dt)
+    else:
+        return compute_transition_amounts_serial(source_numbers, total_rates, method, dt)
+
+@njit(fastmath=True)
+def compute_transition_amounts_serial(source_numbers, total_rates, method, dt):
     n_transitions, n_nodes = total_rates.shape
     amounts = np.zeros((n_transitions, n_nodes))
 
     for t_idx in range(n_transitions):
-        if method == "rk4":
-            amounts[t_idx] = source_numbers[t_idx] * total_rates[t_idx]
-        elif method == "euler":
-            rate = 1 - np.exp(-dt * total_rates[t_idx])
-            amounts[t_idx] = source_numbers[t_idx] * rate
-        elif method == "stochastic":
-            rate = 1 - np.exp(-dt * total_rates[t_idx])
-            amounts[t_idx] = np.array([
-                np.random.binomial(int(source_numbers[t_idx, node]), rate[node])
-                for node in range(n_nodes)
-            ])
-        else:
-            raise ValueError(f"Unknown method: {method}")
+        for node in range(n_nodes):
+            if method == "rk4":
+                amounts[t_idx, node] = source_numbers[t_idx, node] * total_rates[t_idx, node]
+            elif method == "euler":
+                rate = 1 - np.exp(-dt * total_rates[t_idx, node])
+                amounts[t_idx, node] = source_numbers[t_idx, node] * rate
+            elif method == "stochastic":
+                rate = 1 - np.exp(-dt * total_rates[t_idx, node])
+                src = int(source_numbers[t_idx, node])
+                if src > 0 and rate > 0:
+                    amounts[t_idx, node] = np.random.binomial(src, rate)
+    return amounts
+
+@njit(parallel=True, fastmath=True)
+def compute_transition_amounts_parallel(source_numbers, total_rates, dt):
+    n_transitions, n_nodes = total_rates.shape
+    amounts = np.zeros((n_transitions, n_nodes))
+
+    for t_idx in prange(n_transitions):
+        for node in range(n_nodes):
+            rate = 1 - np.exp(-dt * total_rates[t_idx, node])
+            src = int(source_numbers[t_idx, node])
+            if src > 0 and rate > 0:
+                amounts[t_idx, node] = np.random.binomial(src, rate)
 
     return amounts
 
+# === 4. Assemble Flux Vector ===
 
+@njit(fastmath=True)
 def assemble_flux(amounts, transitions, ncompartments, nspatial_nodes):
     dy_dt = np.zeros((ncompartments, nspatial_nodes))
-
     for t_idx in range(amounts.shape[0]):
         src = transitions[0, t_idx]
         dst = transitions[1, t_idx]
-        dy_dt[src] -= amounts[t_idx]
-        dy_dt[dst] += amounts[t_idx]
+        for node in range(nspatial_nodes):
+            dy_dt[src, node] -= amounts[t_idx, node]
+            dy_dt[dst, node] += amounts[t_idx, node]
+    return dy_dt.ravel()
 
-    return dy_dt.flatten()
-
-# === RHS builder ===
+# === 5. RHS Builder ===
 
 def build_rhs(
     ncompartments, nspatial_nodes, transitions, proportion_info,
@@ -129,8 +153,9 @@ def build_rhs(
     mobility_data, mobility_data_indices,
     mobility_row_indices, population
 ):
+    @njit(fastmath=True)
     def rhs(t, y):
-        today = int(np.floor(t))
+        today = int(t)
         states_current = y.reshape((ncompartments, nspatial_nodes))
 
         total_base, source_numbers = compute_proportion_sums_exponents(
@@ -145,30 +170,21 @@ def build_rhs(
             mobility_row_indices, population
         )
 
-        amounts = compute_transition_amounts(
+        amounts = compute_transition_amounts_meta(
             source_numbers, total_rates, method, dt
         )
 
-        dy_dt = assemble_flux(amounts, transitions, ncompartments, nspatial_nodes)
-        return dy_dt
+        return assemble_flux(amounts, transitions, ncompartments, nspatial_nodes)
 
     return rhs
 
-import numpy as np
-from scipy.interpolate import interp1d
-from tqdm import tqdm
+# === 6. Solver Step Functions ===
 
-# === Solver Interface ===
-
-import numpy as np
-from scipy.interpolate import interp1d
-
-# === Update helpers ===
-
+@njit(inline='always')
 def update(y, delta_t, dy):
     return y + delta_t * dy
 
-
+@njit(fastmath=True)
 def rk4_step(rhs_fn, y, t, dt):
     k1 = rhs_fn(t, y)
     k2 = rhs_fn(t + dt / 2, update(y, dt / 2, k1))
@@ -176,12 +192,11 @@ def rk4_step(rhs_fn, y, t, dt):
     k4 = rhs_fn(t + dt, update(y, dt, k3))
     return update(y, dt / 6, k1 + 2 * k2 + 2 * k3 + k4)
 
-
+@njit(fastmath=True)
 def euler_or_stochastic_step(rhs_fn, y, t, dt):
     return update(y, dt, rhs_fn(t, y))
 
-
-# === Main interface ===
+# === 7. Solver Interface ===
 
 def run_solver(
     rhs_fn,
@@ -193,7 +208,7 @@ def run_solver(
     nspatial_nodes=None
 ):
     state_shape = y0.shape
-    y = y0.copy().flatten()
+    y = y0.copy().ravel()
 
     n_steps = len(t_grid)
     states = np.zeros((n_steps, *state_shape))
@@ -201,8 +216,7 @@ def run_solver(
 
     for i, t in enumerate(t_grid):
         today = int(np.floor(t))
-        y_matrix = y.reshape(state_shape)
-        states[i] = y_matrix
+        states[i] = y.reshape(state_shape)
 
         if record_daily and method != "rk4":
             dy = rhs_fn(t, y).reshape(state_shape)
@@ -217,15 +231,12 @@ def run_solver(
             else:
                 raise ValueError(f"Unknown method: {method}")
 
-    # Optional smoothing for dt = 2.0
     if t_grid[1] - t_grid[0] == 2.0:
-        t_half = np.arange(states.shape[0])
-        interp = interp1d(t_half[::2], states[::2], axis=0, kind="linear", fill_value="extrapolate")
-        states = interp(t_half)
+        interp = interp1d(t_grid[::2], states[::2], axis=0, kind="linear", fill_value="extrapolate")
+        states = interp(t_grid)
         if record_daily:
             incid /= 2
             incid[1::2] = incid[:-1:2]
 
     return states, incid
-
 
