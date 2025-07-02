@@ -274,22 +274,32 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
                 "methods: 'SetInitialConditions', 'SetInitialConditionsFolderDraw', "
                 "'FromFile', 'InitialConditionsFolderDraw'."
             )
-        if (
-            self.method in {"SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"}
-            and self.initial_file_type is None
-        ):
-            raise ValueError(
-                "The `initial_file_type` attribute must be set when using "
-                "'SetInitialConditionsFolderDraw' or 'InitialConditionsFolderDraw'."
-            )
-        if (
-            self.method in {"SetInitialConditions", "FromFile"}
-            and self.initial_conditions_file is None
-        ):
-            raise ValueError(
-                "The `initial_conditions_file` attribute must be set when using "
-                "'SetInitialConditions' or 'FromFile'."
-            )
+        if self.method in {"SetInitialConditionsFolderDraw", "InitialConditionsFolderDraw"}:
+            if self.initial_file_type is None:
+                raise ValueError(
+                    "The `initial_file_type` attribute must be set when using "
+                    "'SetInitialConditionsFolderDraw' or 'InitialConditionsFolderDraw'."
+                )
+            if self.initial_conditions_file is not None:
+                warnings.warn(
+                    "The `initial_conditions_file` attribute as been intentionally set "
+                    "to a non-default value but is not used when initial conditions "
+                    f"method is {self.method}.",
+                    ConfigurationWarning,
+                )
+        if self.method in {"SetInitialConditions", "FromFile"}:
+            if self.initial_conditions_file is None:
+                raise ValueError(
+                    "The `initial_conditions_file` attribute must be set when using "
+                    "'SetInitialConditions' or 'FromFile'."
+                )
+            if self.initial_file_type is not None:
+                warnings.warn(
+                    "The `initial_file_type` attribute as been intentionally set "
+                    "to a non-default value but is not used when initial conditions "
+                    f"method is {self.method}.",
+                    ConfigurationWarning,
+                )
         if self.method in {"FromFile", "InitialConditionsFolderDraw"}:
             if self.time_setup is None:
                 raise ValueError(
