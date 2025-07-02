@@ -26,7 +26,7 @@ _SEIR_OUTPUT_REQUIRED_COLUMNS: Final[set[str]] = {"date", "mc_value_type"}
 
 def _read_initial_condition_from_tidydataframe(
     ic_df: pd.DataFrame,
-    compartments: Compartments,
+    compartments: pd.DataFrame,
     subpopulation_structure: SubpopulationStructure,
     allow_missing_subpops: bool,
     allow_missing_compartments: bool,
@@ -37,7 +37,8 @@ def _read_initial_condition_from_tidydataframe(
 
     Args:
         ic_df: The DataFrame containing the initial conditions.
-        compartments: The compartments object.
+        compartments: The compartments DataFrame, which is the `compartments` attribute
+            of the `gempyor.compartments.Compartments` class.
         subpopulation_structure: The subpopulation structure object.
         allow_missing_subpops: Flag indicating whether missing subpopulations are
             allowed.
@@ -59,17 +60,17 @@ def _read_initial_condition_from_tidydataframe(
             DataFrame and `allow_missing_subpops` is `False`.
     """
     rests = []  # Places to allocate the rest of the population
-    y0 = np.zeros((compartments.compartments.shape[0], subpopulation_structure.nsubpops))
+    y0 = np.zeros((len(compartments), subpopulation_structure.nsubpops))
     for pl_idx, pl in enumerate(subpopulation_structure.subpop_names):  #
         if pl in list(ic_df["subpop"]):
             states_pl = ic_df[ic_df["subpop"] == pl]
-            for comp_idx, comp_name in compartments.compartments["name"].items():
+            for comp_idx, comp_name in compartments["name"].items():
                 if "mc_name" in states_pl.columns:
                     ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name][
                         "amount"
                     ]
                 else:
-                    filters = compartments.compartments.iloc[comp_idx].drop("name")
+                    filters = compartments.iloc[comp_idx].drop("name")
                     ic_df_compartment_val = states_pl.copy()
                     for mc_name, mc_value in filters.items():
                         ic_df_compartment_val = ic_df_compartment_val[
@@ -323,7 +324,7 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
         if self.method in {"SetInitialConditions", "SetInitialConditionsFolderDraw"}:
             return _read_initial_condition_from_tidydataframe(
                 initial_conditions,
-                compartments,
+                compartments.compartments,
                 subpopulation_structure,
                 self.allow_missing_subpops,
                 self.allow_missing_compartments,
