@@ -3,13 +3,12 @@
 __all__: tuple[str, ...] = ()
 
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, overload
+from typing import Any
 
 import confuse
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 from ..compartments import Compartments
 from ..model_meta import ModelMeta
