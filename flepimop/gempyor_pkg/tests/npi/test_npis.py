@@ -121,6 +121,7 @@ def test_full_npis_read_write():
     assert (hnpi_read == hnpi_wrote).all().all()
 
 
+@pytest.mark.slow
 def test_spatial_groups():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
