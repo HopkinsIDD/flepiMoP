@@ -357,7 +357,7 @@ def onerun_SEIR(
 
     with Timer("onerun_SEIR.seeding"):
         sim_id = sim_id2load if load_ID else sim_id2write
-        initial_conditions = modinf.get_initial_conditions_data(sim_id)
+        initial_conditions = modinf.get_initial_conditions_data(sim_id, p_draw)
         seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id)
 
     with Timer("onerun_SEIR.compute"):

@@ -438,12 +438,16 @@ class ModelInfo:
     def get_engine(self) -> Literal["rk4", "euler", "stochastic"]:
         return self.seir_config["integration"]["method"].as_str()
 
-    def get_initial_conditions_data(self, sim_id: int) -> npt.NDArray[np.int64]:
+    def get_initial_conditions_data(
+        self, sim_id: int, p_draw: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.int64]:
         """
         Pull the initial conditions data fro the info represented by this instance.
 
         Args:
             sim_id: The simulation ID to pull initial conditions data for.
+            p_draw: A numpy array of floats representing the parameter draws for the
+                simulation.
 
         Returns:
             A two dimensional numpy array of integers with shape of
@@ -451,5 +455,5 @@ class ModelInfo:
 
         """
         return self.initial_conditions.get_initial_conditions(
-            sim_id, self.compartments, self.subpop_struct
+            sim_id, self.compartments, self.subpop_struct, self.parameters, p_draw
         )

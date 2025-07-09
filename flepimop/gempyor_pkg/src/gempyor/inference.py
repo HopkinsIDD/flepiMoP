@@ -753,7 +753,7 @@ class GempyorInference:
             with Timer("onerun_SEIR.seeding"):
                 sim_id = sim_id2load if load_ID else sim_id2write
                 seeding_data, seeding_amounts = self.modinf.get_seeding_data(sim_id)
-                initial_conditions = self.modinf.get_initial_conditions_data(sim_id)
+                initial_conditions = self.modinf.get_initial_conditions_data(sim_id, p_draw)
 
                 self.lastsim_seeding_data = seeding_data
                 self.lastsim_seeding_amounts = seeding_amounts
