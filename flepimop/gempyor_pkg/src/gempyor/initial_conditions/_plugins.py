@@ -119,7 +119,7 @@ def _reset_initial_conditions_plugins() -> None:
     Reset the registered initial conditions plugins.
 
     This is useful for testing purposes to ensure a clean state.
-    
+
     Examples:
         >>> from pprint import pprint
         >>> from typing import Literal
