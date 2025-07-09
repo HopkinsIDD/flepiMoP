@@ -1,5 +1,7 @@
 """Unit tests for the `gempyor.initial_conditions.DefaultInitialConditions` class."""
 
+from datetime import date
+from string import ascii_lowercase
 from unittest.mock import Mock
 
 import numpy as np
@@ -7,6 +9,8 @@ import pandas as pd
 import pytest
 
 from gempyor.initial_conditions import DefaultInitialConditions
+from gempyor.parameters import Parameters
+from gempyor.testing import create_confuse_config_from_dict
 
 
 @pytest.mark.parametrize("sim_id", [i for i in range(1, 102, 20)])
@@ -69,7 +73,16 @@ def test_default_create_initial_conditions(
     # Do the test
     initial_conditions = DefaultInitialConditions(path_prefix=None)
     y0 = initial_conditions.create_initial_conditions(
-        sim_id, compartments, subpopulation_structure
+        sim_id,
+        compartments,
+        subpopulation_structure,
+        Parameters(
+            create_confuse_config_from_dict({}),
+            ti=date(2024, 1, 1),
+            tf=date(2024, 1, 31),
+            subpop_names=list(ascii_lowercase[: len(subpop_pop)]),
+        ),
+        np.array([[[]]], dtype=np.float64),
     )
 
     # Assertions

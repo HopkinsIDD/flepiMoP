@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from ..compartments import Compartments
 from ..model_meta import ModelMeta
+from ..parameters import Parameters
 from ..subpopulation_structure import SubpopulationStructure
 from ..time_setup import TimeSetup
 from ._utils import check_population
@@ -28,6 +29,9 @@ class InitialConditionsABC(ABC, BaseModel):
     Attributes:
         method: The method name used for generating initial conditions, used as a type
             discriminator when instantiating initial conditions from a configuration.
+        ignore_population_checks: If `True`, population checks will be ignored when
+            validating initial conditions against the subpopulation structure.
+            Defaults to `False`.
         meta: Either an instance of `gempyor.model_meta.ModelMeta` or `None` for
             interacting with the filesystem.
         time_setup: Meta information about the time range of the simulation as
@@ -36,6 +40,7 @@ class InitialConditionsABC(ABC, BaseModel):
     """
 
     method: str
+    ignore_population_checks: bool = False
     meta: ModelMeta | None = None
     time_setup: TimeSetup | None = None
 
@@ -67,6 +72,8 @@ class InitialConditionsABC(ABC, BaseModel):
         sim_id: int,
         compartments: Compartments,
         subpopulation_structure: SubpopulationStructure,
+        parameters: Parameters,
+        p_draw: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """
         Produce an array of initial conditions from the configuration.
@@ -92,6 +99,8 @@ class InitialConditionsABC(ABC, BaseModel):
         sim_id: int,
         compartments: Compartments,
         subpopulation_structure: SubpopulationStructure,
+        parameters: Parameters,
+        p_draw: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """
         Get initial conditions for the simulation.
@@ -104,15 +113,21 @@ class InitialConditionsABC(ABC, BaseModel):
             sim_id: An integer id for the simulation being ran.
             compartments: The compartments object.
             subpopulation_structure: The subpopulation structure object.
+            parameters: The parameters object containing a representation of simulation
+                parameters.
+            p_draw: A numpy array of floats representing the parameter draws for the
+                simulation.
 
         Returns:
             A numpy array of initial conditions for the simulation.
         """
-        y0 = self.create_initial_conditions(sim_id, compartments, subpopulation_structure)
+        y0 = self.create_initial_conditions(
+            sim_id, compartments, subpopulation_structure, parameters, p_draw
+        )
         check_population(
             y0,
             subpopulation_structure.subpop_names,
             subpopulation_structure.subpop_pop,
-            ignore_population_checks=getattr(self, "ignore_population_checks", False),
+            ignore_population_checks=self.ignore_population_checks,
         )
         return y0
