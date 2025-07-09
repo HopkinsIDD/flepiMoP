@@ -211,6 +211,7 @@ def test_spatial_groups():
     )
 
 
+@pytest.mark.slow
 def test_spatial_groups():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
