@@ -214,7 +214,6 @@ def test_constant_population_rk4jit_integration():
 
 
 @ignore_non_csv_mobility_warning
-@pytest.mark.slow
 def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -324,7 +323,6 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
 
 
 @ignore_non_csv_mobility_warning
-@pytest.mark.slow
 def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -678,7 +676,6 @@ def test_inference_resume():
     ## Clean up after ourselves
 
 
-@pytest.mark.slow
 def test_parallel_compartments_with_vacc():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -773,7 +770,6 @@ def test_parallel_compartments_with_vacc():
         )
 
 
-@pytest.mark.slow
 def test_parallel_compartments_no_vacc():
     config.clear()
     config.read(user=False)

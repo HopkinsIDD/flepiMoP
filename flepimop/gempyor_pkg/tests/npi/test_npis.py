@@ -23,7 +23,6 @@ config_filepath_prefix = ""
 os.chdir(os.path.dirname(__file__))
 
 
-@pytest.mark.slow
 def test_full_npis_read_write():
     os.chdir(os.path.dirname(__file__))
 
@@ -121,7 +120,6 @@ def test_full_npis_read_write():
     assert (hnpi_read == hnpi_wrote).all().all()
 
 
-@pytest.mark.slow
 def test_spatial_groups():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",
@@ -211,7 +209,6 @@ def test_spatial_groups():
     )
 
 
-@pytest.mark.slow
 def test_spatial_groups():
     inference_simulator = gempyor.GempyorInference(
         config_filepath=f"{config_filepath_prefix}config_test_spatial_group_npi.yml",

@@ -16,7 +16,6 @@ from gempyor.cli import patch
 tutorialpath = os.path.dirname(__file__) + "/../../../../examples/tutorials"
 
 
-@pytest.mark.slow
 def test_config_sample_2pop():
     os.chdir(tutorialpath)
     runner = CliRunner()
@@ -24,7 +23,6 @@ def test_config_sample_2pop():
     assert result.exit_code == 0
 
 
-@pytest.mark.slow
 def test_config_sample_2pop_deprecated():
     os.chdir(tutorialpath)
     runner = CliRunner()
@@ -78,7 +76,6 @@ def test_sample_2pop_modifiers_combined(tmp_path: Path):
     }
 
 
-@pytest.mark.slow
 def test_simple_usa_statelevel_more_deprecated():
     os.chdir(tutorialpath + "/../simple_usa_statelevel")
     result = subprocess.run(
