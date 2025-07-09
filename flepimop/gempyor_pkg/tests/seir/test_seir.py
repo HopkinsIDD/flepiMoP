@@ -85,9 +85,6 @@ def test_constant_population_legacy_integration():
 
     assert modinf.get_engine() == "euler"
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -100,8 +97,11 @@ def test_constant_population_legacy_integration():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -161,9 +161,6 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -176,8 +173,11 @@ def test_constant_population_rk4jit_integration():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -236,9 +236,6 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -251,8 +248,11 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -345,9 +345,6 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -360,8 +357,11 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -423,9 +423,6 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     modinf.mobility.data = modinf.mobility.data * 0
 
     npi = NPI.NPIBase.execute(
@@ -440,8 +437,11 @@ def test_steps_SEIR_no_spread():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -695,9 +695,6 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -710,8 +707,11 @@ def test_parallel_compartments_with_vacc():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -788,9 +788,6 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.get_initial_conditions_data(100)
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -803,8 +800,11 @@ def test_parallel_compartments_no_vacc():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
