@@ -15,18 +15,19 @@ from pydantic import model_validator
 
 from ..compartments import Compartments
 from ..subpopulation_structure import SubpopulationStructure
-from ..utils import read_df
+from ..utils import _invert_into_dict, read_df
 from ..warnings import ConfigurationWarning
 from ._base import InitialConditionsABC
 from ._plugins import register_initial_conditions_plugin
 
 
+_INITIAL_CONDITIONS_REQUIRED_COLUMNS: Final[set[str]] = {"subpop", "amount"}
 _SEIR_OUTPUT_REQUIRED_COLUMNS: Final[set[str]] = {"date", "mc_value_type"}
 
 
 def _read_initial_condition_from_tidydataframe(
-    ic_df: pd.DataFrame,
-    compartments: pd.DataFrame,
+    set_initial_conditions: pd.DataFrame,
+    compartments: Compartments,
     subpopulation_structure: SubpopulationStructure,
     allow_missing_subpops: bool,
     allow_missing_compartments: bool,
@@ -36,7 +37,7 @@ def _read_initial_condition_from_tidydataframe(
     Read the initial conditions from a tidy formatted DataFrame.
 
     Args:
-        ic_df: The DataFrame containing the initial conditions.
+        set_initial_conditions: The DataFrame containing the initial conditions.
         compartments: The compartments DataFrame, which is the `compartments` attribute
             of the `gempyor.compartments.Compartments` class.
         subpopulation_structure: The subpopulation structure object.
@@ -59,62 +60,81 @@ def _read_initial_condition_from_tidydataframe(
         ValueError: If a subpopulation does not exist in the initial conditions
             DataFrame and `allow_missing_subpops` is `False`.
     """
-    rests = []  # Places to allocate the rest of the population
-    y0 = np.zeros((len(compartments), subpopulation_structure.nsubpops))
-    for pl_idx, pl in enumerate(subpopulation_structure.subpop_names):  #
-        if pl in list(ic_df["subpop"]):
-            states_pl = ic_df[ic_df["subpop"] == pl]
-            for comp_idx, comp_name in compartments["name"].items():
-                if "mc_name" in states_pl.columns:
-                    ic_df_compartment_val = states_pl[states_pl["mc_name"] == comp_name][
-                        "amount"
-                    ]
-                else:
-                    filters = compartments.iloc[comp_idx].drop("name")
-                    ic_df_compartment_val = states_pl.copy()
-                    for mc_name, mc_value in filters.items():
-                        ic_df_compartment_val = ic_df_compartment_val[
-                            ic_df_compartment_val["mc_" + mc_name] == mc_value
-                        ]["amount"]
-                if len(ic_df_compartment_val) > 1:
-                    raise ValueError(
-                        f"Several ('{len(ic_df_compartment_val)}') rows are matches "
-                        f"for compartment '{comp_name}' in init file: filters "
-                        f"returned '{ic_df_compartment_val}'"
-                    )
-                if ic_df_compartment_val.empty:
-                    if allow_missing_compartments:
-                        ic_df_compartment_val = 0.0
-                    else:
-                        raise ValueError(
-                            f"Multiple rows match for compartment '{comp_name}' in the "
-                            "initial conditions file; ensure each compartment has a "
-                            f"unique entry. Filters used: '{filters.to_dict()}'. "
-                            f"Matches: '{ic_df_compartment_val.tolist()}'."
-                        )
-                if "rest" in str(ic_df_compartment_val).strip().lower():
-                    rests.append([comp_idx, pl_idx])
-                else:
-                    if isinstance(
-                        ic_df_compartment_val, pd.Series
-                    ):  # it can also be float if we allow allow_missing_compartments
-                        ic_df_compartment_val = float(ic_df_compartment_val.iloc[0])
-                    y0[comp_idx, pl_idx] = float(ic_df_compartment_val)
-        elif allow_missing_subpops:
-            raise RuntimeError(
-                "There is a bug; report this message. Past implementation was buggy."
+    # Validation
+    if missing_columns := _INITIAL_CONDITIONS_REQUIRED_COLUMNS - (
+        columns := set(set_initial_conditions.columns.tolist())
+    ):
+        raise ValueError(
+            "The initial conditions dataframe is missing required columns "
+            f"{', '.join(sorted(missing_columns))}. Instead its columns "
+            f"are {', '.join(sorted(columns))}"
+        )
+    set_initial_conditions = set_initial_conditions.copy()
+    set_initial_conditions["subpop"] = set_initial_conditions["subpop"].astype("string")
+    set_initial_conditions["amount"] = set_initial_conditions["amount"].astype("string")
+    if (
+        extra_subpopulations := set_initial_conditions[
+            ~set_initial_conditions["subpop"].isin(subpopulation_structure.subpop_names)
+        ]["subpop"]
+        .unique()
+        .tolist()
+    ):
+        raise ValueError(
+            "The initial conditions dataframe contains unexpected subpopulations that "
+            "are not found in the subpopulation structure: "
+            f"{', '.join(sorted(extra_subpopulations))}"
+        )
+    if (not allow_missing_subpops) and (
+        missing_subpopulations := set(subpopulation_structure.subpop_names)
+        - set(set_initial_conditions["subpop"].unique().tolist())
+    ):
+        raise ValueError(
+            "The following subpopulations are missing from the initial conditions "
+            f"dataframe: {', '.join(sorted(missing_subpopulations))}"
+        )
+    # Loop over compartments
+    y0 = np.zeros((len(compartments.compartments), subpopulation_structure.nsubpops))
+    subpopulation_indexes = dict(
+        zip(subpopulation_structure.subpop_names, range(subpopulation_structure.nsubpops))
+    )
+    y0_rest: dict[int, list[int]] = {}
+    for compartment_idx, set_initial_conditions_subset in enumerate(
+        compartments.subset_dataframe(
+            set_initial_conditions, raise_on_empty=not allow_missing_compartments
+        )
+    ):
+        subpopulation_indexes_seen: set[int] = set()
+        rest: set[int] = set()
+        for subpopulation, amount in set_initial_conditions_subset[
+            ["subpop", "amount"]
+        ].itertuples(index=False):
+            subpopulation_idx = subpopulation_indexes[subpopulation]
+            if subpopulation_idx in subpopulation_indexes_seen:
+                y = y0[compartment_idx, subpopulation_idx]
+                raise ValueError(
+                    "More than one match found in the initial conditions dataframe "
+                    f"for compartment index {compartment_idx} and subpopulation "
+                    f"{subpopulation}. The previously set amount was {y} and the "
+                    f"duplicate amount is {amount}."
+                )
+            subpopulation_indexes_seen.add(subpopulation_idx)
+            if amount == "rest":
+                rest.add(subpopulation_idx)
+                continue
+            y0[compartment_idx, subpopulation_idx] = float(amount)
+        # Place into `y0_rest`, but inverted
+        _invert_into_dict(y0_rest, compartment_idx, list(rest))
+    # Place "rest" into the remaining spots
+    for subpopulation_idx, compartment_indexes in y0_rest.items():
+        y0[compartment_indexes, subpopulation_idx] = (
+            (
+                1.0
+                if proportional_ic
+                else subpopulation_structure.subpop_pop[subpopulation_idx]
             )
-        else:
-            raise ValueError(
-                f"Subpop '{pl}' does not exist in `initial_conditions::states_file`. "
-                f"You can set `allow_missing_subpops=TRUE` to bypass this error."
-            )
-    if rests:  # not empty
-        for comp_idx, pl_idx in rests:
-            total = subpopulation_structure.subpop_pop[pl_idx]
-            if proportional_ic:
-                total = 1.0
-            y0[comp_idx, pl_idx] = total - y0[:, pl_idx].sum()
+            - y0[:, subpopulation_idx].sum().item()
+        ) / len(compartment_indexes)
+    # Proportion out the population if `proportional_ic`
     if proportional_ic:
         y0 = y0 * subpopulation_structure.subpop_pop
     return y0
@@ -122,7 +142,7 @@ def _read_initial_condition_from_tidydataframe(
 
 def _read_initial_condition_from_seir_output(
     seir_output: pd.DataFrame,
-    compartments: pd.DataFrame,
+    compartments: Compartments,
     subpopulation_structure: SubpopulationStructure,
     start_date: date,
     allow_missing_subpops: bool,
@@ -149,8 +169,6 @@ def _read_initial_condition_from_seir_output(
 
     Raises:
         ValueError: If there are required columns missing from the SEIR output.
-        ValueError: If there are no entries in the SEIR output with the date
-            `start_date` and 'mc_value_type' of 'prevalence'.
         ValueError: If there are more than one match for the compartments found
             in the SEIR output.
         ValueError: If there are not matches found for a given set of compartment
@@ -183,27 +201,19 @@ def _read_initial_condition_from_seir_output(
             f"a date '{start_date}' and an MC value type of 'prevalence'."
         )
     # Loop over compartments & subpopulations
-    y0 = np.zeros((len(compartments), subpopulation_structure.nsubpops))
-    for row in compartments.itertuples():
-        # Extract out a subset for this compartment & validate
-        query = " & ".join(
-            f"mc_{k}=='{v}'"
-            for k, v in zip(["Index"] + compartments.columns.tolist(), row)
-            if k not in {"Index", "name"}
-        )
-        initial_conditions_subset = seir_output.query(query)
+    y0 = np.zeros((len(compartments.compartments), subpopulation_structure.nsubpops))
+    for row, initial_conditions_subset in compartments.subset_dataframe(
+        seir_output,
+        skip_name=True,
+        raise_on_empty=not allow_missing_compartments,
+        yield_compartment=True,
+    ):
         if (len_initial_conditions_subset := len(initial_conditions_subset)) > 1:
             raise ValueError(
                 f"There were {len_initial_conditions_subset} matches found in "
                 f"the SEIR output initial conditions for the filters {row}."
             )
         if initial_conditions_subset.empty:
-            if not allow_missing_compartments:
-                raise ValueError(
-                    "There were no matches found in the SEIR output initial "
-                    f"conditions for the filters {row}. Please specify or set "
-                    "`allow_missing_compartments=True` in the configuration."
-                )
             initial_conditions_subset = pd.DataFrame(
                 data=0, columns=initial_conditions_subset.columns, index=[0]
             )
@@ -341,7 +351,7 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
         if self.method in {"SetInitialConditions", "SetInitialConditionsFolderDraw"}:
             return _read_initial_condition_from_tidydataframe(
                 initial_conditions,
-                compartments.compartments,
+                compartments,
                 subpopulation_structure,
                 self.allow_missing_subpops,
                 self.allow_missing_compartments,
@@ -349,7 +359,7 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
             )
         return _read_initial_condition_from_seir_output(
             initial_conditions,
-            compartments.compartments,
+            compartments,
             subpopulation_structure,
             self.time_setup.start_date,
             self.allow_missing_subpops,
