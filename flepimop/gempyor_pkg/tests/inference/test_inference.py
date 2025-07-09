@@ -20,6 +20,7 @@ tmp_path = "/tmp"
 
 
 class TestGempyorInference:
+    @pytest.mark.slow
     def test_GempyorInference_success(self):
         os.chdir(os.path.dirname(__file__))
 

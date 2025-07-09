@@ -23,6 +23,7 @@ config_filepath_prefix = ""
 os.chdir(os.path.dirname(__file__))
 
 
+@pytest.mark.slow
 def test_full_npis_read_write():
     os.chdir(os.path.dirname(__file__))
 
