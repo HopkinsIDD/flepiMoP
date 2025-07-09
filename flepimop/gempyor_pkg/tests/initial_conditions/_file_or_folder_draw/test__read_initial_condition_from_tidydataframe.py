@@ -2,15 +2,46 @@
 Unit tests for `gempyor.initial_conditions.read_initial_condition_from_tidydataframe`.
 """
 
+from typing import Generator, NamedTuple
 from unittest.mock import Mock
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import pytest
 
 from gempyor.initial_conditions._file_or_folder_draw import (
     _read_initial_condition_from_tidydataframe,
 )
+
+
+class CompartmentsMock(Mock):
+    def subset_dataframe(
+        self,
+        dataframe: pd.DataFrame,
+        skip_name: bool = False,
+        raise_on_empty: bool = True,
+        yield_compartment: bool = False,
+    ) -> Generator[pd.DataFrame | tuple[NamedTuple, pd.DataFrame], None, None]:
+        mc_name = (not skip_name) and ("mc_name" in dataframe.columns)
+        row_names = ["Index"] + self.compartments.columns.tolist()
+        for row in self.compartments.itertuples():
+            query = (
+                f"mc_name=='{row.name}'"
+                if mc_name
+                else " & ".join(
+                    f"mc_{k}=='{v}'"
+                    for k, v in zip(row_names, row)
+                    if k not in {"Index", "name"}
+                )
+            )
+            dataframe_subset = dataframe.query(query)
+            if raise_on_empty and dataframe_subset.empty:
+                raise ValueError(
+                    "There were no matches found in `dataframe` for "
+                    f"compartment filters matching the query: {query}"
+                )
+            yield (row, dataframe_subset) if yield_compartment else dataframe_subset
 
 
 def create_mock_model_info(
@@ -32,7 +63,7 @@ def create_mock_model_info(
     """
     model_info = Mock()
     if compartments is not None:
-        model_info.compartments = Mock()
+        model_info.compartments = CompartmentsMock()
         model_info.compartments.compartments = compartments.copy()
         model_info.compartments.compartments["name"] = (
             model_info.compartments.compartments.astype(str).apply(
@@ -53,39 +84,8 @@ def create_mock_model_info(
     return model_info
 
 
-def test_setting_allow_missing_subpops_to_true_is_not_supported() -> None:
-    """The function raises an error if `allow_missing_subpops` is set to True."""
-    ic_df = pd.DataFrame(
-        data={
-            "mc_name": ["S", "E", "I", "R"],
-            "subpop": ["A", "A", "A", "A"],
-            "amount": [90, 10, 0, 0],
-        }
-    )
-    compartments = pd.DataFrame(data={"infection_stage": ["S", "E", "I", "R"]})
-    subpop_names = ["A", "B"]
-    subpop_pop = [100, 200]
-    model_info = create_mock_model_info(
-        compartments=compartments,
-        subpop_names=subpop_names,
-        subpop_pop=subpop_pop,
-    )
-    with pytest.raises(
-        RuntimeError,
-        match=r"^There is a bug; report this message. Past implementation was buggy.$",
-    ):
-        _read_initial_condition_from_tidydataframe(
-            ic_df,
-            model_info.compartments.compartments,
-            model_info.subpop_struct,
-            True,
-            False,
-            False,
-        )
-
-
 @pytest.mark.parametrize(
-    ("ic_df", "compartments", "subpop_names", "subpop_pop"),
+    ("set_initial_conditions", "compartments", "subpop_names", "subpop_pop"),
     [
         (
             pd.DataFrame(
@@ -126,13 +126,13 @@ def test_setting_allow_missing_subpops_to_true_is_not_supported() -> None:
     ],
 )
 def test_missing_subpops_value_error(
-    ic_df: pd.DataFrame,
+    set_initial_conditions: pd.DataFrame,
     compartments: pd.DataFrame,
     subpop_names: list[str],
     subpop_pop: list[int],
 ) -> None:
     """The function raises an error if `allow_missing_subpops` is set to False."""
-    ic_unique_subpops = ic_df["subpop"].unique()
+    ic_unique_subpops = set_initial_conditions["subpop"].unique()
     missing_subpop = next((s for s in subpop_names if s not in ic_unique_subpops), None)
     if missing_subpop is None:
         pytest.fail(
@@ -147,13 +147,13 @@ def test_missing_subpops_value_error(
     with pytest.raises(
         ValueError,
         match=(
-            r"^Subpop '.*' does not exist in `initial_conditions::states_file`. "
-            r"You can set `allow_missing_subpops=TRUE` to bypass this error.$"
+            r"^The following subpopulations are missing from the initial conditions "
+            r"dataframe: .*$"
         ),
     ):
         _read_initial_condition_from_tidydataframe(
-            ic_df,
-            model_info.compartments.compartments,
+            set_initial_conditions,
+            model_info.compartments,
             model_info.subpop_struct,
             False,
             False,
@@ -163,7 +163,7 @@ def test_missing_subpops_value_error(
 
 @pytest.mark.parametrize(
     (
-        "ic_df",
+        "set_initial_conditions",
         "compartments",
         "subpop_names",
         "subpop_pop",
@@ -202,7 +202,7 @@ def test_missing_subpops_value_error(
     ],
 )
 def test_exact_results_for_select_inputs(
-    ic_df: pd.DataFrame,
+    set_initial_conditions: pd.DataFrame,
     compartments: pd.DataFrame,
     subpop_names: list[str],
     subpop_pop: list[int],
@@ -216,8 +216,8 @@ def test_exact_results_for_select_inputs(
         subpop_pop=subpop_pop,
     )
     y0 = _read_initial_condition_from_tidydataframe(
-        ic_df,
-        model_info.compartments.compartments,
+        set_initial_conditions,
+        model_info.compartments,
         model_info.subpop_struct,
         False,
         allow_missing_compartments,
@@ -225,3 +225,70 @@ def test_exact_results_for_select_inputs(
     )
     assert y0.shape == (len(compartments), len(subpop_names))
     assert np.allclose(y0.sum(axis=0), subpop_pop)
+
+
+@pytest.mark.parametrize(
+    (
+        "set_initial_conditions",
+        "compartments",
+        "subpop_names",
+        "subpop_pop",
+        "proportional_ic",
+        "y0_expected",
+    ),
+    [
+        (
+            pd.DataFrame(
+                data={
+                    "mc_name": ["S", "S", "I", "I", "R", "R"],
+                    "subpop": ["A", "B", "A", "B", "A", "B"],
+                    "amount": [90, 90, "rest", "rest", "rest", 0],
+                },
+            ),
+            pd.DataFrame(data={"infection_stage": ["S", "I", "R"]}),
+            ["A", "B"],
+            [100, 100],
+            False,
+            np.array([[90, 90], [5, 10], [5, 0]], dtype=np.float64),
+        ),
+        (
+            pd.DataFrame(
+                data={
+                    "mc_name": ["S", "S", "I", "I", "R", "R"],
+                    "subpop": ["A", "B", "A", "B", "A", "B"],
+                    "amount": [0.6, 0.9, "rest", "rest", "rest", 0],
+                },
+            ),
+            pd.DataFrame(data={"infection_stage": ["S", "I", "R"]}),
+            ["A", "B"],
+            [100, 300],
+            True,
+            np.array([[60, 270], [20, 30], [20, 0]], dtype=np.float64),
+        ),
+    ],
+)
+def test_initial_conditions_with_rest_allocations(
+    set_initial_conditions: pd.DataFrame,
+    compartments: pd.DataFrame,
+    subpop_names: list[str],
+    subpop_pop: list[int],
+    proportional_ic: bool,
+    y0_expected: npt.NDArray[np.float64],
+) -> None:
+    """Test initial conditions with 'rest' allocations."""
+    model_info = create_mock_model_info(
+        compartments=compartments,
+        subpop_names=subpop_names,
+        subpop_pop=subpop_pop,
+    )
+    y0 = _read_initial_condition_from_tidydataframe(
+        set_initial_conditions,
+        model_info.compartments,
+        model_info.subpop_struct,
+        True,
+        True,
+        proportional_ic,
+    )
+    assert y0.shape == (len(compartments), len(subpop_names))
+    assert np.allclose(y0.sum(axis=0), subpop_pop)
+    assert np.allclose(y0, y0_expected)
