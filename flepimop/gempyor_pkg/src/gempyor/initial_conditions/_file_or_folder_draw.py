@@ -14,6 +14,7 @@ import pandas as pd
 from pydantic import model_validator
 
 from ..compartments import Compartments
+from ..parameters import Parameters
 from ..subpopulation_structure import SubpopulationStructure
 from ..utils import _invert_into_dict, read_df
 from ..warnings import ConfigurationWarning
@@ -257,7 +258,6 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
     ]
     initial_file_type: str | None = None
     initial_conditions_file: Path | None = None
-    ignore_population_checks: bool = False
     allow_missing_subpops: bool = False
     allow_missing_compartments: bool = False
     proportional_ic: bool = False
@@ -330,6 +330,8 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
         sim_id: int,
         compartments: Compartments,
         subpopulation_structure: SubpopulationStructure,
+        parameters: Parameters,
+        p_draw: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """
         Produce an array of initial conditions by reading from a file.

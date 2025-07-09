@@ -9,6 +9,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ..compartments import Compartments
+from ..parameters import Parameters
 from ..subpopulation_structure import SubpopulationStructure
 from ._base import InitialConditionsABC
 from ._plugins import register_initial_conditions_plugin
@@ -29,6 +30,8 @@ class DefaultInitialConditions(InitialConditionsABC):
         sim_id: int,
         compartments: Compartments,
         subpopulation_structure: SubpopulationStructure,
+        parameters: Parameters,
+        p_draw: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """
         Produce an array of initial conditions as a zero array.
