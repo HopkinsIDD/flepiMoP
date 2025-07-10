@@ -59,3 +59,8 @@ package-data = { "gempyor" = ["templates/*.j2"] }
 [tool.setuptools.packages.find]
 where = ["src"]
 namespaces = false
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow to run"
+]

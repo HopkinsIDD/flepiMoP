@@ -47,11 +47,17 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "flepimop/gempyor_pkg[dev]"
         shell: bash
-      - name: Run gempyor tests
+      - name: Run not slow tests
         run: |
           export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
-          pytest --exitfirst
+          pytest -m "not slow" --exitfirst
+        shell: bash
+      - name: Run slow tests
+        run: |
+          export FLEPI_PATH=$(pwd)
+          cd flepimop/gempyor_pkg
+          pytest -m "slow" --exitfirst
         shell: bash
       - name: Run gempyor-cli integration tests from examples
         run: |
