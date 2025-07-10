@@ -51,13 +51,13 @@ jobs:
         run: |
           export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
-          time pytest -m "not slow" --exitfirst
+          pytest -m "not slow" --exitfirst
         shell: bash
       - name: Run slow tests
         run: |
           export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
-          time pytest -m "slow" --exitfirst
+          pytest -m "slow" --exitfirst
         shell: bash
       - name: Run gempyor-cli integration tests from examples
         run: |
