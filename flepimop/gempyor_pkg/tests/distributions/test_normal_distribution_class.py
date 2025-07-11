@@ -1,0 +1,43 @@
+import numpy as np
+import pytest
+from pydantic import ValidationError
+
+from gempyor.distributions import NormalDistribution
+
+
+@pytest.mark.parametrize("mu", [-100.0, 0.0, 50.5], ids=["mu_neg", "mu_zero", "mu_pos"])
+@pytest.mark.parametrize(
+    "sigma", [10.0, 1.0, 0.5], ids=["sigma_ten", "sigma_one", "sigma_pointfive"]
+)
+def test_normal_distribution_init(mu: float, sigma: float) -> None:
+    dist = NormalDistribution(mu=mu, sigma=sigma)
+    assert dist.mu == mu
+    assert dist.sigma == sigma
+    assert dist.distribution == "norm"
+
+
+@pytest.mark.parametrize(
+    "invalid_sigma", [0.0, -0.5, -50.5], ids=["sigma_zero", "sigma_neg", "sigma_larger_neg"]
+)
+def test_normal_distribution_sample_raises_error_for_invalid_sigma(
+    invalid_sigma: float,
+) -> None:
+    with pytest.raises(ValidationError, match="Input should be greater than 0"):
+        NormalDistribution(mu=10.0, sigma=invalid_sigma)
+
+
+@pytest.mark.parametrize(
+    "size, expected_shape",
+    [
+        ((3, 2), (3, 2)),
+        (10, (10,)),
+        ((2, 3, 4), (2, 3, 4)),
+    ],
+    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+)
+def test_normal_distribution_sample_properties(size, expected_shape) -> None:
+    dist = NormalDistribution(mu=0.0, sigma=1.0)
+    sample = dist.sample(size=size)
+    assert isinstance(sample, np.ndarray)
+    assert sample.shape == expected_shape
+    assert sample.dtype == np.float64
