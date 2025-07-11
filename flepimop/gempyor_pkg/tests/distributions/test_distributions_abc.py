@@ -46,6 +46,6 @@ def test_distribution_abc_rng_behavior(dist) -> None:
     sample2 = dist.sample(rng=rng2)
     np.testing.assert_array_equal(sample1, sample2)
 
-    sample3_default = dist.sample()
-    sample4_default = dist.sample()
+    sample3_default = dist.sample(size=10)
+    sample4_default = dist.sample(size=10)
     assert not np.array_equal(sample3_default, sample4_default)
