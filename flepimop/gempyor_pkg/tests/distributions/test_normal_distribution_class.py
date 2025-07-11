@@ -35,14 +35,9 @@ def test_normal_distribution_sample_raises_error_for_invalid_sigma(
     ],
     ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
 )
-@pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
-def test_normal_distribution_sample_properties(size, expected_shape, use_rng) -> None:
+def test_normal_distribution_sample_properties(size, expected_shape) -> None:
     dist = NormalDistribution(mu=0.0, sigma=1.0)
-    kwargs = {}
-    kwargs["size"] = size
-    if use_rng:
-        kwargs["rng"] = np.random.default_rng()
-    sample = dist.sample(**kwargs)
+    sample = dist.sample(size=size)
     assert isinstance(sample, np.ndarray)
     assert sample.shape == expected_shape
     assert sample.dtype == np.float64

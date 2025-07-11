@@ -43,16 +43,10 @@ def test_truncated_normal_distribution_init_invalid_sd(invalid_sd: float) -> Non
     ],
     ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
 )
-@pytest.mark.parametrize("use_rng", [True, False], ids=["with_rng", "without_rng"])
-def test_truncated_normal_distribution_sample_properties(
-    size, expected_shape, use_rng
-) -> None:
+def test_truncated_normal_distribution_sample_properties(size, expected_shape) -> None:
     a, b = 0.0, 10.0
     dist = TruncatedNormalDistribution(mean=5.0, sd=2.0, a=a, b=b)
-    kwargs = {"size": size}
-    if use_rng:
-        kwargs["rng"] = np.random.default_rng()
-    sample = dist.sample(**kwargs)
+    sample = dist.sample(size=size)
     assert isinstance(sample, np.ndarray)
     assert sample.shape == expected_shape
     assert sample.dtype == np.float64

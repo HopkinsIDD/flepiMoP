@@ -23,7 +23,7 @@ from typing import Annotated, Literal
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, PrivateAttr, Field, model_validator
 from scipy.stats import truncnorm
 
 
@@ -31,12 +31,17 @@ class DistributionABC(ABC, BaseModel):
     """Base class for distributions used in modifiers, likelihoods, etc."""
 
     distribution: str
+    _rng: Generator | None = PrivateAttr(default=None)
 
-    def _rng(self, rng: Generator | None = None) -> Generator:
-        """Return the provided rng or a default NumPy Generator"""
-        return rng if rng is not None else np.random.default_rng()
+    @property
+    def rng(self) -> Generator:
+        """
+        Inheritable property for RNG.
+        """
+        if self._rng is None:
+            self._rng = np.random.default_rng()
+        return self._rng
 
-    @abstractmethod
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
     ) -> npt.NDArray[np.float64 | np.int64]:
@@ -45,11 +50,25 @@ class DistributionABC(ABC, BaseModel):
 
         Args:
             size: The desired output size of samples to be drawn.
-            rng: A NumPy random number generator instance used for sampling to ensure reproducibility.
+            rng: A NumPy random number generator instance used for sampling.
 
         Returns:
-            A numpy array of either floats/ints (depending on distribution)
-            with shape `size` drawn from the distribution.
+            A NumPy array of either floats/ints (depending on distribution)
+            drawn from the distribution with shape `size`.
+        """
+        rng = rng if rng is not None else self.rng
+        return self._sample_from_generator(size=size, rng=rng)
+
+    @abstractmethod
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
+    ) -> npt.NDArray[np.float64 | np.int64]:
+        """
+        Distribution-specific sampling logic.
+
+        Args:
+            size: The desired output size of samples to be drawn.
+            rng: A NumPy random number generator instance used for sampling.
         """
         raise NotImplementedError
 
@@ -72,10 +91,10 @@ class FixedDistribution(DistributionABC):
     distribution: Literal["fixed"] = "fixed"
     value: float
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the fixed distribution."""
+        """Sampling logic for fixed distributions."""
         return np.full(size, self.value)
 
 
@@ -102,11 +121,10 @@ class NormalDistribution(DistributionABC):
     mu: float
     sigma: float = Field(..., gt=0)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the normal distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for normal distributions."""
         return rng.normal(loc=self.mu, scale=self.sigma, size=size)
 
 
@@ -133,11 +151,10 @@ class UniformDistribution(DistributionABC):
     low: float
     high: float
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the uniform distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for uniform distributions."""
         return rng.uniform(low=self.low, high=self.high, size=size)
 
     @model_validator(mode="after")
@@ -174,11 +191,10 @@ class LognormalDistribution(DistributionABC):
     meanlog: float
     sdlog: float = Field(..., gt=0)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the Lognormal distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for lognormal distributions."""
         return rng.lognormal(mean=self.meanlog, sigma=self.sdlog, size=size)
 
 
@@ -209,11 +225,10 @@ class TruncatedNormalDistribution(DistributionABC):
     a: float
     b: float
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the truncated normal distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for truncated normal distributions."""
         lower = (self.a - self.mean) / self.sd
         upper = (self.b - self.mean) / self.sd
         return truncnorm.rvs(
@@ -258,11 +273,10 @@ class PoissonDistribution(DistributionABC):
     distribution: Literal["poisson"] = "poisson"
     lam: float = Field(..., ge=0)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.int64]:
-        """Sample from the Poisson distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for Poisson distributions."""
         return rng.poisson(lam=self.lam, size=size)
 
 
@@ -289,11 +303,10 @@ class BinomialDistribution(DistributionABC):
     n: int = Field(..., ge=0)
     p: float = Field(..., ge=0, le=1)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.int64]:
-        """Sample from the binomial distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for binomial distributions."""
         return rng.binomial(n=self.n, p=self.p, size=size)
 
 
@@ -320,11 +333,10 @@ class GammaDistribution(DistributionABC):
     shape: float = Field(..., gt=0)
     scale: float = Field(..., gt=0)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the gamma distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for Gamma distributions."""
         return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
 
@@ -351,11 +363,10 @@ class WeibullDistribution(DistributionABC):
     shape: float = Field(..., gt=0)
     scale: float = Field(..., gt=0)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the Weibull distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for Weibull distributions."""
         # Multiply by scale b/c rng.weibull assumes standard weibull dist (scale of 1)
         return self.scale * rng.weibull(a=self.shape, size=size)
 
@@ -383,11 +394,10 @@ class BetaDistribution(DistributionABC):
     alpha: float = Field(..., gt=0)
     beta: float = Field(..., gt=0)
 
-    def sample(
-        self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
+    def _sample_from_generator(
+        self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
-        """Sample from the beta distribution."""
-        rng = self._rng(rng)
+        """Sampling logic for beta distributions."""
         return rng.beta(a=self.alpha, b=self.beta, size=size)
 
 
