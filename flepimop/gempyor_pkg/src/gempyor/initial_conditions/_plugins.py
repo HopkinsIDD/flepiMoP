@@ -3,7 +3,9 @@
 __all__: tuple[str, ...] = ()
 
 
+import importlib
 from pathlib import Path
+import sys
 from typing import Any, Literal, get_args, get_origin
 import warnings
 
@@ -93,6 +95,19 @@ def initial_conditions_from_plugin(
         method = "Default"
     else:
         method = config["method"].as_str()
+    if config["module"].exists():
+        module_path = Path(config["module"].as_str())
+        before_len = len(_initial_conditions_plugins)
+        spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_path.stem] = module
+        spec.loader.exec_module(module)
+        if len(_initial_conditions_plugins) == before_len:
+            raise ValueError(
+                "No initial conditions plugin was registered from the module "
+                f"'{module_path}'. Was `register_initial_conditions_plugin` "
+                "called by the custom plugin?"
+            )
     if (initial_conditions_class := _initial_conditions_plugins.get(method)) is None:
         raise ValueError(
             "There is no initial conditions plugin matching "
