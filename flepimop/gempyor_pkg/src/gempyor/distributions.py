@@ -31,16 +31,7 @@ class DistributionABC(ABC, BaseModel):
     """Base class for distributions used in modifiers, likelihoods, etc."""
 
     distribution: str
-    _rng: Generator | None = PrivateAttr(default=None)
-
-    @property
-    def rng(self) -> Generator:
-        """
-        Inheritable property for RNG.
-        """
-        if self._rng is None:
-            self._rng = np.random.default_rng()
-        return self._rng
+    _rng: Generator = PrivateAttr(default_factory=np.random.default_rng)
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
@@ -56,7 +47,7 @@ class DistributionABC(ABC, BaseModel):
             A NumPy array of either floats/ints (depending on distribution)
             drawn from the distribution with shape `size`.
         """
-        rng = rng if rng is not None else self.rng
+        rng = rng if rng is not None else self._rng
         return self._sample_from_generator(size=size, rng=rng)
 
     @abstractmethod
