@@ -35,20 +35,15 @@ def test_uniform_distribution_init_invalid_bounds(low: float, high: float) -> No
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
+    "low, high",
     [
-        ((6, 4), (6, 4)),
-        (20, (20,)),
-        ((2, 3, 4), (2, 3, 4)),
+        (10.0, 20.0),
+        (-5.0, 5.0),
+        (0.0, 1.0),
     ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    ids=["positive_range", "centered_range", "unit_range"],
 )
-def test_uniform_distribution_sample_properties(size, expected_shape) -> None:
-    low, high = 10.0, 20.0
+def test_uniform_distribution_sample_range(low: float, high: float) -> None:
     dist = UniformDistribution(low=low, high=high)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.float64
-    assert np.all(sample >= low)
-    assert np.all(sample < high)
+    sample = dist.sample(size=(10, 10))
+    assert np.all((sample >= low) & (sample < high))

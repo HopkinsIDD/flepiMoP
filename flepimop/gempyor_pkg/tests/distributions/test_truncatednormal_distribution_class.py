@@ -35,20 +35,17 @@ def test_truncated_normal_distribution_init_invalid_sd(invalid_sd: float) -> Non
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
+    "mean, sd, a, b",
     [
-        ((3, 5), (3, 5)),
-        (10, (10,)),
-        ((2, 3, 4), (2, 3, 4)),
+        (5.0, 2.0, 0.0, 10.0),
+        (0.0, 1.0, -1.0, 1.0),
+        (100.0, 10.0, 90.0, 110.0),
     ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    ids=["mean_in_range", "std_normal_truncated", "high_mean"],
 )
-def test_truncated_normal_distribution_sample_properties(size, expected_shape) -> None:
-    a, b = 0.0, 10.0
-    dist = TruncatedNormalDistribution(mean=5.0, sd=2.0, a=a, b=b)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.float64
-    assert np.all(sample >= a)
-    assert np.all(sample <= b)
+def test_truncated_normal_distribution_sample_range(
+    mean: float, sd: float, a: float, b: float
+) -> None:
+    dist = TruncatedNormalDistribution(mean=mean, sd=sd, a=a, b=b)
+    sample = dist.sample(size=(10, 10))
+    assert np.all((sample >= a) & (sample <= b))

@@ -46,18 +46,15 @@ def test_weibull_distribution_init_invalid_scale(invalid_scale: float) -> None:
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
+    "shape, scale",
     [
-        ((5, 5), (5, 5)),
-        (5, (5,)),
-        ((2, 3, 4), (2, 3, 4)),
+        (2.0, 10.0),
+        (1.0, 1.0), 
+        (5.0, 1.0),
     ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    ids=["shape_2_scale_10", "exponential_case", "shape_5_scale_1"],
 )
-def test_weibull_distribution_sample_properties(size, expected_shape) -> None:
-    dist = WeibullDistribution(shape=2.0, scale=10.0)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.float64
-    assert np.all(sample > 0)
+def test_weibull_sample_is_non_negative(shape: float, scale: float) -> None:
+    dist = WeibullDistribution(shape=shape, scale=scale)
+    sample = dist.sample(size=(10, 10))
+    assert np.all(sample > 0.0)

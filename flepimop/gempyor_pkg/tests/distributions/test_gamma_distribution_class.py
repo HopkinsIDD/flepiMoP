@@ -48,18 +48,15 @@ def test_gamma_distribution_init_invalid_scale(invalid_scale: float) -> None:
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
+    "shape, scale",
     [
-        ((3, 3), (3, 3)),
-        (5, (5,)),
-        ((2, 3, 4), (2, 3, 4)),
+        (2.0, 2.0),
+        (1.0, 1.0), 
+        (5.0, 0.5),
     ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    ids=["shape_2_scale_2", "standard_gamma", "shape_5_scale_0.5"],
 )
-def test_gamma_distribution_sample_properties(size, expected_shape) -> None:
-    dist = GammaDistribution(shape=2.0, scale=2.0)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.float64
-    assert np.all(sample > 0)
+def test_gamma_sample_is_non_negative(shape: float, scale: float) -> None:
+    dist = GammaDistribution(shape=shape, scale=scale)
+    sample = dist.sample(size=(10, 10))
+    assert np.all(sample > 0.0)

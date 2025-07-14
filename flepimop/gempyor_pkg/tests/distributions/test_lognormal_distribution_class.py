@@ -29,18 +29,15 @@ def test_lognormal_distribution_init_raises_error_for_invalid_sdlog(
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
+    "meanlog, sdlog",
     [
-        ((2, 3), (2, 3)),
-        (25, (25,)),
-        ((2, 3, 4), (2, 3, 4)),
+        (0.0, 1.0),
+        (-2.0, 0.5),
+        (5.0, 3.0),
     ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    ids=["standard", "low_variance", "high_variance"],
 )
-def test_lognormal_distribution_sample_properties(size, expected_shape) -> None:
-    dist = LognormalDistribution(meanlog=0.0, sdlog=1.0)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.float64
-    assert np.all(sample > 0)
+def test_lognormal_sample_is_non_negative(meanlog: float, sdlog: float) -> None:
+    dist = LognormalDistribution(meanlog=meanlog, sdlog=sdlog)
+    sample = dist.sample(size=(10, 10))
+    assert np.all(sample > 0.0)

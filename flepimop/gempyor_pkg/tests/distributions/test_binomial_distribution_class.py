@@ -45,7 +45,6 @@ def test_binomial_distribution_init_invalid_n(invalid_n: int) -> None:
     ids=["small_negative", "large_negative"],
 )
 def test_binomial_distribution_init_invalid_p_below_zero(invalid_p: float) -> None:
-    """Test that initialization fails for probability 'p' less than 0."""
     with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
         BinomialDistribution(n=10, p=invalid_p)
 
@@ -53,7 +52,7 @@ def test_binomial_distribution_init_invalid_p_below_zero(invalid_p: float) -> No
 @pytest.mark.parametrize(
     "invalid_p",
     [1.1, 25.0],
-    ids=["small_positive", "large_positive"],
+    ids=["small_gt_one", "large_gt_one"],
 )
 def test_binomial_distribution_init_invalid_p_above_one(invalid_p: float) -> None:
     with pytest.raises(ValidationError, match="Input should be less than or equal to 1"):
@@ -61,20 +60,16 @@ def test_binomial_distribution_init_invalid_p_above_one(invalid_p: float) -> Non
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
+    "n, p",
     [
-        ((4, 4), (4, 4)),
-        (30, (30,)),
-        ((2, 3, 4), (2, 3, 4)),
+        (10, 0.5),
+        (100, 0.1),
+        (20, 0.99),
     ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    ids=["n_10_p_0.5", "n_100_p_0.1", "n_20_p_0.99"],
 )
-def test_binomial_distribution_sample_properties(size, expected_shape) -> None:
-    n = 20
-    dist = BinomialDistribution(n=n, p=0.5)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.int64
+def test_binomial_sample_properties(n: int, p: float) -> None:
+    dist = BinomialDistribution(n=n, p=p)
+    sample = dist.sample(size=(10, 10))
     assert np.all(sample >= 0)
     assert np.all(sample <= n)

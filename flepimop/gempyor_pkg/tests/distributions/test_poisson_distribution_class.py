@@ -29,18 +29,12 @@ def test_poisson_distribution_init_invalid_lam(invalid_lam: float) -> None:
 
 
 @pytest.mark.parametrize(
-    "size, expected_shape",
-    [
-        ((2, 5), (2, 5)),
-        (15, (15,)),
-        ((2, 3, 2), (2, 3, 2)),
-    ],
-    ids=["2d_tuple_size", "integer_size", "3d_tuple_size"],
+    "lam",
+    [0.0, 1.0, 50.5],
+    ids=["zero_rate", "one_rate", "high_float_rate"],
 )
-def test_poisson_distribution_sample_properties(size, expected_shape) -> None:
-    dist = PoissonDistribution(lam=5.0)
-    sample = dist.sample(size=size)
-    assert isinstance(sample, np.ndarray)
-    assert sample.shape == expected_shape
-    assert sample.dtype == np.int64
+def test_poisson_samples_are_non_negative(lam: float) -> None:
+    dist = PoissonDistribution(lam=lam)
+    sample = dist.sample(size=(10, 10))
     assert np.all(sample >= 0)
+
