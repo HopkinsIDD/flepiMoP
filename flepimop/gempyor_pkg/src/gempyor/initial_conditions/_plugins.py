@@ -3,7 +3,9 @@
 __all__: tuple[str, ...] = ()
 
 
+import importlib
 from pathlib import Path
+import sys
 from typing import Any, Final, Literal, get_args, get_origin
 import warnings
 
@@ -95,6 +97,7 @@ def initial_conditions_from_plugin(
             plugin options.
 
     """
+    global _custom_initial_conditions_plugins, _initial_conditions_plugins
     if not config["method"].exists():
         warnings.warn(
             "Initial conditions plugin 'method' was not specified, assuming 'Default'.",
@@ -103,6 +106,20 @@ def initial_conditions_from_plugin(
         method = "Default"
     else:
         method = config["method"].as_str()
+    if config["module"].exists():
+        module_path = Path(config["module"].as_str())
+        before_len = len(_initial_conditions_plugins)
+        spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_path.stem] = module
+        spec.loader.exec_module(module)
+        if len(_initial_conditions_plugins) == before_len:
+            raise ValueError(
+                "No initial conditions plugin was registered from the module "
+                f"'{module_path}'. Was `register_initial_conditions_plugin` "
+                "called by the custom plugin?"
+            )
+        _custom_initial_conditions_plugins.append(module_path)
     if (initial_conditions_class := _initial_conditions_plugins.get(method)) is None:
         raise ValueError(
             "There is no initial conditions plugin matching "
@@ -112,6 +129,18 @@ def initial_conditions_from_plugin(
     return initial_conditions_class.from_confuse_config(
         config, path_prefix=path_prefix, **kwargs
     )
+
+
+def _get_custom_initial_conditions_plugins() -> list[Path]:
+    """
+    Get the list of custom initial conditions plugins.
+
+    Returns:
+        A list of `Path` objects representing the custom initial conditions plugins.
+
+    """
+    global _custom_initial_conditions_plugins
+    return _custom_initial_conditions_plugins
 
 
 def _reset_initial_conditions_plugins() -> None:
@@ -156,8 +185,9 @@ def _reset_initial_conditions_plugins() -> None:
          'FromFile',
          'InitialConditionsFolderDraw']
     """
-    global _initial_conditions_plugins
+    global _custom_initial_conditions_plugins, _initial_conditions_plugins
     for plugin in (
         set(_initial_conditions_plugins.keys()) - _STANDARD_INITIAL_CONDITION_PLUGINS
     ):
         del _initial_conditions_plugins[plugin]
+    _custom_initial_conditions_plugins = []
