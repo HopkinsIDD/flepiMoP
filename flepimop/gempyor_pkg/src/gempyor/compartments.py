@@ -16,7 +16,7 @@ Functions:
 
 import logging
 from functools import reduce
-from typing import Any
+from typing import Any, Generator, Literal, NamedTuple, overload
 
 import numpy as np
 import pandas as pd
@@ -870,6 +870,63 @@ class Compartments:
         rename_dict = {cn: f"mc_{cn}" for cn in df.columns}
         df = df.rename(columns=rename_dict)
         return df
+
+    @overload
+    def subset_dataframe(
+        self,
+        dataframe: pd.DataFrame,
+        skip_name: bool = ...,
+        raise_on_empty: bool = ...,
+        yield_compartment: Literal[True] = ...,
+    ) -> Generator[tuple[NamedTuple, pd.DataFrame], None, None]: ...
+
+    @overload
+    def subset_dataframe(
+        self,
+        dataframe: pd.DataFrame,
+        skip_name: bool = ...,
+        raise_on_empty: bool = ...,
+        yield_compartment: Literal[False] = ...,
+    ) -> Generator[pd.DataFrame, None, None]: ...
+
+    def subset_dataframe(
+        self,
+        dataframe: pd.DataFrame,
+        skip_name: bool = False,
+        raise_on_empty: bool = True,
+        yield_compartment: bool = False,
+    ) -> Generator[pd.DataFrame | tuple[NamedTuple, pd.DataFrame], None, None]:
+        """
+        Loop through subsets of a DataFrame that match compartments.
+
+        Args:
+            dataframe: The pandas DataFrame to filter.
+            skip_name: Whether or not to consider filtering by full compartment name
+                directly or not. If 'mc_name' is found in `dataframe` then filtering
+                by the individual stages will be bypassed.
+            raise_on_empty: If a set of filters returns an empty DataFrame then raise an
+                exception. If this is set to `False` no exception is raised and the
+                empty subset DataFrame is yielded.
+        """
+        mc_name = (not skip_name) and ("mc_name" in dataframe.columns)
+        row_names = ["Index"] + self.compartments.columns.tolist()
+        for row in self.compartments.itertuples():
+            query = (
+                f"mc_name=='{row.name}'"
+                if mc_name
+                else " & ".join(
+                    f"mc_{k}=='{v}'"
+                    for k, v in zip(row_names, row)
+                    if k not in {"Index", "name"}
+                )
+            )
+            dataframe_subset = dataframe.query(query)
+            if raise_on_empty and dataframe_subset.empty:
+                raise ValueError(
+                    "There were no matches found in `dataframe` for "
+                    f"compartment filters matching the query: {query}"
+                )
+            yield (row, dataframe_subset) if yield_compartment else dataframe_subset
 
     def plot(
         self, output_file="transition_graph", source_filters=[], destination_filters=[]
