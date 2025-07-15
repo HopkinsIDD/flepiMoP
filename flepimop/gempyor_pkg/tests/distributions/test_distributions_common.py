@@ -68,7 +68,7 @@ def test_distribution_abc_rng_behavior(dist) -> None:
     ids=[
         "Beta",
         "Binomial",
-        "Fixed"
+        "Fixed",
         "Gamma",
         "Lognormal",
         "Normal",

@@ -35,6 +35,19 @@ def test_truncated_normal_distribution_init_invalid_sd(invalid_sd: float) -> Non
 
 
 @pytest.mark.parametrize(
+    "a, b",
+    [
+        (10.0, 5.0), 
+        (5.0, 5.0),   
+    ],
+    ids=["b_less_than_a", "b_equal_to_a"],
+)
+def test_truncated_normal_distribution_init_invalid_bounds(a: float, b: float) -> None:
+    with pytest.raises(ValidationError, match="must be strictly greater than"):
+        TruncatedNormalDistribution(mean=5.0, sd=2.0, a=a, b=b)
+
+
+@pytest.mark.parametrize(
     "mean, sd, a, b",
     [
         (5.0, 2.0, 0.0, 10.0),
