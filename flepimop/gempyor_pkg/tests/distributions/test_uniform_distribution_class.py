@@ -19,19 +19,28 @@ def test_uniform_distribution_init_valid(low: float, high: float) -> None:
     assert dist.low == low
     assert dist.high == high
     assert dist.distribution == "uniform"
+    assert dist.allow_edge_cases is False
 
 
-@pytest.mark.parametrize(
-    "low, high",
-    [
-        (10.0, 0.0),
-        (5.0, 5.0),
-    ],
-    ids=["high_less_than_low", "high_equals_low"],
-)
-def test_uniform_distribution_init_invalid_bounds(low: float, high: float) -> None:
-    with pytest.raises(ValidationError, match="must be greater than the 'low' value"):
-        UniformDistribution(low=low, high=high)
+def test_uniform_init_fails_on_edge_case_false_by_default() -> None:
+    with pytest.raises(ValidationError, match="'high' value .* must be > 'low' value"):
+        UniformDistribution(low=5.0, high=5.0)
+
+
+def test_uniform_init_succeeds_on_edge_case_true() -> None:
+    dist = UniformDistribution(low=5.0, high=5.0, allow_edge_cases=True)
+    assert dist.low == 5.0
+    assert dist.high == 5.0
+    assert dist.allow_edge_cases is True
+
+
+def test_uniform_init_fails_on_high_less_than_low() -> None:
+    with pytest.raises(ValidationError, match="'high' value .* must be > 'low' value"):
+        UniformDistribution(low=10.0, high=5.0, allow_edge_cases=False)
+    with pytest.raises(
+        ValidationError, match="'high' value .* must be ≥ to the 'low' value"
+    ):
+        UniformDistribution(low=10.0, high=5.0, allow_edge_cases=True)
 
 
 @pytest.mark.parametrize(
@@ -47,3 +56,9 @@ def test_uniform_distribution_sample_range(low: float, high: float) -> None:
     dist = UniformDistribution(low=low, high=high)
     sample = dist.sample(size=(10, 10))
     assert np.all((sample >= low) & (sample < high))
+
+
+def test_uniform_distribution_sample_range_edge_case() -> None:
+    dist = UniformDistribution(low=10.0, high=10.0, allow_edge_cases=True)
+    sample = dist.sample(size=(10, 10))
+    assert np.all(sample == 10.0)

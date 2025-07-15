@@ -52,7 +52,7 @@ def test_beta_distribution_init_invalid_beta(invalid_beta: float) -> None:
     [
         (2.0, 5.0),
         (1.0, 1.0),
-        (0.5, 0.5), 
+        (0.5, 0.5),
     ],
     ids=["alpha_gt_1", "uniform_case", "u_shaped_case"],
 )

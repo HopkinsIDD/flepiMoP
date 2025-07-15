@@ -31,6 +31,8 @@ class DistributionABC(ABC, BaseModel):
     """Base class for distributions used in modifiers, likelihoods, etc."""
 
     distribution: str
+    allow_edge_cases: bool = False
+
     _rng: Generator = PrivateAttr(default_factory=np.random.default_rng)
 
     def sample(
@@ -149,13 +151,18 @@ class UniformDistribution(DistributionABC):
         return rng.uniform(low=self.low, high=self.high, size=size)
 
     @model_validator(mode="after")
-    def _ensure_high_greater_than_low(self) -> "UniformDistribution":
-        """Ensure that high is greater than low."""
-        if self.high < self.low or isclose(self.high, self.low):
-            raise ValueError(
-                f"The 'high' value, {self.high}, must be "
-                f"greater than the 'low' value, {self.low}."
-            )
+    def _validate_bounds(self) -> "UniformDistribution":
+        """Validate bounds based on whether or not edge cases are allowed."""
+        if self.allow_edge_cases:
+            if self.high < self.low:
+                raise ValueError(
+                    f"'high' value ({self.high}) must be ≥ to the 'low' value ({self.low})."
+                )
+        else:
+            if self.high < self.low or isclose(self.high, self.low):
+                raise ValueError(
+                    f"'high' value ({self.high}) must be > 'low' value ({self.low})."
+                )
         return self
 
 
@@ -220,6 +227,11 @@ class TruncatedNormalDistribution(DistributionABC):
         self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
         """Sampling logic for truncated normal distributions."""
+        if (
+            isclose(self.a, self.b) and self.allow_edge_cases
+        ):  # use this logic b/c scipy.truncnorm doesn't support equal bounds
+            return np.full(size, self.a)
+
         lower = (self.a - self.mean) / self.sd
         upper = (self.b - self.mean) / self.sd
         return truncnorm.rvs(
@@ -232,13 +244,18 @@ class TruncatedNormalDistribution(DistributionABC):
         )
 
     @model_validator(mode="after")
-    def _ensure_b_greater_than_a(self) -> "TruncatedNormalDistribution":
-        """Ensure that the upper bound 'b' is strictly greater than the lower bound 'a'."""
-        if self.b < self.a or isclose(self.b, self.a):
-            raise ValueError(
-                f"The upper bound 'b' ({self.b}) must be strictly "
-                f"greater than the lower bound 'a' ({self.a})."
-            )
+    def _validate_bounds(self) -> "TruncatedNormalDistribution":
+        """Validate bounds based on whether or not edge cases are allowed.."""
+        if self.allow_edge_cases:
+            if self.b < self.a:
+                raise ValueError(
+                    f"Upper bound 'b' ({self.b}) must be ≥ to lower bound 'a' ({self.a})."
+                )
+        else:
+            if self.b < self.a or isclose(self.b, self.a):
+                raise ValueError(
+                    f"Upper bound 'b' ({self.b}) must be > lower bound 'a' ({self.a})."
+                )
         return self
 
 
@@ -262,13 +279,23 @@ class PoissonDistribution(DistributionABC):
     """
 
     distribution: Literal["poisson"] = "poisson"
-    lam: float = Field(..., ge=0)
+    lam: float
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.int64]:
         """Sampling logic for Poisson distributions."""
         return rng.poisson(lam=self.lam, size=size)
+
+    @model_validator(mode="after")
+    def _validate_lambda(self) -> "PoissonDistribution":
+        if self.allow_edge_cases:
+            if self.lam < 0:
+                raise ValueError("Input for 'lam' must be ≥ 0.")
+        else:
+            if self.lam <= 0:
+                raise ValueError("Input for 'lam' must be > 0.")
+        return self
 
 
 class BinomialDistribution(DistributionABC):

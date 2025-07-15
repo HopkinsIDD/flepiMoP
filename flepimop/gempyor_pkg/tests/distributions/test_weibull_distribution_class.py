@@ -49,7 +49,7 @@ def test_weibull_distribution_init_invalid_scale(invalid_scale: float) -> None:
     "shape, scale",
     [
         (2.0, 10.0),
-        (1.0, 1.0), 
+        (1.0, 1.0),
         (5.0, 1.0),
     ],
     ids=["shape_2_scale_10", "exponential_case", "shape_5_scale_1"],

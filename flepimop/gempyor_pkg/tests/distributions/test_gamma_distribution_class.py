@@ -51,7 +51,7 @@ def test_gamma_distribution_init_invalid_scale(invalid_scale: float) -> None:
     "shape, scale",
     [
         (2.0, 2.0),
-        (1.0, 1.0), 
+        (1.0, 1.0),
         (5.0, 0.5),
     ],
     ids=["shape_2_scale_2", "standard_gamma", "shape_5_scale_0.5"],

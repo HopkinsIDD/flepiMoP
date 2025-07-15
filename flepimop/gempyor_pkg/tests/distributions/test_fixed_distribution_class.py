@@ -13,12 +13,8 @@ def test_fixed_distribution_init(value: float) -> None:
     assert dist.distribution == "fixed"
 
 
-@pytest.mark.parametrize(
-    "value", 
-    [0.0, 5.5, -1.2], 
-    ids=["zero", "positive", "negative"]
-)
+@pytest.mark.parametrize("value", [0.0, 5.5, -1.2], ids=["zero", "positive", "negative"])
 def test_fixed_distribution_samples_values(value: float) -> None:
     dist = FixedDistribution(value=value)
-    sample = dist.sample(size=(5, 5))  
+    sample = dist.sample(size=(5, 5))
     assert np.all(sample == value)
