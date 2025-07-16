@@ -35,9 +35,17 @@ def test_truncated_normal_distribution_init_invalid_sd(invalid_sd: float) -> Non
         TruncatedNormalDistribution(mean=0.0, sd=invalid_sd, a=0.0, b=1.0)
 
 
-def test_truncated_normal_init_fails_on_edge_case_false_by_default() -> None:
-    with pytest.raises(ValidationError, match="must be > lower bound 'a'"):
-        TruncatedNormalDistribution(mean=5.0, sd=2.0, a=5.0, b=5.0)
+@pytest.mark.parametrize(
+    "a, b",
+    [
+        (5.0, 5.0),
+        (10.0, 5.0),
+    ],
+    ids=["b_equals_a", "b_less_than_a"],
+)
+def test_truncated_normal_init_fails_when_b_not_gt_a(a: float, b: float) -> None:
+    with pytest.raises(ValidationError, match="must be > to lower bound `a`"):
+        TruncatedNormalDistribution(mean=5.0, sd=2.0, a=a, b=b, allow_edge_cases=False)
 
 
 def test_truncated_normal_init_succeeds_on_edge_case_true() -> None:
@@ -49,21 +57,15 @@ def test_truncated_normal_init_succeeds_on_edge_case_true() -> None:
     assert dist.allow_edge_cases is True
 
 
-def test_truncated_normal_init_fails_on_b_less_than_a() -> None:
-    with pytest.raises(ValidationError, match="must be > lower bound 'a'"):
-        TruncatedNormalDistribution(mean=5.0, sd=2.0, a=10.0, b=5.0)
-    with pytest.raises(ValidationError, match="must be ≥ to lower bound 'a'"):
+def test_truncated_normal_init_fails_when_b_lt_a_with_edge_cases() -> None:
+    with pytest.raises(ValidationError, match="must be >= to lower bound `a`"):
         TruncatedNormalDistribution(mean=5.0, sd=2.0, a=10.0, b=5.0, allow_edge_cases=True)
 
 
+@pytest.mark.parametrize("mean", [0.0, 100.0], ids=["mean_zero", "mean_high"])
+@pytest.mark.parametrize("sd", [1.0, 10.0], ids=["sd_one", "sd_high"])
 @pytest.mark.parametrize(
-    "mean, sd, a, b",
-    [
-        (5.0, 2.0, 0.0, 10.0),
-        (0.0, 1.0, -1.0, 1.0),
-        (100.0, 10.0, 90.0, 110.0),
-    ],
-    ids=["mean_in_range", "std_normal_truncated", "high_mean"],
+    ("a", "b"), [(-2.0, 2.0), (90.0, 110.0)], ids=["bounds_centered", "bounds_high"]
 )
 def test_truncated_normal_distribution_sample_range(
     mean: float, sd: float, a: float, b: float

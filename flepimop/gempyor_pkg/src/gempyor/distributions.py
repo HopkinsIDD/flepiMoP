@@ -138,6 +138,16 @@ class UniformDistribution(DistributionABC):
         array([[ 0.37775688,  1.21719584,  0.89473606, -0.3116453 ,  1.4512447 ],
                [ 1.0222794 ,  1.07212861, -0.24377273,  0.40077188,  0.24159605],
                [ 1.35352998,  0.78773024,  1.14552323,  0.3868284 , -0.04552256]])
+        >>> # With `low == high` and `allow_edge_cases=True`, all samples == `low`.
+        >>> dist_edge = UniformDistribution(low=5.0, high=5.0, allow_edge_cases=True)
+        >>> dist_edge.sample(size=5)
+        array([5., 5., 5., 5., 5.])
+        >>> # Without `allow_edge_cases` set to True, it fails by default when `low == high`.
+        >>> UniformDistribution(low=5.0, high=5.0)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for UniformDistribution
+          Value error, Upper bound `high`, 5.0, must be > to lower bound `low`, 5.0. [type=value_error, ...
     """
 
     distribution: Literal["uniform"] = "uniform"
@@ -153,16 +163,13 @@ class UniformDistribution(DistributionABC):
     @model_validator(mode="after")
     def _validate_bounds(self) -> "UniformDistribution":
         """Validate bounds based on whether or not edge cases are allowed."""
-        if self.allow_edge_cases:
-            if self.high < self.low:
-                raise ValueError(
-                    f"'high' value ({self.high}) must be ≥ to the 'low' value ({self.low})."
-                )
-        else:
-            if self.high < self.low or isclose(self.high, self.low):
-                raise ValueError(
-                    f"'high' value ({self.high}) must be > 'low' value ({self.low})."
-                )
+        if self.high < self.low or (
+            not self.allow_edge_cases and isclose(self.high, self.low)
+        ):
+            op = ">=" if self.allow_edge_cases else ">"
+            raise ValueError(
+                f"Upper bound `high`, {self.high}, must be {op} to lower bound `low`, {self.low}."
+            )
         return self
 
 
@@ -214,6 +221,16 @@ class TruncatedNormalDistribution(DistributionABC):
         array([[1.07000038, 2.18016199, 1.66002835, 0.28689654, 3.04332767],
                [1.83818339, 1.9153892 , 0.37639339, 1.09435167, 0.92629918],
                [2.54134935, 1.52545861, 2.04022114, 1.07959285, 0.6142512 ]])
+        >>> # With `a == b` and `allow_edge_cases=True`, all samples == `a`.
+        >>> dist_edge = TruncatedNormalDistribution(mean=5.0, sd=2.0, a=7.0, b=7.0, allow_edge_cases=True)
+        >>> dist_edge.sample(size=5)
+        array([7., 7., 7., 7., 7.])
+        >>> # Withoug `allow_edge_cases` set to True, it fails by default when `a == b`.
+        >>> TruncatedNormalDistribution(mean=5.0, sd=2.0, a=7.0, b=7.0)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for TruncatedNormalDistribution
+          Value error, Upper bound `b`, 7.0, must be > to lower bound `a`, 7.0. [type=value_error, ...
     """
     # pylint: enable=line-too-long
 
@@ -246,16 +263,11 @@ class TruncatedNormalDistribution(DistributionABC):
     @model_validator(mode="after")
     def _validate_bounds(self) -> "TruncatedNormalDistribution":
         """Validate bounds based on whether or not edge cases are allowed.."""
-        if self.allow_edge_cases:
-            if self.b < self.a:
-                raise ValueError(
-                    f"Upper bound 'b' ({self.b}) must be ≥ to lower bound 'a' ({self.a})."
-                )
-        else:
-            if self.b < self.a or isclose(self.b, self.a):
-                raise ValueError(
-                    f"Upper bound 'b' ({self.b}) must be > lower bound 'a' ({self.a})."
-                )
+        if self.b < self.a or (not self.allow_edge_cases and isclose(self.a, self.b)):
+            op = ">=" if self.allow_edge_cases else ">"
+            raise ValueError(
+                f"Upper bound `b`, {self.b}, must be {op} to lower bound `a`, {self.a}."
+            )
         return self
 
 
@@ -276,10 +288,20 @@ class PoissonDistribution(DistributionABC):
         array([[4, 5, 1, 7, 1],
                [4, 2, 2, 5, 4],
                [1, 6, 2, 5, 0]])
+        >>> # With `lam=0` and `allow_edge_cases=True`, all samples will be 0.
+        >>> dist_edge = PoissonDistribution(lam=0.0, allow_edge_cases=True)
+        >>> dist_edge.sample(size=5)
+        array([0, 0, 0, 0, 0])
+        >>> # Without `allow_edge_cases` explicitly set to True, it fails by default.
+        >>> PoissonDistribution(lam=0.0)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for PoissonDistribution
+          Value error, Input for `lam` cannot be zero when `allow_edge_cases` is `False`. [type=value_error, ...
     """
 
     distribution: Literal["poisson"] = "poisson"
-    lam: float
+    lam: float = Field(..., ge=0.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -289,12 +311,10 @@ class PoissonDistribution(DistributionABC):
 
     @model_validator(mode="after")
     def _validate_lambda(self) -> "PoissonDistribution":
-        if self.allow_edge_cases:
-            if self.lam < 0:
-                raise ValueError("Input for 'lam' must be ≥ 0.")
-        else:
-            if self.lam <= 0:
-                raise ValueError("Input for 'lam' must be > 0.")
+        if not self.allow_edge_cases and isclose(self.lam, 0.0):
+            raise ValueError(
+                "Input for `lam` cannot be zero when `allow_edge_cases` is `False`."
+            )
         return self
 
 
@@ -315,17 +335,41 @@ class BinomialDistribution(DistributionABC):
         array([[5, 7, 6, 3, 8],
                [6, 6, 3, 5, 4],
                [7, 6, 6, 5, 4]])
+        >>> # It succeeds with `p=0` or `p=1` when `allow_edge_cases=True`.
+        >>> dist_edge = BinomialDistribution(n=10, p=1.0, allow_edge_cases=True)
+        >>> dist_edge.sample(size=5)
+        array([10, 10, 10, 10, 10])
+        >>> # Without `allow_edge_cases` set to True, it fails by default when `p=0` or `p=1`.
+        >>> BinomialDistribution(n=10, p=0.0)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for BinomialDistribution
+          Value error, `p` cannot be 0 or 1 when `allow_edge_cases` is `False`. [type=value_error, ...
     """
 
     distribution: Literal["binomial"] = "binomial"
-    n: int = Field(..., ge=0)
-    p: float = Field(..., ge=0, le=1)
+    n: int = Field(..., gt=0)
+    p: float = Field(..., gt=0.0, lt=1.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.int64]:
         """Sampling logic for binomial distributions."""
         return rng.binomial(n=self.n, p=self.p, size=size)
+
+    @model_validator(mode="after")
+    def _validate_params(self) -> "BinomialDistribution":
+        """Validate params based on whether or not edge cases are allowed."""
+        if not self.allow_edge_cases:
+            if self.n == 0:
+                raise ValueError(
+                    "Input for `n` cannot be zero when `allow_edge_cases` is `False`."
+                )
+            if isclose(self.p, 0.0) or isclose(self.p, 1.0):
+                raise ValueError(
+                    "Input for `p` cannot be 0 or 1 when `allow_edge_cases` is `False`."
+                )
+        return self
 
 
 class GammaDistribution(DistributionABC):

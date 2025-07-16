@@ -21,7 +21,10 @@ def test_poisson_distribution_init_valid(valid_lam: float) -> None:
 
 
 def test_poisson_distribution_init_fails_on_edge_case_false_by_default() -> None:
-    with pytest.raises(ValidationError, match="Input for 'lam' must be > 0."):
+    with pytest.raises(
+        ValidationError,
+        match="Input for `lam` cannot be zero when `allow_edge_cases` is `False`.",
+    ):
         PoissonDistribution(lam=0.0)
 
 
@@ -31,11 +34,17 @@ def test_poisson_distribution_init_succeeds_on_edge_case_true() -> None:
     assert dist.allow_edge_cases is True
 
 
-def test_poisson_distribution_init_fails_on_negative_lam() -> None:
-    with pytest.raises(ValidationError, match="Input for 'lam' must be > 0."):
-        PoissonDistribution(lam=-5.0, allow_edge_cases=False)
-    with pytest.raises(ValidationError, match="Input for 'lam' must be ≥ 0."):
-        PoissonDistribution(lam=-5.0, allow_edge_cases=True)
+@pytest.mark.parametrize(
+    "invalid_lam",
+    [
+        -5.0,
+        -50.5,
+    ],
+    ids=["small_negative_lam", "large_negative_lam"],
+)
+def test_poisson_distribution_init_fails_on_negative_lam(invalid_lam: float) -> None:
+    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
+        PoissonDistribution(lam=invalid_lam)
 
 
 @pytest.mark.parametrize(

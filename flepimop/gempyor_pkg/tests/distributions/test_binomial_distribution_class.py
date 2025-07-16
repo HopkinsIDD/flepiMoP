@@ -9,17 +9,13 @@ from gempyor.distributions import BinomialDistribution
     "n, p",
     [
         (10, 0.5),
-        (0, 0.5),
-        (100, 0.0),
-        (100, 1.0),
         (50, 0.25),
+        (1, 0.99),
     ],
     ids=[
-        "standard_case",
-        "zero_trials",
-        "zero_probability",
-        "full_probability",
+        "standard_case_1",
         "standard_case_2",
+        "min_valid_n",
     ],
 )
 def test_binomial_distribution_init_valid(n: int, p: float) -> None:
@@ -27,35 +23,36 @@ def test_binomial_distribution_init_valid(n: int, p: float) -> None:
     assert dist.n == n
     assert dist.p == p
     assert dist.distribution == "binomial"
+    assert dist.allow_edge_cases is False
 
 
 @pytest.mark.parametrize(
     "invalid_n",
-    [-1, -10],
-    ids=["-1", "-10"],
+    [0, -1, -10],
+    ids=["zero", "-1", "-10"],
 )
 def test_binomial_distribution_init_invalid_n(invalid_n: int) -> None:
-    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
+    with pytest.raises(ValidationError, match="Input should be greater than 0"):
         BinomialDistribution(n=invalid_n, p=0.5)
 
 
 @pytest.mark.parametrize(
     "invalid_p",
-    [-0.1, -10.0],
-    ids=["small_negative", "large_negative"],
+    [0.0, -0.1, -10.0],
+    ids=["zero", "small_negative", "large_negative"],
 )
-def test_binomial_distribution_init_invalid_p_below_zero(invalid_p: float) -> None:
-    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
+def test_binomial_distribution_init_invalid_p_below_range(invalid_p: float) -> None:
+    with pytest.raises(ValidationError, match="Input should be greater than 0"):
         BinomialDistribution(n=10, p=invalid_p)
 
 
 @pytest.mark.parametrize(
     "invalid_p",
-    [1.1, 25.0],
-    ids=["small_gt_one", "large_gt_one"],
+    [1.0, 1.1, 25.0],
+    ids=["one", "small_gt_one", "large_gt_one"],
 )
-def test_binomial_distribution_init_invalid_p_above_one(invalid_p: float) -> None:
-    with pytest.raises(ValidationError, match="Input should be less than or equal to 1"):
+def test_binomial_distribution_init_invalid_p_above_range(invalid_p: float) -> None:
+    with pytest.raises(ValidationError, match="Input should be less than 1"):
         BinomialDistribution(n=10, p=invalid_p)
 
 
