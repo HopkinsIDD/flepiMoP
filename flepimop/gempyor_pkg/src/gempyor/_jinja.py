@@ -77,7 +77,7 @@ def _render_template_to_temp_file(
         ...     "test_template.j2", {"name": "John"}, suffix=".txt", prefix="foo_"
         ... )
         >>> file
-        PosixPath('/var/folders/2z/h3pc0p7s3ng1tvxrgsw5kr680000gp/T/foo_ocaomg4k.txt')
+        PosixPath(...)
         >>> file.read_text()
         'Hello John!'
     """
