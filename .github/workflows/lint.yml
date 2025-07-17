@@ -53,30 +53,35 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env: 
       PYLINT_SRC: 'flepimop/gempyor_pkg/src/gempyor'
-      PYLINT_FAIL_UNDER: '4'
+      PYLINT_FAIL_UNDER: '5'
       PYLINT_RCFILE: 'flepimop/gempyor_pkg/.pylintrc'
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+        R-version: ["4.3"]
     steps:
-      - name: Checkout
+      - name: Checkout flepiMoP
         uses: actions/checkout@v4
         with:
           lfs: true
           sparse-checkout: |
-            flepimop/gempyor_pkg/
+            *
+            !documentation/
           sparse-checkout-cone-mode: false
-      - name: Setup Python
-        uses: actions/setup-python@v5
+          persist-credentials: false
+      - name: Install flepiMoP
+        uses: ./.github/actions/flepimop-install
         with:
-          python-version: '3.11'
-      - name: Install Pylint
+          python-version: ${{ matrix.python-version }}
+          R-version: ${{ matrix.R-version }}
+      - name: Run pylint
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install pylint
-      - name: Linting with Pylint
-        run: |
+          conda activate venv/
           pylint ${{ env.PYLINT_SRC }} \
             --fail-under ${{ env.PYLINT_FAIL_UNDER }} \
             --rcfile ${{ env.PYLINT_RCFILE }} \
             --verbose
+        shell: bash -el {0}
   check-info-json-schema:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
