@@ -9,8 +9,10 @@ Classes:
 __all__ = ["Parameters"]
 
 
+from collections.abc import Callable
 import copy
 import datetime
+from inspect import signature
 import logging
 import os
 from typing import Any, Literal
@@ -18,6 +20,7 @@ from typing import Any, Literal
 import confuse
 import numpy as np
 from numpy import ndarray
+import numpy.typing as npt
 import pandas as pd
 
 from . import NPI, utils
@@ -334,3 +337,98 @@ class Parameters:
                     )
 
         return p_reduced
+
+
+def _inspect_requested_parameters(
+    f: Callable[..., Any],
+    ignore_args: int,
+    pdata: dict[str, dict[str, Any]],
+    p_draw: npt.NDArray[np.float64],
+) -> list[float | int | npt.NDArray[np.float64 | np.int64]]:
+    """
+    Inspect a function for requested parameters.
+
+    Args:
+        f: The function to inspect the arguments of.
+        ignore_args: The number of initial arguments to ignore.
+        pdata: A dictionary of parameter data, like the `pdata` attribute of
+            :obj:`gempyor.parameters.Parameters`.
+        p_draw: A numpy array of parameter draws to extract values from.
+
+    Returns:
+        A list of parameter values extracted from `p_draw` that can be passed to the
+        given function `f` after ignoring the first `ignore_args` arguments. The
+        values are extracted based on the parameter data in `pdata`.
+        * 'dist' parameters are expected to be single values.
+        * 'ts' parameters are expected to be time series data and will be returned as
+            a numpy array.
+
+    Raises:
+        ValueError: If the function does not have enough arguments to ignore.
+        ValueError: If a requested parameter is not found in `pdata`.
+        NotImplementedError: If a requested parameter is not supported, only 'dist' or
+            'ts' parameters are currently supported.
+
+    Examples:
+        >>> from pprint import pprint
+        >>> import numpy as np
+        >>> from gempyor.parameters import _inspect_requested_parameters
+        >>> def example_function(a, b, c):
+        ...     return (a + b) * c
+        >>> pdata = {
+        ...     'a': {'idx': 0, 'dist': True},
+        ...     'b': {'idx': 1, 'dist': True},
+        ...     'c': {'idx': 2, 'ts': True}
+        ... }
+        >>> p_draw = np.stack([
+        ...     0.1 * np.ones((3, 2)),
+        ...     1.5 * np.ones((3, 2)),
+        ...     np.random.default_rng(123).uniform(size=(3, 2)),
+        ... ])
+        >>> p_draw.shape
+        (3, 3, 2)
+        >>> args = _inspect_requested_parameters(example_function, 1, pdata, p_draw)
+        >>> pprint(args)
+        [1.5,
+         array([[0.68235186, 0.05382102],
+               [0.22035987, 0.18437181],
+               [0.1759059 , 0.81209451]])]
+        >>> example_function(1.0, *args)
+        array([[1.70587966, 0.13455255],
+               [0.55089968, 0.46092953],
+               [0.43976475, 2.03023627]])
+
+    """
+    sig = signature(f)
+    arg_names = list(sig.parameters.keys())
+    if len(arg_names) < ignore_args:
+        msg = (
+            f"Function '{f.__name__}' does not have enough arguments to ignore "
+            f"the first {ignore_args} arguments. It has {len(arg_names)} arguments "
+            f"instead. The arguments are: {arg_names}."
+        )
+        raise ValueError(msg)
+    if not (parameter_args := arg_names[ignore_args:]):
+        return []
+    args = []
+    for param_name in parameter_args:
+        if (param_data := pdata.get(param_name)) is None:
+            msg = (
+                f"The requested parameter, '{param_name}', not "
+                f"found in the arguments of {f.__name__}. The "
+                f"available parameters are: {pdata.keys()}."
+            )
+            raise ValueError(msg)
+        if "dist" in param_data:
+            args.append(p_draw[param_data["idx"], 0, 0].item())
+            continue
+        if "ts" in param_data:
+            args.append(p_draw[param_data["idx"], :, :])
+            continue
+        msg = (
+            f"Parameter '{param_name}' in function '{f.__name__}' is not supported. "
+            "Only parameters with 'dist' or 'ts' in their data are currently "
+            f"supported. Instead has the following data: {param_data.keys()}."
+        )
+        raise NotImplementedError(msg)
+    return args
