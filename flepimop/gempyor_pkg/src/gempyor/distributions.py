@@ -348,8 +348,8 @@ class BinomialDistribution(DistributionABC):
     """
 
     distribution: Literal["binomial"] = "binomial"
-    n: int = Field(..., gt=0)
-    p: float = Field(..., gt=0.0, lt=1.0)
+    n: int = Field(..., ge=0)
+    p: float = Field(..., ge=0.0, le=1.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
