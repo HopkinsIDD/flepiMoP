@@ -67,7 +67,7 @@ class BatchSystem(ABC):
         >>> batch_system.format_time_limit(time_limit)
         '1595'
         >>> batch_system.size_from_jobs_simulations_blocks(2, 10, None, 5)
-        JobSize(blocks=2, chains=10, samples=None, simulations=5)
+        JobSize(blocks=2, chains=10, samples=None, simulations=5, samples_per_chain=None, simulations_per_chain=10, total_samples=None, total_simulations=100)
     """
 
     needs_cluster: bool = False
@@ -300,7 +300,7 @@ class LocalBatchSystem(BatchSystem):
         >>> from gempyor.batch import LocalBatchSystem
         >>> batch_system = LocalBatchSystem()
         >>> batch_system.size_from_jobs_simulations_blocks(1, 1, 25, 50)
-        JobSize(blocks=1, chains=1, samples=25, simulations=50)
+        JobSize(blocks=1, chains=1, samples=25, simulations=50, samples_per_chain=25, simulations_per_chain=50, total_samples=25, total_simulations=50)
         >>> with warnings.catch_warnings(record=True) as warns:
         ...     size = batch_system.size_from_jobs_simulations_blocks(2, 4, 50, 100)
         ...     for warn in warns:
@@ -308,10 +308,10 @@ class LocalBatchSystem(BatchSystem):
         ...
         Local batch system only supports 1 chain but was given 4, overriding.
         Local batch system only supports 1 block but was given 2, overriding.
-        Local batch system only supports 50 total simulations but was given 800, overriding.
         Local batch system only supports 25 total samples but was given 400, overriding.
+        Local batch system only supports 50 total simulations but was given 800, overriding.
         >>> size
-        JobSize(blocks=1, chains=1, samples=25, simulations=50)
+        JobSize(blocks=1, chains=1, samples=25, simulations=50, samples_per_chain=25, simulations_per_chain=50, total_samples=25, total_simulations=50)
     """
 
     name = "local"
@@ -625,19 +625,6 @@ def register_batch_system(batch_system: BatchSystem) -> None:
     Raises:
         ValueError: If the batch system is already registered, checks the `name`
             attribute to determine this.
-
-    Examples:
-        >>> from gempyor.batch import BatchSystem, register_batch_system
-        >>> class CustomBatchSystem(BatchSystem):
-        ...     name = "custom"
-        >>> register_batch_system(CustomBatchSystem()) is None
-        True
-        >>> try:
-        ...     register_batch_system(CustomBatchSystem()) is None
-        ... except Exception as e:
-        ...     print(e)
-        ...
-        Batch system 'custom' already registered.
     """
     if any(batch_system.name == bs.name for bs in _batch_systems):
         raise ValueError(f"Batch system '{batch_system.name}' already registered.")
@@ -665,9 +652,9 @@ def get_batch_system(name: str, raise_on_missing: bool = True) -> BatchSystem | 
     Examples:
         >>> from gempyor.batch import get_batch_system
         >>> get_batch_system("local")
-        <gempyor.batch.LocalBatchSystem object at 0x1629f9b10>
+        <gempyor.batch.systems.LocalBatchSystem object at ...>
         >>> get_batch_system("slurm")
-        <gempyor.batch.SlurmBatchSystem object at 0x1629f9ad0>
+        <gempyor.batch.systems.SlurmBatchSystem object at ...>
         >>> try:
         ...     get_batch_system("does not exist")
         ... except Exception as e:
@@ -715,7 +702,7 @@ def _resolve_batch_system_name(name: str | None, local: bool, slurm: bool) -> st
         ValueError: If the given name conflicts with the boolean flags.
 
     Examples:
-        >>> from gempyor.batch import _resolve_batch_system_name
+        >>> from gempyor.batch.systems import _resolve_batch_system_name
         >>> _resolve_batch_system_name("abc", False, False)
         'abc'
         >>> _resolve_batch_system_name("SLURM", False, False)

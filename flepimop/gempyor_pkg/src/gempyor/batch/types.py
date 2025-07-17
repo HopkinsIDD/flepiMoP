@@ -71,22 +71,20 @@ class JobResources(BaseModel):
         51200
         >>> resources.total_resources()
         (5, 50, 51200)
-        >>> try:
-        ...     JobResources(nodes=0, cpus=1, memory=1024)
-        ... except Exception as e:
-        ...     print(e)
-        1 validation error for JobResources
+        >>> JobResources(nodes=0, cpus=1, memory=1024)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for JobResources
         nodes
-        Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
-            For further information visit https://errors.pydantic.dev/2.10/v/greater_than
-        >>> try:
-        ...     JobResources(nodes=2, cpus=4.5, memory=1024)
-        ... except Exception as e:
-        ...     print(e)
-        1 validation error for JobResources
+          Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
+            For further information visit https://errors.pydantic.dev/2.11/v/greater_than
+        >>> JobResources(nodes=2, cpus=4.5, memory=1024)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for JobResources
         cpus
-        Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=4.5, input_type=float]
-            For further information visit https://errors.pydantic.dev/2.10/v/int_from_float
+          Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=4.5, input_type=float]
+            For further information visit https://errors.pydantic.dev/2.11/v/int_from_float
     """
 
     nodes: PositiveInt
@@ -190,44 +188,37 @@ class JobSize(BaseModel):
         >>> import warnings
         >>> from gempyor.batch import JobSize
         >>> JobSize(blocks=5, chains=10, samples=100, simulations=200)
-        JobSize(blocks=5, chains=10, samples=100, simulations=200)
+        JobSize(blocks=5, chains=10, samples=100, simulations=200, samples_per_chain=500, simulations_per_chain=1000, total_samples=5000, total_simulations=10000)
         >>> JobSize(chains=32, simulations=500)
-        JobSize(blocks=None, chains=32, samples=None, simulations=500)
-        >>> try:
-        ...     JobSize(blocks=0, chains=12, simulations=100)
-        ... except Exception as e:
-        ...     print(e)
-        ...
-        1 validation error for JobSize
+        JobSize(blocks=None, chains=32, samples=None, simulations=500, samples_per_chain=None, simulations_per_chain=500, total_samples=None, total_simulations=16000)
+        >>> JobSize(blocks=0, chains=12, simulations=100)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for JobSize
         blocks
-        Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
-            For further information visit https://errors.pydantic.dev/2.10/v/greater_than
-        >>> try:
-        ...     JobSize(chains=10, samples=50.5, simulations=200)
-        ... except Exception as e:
-        ...     print(e)
-        ...
-        1 validation error for JobSize
+          Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]
+            For further information visit https://errors.pydantic.dev/2.11/v/greater_than
+        >>> JobSize(chains=10, samples=50.5, simulations=200)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for JobSize
         samples
-        Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=50.5, input_type=float]
-            For further information visit https://errors.pydantic.dev/2.10/v/int_from_float
-        >>> try:
-        ...     JobSize(samples=100, simulations=50)
-        ... except Exception as e:
-        ...     print(e)
-        ...
-        1 validation error for JobSize
-        Value error, The number of samples, 100, must be less than or equal to the number of simulations, 50, per a block. [type=value_error, input_value={'samples': 100, 'simulations': 50}, input_type=dict]
-            For further information visit https://errors.pydantic.dev/2.10/v/value_error
+          Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=50.5, input_type=float]
+            For further information visit https://errors.pydantic.dev/2.11/v/int_from_float
+        >>> JobSize(samples=100, simulations=50)
+        Traceback (most recent call last):
+            ...
+        pydantic_core._pydantic_core.ValidationError: 1 validation error for JobSize
+          Value error, The number of samples, 100, must be less than or equal to the number of simulations, 50, per a block. [type=value_error, input_value={'samples': 100, 'simulations': 50}, input_type=dict]
+            For further information visit https://errors.pydantic.dev/2.11/v/value_error
         >>> with warnings.catch_warnings(record=True) as warns:
         ...     JobSize(samples=75, simulations=100)
         ...     for warn in warns:
         ...             print(warn.message)
-        ...
-        JobSize(blocks=None, chains=None, samples=75, simulations=100)
+        JobSize(blocks=None, chains=None, samples=75, simulations=100, samples_per_chain=75, simulations_per_chain=100, total_samples=75, total_simulations=100)
         The samples to simulations ratio is 75%, which is higher than the recommended limit of 60%.
         >>> JobSize()
-        JobSize(blocks=None, chains=None, samples=None, simulations=None)
+        JobSize(blocks=None, chains=None, samples=None, simulations=None, samples_per_chain=None, simulations_per_chain=None, total_samples=None, total_simulations=None)
         >>> size = JobSize(blocks=4, chains=3, samples=10, simulations=25)
         >>> size.samples_per_chain
         40

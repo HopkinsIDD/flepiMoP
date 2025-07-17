@@ -106,7 +106,7 @@ def get_script_logger(
     Examples:
         >>> from gempyor.logging import get_script_logger
         >>> logger = get_script_logger(__name__, 3)
-        >>> logger.info("This is a log info message")
+        >>> logger.info("This is a log info message")  # doctest: +SKIP
         2024-10-29 16:07:20,272:INFO:__main__> This is a log info message.
     """
     logger = logging.getLogger(name)

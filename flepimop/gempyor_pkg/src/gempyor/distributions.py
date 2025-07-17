@@ -108,7 +108,7 @@ class NormalDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = NormalDistribution(mu=2.3, sigma=4.5)
         >>> dist
-        NormalDistribution(distribution='norm', mu=2.3, sigma=4.5)
+        NormalDistribution(distribution='norm', allow_edge_cases=False, mu=2.3, sigma=4.5)
         >>> dist.sample(rng=rng)
         array([3.67122686])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -138,7 +138,7 @@ class UniformDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = UniformDistribution(low=-0.5, high=1.5)
         >>> dist
-        UniformDistribution(distribution='uniform', low=-0.5, high=1.5)
+        UniformDistribution(distribution='uniform', allow_edge_cases=False, low=-0.5, high=1.5)
         >>> dist.sample(rng=rng)
         array([1.0479121])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -190,7 +190,7 @@ class LognormalDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = LognormalDistribution(meanlog=0.0, sdlog=1.0)
         >>> dist
-        LognormalDistribution(distribution='lognorm', meanlog=0.0, sdlog=1.0)
+        LognormalDistribution(distribution='lognorm', allow_edge_cases=False, meanlog=0.0, sdlog=1.0)
         >>> dist.sample(rng=rng)
         array([1.35624124])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -221,7 +221,7 @@ class TruncatedNormalDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = TruncatedNormalDistribution(mean=1.0, sd=1.0, a=0.0, b=10.0)
         >>> dist
-        TruncatedNormalDistribution(distribution='truncnorm', mean=1.0, sd=1.0, a=0.0, b=10.0)
+        TruncatedNormalDistribution(distribution='truncnorm', allow_edge_cases=False, mean=1.0, sd=1.0, a=0.0, b=10.0)
         >>> dist.sample(rng=rng)
         array([1.87722989])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -288,7 +288,7 @@ class PoissonDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = PoissonDistribution(lam=3.0)
         >>> dist
-        PoissonDistribution(distribution='poisson', lam=3.0)
+        PoissonDistribution(distribution='poisson', allow_edge_cases=False, lam=3.0)
         >>> dist.sample(rng=rng)
         array([4])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -335,7 +335,7 @@ class BinomialDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = BinomialDistribution(n=10, p=0.5)
         >>> dist
-        BinomialDistribution(distribution='binomial', n=10, p=0.5)
+        BinomialDistribution(distribution='binomial', allow_edge_cases=False, n=10, p=0.5)
         >>> dist.sample(rng=rng)
         array([6])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -351,7 +351,8 @@ class BinomialDistribution(DistributionABC):
         Traceback (most recent call last):
             ...
         pydantic_core._pydantic_core.ValidationError: 1 validation error for BinomialDistribution
-          Value error, `p` cannot be 0 or 1 when `allow_edge_cases` is `False`. [type=value_error, ...
+          Value error, Input for `p` cannot be 0 or 1 when `allow_edge_cases` is `False`. [type=value_error, input_value={'n': 10, 'p': 0.0}, input_type=dict]
+            For further information visit https://errors.pydantic.dev/2.11/v/value_error
     """
 
     distribution: Literal["binomial"] = "binomial"
@@ -389,13 +390,13 @@ class GammaDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = GammaDistribution(shape=2.0, scale=1.5)
         >>> dist
-        GammaDistribution(distribution='gamma', shape=2.0, scale=1.5)
+        GammaDistribution(distribution='gamma', allow_edge_cases=False, shape=2.0, scale=1.5)
         >>> dist.sample(rng=rng)
-        array([2.78453141])
+        array([3.13772591])
         >>> dist.sample(size=(3, 5), rng=rng)
-        array([[1.0116844 , 5.1632733 , 6.51682397, 0.49053229, 0.82522731],
-               [2.45524838, 1.4870423 , 1.95460596, 0.94191942, 5.92679803],
-               [5.08819234, 2.21976694, 7.82570081, 3.42761858, 1.1070266 ]])
+        array([[4.25301838, 2.75582337, 2.46760563, 4.61888299, 2.63006031],
+               [3.51900762, 3.28422915, 4.61612039, 2.15883076, 5.69337578],
+               [1.75889742, 3.67897959, 3.38745296, 1.6334585 , 3.89261212]])
     """
 
     distribution: Literal["gamma"] = "gamma"
@@ -419,13 +420,13 @@ class WeibullDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = WeibullDistribution(shape=2.5, scale=5.0)
         >>> dist
-        WeibullDistribution(distribution='weibull', shape=2.5, scale=5.0)
+        WeibullDistribution(distribution='weibull', allow_edge_cases=False, shape=2.5, scale=5.0)
         >>> dist.sample(rng=rng)
-        array([5.18664161])
+        array([7.10164344])
         >>> dist.sample(size=(3, 5), rng=rng)
-        array([[4.09267151, 6.25764353, 6.57560416, 2.72348545, 3.73147743],
-               [5.08637841, 4.63044996, 4.96639599, 3.99658252, 6.42564251],
-               [6.29525049, 5.03450379, 6.88371131, 5.65602432, 3.99307222]])
+        array([[7.02058405, 7.0786094 , 3.00403884, 1.87780582, 5.8054469 ],
+               [5.73657673, 7.886256  , 1.81412232, 5.0918523 , 1.73016943],
+               [5.17350562, 6.22761392, 3.4198509 , 5.43445321, 2.36440749]])
     """
 
     distribution: Literal["weibull"] = "weibull"
@@ -450,13 +451,13 @@ class BetaDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = BetaDistribution(alpha=2.0, beta=5.0)
         >>> dist
-        BetaDistribution(distribution='beta', alpha=2.0, beta=5.0)
+        BetaDistribution(distribution='beta', allow_edge_cases=False, alpha=2.0, beta=5.0)
         >>> dist.sample(rng=rng)
-        array([0.31153835])
+        array([0.24395464])
         >>> dist.sample(size=(3, 5), rng=rng)
-        array([[0.18343469, 0.43545995, 0.48512838, 0.08625927, 0.22223849],
-               [0.34020943, 0.28014294, 0.3069152 , 0.201726  , 0.4729195 ],
-               [0.44331908, 0.32357912, 0.5282496 , 0.38318282, 0.20141687]])
+        array([[0.28406092, 0.39027204, 0.29864681, 0.41835336, 0.49963165],
+               [0.30396328, 0.15089427, 0.32937986, 0.52373987, 0.16127411],
+               [0.32746504, 0.48761242, 0.2162056 , 0.29178583, 0.22819733]])
     """
 
     distribution: Literal["beta"] = "beta"

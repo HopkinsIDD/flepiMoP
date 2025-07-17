@@ -45,6 +45,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           R-version: ${{ matrix.R-version }}
+      - name: Run doctests
+        run: |
+          conda activate venv/
+          export FLEPI_PATH=$(pwd)
+          cd flepimop/gempyor_pkg
+          pytest --doctest-modules --exitfirst src/gempyor/
+        shell: bash -el {0}
       - name: Run fast unit tests
         run: |
           conda activate venv/
