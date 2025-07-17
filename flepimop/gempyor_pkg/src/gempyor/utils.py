@@ -188,18 +188,6 @@ def search_and_import_plugins_class(
     Returns:
         The instance of the class that was instantiated with provided **kwargs.
 
-    Examples:
-        Suppose there is a module called `my_plugin.py with a class `MyClass` located at `/path/to/plugin/`.
-
-        Dynamically import and instantiate the class:
-
-        >>> instance = search_and_import_plugins_class('/path/to/plugin', path_prefix, 'MyClass', **params)
-
-        View the instance:
-
-        >>> print(instance)
-        <__main__.MyClass object at 0x7f8b2c6b4d60>
-
     """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
@@ -253,14 +241,6 @@ def profile(
     Returns:
         Profile of the decorated function.
 
-    Examples:
-        >>> @profile(output_file="my_function.prof")
-        >>> def my_function():
-            # Function body content
-            pass
-        >>> my_function()
-        After running ``my_function``, a file named ``my_function.prof`` will be created in the current WD.
-        This file contains the profiling data.
     """
 
     def inner(func):
@@ -373,18 +353,6 @@ def list_filenames(
     Returns:
         A list of strings representing the paths to the files that match the filters.
 
-    Examples:
-        To get all files containing "hosp":
-        >>> gempyor.utils.list_filenames(
-            folder="model_output/",
-            filters=["hosp"],
-        )
-
-        To get only "hosp" files with a ".parquet" extension:
-        >>> gempyor.utils.list_filenames(
-            folder="model_output/",
-            filters=["hosp", ".parquet"],
-        )
     """
     filters = [filters] if not isinstance(filters, list) else filters
     filters = filters if len(filters) else [""]
@@ -419,20 +387,11 @@ def extract_slot(file: Path) -> pd.DataFrame:
         >>> file = Path.cwd() / "00017.foobar.csv"
         >>> sample.to_csv(file, index=False)
         >>> extract_slot(file)
-        letters  slot
+          letters  slot
         0       a    17
         1       b    17
         2       c    17
-        >>> extract_slot(file).info()
-        <class 'pandas.core.frame.DataFrame'>
-        RangeIndex: 3 entries, 0 to 2
-        Data columns (total 2 columns):
-        #   Column   Non-Null Count  Dtype
-        ---  ------   --------------  -----
-        0   letters  3 non-null      object
-        1   slot     3 non-null      int64
-        dtypes: int64(1), object(1)
-        memory usage: 180.0+ bytes
+
     """
     df = pd.read_parquet(file) if file.suffix == ".parquet" else pd.read_csv(file)
     if "slot" in df.columns:
@@ -483,27 +442,27 @@ def rolling_mean_pad(
     Examples:
         Below is a brief set of examples showcasing how to smooth a metric, like
         hospitalizations, using this function.
-        ```
+
         >>> import numpy as np
         >>> from gempyor.utils import rolling_mean_pad
         >>> hospitalizations = np.arange(1., 29.).reshape((7, 4))
         >>> hospitalizations
         array([[ 1.,  2.,  3.,  4.],
-            [ 5.,  6.,  7.,  8.],
-            [ 9., 10., 11., 12.],
-            [13., 14., 15., 16.],
-            [17., 18., 19., 20.],
-            [21., 22., 23., 24.],
-            [25., 26., 27., 28.]])
+               [ 5.,  6.,  7.,  8.],
+               [ 9., 10., 11., 12.],
+               [13., 14., 15., 16.],
+               [17., 18., 19., 20.],
+               [21., 22., 23., 24.],
+               [25., 26., 27., 28.]])
         >>> rolling_mean_pad(hospitalizations, 5)
         array([[ 3.4,  4.4,  5.4,  6.4],
-            [ 5.8,  6.8,  7.8,  8.8],
-            [ 9. , 10. , 11. , 12. ],
-            [13. , 14. , 15. , 16. ],
-            [17. , 18. , 19. , 20. ],
-            [20.2, 21.2, 22.2, 23.2],
-            [22.6, 23.6, 24.6, 25.6]])
-        ```
+               [ 5.8,  6.8,  7.8,  8.8],
+               [ 9. , 10. , 11. , 12. ],
+               [13. , 14. , 15. , 16. ],
+               [17. , 18. , 19. , 20. ],
+               [20.2, 21.2, 22.2, 23.2],
+               [22.6, 23.6, 24.6, 25.6]])
+
     """
     weights = (1.0 / window) * np.ones(window)
     output = scipy.ndimage.convolve1d(data, weights, axis=0, mode="nearest")
@@ -580,17 +539,16 @@ def create_resume_out_filename(
         The path to a corresponding output file.
 
     Examples:
-        Generate an output file with specified parameters:
-        >>> filename = create_resume_out_filename(
-            flepi_run_index="test_run",
-            flepi_prefix="model_output/run_id/",
-            flepi_slot_index="1",
-            flepi_block_index="2",
-            filetype="seed",
-            liketype="chimeric"
-            )
-        >>> print(filename)
-        "experiment/001/normal/intermediate/000000123.000000000.1.parquet"
+        >>> from gempyor.utils import create_resume_out_filename
+        >>> create_resume_out_filename(
+        ...     flepi_run_index="test_run",
+        ...     flepi_prefix="model_output/run_id/",
+        ...     flepi_slot_index="1",
+        ...     flepi_block_index="2",
+        ...     filetype="seed",
+        ...     liketype="chimeric",
+        ... )
+        'model_output/model_output/run_id/test_run/seed/chimeric/intermediate/000000001.000000001.000000001.test_run.seed.csv'
     """
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
@@ -631,16 +589,15 @@ def create_resume_input_filename(
         The path to the a corresponding input file.
 
     Examples:
-        Generate an input file with specified parameters:
-        >>> filename = create_resume_input_filename(
-            resume_run_index="2",
-            flepi_prefix="model_output/run_id/",
-            flepi_slot_index="1",
-            filetype="seed",
-            liketype="chimeric"
-            )
-        >>> print(filename)
-        "experiment/002/normal/final/789.csv"
+        >>> from gempyor.utils import create_resume_input_filename
+        >>> create_resume_input_filename(
+        ...     resume_run_index="2",
+        ...     flepi_prefix="model_output/run_id/",
+        ...     flepi_slot_index="1",
+        ...     filetype="seed",
+        ...     liketype="chimeric",
+        ... )
+        'model_output/model_output/run_id/2/seed/chimeric/final/000000001.2.seed.csv'
     """
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
@@ -676,14 +633,20 @@ def get_filetype_for_resume(
 
     Examples:
         Determine file types for block index 1 with seeding data NOT discarded:
-        >>> filetypes = get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1")
-        >>> print(filetypes)
-        ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
+
+        >>> from gempyor.utils import get_filetype_for_resume
+        >>> get_filetype_for_resume(
+        ...     resume_discard_seeding="false", flepi_block_index="1"
+        ... )
+        ['seed', 'spar', 'snpi', 'hpar', 'hnpi', 'init']
 
         Determine file types for block index 2 with seeding data discarded:
-        >>> filtypes = get_filetype_for_resume(resume_discard_seeding="true", flepi_block_index="2")
-        >>> print(filetypes)
-        ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
+
+        >>> get_filetype_for_resume(
+        ...     resume_discard_seeding="true", flepi_block_index="2"
+        ... )
+        ['seed', 'spar', 'snpi', 'hpar', 'hnpi', 'host', 'llik', 'init']
+
     """
     if flepi_block_index == "1":
         if resume_discard_seeding == "true":
@@ -704,13 +667,18 @@ def create_resume_file_names_map(
     last_job_output: str,
 ) -> dict[str, str]:
     """
-    Generates a mapping of input file names to output file names for a resume process based on
-    parquet file types and environmental conditions. The function adjusts the file name mappings
-    based on the operational block index and the location of the last job output.
+    Generate a mapping of input file names to output file names for a resume process.
+
+    Generates a mapping of input file names to output file names for a resume process
+    based on parquet file types and environmental conditions. The function adjusts the
+    file name mappings based on the operational block index and the location of the
+    last job output.
 
     Args:
-        resume_discard_seeding:  Determines whether seeding-related file types should be included.
-        flepi_block_index: Determines a specific operational mode or block of the process.
+        resume_discard_seeding:  Determines whether seeding-related file types should
+            be included.
+        flepi_block_index: Determines a specific operational mode or block of the
+            process.
         resume_run_index: Resume run index.
         flepi_prefix: File prefix.
         flepi_slot_index: Index of the slot.
@@ -722,40 +690,49 @@ def create_resume_file_names_map(
         output file paths.
 
     The mappings depend on:
-    - Parquet file types appropriate for resuming a process, as determined by the environment.
-    - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the
-      file naming convention.
-    - The operational block index ('FLEPI_BLOCK_INDEX'), which can alter the input file names for
-      block index '1'.
-    - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set to an S3 path,
-      adjusts the keys in the mapping to be prefixed with this path.
+    - Parquet file types appropriate for resuming a process, as determined by the
+        environment.
+    - Whether the files are for 'global' or 'chimeric' types, as these like types
+        influence the file naming convention.
+    - The operational block index ('FLEPI_BLOCK_INDEX'), which can alter the input
+        file names for block index '1'.
+    - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set
+        to an S3 path, adjusts the keys in the mapping to be prefixed with this path.
 
     Raises:
-        No explicit exceptions are raised within the function, but it relies heavily on external
-        functions and environment variables which if improperly configured could lead to unexpected
-        behavior.
+        No explicit exceptions are raised within the function, but it relies heavily
+        on external functions and environment variables which if improperly configured
+        could lead to unexpected behavior.
 
     Examples:
-        Generate a mapping of file names for a given resume process:
+        >>> from pprint import pprint
+        >>> from gempyor.utils import create_resume_file_names_map
         >>> file_names_map = create_resume_file_names_map(
-            resume_discard_seeding="false",
-            flepi_block_index="1",
-            resume_run_index="1",
-            flepi_prefix="model_output/run_id/",
-            flepi_slot_index="1",
-            flepi_run_index="test_run",
-            last_job_output="s3://bucket/path/")
-        >>> print(file_names_map)
-        {
-        's3://bucket/path/model_output/run_id/1_type1_global_1.in': 'model_output/run_id/test_run_type1_global_1_1.out',
-        's3://bucket/path/model_output/run_id/1_type1_chimeric_1.in': 'model_output/run_id/test_run_type1_chimeric_1_1.out',
-        's3://bucket/path/model_output/run_id/1_type2_global_1.in': 'model_output/run_id/test_run_type2_global_1_1.out',
-        's3://bucket/path/model_output/run_id/1_type2_chimeric_1.in': 'model_output/run_id/test_run_type2_chimeric_1_1.out'
-        }
-        # Note: this output is toy output implemented with toy file names.
+        ...     resume_discard_seeding="false",
+        ...     flepi_block_index="1",
+        ...     resume_run_index="1",
+        ...     flepi_prefix="model_output/run_id/",
+        ...     flepi_slot_index="1",
+        ...     flepi_run_index="test_run",
+        ...     last_job_output="s3://bucket/path/",
+        ... )
+        >>> pprint(file_names_map)
+        {'s3://bucket/path/model_output/model_output/run_id/1/hnpi/chimeric/final/000000001.1.hnpi.parquet': 'model_output/model_output/run_id/test_run/hnpi/chimeric/intermediate/000000001.000000001.000000000.test_run.hnpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/hnpi/global/final/000000001.1.hnpi.parquet': 'model_output/model_output/run_id/test_run/hnpi/global/intermediate/000000001.000000001.000000000.test_run.hnpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/hpar/chimeric/final/000000001.1.hpar.parquet': 'model_output/model_output/run_id/test_run/hpar/chimeric/intermediate/000000001.000000001.000000000.test_run.hpar.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/hpar/global/final/000000001.1.hpar.parquet': 'model_output/model_output/run_id/test_run/hpar/global/intermediate/000000001.000000001.000000000.test_run.hpar.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/init/chimeric/final/000000001.1.init.parquet': 'model_output/model_output/run_id/test_run/init/chimeric/intermediate/000000001.000000001.000000000.test_run.init.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/init/global/final/000000001.1.init.parquet': 'model_output/model_output/run_id/test_run/init/global/intermediate/000000001.000000001.000000000.test_run.init.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/seed/chimeric/final/000000001.1.seed.csv': 'model_output/model_output/run_id/test_run/seed/chimeric/intermediate/000000001.000000001.000000000.test_run.seed.csv',
+         's3://bucket/path/model_output/model_output/run_id/1/seed/global/final/000000001.1.seed.csv': 'model_output/model_output/run_id/test_run/seed/global/intermediate/000000001.000000001.000000000.test_run.seed.csv',
+         's3://bucket/path/model_output/model_output/run_id/1/snpi/chimeric/final/000000001.1.snpi.parquet': 'model_output/model_output/run_id/test_run/snpi/chimeric/intermediate/000000001.000000001.000000000.test_run.snpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/snpi/global/final/000000001.1.snpi.parquet': 'model_output/model_output/run_id/test_run/snpi/global/intermediate/000000001.000000001.000000000.test_run.snpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/spar/chimeric/final/000000001.1.spar.parquet': 'model_output/model_output/run_id/test_run/spar/chimeric/intermediate/000000001.000000001.000000000.test_run.spar.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/spar/global/final/000000001.1.spar.parquet': 'model_output/model_output/run_id/test_run/spar/global/intermediate/000000001.000000001.000000000.test_run.spar.parquet'}
 
     Notes:
-        - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to an S3 location.
+        - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to
+        an S3 location.
     """
     file_types = get_filetype_for_resume(
         resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
@@ -813,21 +790,6 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
         ClientError: If an error occurs during the download from S3, such as a permissions issue,
                      a missing file, or network-related errors. These are caught and logged but not
                      re-raised, to allow the function to attempt subsequent downloads.
-
-    Examples:
-        >>> name_map = {
-            "s3://mybucket/data/file1.txt": "/local/path/to/file1.txt",
-            "s3://mybucket/data/file2.txt": "/local/path/to/file2.txt"
-        }
-        >>> download_file_from_s3(name_map)
-        # This would download 'file1.txt' and 'file2.txt' from 'mybucket' on S3 to the specified local paths.
-
-        # If an S3 URI is malformed:
-        >>> name_map = {
-            "http://wrongurl.com/data/file1.txt": "/local/path/to/file1.txt"
-        }
-        >>> download_file_from_s3(name_map)
-        # This will raise a ValueError indicating the invalid S3 URI format.
     """
     try:
         import boto3
@@ -922,6 +884,7 @@ def _dump_formatted_yaml(cfg: confuse.Configuration) -> str:
                 rate: ["beta * gamma"]
                 proportional_to: [[S], [I]]
                 proportion_exponent: [1, 1]
+        <BLANKLINE>
     """
 
     class CustomDumper(yaml.Dumper):
@@ -1004,9 +967,13 @@ def _git_head(repository: Path) -> str:
 
     Examples:
         >>> import os
+        >>> import pytest
+        >>> if os.environ.get("FLEPI_PATH") is None:
+        ...     pytest.skip("FLEPI_PATH environment variable is not set.")
         >>> from pathlib import Path
-        >>> _git_head(Path(os.environ["FLEPI_PATH"]))
-        'efe896b1a5e4f8e33667c170cd5319d6ef1e3db5'
+        >>> _git_head(Path(os.environ["FLEPI_PATH"]))  # doctest: +ELLIPSIS
+        '...'
+
     """
     git_cmd = _shutil_which("git")
     proc = subprocess.run(
@@ -1027,10 +994,10 @@ def _git_checkout(repository: Path, branch: str) -> subprocess.CompletedProcess:
             checkout a new branch in.
         branch: The name of the new branch to checkout.
 
-    Examples:
-        >>> import os
-        >>> from pathlib import Path
-        >>> _git_checkout(Path(os.environ["FLEPI_PATH"]), "my-new-branch")
+    Returns:
+        A `subprocess.CompletedProcess` object containing the result of the checkout
+        command.
+
     """
     git_cmd = _shutil_which("git")
     return subprocess.run(
@@ -1073,7 +1040,7 @@ def _format_cli_options(
         >>> _format_cli_options({"o": "/path/to/output.log"})
         ['-o=/path/to/output.log']
         >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
-        ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+        ["--opt1='```'", '--opt2=\\'$( echo \\'"\\'"\\'Hello!\\'"\\'"\\')\\'']
         >>> _format_cli_options({"output": "/path/to/output.log"}, always_single=True)
         ['-output=/path/to/output.log']
         >>> _format_cli_options({"person": ["Alice", "Bob", "Charlie"]})

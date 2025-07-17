@@ -134,16 +134,20 @@ def _read_and_validate_dataframe(
         ...     name: str
         ...     age: int
         >>> _read_and_validate_dataframe(file, model=Person)
-        name  age
+           name  age
         0  Jack   23
         1  Jill   25
         >>> pd.DataFrame(data={"name": [32], "age": ["Jane"]}).to_csv(file, index=False)
         >>> _read_and_validate_dataframe(file, model=Person)
         Traceback (most recent call last):
             ...
-        pydantic_core._pydantic_core.ValidationError: 1 validation error for RootModel[list[Person]]
+        pydantic_core._pydantic_core.ValidationError: 2 validation errors for RootModel[list[Person]]
+        0.name
+          Input should be a valid string [type=string_type, input_value=32, input_type=int]
+            For further information visit https://errors.pydantic.dev/2.11/v/string_type
         0.age
-        Input should be a valid integer, unable to parse string as an integer ...
+          Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='Jane', input_type=str]
+            For further information visit https://errors.pydantic.dev/2.11/v/int_parsing
         >>> class PartitionSlice(BaseModel):
         ...     name: str
         ...     amount: Annotated[float, Field(gt=0.0, lt=1.0)]
@@ -159,7 +163,7 @@ def _read_and_validate_dataframe(
         ...     data={"name": ["A", "B"], "amount": [0.5, 0.5]},
         ... ).to_csv(file, index=False)
         >>> _read_and_validate_dataframe(file, model=Partition)
-        name  amount
+          name  amount
         0    A     0.5
         1    B     0.5
         >>> pd.DataFrame(
@@ -169,7 +173,8 @@ def _read_and_validate_dataframe(
         Traceback (most recent call last):
             ...
         pydantic_core._pydantic_core.ValidationError: 1 validation error for Partition
-        Value error, The sum of the amounts must be equal to 1.0 ...
+          Value error, The sum of the amounts must be equal to 1.0 [type=value_error, input_value=[{'name': 'A', 'amount': ...e': 'B', 'amount': 0.1}], input_type=list]
+            For further information visit https://errors.pydantic.dev/2.11/v/value_error
 
     """
     if file.suffix == ".csv":
@@ -213,8 +218,8 @@ def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
         2
         >>> _evaled_expression("10 / 4", float)
         2.5
+        >>> # Note that result is truncated, probably undesirable if misused
         >>> _evaled_expression("10 / 4", int)
-        # note that result is trucnated; probably undesirable if misused
         2
         >>> _evaled_expression(99.5, float)
         99.5
@@ -223,7 +228,7 @@ def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
         >>> _evaled_expression("a * b", float)
         Traceback (most recent call last):
             ...
-        ValueError: Can't convert expression to float.
+        ValueError: Cannot convert expression 'a*b' to <class 'float'>.
     """
     if isinstance(val, target_type):
         return val

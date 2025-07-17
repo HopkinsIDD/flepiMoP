@@ -55,7 +55,7 @@ def create_file_name(
         ...     "jkl",
         ...     create_directory=False,
         ... )
-        PosixPath('model_output/abc/hosp/global/jkl000000001.20240101_000000.hosp.parquet')
+        'model_output/abc/hosp/global/jkl000000001.20240101_000000.hosp.parquet'
     """
     if create_directory:
         os.makedirs(
@@ -157,8 +157,6 @@ def run_id(timestamp: None | datetime = None) -> str:
     Examples:
         >>> from datetime import datetime, timezone
         >>> from gempyor.file_paths import run_id
-        >>> run_id()
-        '20240711_160059'
         >>> run_id(timestamp=datetime(2024, 1, 1))
         '20240101_000000'
         >>> run_id(timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc))
