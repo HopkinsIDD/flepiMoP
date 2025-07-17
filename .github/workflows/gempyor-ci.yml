@@ -29,8 +29,9 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
+        R-version: ["4.3"]
     steps:
-      - name: Checkout
+      - name: Checkout flepiMoP
         uses: actions/checkout@v4
         with:
           lfs: true
@@ -38,67 +39,69 @@ jobs:
             *
             !documentation/
           sparse-checkout-cone-mode: false
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+          persist-credentials: false
+      - name: Install flepiMoP
+        uses: ./.github/actions/flepimop-install
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install gempyor
+          R-version: ${{ matrix.R-version }}
+      - name: Run fast unit tests
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install "flepimop/gempyor_pkg[dev]"
-        shell: bash
-      - name: Run not slow tests
-        run: |
+          conda activate venv/
           export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
           pytest -m "not slow" --exitfirst
-        shell: bash
-      - name: Run slow tests
+        shell: bash -el {0}
+      - name: Run slow unit tests
         run: |
+          conda activate venv/
           export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
           pytest -m "slow" --exitfirst
-        shell: bash
+        shell: bash -el {0}
       - name: Run gempyor-cli integration tests from examples
         run: |
+          conda activate venv/
           cd examples
           pytest --exitfirst
-        shell: bash
+        shell: bash -el {0}
   doc-updates:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+        R-version: ["4.3"]
     steps:
-      - name: Checkout
+      - name: Checkout flepiMoP
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
           lfs: true
           sparse-checkout: |
             *
-            !tests/
+            !documentation/
           sparse-checkout-cone-mode: false
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+          persist-credentials: false
+      - name: Install flepiMoP
+        uses: ./.github/actions/flepimop-install
         with:
-          python-version: '3.11'
-      - name: Install gempyor
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "flepimop/gempyor_pkg[dev]"
-        shell: bash
+          python-version: ${{ matrix.python-version }}
+          R-version: ${{ matrix.R-version }}
       - name: Build gempyor documentation with Sphinx
         run: |
+          conda activate venv/
+          export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg/docs
           make fullbuild
-        shell: bash
-      - name: Install pandoc 
-        run: |
-          sudo apt-get update && sudo apt-get install -y pandoc
+        shell: bash -el {0}
       - name: Build click documentation with click-man
         run: |
+          conda activate venv/
+          export FLEPI_PATH=$(pwd)
           cd flepimop/gempyor_pkg
           click-man flepimop --target docs/cli_man --man-version 1
           python docs/click-man_parsing.py
+        shell: bash -el {0}
       - name: Remove temporal metadata from man page headers
         run: |
           sed -i 's/^\(\.TH [^"]* \)"[^"]*" "\(.*\)"/\1"" "\2"/' flepimop/gempyor_pkg/docs/cli_man/*.1
