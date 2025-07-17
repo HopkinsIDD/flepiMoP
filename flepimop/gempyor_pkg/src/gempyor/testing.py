@@ -304,7 +304,7 @@ def run_test_in_separate_process(
     Examples:
         Typically this function is used in a test like so:
 
-        >>> assert run_test_in_separate_process(
+        >>> assert run_test_in_separate_process( # doctest: +SKIP
         ...     Path(__file__).parent / "external_script.py",
         ...     tmp_path / "test.py",
         ...     args=["arg1", "arg2"],

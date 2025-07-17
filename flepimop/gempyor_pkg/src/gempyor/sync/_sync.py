@@ -181,10 +181,8 @@ def _rsync_ensure_path(target: str, verbosity: int, dry_run: bool) -> CompletedP
     Examples:
         >>> from gempyor.sync._sync import _rsync_ensure_path
         >>> _rsync_ensure_path("/foo/bar", 0, True)
-        (DRY RUN): mkdir -p /foo/bar
         CompletedProcess(args=['echo', '(DRY RUN): mkdir -p /foo/bar'], returncode=0)
         >>> _rsync_ensure_path("user@host:/fizz/buzz", 0, True)
-        (DRY RUN): ssh user@host mkdir -p /fizz/buzz
         CompletedProcess(args=['echo', '(DRY RUN): ssh user@host mkdir -p /fizz/buzz'], returncode=0)
     """
     # pylint: enable=line-too-long
@@ -349,7 +347,7 @@ class S3SyncModel(SyncABC, WithFilters):
         Traceback (most recent call last):
             ...
         pydantic_core._pydantic_core.ValidationError: 1 validation error for S3SyncModel
-        Value error, At least one of `source` or `target` must be an s3 bucket, as indicated by a `s3://` prefix [type=value_error, input_value={'type': 's3sync', 'targe...et', 'source': 'source'}, input_type=dict]
+          Value error, At least one of `source` or `target` must be an s3 bucket, as indicated by a `s3://` prefix [type=value_error, input_value={'type': 's3sync', 'targe...et', 'source': 'source'}, input_type=dict]
             For further information visit https://errors.pydantic.dev/2.11/v/value_error
     """
     # pylint: enable=line-too-long
