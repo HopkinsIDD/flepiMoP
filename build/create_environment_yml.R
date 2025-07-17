@@ -43,6 +43,7 @@ new_environment_yml <- c(
   "- pyarrow=17.0.0",
   "- r-arrow=17.0.0",
   "- r-sf",
+  "- r-testthat",
   paste0("- r-", dependencies)
 )
 if (file.exists(environment_yml)) {
