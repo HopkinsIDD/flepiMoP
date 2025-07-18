@@ -34,31 +34,31 @@ One of the current focus is to switch internal data types from dataframes and nu
 To run the tests suite locally, you'll need to install the gempyor package with build dependencies:
 
 ```bash
-pip install "flepimop/gempyor_pkg[test]"
+pip install "flepimop/gempyor_pkg[dev]"
 ```
 
-which installs the `pytest` and `mock` packages in addition to all other gempyor dependencies so that one can run tests.
-
-If you are running from a conda environment and installing with \`--no-deps\`, then you should make sure that these two packages are installed.
-
-Now you can try to run the gempyor test suite by running, from the `flepimop/gempyor_pkg` folder:
+which installs the `pytest` package in addition to all other gempyor dependencies so that one can run tests. Now you can try to run the gempyor test suite by running, from the `flepimop/gempyor_pkg` folder:
 
 ```bash
 pytest
 ```
 
-If that works, then you are ready to develop gempyor. Feel free to open your first pull request.
-
-If you want more output on tests, e.g capturing standard output (print), you can use:
+If that works, then you are ready to develop gempyor. Feel free to open your first pull request. If you want more output on tests, e.g capturing standard output (print), you can use:
 
 ```bash
-pytest -vvvv
+pytest -vvv
 ```
 
-and to run just some subset of the tests (e.g here just the outcome tests), use:
+And to run just some subset of the tests (e.g here just the outcome tests), use:
 
 ```bash
-pytest -vvvv -k outcomes
+pytest -vvv -k outcomes
+```
+
+Furthermore, to ensure that the examples provided in the documentation are high quality we run the doctests in CI with:
+
+```bash
+pytest --doctest-modules src/gempyor/
 ```
 
 For more details on how to use `pytest` please refer to their [usage guide](https://docs.pytest.org/en/latest/how-to/usage.html).
