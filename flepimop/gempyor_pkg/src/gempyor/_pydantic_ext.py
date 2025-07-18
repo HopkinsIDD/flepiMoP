@@ -8,12 +8,14 @@ models.
 __all__ = ()
 
 
+import numbers
 from pathlib import Path
-from typing import Any, TypeVar, overload
+from typing import Any, TypeVar, overload, Annotated
 
 import pyarrow.parquet as pq
 import pandas as pd
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, BeforeValidator
+import sympy
 
 
 T = TypeVar("T")
@@ -180,3 +182,31 @@ def _read_and_validate_dataframe(
             model = RootModel[list[model]]
         data = [r.model_dump() for r in model.model_validate(data).root]
     return pd.DataFrame.from_records(data)
+
+
+def _evaled_expression(val: float | str | Any) -> float | Any:
+    """
+    Evaluates an expression and attempts to convert it to a float.
+
+    Args:
+        val: Expression to be evaluated:
+
+    Returns:
+        Either the expression coerced into a float, or the expression.
+
+    Raises:
+        ValueError: on parsing errors
+    """
+
+    if isinstance(val, float):
+        return val
+    elif isinstance(val, str):
+        try:
+            return float(sympy.parsing.sympy_parser.parse_expr(val))
+        except TypeError as e:
+            raise ValueError(e) from e
+    return val
+
+
+# TODO: add EvaluatedInt = Annotated[int, BeforeValidator(_evaled_expression_int)]
+EvaledFloat = Annotated[float, BeforeValidator(_evaled_expression)]
