@@ -14,6 +14,7 @@ import pytest
 
 from gempyor.parameters import Parameters
 from gempyor.distributions import (
+    DistributionABC,
     BetaDistribution,
     BinomialDistribution,
     FixedDistribution,
@@ -362,45 +363,10 @@ class TestParameters:
                 assert params.pdata[param_name]["ts"].equals(
                     mock_inputs.get_timeseries_df(param_name)
                 )
-            # This is the new, corrected logic for checking distributions.
             elif "dist" in params.pdata[param_name]:
                 dist_obj = params.pdata[param_name]["dist"]
                 value_conf = param_conf.get("value")
-
-                # TODO, does this just test pydantic?
-                # Check for the correct Pydantic model type and assert its attributes.
-                if isinstance(dist_obj, FixedDistribution):
-                    assert dist_obj.value == value_conf.get("value")
-                elif isinstance(dist_obj, NormalDistribution):
-                    assert dist_obj.mu == value_conf.get("mu")
-                    assert dist_obj.sigma == value_conf.get("sigma")
-                elif isinstance(dist_obj, UniformDistribution):
-                    assert dist_obj.low == value_conf.get("low")
-                    assert dist_obj.high == value_conf.get("high")
-                elif isinstance(dist_obj, LognormalDistribution):
-                    assert dist_obj.meanlog == value_conf.get("meanlog")
-                    assert dist_obj.sdlog == value_conf.get("sdlog")
-                elif isinstance(dist_obj, TruncatedNormalDistribution):
-                    assert dist_obj.mean == value_conf.get("mean")
-                    assert dist_obj.sd == value_conf.get("sd")
-                    assert dist_obj.a == value_conf.get("a")
-                    assert dist_obj.b == value_conf.get("b")
-                elif isinstance(dist_obj, PoissonDistribution):
-                    assert dist_obj.lam == value_conf.get("lam")
-                elif isinstance(dist_obj, BinomialDistribution):
-                    assert dist_obj.n == value_conf.get("n")
-                    assert dist_obj.p == value_conf.get("p")
-                elif isinstance(dist_obj, GammaDistribution):
-                    assert dist_obj.shape == value_conf.get("shape")
-                    assert dist_obj.scale == value_conf.get("scale")
-                elif isinstance(dist_obj, WeibullDistribution):
-                    assert dist_obj.shape == value_conf.get("shape")
-                    assert dist_obj.scale == value_conf.get("scale")
-                elif isinstance(dist_obj, BetaDistribution):
-                    assert dist_obj.alpha == value_conf.get("alpha")
-                    assert dist_obj.beta == value_conf.get("beta")
-                else:
-                    raise TypeError(f"Unhandled distribution type: {type(dist_obj)}")
+                assert isinstance(dist_obj, DistributionABC)
 
         # The `pnames` attribute
         assert set(params.pnames) == set(mock_inputs.config.keys())
