@@ -22,12 +22,10 @@ import pandas as pd
 import pydantic
 
 from . import NPI, utils
-from .distributions import Distribution
+from .distributions import Distribution, DISTRIBUTION_ADAPTER
 
 
 logger = logging.getLogger(__name__)
-
-DISTRIBUTION_ADAPTER = pydantic.TypeAdapter(Distribution)
 
 
 class Parameters:
@@ -104,6 +102,8 @@ class Parameters:
             # Parameter characterized by its distribution
             if self.pconfig[pn]["value"].exists():
                 dist_dict = self.pconfig[pn]["value"].get()
+                if isinstance(dist_dict, float | int | str):
+                    dist_dict = {"distribution": "fixed", "value": dist_dict}
                 self.pdata[pn]["dist"] = DISTRIBUTION_ADAPTER.validate_python(dist_dict)
 
             # Parameter given as a file
@@ -188,6 +188,8 @@ class Parameters:
         for pn in self.pnames:
             if "dist" in self.pdata[pn]:
                 dist_dict = self.pconfig[pn]["value"].get()
+                if isinstance(dist_dict, float | int | str):
+                    dist_dict = {"distribution": "fixed", "value": dist_dict}
                 self.pdata[pn]["dist"] = DISTRIBUTION_ADAPTER.validate_python(dist_dict)
 
     def get_pnames2pindex(self) -> dict:
@@ -230,7 +232,9 @@ class Parameters:
 
         for idx, pn in enumerate(self.pnames):
             if "dist" in self.pdata[pn]:
-                param_arr[idx] = self.pdata[pn]["dist"].sample(size=(n_days, nsubpops))
+                param_arr[idx] = np.full(
+                    (n_days, nsubpops), self.pdata[pn]["dist"].sample().item()
+                )
             else:
                 param_arr[idx] = self.pdata[pn]["ts"].values
 
@@ -278,7 +282,9 @@ class Parameters:
                     f"PARAM: parameter {pn} NOT found in loadID file. "
                     "Drawing from config distribution"
                 )
-                param_arr[idx] = self.pdata[pn]["dist"].sample(size=(n_days, nsubpops))
+                param_arr[idx] = np.full(
+                    (n_days, nsubpops), self.pdata[pn]["dist"].sample().item()
+                )
 
         return param_arr
 
