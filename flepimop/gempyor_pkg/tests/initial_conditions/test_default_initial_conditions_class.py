@@ -73,16 +73,7 @@ def test_default_create_initial_conditions(
     # Do the test
     initial_conditions = DefaultInitialConditions(path_prefix=None)
     y0 = initial_conditions.create_initial_conditions(
-        sim_id,
-        compartments,
-        subpopulation_structure,
-        Parameters(
-            create_confuse_config_from_dict({}),
-            ti=date(2024, 1, 1),
-            tf=date(2024, 1, 31),
-            subpop_names=list(ascii_lowercase[: len(subpop_pop)]),
-        ),
-        np.array([[[]]], dtype=np.float64),
+        sim_id, compartments, subpopulation_structure
     )
 
     # Assertions
