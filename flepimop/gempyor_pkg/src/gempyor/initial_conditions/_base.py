@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from ..compartments import Compartments
 from ..model_meta import ModelMeta
-from ..parameters import Parameters
+from ..parameters import Parameters, _inspect_requested_parameters
 from ..subpopulation_structure import SubpopulationStructure
 from ..time_setup import TimeSetup
 from ._utils import check_population
@@ -72,8 +72,7 @@ class InitialConditionsABC(ABC, BaseModel):
         sim_id: int,
         compartments: Compartments,
         subpopulation_structure: SubpopulationStructure,
-        parameters: Parameters,
-        p_draw: npt.NDArray[np.float64],
+        *args: float | int | npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """
         Produce an array of initial conditions from the configuration.
@@ -85,6 +84,8 @@ class InitialConditionsABC(ABC, BaseModel):
             sim_id: An integer id for the simulation being ran.
             compartments: The compartments object.
             subpopulation_structure: The subpopulation structure object.
+            *args: Additional implementation requested parameters, which are extracted
+                from the parameters quick draw.
 
         Returns:
             A numpy array of initial conditions for the simulation.
@@ -121,8 +122,11 @@ class InitialConditionsABC(ABC, BaseModel):
         Returns:
             A numpy array of initial conditions for the simulation.
         """
+        args = _inspect_requested_parameters(
+            self.create_initial_conditions, 3, parameters.pdata, p_draw
+        )
         y0 = self.create_initial_conditions(
-            sim_id, compartments, subpopulation_structure, parameters, p_draw
+            sim_id, compartments, subpopulation_structure, *args
         )
         check_population(
             y0,
