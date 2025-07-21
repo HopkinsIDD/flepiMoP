@@ -330,8 +330,6 @@ class FileOrFolderDrawInitialConditions(InitialConditionsABC):
         sim_id: int,
         compartments: Compartments,
         subpopulation_structure: SubpopulationStructure,
-        parameters: Parameters,
-        p_draw: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """
         Produce an array of initial conditions by reading from a file.
