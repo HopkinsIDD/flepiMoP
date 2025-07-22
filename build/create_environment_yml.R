@@ -32,19 +32,19 @@ dependencies <- dependencies[!grepl("^R(\\(.*\\))?$", dependencies)]
 environment_yml <- file.path(flepi_path, "environment.yml")
 new_environment_yml <- c(
   "channels:",
-  "- conda-forge",
-  "- defaults",
-  "- r",
-  "- dnachun",
+  "  - conda-forge",
+  "  - defaults",
+  "  - r",
+  "  - dnachun",
   "dependencies:",
-  "- python=3.11",
-  "- pip",
-  "- r-base>=4.3",
-  "- pyarrow=17.0.0",
-  "- r-arrow=17.0.0",
-  "- r-sf",
-  "- r-testthat",
-  paste0("- r-", dependencies)
+  "  - python=3.11",
+  "  - pip",
+  "  - r-base>=4.3",
+  "  - pyarrow=17.0.0",
+  "  - r-arrow=17.0.0",
+  "  - r-sf",
+  "  - r-testthat",
+  paste0("  - r-", dependencies)
 )
 if (file.exists(environment_yml)) {
   old_environment_yml <- readLines(environment_yml)
