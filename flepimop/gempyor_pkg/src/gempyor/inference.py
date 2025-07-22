@@ -73,7 +73,6 @@ def simulation_atomic(
     transition_array,
     proportion_array,
     proportion_info,
-    initial_conditions,
     seeding_data,
     seeding_amounts,
     outcomes_parameters,
@@ -112,6 +111,8 @@ def simulation_atomic(
 
     for k, v in seeding_data.items():
         seeding_data_nbdict[k] = np.array(v, dtype=np.int64)
+
+    initial_conditions = modinf.get_initial_conditions_data(0, parameters)
 
     # Compute the SEIR simulation
     states = seir.steps_SEIR(
@@ -269,7 +270,6 @@ def get_static_arguments(modinf: model_info.ModelInfo):
         "transition_array": transition_array,
         "proportion_array": proportion_array,
         "proportion_info": proportion_info,
-        "initial_conditions": initial_conditions,
         "seeding_data": seeding_data,
         "seeding_amounts": seeding_amounts,
         "outcomes_parameters": outcomes_parameters,
