@@ -16,6 +16,8 @@ import xarray as xr
 from . import NPI, steps_rk4
 from .model_info import ModelInfo
 from .utils import Timer, _nslots_random_seeds, read_df
+from .initial_conditions._plugins import _get_custom_initial_conditions_plugins
+from ._multiprocessing import _tqdm_map
 
 
 logger = logging.getLogger(__name__)
@@ -440,7 +442,7 @@ def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1) -> None:
                 config=config,
             )
     else:
-        tqdm.contrib.concurrent.process_map(
+        _tqdm_map(
             _onerun_SEIR_with_random_seed,
             random_seeds,
             sim_ids,
@@ -448,7 +450,8 @@ def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1) -> None:
             itertools.repeat(False),
             itertools.repeat(None),
             itertools.repeat(config),
-            max_workers=n_jobs,
+            processes=n_jobs,
+            custom_plugins=_get_custom_initial_conditions_plugins(),
         )
 
     logging.info(
