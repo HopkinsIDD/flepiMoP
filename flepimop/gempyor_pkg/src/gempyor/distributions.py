@@ -16,6 +16,7 @@ __all__: tuple[str, ...] = (
 )
 
 
+import confuse
 from abc import ABC, abstractmethod
 from math import isclose
 from typing import Annotated, Literal
@@ -480,3 +481,25 @@ Distribution = Annotated[
 ]
 
 DISTRIBUTION_ADAPTER = TypeAdapter(Distribution)
+
+
+def build_distribution_from_confuse_config(
+    param_config: confuse.ConfigView,
+) -> Distribution:
+    """
+    Creates a Distribution object from a confuse.ConfigView (single value).
+
+    Handles the case where the value is a simple number or string,
+    interpreting it as a 'fixed' distribution.
+
+    Args:
+        param_config: A confuse.ConfigView for a single parameter.
+
+    Returns:
+        A Distribution object.
+    """
+    conf = param_config["value"].get()
+    if isinstance(conf, float | int | str):
+        conf = {"distribution": "fixed", "value": conf}
+
+    return DISTRIBUTION_ADAPTER.validate_python(conf)

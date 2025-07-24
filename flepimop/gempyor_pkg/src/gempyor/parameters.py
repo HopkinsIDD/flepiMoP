@@ -22,7 +22,11 @@ import pandas as pd
 import pydantic
 
 from . import NPI, utils
-from .distributions import Distribution, DISTRIBUTION_ADAPTER
+from .distributions import (
+    Distribution,
+    DISTRIBUTION_ADAPTER,
+    build_distribution_from_confuse_config,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -101,10 +105,9 @@ class Parameters:
 
             # Parameter characterized by its distribution
             if self.pconfig[pn]["value"].exists():
-                dist_dict = self.pconfig[pn]["value"].get()
-                if isinstance(dist_dict, float | int | str):
-                    dist_dict = {"distribution": "fixed", "value": dist_dict}
-                self.pdata[pn]["dist"] = DISTRIBUTION_ADAPTER.validate_python(dist_dict)
+                self.pdata[pn]["dist"] = build_distribution_from_confuse_config(
+                    self.pconfig[pn]
+                )
 
             # Parameter given as a file
             elif self.pconfig[pn]["timeseries"].exists():
@@ -187,10 +190,9 @@ class Parameters:
         """
         for pn in self.pnames:
             if "dist" in self.pdata[pn]:
-                dist_dict = self.pconfig[pn]["value"].get()
-                if isinstance(dist_dict, float | int | str):
-                    dist_dict = {"distribution": "fixed", "value": dist_dict}
-                self.pdata[pn]["dist"] = DISTRIBUTION_ADAPTER.validate_python(dist_dict)
+                self.pdata[pn]["dist"] = build_distribution_from_confuse_config(
+                    self.pconfig[pn]
+                )
 
     def get_pnames2pindex(self) -> dict:
         """
