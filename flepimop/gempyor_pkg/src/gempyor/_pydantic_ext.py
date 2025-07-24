@@ -200,7 +200,7 @@ def _evaled_expression(val: float | str | Any) -> float | Any:
 
     if isinstance(val, float):
         return val
-    elif isinstance(val, str):
+    if isinstance(val, str):
         try:
             return float(sympy.parsing.sympy_parser.parse_expr(val))
         except TypeError as e:
