@@ -387,6 +387,7 @@ class RandomDrawAssertion(NamedTuple):
         ),
     ),
 )
+@pytest.mark.slow
 def test_parameter_draw_per_slot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -428,6 +429,7 @@ def test_parameter_draw_per_slot(
     reason="The $FLEPI_PATH environment variable is not set.",
 )
 @pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.slow
 def test_parameter_draws_per_slot_across_scenarios(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, n_jobs: int
 ) -> None:

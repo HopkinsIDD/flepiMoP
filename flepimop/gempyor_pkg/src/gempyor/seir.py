@@ -381,10 +381,11 @@ def onerun_SEIR(
         )
 
     with Timer("onerun_SEIR.postprocess"):
+        out_df = states2Df(modinf, states)
         if modinf.write_csv or modinf.write_parquet:
             write_spar_snpi(sim_id2write, modinf, p_draw, npi)
-            out_df = write_seir(sim_id2write, modinf, states)
-    return out_df
+            write_seir(sim_id2write, modinf, out_df)
+        return out_df
 
 
 def _onerun_SEIR_with_random_seed(
@@ -420,7 +421,7 @@ def _onerun_SEIR_with_random_seed(
     )
 
 
-def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1):
+def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1) -> None:
     """
     Run SEIR simulations in parallel.
 
@@ -538,11 +539,8 @@ def write_spar_snpi(sim_id: int, modinf: ModelInfo, p_draw, npi):
     )
 
 
-def write_seir(sim_id, modinf: ModelInfo, states):
-    # print_disk_diagnosis()
-    out_df = states2Df(modinf, states)
+def write_seir(sim_id, modinf: ModelInfo, out_df):
     modinf.write_simID(ftype="seir", sim_id=sim_id, df=out_df)
-
     return out_df
 
 

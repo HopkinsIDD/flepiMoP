@@ -1,4 +1,5 @@
 import os
+import pytest
 import subprocess
 from pathlib import Path
 
@@ -29,6 +30,7 @@ def test_config_sample_2pop_deprecated():
     assert result.exit_code == 0
 
 
+@pytest.mark.slow
 def test_sample_2pop_modifiers():
     os.chdir(tutorialpath)
     runner = CliRunner()
