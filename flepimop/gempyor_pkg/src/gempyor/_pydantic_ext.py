@@ -185,40 +185,40 @@ def _read_and_validate_dataframe(
 
 
 @overload
-def _evaled_expression(val: float) -> float: ...
+def _evaled_expression_float(val: float) -> float: ...
 
 
 @overload
-def _evaled_expression(val: str) -> float: ...
+def _evaled_expression_float(val: str) -> float: ...
 
 
 @overload
-def _evaled_expression(val: T) -> T: ...
+def _evaled_expression_float(val: T) -> T: ...
 
 
-def _evaled_expression(val: float | str | Any) -> float | Any:
+def _evaled_expression_float(val: float | str | Any) -> float | Any:
     """
     Evaluates an expression and attempts to convert it to a float.
 
     Args:
-        val: Expression to be evaluated:
+        val: Expression to be evaluated.
 
     Returns:
         Either the expression coerced into a float, or the expression.
 
     Raises:
-        ValueError: on parsing errors
+        ValueError: on parsing errors.
 
     Example:
-        >>> _evaled_expression("1 + 1")
+        >>> _evaled_expression_float("1 + 1")
         2.0
-        >>> _evaled_expression("5 / 2")
+        >>> _evaled_expression_float("5 / 2")
         2.5
-        >>> _evaled_expression(99.5)
+        >>> _evaled_expression_float(99.5)
         99.5
-        >>> _evaled_expression(None)
+        >>> _evaled_expression_float(None)
 
-        >>> _evaled_expression("a * b")
+        >>> _evaled_expression_float("a * b")
         Traceback (most recent call last):
             ...
         ValueError: can't convert expression to float
@@ -234,5 +234,54 @@ def _evaled_expression(val: float | str | Any) -> float | Any:
     return val
 
 
-# TODO: add EvaluatedInt = Annotated[int, BeforeValidator(_evaled_expression_int)]
-EvaledFloat = Annotated[float, BeforeValidator(_evaled_expression)]
+@overload
+def _evaled_expression_int(val: int) -> int: ...
+
+
+@overload
+def _evaled_expression_int(val: str) -> int: ...
+
+
+@overload
+def _evaled_expression_int(val: T) -> T: ...
+
+
+def _evaled_expression_int(val: int | str | Any) -> int | Any:
+    """
+    Evaluates an expression and attempts to convert it to an int.
+
+    Args:
+        val: Expression to be evaluated.
+
+    Returns:
+        Either the expression coerced into an integer, or the original expression.
+
+    Raises:
+        ValueError: On parsing errors.
+
+    Examples:
+        >>> _evaled_expression_int("1 + 1")
+        2
+        >>> _evaled_expression_int("10 / 2") # Note: Result is truncated
+        5
+        >>> _evaled_expression_int(99)
+        99
+        >>> _evaled_expression_int(None)
+
+        >>> _evaled_expression_int("a * b")
+        Traceback (most recent call last):
+            ...
+        ValueError: can't convert expression to int
+    """
+    if isinstance(val, int):
+        return val
+    if isinstance(val, str):
+        try:
+            return int(sympy.parsing.sympy_parser.parse_expr(val))
+        except TypeError as e:
+            raise ValueError(e) from e
+    return val
+
+
+EvaledInt = Annotated[int, BeforeValidator(_evaled_expression_int)]
+EvaledFloat = Annotated[float, BeforeValidator(_evaled_expression_float)]

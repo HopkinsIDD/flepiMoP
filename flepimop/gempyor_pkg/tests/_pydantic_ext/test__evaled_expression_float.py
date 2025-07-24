@@ -1,8 +1,8 @@
-"""Tests for the `gempyor._pydantic_ext._evaled_expression` function."""
+"""Tests for the `gempyor._pydantic_ext._evaled_expression_float` function."""
 
 import pytest
 
-from gempyor._pydantic_ext import _evaled_expression
+from gempyor._pydantic_ext import _evaled_expression_float
 
 
 @pytest.mark.parametrize(
@@ -19,8 +19,8 @@ from gempyor._pydantic_ext import _evaled_expression
         ({"a": 1}, {"a": 1}),
     ],
 )
-def test_evaled_expression_returns_expected_results(val, expected):
-    assert _evaled_expression(val) == expected
+def test_evaled_expression_float_returns_expected_results(val, expected):
+    assert _evaled_expression_float(val) == expected
 
 
 @pytest.mark.parametrize(
@@ -31,6 +31,6 @@ def test_evaled_expression_returns_expected_results(val, expected):
         "1 / 0",
     ],
 )
-def test_evaled_expression_raises_value_error_for_invalid_input(val):
+def test_evaled_expression_float_raises_value_error_for_invalid_input(val):
     with pytest.raises(ValueError):
-        _evaled_expression(val)
+        _evaled_expression_float(val)

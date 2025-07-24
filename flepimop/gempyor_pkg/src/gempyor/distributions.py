@@ -26,7 +26,7 @@ import numpy.typing as npt
 from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator
 from scipy.stats import truncnorm
 
-from ._pydantic_ext import EvaledFloat
+from ._pydantic_ext import EvaledFloat, EvaledInt
 
 
 class DistributionABC(ABC, BaseModel):
@@ -350,7 +350,7 @@ class BinomialDistribution(DistributionABC):
     """
 
     distribution: Literal["binomial"] = "binomial"
-    n: int = Field(..., ge=0)
+    n: EvaledInt = Field(..., ge=0)
     p: EvaledFloat = Field(..., ge=0.0, le=1.0)
 
     def _sample_from_generator(
