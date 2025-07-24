@@ -469,7 +469,6 @@ class TestParameters:
                     dist_obj = params.pdata[param_name]["dist"]
                     drawn_values = p_draw[i, :, :]
 
-
     @pytest.mark.parametrize(
         "factory,param_df,n_days,nsubpops",
         [

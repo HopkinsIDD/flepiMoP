@@ -184,6 +184,18 @@ def _read_and_validate_dataframe(
     return pd.DataFrame.from_records(data)
 
 
+@overload
+def _evaled_expression(val: float) -> float: ...
+
+
+@overload
+def _evaled_expression(val: str) -> float: ...
+
+
+@overload
+def _evaled_expression(val: T) -> T: ...
+
+
 def _evaled_expression(val: float | str | Any) -> float | Any:
     """
     Evaluates an expression and attempts to convert it to a float.
@@ -196,6 +208,20 @@ def _evaled_expression(val: float | str | Any) -> float | Any:
 
     Raises:
         ValueError: on parsing errors
+
+    Example:
+        >>> _evaled_expression("1 + 1")
+        2.0
+        >>> _evaled_expression("5 / 2")
+        2.5
+        >>> _evaled_expression(99.5)
+        99.5
+        >>> _evaled_expression(None)
+
+        >>> _evaled_expression("a * b")
+        Traceback (most recent call last):
+            ...
+        ValueError: can't convert expression to float
     """
 
     if isinstance(val, float):
