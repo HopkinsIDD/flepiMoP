@@ -28,6 +28,7 @@ import sympy.parsing.sympy_parser
 import yaml
 
 from . import file_paths
+from ._pydantic_ext import _evaled_expression
 
 
 logger = logging.getLogger(__name__)
@@ -350,30 +351,6 @@ def as_date(self) -> datetime.date:
     return self.get(ISO8601Date())
 
 
-@add_method(confuse.ConfigView)
-def as_evaled_expression(self):
-    """
-    Evaluates an expression string, returning a float.
-
-    Returns:
-        A float data type of the value associated with the object.
-
-    Raises:
-        ValueError: On parsing errors.
-    """
-
-    value = self.get()
-    if isinstance(value, numbers.Number):
-        return value
-    elif isinstance(value, str):
-        try:
-            return float(sympy.parsing.sympy_parser.parse_expr(value))
-        except TypeError as e:
-            raise ValueError(e) from e
-    else:
-        raise ValueError(f"Expected numeric or string expression [received: '{value}'].")
-
-
 def get_truncated_normal(
     mean: float | int = 0,
     sd: float | int = 1,
@@ -551,40 +528,42 @@ def as_random_distribution(self):
         if dist == "fixed":
             return functools.partial(
                 np.random.uniform,
-                self["value"].as_evaled_expression(),
-                self["value"].as_evaled_expression(),
+                _evaled_expression(self["value"].get(), target_type=float),
+                _evaled_expression(self["value"].get(), target_type=float),
             )
         elif dist == "uniform":
             return functools.partial(
                 np.random.uniform,
-                self["low"].as_evaled_expression(),
-                self["high"].as_evaled_expression(),
+                _evaled_expression(self["low"].get(), target_type=float),
+                _evaled_expression(self["high"].get(), target_type=float),
             )
         elif dist == "poisson":
-            return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
+            return functools.partial(
+                np.random.poisson, _evaled_expression(self["lam"].get(), target_type=float)
+            )
         elif dist == "binomial":
-            p = self["p"].as_evaled_expression()
+            p = _evaled_expression(self["p"].get(), target_type=float)
             if (p < 0) or (p > 1):
                 raise ValueError(f"Invalid `p-value`: '{p}' is out of range [0,1].")
                 # if (self["p"] < 0) or (self["p"] > 1):
                 #    raise ValueError(f"""p value { self["p"] } is out of range [0,1]""")
             return functools.partial(
                 np.random.binomial,
-                self["n"].as_evaled_expression(),
-                # self["p"].as_evaled_expression(),
+                _evaled_expression(self["n"].get(), target_type=float),
+                # _evaled_expression(self["p"].get(), target_type=float),
                 p,
             )
         elif dist == "truncnorm":
             return get_truncated_normal(
-                mean=self["mean"].as_evaled_expression(),
-                sd=self["sd"].as_evaled_expression(),
-                a=self["a"].as_evaled_expression(),
-                b=self["b"].as_evaled_expression(),
+                mean=_evaled_expression(self["mean"].get(), target_type=float),
+                sd=_evaled_expression(self["sd"].get(), target_type=float),
+                a=_evaled_expression(self["a"].get(), target_type=float),
+                b=_evaled_expression(self["b"].get(), target_type=float),
             ).rvs
         elif dist == "lognorm":
             return get_log_normal(
-                meanlog=self["meanlog"].as_evaled_expression(),
-                sdlog=self["sdlog"].as_evaled_expression(),
+                meanlog=_evaled_expression(self["meanlog"].get(), target_type=float),
+                sdlog=_evaled_expression(self["sdlog"].get(), target_type=float),
             ).rvs
         else:
             raise NotImplementedError(f"Unknown distribution [received: '{dist}'].")
@@ -592,8 +571,8 @@ def as_random_distribution(self):
         # we allow a fixed value specified directly:
         return functools.partial(
             np.random.uniform,
-            self.as_evaled_expression(),
-            self.as_evaled_expression(),
+            _evaled_expression(self.get(), target_type=float),
+            _evaled_expression(self.get(), target_type=float),
         )
 
 

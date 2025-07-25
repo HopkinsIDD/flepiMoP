@@ -8,16 +8,20 @@ models.
 __all__ = ()
 
 
+import numbers
 from pathlib import Path
-from typing import Any, TypeVar, overload
+from functools import partial
+from typing import Any, TypeVar, overload, Annotated, Type
 
 import pyarrow.parquet as pq
 import pandas as pd
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, BeforeValidator
+import sympy
 
 
 T = TypeVar("T")
 U = TypeVar("U")
+EE = TypeVar("EE", int, float)
 
 
 def _ensure_list(value: list[T] | tuple[T] | T | None) -> list[T] | None:
@@ -180,3 +184,64 @@ def _read_and_validate_dataframe(
             model = RootModel[list[model]]
         data = [r.model_dump() for r in model.model_validate(data).root]
     return pd.DataFrame.from_records(data)
+
+
+@overload
+def _evaled_expression(val: str, *, target_type: Type[int]) -> int: ...
+@overload
+def _evaled_expression(val: Any, *, target_type: Type[int]) -> int | Any: ...
+
+
+@overload
+def _evaled_expression(val: str, *, target_type: Type[float]) -> float: ...
+@overload
+def _evaled_expression(val: Any, *, target_type: Type[float]) -> float | Any: ...
+
+
+def _evaled_expression(val: Any, *, target_type: Type[EE]) -> EE | Any:
+    """
+    Evaluates a string expression to a target numeric type (int or float).
+
+    Args:
+        val: The input value to process.
+        target_type: The type (int or float) to convert the expression to.
+
+    Returns:
+        The value coerced into the target numeric type, or the original value.
+
+    Raises:
+        ValueError: On parsing errors.
+
+    Examples:
+        >>> _evaled_expression("1 + 1", target_type=int)
+        2
+        >>> _evaled_expression("10 / 4", target_type=float)
+        2.5
+        >>> _evaled_expression("10 / 4", target_type=int)
+        # note that result is trucnated; probably undesirable if misused
+        2
+        >>> _evaled_expression(99.5, target_type=float)
+        99.5
+        >>> _evaled_expression(None, target_type=int)
+
+        >>> _evaled_expression("a * b", target_type=float)
+        Traceback (most recent call last):
+            ...
+        ValueError: Can't convert expression to float.
+    """
+    if isinstance(val, target_type):
+        return val
+
+    if isinstance(val, str):
+        try:
+            return target_type(sympy.parsing.sympy_parser.parse_expr(val))
+        except TypeError as e:
+            raise ValueError(f"Can't convert expression to {target_type.__name__}.") from e
+
+    return val
+
+
+EvaledInt = Annotated[int, BeforeValidator(partial(_evaled_expression, target_type=int))]
+EvaledFloat = Annotated[
+    float, BeforeValidator(partial(_evaled_expression, target_type=float))
+]
