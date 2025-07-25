@@ -135,7 +135,9 @@ def test_parameters_quick_draw_old():
     assert sigma.shape == (modinf.n_days, modinf.nsubpops)
     assert (
         sigma
-        == _evaled_expression(config["seir"]["parameters"]["sigma"]["value"]["value"].get(), target_type=float)
+        == _evaled_expression(
+            config["seir"]["parameters"]["sigma"]["value"]["value"].get(), target_type=float
+        )
     ).all()
 
     assert gamma.shape == (modinf.n_days, modinf.nsubpops)

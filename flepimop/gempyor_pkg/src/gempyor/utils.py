@@ -538,7 +538,9 @@ def as_random_distribution(self):
                 _evaled_expression(self["high"].get(), target_type=float),
             )
         elif dist == "poisson":
-            return functools.partial(np.random.poisson, _evaled_expression(self["lam"].get(), target_type=float))
+            return functools.partial(
+                np.random.poisson, _evaled_expression(self["lam"].get(), target_type=float)
+            )
         elif dist == "binomial":
             p = _evaled_expression(self["p"].get(), target_type=float)
             if (p < 0) or (p > 1):
@@ -560,8 +562,8 @@ def as_random_distribution(self):
             ).rvs
         elif dist == "lognorm":
             return get_log_normal(
-                meanlog=_evaled_expression(self["mean_log"].get(), target_type=float),
-                sdlog=_evaled_expression(self["sd_log"].get(), target_type=float),
+                meanlog=_evaled_expression(self["meanlog"].get(), target_type=float),
+                sdlog=_evaled_expression(self["sdlog"].get(), target_type=float),
             ).rvs
         else:
             raise NotImplementedError(f"Unknown distribution [received: '{dist}'].")
@@ -569,8 +571,8 @@ def as_random_distribution(self):
         # we allow a fixed value specified directly:
         return functools.partial(
             np.random.uniform,
-            _evaled_expression(self, target_type=float),
-            _evaled_expression(self, target_type=float),
+            _evaled_expression(self.get(), target_type=float),
+            _evaled_expression(self.get(), target_type=float),
         )
 
 

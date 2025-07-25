@@ -191,10 +191,12 @@ def _evaled_expression(val: str, *, target_type: Type[int]) -> int: ...
 @overload
 def _evaled_expression(val: Any, *, target_type: Type[int]) -> int | Any: ...
 
+
 @overload
 def _evaled_expression(val: str, *, target_type: Type[float]) -> float: ...
 @overload
 def _evaled_expression(val: Any, *, target_type: Type[float]) -> float | Any: ...
+
 
 def _evaled_expression(val: Any, *, target_type: Type[EE]) -> EE | Any:
     """
@@ -215,8 +217,8 @@ def _evaled_expression(val: Any, *, target_type: Type[EE]) -> EE | Any:
         2
         >>> _evaled_expression("10 / 4", target_type=float)
         2.5
-        >>> _evaled_expression("10 / 4", target_type=int) 
-        # note that result is trucnated; probably undesirable if misused 
+        >>> _evaled_expression("10 / 4", target_type=int)
+        # note that result is trucnated; probably undesirable if misused
         2
         >>> _evaled_expression(99.5, target_type=float)
         99.5
@@ -240,36 +242,6 @@ def _evaled_expression(val: Any, *, target_type: Type[EE]) -> EE | Any:
 
 
 EvaledInt = Annotated[int, BeforeValidator(partial(_evaled_expression, target_type=int))]
-EvaledFloat = Annotated[float, BeforeValidator(partial(_evaled_expression, target_type=float))]
-
-
-# TEMP --------
-# --- TEMPORARY DEBUGGING LOGIC ---
-# This entire block should be deleted after the refactor is complete.
-
-import functools
-import confuse
-from typing import Any
-
-def add_method(cls: Any):
-    """A function which adds a function to a class."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-        setattr(cls, func.__name__, wrapper)
-        return func
-    return decorator
-
-@add_method(confuse.ConfigView)
-def _as_evaled_expression(self):
-    """
-    This is a temporary function to find all usages of the old method.
-    It will be removed after the refactoring is complete.
-    """
-    raise NotImplementedError(
-        "DEPRECATED: _as_evaled_expression has been replaced. "
-        "Use the new pattern: _evaled_expression(view.get(), target_type=...)"
-    )
-
-# --- END OF TEMPORARY BLOCK ---
+EvaledFloat = Annotated[
+    float, BeforeValidator(partial(_evaled_expression, target_type=float))
+]

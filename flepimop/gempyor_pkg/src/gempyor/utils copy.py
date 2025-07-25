@@ -538,7 +538,9 @@ def as_random_distribution(self):
                 _evaled_expression(self["high"].get(), target_type=float),
             )
         elif dist == "poisson":
-            return functools.partial(np.random.poisson, _evaled_expression(self["lam"].get(), target_type=float))
+            return functools.partial(
+                np.random.poisson, _evaled_expression(self["lam"].get(), target_type=float)
+            )
         elif dist == "binomial":
             p = _evaled_expression(self["p"].get(), target_type=float)
             if (p < 0) or (p > 1):
