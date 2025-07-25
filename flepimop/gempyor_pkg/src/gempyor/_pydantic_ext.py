@@ -10,7 +10,8 @@ __all__ = ()
 
 import numbers
 from pathlib import Path
-from typing import Any, TypeVar, overload, Annotated
+from functools import partial
+from typing import Any, TypeVar, overload, Annotated, Type
 
 import pyarrow.parquet as pq
 import pandas as pd
@@ -20,6 +21,7 @@ import sympy
 
 T = TypeVar("T")
 U = TypeVar("U")
+EE = TypeVar("EE", int, float)
 
 
 def _ensure_list(value: list[T] | tuple[T] | T | None) -> list[T] | None:
@@ -185,103 +187,89 @@ def _read_and_validate_dataframe(
 
 
 @overload
-def _evaled_expression_float(val: float) -> float: ...
-
+def _evaled_expression(val: str, *, target_type: Type[int]) -> int: ...
+@overload
+def _evaled_expression(val: Any, *, target_type: Type[int]) -> int | Any: ...
 
 @overload
-def _evaled_expression_float(val: str) -> float: ...
-
-
+def _evaled_expression(val: str, *, target_type: Type[float]) -> float: ...
 @overload
-def _evaled_expression_float(val: T) -> T: ...
+def _evaled_expression(val: Any, *, target_type: Type[float]) -> float | Any: ...
 
-
-def _evaled_expression_float(val: float | str | Any) -> float | Any:
+def _evaled_expression(val: Any, *, target_type: Type[EE]) -> EE | Any:
     """
-    Evaluates an expression and attempts to convert it to a float.
+    Evaluates a string expression to a target numeric type (int or float).
 
     Args:
-        val: Expression to be evaluated.
+        val: The input value to process.
+        target_type: The type (int or float) to convert the expression to.
 
     Returns:
-        Either the expression coerced into a float, or the expression.
-
-    Raises:
-        ValueError: on parsing errors.
-
-    Example:
-        >>> _evaled_expression_float("1 + 1")
-        2.0
-        >>> _evaled_expression_float("5 / 2")
-        2.5
-        >>> _evaled_expression_float(99.5)
-        99.5
-        >>> _evaled_expression_float(None)
-
-        >>> _evaled_expression_float("a * b")
-        Traceback (most recent call last):
-            ...
-        ValueError: can't convert expression to float
-    """
-
-    if isinstance(val, float):
-        return val
-    if isinstance(val, str):
-        try:
-            return float(sympy.parsing.sympy_parser.parse_expr(val))
-        except TypeError as e:
-            raise ValueError(e) from e
-    return val
-
-
-@overload
-def _evaled_expression_int(val: int) -> int: ...
-
-
-@overload
-def _evaled_expression_int(val: str) -> int: ...
-
-
-@overload
-def _evaled_expression_int(val: T) -> T: ...
-
-
-def _evaled_expression_int(val: int | str | Any) -> int | Any:
-    """
-    Evaluates an expression and attempts to convert it to an int.
-
-    Args:
-        val: Expression to be evaluated.
-
-    Returns:
-        Either the expression coerced into an integer, or the original expression.
+        The value coerced into the target numeric type, or the original value.
 
     Raises:
         ValueError: On parsing errors.
 
     Examples:
-        >>> _evaled_expression_int("1 + 1")
+        >>> _evaled_expression("1 + 1", target_type=int)
         2
-        >>> _evaled_expression_int("10 / 2") # Note: Result is truncated
-        5
-        >>> _evaled_expression_int(99)
-        99
-        >>> _evaled_expression_int(None)
+        >>> _evaled_expression("10 / 4", target_type=float)
+        2.5
+        >>> _evaled_expression("10 / 4", target_type=int) 
+        # note that result is trucnated; probably undesirable if misused 
+        2
+        >>> _evaled_expression(99.5, target_type=float)
+        99.5
+        >>> _evaled_expression(None, target_type=int)
 
-        >>> _evaled_expression_int("a * b")
+        >>> _evaled_expression("a * b", target_type=float)
         Traceback (most recent call last):
             ...
-        ValueError: can't convert expression to int
+        ValueError: Can't convert expression to float.
     """
-    if isinstance(val, int):
+    if isinstance(val, target_type):
         return val
+
     if isinstance(val, str):
         try:
-            return int(sympy.parsing.sympy_parser.parse_expr(val))
+            return target_type(sympy.parsing.sympy_parser.parse_expr(val))
         except TypeError as e:
-            raise ValueError(e) from e
+            raise ValueError(f"Can't convert expression to {target_type.__name__}.") from e
+
     return val
 
 
-EvaledInt = Annotated[int, BeforeValidator(_evaled_expression_int)]
-EvaledFloat = Annotated[float, BeforeValidator(_evaled_expression_float)]
+EvaledInt = Annotated[int, BeforeValidator(partial(_evaled_expression, target_type=int))]
+EvaledFloat = Annotated[float, BeforeValidator(partial(_evaled_expression, target_type=float))]
+
+
+# TEMP --------
+# --- TEMPORARY DEBUGGING LOGIC ---
+# This entire block should be deleted after the refactor is complete.
+
+import functools
+import confuse
+from typing import Any
+
+def add_method(cls: Any):
+    """A function which adds a function to a class."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        setattr(cls, func.__name__, wrapper)
+        return func
+    return decorator
+
+@add_method(confuse.ConfigView)
+def _as_evaled_expression(self):
+    """
+    This is a temporary function to find all usages of the old method.
+    It will be removed after the refactoring is complete.
+    """
+    raise NotImplementedError(
+        "DEPRECATED: _as_evaled_expression has been replaced. "
+        "Use the new pattern: _evaled_expression(view.get(), target_type=...)"
+    )
+
+# --- END OF TEMPORARY BLOCK ---

@@ -108,48 +108,10 @@ def test_as_date_with_valid_date_string():
     assert result == datetime.date(2022, 1, 15)
 
 
-def test_as_evaled_expression_with_valid_expression():
-    # ConfigViewオブジェクトをモック化
-    mock_config_view = MagicMock(spec=confuse.ConfigView)
-    mock_config_view.as_evaled_expression.return_value = 7.5
-
-    # as_evaled_expressionメソッドを呼び出し、正しい結果を確認
-    result = mock_config_view.as_evaled_expression()
-
-    assert result == 7.5
-
-
 @pytest.fixture
 def config():
     config = confuse.Configuration("myapp", __name__)
     return config
-
-
-def test_as_evaled_expression_number(config):
-    config.add({"myvalue": 123})
-    assert config["myvalue"].as_evaled_expression() == 123
-
-
-def test_as_evaled_expression_number(config):
-    config.add({"myvalue": 1.10})
-    assert config["myvalue"].as_evaled_expression() == 1.1
-
-
-def test_as_evaled_expression_string(config):
-    config.add({"myvalue": "2 + 3"})
-    assert config["myvalue"].as_evaled_expression() == 5.0
-
-
-def test_as_evaled_expression_other(config):
-    config.add({"myvalue": [1, 2, 3]})
-    with pytest.raises(ValueError):
-        config["myvalue"].as_evaled_expression()
-
-
-def test_as_evaled_expression_Invalid_string(config):
-    config.add({"myvalue": "invalid"})
-    with pytest.raises(ValueError):
-        config["myvalue"].as_evaled_expression()
 
 
 def test_as_date(config):
