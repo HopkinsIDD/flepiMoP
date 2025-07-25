@@ -17,6 +17,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import pyarrow as pa
 from gempyor import file_paths, model_info, outcomes
+from gempyor.testing import ignore_initial_conditions_missing_method_warning
 
 config_filepath_prefix = ""  #'tests/outcomes/'
 
@@ -30,6 +31,7 @@ date_data = datetime.date(2020, 4, 15)
 os.chdir(os.path.dirname(__file__))
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcome():
     os.chdir(os.path.dirname(__file__))  ## this is redundant but necessary. Why ?
     inference_simulator = gempyor.GempyorInference(
@@ -178,6 +180,7 @@ def test_outcome():
         )
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcome_modifiers_scenario_with_load():
     os.chdir(os.path.dirname(__file__))
     inference_simulator = gempyor.GempyorInference(
@@ -215,6 +218,7 @@ def test_outcome_modifiers_scenario_with_load():
                         assert a.iloc[j]["value"] == b.iloc[j]["value"] * diffI[i] * 0.1
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_read_write_hpar():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -291,6 +295,7 @@ def test_multishift_notstochdelays():
     assert (outcomes.multishift(array, shifts, stoch_delay_flag=False) == expected).all()
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_npi():
     os.chdir(os.path.dirname(__file__))
 
@@ -440,6 +445,7 @@ def test_outcomes_npi():
         )
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_read_write_hnpi():
     os.chdir(os.path.dirname(__file__))
 
@@ -479,6 +485,7 @@ def test_outcomes_read_write_hnpi():
     assert (hosp_read == hosp_wrote).all().all()
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_read_write_hnpi2():
     os.chdir(os.path.dirname(__file__))
 
@@ -548,6 +555,7 @@ def test_outcomes_read_write_hnpi2():
     assert (hosp_read == hosp_wrote).all().all()
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_npi_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
@@ -699,6 +707,7 @@ def test_outcomes_npi_custom_pname():
         )
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_read_write_hnpi_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
@@ -737,6 +746,7 @@ def test_outcomes_read_write_hnpi_custom_pname():
     assert (hosp_read == hosp_wrote).all().all()
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_read_write_hnpi2_custom_pname():
     os.chdir(os.path.dirname(__file__))
 
@@ -810,6 +820,7 @@ def test_outcomes_read_write_hnpi2_custom_pname():
     assert (hosp_read == hosp_wrote).all().all()
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_pcomp():
     os.chdir(os.path.dirname(__file__))
     prefix = ""
@@ -1014,6 +1025,7 @@ def test_outcomes_pcomp():
             )
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_outcomes_pcomp_read_write():
     os.chdir(os.path.dirname(__file__))
 

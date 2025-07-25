@@ -73,7 +73,6 @@ def simulation_atomic(
     transition_array,
     proportion_array,
     proportion_info,
-    initial_conditions,
     seeding_data,
     seeding_amounts,
     outcomes_parameters,
@@ -113,6 +112,8 @@ def simulation_atomic(
     for k, v in seeding_data.items():
         seeding_data_nbdict[k] = np.array(v, dtype=np.int64)
 
+    initial_conditions = modinf.get_initial_conditions_data(0, parameters)
+
     # Compute the SEIR simulation
     states = seir.steps_SEIR(
         modinf,
@@ -125,8 +126,9 @@ def simulation_atomic(
         seeding_amounts,
     )
     if save:
-        seir.write_spar_snpi(sim_id=random_id, modinf=modinf, p_draw=p_draw, npi=npi_seir)
-        seir.write_seir(sim_id=random_id, modinf=modinf, states=states)
+        out_df = seir.states2Df(modinf, states)
+        seir.write_spar_snpi(random_id, modinf, p_draw, npi_seir)
+        seir.write_seir(random_id, modinf, out_df)
 
     # Compute outcomes
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
@@ -188,15 +190,15 @@ def get_static_arguments(modinf: model_info.ModelInfo):
         n_days=modinf.n_days, nsubpops=modinf.nsubpops
     )
 
-    initial_conditions = modinf.initial_conditions.get_from_config(sim_id=0, modinf=modinf)
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=0)
-
     # reduce them
     parameters = modinf.parameters.parameters_reduce(p_draw, npi_seir)
     # Parse them
     parsed_parameters = modinf.compartments.parse_parameters(
         parameters, modinf.parameters.pnames, unique_strings
     )
+
+    initial_conditions = modinf.get_initial_conditions_data(0, parameters)
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=0)
 
     if real_simulation:
         states = seir.steps_SEIR(
@@ -268,7 +270,6 @@ def get_static_arguments(modinf: model_info.ModelInfo):
         "transition_array": transition_array,
         "proportion_array": proportion_array,
         "proportion_info": proportion_info,
-        "initial_conditions": initial_conditions,
         "seeding_data": seeding_data,
         "seeding_amounts": seeding_amounts,
         "outcomes_parameters": outcomes_parameters,
@@ -616,7 +617,8 @@ class GempyorInference:
     def write_last_seir(self, sim_id2write=None):
         if sim_id2write is None:
             sim_id2write = self.lastsim_sim_id2write
-        out_df = seir.write_seir(sim_id2write, self.modinf, self.lastsim_states)
+        out_df = seir.states2Df(self.modinf, self.lastsim_states)
+        seir.write_seir(sim_id2write, self.modinf, out_df)
         return out_df
 
     # @profile()
@@ -751,17 +753,12 @@ class GempyorInference:
                 self.lastsim_parsed_parameters = parsed_parameters
 
             with Timer("onerun_SEIR.seeding"):
-                seeding_data, seeding_amounts = self.modinf.get_seeding_data(
-                    sim_id=sim_id2load if load_ID else sim_id2write
+                sim_id = sim_id2load if load_ID else sim_id2write
+                seeding_data, seeding_amounts = self.modinf.get_seeding_data(sim_id)
+                initial_conditions = self.modinf.get_initial_conditions_data(
+                    sim_id, parameters
                 )
-                if load_ID:
-                    initial_conditions = self.modinf.initial_conditions.get_from_file(
-                        sim_id2load, modinf=self.modinf
-                    )
-                else:
-                    initial_conditions = self.modinf.initial_conditions.get_from_config(
-                        sim_id2write, modinf=self.modinf
-                    )
+
                 self.lastsim_seeding_data = seeding_data
                 self.lastsim_seeding_amounts = seeding_amounts
                 self.lastsim_initial_conditions = initial_conditions
@@ -783,7 +780,8 @@ class GempyorInference:
                 if self.modinf.write_csv or self.modinf.write_parquet:
                     seir.write_spar_snpi(sim_id2write, self.modinf, p_draw, npi_seir)
                     if self.autowrite_seir:
-                        out_df = seir.write_seir(sim_id2write, self.modinf, states)
+                        out_df = seir.states2Df(self.modinf, states)
+                        seir.write_seir(sim_id2write, self.modinf, states)
                         self.lastsim_out_df = out_df
 
             loaded_values = None
