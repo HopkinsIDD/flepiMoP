@@ -55,6 +55,10 @@ class DistributionABC(ABC, BaseModel):
         rng = rng if rng is not None else self._rng
         return self._sample_from_generator(size=size, rng=rng)
 
+    def __call__(self) -> float | int:
+        """A shortcut for `self.sample(size=1)`."""
+        return self.sample(size=1).item()
+
     @abstractmethod
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -483,23 +487,20 @@ Distribution = Annotated[
 DISTRIBUTION_ADAPTER = TypeAdapter(Distribution)
 
 
-def build_distribution_from_confuse_config(
-    param_config: confuse.ConfigView,
-) -> Distribution:
+def build_distribution_from_confuse_config(config: confuse.ConfigView) -> Distribution:
     """
-    Creates a Distribution object from a confuse.ConfigView (single value).
+    Creates a Distribution object from a `confuse.ConfigView`.
 
     Handles the case where the value is a simple number or string,
     interpreting it as a 'fixed' distribution.
 
     Args:
-        param_config: A confuse.ConfigView for a single parameter.
+        config: A `confuse.ConfigView` for a single parameter.
 
     Returns:
         A Distribution object.
     """
-    conf = param_config["value"].get()
+    conf = config.get()
     if isinstance(conf, float | int | str):
         conf = {"distribution": "fixed", "value": conf}
-
     return DISTRIBUTION_ADAPTER.validate_python(conf)

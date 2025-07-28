@@ -5,6 +5,7 @@ import pandas as pd
 
 from . import helpers
 from .base import NPIBase
+from ..distributions import build_distribution_from_confuse_config
 
 
 class MultiPeriodModifier(NPIBase):
@@ -149,7 +150,7 @@ class MultiPeriodModifier(NPIBase):
         self.affected_subpops = self.__get_affected_subpops(npi_config)
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
-        dist = npi_config["value"].as_random_distribution()
+        dist = build_distribution_from_confuse_config(npi_config["value"])
         self.parameters["modifier_name"] = self.name
         self.parameters["parameter"] = self.param_name
 
@@ -177,9 +178,9 @@ class MultiPeriodModifier(NPIBase):
             for subpop in this_spatial_group["ungrouped"]:
                 self.parameters.at[subpop, "start_date"] = start_dates
                 self.parameters.at[subpop, "end_date"] = end_dates
-                self.parameters.at[subpop, "value"] = dist(size=1)
+                self.parameters.at[subpop, "value"] = dist()
             for group in this_spatial_group["grouped"]:
-                drawn_value = dist(size=1)
+                drawn_value = dist()
                 for subpop in group:
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
@@ -235,8 +236,8 @@ class MultiPeriodModifier(NPIBase):
                 if not subpop in loaded_df.index:
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
-                    dist = npi_config["value"].as_random_distribution()
-                    self.parameters.at[subpop, "value"] = dist(size=1)
+                    dist = build_distribution_from_confuse_config(npi_config["value"])
+                    self.parameters.at[subpop, "value"] = dist()
                 else:
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
@@ -250,8 +251,8 @@ class MultiPeriodModifier(NPIBase):
                             ",".join(group), "value"
                         ]
                 else:
-                    dist = npi_config["value"].as_random_distribution()
-                    drawn_value = dist(size=1)
+                    dist = build_distribution_from_confuse_config(npi_config["value"])
+                    drawn_value = dist()
                     for subpop in group:
                         self.parameters.at[subpop, "start_date"] = start_dates
                         self.parameters.at[subpop, "end_date"] = end_dates

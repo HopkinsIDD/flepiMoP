@@ -22,11 +22,7 @@ import pandas as pd
 import pydantic
 
 from . import NPI, utils
-from .distributions import (
-    Distribution,
-    DISTRIBUTION_ADAPTER,
-    build_distribution_from_confuse_config,
-)
+from .distributions import build_distribution_from_confuse_config
 
 
 logger = logging.getLogger(__name__)
@@ -106,7 +102,7 @@ class Parameters:
             # Parameter characterized by its distribution
             if self.pconfig[pn]["value"].exists():
                 self.pdata[pn]["dist"] = build_distribution_from_confuse_config(
-                    self.pconfig[pn]
+                    self.pconfig[pn]["value"]
                 )
 
             # Parameter given as a file
@@ -191,7 +187,7 @@ class Parameters:
         for pn in self.pnames:
             if "dist" in self.pdata[pn]:
                 self.pdata[pn]["dist"] = build_distribution_from_confuse_config(
-                    self.pconfig[pn]
+                    self.pconfig[pn]["value"]
                 )
 
     def get_pnames2pindex(self) -> dict:
