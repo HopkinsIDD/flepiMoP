@@ -22,11 +22,7 @@ import pandas as pd
 import pydantic
 
 from . import NPI, utils
-from .distributions import (
-    Distribution,
-    DISTRIBUTION_ADAPTER,
-    build_distribution_from_confuse_config,
-)
+from .distributions import build_distribution_from_confuse_config
 
 
 logger = logging.getLogger(__name__)

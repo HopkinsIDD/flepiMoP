@@ -54,6 +54,10 @@ class DistributionABC(ABC, BaseModel):
         """
         rng = rng if rng is not None else self._rng
         return self._sample_from_generator(size=size, rng=rng)
+    
+    def __call__(self) -> float | int:
+        """A shortcut for `self.sample(size=1)`."""
+        return self.sample(size=1).item()
 
     @abstractmethod
     def _sample_from_generator(
@@ -498,7 +502,8 @@ def build_distribution_from_confuse_config(
     Returns:
         A Distribution object.
     """
-    conf = param_config["value"].get()
+    # previously: conf = param_config["value"].get()
+    conf = param_config.get()
     if isinstance(conf, float | int | str):
         conf = {"distribution": "fixed", "value": conf}
 

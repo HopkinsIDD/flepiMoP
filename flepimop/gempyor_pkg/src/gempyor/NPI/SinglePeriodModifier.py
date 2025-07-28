@@ -5,6 +5,7 @@ import pandas as pd
 
 from . import helpers
 from .base import NPIBase
+from ..distributions import build_distribution_from_confuse_config
 
 
 class SinglePeriodModifier(NPIBase):
@@ -134,7 +135,7 @@ class SinglePeriodModifier(NPIBase):
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         # Create reduction
-        self.dist = npi_config["value"].as_random_distribution()
+        self.dist = build_distribution_from_confuse_config(npi_config["value"])
 
         self.parameters["modifier_name"] = self.name
         self.parameters["start_date"] = (
@@ -152,12 +153,12 @@ class SinglePeriodModifier(NPIBase):
             npi_config, list(self.affected_subpops)
         )
         if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = self.dist(
-                size=len(self.spatial_groups["ungrouped"])
+            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = (
+                self.dist.sample(size=len(self.spatial_groups["ungrouped"]))
             )
         if self.spatial_groups["grouped"]:
             for group in self.spatial_groups["grouped"]:
-                drawn_value = self.dist(size=1) * np.ones(len(group))
+                drawn_value = self.dist() * np.ones(len(group))
                 self.parameters.loc[group, "value"] = drawn_value
 
     def __createFromDf(self, loaded_df, npi_config):
