@@ -8,16 +8,20 @@ models.
 __all__ = ()
 
 
+import numbers
 from pathlib import Path
-from typing import Any, TypeVar, overload
+from functools import partial
+from typing import Any, TypeVar, overload, Annotated, Type
 
 import pyarrow.parquet as pq
 import pandas as pd
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, BeforeValidator
+from sympy.parsing.sympy_parser import parse_expr
 
 
 T = TypeVar("T")
 U = TypeVar("U")
+EE = TypeVar("EE", int, float)
 
 
 def _ensure_list(value: list[T] | tuple[T] | T | None) -> list[T] | None:
@@ -180,3 +184,60 @@ def _read_and_validate_dataframe(
             model = RootModel[list[model]]
         data = [r.model_dump() for r in model.model_validate(data).root]
     return pd.DataFrame.from_records(data)
+
+
+@overload
+def _evaled_expression(val: EE | str, target_type: Type[EE]) -> EE: ...
+
+
+@overload
+def _evaled_expression(val: T, target_type: Type[EE]) -> T: ...
+
+
+def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
+    """
+    Evaluates a string expression to a target numeric type (int or float).
+
+    Args:
+        val: The input value to process.
+        target_type: The type (int or float) to convert the expression to.
+
+    Returns:
+        The value coerced into the target numeric type, or the original value.
+
+    Raises:
+        ValueError: On parsing errors.
+
+    Examples:
+        >>> _evaled_expression("1 + 1", int)
+        2
+        >>> _evaled_expression("10 / 4", float)
+        2.5
+        >>> _evaled_expression("10 / 4", int)
+        # note that result is trucnated; probably undesirable if misused
+        2
+        >>> _evaled_expression(99.5, float)
+        99.5
+        >>> _evaled_expression(None, int)
+
+        >>> _evaled_expression("a * b", float)
+        Traceback (most recent call last):
+            ...
+        ValueError: Can't convert expression to float.
+    """
+    if isinstance(val, target_type):
+        return val
+
+    if isinstance(val, str):
+        expr = parse_expr(val)
+        if not expr.is_Number:
+            raise ValueError(f"Cannot convert expression '{expr}' to {target_type}.")
+        return target_type(expr)
+
+    return val
+
+
+EvaledInt = Annotated[int, BeforeValidator(partial(_evaled_expression, target_type=int))]
+EvaledFloat = Annotated[
+    float, BeforeValidator(partial(_evaled_expression, target_type=float))
+]

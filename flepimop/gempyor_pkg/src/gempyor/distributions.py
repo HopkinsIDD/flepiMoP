@@ -16,6 +16,7 @@ __all__: tuple[str, ...] = (
 )
 
 
+import confuse
 from abc import ABC, abstractmethod
 from math import isclose
 from typing import Annotated, Literal
@@ -23,8 +24,10 @@ from typing import Annotated, Literal
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from pydantic import BaseModel, PrivateAttr, Field, model_validator
+from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator
 from scipy.stats import truncnorm
+
+from ._pydantic_ext import EvaledFloat, EvaledInt
 
 
 class DistributionABC(ABC, BaseModel):
@@ -51,6 +54,10 @@ class DistributionABC(ABC, BaseModel):
         """
         rng = rng if rng is not None else self._rng
         return self._sample_from_generator(size=size, rng=rng)
+
+    def __call__(self) -> float | int:
+        """A shortcut for `self.sample(size=1)`."""
+        return self.sample(size=1).item()
 
     @abstractmethod
     def _sample_from_generator(
@@ -82,7 +89,7 @@ class FixedDistribution(DistributionABC):
     """
 
     distribution: Literal["fixed"] = "fixed"
-    value: float
+    value: EvaledFloat
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -111,8 +118,8 @@ class NormalDistribution(DistributionABC):
     """
 
     distribution: Literal["norm"] = "norm"
-    mu: float
-    sigma: float = Field(..., gt=0)
+    mu: EvaledFloat
+    sigma: EvaledFloat = Field(..., gt=0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -151,8 +158,8 @@ class UniformDistribution(DistributionABC):
     """
 
     distribution: Literal["uniform"] = "uniform"
-    low: float
-    high: float
+    low: EvaledFloat
+    high: EvaledFloat
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -193,8 +200,8 @@ class LognormalDistribution(DistributionABC):
     """
 
     distribution: Literal["lognorm"] = "lognorm"
-    meanlog: float
-    sdlog: float = Field(..., gt=0)
+    meanlog: EvaledFloat
+    sdlog: EvaledFloat = Field(..., gt=0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -235,10 +242,10 @@ class TruncatedNormalDistribution(DistributionABC):
     # pylint: enable=line-too-long
 
     distribution: Literal["truncnorm"] = "truncnorm"
-    mean: float
-    sd: float = Field(..., gt=0)
-    a: float
-    b: float
+    mean: EvaledFloat
+    sd: EvaledFloat = Field(..., gt=0)
+    a: EvaledFloat
+    b: EvaledFloat
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -301,7 +308,7 @@ class PoissonDistribution(DistributionABC):
     """
 
     distribution: Literal["poisson"] = "poisson"
-    lam: float = Field(..., ge=0.0)
+    lam: EvaledFloat = Field(..., ge=0.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -348,8 +355,8 @@ class BinomialDistribution(DistributionABC):
     """
 
     distribution: Literal["binomial"] = "binomial"
-    n: int = Field(..., ge=0)
-    p: float = Field(..., ge=0.0, le=1.0)
+    n: EvaledInt = Field(..., ge=0)
+    p: EvaledFloat = Field(..., ge=0.0, le=1.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -392,8 +399,8 @@ class GammaDistribution(DistributionABC):
     """
 
     distribution: Literal["gamma"] = "gamma"
-    shape: float = Field(..., gt=0)
-    scale: float = Field(..., gt=0)
+    shape: EvaledFloat = Field(..., gt=0)
+    scale: EvaledFloat = Field(..., gt=0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -422,8 +429,8 @@ class WeibullDistribution(DistributionABC):
     """
 
     distribution: Literal["weibull"] = "weibull"
-    shape: float = Field(..., gt=0)
-    scale: float = Field(..., gt=0)
+    shape: EvaledFloat = Field(..., gt=0)
+    scale: EvaledFloat = Field(..., gt=0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -453,8 +460,8 @@ class BetaDistribution(DistributionABC):
     """
 
     distribution: Literal["beta"] = "beta"
-    alpha: float = Field(..., gt=0)
-    beta: float = Field(..., gt=0)
+    alpha: EvaledFloat = Field(..., gt=0)
+    beta: EvaledFloat = Field(..., gt=0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -476,3 +483,24 @@ Distribution = Annotated[
     | WeibullDistribution,
     Field(discriminator="distribution"),
 ]
+
+DISTRIBUTION_ADAPTER = TypeAdapter(Distribution)
+
+
+def distribution_from_confuse_config(config: confuse.ConfigView) -> Distribution:
+    """
+    Creates a Distribution object from a `confuse.ConfigView`.
+
+    Handles the case where the value is a simple number or string,
+    interpreting it as a 'fixed' distribution.
+
+    Args:
+        config: A `confuse.ConfigView` for a single parameter.
+
+    Returns:
+        A Distribution object.
+    """
+    conf = config.get()
+    if isinstance(conf, float | int | str):
+        conf = {"distribution": "fixed", "value": conf}
+    return DISTRIBUTION_ADAPTER.validate_python(conf)

@@ -8,6 +8,10 @@ class DummyDistribution(DistributionABC):
 
     distribution: str = "dummy"
 
+    def __call__(self) -> float | int:
+        """A shortcut for `self.sample(size=1)`."""
+        return self.sample(size=1).item()
+
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: np.random.Generator
     ) -> np.ndarray:
@@ -47,3 +51,11 @@ def test_distribution_abc_sample_properties(size, expected_shape) -> None:
     assert isinstance(sample, np.ndarray)
     assert sample.shape == expected_shape
     assert np.issubdtype(sample.dtype, np.number)
+
+
+def test_distribution_abc_callable() -> None:
+    dist = DummyDistribution()
+    sample_callable_result = dist()
+    assert isinstance(
+        sample_callable_result, float
+    )  # b/c rng.random always returns a float

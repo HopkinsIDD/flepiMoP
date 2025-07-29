@@ -13,6 +13,7 @@ import filecmp
 from gempyor import model_info, seir, NPI, file_paths, parameters, subpopulation_structure
 
 from gempyor.utils import config, write_df, read_df
+from gempyor._pydantic_ext import _evaled_expression
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
@@ -134,7 +135,9 @@ def test_parameters_quick_draw_old():
     assert sigma.shape == (modinf.n_days, modinf.nsubpops)
     assert (
         sigma
-        == config["seir"]["parameters"]["sigma"]["value"]["value"].as_evaled_expression()
+        == _evaled_expression(
+            config["seir"]["parameters"]["sigma"]["value"]["value"].get(), target_type=float
+        )
     ).all()
 
     assert gamma.shape == (modinf.n_days, modinf.nsubpops)
