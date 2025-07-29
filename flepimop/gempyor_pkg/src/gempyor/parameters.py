@@ -231,7 +231,7 @@ class Parameters:
         for idx, pn in enumerate(self.pnames):
             if "dist" in self.pdata[pn]:
                 param_arr[idx] = np.full(
-                    (n_days, nsubpops), self.pdata[pn]["dist"].sample().item()
+                    (n_days, nsubpops), self.pdata[pn]["dist"]()
                 )
             else:
                 param_arr[idx] = self.pdata[pn]["ts"].values
