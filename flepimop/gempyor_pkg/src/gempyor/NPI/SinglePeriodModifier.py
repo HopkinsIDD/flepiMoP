@@ -158,7 +158,7 @@ class SinglePeriodModifier(NPIBase):
             )
         if self.spatial_groups["grouped"]:
             for group in self.spatial_groups["grouped"]:
-                drawn_value = self.dist() * np.ones(len(group))
+                drawn_value = np.repeat(self.dist(), len(group))
                 self.parameters.loc[group, "value"] = drawn_value
 
     def __createFromDf(self, loaded_df, npi_config):
