@@ -227,10 +227,10 @@ def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
         return val
 
     if isinstance(val, str):
-        try:
-            return target_type(sympy.parsing.sympy_parser.parse_expr(val))
-        except TypeError as e:
-            raise ValueError(f"Can't convert expression to {target_type.__name__}.") from e
+        expr = parse_expr(val)
+        if not expr.is_Number:
+          raise ValueError(f"Cannot convert expression '{expr}' to {target_type}.")
+        return target_type(expr)
 
     return val
 
