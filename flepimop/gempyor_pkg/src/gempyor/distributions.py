@@ -54,7 +54,7 @@ class DistributionABC(ABC, BaseModel):
         """
         rng = rng if rng is not None else self._rng
         return self._sample_from_generator(size=size, rng=rng)
-    
+
     def __call__(self) -> float | int:
         """A shortcut for `self.sample(size=1)`."""
         return self.sample(size=1).item()

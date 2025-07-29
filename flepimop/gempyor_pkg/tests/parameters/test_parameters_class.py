@@ -31,7 +31,6 @@ from gempyor.testing import (
     partials_are_similar,
     sample_fits_distribution,
 )
-from gempyor.utils import random_distribution_sampler
 
 
 class MockParametersInput:
