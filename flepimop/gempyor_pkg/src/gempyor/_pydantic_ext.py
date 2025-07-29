@@ -187,18 +187,12 @@ def _read_and_validate_dataframe(
 
 
 @overload
-def _evaled_expression(val: str, *, target_type: Type[int]) -> int: ...
-@overload
-def _evaled_expression(val: Any, *, target_type: Type[int]) -> int | Any: ...
-
+def _evaled_expression(val: EE | str, *, target_type: Type[EE]) -> EE: ...
 
 @overload
-def _evaled_expression(val: str, *, target_type: Type[float]) -> float: ...
-@overload
-def _evaled_expression(val: Any, *, target_type: Type[float]) -> float | Any: ...
+def _evaled_expression(val: T, *, target_type: Type[EE]) -> T: ...
 
-
-def _evaled_expression(val: Any, *, target_type: Type[EE]) -> EE | Any:
+def _evaled_expression(val: EE | str | Any, *, target_type: Type[EE]) -> EE | Any:
     """
     Evaluates a string expression to a target numeric type (int or float).
 
