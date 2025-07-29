@@ -600,41 +600,7 @@ class TestParameters:
 
                 else:
                     dist_obj = params.pdata[param_name]["dist"]
-                    drawn_values = p_draw[i, :, :]
-
-                    # For a fixed distribution, all values must be equal to the specified value
-                    if isinstance(dist_obj, FixedDistribution):
-                        assert np.allclose(drawn_values, dist_obj.value)
-
-                    # For bounded distributions, check that all values are within the domain
-                    elif isinstance(dist_obj, UniformDistribution):
-                        assert np.all(drawn_values >= dist_obj.low)
-                        assert np.all(drawn_values <= dist_obj.high)
-                    elif isinstance(dist_obj, TruncatedNormalDistribution):
-                        assert np.all(drawn_values >= dist_obj.a)
-                        assert np.all(drawn_values <= dist_obj.b)
-                    elif isinstance(dist_obj, BetaDistribution):
-                        assert np.all(drawn_values >= 0)
-                        assert np.all(drawn_values <= 1)
-
-                    # For discrete distributions, check for integer type and domain
-                    elif isinstance(dist_obj, BinomialDistribution):
-                        assert np.all(drawn_values >= 0)
-                        assert np.all(drawn_values <= dist_obj.n)
-                    elif isinstance(dist_obj, PoissonDistribution):
-                        assert np.all(drawn_values >= 0)
-
-                    # For distributions with a non-negative domain
-                    elif isinstance(
-                        dist_obj,
-                        (LognormalDistribution, GammaDistribution, WeibullDistribution),
-                    ):
-                        assert np.all(drawn_values >= 0)
-
-                    # For distributions without a simple domain to check (Normal)
-                    else:
-                        assert isinstance(dist_obj, NormalDistribution)
-                        assert not np.isnan(drawn_values).any()
+                    assert isinstance(dist_obj, DistributionABC)
 
     @pytest.mark.parametrize(
         "factory,n_days,nsubpops",

@@ -59,7 +59,6 @@ class DistributionABC(ABC, BaseModel):
         """A shortcut for `self.sample(size=1)`."""
         return self.sample(size=1).item()
 
-
     @abstractmethod
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator

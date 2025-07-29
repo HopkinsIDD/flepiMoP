@@ -44,5 +44,5 @@ def test_evaled_expression_returns_expected_results(val, target_type, expected):
     ],
 )
 def test_evaled_expression_raises_value_error_for_invalid_input(val, target_type):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"Cannot convert expression '.*' to .*"):
         _evaled_expression(val, target_type=target_type)

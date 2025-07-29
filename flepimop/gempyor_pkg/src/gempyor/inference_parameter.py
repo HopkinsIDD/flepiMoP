@@ -59,9 +59,7 @@ class InferenceParameters:
                         ptype=ptype,
                         pname=pname,
                         subpop=sp,
-                        pdist=distribution_from_confuse_config(
-                            parameter_config["value"]
-                        ),
+                        pdist=distribution_from_confuse_config(parameter_config["value"]),
                         lb=parameter_config["value"]["a"].get(float),
                         ub=parameter_config["value"]["b"].get(float),
                     )
@@ -73,9 +71,7 @@ class InferenceParameters:
                         ptype=ptype,
                         pname=pname,
                         subpop=",".join(group),
-                        pdist=distribution_from_confuse_config(
-                            parameter_config["value"]
-                        ),
+                        pdist=distribution_from_confuse_config(parameter_config["value"]),
                         lb=parameter_config["value"]["a"].get(float),
                         ub=parameter_config["value"]["b"].get(float),
                     )

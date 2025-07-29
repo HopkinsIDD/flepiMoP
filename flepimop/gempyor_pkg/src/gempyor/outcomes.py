@@ -467,9 +467,7 @@ def compute_all_multioutcomes(
             else:
                 # One draw for all subpops
                 probabilities = np.repeat(
-                    distribution_from_confuse_config(
-                        parameters[new_comp]["probability"]
-                    )(),
+                    distribution_from_confuse_config(parameters[new_comp]["probability"])(),
                     len(modinf.subpop_struct.subpop_names),
                 )
                 if "rel_probability" in parameters[new_comp]:

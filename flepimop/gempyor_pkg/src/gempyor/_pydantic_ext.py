@@ -189,8 +189,10 @@ def _read_and_validate_dataframe(
 @overload
 def _evaled_expression(val: EE | str, target_type: Type[EE]) -> EE: ...
 
+
 @overload
 def _evaled_expression(val: T, target_type: Type[EE]) -> T: ...
+
 
 def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
     """
@@ -229,7 +231,7 @@ def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
     if isinstance(val, str):
         expr = parse_expr(val)
         if not expr.is_Number:
-          raise ValueError(f"Cannot convert expression '{expr}' to {target_type}.")
+            raise ValueError(f"Cannot convert expression '{expr}' to {target_type}.")
         return target_type(expr)
 
     return val
