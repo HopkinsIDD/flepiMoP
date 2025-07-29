@@ -5,7 +5,7 @@ import pandas as pd
 
 from . import helpers
 from .base import NPIBase
-from ..distributions import build_distribution_from_confuse_config
+from ..distributions import distribution_from_confuse_config
 
 
 class SinglePeriodModifier(NPIBase):
@@ -135,7 +135,7 @@ class SinglePeriodModifier(NPIBase):
 
         self.parameters = self.parameters[self.parameters.index.isin(self.affected_subpops)]
         # Create reduction
-        self.dist = build_distribution_from_confuse_config(npi_config["value"])
+        self.dist = distribution_from_confuse_config(npi_config["value"])
 
         self.parameters["modifier_name"] = self.name
         self.parameters["start_date"] = (

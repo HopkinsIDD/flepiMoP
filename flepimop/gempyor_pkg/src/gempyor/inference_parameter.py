@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import confuse
 from . import NPI
-from .distributions import build_distribution_from_confuse_config
+from .distributions import distribution_from_confuse_config
 
 
 # TODO cast uper and lower bound as arrays
@@ -59,7 +59,7 @@ class InferenceParameters:
                         ptype=ptype,
                         pname=pname,
                         subpop=sp,
-                        pdist=build_distribution_from_confuse_config(
+                        pdist=distribution_from_confuse_config(
                             parameter_config["value"]
                         ),
                         lb=parameter_config["value"]["a"].get(float),
@@ -73,7 +73,7 @@ class InferenceParameters:
                         ptype=ptype,
                         pname=pname,
                         subpop=",".join(group),
-                        pdist=build_distribution_from_confuse_config(
+                        pdist=distribution_from_confuse_config(
                             parameter_config["value"]
                         ),
                         lb=parameter_config["value"]["a"].get(float),
@@ -105,7 +105,7 @@ class InferenceParameters:
                             ptype=ptype,
                             pname=pname,
                             subpop=sp,
-                            pdist=build_distribution_from_confuse_config(
+                            pdist=istribution_from_confuse_config(
                                 parameter_config["value"]
                             ),
                             lb=parameter_config["value"]["a"].get(float),
@@ -119,7 +119,7 @@ class InferenceParameters:
                             ptype=ptype,
                             pname=pname,
                             subpop=",".join(group),
-                            pdist=build_distribution_from_confuse_config(
+                            pdist=istribution_from_confuse_config(
                                 parameter_config["value"]
                             ),
                             lb=parameter_config["value"]["a"].get(float),

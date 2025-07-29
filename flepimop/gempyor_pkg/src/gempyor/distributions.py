@@ -59,9 +59,6 @@ class DistributionABC(ABC, BaseModel):
         """A shortcut for `self.sample(size=1)`."""
         return self.sample(size=1).item()
 
-    def __call__(self) -> float | int:
-        """A shortcut for `self.sample(size=1)`."""
-        return self.sample(size=1).item()
 
     @abstractmethod
     def _sample_from_generator(
@@ -491,7 +488,7 @@ Distribution = Annotated[
 DISTRIBUTION_ADAPTER = TypeAdapter(Distribution)
 
 
-def build_distribution_from_confuse_config(config: confuse.ConfigView) -> Distribution:
+def distribution_from_confuse_config(config: confuse.ConfigView) -> Distribution:
     """
     Creates a Distribution object from a `confuse.ConfigView`.
 

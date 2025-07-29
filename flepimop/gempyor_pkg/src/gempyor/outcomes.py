@@ -17,7 +17,7 @@ import xarray as xr
 
 from .utils import Timer, _nslots_random_seeds, config, read_df
 from . import NPI, model_info
-from .distributions import build_distribution_from_confuse_config
+from .distributions import distribution_from_confuse_config
 
 
 logger = logging.getLogger(__name__)
@@ -467,7 +467,7 @@ def compute_all_multioutcomes(
             else:
                 # One draw for all subpops
                 probabilities = np.repeat(
-                    build_distribution_from_confuse_config(
+                    distribution_from_confuse_config(
                         parameters[new_comp]["probability"]
                     )(),
                     len(modinf.subpop_struct.subpop_names),
@@ -475,7 +475,7 @@ def compute_all_multioutcomes(
                 if "rel_probability" in parameters[new_comp]:
                     probabilities = probabilities * parameters[new_comp]["rel_probability"]
                 delays = np.repeat(
-                    build_distribution_from_confuse_config(parameters[new_comp]["delay"])(),
+                    distribution_from_confuse_config(parameters[new_comp]["delay"])(),
                     len(modinf.subpop_struct.subpop_names),
                 )
             probabilities[probabilities > 1] = 1
@@ -556,7 +556,7 @@ def compute_all_multioutcomes(
                     ]["value"].to_numpy()
                 else:
                     durations = np.repeat(
-                        build_distribution_from_confuse_config(
+                        distribution_from_confuse_config(
                             parameters[new_comp]["duration"]
                         )(),
                         len(modinf.subpop_struct.subpop_names),
