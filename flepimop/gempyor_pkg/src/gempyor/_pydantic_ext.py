@@ -187,12 +187,12 @@ def _read_and_validate_dataframe(
 
 
 @overload
-def _evaled_expression(val: EE | str, *, target_type: Type[EE]) -> EE: ...
+def _evaled_expression(val: EE | str, target_type: Type[EE]) -> EE: ...
 
 @overload
-def _evaled_expression(val: T, *, target_type: Type[EE]) -> T: ...
+def _evaled_expression(val: T, target_type: Type[EE]) -> T: ...
 
-def _evaled_expression(val: EE | str | Any, *, target_type: Type[EE]) -> EE | Any:
+def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
     """
     Evaluates a string expression to a target numeric type (int or float).
 
@@ -207,18 +207,18 @@ def _evaled_expression(val: EE | str | Any, *, target_type: Type[EE]) -> EE | An
         ValueError: On parsing errors.
 
     Examples:
-        >>> _evaled_expression("1 + 1", target_type=int)
+        >>> _evaled_expression("1 + 1", int)
         2
-        >>> _evaled_expression("10 / 4", target_type=float)
+        >>> _evaled_expression("10 / 4", float)
         2.5
-        >>> _evaled_expression("10 / 4", target_type=int)
+        >>> _evaled_expression("10 / 4", int)
         # note that result is trucnated; probably undesirable if misused
         2
-        >>> _evaled_expression(99.5, target_type=float)
+        >>> _evaled_expression(99.5, float)
         99.5
-        >>> _evaled_expression(None, target_type=int)
+        >>> _evaled_expression(None, int)
 
-        >>> _evaled_expression("a * b", target_type=float)
+        >>> _evaled_expression("a * b", float)
         Traceback (most recent call last):
             ...
         ValueError: Can't convert expression to float.
