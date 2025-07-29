@@ -16,7 +16,7 @@ from typing import Any, TypeVar, overload, Annotated, Type
 import pyarrow.parquet as pq
 import pandas as pd
 from pydantic import BaseModel, RootModel, BeforeValidator
-import sympy
+from sympy.parsing.sympy_parser import parse_expr
 
 
 T = TypeVar("T")
