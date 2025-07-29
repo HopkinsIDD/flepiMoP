@@ -230,9 +230,7 @@ class Parameters:
 
         for idx, pn in enumerate(self.pnames):
             if "dist" in self.pdata[pn]:
-                param_arr[idx] = np.full(
-                    (n_days, nsubpops), self.pdata[pn]["dist"]()
-                )
+                param_arr[idx] = np.full((n_days, nsubpops), self.pdata[pn]["dist"]())
             else:
                 param_arr[idx] = self.pdata[pn]["ts"].values
 
@@ -280,9 +278,7 @@ class Parameters:
                     f"PARAM: parameter {pn} NOT found in loadID file. "
                     "Drawing from config distribution"
                 )
-                param_arr[idx] = np.full(
-                    (n_days, nsubpops), self.pdata[pn]["dist"].sample().item()
-                )
+                param_arr[idx] = np.full((n_days, nsubpops), self.pdata[pn]["dist"]())
 
         return param_arr
 
