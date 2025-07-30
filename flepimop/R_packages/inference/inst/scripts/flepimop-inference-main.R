@@ -133,8 +133,7 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
           "`flepimop-inference-slot` not found in PATH, unable to run inference slot"
         )
     }
-    command <- c(
-        inference_slot_cmd,
+    args <- c(
         "-c", opt$config,
         "-u", opt$run_id,
         "-s", opt$seir_modifiers_scenarios,
@@ -160,7 +159,10 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
     )
     err <- tryCatch({
         system2(
-            command = opt$rpath, args = command, stdout = log_file, stderr = log_file
+            command = inference_slot_cmd,
+            args = args,
+            stdout = log_file,
+            stderr = log_file
         )
     }, error = function(e) {
         message <- paste("Error in slot", flepi_slot, ":", e$message)
