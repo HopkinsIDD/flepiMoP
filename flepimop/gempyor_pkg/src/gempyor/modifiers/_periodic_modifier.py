@@ -1,4 +1,4 @@
-"""Definition for a single period modifier."""
+"""Definition for a periodic modifier."""
 
 __all__: tuple[str, ...] = ()
 
@@ -13,10 +13,10 @@ from ..distributions import Distribution
 from ._base import ModifierABC
 
 
-class SinglePeriodModifier(ModifierABC):
-    """Modifier that applies to a single period."""
+class PeriodicModifier(ModifierABC):
+    """Modifier that applies to a specific period(s)."""
 
-    method: Literal["SinglePeriodModifier"] = "SinglePeriodModifier"
+    method: Literal["PeriodicModifier"] = "PeriodicModifier"
     parameter: str
     subpop: Literal["all"] | list[str] = "all"
     period_start_date: date
@@ -76,7 +76,7 @@ class SinglePeriodModifier(ModifierABC):
         return [subpop] if isinstance(subpop, str) and subpop != "all" else subpop
 
     @model_validator(mode="after")
-    def _validate_date_order(self) -> "SinglePeriodModifier":
+    def _validate_date_order(self) -> "PeriodicModifier":
         """
         Validate that the period start date is before the period end date.
 
@@ -84,7 +84,7 @@ class SinglePeriodModifier(ModifierABC):
             ValueError: If the period start date is not before the period end date.
 
         Returns:
-            The validated SinglePeriodModifier instance.
+            The validated PeriodicModifier instance.
 
         """
         if self.period_start_date > self.period_end_date:
