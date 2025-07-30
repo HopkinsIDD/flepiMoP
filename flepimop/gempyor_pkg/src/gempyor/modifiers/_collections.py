@@ -64,6 +64,7 @@ class ModifiersCollection(BaseModel):
         """
         Filters modifiers for the specified scenario and then
         delegates calculations to modifier's own .apply() methods.
+
         Args:
             parameters: A dictionary of parameter names and their ndarray values.
             scenario: The specific scenario to apply modifiers for.
@@ -106,4 +107,6 @@ class ModifiersCollection(BaseModel):
                     method=apply_method,
                 )
             modified_parameters[param] = current_value
+
         return modified_parameters
+

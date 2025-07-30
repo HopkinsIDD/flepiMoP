@@ -13,4 +13,3 @@ class StackedModifier(BaseModel):
     name: str
     scenarios: list[str]
     modifiers: list["Modifier"]
-
