@@ -509,8 +509,15 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
     initial_hpar <- flepicommon::read_parquet_with_check(first_chimeric_files[['hpar_filename']])
     initial_snpi <- flepicommon::read_parquet_with_check(first_chimeric_files[['snpi_filename']])
     initial_hnpi <- flepicommon::read_parquet_with_check(first_chimeric_files[['hnpi_filename']])
-    if (!is.null(config$initial_conditions)){
+    if (!is.null(config$initial_conditions) && config$initial_conditions$method %in% c(
+        "Default",
+        "FromFile",
+        "SetInitialConditions",
+        "InitialConditionsFolderDraw",
+        "SetInitialConditionsFolderDraw")) {
       initial_init <- flepicommon::read_parquet_with_check(first_chimeric_files[['init_filename']])
+    } else {
+      initial_init <- NULL
     }
     if (!is.null(config$seeding)){
       seeding_col_types <- NULL
@@ -551,8 +558,20 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       startTimeCountEach = Sys.time()
 
       ## Create filenames to save output from each iteration
-      this_global_files <- inference::create_filename_list(run_id=opt$run_id,  prefix = setup_prefix, filepath_suffix=global_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=this_index)
-      this_chimeric_files <- inference::create_filename_list(run_id=opt$run_id, prefix = setup_prefix, filepath_suffix=chimeric_intermediate_filepath_suffix, filename_prefix=slotblock_filename_prefix, index=this_index)
+      this_global_files <- inference::create_filename_list(
+        run_id = opt$run_id,
+        prefix = setup_prefix,
+        filepath_suffix=global_intermediate_filepath_suffix,
+        filename_prefix=slotblock_filename_prefix,
+        index=this_index
+      )
+      this_chimeric_files <- inference::create_filename_list(
+        run_id=opt$run_id,
+        prefix = setup_prefix,
+        filepath_suffix=chimeric_intermediate_filepath_suffix,
+        filename_prefix=slotblock_filename_prefix,
+        index=this_index
+      )
 
       ### Perturb accepted parameters to get proposed parameters ----
 
@@ -563,7 +582,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         proposed_hpar <- initial_hpar
         proposed_snpi <- initial_snpi
         proposed_hnpi <- initial_hnpi
-        if (!is.null(config$initial_conditions)){
+        if (!is.null(config$initial_conditions)) {
           proposed_init <- initial_init
         }
         if (!is.null(config$seeding)){
@@ -593,7 +612,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         } else {
           proposed_seeding <- initial_seeding
         }
-        if (!is.null(config$initial_conditions)){
+        if (!is.null(config$initial_conditions)) {
           if (infer_initial_conditions) {
             proposed_init <- inference::perturb_init(initial_init, config$initial_conditions$perturbation)
           } else {
@@ -612,7 +631,12 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       if (!is.null(config$seeding)){
         readr::write_csv(proposed_seeding, this_global_files[['seed_filename']])
       }
-      if (!is.null(config$initial_conditions)){
+      if (!is.null(config$initial_conditions) && config$initial_conditions$method %in% c(
+          "Default",
+          "FromFile",
+          "SetInitialConditions",
+          "InitialConditionsFolderDraw",
+          "SetInitialConditionsFolderDraw")) {
         arrow::write_parquet(proposed_init, this_global_files[['init_filename']])
       }
 
@@ -820,7 +844,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
         #  "Chimeric" means GeoID-specific
         print("Making chimeric acceptance decision")
 
-        if (is.null(config$initial_conditions)){
+        if (is.null(config$initial_conditions)) {
           initial_init <- NULL
           proposed_init <- NULL
         }
@@ -902,7 +926,12 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
       if (!is.null(config$seeding)){
         readr::write_csv(new_seeding,this_chimeric_files[['seed_filename']])
       }
-      if (!is.null(config$initial_conditions)){
+      if (!is.null(config$initial_conditions) && config$initial_conditions$method %in% c(
+          "Default",
+          "FromFile",
+          "SetInitialConditions",
+          "InitialConditionsFolderDraw",
+          "SetInitialConditionsFolderDraw")) {
         arrow::write_parquet(new_init, this_chimeric_files[['init_filename']])
       }
       arrow::write_parquet(new_spar,this_chimeric_files[['spar_filename']])
@@ -915,7 +944,7 @@ for(seir_modifiers_scenario in seir_modifiers_scenarios) {
 
 
       # set initial values to start next iteration
-      if (!is.null(config$initial_conditions)){
+      if (!is.null(config$initial_conditions)) {
         initial_init <- new_init
       }
       if (!is.null(config$seeding)){
