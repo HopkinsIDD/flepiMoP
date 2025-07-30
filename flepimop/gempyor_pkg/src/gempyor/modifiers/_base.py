@@ -19,6 +19,7 @@ class ModifierABC(ABC, BaseModel):
 
     method: str
     name: str
+    scenarios: list[str] = []
 
     @abstractmethod
     def apply(
