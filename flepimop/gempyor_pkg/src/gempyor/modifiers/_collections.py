@@ -64,12 +64,10 @@ class ModifiersCollection(BaseModel):
         """
         Filters modifiers for the specified scenario and then
         delegates calculations to modifier's own .apply() methods.
-
         Args:
             parameters: A dictionary of parameter names and their ndarray values.
             scenario: The specific scenario to apply modifiers for.
             rng: A random number generator to sample from modifier distribution
-
         Returns:
             A dictionary with the modified parameter values.
         """
