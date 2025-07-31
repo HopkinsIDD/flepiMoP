@@ -24,7 +24,6 @@ class ModifierABC(ABC, BaseModel):
     def __init__(self, *, name):
         self.name = name
 
-
     @abstractmethod
     def apply(
         self,
