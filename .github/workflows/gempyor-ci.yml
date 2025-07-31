@@ -2,12 +2,6 @@ name: gempyor CI
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - examples/**/*
-      - flepimop/gempyor_pkg/**/*
-    branches:
-      - dev
   pull_request:
     types:
       - edited
@@ -23,7 +17,7 @@ on:
       - main
 
 jobs:
-  tests:
+  fast-tests:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     strategy:
@@ -59,18 +53,41 @@ jobs:
           cd flepimop/gempyor_pkg
           pytest -m "not slow" --exitfirst
         shell: bash -el {0}
-      - name: Run slow unit tests
-        run: |
-          conda activate venv/
-          export FLEPI_PATH=$(pwd)
-          cd flepimop/gempyor_pkg
-          pytest -m "slow" --exitfirst
-        shell: bash -el {0}
       - name: Run gempyor-cli integration tests from examples
         run: |
           conda activate venv/
           cd examples
           pytest --exitfirst
+        shell: bash -el {0}
+  slow-tests:
+    needs: fast-tests
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+        R-version: ["4.3"]
+    steps:
+      - name: Checkout flepiMoP
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          sparse-checkout: |
+            *
+            !documentation/
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Install flepiMoP
+        uses: ./.github/actions/flepimop-install
+        with:
+          python-version: ${{ matrix.python-version }}
+          R-version: ${{ matrix.R-version }}
+      - name: Run slow unit tests
+        run: |
+          conda activate venv/
+          export FLEPI_PATH=$(pwd)
+          cd flepimop/gempyor_pkg
+          pytest -m "slow"
         shell: bash -el {0}
   doc-updates:
     runs-on: ubuntu-latest

@@ -2,14 +2,6 @@ name: inference CI
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - flepimop/R_packages/inference/**/*
-      - flepimop/R_packages/flepicommon/**/*
-      - examples/**/*
-      - flepimop/gempyor_pkg/**/*
-    branches:
-      - dev
   pull_request:
     types:
       - edited

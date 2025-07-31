@@ -2,11 +2,6 @@ name: flepicommon CI
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - flepimop/R_packages/flepicommon/**/*
-    branches:
-      - dev
   pull_request:
     types:
       - edited
