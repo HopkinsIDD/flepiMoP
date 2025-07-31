@@ -64,9 +64,9 @@ def compute_proportion_sums_exponents(
             sum_start = proportion_info[0, p_idx]
             sum_stop = proportion_info[1, p_idx]
             expnt = parameters[proportion_info[2, p_idx], today]
-            summed = states_current[
-                transition_sum_compartments[sum_start:sum_stop], :
-            ].sum(axis=0)
+            summed = states_current[transition_sum_compartments[sum_start:sum_stop], :].sum(
+                axis=0
+            )
             summed_exp = summed**expnt
 
             if first:
@@ -186,9 +186,7 @@ def compute_transition_amounts_meta(source_numbers, total_rates, method, dt):
     elif workload >= _PARALLEL_THRESHOLD:
         return compute_transition_amounts_parallel(source_numbers, total_rates, dt)
     else:
-        return compute_transition_amounts_serial(
-            source_numbers, total_rates, method, dt
-        )
+        return compute_transition_amounts_serial(source_numbers, total_rates, method, dt)
 
 
 @njit(fastmath=False)

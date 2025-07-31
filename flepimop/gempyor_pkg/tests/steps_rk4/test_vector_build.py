@@ -116,19 +116,6 @@ def model_and_inputs(modelinfo_from_config):
     return out
 
 
-import numpy as np
-import pytest
-
-from gempyor.vectorization_experiments import (
-    compute_proportion_sums_exponents,
-    compute_transition_rates,
-    compute_transition_amounts_meta,
-    assemble_flux,
-    run_solver,
-    build_rhs,
-)
-
-
 def test_proportion_sums_and_sources(model_and_inputs):
     out = model_and_inputs
     prop_sums, source_nums = compute_proportion_sums_exponents(
