@@ -46,7 +46,7 @@ class Statistic:
         scale_func: The function to use when rescaling the data. Can be any function
             exported by `numpy`. This attribute is not set when a "scale" value is not
             defined in the `statistic_config` arg.
-        zero_to_one: Should non-zero values be coerced to 1 when calculating
+        zero_to_one: Whether or not non-zero values be coerced to 1 when calculating
             log-likelihood.
     """
 
