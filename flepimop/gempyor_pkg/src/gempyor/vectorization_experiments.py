@@ -1,10 +1,10 @@
 import numpy as np
 from numba import njit, prange
 from scipy.interpolate import interp1d
-from typing import Callable, Tuple, Optional, Dict
+from collections.abc import Callable
+
 
 # === Constants ===
-FLOAT_TOLERANCE = 1e-9
 _PARALLEL_THRESHOLD = 1e7
 
 # === Helper for symbolic expression resolution ===
@@ -69,7 +69,7 @@ def compute_proportion_sums_exponents(
     transition_sum_compartments: np.ndarray,
     parameters: np.ndarray,
     today: int,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute total rates and source population sizes based on exponentiated proportion-based terms.
 
@@ -143,7 +143,7 @@ def compute_transition_rates(
     mobility_data_indices: np.ndarray,
     mobility_row_indices: np.ndarray,
     population: np.ndarray,
-    param_expr_lookup: Optional[Dict[int, str]] = None,
+    param_expr_lookup: dict[int, str] | None = None,
 ) -> np.ndarray:
     """
     Compute adjusted transition rates per node, accounting for parameter values and mobility mixing.
@@ -402,7 +402,7 @@ def build_rhs(
     mobility_data_indices: np.ndarray,
     mobility_row_indices: np.ndarray,
     population: np.ndarray,
-    param_expr_lookup: Optional[Dict[int, str]] = None,
+    param_expr_lookup: dict[int, str] | None = None,
 ) -> Callable[[float, np.ndarray], np.ndarray]:
     """
     Construct the RHS function for the ODE/stepper solver using mobility-aware transition logic.
@@ -547,9 +547,9 @@ def run_solver(
     t_grid: np.ndarray,
     method: str = "rk4",
     record_daily: bool = False,
-    ncompartments: Optional[int] = None,
-    nspatial_nodes: Optional[int] = None,
-) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    ncompartments: int | None = None,
+    nspatial_nodes: int | None = None,
+) -> tuple[np.ndarray, np.ndarray | None]:
     """
     Run a numerical solver on a system with a flattened state vector using a fixed time grid.
 
