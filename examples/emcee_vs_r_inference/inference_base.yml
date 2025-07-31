@@ -1,0 +1,58 @@
+name: three_state
+start_date: 2024-01-01
+end_date: 2024-12-31
+
+subpop_setup:
+  geodata: model_input/geodata.csv
+  mobility: model_input/mobility.csv
+
+initial_conditions:
+  method: SetInitialConditions
+  initial_conditions_file: model_input/initial_conditions.csv
+  allow_missing_subpops: TRUE
+  allow_missing_compartments: TRUE
+
+compartments:
+  infection_stage: ["S", "E", "I", "R"]
+
+seir:
+  integration:
+    method: rk4
+    dt: 0.25
+  parameters:
+    sigma:
+      value: 1
+    gamma:
+      value: 1
+    Ro:
+      value: 1
+  transitions:
+    - source: ["S"]
+      destination: ["E"]
+      rate: ["Ro * gamma"]
+      proportional_to: [["S"], ["I"]]
+      proportion_exponent: ["1", "1"]
+    - source: ["E"]
+      destination: ["I"]
+      rate: ["sigma"]
+      proportional_to: ["E"]
+      proportion_exponent: ["1"]
+    - source: ["I"]
+      destination: ["R"]
+      rate: ["gamma"]
+      proportional_to: ["I"]
+      proportion_exponent: ["1"]
+
+outcomes:
+  method: delayframe
+  outcomes:
+    hospitalizations:
+      source:
+        incidence:
+          infection_stage: "I"
+      probability:
+        value: 1
+      delay:
+        value: 1
+      duration:
+        value: 1

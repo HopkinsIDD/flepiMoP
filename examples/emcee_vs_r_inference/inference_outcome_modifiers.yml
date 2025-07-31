@@ -1,0 +1,78 @@
+outcome_modifiers:
+  scenarios:
+    - hosp_stacked
+  modifiers:
+    hosp_probability:
+      method: SinglePeriodModifier
+      parameter: incidH::probability
+      subpop: "all"
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      value: 
+        distribution: truncnorm
+        mean: 0.1
+        sd: 0.05
+        a: 0
+        b: 1
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    hosp_delay:
+      method: SinglePeriodModifier
+      parameter: incidH::delay
+      subpop: "all"
+      subpop_groups:
+        -
+          - NC
+          - SC
+        -
+          - GA
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      value: 
+        distribution: truncnorm
+        mean: 7.0
+        sd: 2.0
+        a: 0
+        b: 21.0
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    hosp_duration:
+      method: SinglePeriodModifier
+      parameter: incidH::duration
+      subpop: "all"
+      subpop_groups:
+        -
+          - NC
+          - SC
+          - GA
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      value: 
+        distribution: truncnorm
+        mean: 14.0
+        sd: 7.0
+        a: 3.0
+        b: 21.0
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    hosp_stacked:
+      method: StackedModifier
+      subpop: "all"
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      modifiers:
+        - hosp_probability
+        - hosp_delay
+        - hosp_duration

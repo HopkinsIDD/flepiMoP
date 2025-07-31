@@ -1,0 +1,13 @@
+inference:
+  iterations_per_slot: 250
+  method: emcee
+  do_inference: true
+  gt_data_path: model_input/ground_truth_hospitalizations.csv
+  statistics:
+    incidH:
+      name: incidH
+      sim_var: hospitalizations
+      data_var: incidH
+      zero_to_one: True
+      likelihood: 
+        dist: pois
