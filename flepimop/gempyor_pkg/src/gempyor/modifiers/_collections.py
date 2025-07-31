@@ -49,7 +49,7 @@ class ModifiersCollection(BaseModel):
                 stacked_scenarios_map[modifier.name] = modifier.scenarios
 
                 for inner_modifier in modifier.modifiers:
-                    inner_modifier.scenarios = modifier.scenarios
+                    inner_modifier._scenarios = modifier.scenarios
                     unpacked_modifiers.append(inner_modifier)
             else:
                 unpacked_modifiers.append(modifier)
@@ -78,7 +78,7 @@ class ModifiersCollection(BaseModel):
 
         # Filter for modifiers relevant to given scenario
         applicable_modifiers = [
-            m for m in self.modifiers if not m.scenarios or scenario in m.scenarios
+            m for m in self.modifiers if not m._scenarios or scenario in m._scenarios
         ]
 
         # Group modifiers by the parameter they affect
