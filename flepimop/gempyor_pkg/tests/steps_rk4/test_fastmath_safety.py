@@ -85,9 +85,6 @@ def model_and_inputs(modelinfo_from_config):
         ].sum()
         proportion_who_move[i] = min(total_flux / population[i], 1.0)
 
-
-
-
     return {
         "initial_array": initial_array,
         "params": parsed_params,
@@ -102,13 +99,17 @@ def model_and_inputs(modelinfo_from_config):
         "dt": 0.1,
     }
 
+
 def test_fastmath_equivalence_prod(model_and_inputs):
-    arr = np.random.rand(4, model_and_inputs["initial_array"].shape[1]).astype(np.float32)
+    arr = np.random.rand(4, model_and_inputs["initial_array"].shape[1]).astype(
+        np.float32
+    )
     fn_fast = prod_along_axis0
     fn_safe = njit(fastmath=False)(fn_fast.py_func)
     out1 = fn_safe(arr)
     out2 = fn_fast(arr)
     assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
+
 
 def test_fastmath_equivalence_proportion_sums_exponents(model_and_inputs):
     out = model_and_inputs
@@ -127,6 +128,7 @@ def test_fastmath_equivalence_proportion_sums_exponents(model_and_inputs):
     assert np.allclose(total1, total2, rtol=1e-5, atol=1e-7)
     assert np.allclose(src1, src2, rtol=1e-5, atol=1e-7)
 
+
 def test_fastmath_equivalence_transition_amounts_serial(model_and_inputs):
     out = model_and_inputs
     rates, sources = compute_proportion_sums_exponents(
@@ -144,6 +146,7 @@ def test_fastmath_equivalence_transition_amounts_serial(model_and_inputs):
         out2 = fn_fast(sources, rates, method, out["dt"])
         assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
 
+
 def test_fastmath_equivalence_transition_amounts_parallel(model_and_inputs):
     out = model_and_inputs
     rates, sources = compute_proportion_sums_exponents(
@@ -160,6 +163,7 @@ def test_fastmath_equivalence_transition_amounts_parallel(model_and_inputs):
     out2 = fn_fast(sources, rates, out["dt"])
     assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
 
+
 def test_fastmath_equivalence_flux(model_and_inputs):
     out = model_and_inputs
     rates, sources = compute_proportion_sums_exponents(
@@ -173,6 +177,16 @@ def test_fastmath_equivalence_flux(model_and_inputs):
     amounts = compute_transition_amounts_serial(sources, rates, "euler", out["dt"])
     fn_fast = assemble_flux
     fn_safe = njit(fastmath=False)(fn_fast.py_func)
-    out1 = fn_safe(amounts, out["transitions"], out["initial_array"].shape[0], out["initial_array"].shape[1])
-    out2 = fn_fast(amounts, out["transitions"], out["initial_array"].shape[0], out["initial_array"].shape[1])
+    out1 = fn_safe(
+        amounts,
+        out["transitions"],
+        out["initial_array"].shape[0],
+        out["initial_array"].shape[1],
+    )
+    out2 = fn_fast(
+        amounts,
+        out["transitions"],
+        out["initial_array"].shape[0],
+        out["initial_array"].shape[1],
+    )
     assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)

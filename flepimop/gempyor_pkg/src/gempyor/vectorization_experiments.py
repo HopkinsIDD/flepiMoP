@@ -11,9 +11,7 @@ _PARALLEL_THRESHOLD = 1e7
 
 
 def resolve_parameter_expression(
-    expr: str,
-    param_lookup: dict[str, np.ndarray],
-    today: int
+    expr: str, param_lookup: dict[str, np.ndarray], today: int
 ) -> np.ndarray:
     """
     Resolve a symbolic parameter expression (e.g. 'beta * gamma') at a given time index.
@@ -41,10 +39,7 @@ def resolve_parameter_expression(
         return val if val.ndim == 1 else val[:, today]
 
 
-
 # === 1. Core Proportion Logic ===
-
-
 
 
 @njit(fastmath=True)
@@ -64,8 +59,6 @@ def prod_along_axis0(arr_2d: np.ndarray) -> np.ndarray:
         for j in range(n_cols):
             result[j] *= arr_2d[i, j]
     return result
-
-
 
 
 @njit(fastmath=True)
@@ -114,9 +107,9 @@ def compute_proportion_sums_exponents(
             sum_start = proportion_info[0, p_idx]
             sum_stop = proportion_info[1, p_idx]
             expnt = parameters[proportion_info[2, p_idx], today]
-            summed = states_current[transition_sum_compartments[sum_start:sum_stop], :].sum(
-                axis=0
-            )
+            summed = states_current[
+                transition_sum_compartments[sum_start:sum_stop], :
+            ].sum(axis=0)
             summed_exp = summed**expnt
 
             if first:
@@ -239,13 +232,12 @@ def compute_transition_rates(
 
     return total_rates
 
+
 # === 3. Binomial Stochastic (NumPy) ===
 
 
 def compute_transition_amounts_numpy_binomial(
-    source_numbers: np.ndarray,
-    total_rates: np.ndarray,
-    dt: float
+    source_numbers: np.ndarray, total_rates: np.ndarray, dt: float
 ) -> np.ndarray:
     """
     Compute stochastic transition amounts using binomial draws, assuming Poisson process approximation.
@@ -264,16 +256,12 @@ def compute_transition_amounts_numpy_binomial(
     return draws.astype(np.float32)
 
 
-
 # === 4. Transition Amount Dispatch ===
 
 
 @njit
 def compute_transition_amounts_meta(
-    source_numbers: np.ndarray,
-    total_rates: np.ndarray,
-    method: str,
-    dt: float
+    source_numbers: np.ndarray, total_rates: np.ndarray, method: str, dt: float
 ) -> np.ndarray:
     """
     Dispatch to serial or parallel deterministic transition computation based on workload.
@@ -298,18 +286,14 @@ def compute_transition_amounts_meta(
     elif workload >= _PARALLEL_THRESHOLD:
         return compute_transition_amounts_parallel(source_numbers, total_rates, dt)
     else:
-        return compute_transition_amounts_serial(source_numbers, total_rates, method, dt)
-
-
-
+        return compute_transition_amounts_serial(
+            source_numbers, total_rates, method, dt
+        )
 
 
 @njit(fastmath=True)
 def compute_transition_amounts_serial(
-    source_numbers: np.ndarray,
-    total_rates: np.ndarray,
-    method: str,
-    dt: float
+    source_numbers: np.ndarray, total_rates: np.ndarray, method: str, dt: float
 ) -> np.ndarray:
     """
     Compute deterministic transition amounts serially for each transition and node.
@@ -337,12 +321,9 @@ def compute_transition_amounts_serial(
     return amounts
 
 
-
 @njit(parallel=True, fastmath=True)
 def compute_transition_amounts_parallel(
-    source_numbers: np.ndarray,
-    total_rates: np.ndarray,
-    dt: float
+    source_numbers: np.ndarray, total_rates: np.ndarray, dt: float
 ) -> np.ndarray:
     """
     Compute deterministic transition amounts in parallel using Euler integration logic.
@@ -367,7 +348,6 @@ def compute_transition_amounts_parallel(
     return amounts
 
 
-
 # === 5. Assemble Flux Vector ===
 
 
@@ -376,7 +356,7 @@ def assemble_flux(
     amounts: np.ndarray,
     transitions: np.ndarray,
     ncompartments: int,
-    nspatial_nodes: int
+    nspatial_nodes: int,
 ) -> np.ndarray:
     """
     Assemble the full system flux vector from transition amounts.
@@ -404,11 +384,8 @@ def assemble_flux(
     return dy_dt.ravel()
 
 
-
 # === 6. RHS Builder ===
 
-
-from typing import Callable, Optional, Dict
 
 def build_rhs(
     ncompartments: int,
@@ -493,16 +470,11 @@ def build_rhs(
     return rhs
 
 
-
 # === 7. Solver Step Functions ===
 
 
 @njit(inline="always", fastmath=True)
-def update(
-    y: np.ndarray,
-    delta_t: float,
-    dy: np.ndarray
-) -> np.ndarray:
+def update(y: np.ndarray, delta_t: float, dy: np.ndarray) -> np.ndarray:
     """
     Basic time update: y(t + dt) = y(t) + dt * dy.
 
@@ -517,14 +489,14 @@ def update(
     return y + delta_t * dy
 
 
-
 from typing import Callable
+
 
 def rk4_step(
     rhs_fn: Callable[[float, np.ndarray], np.ndarray],
     y: np.ndarray,
     t: float,
-    dt: float
+    dt: float,
 ) -> np.ndarray:
     """
     Perform a single Runge-Kutta 4th order step.
@@ -545,12 +517,11 @@ def rk4_step(
     return update(y, dt / 6, k1 + 2 * k2 + 2 * k3 + k4)
 
 
-
 def euler_or_stochastic_step(
     rhs_fn: Callable[[float, np.ndarray], np.ndarray],
     y: np.ndarray,
     t: float,
-    dt: float
+    dt: float,
 ) -> np.ndarray:
     """
     Perform a single step using forward Euler or stochastic update logic.
@@ -567,10 +538,7 @@ def euler_or_stochastic_step(
     return update(y, dt, rhs_fn(t, y))
 
 
-
 # === 8. Solver Interface ===
-
-
 
 
 def run_solver(
@@ -636,4 +604,3 @@ def run_solver(
             incid[1::2] = incid[:-1:2]
 
     return states, incid
-
