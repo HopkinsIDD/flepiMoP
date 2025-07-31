@@ -47,6 +47,8 @@ def prod_along_axis0(arr_2d: np.ndarray) -> np.ndarray:
     """
     Computes the product along the first axis (axis=0) of a 2D array.
 
+    Note we do not use np.prod due to numba incompatibility with that function.
+
     Args:
         arr_2d: A 2D NumPy array of shape (n_rows, n_cols). Assumes numeric dtype.
 
