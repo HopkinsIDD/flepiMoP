@@ -1,0 +1,15 @@
+inference:
+  iterations_per_slot: 250
+  do_inference: true
+  gt_data_path: model_input/ground_truth_hospitalizations.csv
+  statistics:
+    incidH:
+      name: incidH
+      sim_var: hospitalizations
+      data_var: incidH
+      add_one: True
+      remove_na: False
+      aggregator: sum
+      period: 1 days
+      likelihood: 
+        dist: pois

@@ -1,0 +1,191 @@
+write_parquet: true
+jobs: 14
+first_sim_index: 1
+write_csv: false
+config_src: [inference_base.yml, inference_outcome_modifiers.yml, inference_seir_modifiers.yml,
+    r_inference.yml]
+name: three_state
+start_date: 2024-01-01
+end_date: 2024-12-31
+subpop_setup:
+    geodata: model_input/geodata.csv
+    mobility: model_input/mobility.csv
+initial_conditions:
+    method: SetInitialConditions
+    initial_conditions_file: model_input/initial_conditions.csv
+    allow_missing_subpops: true
+    allow_missing_compartments: true
+compartments:
+    infection_stage: [S, E, I, R]
+seir:
+    integration:
+        method: rk4
+        dt: 0.25
+    parameters:
+        sigma:
+            value: 1
+        gamma:
+            value: 1
+        Ro:
+            value: 1
+    transitions: [{source: [S], destination: [E], rate: ["Ro * gamma"], proportional_to: [
+                [S], [I]], proportion_exponent: ['1', '1']}, {source: [E], destination: [
+                I], rate: [sigma], proportional_to: [E], proportion_exponent: ['1']},
+        {source: [I], destination: [R], rate: [gamma], proportional_to: [I], proportion_exponent: [
+                '1']}]
+outcomes:
+    method: delayframe
+    outcomes:
+        hospitalizations:
+            source:
+                incidence:
+                    infection_stage: I
+            probability:
+                value: 1
+            delay:
+                value: 1
+            duration:
+                value: 1
+outcome_modifiers:
+    scenarios: [hosp_stacked]
+    modifiers:
+        hosp_probability:
+            method: SinglePeriodModifier
+            parameter: incidH::probability
+            subpop: all
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            value:
+                distribution: truncnorm
+                mean: 0.1
+                sd: 0.05
+                a: 0
+                b: 1
+            perturbation:
+                distribution: truncnorm
+                mean: 0
+                sd: 0.025
+                a: -0.1
+                b: 0.1
+        hosp_delay:
+            method: SinglePeriodModifier
+            parameter: incidH::delay
+            subpop: all
+            subpop_groups: [[NC, SC], [GA]]
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            value:
+                distribution: truncnorm
+                mean: 7.0
+                sd: 2.0
+                a: 0
+                b: 21.0
+            perturbation:
+                distribution: truncnorm
+                mean: 0
+                sd: 0.025
+                a: -0.1
+                b: 0.1
+        hosp_duration:
+            method: SinglePeriodModifier
+            parameter: incidH::duration
+            subpop: all
+            subpop_groups: [[NC, SC, GA]]
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            value:
+                distribution: truncnorm
+                mean: 14.0
+                sd: 7.0
+                a: 3.0
+                b: 21.0
+            perturbation:
+                distribution: truncnorm
+                mean: 0
+                sd: 0.025
+                a: -0.1
+                b: 0.1
+        hosp_stacked:
+            method: StackedModifier
+            subpop: all
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            modifiers: [hosp_probability, hosp_delay, hosp_duration]
+seir_modifiers:
+    scenarios: [seir_stacked]
+    modifiers:
+        sigma_fit:
+            method: SinglePeriodModifier
+            parameter: sigma
+            subpop: all
+            subpop_groups: [NC, SC, GA]
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            value:
+                distribution: truncnorm
+                mean: 0.5
+                sd: 0.2
+                a: 0
+                b: 3
+            perturbation:
+                distribution: truncnorm
+                mean: 0
+                sd: 0.025
+                a: -0.1
+                b: 0.1
+        gamma_fit:
+            method: SinglePeriodModifier
+            parameter: gamma
+            subpop: all
+            subpop_groups: [NC, SC, GA]
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            value:
+                distribution: truncnorm
+                mean: 0.5
+                sd: 0.2
+                a: 0
+                b: 3
+            perturbation:
+                distribution: truncnorm
+                mean: 0
+                sd: 0.025
+                a: -0.1
+                b: 0.1
+        Ro_fit:
+            method: SinglePeriodModifier
+            parameter: Ro
+            subpop: all
+            period_start_date: 2024-01-01
+            period_end_date: 2024-12-31
+            value:
+                distribution: truncnorm
+                mean: 2.5
+                sd: 0.1
+                a: 0
+                b: 5
+            perturbation:
+                distribution: truncnorm
+                mean: 0
+                sd: 0.025
+                a: -0.1
+                b: 0.1
+        seir_stacked:
+            method: StackedModifier
+            modifiers: [sigma_fit, gamma_fit, Ro_fit]
+inference:
+    iterations_per_slot: 250
+    do_inference: true
+    gt_data_path: model_input/ground_truth_hospitalizations.csv
+    statistics:
+        incidH:
+            name: incidH
+            sim_var: hospitalizations
+            data_var: incidH
+            add_one: true
+            remove_na: false
+            aggregator: sum
+            period: "1 days"
+            likelihood:
+                dist: pois
+
