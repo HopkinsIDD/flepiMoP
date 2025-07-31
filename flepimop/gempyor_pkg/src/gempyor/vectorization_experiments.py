@@ -489,9 +489,6 @@ def update(y: np.ndarray, delta_t: float, dy: np.ndarray) -> np.ndarray:
     return y + delta_t * dy
 
 
-from typing import Callable
-
-
 def rk4_step(
     rhs_fn: Callable[[float, np.ndarray], np.ndarray],
     y: np.ndarray,
