@@ -15,6 +15,7 @@ from gempyor.vectorization_experiments import (
     build_rhs,
 )
 
+
 @pytest.fixture(scope="module")
 def modelinfo_from_config(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("model_input")
@@ -42,13 +43,17 @@ def modelinfo_from_config(tmp_path_factory):
     config = confuse.Configuration("TestModel", __name__)
     config.set_file(str(config_path))
 
-    return ModelInfo(
-        config=config,
-        config_filepath=str(config_path),
-        path_prefix=str(tmp_path),
-        setup_name="sample_2pop",
-        seir_modifiers_scenario="Ro_all",
-    ), config
+    return (
+        ModelInfo(
+            config=config,
+            config_filepath=str(config_path),
+            path_prefix=str(tmp_path),
+            setup_name="sample_2pop",
+            seir_modifiers_scenario="Ro_all",
+        ),
+        config,
+    )
+
 
 @pytest.fixture
 def model_and_inputs(modelinfo_from_config):
@@ -56,18 +61,15 @@ def model_and_inputs(modelinfo_from_config):
 
     initial_array = model.initial_conditions.get_from_config(sim_id=0, modinf=model)
 
-    (unique_strings,
-     transitions,
-     transition_sum_compartments,
-     proportion_info
-    ) = model.compartments.get_transition_array()
-
+    (unique_strings, transitions, transition_sum_compartments, proportion_info) = (
+        model.compartments.get_transition_array()
+    )
 
     # This is the correct call — no .parameter_names used
     parsed_params = model.compartments.parse_parameters(
         model.parameters.parameters_quick_draw(model.n_days, model.nsubpops),
         config["seir"]["parameters"].get(),
-        unique_strings
+        unique_strings,
     )
 
     # === Mobility setup ===
@@ -80,7 +82,9 @@ def model_and_inputs(modelinfo_from_config):
 
     proportion_who_move = np.zeros(model.nsubpops)
     for i in range(model.nsubpops):
-        total_flux = mobility_data[mobility_data_indices[i]:mobility_data_indices[i + 1]].sum()
+        total_flux = mobility_data[
+            mobility_data_indices[i] : mobility_data_indices[i + 1]
+        ].sum()
         proportion_who_move[i] = min(total_flux / population[i], 1.0)
 
     # === Time grid ===
@@ -91,7 +95,7 @@ def model_and_inputs(modelinfo_from_config):
     n_steps = int((t1 - t0) / dt) + 1
     time_grid = np.linspace(t0, t1, n_steps).astype(np.float32)
 
-    out= {
+    out = {
         "model": model,
         "initial_array": initial_array,
         "params": parsed_params,
@@ -112,7 +116,6 @@ def model_and_inputs(modelinfo_from_config):
     return out
 
 
-
 import numpy as np
 import pytest
 
@@ -129,8 +132,12 @@ from gempyor.vectorization_experiments import (
 def test_proportion_sums_and_sources(model_and_inputs):
     out = model_and_inputs
     prop_sums, source_nums = compute_proportion_sums_exponents(
-        out["initial_array"], out["transitions"], out["proportion_info"],
-        out["transition_sum_compartments"], out["params"], out["today_idx"]
+        out["initial_array"],
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        out["params"],
+        out["today_idx"],
     )
     assert prop_sums.shape == source_nums.shape
     assert np.all(np.isfinite(prop_sums))
@@ -140,16 +147,26 @@ def test_proportion_sums_and_sources(model_and_inputs):
 def test_transition_rate_shape_and_finiteness(model_and_inputs):
     out = model_and_inputs
 
-
     prop_sums, source_nums = compute_proportion_sums_exponents(
-        out["initial_array"], out["transitions"], out["proportion_info"],
-        out["transition_sum_compartments"], out["params"], out["today_idx"]
+        out["initial_array"],
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        out["params"],
+        out["today_idx"],
     )
     rates = compute_transition_rates(
-        prop_sums, source_nums, out["transitions"], out["params"], out["today_idx"],
-        out["percent_day_away"], out["proportion_who_move"],
-        out["mobility_data"], out["mobility_data_indices"],
-        out["mobility_row_indices"], out["population"]
+        prop_sums,
+        source_nums,
+        out["transitions"],
+        out["params"],
+        out["today_idx"],
+        out["percent_day_away"],
+        out["proportion_who_move"],
+        out["mobility_data"],
+        out["mobility_data_indices"],
+        out["mobility_row_indices"],
+        out["population"],
     )
     assert rates.shape == source_nums.shape
     assert np.all(np.isfinite(rates))
@@ -158,11 +175,17 @@ def test_transition_rate_shape_and_finiteness(model_and_inputs):
 def test_transition_amounts_meta_rk4(model_and_inputs):
     out = model_and_inputs
     _, source_nums = compute_proportion_sums_exponents(
-        out["initial_array"], out["transitions"], out["proportion_info"],
-        out["transition_sum_compartments"], out["params"], out["today_idx"]
+        out["initial_array"],
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        out["params"],
+        out["today_idx"],
     )
     rates = np.ones_like(source_nums)
-    amounts = compute_transition_amounts_meta(source_nums, rates, method="rk4", dt=out["dt"])
+    amounts = compute_transition_amounts_meta(
+        source_nums, rates, method="rk4", dt=out["dt"]
+    )
     assert amounts.shape == rates.shape
     assert np.all(amounts >= 0)
 
@@ -181,17 +204,30 @@ def test_run_solver_vectorized_backend(model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
     rhs_fn = build_rhs(
-        ncomp, nloc, out["transitions"], out["proportion_info"],
-        out["transition_sum_compartments"], out["params"], "rk4", out["dt"],
-        out["percent_day_away"], out["proportion_who_move"],
-        out["mobility_data"], out["mobility_data_indices"],
-        out["mobility_row_indices"], out["population"]
+        ncomp,
+        nloc,
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        out["params"],
+        "rk4",
+        out["dt"],
+        out["percent_day_away"],
+        out["proportion_who_move"],
+        out["mobility_data"],
+        out["mobility_data_indices"],
+        out["mobility_row_indices"],
+        out["population"],
     )
-    states, fluxes = run_solver(rhs_fn, out["initial_array"], out["time_grid"],
-                                method="rk4", record_daily=True,
-                                ncompartments=ncomp, nspatial_nodes=nloc)
-
-    
+    states, fluxes = run_solver(
+        rhs_fn,
+        out["initial_array"],
+        out["time_grid"],
+        method="rk4",
+        record_daily=True,
+        ncompartments=ncomp,
+        nspatial_nodes=nloc,
+    )
 
     assert states.shape == (len(out["time_grid"]), ncomp, nloc)
     assert fluxes.shape == states.shape
@@ -203,11 +239,20 @@ def test_rhs_output_matches_input_shape(model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
     rhs_fn = build_rhs(
-        ncomp, nloc, out["transitions"], out["proportion_info"],
-        out["transition_sum_compartments"], out["params"], "rk4", out["dt"],
-        out["percent_day_away"], out["proportion_who_move"],
-        out["mobility_data"], out["mobility_data_indices"],
-        out["mobility_row_indices"], out["population"]
+        ncomp,
+        nloc,
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        out["params"],
+        "rk4",
+        out["dt"],
+        out["percent_day_away"],
+        out["proportion_who_move"],
+        out["mobility_data"],
+        out["mobility_data_indices"],
+        out["mobility_row_indices"],
+        out["population"],
     )
     flat_y = out["initial_array"].ravel()
     dy = rhs_fn(out["today_idx"], flat_y)
@@ -219,11 +264,17 @@ def test_mass_conservation_for_dummy_flux(model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
     _, source_nums = compute_proportion_sums_exponents(
-        out["initial_array"], out["transitions"], out["proportion_info"],
-        out["transition_sum_compartments"], out["params"], out["today_idx"]
+        out["initial_array"],
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        out["params"],
+        out["today_idx"],
     )
     dummy_rates = np.ones_like(source_nums)
-    dummy_amounts = compute_transition_amounts_meta(source_nums, dummy_rates, method="rk4", dt=out["dt"])
+    dummy_amounts = compute_transition_amounts_meta(
+        source_nums, dummy_rates, method="rk4", dt=out["dt"]
+    )
     flux = assemble_flux(dummy_amounts, out["transitions"], ncomp, nloc)
     total_flux_per_node = flux.reshape((ncomp, nloc)).sum(axis=0)
     assert np.allclose(total_flux_per_node, 0.0, atol=1e-5)
