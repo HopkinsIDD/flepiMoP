@@ -14,6 +14,8 @@ from scipy.special import gammaln
 import scipy.stats
 import xarray as xr
 
+from .distributions import DistributionABC, distribution_from_confuse_config
+
 
 class Statistic:
     """
@@ -103,11 +105,20 @@ class Statistic:
             self.scale = True
             self.scale_func = getattr(np, statistic_config["scale"].get())
 
-        self.dist = statistic_config["likelihood"]["dist"].get()
-        if statistic_config["likelihood"]["params"].exists():
-            self.params = statistic_config["likelihood"]["params"].get()
-        else:
-            self.params = {}
+        try:
+            self.dist = distribution_from_confuse_config(
+                statistic_config["likelihood"]
+            )
+            self.params = {} # what to do here? delete?
+            self._use_new_dist_object = True
+        except Exception:
+            # Fallback to the old dist_map if it is not a Distribution
+            self.dist = statistic_config["likelihood"]["dist"].get()
+            if statistic_config["likelihood"]["params"].exists():
+                self.params = statistic_config["likelihood"]["params"].get()
+            else:
+                self.params = {}
+            self._use_new_dist_object = False
 
         self.zero_to_one = False
         if statistic_config["zero_to_one"].exists():
@@ -243,64 +254,65 @@ class Statistic:
             xarray DataArray with a "subpop" dimension.
         """
 
-        dist_map = {
-            "pois": lambda gt_data, model_data: -model_data
-            + (gt_data * np.log(model_data))
-            - gammaln(gt_data + 1),
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # OLD: # TODO: Swap out in favor of NEW
-            "norm": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
-                gt_data, loc=model_data, scale=self.params.get("scale", scale)
-            ),
-            "norm_cov": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
-                gt_data, loc=model_data, scale=scale * model_data.where(model_data > 5, 5)
-            ),
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
-            # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
-            "norm_homoskedastic": lambda gt_data, model_data, sd: scipy.stats.norm.logpdf(
-                gt_data, loc=model_data, scale=self.params.get("sd", sd)
-            ),  # scale = standard deviation
-            "norm_heteroskedastic": lambda gt_data, model_data, sd: scipy.stats.norm.logpdf(
-                gt_data, loc=model_data, scale=self.params.get("sd", sd) * model_data
-            ),  # scale = standard deviation
-            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            "nbinom": lambda gt_data, model_data, n, p: scipy.stats.nbinom.logpmf(
-                k=gt_data,
-                n=1.0 / self.params.get("alpha"),
-                p=1.0 / (1.0 + self.params.get("alpha") * model_data),
-            ),
-            "rmse": lambda gt_data, model_data: -np.log(
-                np.sqrt(np.nansum((gt_data - model_data) ** 2))
-            ),
-            "absolute_error": lambda gt_data, model_data: -np.log(
-                np.nansum(np.abs(gt_data - model_data))
-            ),
-        }
-        if self.dist not in dist_map:
-            raise ValueError(
-                f"Invalid distribution specified: '{self.dist}'. "
-                f"Valid distributions: '{dist_map.keys()}'."
-            )
-        if self.dist in ["pois", "nbinom"]:
-            # pydata/xarray#4612
-            model_data = model_data.fillna(0.0).astype(int)
-            gt_data = gt_data.fillna(0.0).astype(int)
-
         if self.zero_to_one:
             # so confusing, wish I had not used xarray to do model_data[model_data==0]=1
             model_data = model_data.where(model_data != 0, 1)
             gt_data = gt_data.where(gt_data != 0, 1)
 
-        # Use stored parameters in the distribution function call
-        likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
-        if len(likelihood.shape) == 0:
-            # If the likelihood is a scalar, broadcast it to the shape of the data.
-            # Xarray used to do this, but not anymore after numpy/numpy#26889?
-            likelihood = np.full(gt_data.shape, likelihood)
-        likelihood = xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
+        if self._use_new_dist_object:
+            likelihood = self.dist.likelihood(gt_data.values, model_data.values)
+        else:
+            # Fallback path: use the old dist_map for legacy distributions
+            if self.dist in ["pois", "nbinom"]:
+                model_data = model_data.fillna(0.0).astype(int)
+                gt_data = gt_data.fillna(0.0).astype(int)
 
-        return likelihood
+            dist_map = {
+                "pois": lambda gt_data, model_data: -model_data
+                + (gt_data * np.log(model_data))
+                - gammaln(gt_data + 1),
+                # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                # OLD: # TODO: Swap out in favor of NEW
+                "norm": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
+                    gt_data, loc=model_data, scale=self.params.get("scale", scale)
+                ),
+                "norm_cov": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
+                    gt_data, loc=model_data, scale=scale * model_data.where(model_data > 5, 5)
+                ),
+                # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
+                # --> `norm_heteroskedastic`; names of input `scale` --> `sd`
+                "norm_homoskedastic": lambda gt_data, model_data, sd: scipy.stats.norm.logpdf(
+                    gt_data, loc=model_data, scale=self.params.get("sd", sd)
+                ),  # scale = standard deviation
+                "norm_heteroskedastic": lambda gt_data, model_data, sd: scipy.stats.norm.logpdf(
+                    gt_data, loc=model_data, scale=self.params.get("sd", sd) * model_data
+                ),  # scale = standard deviation
+                # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                "nbinom": lambda gt_data, model_data, n, p: scipy.stats.nbinom.logpmf(
+                    k=gt_data,
+                    n=1.0 / self.params.get("alpha"),
+                    p=1.0 / (1.0 + self.params.get("alpha") * model_data),
+                ),
+                "rmse": lambda gt_data, model_data: -np.log(
+                    np.sqrt(np.nansum((gt_data - model_data) ** 2))
+                ),
+                "absolute_error": lambda gt_data, model_data: -np.log(
+                    np.nansum(np.abs(gt_data - model_data))
+                ),
+            }
+            if self.dist not in dist_map:
+                raise ValueError(
+                    f"Invalid distribution specified: '{self.dist}'. "
+                    f"Valid distributions: '{dist_map.keys()}'."
+                )
+            likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
+
+
+        if len(getattr(likelihood, "shape", [])) == 0:
+            likelihood = np.full(gt_data.shape, likelihood)
+
+        return xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 
     def compute_logloss(
         self, model_data: xr.Dataset, gt_data: xr.Dataset
