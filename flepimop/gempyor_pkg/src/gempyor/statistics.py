@@ -106,10 +106,8 @@ class Statistic:
             self.scale_func = getattr(np, statistic_config["scale"].get())
 
         try:
-            self.dist = distribution_from_confuse_config(
-                statistic_config["likelihood"]
-            )
-            self.params = {} # what to do here? delete?
+            self.dist = distribution_from_confuse_config(statistic_config["likelihood"])
+            self.params = {}  # what to do here? delete?
             self._use_new_dist_object = True
         except Exception:
             # Fallback to the old dist_map if it is not a Distribution
@@ -277,7 +275,9 @@ class Statistic:
                     gt_data, loc=model_data, scale=self.params.get("scale", scale)
                 ),
                 "norm_cov": lambda gt_data, model_data, scale: scipy.stats.norm.logpdf(
-                    gt_data, loc=model_data, scale=scale * model_data.where(model_data > 5, 5)
+                    gt_data,
+                    loc=model_data,
+                    scale=scale * model_data.where(model_data > 5, 5),
                 ),
                 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                 # NEW: names of distributions: `norm` --> `norm_homoskedastic`, `norm_cov`
@@ -307,7 +307,6 @@ class Statistic:
                     f"Valid distributions: '{dist_map.keys()}'."
                 )
             likelihood = dist_map[self.dist](gt_data, model_data, **self.params)
-
 
         if len(getattr(likelihood, "shape", [])) == 0:
             likelihood = np.full(gt_data.shape, likelihood)
