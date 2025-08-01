@@ -172,43 +172,10 @@ else
 fi
 
 # Install the local R packages
-CONDA_R_LIBS=$( realpath "$CONDA_PREFIX/lib/R/library" )
-R -e "install.packages('epidatr', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
-RETURNTO=$( pwd )
-cd $FLEPI_PATH/flepimop/R_packages/
-R_PACKAGES=("flepicommon" "flepiconfig" "inference")
-for pkg in "${R_PACKAGES[@]}"; do
-    if [ -d "$pkg" ]; then
-        R_LIBS=$CONDA_R_LIBS R CMD INSTALL $pkg
-    else
-        echo "WARNING: The R package '$pkg' does not exist in '$FLEPI_PATH/flepimop/R_packages/'. Skipping installation." >&2
-    fi
-done
-cd $RETURNTO
-R -e "library(inference); inference::install_cli()"
+FLEPI_PATH=$FLEPI_PATH CONDA_PREFIX=$CONDA_PREFIX $FLEPI_PATH/bin/flepimop-install-r-pkgs
 
 # Output a summary of the installation
-WHICH_R=$( which R )
-WHICH_PYTHON=$( which python )
-CONDA_VERSION=$( conda --version | cut -d' ' -f2 )
-R_VERSION=$( R --version | head -n 1 | cut -d' ' -f3 )
-PYTHON_VERSION=$( python --version | cut -d' ' -f2 )
-GEMPYOR_VERSION=$( pip show gempyor | grep Version | cut -d' ' -f2 )
-
-cat << EOF
-flepiMoP installation summary:
-> flepiMoP version: $( git -C $FLEPI_PATH rev-parse HEAD )
-> flepiMoP path: $FLEPI_PATH
-> flepiMoP conda env: $FLEPI_CONDA
-> conda: $CONDA_VERSION
-> R $R_VERSION: $WHICH_R
-> Python $PYTHON_VERSION: $WHICH_PYTHON
-> gempyor version: $GEMPYOR_VERSION
-EOF
-for pkg in "${R_PACKAGES[@]}"; do
-    PKG_VERSION=$( R -s -e "print(packageVersion('$pkg'))" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" )
-    echo "> R $pkg version: $PKG_VERSION"
-done
+FLEPI_PATH=$FLEPI_PATH FLEPI_CONDA=$FLEPI_CONDA $FLEPI_PATH/bin/flepimop-install-info
 cat << EOF
 To activate the flepimop conda environment, run:
     conda activate $FLEPI_CONDA

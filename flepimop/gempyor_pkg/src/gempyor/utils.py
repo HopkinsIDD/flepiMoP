@@ -28,6 +28,7 @@ import sympy.parsing.sympy_parser
 import yaml
 
 from . import file_paths
+from ._pydantic_ext import _evaled_expression
 
 
 logger = logging.getLogger(__name__)
@@ -187,18 +188,6 @@ def search_and_import_plugins_class(
     Returns:
         The instance of the class that was instantiated with provided **kwargs.
 
-    Examples:
-        Suppose there is a module called `my_plugin.py with a class `MyClass` located at `/path/to/plugin/`.
-
-        Dynamically import and instantiate the class:
-
-        >>> instance = search_and_import_plugins_class('/path/to/plugin', path_prefix, 'MyClass', **params)
-
-        View the instance:
-
-        >>> print(instance)
-        <__main__.MyClass object at 0x7f8b2c6b4d60>
-
     """
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
@@ -252,14 +241,6 @@ def profile(
     Returns:
         Profile of the decorated function.
 
-    Examples:
-        >>> @profile(output_file="my_function.prof")
-        >>> def my_function():
-            # Function body content
-            pass
-        >>> my_function()
-        After running ``my_function``, a file named ``my_function.prof`` will be created in the current WD.
-        This file contains the profiling data.
     """
 
     def inner(func):
@@ -350,253 +331,6 @@ def as_date(self) -> datetime.date:
     return self.get(ISO8601Date())
 
 
-@add_method(confuse.ConfigView)
-def as_evaled_expression(self):
-    """
-    Evaluates an expression string, returning a float.
-
-    Returns:
-        A float data type of the value associated with the object.
-
-    Raises:
-        ValueError: On parsing errors.
-    """
-
-    value = self.get()
-    if isinstance(value, numbers.Number):
-        return value
-    elif isinstance(value, str):
-        try:
-            return float(sympy.parsing.sympy_parser.parse_expr(value))
-        except TypeError as e:
-            raise ValueError(e) from e
-    else:
-        raise ValueError(f"Expected numeric or string expression [received: '{value}'].")
-
-
-def get_truncated_normal(
-    mean: float | int = 0,
-    sd: float | int = 1,
-    a: float | int = 0,
-    b: float | int = 10,
-) -> scipy.stats._distn_infrastructure.rv_frozen:
-    """
-    Returns a truncated normal distribution.
-
-    This function constructs a truncated normal distribution with the specified
-    mean, standard deviation, and bounds. The truncated normal distribution is
-    a normal distribution bounded within the interval [a, b].
-
-    Args:
-        mean: The mean of the truncated normal distribution. Defaults to 0.
-        sd: The standard deviation of the truncated normal distribution. Defaults to 1.
-        a: The lower bound of the truncated normal distribution. Defaults to 0.
-        b: The upper bound of the truncated normal distribution. Defaults to 10.
-
-    Returns:
-        rv_frozen: A frozen instance of the truncated normal distribution with the specified parameters.
-
-    Examples:
-        Create a truncated normal distribution with specified parameters (truncated between 1 and 10):
-        >>> truncated_normal_dist = get_truncated_normal(mean=5, sd=2, a=1, b=10)
-        >>> print(truncated_normal_dist)
-        rv_frozen(<scipy.stats._distn_infrastructure.rv_frozen object at 0x...>)
-    """
-    lower = (a - mean) / sd
-    upper = (b - mean) / sd
-    return scipy.stats.truncnorm(lower, upper, loc=mean, scale=sd)
-
-
-def get_log_normal(
-    meanlog: float | int,
-    sdlog: float | int,
-) -> scipy.stats._distn_infrastructure.rv_frozen:
-    """
-    Returns a log normal distribution.
-
-    This function constructs a log normal distribution with the specified
-    log mean and log standard deviation.
-
-    Args:
-        meanlog: The log of the mean of the log normal distribution.
-        sdlog: The log of the standard deviation of the log normal distribution.
-
-    Returns:
-        rv_frozen: A frozen instance of the log normal distribution with the
-        specified parameters.
-
-    Examples:
-        Create a log-normal distribution with specified parameters:
-        >>> log_normal_dist = get_log_normal(meanlog=1, sdlog=0.5)
-        >>> print(log_normal_dist)
-        <scipy.stats._distn_infrastructure.rv_frozen object at 0x...>
-    """
-    return scipy.stats.lognorm(s=sdlog, scale=np.exp(meanlog), loc=0)
-
-
-def random_distribution_sampler(
-    distribution: Literal[
-        "fixed", "uniform", "poisson", "binomial", "truncnorm", "lognorm"
-    ],
-    **kwargs: dict[str, Any],
-) -> Callable[[], float | int]:
-    """
-    Create function to sample from a random distribution.
-
-    Args:
-        distribution: The type of distribution to generate a sampling function for.
-        **kwargs: Further parameters that are passed to the underlying function for the
-            given distribution.
-
-    Notes:
-        The further args expected by each distribution type are:
-        - fixed: value,
-        - uniform: low, high,
-        - poisson: lam,
-        - binomial: n, p,
-        - truncnorm: mean, sd, a, b,
-        - lognorm: meanlog, sdlog.
-
-    Returns:
-        A function that can be called to sample from that distribution.
-
-    Raises:
-        ValueError: If `distribution` is 'binomial' the given `p` must be in (0,1).
-        NotImplementedError: If `distribution` is not one of the type hinted options.
-
-    Examples:
-        >>> import numpy as np
-        >>> np.random.seed(123)
-        >>> uniform_sampler = random_distribution_sampler("uniform", low=0.0, high=3.0)
-        >>> uniform_sampler()
-        2.089407556793585
-        >>> uniform_sampler()
-        0.8584180048511384
-    """
-    if distribution == "fixed":
-        # Fixed value is the same as uniform on [a, a)
-        return functools.partial(
-            np.random.uniform,
-            kwargs.get("value"),
-            kwargs.get("value"),
-        )
-    elif distribution == "uniform":
-        # Uniform on [low, high)
-        return functools.partial(
-            np.random.uniform,
-            kwargs.get("low"),
-            kwargs.get("high"),
-        )
-    elif distribution == "poisson":
-        # Poisson with mean lambda
-        return functools.partial(np.random.poisson, kwargs.get("lam"))
-    elif distribution == "binomial":
-        p = kwargs.get("p")
-        if not (0 < p < 1):
-            raise ValueError(f"Invalid `p-value`: '{p}' is out of range [0,1].")
-        return functools.partial(np.random.binomial, kwargs.get("n"), p)
-    elif distribution == "truncnorm":
-        # Truncated normal with mean, sd on interval [a, b]
-        return get_truncated_normal(
-            mean=kwargs.get("mean"),
-            sd=kwargs.get("sd"),
-            a=kwargs.get("a"),
-            b=kwargs.get("b"),
-        ).rvs
-    elif distribution == "lognorm":
-        # Lognormal distribution with meanlog, sdlog
-        return get_log_normal(kwargs.get("meanlog"), kwargs.get("sdlog")).rvs
-    raise NotImplementedError(f"Unknown distribution [received: '{distribution}'].")
-
-
-@add_method(confuse.ConfigView)
-def as_random_distribution(self):
-    """
-    Constructs a random distribution object from a distribution config key.
-
-    Args:
-        self: Class instance (in this case, a config key) to construct the random distribution from.
-
-    Returns:
-        A partial object containing the random distribution.
-
-    Raises:
-        ValueError: When values are out of range.
-        NotImplementedError: If an unknown distribution is found.
-
-    Examples:
-        Say that ``config`` is a ``confuse.ConfigView`` instance.
-
-        To create a uniform distribution between 1 and 10:
-        >>> dist_function = config.as_random_distribution()
-        >>> sample = dist_function()
-        5.436789235794546
-
-        To use a truncated normal distribution:
-        >>> config_truncnorm = confuse.ConfigView({
-            "distribution": "truncnorm",
-            "mean": 0
-            "sd": 1,
-            "a": -1,
-            "b": 1
-            })
-        >>> truncnorm_dist_function = config_truncnorm.as_random_distribution()
-        >>> truncnorm_sample = truncnorm_dist_function()
-        0.312745
-        ```
-    """
-
-    if isinstance(self.get(), dict):
-        dist = self["distribution"].get()
-        if dist == "fixed":
-            return functools.partial(
-                np.random.uniform,
-                self["value"].as_evaled_expression(),
-                self["value"].as_evaled_expression(),
-            )
-        elif dist == "uniform":
-            return functools.partial(
-                np.random.uniform,
-                self["low"].as_evaled_expression(),
-                self["high"].as_evaled_expression(),
-            )
-        elif dist == "poisson":
-            return functools.partial(np.random.poisson, self["lam"].as_evaled_expression())
-        elif dist == "binomial":
-            p = self["p"].as_evaled_expression()
-            if (p < 0) or (p > 1):
-                raise ValueError(f"Invalid `p-value`: '{p}' is out of range [0,1].")
-                # if (self["p"] < 0) or (self["p"] > 1):
-                #    raise ValueError(f"""p value { self["p"] } is out of range [0,1]""")
-            return functools.partial(
-                np.random.binomial,
-                self["n"].as_evaled_expression(),
-                # self["p"].as_evaled_expression(),
-                p,
-            )
-        elif dist == "truncnorm":
-            return get_truncated_normal(
-                mean=self["mean"].as_evaled_expression(),
-                sd=self["sd"].as_evaled_expression(),
-                a=self["a"].as_evaled_expression(),
-                b=self["b"].as_evaled_expression(),
-            ).rvs
-        elif dist == "lognorm":
-            return get_log_normal(
-                meanlog=self["meanlog"].as_evaled_expression(),
-                sdlog=self["sdlog"].as_evaled_expression(),
-            ).rvs
-        else:
-            raise NotImplementedError(f"Unknown distribution [received: '{dist}'].")
-    else:
-        # we allow a fixed value specified directly:
-        return functools.partial(
-            np.random.uniform,
-            self.as_evaled_expression(),
-            self.as_evaled_expression(),
-        )
-
-
 def list_filenames(
     folder: str | bytes | os.PathLike = ".",
     filters: str | list[str] = [],
@@ -619,18 +353,6 @@ def list_filenames(
     Returns:
         A list of strings representing the paths to the files that match the filters.
 
-    Examples:
-        To get all files containing "hosp":
-        >>> gempyor.utils.list_filenames(
-            folder="model_output/",
-            filters=["hosp"],
-        )
-
-        To get only "hosp" files with a ".parquet" extension:
-        >>> gempyor.utils.list_filenames(
-            folder="model_output/",
-            filters=["hosp", ".parquet"],
-        )
     """
     filters = [filters] if not isinstance(filters, list) else filters
     filters = filters if len(filters) else [""]
@@ -665,20 +387,11 @@ def extract_slot(file: Path) -> pd.DataFrame:
         >>> file = Path.cwd() / "00017.foobar.csv"
         >>> sample.to_csv(file, index=False)
         >>> extract_slot(file)
-        letters  slot
+          letters  slot
         0       a    17
         1       b    17
         2       c    17
-        >>> extract_slot(file).info()
-        <class 'pandas.core.frame.DataFrame'>
-        RangeIndex: 3 entries, 0 to 2
-        Data columns (total 2 columns):
-        #   Column   Non-Null Count  Dtype
-        ---  ------   --------------  -----
-        0   letters  3 non-null      object
-        1   slot     3 non-null      int64
-        dtypes: int64(1), object(1)
-        memory usage: 180.0+ bytes
+
     """
     df = pd.read_parquet(file) if file.suffix == ".parquet" else pd.read_csv(file)
     if "slot" in df.columns:
@@ -729,27 +442,27 @@ def rolling_mean_pad(
     Examples:
         Below is a brief set of examples showcasing how to smooth a metric, like
         hospitalizations, using this function.
-        ```
+
         >>> import numpy as np
         >>> from gempyor.utils import rolling_mean_pad
         >>> hospitalizations = np.arange(1., 29.).reshape((7, 4))
         >>> hospitalizations
         array([[ 1.,  2.,  3.,  4.],
-            [ 5.,  6.,  7.,  8.],
-            [ 9., 10., 11., 12.],
-            [13., 14., 15., 16.],
-            [17., 18., 19., 20.],
-            [21., 22., 23., 24.],
-            [25., 26., 27., 28.]])
+               [ 5.,  6.,  7.,  8.],
+               [ 9., 10., 11., 12.],
+               [13., 14., 15., 16.],
+               [17., 18., 19., 20.],
+               [21., 22., 23., 24.],
+               [25., 26., 27., 28.]])
         >>> rolling_mean_pad(hospitalizations, 5)
         array([[ 3.4,  4.4,  5.4,  6.4],
-            [ 5.8,  6.8,  7.8,  8.8],
-            [ 9. , 10. , 11. , 12. ],
-            [13. , 14. , 15. , 16. ],
-            [17. , 18. , 19. , 20. ],
-            [20.2, 21.2, 22.2, 23.2],
-            [22.6, 23.6, 24.6, 25.6]])
-        ```
+               [ 5.8,  6.8,  7.8,  8.8],
+               [ 9. , 10. , 11. , 12. ],
+               [13. , 14. , 15. , 16. ],
+               [17. , 18. , 19. , 20. ],
+               [20.2, 21.2, 22.2, 23.2],
+               [22.6, 23.6, 24.6, 25.6]])
+
     """
     weights = (1.0 / window) * np.ones(window)
     output = scipy.ndimage.convolve1d(data, weights, axis=0, mode="nearest")
@@ -826,17 +539,16 @@ def create_resume_out_filename(
         The path to a corresponding output file.
 
     Examples:
-        Generate an output file with specified parameters:
-        >>> filename = create_resume_out_filename(
-            flepi_run_index="test_run",
-            flepi_prefix="model_output/run_id/",
-            flepi_slot_index="1",
-            flepi_block_index="2",
-            filetype="seed",
-            liketype="chimeric"
-            )
-        >>> print(filename)
-        "experiment/001/normal/intermediate/000000123.000000000.1.parquet"
+        >>> from gempyor.utils import create_resume_out_filename
+        >>> create_resume_out_filename(
+        ...     flepi_run_index="test_run",
+        ...     flepi_prefix="model_output/run_id/",
+        ...     flepi_slot_index="1",
+        ...     flepi_block_index="2",
+        ...     filetype="seed",
+        ...     liketype="chimeric",
+        ... )
+        'model_output/model_output/run_id/test_run/seed/chimeric/intermediate/000000001.000000001.000000001.test_run.seed.csv'
     """
     prefix = f"{flepi_prefix}/{flepi_run_index}"
     inference_filepath_suffix = f"{liketype}/intermediate"
@@ -877,16 +589,15 @@ def create_resume_input_filename(
         The path to the a corresponding input file.
 
     Examples:
-        Generate an input file with specified parameters:
-        >>> filename = create_resume_input_filename(
-            resume_run_index="2",
-            flepi_prefix="model_output/run_id/",
-            flepi_slot_index="1",
-            filetype="seed",
-            liketype="chimeric"
-            )
-        >>> print(filename)
-        "experiment/002/normal/final/789.csv"
+        >>> from gempyor.utils import create_resume_input_filename
+        >>> create_resume_input_filename(
+        ...     resume_run_index="2",
+        ...     flepi_prefix="model_output/run_id/",
+        ...     flepi_slot_index="1",
+        ...     filetype="seed",
+        ...     liketype="chimeric",
+        ... )
+        'model_output/model_output/run_id/2/seed/chimeric/final/000000001.2.seed.csv'
     """
     prefix = f"{flepi_prefix}/{resume_run_index}"
     inference_filepath_suffix = f"{liketype}/final"
@@ -922,14 +633,20 @@ def get_filetype_for_resume(
 
     Examples:
         Determine file types for block index 1 with seeding data NOT discarded:
-        >>> filetypes = get_filetype_for_resume(resume_discard_seeding="false", flepi_block_index="1")
-        >>> print(filetypes)
-        ["seed", "spar", "snpi", "hpar", "hnpi", "init"]
+
+        >>> from gempyor.utils import get_filetype_for_resume
+        >>> get_filetype_for_resume(
+        ...     resume_discard_seeding="false", flepi_block_index="1"
+        ... )
+        ['seed', 'spar', 'snpi', 'hpar', 'hnpi', 'init']
 
         Determine file types for block index 2 with seeding data discarded:
-        >>> filtypes = get_filetype_for_resume(resume_discard_seeding="true", flepi_block_index="2")
-        >>> print(filetypes)
-        ["seed", "spar", "snpi", "hpar", "hnpi", "host", "llik", "init"]
+
+        >>> get_filetype_for_resume(
+        ...     resume_discard_seeding="true", flepi_block_index="2"
+        ... )
+        ['seed', 'spar', 'snpi', 'hpar', 'hnpi', 'host', 'llik', 'init']
+
     """
     if flepi_block_index == "1":
         if resume_discard_seeding == "true":
@@ -950,13 +667,18 @@ def create_resume_file_names_map(
     last_job_output: str,
 ) -> dict[str, str]:
     """
-    Generates a mapping of input file names to output file names for a resume process based on
-    parquet file types and environmental conditions. The function adjusts the file name mappings
-    based on the operational block index and the location of the last job output.
+    Generate a mapping of input file names to output file names for a resume process.
+
+    Generates a mapping of input file names to output file names for a resume process
+    based on parquet file types and environmental conditions. The function adjusts the
+    file name mappings based on the operational block index and the location of the
+    last job output.
 
     Args:
-        resume_discard_seeding:  Determines whether seeding-related file types should be included.
-        flepi_block_index: Determines a specific operational mode or block of the process.
+        resume_discard_seeding:  Determines whether seeding-related file types should
+            be included.
+        flepi_block_index: Determines a specific operational mode or block of the
+            process.
         resume_run_index: Resume run index.
         flepi_prefix: File prefix.
         flepi_slot_index: Index of the slot.
@@ -968,40 +690,49 @@ def create_resume_file_names_map(
         output file paths.
 
     The mappings depend on:
-    - Parquet file types appropriate for resuming a process, as determined by the environment.
-    - Whether the files are for 'global' or 'chimeric' types, as these liketypes influence the
-      file naming convention.
-    - The operational block index ('FLEPI_BLOCK_INDEX'), which can alter the input file names for
-      block index '1'.
-    - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set to an S3 path,
-      adjusts the keys in the mapping to be prefixed with this path.
+    - Parquet file types appropriate for resuming a process, as determined by the
+        environment.
+    - Whether the files are for 'global' or 'chimeric' types, as these like types
+        influence the file naming convention.
+    - The operational block index ('FLEPI_BLOCK_INDEX'), which can alter the input
+        file names for block index '1'.
+    - The presence and value of 'LAST_JOB_OUTPUT' environment variable, which if set
+        to an S3 path, adjusts the keys in the mapping to be prefixed with this path.
 
     Raises:
-        No explicit exceptions are raised within the function, but it relies heavily on external
-        functions and environment variables which if improperly configured could lead to unexpected
-        behavior.
+        No explicit exceptions are raised within the function, but it relies heavily
+        on external functions and environment variables which if improperly configured
+        could lead to unexpected behavior.
 
     Examples:
-        Generate a mapping of file names for a given resume process:
+        >>> from pprint import pprint
+        >>> from gempyor.utils import create_resume_file_names_map
         >>> file_names_map = create_resume_file_names_map(
-            resume_discard_seeding="false",
-            flepi_block_index="1",
-            resume_run_index="1",
-            flepi_prefix="model_output/run_id/",
-            flepi_slot_index="1",
-            flepi_run_index="test_run",
-            last_job_output="s3://bucket/path/")
-        >>> print(file_names_map)
-        {
-        's3://bucket/path/model_output/run_id/1_type1_global_1.in': 'model_output/run_id/test_run_type1_global_1_1.out',
-        's3://bucket/path/model_output/run_id/1_type1_chimeric_1.in': 'model_output/run_id/test_run_type1_chimeric_1_1.out',
-        's3://bucket/path/model_output/run_id/1_type2_global_1.in': 'model_output/run_id/test_run_type2_global_1_1.out',
-        's3://bucket/path/model_output/run_id/1_type2_chimeric_1.in': 'model_output/run_id/test_run_type2_chimeric_1_1.out'
-        }
-        # Note: this output is toy output implemented with toy file names.
+        ...     resume_discard_seeding="false",
+        ...     flepi_block_index="1",
+        ...     resume_run_index="1",
+        ...     flepi_prefix="model_output/run_id/",
+        ...     flepi_slot_index="1",
+        ...     flepi_run_index="test_run",
+        ...     last_job_output="s3://bucket/path/",
+        ... )
+        >>> pprint(file_names_map)
+        {'s3://bucket/path/model_output/model_output/run_id/1/hnpi/chimeric/final/000000001.1.hnpi.parquet': 'model_output/model_output/run_id/test_run/hnpi/chimeric/intermediate/000000001.000000001.000000000.test_run.hnpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/hnpi/global/final/000000001.1.hnpi.parquet': 'model_output/model_output/run_id/test_run/hnpi/global/intermediate/000000001.000000001.000000000.test_run.hnpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/hpar/chimeric/final/000000001.1.hpar.parquet': 'model_output/model_output/run_id/test_run/hpar/chimeric/intermediate/000000001.000000001.000000000.test_run.hpar.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/hpar/global/final/000000001.1.hpar.parquet': 'model_output/model_output/run_id/test_run/hpar/global/intermediate/000000001.000000001.000000000.test_run.hpar.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/init/chimeric/final/000000001.1.init.parquet': 'model_output/model_output/run_id/test_run/init/chimeric/intermediate/000000001.000000001.000000000.test_run.init.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/init/global/final/000000001.1.init.parquet': 'model_output/model_output/run_id/test_run/init/global/intermediate/000000001.000000001.000000000.test_run.init.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/seed/chimeric/final/000000001.1.seed.csv': 'model_output/model_output/run_id/test_run/seed/chimeric/intermediate/000000001.000000001.000000000.test_run.seed.csv',
+         's3://bucket/path/model_output/model_output/run_id/1/seed/global/final/000000001.1.seed.csv': 'model_output/model_output/run_id/test_run/seed/global/intermediate/000000001.000000001.000000000.test_run.seed.csv',
+         's3://bucket/path/model_output/model_output/run_id/1/snpi/chimeric/final/000000001.1.snpi.parquet': 'model_output/model_output/run_id/test_run/snpi/chimeric/intermediate/000000001.000000001.000000000.test_run.snpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/snpi/global/final/000000001.1.snpi.parquet': 'model_output/model_output/run_id/test_run/snpi/global/intermediate/000000001.000000001.000000000.test_run.snpi.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/spar/chimeric/final/000000001.1.spar.parquet': 'model_output/model_output/run_id/test_run/spar/chimeric/intermediate/000000001.000000001.000000000.test_run.spar.parquet',
+         's3://bucket/path/model_output/model_output/run_id/1/spar/global/final/000000001.1.spar.parquet': 'model_output/model_output/run_id/test_run/spar/global/intermediate/000000001.000000001.000000000.test_run.spar.parquet'}
 
     Notes:
-        - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to an S3 location.
+        - The paths may be modified by the 'LAST_JOB_OUTPUT' if it is set and points to
+        an S3 location.
     """
     file_types = get_filetype_for_resume(
         resume_discard_seeding=resume_discard_seeding, flepi_block_index=flepi_block_index
@@ -1059,21 +790,6 @@ def download_file_from_s3(name_map: dict[str, str]) -> None:
         ClientError: If an error occurs during the download from S3, such as a permissions issue,
                      a missing file, or network-related errors. These are caught and logged but not
                      re-raised, to allow the function to attempt subsequent downloads.
-
-    Examples:
-        >>> name_map = {
-            "s3://mybucket/data/file1.txt": "/local/path/to/file1.txt",
-            "s3://mybucket/data/file2.txt": "/local/path/to/file2.txt"
-        }
-        >>> download_file_from_s3(name_map)
-        # This would download 'file1.txt' and 'file2.txt' from 'mybucket' on S3 to the specified local paths.
-
-        # If an S3 URI is malformed:
-        >>> name_map = {
-            "http://wrongurl.com/data/file1.txt": "/local/path/to/file1.txt"
-        }
-        >>> download_file_from_s3(name_map)
-        # This will raise a ValueError indicating the invalid S3 URI format.
     """
     try:
         import boto3
@@ -1168,6 +884,7 @@ def _dump_formatted_yaml(cfg: confuse.Configuration) -> str:
                 rate: ["beta * gamma"]
                 proportional_to: [[S], [I]]
                 proportion_exponent: [1, 1]
+        <BLANKLINE>
     """
 
     class CustomDumper(yaml.Dumper):
@@ -1250,9 +967,13 @@ def _git_head(repository: Path) -> str:
 
     Examples:
         >>> import os
+        >>> import pytest
+        >>> if os.environ.get("FLEPI_PATH") is None:
+        ...     pytest.skip("FLEPI_PATH environment variable is not set.")
         >>> from pathlib import Path
-        >>> _git_head(Path(os.environ["FLEPI_PATH"]))
-        'efe896b1a5e4f8e33667c170cd5319d6ef1e3db5'
+        >>> _git_head(Path(os.environ["FLEPI_PATH"]))  # doctest: +ELLIPSIS
+        '...'
+
     """
     git_cmd = _shutil_which("git")
     proc = subprocess.run(
@@ -1273,10 +994,10 @@ def _git_checkout(repository: Path, branch: str) -> subprocess.CompletedProcess:
             checkout a new branch in.
         branch: The name of the new branch to checkout.
 
-    Examples:
-        >>> import os
-        >>> from pathlib import Path
-        >>> _git_checkout(Path(os.environ["FLEPI_PATH"]), "my-new-branch")
+    Returns:
+        A `subprocess.CompletedProcess` object containing the result of the checkout
+        command.
+
     """
     git_cmd = _shutil_which("git")
     return subprocess.run(
@@ -1319,7 +1040,7 @@ def _format_cli_options(
         >>> _format_cli_options({"o": "/path/to/output.log"})
         ['-o=/path/to/output.log']
         >>> _format_cli_options({"opt1": "```", "opt2": "$( echo 'Hello!')"})
-        ["--opt1='```'", '--opt2=\'$( echo \'"\'"\'Hello!\'"\'"\')\'']
+        ["--opt1='```'", '--opt2=\\'$( echo \\'"\\'"\\'Hello!\\'"\\'"\\')\\'']
         >>> _format_cli_options({"output": "/path/to/output.log"}, always_single=True)
         ['-output=/path/to/output.log']
         >>> _format_cli_options({"person": ["Alice", "Bob", "Charlie"]})
