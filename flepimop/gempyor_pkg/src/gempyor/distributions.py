@@ -117,7 +117,7 @@ class FixedDistribution(DistributionABC):
 
     def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the fixed distribution."""
-        return np.where(gt_data == self.value, 0.0, -np.inf)
+        return np.where(np.isclose(gt_data, self.value), 0.0, -np.inf)
 
 
 class NormalDistribution(DistributionABC):
