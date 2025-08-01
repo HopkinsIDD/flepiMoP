@@ -258,7 +258,7 @@ class Statistic:
             gt_data = gt_data.where(gt_data != 0, 1)
 
         if self._use_new_dist_object:
-            likelihood = self.dist.likelihood(gt_data.values, model_data.values)
+            likelihood = self.dist.loglikelihood(gt_data.values, model_data.values)
         else:
             # Fallback path: use the old dist_map for legacy distributions
             if self.dist in ["pois", "nbinom"]:

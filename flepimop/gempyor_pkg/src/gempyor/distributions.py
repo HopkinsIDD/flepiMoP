@@ -73,11 +73,11 @@ class DistributionABC(ABC, BaseModel):
         raise NotImplementedError
 
     @abstractmethod
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
-        """Establish distribution-specific likelihood logic."""
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+        """Establish distribution-specific log-likelihood logic."""
         raise NotImplemented
 
-    def likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """
         Calculates the log-likelihood of observing data given the model's predictions.
 
@@ -88,7 +88,7 @@ class DistributionABC(ABC, BaseModel):
         Returns:
             An array of log-likelihood values.
         """
-        return self._likelihood(gt_data, model_data)
+        return self._loglikelihood(gt_data, model_data)
 
 
 class FixedDistribution(DistributionABC):
@@ -115,7 +115,7 @@ class FixedDistribution(DistributionABC):
         """Sampling logic for fixed distributions."""
         return np.full(size, self.value)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the fixed distribution."""
         return np.where(gt_data == self.value, 0.0, -np.inf)
 
@@ -149,7 +149,7 @@ class NormalDistribution(DistributionABC):
         """Sampling logic for normal distributions."""
         return rng.normal(loc=self.mu, scale=self.sigma, size=size)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the normal distribution."""
         return scipy.stats.norm.logpdf(x=gt_data, loc=model_data, scale=self.sigma)
 
@@ -205,7 +205,7 @@ class UniformDistribution(DistributionABC):
             )
         return self
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the uniform distribution."""
         return scipy.stats.uniform.logpdf(
             x=gt_data,
@@ -243,7 +243,7 @@ class LognormalDistribution(DistributionABC):
         """Sampling logic for lognormal distributions."""
         return rng.lognormal(mean=self.meanlog, sigma=self.sdlog, size=size)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the lognormal distribtuion."""
         return scipy.stats.lognorm.logpdf(x=gt_data, s=self.sdlog, scale=model_data)
 
@@ -315,7 +315,7 @@ class TruncatedNormalDistribution(DistributionABC):
             )
         return self
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the truncated normal distribution."""
         return scipy.stats.truncnorm.logpdf(
             x=gt_data,
@@ -372,7 +372,7 @@ class PoissonDistribution(DistributionABC):
             )
         return self
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the Poisson distribution."""
         return scipy.stats.poisson.logpmf(k=gt_data, mu=model_data)
 
@@ -430,7 +430,7 @@ class BinomialDistribution(DistributionABC):
                 )
         return self
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the binomial distribution."""
         return scipy.stats.binom.logpmf(k=gt_data, n=self.n, p=np.clip(model_data, 0, 1))
 
@@ -464,7 +464,7 @@ class GammaDistribution(DistributionABC):
         """Sampling logic for Gamma distributions."""
         return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the Gamma distribution."""
         return scipy.stats.gamma.logpdf(x=gt_data, a=self.shape, scale=model_data)
 
@@ -499,7 +499,7 @@ class WeibullDistribution(DistributionABC):
         # Multiply by scale b/c rng.weibull assumes standard weibull dist (scale of 1)
         return self.scale * rng.weibull(a=self.shape, size=size)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the weibull distribution."""
         return scipy.stats.weibull_min.logpdf(x=gt_data, c=self.shape, scale=model_data)
 
@@ -533,7 +533,7 @@ class BetaDistribution(DistributionABC):
         """Sampling logic for beta distributions."""
         return rng.beta(a=self.alpha, b=self.beta, size=size)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """Log-likelihood for the beta distribution."""
         return scipy.stats.beta.logpdf(
             x=gt_data,
