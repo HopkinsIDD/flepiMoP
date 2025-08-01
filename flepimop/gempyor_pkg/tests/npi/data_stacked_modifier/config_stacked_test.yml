@@ -1,0 +1,52 @@
+
+default:
+    model_info:
+        time:
+            ti: 2020-04-01
+            tf: 2020-08-31
+        subpopulation_geography_path: 'geography.csv'
+
+seir_modifiers:
+  # Define the scenarios to be tested
+  scenarios:
+    - TestStackSuccess
+    - TestStackDuplicateFail
+    - TestStackForCapFail
+
+  # Define the building-block modifiers
+  modifiers:
+    FixedR0Reduce:
+      method: SinglePeriodModifier
+      parameter: r0
+      period_start_date: 2020-05-01
+      period_end_date: 2020-05-31
+      value: {distribution: "fixed", value: 0.8} # Reduces r0 by multiplying by 0.8
+
+    FixedBetaReduce:
+      method: SinglePeriodModifier
+      parameter: beta
+      period_start_date: 2020-05-01
+      period_end_date: 2020-05-31
+      value: {distribution: "fixed", value: 0.7} # Reduces beta by multiplying by 0.7
+
+    # This scenario correctly combines two different modifiers
+    TestStackSuccess:
+      method: StackedModifier
+      modifiers:
+        - FixedR0Reduce
+        - FixedBetaReduce
+
+    # This scenario incorrectly uses the same modifier twice
+    TestStackDuplicateFail:
+      method: StackedModifier
+      modifiers:
+        - FixedR0Reduce
+        - FixedBetaReduce
+        - FixedR0Reduce
+
+    # This scenario has enough modifiers to test the metadata cap
+    TestStackForCapFail:
+      method: StackedModifier
+      modifiers:
+        - FixedR0Reduce
+        - FixedBetaReduce
