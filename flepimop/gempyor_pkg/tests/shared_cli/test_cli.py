@@ -79,7 +79,7 @@ def test_sample_2pop_modifiers_combined(tmp_path: Path):
 def test_simple_usa_statelevel_more_deprecated():
     os.chdir(tutorialpath + "/../simple_usa_statelevel")
     result = subprocess.run(
-        ["gempyor-simulate", "-n", "1", "-c", "simple_usa_statelevel.yml"],
+        ["gempyor-simulate", "--nslots", "1", "--config", "simple_usa_statelevel.yml"],
         capture_output=True,
         text=True,
     )

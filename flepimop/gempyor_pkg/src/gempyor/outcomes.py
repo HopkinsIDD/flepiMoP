@@ -18,6 +18,8 @@ import xarray as xr
 from .utils import Timer, _nslots_random_seeds, config, read_df
 from . import NPI, model_info
 from .distributions import distribution_from_confuse_config
+from .initial_conditions._plugins import _get_custom_initial_conditions_plugins
+from ._multiprocessing import _tqdm_map
 
 
 logger = logging.getLogger(__name__)
@@ -45,9 +47,7 @@ def run_parallel_outcomes(
     start = time.monotonic()
     sim_id2writes = np.arange(sim_id2write, sim_id2write + modinf.nslots)
     random_seeds = _nslots_random_seeds(nslots)
-    if (n_jobs == 1) or (
-        modinf.nslots == 1
-    ):  # run single process for debugging/profiling purposes
+    if 1 in {n_jobs, modinf.nslots}:
         for sim_offset in range(nslots):
             _onerun_delayframe_outcomes_with_random_seed(
                 random_seeds[sim_offset],
@@ -55,14 +55,14 @@ def run_parallel_outcomes(
                 modinf=modinf,
             )
     else:
-        tqdm.contrib.concurrent.process_map(
+        _tqdm_map(
             _onerun_delayframe_outcomes_with_random_seed,
             random_seeds,
             sim_id2writes,
             itertools.repeat(modinf),
-            max_workers=n_jobs,
+            processes=n_jobs,
+            custom_plugins=_get_custom_initial_conditions_plugins(),
         )
-
     print(
         f">> {nslots} outcomes simulations completed "
         f"in {time.monotonic() - start:.1f} seconds"

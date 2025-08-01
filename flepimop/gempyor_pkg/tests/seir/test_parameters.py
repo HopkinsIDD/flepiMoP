@@ -11,14 +11,15 @@ import pyarrow.parquet as pq
 import filecmp
 
 from gempyor import model_info, seir, NPI, file_paths, parameters, subpopulation_structure
-
 from gempyor.utils import config, write_df, read_df
 from gempyor._pydantic_ext import _evaled_expression
+from gempyor.testing import ignore_initial_conditions_missing_method_warning
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
 
 
+@ignore_initial_conditions_missing_method_warning
 @pytest.mark.filterwarnings(
     "ignore:Mobility files as matrices are not recommended. "
     "Please switch to long form csv files.:PendingDeprecationWarning"
@@ -144,6 +145,7 @@ def test_parameters_quick_draw_old():
     assert len(np.unique(gamma)) == 1
 
 
+@ignore_initial_conditions_missing_method_warning
 @pytest.mark.filterwarnings(
     "ignore:Mobility files as matrices are not recommended. "
     "Please switch to long form csv files.:PendingDeprecationWarning"
