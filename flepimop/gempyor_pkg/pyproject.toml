@@ -27,6 +27,7 @@ dependencies = [
     "pandas",
     "pyarrow",
     "pydantic>=2.10.0",
+    "pyyaml",
     "scipy",
     "seaborn",
     "sympy",
