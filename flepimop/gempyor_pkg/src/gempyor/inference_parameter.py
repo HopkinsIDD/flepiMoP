@@ -1,16 +1,14 @@
 """
-Managing inference paramters in a vectorized way.
+Managing inference parameters in a vectorized way.
 """
 
-import xarray as xr
-import pandas as pd
 import numpy as np
-import confuse
+import numpy.typing as npt
+
 from . import NPI
 from .distributions import distribution_from_confuse_config
 
 
-# TODO cast uper and lower bound as arrays
 class InferenceParameters:
     """
     A class to manage inference parameters, in a vectorized way
@@ -25,8 +23,8 @@ class InferenceParameters:
         self.pnames = []
         self.subpops = []
         self.pdists = []
-        self.ubs = []
-        self.lbs = []
+        self.ubs = np.array([], dtype=np.float64)
+        self.lbs = np.array([], dtype=np.float64)
         self.build_from_config(global_config, subpop_names)
 
     def add_modifier(self, pname, ptype, parameter_config, subpops):
@@ -51,29 +49,32 @@ class InferenceParameters:
             spatial_groups = NPI.helpers.get_spatial_groups(
                 parameter_config, list(affected_subpops)
             )
-
-            # ungrouped subpop (all affected subpop by default) have one parameter per subpop
+            # ungrouped subpop (all affected subpop by
+            # default) have one parameter per subpop
             if spatial_groups["ungrouped"]:
                 for sp in spatial_groups["ungrouped"]:
+                    dist = distribution_from_confuse_config(parameter_config["value"])
+                    lower, upper = dist.support
                     self.add_single_parameter(
                         ptype=ptype,
                         pname=pname,
                         subpop=sp,
-                        pdist=distribution_from_confuse_config(parameter_config["value"]),
-                        lb=parameter_config["value"]["a"].get(float),
-                        ub=parameter_config["value"]["b"].get(float),
+                        pdist=dist,
+                        lb=lower,
+                        ub=upper,
                     )
-
             # grouped subpop have one parameter per group
             if spatial_groups["grouped"]:
                 for group in spatial_groups["grouped"]:
+                    dist = distribution_from_confuse_config(parameter_config["value"])
+                    lower, upper = dist.support
                     self.add_single_parameter(
                         ptype=ptype,
                         pname=pname,
                         subpop=",".join(group),
-                        pdist=distribution_from_confuse_config(parameter_config["value"]),
-                        lb=parameter_config["value"]["a"].get(float),
-                        ub=parameter_config["value"]["b"].get(float),
+                        pdist=dist,
+                        lb=lower,
+                        ub=upper,
                     )
         elif parameter_config["method"].get() == "MultiPeriodModifier":
             affected_subpops_grp = []
@@ -93,33 +94,32 @@ class InferenceParameters:
                 this_spatial_group = NPI.helpers.get_spatial_groups(
                     grp_config, affected_subpops_grp
                 )
-
-                # ungrouped subpop (all affected subpop by default) have one parameter per subpop
+                # ungrouped subpop (all affected subpop by
+                # default) have one parameter per subpop
                 if this_spatial_group["ungrouped"]:
                     for sp in this_spatial_group["ungrouped"]:
+                        dist = distribution_from_confuse_config(parameter_config["value"])
+                        lower, upper = dist.support
                         self.add_single_parameter(
                             ptype=ptype,
                             pname=pname,
                             subpop=sp,
-                            pdist=distribution_from_confuse_config(
-                                parameter_config["value"]
-                            ),
-                            lb=parameter_config["value"]["a"].get(float),
-                            ub=parameter_config["value"]["b"].get(float),
+                            pdist=dist,
+                            lb=lower,
+                            ub=upper,
                         )
-
                 # grouped subpop have one parameter per group
                 if this_spatial_group["grouped"]:
                     for group in this_spatial_group["grouped"]:
+                        dist = distribution_from_confuse_config(parameter_config["value"])
+                        lower, upper = dist.support
                         self.add_single_parameter(
                             ptype=ptype,
                             pname=pname,
                             subpop=",".join(group),
-                            pdist=distribution_from_confuse_config(
-                                parameter_config["value"]
-                            ),
-                            lb=parameter_config["value"]["a"].get(float),
-                            ub=parameter_config["value"]["b"].get(float),
+                            pdist=dist,
+                            lb=lower,
+                            ub=upper,
                         )
         else:
             raise ValueError(f"Unknown method {parameter_config['method']}")
@@ -140,8 +140,8 @@ class InferenceParameters:
         self.pnames.append(pname)
         self.subpops.append(subpop)
         self.pdists.append(pdist)
-        self.ubs.append(ub)
-        self.lbs.append(lb)
+        self.ubs = np.append(self.ubs, ub)
+        self.lbs = np.append(self.lbs, lb)
 
     def build_from_config(self, global_config, subpop_names):
         for config_part in ["seir_modifiers", "outcome_modifiers"]:
@@ -206,8 +206,9 @@ class InferenceParameters:
             p0[:, p_idx] = self.pdists[p_idx].sample(size=n_draw)
         return p0
 
-    # TODO: write a more granular method the return for a single parameter and correct the proposal like we did
-    def check_in_bound(self, proposal) -> bool:
+    # TODO: write a more granular method the return for a
+    # single parameter and correct the proposal like we did
+    def check_in_bound(self, proposal: npt.NDArray[np.float64]) -> bool:
         """
         Checks if the proposal is within parameter bounds.
 
@@ -215,20 +216,33 @@ class InferenceParameters:
             proposal: The proposed parameter values.
 
         Returns:
-            bool: True if the proposal is within bounds, False otherwise.
+            `True` if the proposal is within bounds, `False` otherwise.
         """
-        if self.hit_lbs(proposal=proposal).any() or self.hit_ubs(proposal=proposal).any():
-            return False
-        return True
+        return np.logical_and(~self.hit_lbs(proposal), ~self.hit_ubs(proposal)).all()
 
-    def hit_lbs(self, proposal) -> np.ndarray:
-        return np.array((proposal < self.lbs))
+    def hit_lbs(self, proposal: npt.NDArray[np.float64]) -> npt.NDArray[np.bool_]:
+        """
+        Test if the proposal hits the lower bounds.
 
-    def hit_ubs(self, proposal) -> np.ndarray:
+        Args:
+            proposal: The proposed parameter values.
+
+        Returns:
+            A boolean array indicating which proposed parameters hit the lower bounds.
         """
-        boolean vector of True if the parameter is bigger than the upper bound and False if not
+        return np.less(proposal, self.lbs)
+
+    def hit_ubs(self, proposal: npt.NDArray[np.float64]) -> npt.NDArray[np.bool_]:
         """
-        return np.array((proposal > self.ubs))
+        Test if the proposal hits the upper bounds.
+
+        Args:
+            proposal: The proposed parameter values.
+
+        Returns:
+            A boolean array indicating which proposed parameters hit the upper bounds.
+        """
+        return np.greater(proposal, self.ubs)
 
     def inject_proposal(
         self,
