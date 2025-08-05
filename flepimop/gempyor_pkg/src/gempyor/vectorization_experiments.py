@@ -140,15 +140,21 @@ def compute_proportion_sums_exponents(
     proportion_info: np.ndarray,  # (3, Pk)
     transition_sum_compartments: np.ndarray,  # (S,)
     param_t: np.ndarray,  # (P, N)  <-- time-sliced parameters
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Compute multiplicative proportion terms and source sizes.
+    Compute multiplicative proportion terms, source sizes, and a flag for n_p == 1.
 
-    Notes
-    -----
-    - Fixes bug: we write proportion_contribs at absolute row index `p_idx`,
-      not a local counter, so the [p_start:p_stop] slice aligns correctly.
-    - Exponents may be node-wise (vector) via `param_t[row_idx, :]`.
+    Matches legacy `rk4_integration` math:
+    - If only one proportion term (n_p == 1), we normalize the first proportion term
+      and multiply by the rate parameter immediately.
+    - Otherwise, we compute proportion contributions for all terms and leave parameter
+      multiplication / mobility mixing to later.
+
+    Returns
+    -------
+    total_rates : (Tn, N)  # proportion products (includes param if n_p==1)
+    source_numbers : (Tn, N)  # summed counts for first proportion term
+    single_prop_mask : (Tn,)  # boolean flag for n_p == 1 transitions
     """
     n_transitions = transitions.shape[1]
     n_nodes = states_current.shape[1]
@@ -157,6 +163,7 @@ def compute_proportion_sums_exponents(
     total_rates = np.ones((n_transitions, n_nodes))
     source_numbers = np.zeros((n_transitions, n_nodes))
     proportion_contribs = np.zeros((n_props, n_nodes))
+    single_prop_mask = np.zeros(n_transitions, dtype=np.uint8)
 
     for t_idx in range(n_transitions):
         p_start = transitions[3, t_idx]
@@ -164,28 +171,33 @@ def compute_proportion_sums_exponents(
         n_p = p_stop - p_start
         first = True
 
+        if n_p == 1:
+            single_prop_mask[t_idx] = 1  # mark for skipping mobility later
+
         for p_idx in range(p_start, p_stop):
             sum_start = proportion_info[0, p_idx]
             sum_stop = proportion_info[1, p_idx]
             row_idx = proportion_info[2, p_idx]
 
-            # sum of selected compartments across nodes
+            # sum of selected compartments
             summed = states_current[
                 transition_sum_compartments[sum_start:sum_stop], :
             ].sum(
                 axis=0
             )  # (N,)
 
-            # node-wise exponent (vector) or scalar if constant across nodes
             expnt_vec = param_t[row_idx, :]  # (N,)
-
-            # elementwise power
             summed_exp = summed**expnt_vec  # (N,)
 
             if first:
                 source_numbers[t_idx, :] = summed
                 safe_src = np.where(summed > 0.0, summed, 1.0)
-                proportion_contribs[p_idx, :] = summed_exp / safe_src
+                contrib = summed_exp / safe_src
+                if n_p == 1:
+                    # legacy behavior: multiply by param immediately
+                    param_idx = transitions[2, t_idx]
+                    contrib *= param_t[param_idx, :]
+                proportion_contribs[p_idx, :] = contrib
                 first = False
             else:
                 proportion_contribs[p_idx, :] = summed_exp
@@ -195,130 +207,91 @@ def compute_proportion_sums_exponents(
                 proportion_contribs[p_start:p_stop, :]
             )
 
-    return total_rates, source_numbers
+    return total_rates, source_numbers, single_prop_mask
 
 
 # === 2. Transition Rate Computation ===
-
-
 def compute_transition_rates(
-    total_rates_base: np.ndarray,  # (Tn, N)
-    source_numbers: np.ndarray,  # (Tn, N)
+    total_rates_base: np.ndarray,  # (Tn, N) e.g., I for S->E
+    source_numbers: np.ndarray,  # (Tn, N) e.g., S for S->E  (NOT used here)
     transitions: np.ndarray,  # (5, Tn)
     param_t: np.ndarray,  # (P, N)
     percent_day_away: float,
     proportion_who_move: np.ndarray,  # (N,)
-    mobility_data: np.ndarray,  # CSR data
-    mobility_data_indices: np.ndarray,  # CSR indptr (N+1,)
-    mobility_row_indices: np.ndarray,  # CSR indices
+    mobility_data: np.ndarray,
+    mobility_data_indices: np.ndarray,
+    mobility_row_indices: np.ndarray,
     population: np.ndarray,  # (N,)
-    param_expr_lookup: dict[int, str] | None = None,  # transition-param-index -> expr
-    param_name_to_row: dict[str, int] | None = None,  # name -> row index
+    single_prop_mask: np.ndarray,  # (Tn,)
+    param_expr_lookup: dict[int, str] | None = None,
+    param_name_to_row: dict[str, int] | None = None,
 ) -> np.ndarray:
-    """
-    Compute adjusted transition rates per node, accounting for parameter scaling and mobility mixing.
-
-    - If a transition has exactly one proportion term (n_p == 1), we simply scale by the parameter vector.
-    - Otherwise we compute keep/change mixing with mobility.
-    """
     if DEBUG:
         _dbg_stats("compute_transition_rates.total_rates_base", total_rates_base)
-        _dbg_stats("compute_transition_rates.source_numbers", source_numbers)
         _dbg_stats("compute_transition_rates.param_t", param_t)
 
     n_transitions, n_nodes = total_rates_base.shape
-    total_rates = total_rates_base.copy()
+    # IMPORTANT: start from zeros; we will assign the mixed “force of transition”
+    total_rates = np.zeros_like(total_rates_base)
 
     for t_idx in range(n_transitions):
-        p_start = transitions[3, t_idx]
-        p_stop = transitions[4, t_idx]
-        param_idx = transitions[2, t_idx]
-        n_p = p_stop - p_start
 
-        # parameter vector for this transition (N,)
+        # If there was exactly one proportion term (e.g., E->I with sigma*E),
+        # the parameter has already been applied in compute_proportion_sums_exponents,
+        # and there is no mobility mixing. Just carry the base through.
+        if single_prop_mask[t_idx]:
+            total_rates[t_idx, :] = total_rates_base[t_idx, :]
+            continue
+
+        param_idx = transitions[2, t_idx]
+
+        # Resolve parameter vector (name or expression)
         if param_expr_lookup is None:
-            param_vec = param_t[param_idx, :]  # (N,)
+            param_vec = param_t[param_idx, :]
         else:
             if param_name_to_row is None:
                 raise ValueError(
-                    "param_name_to_row is required when param_expr_lookup is provided."
+                    "param_name_to_row required when param_expr_lookup is provided."
                 )
             expr = param_expr_lookup[param_idx]
-            param_vec = resolve_param_expr_from_slice(
-                expr, param_t, param_name_to_row
-            )  # (N,)
+            param_vec = resolve_param_expr_from_slice(expr, param_t, param_name_to_row)
 
         if DEBUG:
             _dbg_stats(f"param_vec[t_idx={t_idx}]", param_vec)
-            _dbg_nonfinite(f"param_vec[t_idx={t_idx}]", param_vec)
 
-        if n_p == 1:
-            # simple scaling by parameter
-            if DEBUG:
-                # Check before multiply
-                if not np.all(np.isfinite(param_vec)):
-                    bad = np.argwhere(~np.isfinite(param_vec))[:10]
-                    print(
-                        f"[DBG] n_p==1: non-finite param_vec at indices {bad.tolist()} for transition {t_idx}"
-                    )
-            total_rates[t_idx, :] *= param_vec
-            if DEBUG:
-                _dbg_nonfinite(
-                    f"total_rates_after_scale[t_idx={t_idx}]", total_rates[t_idx, :]
-                )
-        else:
-            # mobility-aware mixing (per node)
-            for node in range(n_nodes):
-                pop_n = population[node]
-                pop_n_safe = pop_n if pop_n > 0.0 else 1.0
+        # Mix infectious pressure across mobility; never multiply by S here.
+        for node in range(n_nodes):
+            pop_n = population[node]
+            pop_n_safe = pop_n if pop_n > 0.0 else 1.0
 
-                param_node = param_vec[node]
-                source_node = source_numbers[t_idx, node]
+            prop_keep = 1.0 - percent_day_away * proportion_who_move[node]
 
-                prop_keep = 1.0 - percent_day_away * proportion_who_move[node]
-                v_slice = slice(
-                    mobility_data_indices[node], mobility_data_indices[node + 1]
-                )
-                visitors = mobility_row_indices[v_slice]
-                mobility_vals = mobility_data[v_slice]
-                prop_change = (
-                    percent_day_away * mobility_vals / pop_n_safe
-                )  # normalized contribution
+            # slice CSR
+            v_slice = slice(
+                mobility_data_indices[node], mobility_data_indices[node + 1]
+            )
+            visitors = mobility_row_indices[v_slice]
+            mobility_vals = mobility_data[v_slice]
+            prop_change = percent_day_away * mobility_vals / pop_n_safe
 
-                # residents who stay
-                rate_keep = (
-                    (prop_keep * source_node * param_node / pop_n)
-                    if (pop_n > 0.0 and param_node >= 0.0)
-                    else 0.0
+            # residents’ infectious pressure (e.g., I/N) scaled by beta at this node
+            force_keep = param_vec[node] * (total_rates_base[t_idx, node] / pop_n_safe)
+
+            # visitors’ infectious pressure
+            force_change = 0.0
+            for i in range(visitors.size):
+                v = visitors[i]
+                pop_v = population[v]
+                pop_v_safe = pop_v if pop_v > 0.0 else 1.0
+                force_change += prop_change[i] * (
+                    param_vec[v] * (total_rates_base[t_idx, v] / pop_v_safe)
                 )
 
-                # visitors contribution
-                rate_change = 0.0
-                for i in range(visitors.size):
-                    v = visitors[i]
-                    pop_v = population[v]
-                    pop_v_safe = pop_v if pop_v > 0.0 else 1.0
-                    src_v = source_numbers[t_idx, v]
-                    param_v = param_vec[v]
-                    if pop_v > 0.0 and param_v >= 0.0:
-                        rate_change += prop_change[i] * src_v * param_v / pop_v_safe
-
-                total = rate_keep + rate_change
-                if DEBUG and not np.isfinite(total):
-                    print(
-                        f"[DBG] non-finite total (t_idx={t_idx}, node={node}): "
-                        f"rate_keep={rate_keep}, rate_change={rate_change}, "
-                        f"source_node={source_node}, param_node={param_node}, pop_n={pop_n}, "
-                        f"prop_keep={prop_keep}, sum(prop_change)={prop_change.sum() if prop_change.size else 0.0}"
-                    )
-                total_rates[t_idx, node] *= total if np.isfinite(total) else 0.0
-
-        if DEBUG:
-            _dbg_nonfinite(f"total_rates_row_end[t_idx={t_idx}]", total_rates[t_idx, :])
+            total_rates[t_idx, node] = prop_keep * force_keep + force_change
 
     if DEBUG:
         _dbg_stats("compute_transition_rates.total_rates(OUT)", total_rates)
-        _dbg_nonfinite("compute_transition_rates.total_rates(OUT)", total_rates)
+
     return total_rates
 
 
@@ -431,73 +404,62 @@ def build_rhs_for_solve_ivp(
     *,
     param_expr_lookup: dict[int, str] | None = None,
     param_name_to_row: dict[str, int] | None = None,
-    param_time_mode: str = "linear",
+    param_time_mode: str = "step",  # match legacy's discrete stepping by default
 ) -> Callable[[float, np.ndarray, np.ndarray], np.ndarray]:
     """
     Construct an RHS suitable for SciPy's solve_ivp: f(t, y, parameters) -> dy/dt.
 
-    'parameters' must be passed at call time (via solve_ivp's args or functools.partial),
-    and have shape (P, T, N) or (P, T). Time is sliced internally using `param_time_mode`.
+    Assumptions / guarantees:
+      - Returns dy/dt (rates), never scaled by dt.
+      - Parameter time dependence is handled by `param_slice` using `param_time_mode`.
+      - Expects `compute_proportion_sums_exponents` to return
+          (total_base, source_numbers, single_prop_mask).
+      - Passes `single_prop_mask` to `compute_transition_rates` so transitions with a
+        single proportion skip mobility mixing (legacy behavior).
     """
 
     def rhs(t: float, y: np.ndarray, parameters: np.ndarray) -> np.ndarray:
-        if DEBUG:
-            print(f"[DBG] RHS call t={t}")
-            _dbg_stats("RHS.y(in)", y)
-
-        # Time-slice parameters to (P, N)
+        # 0) Time-slice parameters to (P, N)
         param_t = param_slice(parameters, t, mode=param_time_mode)
-        if DEBUG:
-            _dbg_nonfinite("RHS.param_t", param_t)
 
+        # 1) Reshape state vector into (C, N)
         states_current = y.reshape((ncompartments, nspatial_nodes))
-        if DEBUG:
-            _dbg_stats("RHS.states_current", states_current)
 
-        total_base, source_numbers = compute_proportion_sums_exponents(
-            states_current,
-            transitions,
-            proportion_info,
-            transition_sum_compartments,
-            param_t,  # (P, N)
+        # 2) Proportion terms + source numbers (+ mask for n_p == 1)
+        total_base, source_numbers, single_prop_mask = (
+            compute_proportion_sums_exponents(
+                states_current,
+                transitions,
+                proportion_info,
+                transition_sum_compartments,
+                param_t,  # (P, N)
+            )
         )
-        if DEBUG:
-            _dbg_stats("RHS.total_base", total_base)
-            _dbg_stats("RHS.source_numbers", source_numbers)
-            _dbg_nonfinite("RHS.total_base", total_base)
-            _dbg_nonfinite("RHS.source_numbers", source_numbers)
 
+        # 3) Apply parameter scaling + mobility mixing (mask controls mobility path)
         total_rates = compute_transition_rates(
-            total_base,
-            source_numbers,
-            transitions,
-            param_t,
-            percent_day_away,
-            proportion_who_move,
-            mobility_data,
-            mobility_data_indices,
-            mobility_row_indices,
-            population,
+            total_rates_base=total_base,
+            source_numbers=source_numbers,
+            transitions=transitions,
+            param_t=param_t,
+            percent_day_away=percent_day_away,
+            proportion_who_move=proportion_who_move,
+            mobility_data=mobility_data,
+            mobility_data_indices=mobility_data_indices,
+            mobility_row_indices=mobility_row_indices,
+            population=population,
             param_expr_lookup=param_expr_lookup,
             param_name_to_row=param_name_to_row,
+            # IMPORTANT: requires your edited compute_transition_rates to accept this kwarg
+            single_prop_mask=single_prop_mask,
         )
 
-        if DEBUG:
-            _dbg_stats("RHS.total_rates", total_rates)
-            _dbg_nonfinite("RHS.total_rates", total_rates)
-
-        # Instantaneous flux (dy/dt)
+        # 4) Instantaneous flux (dy/dt)
         amounts = compute_transition_amounts_meta(source_numbers, total_rates)
-        if DEBUG:
-            _dbg_stats("RHS.amounts", amounts)
-            _dbg_nonfinite("RHS.amounts", amounts)
 
+        # 5) Assemble net change vector (flattened for solve_ivp)
         dy = assemble_flux(amounts, transitions, ncompartments, nspatial_nodes)
-        if DEBUG:
-            _dbg_stats("RHS.dy(out)", dy)
-            _dbg_nonfinite("RHS.dy(out)", dy)
-
-        return dy
+        return dy  # dy/dt
 
     return rhs
 
