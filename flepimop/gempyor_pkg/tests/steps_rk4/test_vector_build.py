@@ -20,10 +20,13 @@ from gempyor.vectorization_experiments import (
     build_rhs_for_solve_ivp,
 )
 
+
 # ------------------------------------------------------------
 # Helper: build a SAFE expression lookup from unique_strings
 # ------------------------------------------------------------
-def build_safe_param_expr_lookup(unique_strings: list[str]) -> tuple[dict[int, str] | None, dict[str, int]]:
+def build_safe_param_expr_lookup(
+    unique_strings: list[str],
+) -> tuple[dict[int, str] | None, dict[str, int]]:
     """
     Build (param_expr_lookup, param_name_to_row) safely.
 
@@ -111,7 +114,9 @@ def model_and_inputs(modelinfo_from_config):
 
     proportion_who_move = np.zeros(model.nsubpops)
     for i in range(model.nsubpops):
-        total_flux = mobility_data[mobility_data_indices[i] : mobility_data_indices[i + 1]].sum()
+        total_flux = mobility_data[
+            mobility_data_indices[i] : mobility_data_indices[i + 1]
+        ].sum()
         proportion_who_move[i] = min(total_flux / population[i], 1.0)
 
     offset = model.ti.toordinal()
@@ -135,8 +140,8 @@ def model_and_inputs(modelinfo_from_config):
         "time_grid": time_grid,
         "dt": dt,
         "percent_day_away": 0.5,
-        "param_expr_lookup": param_expr_lookup,    # may be None if factors not separately present
-        "param_name_to_row": param_name_to_row,    # always safe to pass
+        "param_expr_lookup": param_expr_lookup,  # may be None if factors not separately present
+        "param_name_to_row": param_name_to_row,  # always safe to pass
     }
 
 
@@ -179,8 +184,8 @@ def test_transition_rate_shape_and_finiteness(model_and_inputs):
         mobility_data_indices=out["mobility_data_indices"],
         mobility_row_indices=out["mobility_row_indices"],
         population=out["population"],
-        param_expr_lookup=out["param_expr_lookup"],     # None or dict
-        param_name_to_row=out["param_name_to_row"],     # name->row
+        param_expr_lookup=out["param_expr_lookup"],  # None or dict
+        param_name_to_row=out["param_name_to_row"],  # name->row
     )
     assert rates.shape == source_nums.shape
     assert np.all(np.isfinite(rates))
@@ -290,7 +295,9 @@ def test_mass_conservation_for_dummy_flux(model_and_inputs):
     )
     dummy_rates = np.ones_like(source_nums)
     dummy_amounts = compute_transition_amounts_meta(source_nums, dummy_rates)
-    flux = assemble_flux(dummy_amounts, out["transitions"], ncomp, nloc).reshape(ncomp, nloc)
+    flux = assemble_flux(dummy_amounts, out["transitions"], ncomp, nloc).reshape(
+        ncomp, nloc
+    )
     assert np.allclose(flux.sum(axis=0), 0.0, atol=1e-5)
 
 
@@ -401,7 +408,9 @@ def test_multiple_runs_different_theta(model_and_inputs):
         nspatial_nodes=nloc,
     )
 
-    assert not np.allclose(states1, states2), "Different thetas should yield different simulations"
+    assert not np.allclose(
+        states1, states2
+    ), "Different thetas should yield different simulations"
 
 
 def test_expression_lookup_only_when_factors_present(model_and_inputs):
@@ -413,8 +422,6 @@ def test_expression_lookup_only_when_factors_present(model_and_inputs):
     pel = out["param_expr_lookup"]
     # If there are NO resolvable expressions, pel is None (desired for current tutorial config)
     assert pel is None or isinstance(pel, dict)
-
-
 
 
 def test_run_solver_vectorized_backend_scipy(model_and_inputs):
@@ -448,7 +455,7 @@ def test_run_solver_vectorized_backend_scipy(model_and_inputs):
         t_eval=out["time_grid"],
         vectorized=False,
         atol=1e-8,
-        rtol=1e-6
+        rtol=1e-6,
     )
 
     assert res.success, f"solve_ivp failed: {res.message}"
@@ -493,7 +500,7 @@ def test_model_runs_with_alternative_param_set_scipy(model_and_inputs):
         t_eval=out["time_grid"],
         vectorized=False,
         atol=1e-8,
-        rtol=1e-6
+        rtol=1e-6,
     )
 
     assert res.success, f"solve_ivp failed: {res.message}"

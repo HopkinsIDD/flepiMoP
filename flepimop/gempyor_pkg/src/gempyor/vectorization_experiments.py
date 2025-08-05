@@ -6,6 +6,7 @@ from collections.abc import Callable
 # === Debug switch ===
 DEBUG = False  # set to False to silence debug prints
 
+
 def _dbg_stats(name: str, arr: np.ndarray, prefix: str = "[DBG]"):
     if not DEBUG:
         return
@@ -18,7 +19,10 @@ def _dbg_stats(name: str, arr: np.ndarray, prefix: str = "[DBG]"):
     amax = np.nanmax(a)
     any_nan = np.isnan(a).any()
     any_inf = np.isinf(a).any()
-    print(f"{prefix} {name}: shape={a.shape}, dtype={a.dtype}, min={amin}, max={amax}, nan={any_nan}, inf={any_inf}")
+    print(
+        f"{prefix} {name}: shape={a.shape}, dtype={a.dtype}, min={amin}, max={amax}, nan={any_nan}, inf={any_inf}"
+    )
+
 
 def _dbg_nonfinite(name: str, arr: np.ndarray, prefix: str = "[DBG]"):
     if not DEBUG:
@@ -27,7 +31,9 @@ def _dbg_nonfinite(name: str, arr: np.ndarray, prefix: str = "[DBG]"):
     if mask.any():
         idx = np.argwhere(mask)
         sample = idx[:10]  # avoid huge dumps
-        print(f"{prefix} NON-FINITE in {name}: count={mask.sum()}, sample_indices={sample.tolist()}")
+        print(
+            f"{prefix} NON-FINITE in {name}: count={mask.sum()}, sample_indices={sample.tolist()}"
+        )
 
 
 # === Constants ===
@@ -35,6 +41,7 @@ _PARALLEL_THRESHOLD = 1e7
 
 
 # === Parameter time slicing (for solve_ivp's continuous t) ===
+
 
 def param_slice(parameters: np.ndarray, t: float, mode: str = "linear") -> np.ndarray:
     """
@@ -83,6 +90,7 @@ def param_slice(parameters: np.ndarray, t: float, mode: str = "linear") -> np.nd
 
 # === Helper for symbolic expression resolution (from a time slice) ===
 
+
 def resolve_param_expr_from_slice(
     expr: str,
     param_t: np.ndarray,  # (P, N)
@@ -108,6 +116,7 @@ def resolve_param_expr_from_slice(
 
 
 # === 1. Core Proportion Logic ===
+
 
 @njit(fastmath=True)
 def prod_along_axis0(arr_2d: np.ndarray) -> np.ndarray:
@@ -163,13 +172,15 @@ def compute_proportion_sums_exponents(
             # sum of selected compartments across nodes
             summed = states_current[
                 transition_sum_compartments[sum_start:sum_stop], :
-            ].sum(axis=0)  # (N,)
+            ].sum(
+                axis=0
+            )  # (N,)
 
             # node-wise exponent (vector) or scalar if constant across nodes
             expnt_vec = param_t[row_idx, :]  # (N,)
 
             # elementwise power
-            summed_exp = summed ** expnt_vec  # (N,)
+            summed_exp = summed**expnt_vec  # (N,)
 
             if first:
                 source_numbers[t_idx, :] = summed
@@ -188,6 +199,7 @@ def compute_proportion_sums_exponents(
 
 
 # === 2. Transition Rate Computation ===
+
 
 def compute_transition_rates(
     total_rates_base: np.ndarray,  # (Tn, N)
@@ -246,10 +258,14 @@ def compute_transition_rates(
                 # Check before multiply
                 if not np.all(np.isfinite(param_vec)):
                     bad = np.argwhere(~np.isfinite(param_vec))[:10]
-                    print(f"[DBG] n_p==1: non-finite param_vec at indices {bad.tolist()} for transition {t_idx}")
+                    print(
+                        f"[DBG] n_p==1: non-finite param_vec at indices {bad.tolist()} for transition {t_idx}"
+                    )
             total_rates[t_idx, :] *= param_vec
             if DEBUG:
-                _dbg_nonfinite(f"total_rates_after_scale[t_idx={t_idx}]", total_rates[t_idx, :])
+                _dbg_nonfinite(
+                    f"total_rates_after_scale[t_idx={t_idx}]", total_rates[t_idx, :]
+                )
         else:
             # mobility-aware mixing (per node)
             for node in range(n_nodes):
@@ -309,6 +325,7 @@ def compute_transition_rates(
 # === 3. Binomial Stochastic (NumPy) ===
 # (Kept for optional tau-leaping outside solve_ivp; not used in deterministic RHS.)
 
+
 def compute_transition_amounts_numpy_binomial(
     source_numbers: np.ndarray, total_rates: np.ndarray, dt: float
 ) -> np.ndarray:
@@ -321,6 +338,7 @@ def compute_transition_amounts_numpy_binomial(
 
 
 # === 4. Transition Amounts (Deterministic dy/dt only) ===
+
 
 @njit(fastmath=True)
 def compute_transition_amounts_serial(
@@ -373,6 +391,7 @@ def compute_transition_amounts_meta(
 
 # === 5. Assemble Flux Vector ===
 
+
 @njit(fastmath=True)
 def assemble_flux(
     amounts: np.ndarray,  # (Tn, N), instantaneous flux
@@ -395,6 +414,7 @@ def assemble_flux(
 
 
 # === 6. RHS Builder (solve_ivp-compatible) ===
+
 
 def build_rhs_for_solve_ivp(
     ncompartments: int,
@@ -484,6 +504,7 @@ def build_rhs_for_solve_ivp(
 
 # === 7. Solver Step Functions (unchanged; for your custom runner) ===
 
+
 @njit(inline="always", fastmath=True)
 def update(y: np.ndarray, delta_t: float, dy: np.ndarray) -> np.ndarray:
     """
@@ -521,6 +542,7 @@ def euler_or_stochastic_step(
 
 
 # === 8. Optional: your existing custom fixed-grid solver (works by currying parameters) ===
+
 
 def run_solver(
     rhs_fn: Callable[[float, np.ndarray], np.ndarray],
@@ -564,7 +586,9 @@ def run_solver(
 
             if DEBUG:
                 if not np.all(np.isfinite(y)):
-                    print(f"[DBG] run_solver: non-finite state after step i={i}, t={t}, dt={dt}")
+                    print(
+                        f"[DBG] run_solver: non-finite state after step i={i}, t={t}, dt={dt}"
+                    )
                     _dbg_nonfinite("run_solver.y(after step)", y)
                     # Optional: early break to reduce log noise during debug
                     # break
@@ -588,6 +612,7 @@ def run_solver(
 
 
 # === 9. Optional factory class (solve_ivp-compatible) ===
+
 
 class RHSfactory:
     """
