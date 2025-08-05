@@ -1,3 +1,4 @@
+# tests/steps_rk4/test_fastmath_safety.py
 import numpy as np
 import pytest
 from numba import njit
@@ -9,10 +10,13 @@ import confuse
 from gempyor.model_info import ModelInfo
 from gempyor.vectorization_experiments import (
     prod_along_axis0,
+    param_slice,  # NEW: for time-slicing parameters
     compute_proportion_sums_exponents,
     compute_transition_amounts_serial,
     compute_transition_amounts_parallel,
     assemble_flux,
+    update,
+    compute_transition_amounts_meta,
 )
 
 
@@ -70,6 +74,7 @@ def model_and_inputs(modelinfo_from_config):
         config["seir"]["parameters"].get(),
         unique_strings,
     )
+    # parsed_params is typically (P, T, N) or (P, T). We will time-slice in each test.
 
     mobility_csr: csr_matrix = model.mobility
     population = model.subpop_pop
@@ -87,7 +92,7 @@ def model_and_inputs(modelinfo_from_config):
 
     return {
         "initial_array": initial_array,
-        "params": parsed_params,
+        "params": parsed_params,  # (P, T, N) or (P, T)
         "transitions": transitions,
         "proportion_info": proportion_info,
         "transition_sum_compartments": transition_sum_compartments,
@@ -96,7 +101,7 @@ def model_and_inputs(modelinfo_from_config):
         "mobility_row_indices": mobility_row_indices,
         "proportion_who_move": proportion_who_move,
         "population": population,
-        "dt": 0.1,
+        "dt": 0.1,  # kept for consistency; amounts no longer use dt
     }
 
 
@@ -113,13 +118,15 @@ def test_fastmath_equivalence_prod(model_and_inputs):
 
 def test_fastmath_equivalence_proportion_sums_exponents(model_and_inputs):
     out = model_and_inputs
+    # Slice parameters at t=0 (step-wise to match prior behavior)
+    param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
+
     args = (
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
         out["transition_sum_compartments"],
-        out["params"],
-        0,
+        param_t,  # CHANGED: pass (P, N) slice
     )
     fn_fast = compute_proportion_sums_exponents
     fn_safe = njit(fastmath=False)(fn_fast.py_func)
@@ -131,52 +138,56 @@ def test_fastmath_equivalence_proportion_sums_exponents(model_and_inputs):
 
 def test_fastmath_equivalence_transition_amounts_serial(model_and_inputs):
     out = model_and_inputs
+    param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
     rates, sources = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
         out["transition_sum_compartments"],
-        out["params"],
-        0,
+        param_t,  # (P, N)
     )
-    for method in ["rk4", "euler"]:
-        fn_fast = compute_transition_amounts_serial
-        fn_safe = njit(fastmath=False)(fn_fast.py_func)
-        out1 = fn_safe(sources, rates, method, out["dt"])
-        out2 = fn_fast(sources, rates, method, out["dt"])
-        assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
+    # CHANGED: deterministic amounts no longer take method/dt (instantaneous dy/dt)
+    fn_fast = compute_transition_amounts_serial
+    fn_safe = njit(fastmath=False)(fn_fast.py_func)
+    out1 = fn_safe(sources, rates)
+    out2 = fn_fast(sources, rates)
+    assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
 
 
 def test_fastmath_equivalence_transition_amounts_parallel(model_and_inputs):
     out = model_and_inputs
+    param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
     rates, sources = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
         out["transition_sum_compartments"],
-        out["params"],
-        0,
+        param_t,  # (P, N)
     )
+    # CHANGED: parallel variant also drops dt
     fn_fast = compute_transition_amounts_parallel
     fn_safe = njit(parallel=True, fastmath=False)(fn_fast.py_func)
-    out1 = fn_safe(sources, rates, out["dt"])
-    out2 = fn_fast(sources, rates, out["dt"])
+    out1 = fn_safe(sources, rates)
+    out2 = fn_fast(sources, rates)
     assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
 
 
 def test_fastmath_equivalence_flux(model_and_inputs):
     out = model_and_inputs
+    param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
     rates, sources = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
         out["transition_sum_compartments"],
-        out["params"],
-        0,
+        param_t,  # (P, N)
     )
-    amounts = compute_transition_amounts_serial(sources, rates, "euler", out["dt"])
+    # CHANGED: amounts are instantaneous dy/dt contributions
+    amounts = compute_transition_amounts_serial(sources, rates)
+
     fn_fast = assemble_flux
     fn_safe = njit(fastmath=False)(fn_fast.py_func)
+
     out1 = fn_safe(
         amounts,
         out["transitions"],
@@ -190,3 +201,145 @@ def test_fastmath_equivalence_flux(model_and_inputs):
         out["initial_array"].shape[1],
     )
     assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
+
+
+def test_fastmath_equivalence_update():
+    y = np.random.rand(20).astype(np.float64)
+    dy = np.random.randn(20).astype(np.float64)
+    dt = 0.123
+
+    fn_fast = update
+    fn_safe = njit(fastmath=False)(fn_fast.py_func)
+    out1 = fn_safe(y, dt, dy)
+    out2 = fn_fast(y, dt, dy)
+    assert np.allclose(out1, out2, rtol=1e-12, atol=0.0)
+
+
+def test_proportion_sums_edge_cases_zero_and_large(model_and_inputs):
+    """
+    Exercise 0**exp, 1**exp, and very large magnitudes to ensure no NaN/Inf and
+    fastmath equivalence.
+    """
+    out = model_and_inputs
+    N = out["initial_array"].shape[1]
+    param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
+
+    # Craft states with zeros and huge values
+    states = out["initial_array"].astype(np.float64).copy()
+    if states.size >= 4 * N:
+        states[0, :] = 0.0  # zeros -> 0**exp
+        states[1, :] = 1.0  # ones  -> 1**exp
+        states[2, :] = 1e-30  # tiny  -> underflow risk
+        states[3, :] = 1e30  # huge  -> overflow risk
+
+    fn_fast = compute_proportion_sums_exponents
+    fn_safe = njit(fastmath=False)(fn_fast.py_func)
+
+    total1, src1 = fn_safe(
+        states,
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        param_t,
+    )
+    total2, src2 = fn_fast(
+        states,
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        param_t,
+    )
+
+    assert np.all(np.isfinite(total1)) and np.all(np.isfinite(src1))
+    assert np.all(np.isfinite(total2)) and np.all(np.isfinite(src2))
+    assert np.allclose(total1, total2, rtol=1e-5, atol=1e-7)
+    assert np.allclose(src1, src2, rtol=1e-5, atol=1e-7)
+
+
+def test_assemble_flux_conservation_fastmath(model_and_inputs):
+    """
+    For any amounts & transitions, net flux per node should sum to zero across compartments.
+    Check with and without fastmath.
+    """
+    out = model_and_inputs
+    C, N = out["initial_array"].shape
+
+    # Random but nonnegative amounts
+    Tn = out["transitions"].shape[1]
+    rng = np.random.default_rng(42)
+    amounts = rng.random((Tn, N)).astype(np.float64)
+
+    fn_fast = assemble_flux
+    fn_safe = njit(fastmath=False)(fn_fast.py_func)
+
+    dy1 = fn_safe(amounts, out["transitions"], C, N).reshape(C, N)
+    dy2 = fn_fast(amounts, out["transitions"], C, N).reshape(C, N)
+
+    # Column sums should be ~0 (numerical noise ok)
+    assert np.allclose(dy1.sum(axis=0), 0.0, atol=1e-10)
+    assert np.allclose(dy2.sum(axis=0), 0.0, atol=1e-10)
+    # Equivalence
+    assert np.allclose(dy1, dy2, rtol=1e-12, atol=0.0)
+
+
+def test_meta_dispatch_equivalence_serial_vs_parallel(monkeypatch, model_and_inputs):
+    """
+    Force small and large thresholds to exercise both branches and ensure results match
+    the explicit serial/parallel kernels.
+    """
+    out = model_and_inputs
+    param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
+    rates, sources = compute_proportion_sums_exponents(
+        out["initial_array"],
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        param_t,
+    )
+
+    # Serial expectation
+    expected_serial = compute_transition_amounts_serial(sources, rates)
+    # Parallel expectation
+    expected_parallel = compute_transition_amounts_parallel(sources, rates)
+
+    import gempyor.vectorization_experiments as ve
+
+    # Force serial path
+    monkeypatch.setattr(
+        ve, "_PARALLEL_THRESHOLD", np.iinfo(np.int64).max, raising=False
+    )
+    out_serial = compute_transition_amounts_meta(sources, rates)
+    assert np.allclose(out_serial, expected_serial, rtol=1e-12, atol=0.0)
+
+    # Force parallel path
+    monkeypatch.setattr(ve, "_PARALLEL_THRESHOLD", 1, raising=False)
+    out_parallel = compute_transition_amounts_meta(sources, rates)
+    assert np.allclose(out_parallel, expected_parallel, rtol=1e-12, atol=0.0)
+
+
+def test_end_to_end_rhs_dydt_finite(model_and_inputs):
+    """
+    Quick end-to-end check that the dy/dt produced by the pipeline is finite at t=0.
+    Uses the simplest parameter slicing and deterministic amounts.
+    """
+    out = model_and_inputs
+    C, N = out["initial_array"].shape
+    param_t = param_slice(out["params"], t=0.0, mode="step")
+
+    total_base, source_numbers = compute_proportion_sums_exponents(
+        out["initial_array"],
+        out["transitions"],
+        out["proportion_info"],
+        out["transition_sum_compartments"],
+        param_t,
+    )
+    # Dummy mobility inputs if not already used here; compute_transition_rates is Python
+    # in your code, so this checks the Numba parts around it.
+    # If your test suite constructs total_rates elsewhere, skip compute_transition_rates here.
+
+    # Construct a benign total_rates for the check (nonnegative)
+    total_rates = np.abs(total_base)
+
+    amounts = compute_transition_amounts_serial(source_numbers, total_rates)
+    dy = assemble_flux(amounts, out["transitions"], C, N)
+    assert np.all(np.isfinite(dy))
