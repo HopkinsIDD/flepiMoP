@@ -101,7 +101,7 @@ class InferenceParameters:
                             ptype=ptype,
                             pname=pname,
                             subpop=sp,
-                            pdist=istribution_from_confuse_config(
+                            pdist=distribution_from_confuse_config(
                                 parameter_config["value"]
                             ),
                             lb=parameter_config["value"]["a"].get(float),
@@ -115,7 +115,7 @@ class InferenceParameters:
                             ptype=ptype,
                             pname=pname,
                             subpop=",".join(group),
-                            pdist=istribution_from_confuse_config(
+                            pdist=distribution_from_confuse_config(
                                 parameter_config["value"]
                             ),
                             lb=parameter_config["value"]["a"].get(float),
@@ -203,8 +203,7 @@ class InferenceParameters:
         """
         p0 = np.zeros((n_draw, self.get_dim()))
         for p_idx in range(self.get_dim()):
-            p0[:, p_idx] = self.pdists[p_idx](n_draw)
-
+            p0[:, p_idx] = self.pdists[p_idx].sample(size=n_draw)
         return p0
 
     # TODO: write a more granular method the return for a single parameter and correct the proposal like we did
