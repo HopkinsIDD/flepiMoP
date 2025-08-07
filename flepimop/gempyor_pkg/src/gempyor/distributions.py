@@ -13,18 +13,19 @@ __all__: tuple[str, ...] = (
     "TruncatedNormalDistribution",
     "UniformDistribution",
     "WeibullDistribution",
+    "distribution_from_confuse_config",
 )
 
 
-import confuse
 from abc import ABC, abstractmethod
-from math import isclose
+from math import inf, isclose
 from typing import Annotated, Literal
 
+import confuse
 import numpy as np
-from numpy.random import Generator
 import numpy.typing as npt
-from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator
+from numpy.random import Generator
+from pydantic import BaseModel, Field, PrivateAttr, TypeAdapter, model_validator
 from scipy.stats import truncnorm
 
 from ._pydantic_ext import EvaledFloat, EvaledInt
@@ -37,6 +38,12 @@ class DistributionABC(ABC, BaseModel):
     allow_edge_cases: bool = False
 
     _rng: Generator = PrivateAttr(default_factory=np.random.default_rng)
+    _lower_bound: float | int | None = PrivateAttr(default=None)
+    _upper_bound: float | int | None = PrivateAttr(default=None)
+
+    def __call__(self) -> float | int:
+        """A shortcut for `self.sample(size=1)`."""
+        return self.sample(size=1).item()
 
     def sample(
         self, size: int | tuple[int, ...] = 1, rng: Generator | None = None
@@ -55,10 +62,6 @@ class DistributionABC(ABC, BaseModel):
         rng = rng if rng is not None else self._rng
         return self._sample_from_generator(size=size, rng=rng)
 
-    def __call__(self) -> float | int:
-        """A shortcut for `self.sample(size=1)`."""
-        return self.sample(size=1).item()
-
     @abstractmethod
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -69,8 +72,62 @@ class DistributionABC(ABC, BaseModel):
         Args:
             size: The desired output size of samples to be drawn.
             rng: A NumPy random number generator instance used for sampling.
+
+        Returns:
+            A NumPy array of either floats/ints (depending on distribution)
+            drawn from the distribution with shape `size`.
         """
         raise NotImplementedError
+
+    def _bound(self, kind: Literal["lower", "upper"]) -> float | int:
+        """
+        Get the lower or upper bound of the distribution's support.
+
+        Args:
+            kind: Either "lower" or "upper" to specify which bound to return.
+
+        Returns:
+            The lower or upper bound of the distribution's support.
+        """
+        if (bnd := getattr(self, f"_{kind}_bound", None)) is not None:
+            return bnd
+        msg = (
+            f"{kind.title()} bound not defined for {self.distribution} "
+            f"distribution. Implementation must either define `_{kind}_bound` "
+            f"property or override `_{kind}` to handle bounds."
+        )
+        raise NotImplementedError(msg)
+
+    @property
+    def _lower(self) -> float | int:
+        """
+        The lower bound of the distribution's support.
+
+        Returns:
+            The lower bound of the distribution's support as a float or int.
+        """
+        return self._bound("lower")
+
+    @property
+    def _upper(self) -> float | int:
+        """
+        The upper bound of the distribution's support.
+
+        Returns:
+            The upper bound of the distribution's support as a float or int.
+        """
+        return self._bound("upper")
+
+    @property
+    def support(self) -> tuple[float | int, float | int]:
+        """
+        The theoretical support of the distribution as a (min, max) tuple.
+
+        Returns:
+            A tuple representing the upper and lower bounds in the distribution's
+            support.
+        """
+        return (self._lower, self._upper)
 
 
 class FixedDistribution(DistributionABC):
@@ -86,6 +143,8 @@ class FixedDistribution(DistributionABC):
         array([[1.23, 1.23, 1.23, 1.23, 1.23],
                [1.23, 1.23, 1.23, 1.23, 1.23],
                [1.23, 1.23, 1.23, 1.23, 1.23]])
+        >>> dist.support
+        (1.23, 1.23)
     """
 
     distribution: Literal["fixed"] = "fixed"
@@ -96,6 +155,16 @@ class FixedDistribution(DistributionABC):
     ) -> npt.NDArray[np.float64]:
         """Sampling logic for fixed distributions."""
         return np.full(size, self.value)
+
+    @property
+    def _lower(self) -> float:
+        """The lower bound of the fixed distribution's support."""
+        return self.value
+
+    @property
+    def _upper(self) -> float:
+        """The upper bound of the fixed distribution's support."""
+        return self.value
 
 
 class NormalDistribution(DistributionABC):
@@ -115,11 +184,16 @@ class NormalDistribution(DistributionABC):
         array([[-2.37992848,  5.67703038,  6.53254122, -6.47965835, -3.55980778],
                [ 2.87528181,  0.87690833,  2.22439479, -1.53869767,  6.25729089],
                [ 5.80006371,  2.59713814,  7.37258543,  4.40379204, -1.56681608]])
+        >>> dist.support
+        (-inf, inf)
     """
 
     distribution: Literal["norm"] = "norm"
     mu: EvaledFloat
     sigma: EvaledFloat = Field(..., gt=0)
+
+    _lower_bound: float = PrivateAttr(default=-inf)
+    _upper_bound: float = PrivateAttr(default=inf)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -129,6 +203,7 @@ class NormalDistribution(DistributionABC):
 
 
 class UniformDistribution(DistributionABC):
+    # pylint: disable=line-too-long
     """
     Represents a uniform distribution.
 
@@ -145,10 +220,14 @@ class UniformDistribution(DistributionABC):
         array([[ 0.37775688,  1.21719584,  0.89473606, -0.3116453 ,  1.4512447 ],
                [ 1.0222794 ,  1.07212861, -0.24377273,  0.40077188,  0.24159605],
                [ 1.35352998,  0.78773024,  1.14552323,  0.3868284 , -0.04552256]])
+        >>> dist.support
+        (-0.5, 1.5)
         >>> # With `low == high` and `allow_edge_cases=True`, all samples == `low`.
         >>> dist_edge = UniformDistribution(low=5.0, high=5.0, allow_edge_cases=True)
         >>> dist_edge.sample(size=5)
         array([5., 5., 5., 5., 5.])
+        >>> dist_edge.support
+        (5.0, 5.0)
         >>> # Without `allow_edge_cases` set to True, it fails by default when `low == high`.
         >>> UniformDistribution(low=5.0, high=5.0)
         Traceback (most recent call last):
@@ -156,6 +235,7 @@ class UniformDistribution(DistributionABC):
         pydantic_core._pydantic_core.ValidationError: 1 validation error for UniformDistribution
           Value error, Upper bound `high`, 5.0, must be > to lower bound `low`, 5.0. [type=value_error, ...
     """
+    # pylint: enable=line-too-long
 
     distribution: Literal["uniform"] = "uniform"
     low: EvaledFloat
@@ -167,6 +247,16 @@ class UniformDistribution(DistributionABC):
         """Sampling logic for uniform distributions."""
         return rng.uniform(low=self.low, high=self.high, size=size)
 
+    @property
+    def _lower(self) -> float:
+        """The lower bound of the uniform distribution's support."""
+        return self.low
+
+    @property
+    def _upper(self) -> float:
+        """The upper bound of the uniform distribution's support."""
+        return self.high
+
     @model_validator(mode="after")
     def _validate_bounds(self) -> "UniformDistribution":
         """Validate bounds based on whether or not edge cases are allowed."""
@@ -174,13 +264,16 @@ class UniformDistribution(DistributionABC):
             not self.allow_edge_cases and isclose(self.high, self.low)
         ):
             op = ">=" if self.allow_edge_cases else ">"
-            raise ValueError(
-                f"Upper bound `high`, {self.high}, must be {op} to lower bound `low`, {self.low}."
+            msg = (
+                f"Upper bound `high`, {self.high}, must be "
+                f"{op} to lower bound `low`, {self.low}."
             )
+            raise ValueError(msg)
         return self
 
 
 class LognormalDistribution(DistributionABC):
+    # pylint: disable=line-too-long
     """
     Represents a Lognormal distribution.
 
@@ -197,11 +290,17 @@ class LognormalDistribution(DistributionABC):
         array([[0.3534603 , 2.11795541, 2.56142749, 0.14212687, 0.27193845],
                [1.13637163, 0.72888261, 0.98333919, 0.42611589, 2.40944872],
                [2.17666075, 1.06825951, 3.08712799, 1.59601411, 0.42346159]])
+        >>> dist.support
+        (0.0, inf)
     """
+    # pylint: enable=line-too-long
 
     distribution: Literal["lognorm"] = "lognorm"
     meanlog: EvaledFloat
     sdlog: EvaledFloat = Field(..., gt=0)
+
+    _lower_bound: float = PrivateAttr(default=0.0)
+    _upper_bound: float = PrivateAttr(default=inf)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -228,11 +327,15 @@ class TruncatedNormalDistribution(DistributionABC):
         array([[1.07000038, 2.18016199, 1.66002835, 0.28689654, 3.04332767],
                [1.83818339, 1.9153892 , 0.37639339, 1.09435167, 0.92629918],
                [2.54134935, 1.52545861, 2.04022114, 1.07959285, 0.6142512 ]])
+        >>> dist.support
+        (0.0, 10.0)
         >>> # With `a == b` and `allow_edge_cases=True`, all samples == `a`.
         >>> dist_edge = TruncatedNormalDistribution(mean=5.0, sd=2.0, a=7.0, b=7.0, allow_edge_cases=True)
         >>> dist_edge.sample(size=5)
         array([7., 7., 7., 7., 7.])
-        >>> # Withoug `allow_edge_cases` set to True, it fails by default when `a == b`.
+        >>> dist_edge.support
+        (7.0, 7.0)
+        >>> # Without `allow_edge_cases` set to True, it fails by default when `a == b`.
         >>> TruncatedNormalDistribution(mean=5.0, sd=2.0, a=7.0, b=7.0)
         Traceback (most recent call last):
             ...
@@ -267,6 +370,16 @@ class TruncatedNormalDistribution(DistributionABC):
             random_state=rng,
         )
 
+    @property
+    def _lower(self) -> float:
+        """The lower bound of the truncated normal distribution's support."""
+        return self.a
+
+    @property
+    def _upper(self) -> float:
+        """The upper bound of the truncated normal distribution's support."""
+        return self.b
+
     @model_validator(mode="after")
     def _validate_bounds(self) -> "TruncatedNormalDistribution":
         """Validate bounds based on whether or not edge cases are allowed.."""
@@ -279,6 +392,7 @@ class TruncatedNormalDistribution(DistributionABC):
 
 
 class PoissonDistribution(DistributionABC):
+    # pylint: disable=line-too-long
     """
     Represents a Poisson distribution.
 
@@ -295,10 +409,14 @@ class PoissonDistribution(DistributionABC):
         array([[4, 5, 1, 7, 1],
                [4, 2, 2, 5, 4],
                [1, 6, 2, 5, 0]])
+        >>> dist.support
+        (0, inf)
         >>> # With `lam=0` and `allow_edge_cases=True`, all samples will be 0.
         >>> dist_edge = PoissonDistribution(lam=0.0, allow_edge_cases=True)
         >>> dist_edge.sample(size=5)
         array([0, 0, 0, 0, 0])
+        >>> dist_edge.support
+        (0, 0)
         >>> # Without `allow_edge_cases` explicitly set to True, it fails by default.
         >>> PoissonDistribution(lam=0.0)
         Traceback (most recent call last):
@@ -306,15 +424,23 @@ class PoissonDistribution(DistributionABC):
         pydantic_core._pydantic_core.ValidationError: 1 validation error for PoissonDistribution
           Value error, Input for `lam` cannot be zero when `allow_edge_cases` is `False`. [type=value_error, ...
     """
+    # pylint: enable=line-too-long
 
     distribution: Literal["poisson"] = "poisson"
     lam: EvaledFloat = Field(..., ge=0.0)
+
+    _lower_bound: int = PrivateAttr(default=0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.int64]:
         """Sampling logic for Poisson distributions."""
         return rng.poisson(lam=self.lam, size=size)
+
+    @property
+    def _upper(self) -> float | int:
+        """The upper bound of the Poisson distribution is inf."""
+        return 0 if isclose(self.lam, 0.0) else inf
 
     @model_validator(mode="after")
     def _validate_lambda(self) -> "PoissonDistribution":
@@ -326,6 +452,7 @@ class PoissonDistribution(DistributionABC):
 
 
 class BinomialDistribution(DistributionABC):
+    # pylint: disable=line-too-long
     """
     Represents a binomial distribution.
 
@@ -342,10 +469,14 @@ class BinomialDistribution(DistributionABC):
         array([[5, 7, 6, 3, 8],
                [6, 6, 3, 5, 4],
                [7, 6, 6, 5, 4]])
+        >>> dist.support
+        (0, 10)
         >>> # It succeeds with `p=0` or `p=1` when `allow_edge_cases=True`.
         >>> dist_edge = BinomialDistribution(n=10, p=1.0, allow_edge_cases=True)
         >>> dist_edge.sample(size=5)
         array([10, 10, 10, 10, 10])
+        >>> dist_edge.support
+        (10, 10)
         >>> # Without `allow_edge_cases` set to True, it fails by default when `p=0` or `p=1`.
         >>> BinomialDistribution(n=10, p=0.0)
         Traceback (most recent call last):
@@ -354,6 +485,7 @@ class BinomialDistribution(DistributionABC):
           Value error, Input for `p` cannot be 0 or 1 when `allow_edge_cases` is `False`. [type=value_error, input_value={'n': 10, 'p': 0.0}, input_type=dict]
             For further information visit https://errors.pydantic.dev/2.11/v/value_error
     """
+    # pylint: enable=line-too-long
 
     distribution: Literal["binomial"] = "binomial"
     n: EvaledInt = Field(..., ge=0)
@@ -364,6 +496,16 @@ class BinomialDistribution(DistributionABC):
     ) -> npt.NDArray[np.int64]:
         """Sampling logic for binomial distributions."""
         return rng.binomial(n=self.n, p=self.p, size=size)
+
+    @property
+    def _lower(self) -> int:
+        """The lower bound of the binomial distribution is 0."""
+        return self.n if isclose(self.p, 1.0) else 0
+
+    @property
+    def _upper(self) -> int:
+        """The upper bound of the binomial distribution is n."""
+        return 0 if isclose(self.p, 0.0) else self.n
 
     @model_validator(mode="after")
     def _validate_params(self) -> "BinomialDistribution":
@@ -381,6 +523,7 @@ class BinomialDistribution(DistributionABC):
 
 
 class GammaDistribution(DistributionABC):
+    # pylint: disable=line-too-long
     """
     Represents a gamma distribution.
 
@@ -397,11 +540,17 @@ class GammaDistribution(DistributionABC):
         array([[4.25301838, 2.75582337, 2.46760563, 4.61888299, 2.63006031],
                [3.51900762, 3.28422915, 4.61612039, 2.15883076, 5.69337578],
                [1.75889742, 3.67897959, 3.38745296, 1.6334585 , 3.89261212]])
+        >>> dist.support
+        (0.0, inf)
     """
+    # pylint: enable=line-too-long
 
     distribution: Literal["gamma"] = "gamma"
     shape: EvaledFloat = Field(..., gt=0)
     scale: EvaledFloat = Field(..., gt=0)
+
+    _lower_bound: float = PrivateAttr(default=0.0)
+    _upper_bound: float = PrivateAttr(default=inf)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -409,8 +558,14 @@ class GammaDistribution(DistributionABC):
         """Sampling logic for Gamma distributions."""
         return rng.gamma(shape=self.shape, scale=self.scale, size=size)
 
+    @property
+    def support(self) -> tuple[float, float]:
+        """The theoretical support of the gamma distribution is [0, inf)."""
+        return (0.0, inf)
+
 
 class WeibullDistribution(DistributionABC):
+    # pylint: disable=line-too-long
     """
     Represents a weibull distribution.
 
@@ -427,11 +582,17 @@ class WeibullDistribution(DistributionABC):
         array([[7.02058405, 7.0786094 , 3.00403884, 1.87780582, 5.8054469 ],
                [5.73657673, 7.886256  , 1.81412232, 5.0918523 , 1.73016943],
                [5.17350562, 6.22761392, 3.4198509 , 5.43445321, 2.36440749]])
+        >>> dist.support
+        (0.0, inf)
     """
+    # pylint: enable=line-too-long
 
     distribution: Literal["weibull"] = "weibull"
     shape: EvaledFloat = Field(..., gt=0)
     scale: EvaledFloat = Field(..., gt=0)
+
+    _lower_bound: float = PrivateAttr(default=0.0)
+    _upper_bound: float = PrivateAttr(default=inf)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
@@ -458,11 +619,16 @@ class BetaDistribution(DistributionABC):
         array([[0.28406092, 0.39027204, 0.29864681, 0.41835336, 0.49963165],
                [0.30396328, 0.15089427, 0.32937986, 0.52373987, 0.16127411],
                [0.32746504, 0.48761242, 0.2162056 , 0.29178583, 0.22819733]])
+        >>> dist.support
+        (0.0, 1.0)
     """
 
     distribution: Literal["beta"] = "beta"
     alpha: EvaledFloat = Field(..., gt=0)
     beta: EvaledFloat = Field(..., gt=0)
+
+    _lower_bound: float = PrivateAttr(default=0.0)
+    _upper_bound: float = PrivateAttr(default=1.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
