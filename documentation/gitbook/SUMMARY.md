@@ -11,6 +11,7 @@
   * [Specifying compartmental model](gempyor/model-implementation/compartmental-model-structure.md)
   * [Specifying initial conditions](gempyor/model-implementation/specifying-initial-conditions.md)
   * [Specifying seeding](gempyor/model-implementation/specifying-seeding.md)
+  * [Initial Conditions vs Seeding](./gempyor/model-implementation/initial-conditions-vs-seeding.md)
   * [Specifying observational model](gempyor/model-implementation/outcomes-for-compartments.md)
   * [Distributions](gempyor/model-implementation/distributions.md)
   * [Specifying time-varying parameter modifications](gempyor/model-implementation/intervention-templates.md)
