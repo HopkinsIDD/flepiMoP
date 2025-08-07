@@ -8,16 +8,20 @@ models.
 __all__ = ()
 
 
+import numbers
 from pathlib import Path
-from typing import Any, TypeVar, overload
+from functools import partial
+from typing import Any, TypeVar, overload, Annotated, Type
 
 import pyarrow.parquet as pq
 import pandas as pd
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, BeforeValidator
+from sympy.parsing.sympy_parser import parse_expr
 
 
 T = TypeVar("T")
 U = TypeVar("U")
+EE = TypeVar("EE", int, float)
 
 
 def _ensure_list(value: list[T] | tuple[T] | T | None) -> list[T] | None:
@@ -130,16 +134,20 @@ def _read_and_validate_dataframe(
         ...     name: str
         ...     age: int
         >>> _read_and_validate_dataframe(file, model=Person)
-        name  age
+           name  age
         0  Jack   23
         1  Jill   25
         >>> pd.DataFrame(data={"name": [32], "age": ["Jane"]}).to_csv(file, index=False)
         >>> _read_and_validate_dataframe(file, model=Person)
         Traceback (most recent call last):
             ...
-        pydantic_core._pydantic_core.ValidationError: 1 validation error for RootModel[list[Person]]
+        pydantic_core._pydantic_core.ValidationError: 2 validation errors for RootModel[list[Person]]
+        0.name
+          Input should be a valid string [type=string_type, input_value=32, input_type=int]
+            For further information visit https://errors.pydantic.dev/2.11/v/string_type
         0.age
-        Input should be a valid integer, unable to parse string as an integer ...
+          Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='Jane', input_type=str]
+            For further information visit https://errors.pydantic.dev/2.11/v/int_parsing
         >>> class PartitionSlice(BaseModel):
         ...     name: str
         ...     amount: Annotated[float, Field(gt=0.0, lt=1.0)]
@@ -155,7 +163,7 @@ def _read_and_validate_dataframe(
         ...     data={"name": ["A", "B"], "amount": [0.5, 0.5]},
         ... ).to_csv(file, index=False)
         >>> _read_and_validate_dataframe(file, model=Partition)
-        name  amount
+          name  amount
         0    A     0.5
         1    B     0.5
         >>> pd.DataFrame(
@@ -165,7 +173,8 @@ def _read_and_validate_dataframe(
         Traceback (most recent call last):
             ...
         pydantic_core._pydantic_core.ValidationError: 1 validation error for Partition
-        Value error, The sum of the amounts must be equal to 1.0 ...
+          Value error, The sum of the amounts must be equal to 1.0 [type=value_error, input_value=[{'name': 'A', 'amount': ...e': 'B', 'amount': 0.1}], input_type=list]
+            For further information visit https://errors.pydantic.dev/2.11/v/value_error
 
     """
     if file.suffix == ".csv":
@@ -180,3 +189,60 @@ def _read_and_validate_dataframe(
             model = RootModel[list[model]]
         data = [r.model_dump() for r in model.model_validate(data).root]
     return pd.DataFrame.from_records(data)
+
+
+@overload
+def _evaled_expression(val: EE | str, target_type: Type[EE]) -> EE: ...
+
+
+@overload
+def _evaled_expression(val: T, target_type: Type[EE]) -> T: ...
+
+
+def _evaled_expression(val: EE | str | Any, target_type: Type[EE]) -> EE | Any:
+    """
+    Evaluates a string expression to a target numeric type (int or float).
+
+    Args:
+        val: The input value to process.
+        target_type: The type (int or float) to convert the expression to.
+
+    Returns:
+        The value coerced into the target numeric type, or the original value.
+
+    Raises:
+        ValueError: On parsing errors.
+
+    Examples:
+        >>> _evaled_expression("1 + 1", int)
+        2
+        >>> _evaled_expression("10 / 4", float)
+        2.5
+        >>> # Note that result is truncated, probably undesirable if misused
+        >>> _evaled_expression("10 / 4", int)
+        2
+        >>> _evaled_expression(99.5, float)
+        99.5
+        >>> _evaled_expression(None, int)
+
+        >>> _evaled_expression("a * b", float)
+        Traceback (most recent call last):
+            ...
+        ValueError: Cannot convert expression 'a*b' to <class 'float'>.
+    """
+    if isinstance(val, target_type):
+        return val
+
+    if isinstance(val, str):
+        expr = parse_expr(val)
+        if not expr.is_Number:
+            raise ValueError(f"Cannot convert expression '{expr}' to {target_type}.")
+        return target_type(expr)
+
+    return val
+
+
+EvaledInt = Annotated[int, BeforeValidator(partial(_evaled_expression, target_type=int))]
+EvaledFloat = Annotated[
+    float, BeforeValidator(partial(_evaled_expression, target_type=float))
+]

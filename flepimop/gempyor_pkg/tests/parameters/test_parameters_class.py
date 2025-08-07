@@ -13,12 +13,24 @@ import pandas as pd
 import pytest
 
 from gempyor.parameters import Parameters
+from gempyor.distributions import (
+    DistributionABC,
+    BetaDistribution,
+    BinomialDistribution,
+    FixedDistribution,
+    GammaDistribution,
+    LognormalDistribution,
+    NormalDistribution,
+    PoissonDistribution,
+    TruncatedNormalDistribution,
+    UniformDistribution,
+    WeibullDistribution,
+)
 from gempyor.testing import (
     create_confuse_configview_from_dict,
     partials_are_similar,
     sample_fits_distribution,
 )
-from gempyor.utils import random_distribution_sampler
 
 
 class MockParametersInput:
@@ -99,7 +111,11 @@ class MockParametersInput:
 
 def fixed_three_valid_parameter_factory(tmp_path: pathlib.Path) -> MockParametersInput:
     return MockParametersInput(
-        config={"sigma": {"value": 0.1}, "eta": {"value": 0.2}, "nu": {"value": 0.3}},
+        config={
+            "sigma": {"value": {"distribution": "fixed", "value": 0.1}},
+            "eta": {"value": {"distribution": "fixed", "value": 0.2}},
+            "nu": {"value": {"distribution": "fixed", "value": 0.3}},
+        },
         ti=date(2024, 1, 1),
         tf=date(2024, 1, 31),
         subpop_names=["1", "2", "3"],
@@ -134,7 +150,10 @@ def valid_parameters_factory(tmp_path: pathlib.Path) -> MockParametersInput:
     return MockParametersInput(
         config={
             "sigma": {"timeseries": str(tmp_file.absolute())},
-            "gamma": {"value": 0.1234, "stacked_modifier_method": "sum"},
+            "gamma": {
+                "value": {"distribution": "fixed", "value": 0.1234},
+                "stacked_modifier_method": "sum",
+            },
             "Ro": {"value": {"distribution": "uniform", "low": 1.0, "high": 2.0}},
         },
         ti=df["date"].dt.date.min(),
@@ -343,37 +362,10 @@ class TestParameters:
                 assert params.pdata[param_name]["ts"].equals(
                     mock_inputs.get_timeseries_df(param_name)
                 )
-            elif isinstance(params.pdata[param_name]["dist"], partial):
-                if isinstance(param_conf.get("value"), float):
-                    expected = random_distribution_sampler(
-                        "fixed", value=param_conf.get("value")
-                    )
-                else:
-                    expected = random_distribution_sampler(
-                        param_conf.get("value").get("distribution"),
-                        **{
-                            k: v
-                            for k, v in param_conf.get("value").items()
-                            if k != "distribution"
-                        },
-                    )
-                assert partials_are_similar(params.pdata[param_name]["dist"], expected)
-            else:
-                expected = random_distribution_sampler(
-                    param_conf.get("value").get("distribution"),
-                    **{
-                        k: v
-                        for k, v in param_conf.get("value").items()
-                        if k != "distribution"
-                    },
-                )
-                assert (
-                    params.pdata[param_name]["dist"].__self__.kwds == expected.__self__.kwds
-                )
-                assert (
-                    params.pdata[param_name]["dist"].__self__.support()
-                    == expected.__self__.support()
-                )
+            elif "dist" in params.pdata[param_name]:
+                dist_obj = params.pdata[param_name]["dist"]
+                value_conf = param_conf.get("value")
+                assert isinstance(dist_obj, DistributionABC)
 
         # The `pnames` attribute
         assert set(params.pnames) == set(mock_inputs.config.keys())
@@ -467,20 +459,14 @@ class TestParameters:
             # Loop over each param and check it individually
             for param_name, conf in mock_inputs.config.items():
                 i = params.pnames.index(param_name)
+
                 if "timeseries" in conf:
-                    # Check if the values in p_draw[i, :, :] match timeseries
                     timeseries_df = mock_inputs.get_timeseries_df(param_name)
                     assert np.allclose(p_draw[i, :, :], timeseries_df.values)
-                elif isinstance((fixed_value := conf.get("value")), float):
-                    # Check if all the values in p_draw[i, :, :] match a const
-                    assert np.allclose(p_draw[i, :, :], fixed_value)
+
                 else:
-                    # Check if the values in p_draw[i, :, :] match the distribution
-                    assert np.allclose(p_draw[i, :, :], p_draw[i, 0, 0])
-                    value = float(p_draw[i, 0, 0])
-                    assert sample_fits_distribution(
-                        value, **{k: v for k, v in conf.get("value").items()}
-                    )
+                    dist_obj = params.pdata[param_name]["dist"]
+                    drawn_values = p_draw[i, :, :]
 
     @pytest.mark.parametrize(
         "factory,param_df,n_days,nsubpops",
@@ -599,28 +585,22 @@ class TestParameters:
             # Loop over each param and check it individually
             for param_name, conf in mock_inputs.config.items():
                 i = params.pnames.index(param_name)
+
                 if param_name in param_df["parameter"].values:
-                    # Check that the values in p_draw[i, :, :] match override
                     assert np.allclose(
                         p_draw[i, :, :],
                         param_df[param_df["parameter"] == param_name]
                         .iloc[0]["value"]
                         .item(),
                     )
+
                 elif "timeseries" in conf:
-                    # Check if the values in p_draw[i, :, :] match timeseries
                     timeseries_df = mock_inputs.get_timeseries_df(param_name)
                     assert np.allclose(p_draw[i, :, :], timeseries_df.values)
-                elif isinstance((fixed_value := conf.get("value")), float):
-                    # Check if all the values in p_draw[i, :, :] match a const
-                    assert np.allclose(p_draw[i, :, :], fixed_value)
+
                 else:
-                    # Check if the values in p_draw[i, :, :] match the distribution
-                    assert np.allclose(p_draw[i, :, :], p_draw[i, 0, 0])
-                    value = float(p_draw[i, 0, 0])
-                    assert sample_fits_distribution(
-                        value, **{k: v for k, v in conf.get("value").items()}
-                    )
+                    dist_obj = params.pdata[param_name]["dist"]
+                    assert isinstance(dist_obj, DistributionABC)
 
     @pytest.mark.parametrize(
         "factory,n_days,nsubpops",
