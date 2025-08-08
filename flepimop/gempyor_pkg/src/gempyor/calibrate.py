@@ -192,6 +192,10 @@ def calibrate(
         # and then acceptances are not guaranted, see issue #316. This solves this issue and greates a new chain with llik evaluation
         p0 = backend.get_last_sample().coords
     else:
+        print(
+            f"nwalkers: {nwalkers}, inference parameters dim: "
+            f"{gempyor_inference.inferpar.get_dim()}."
+        )
         backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
         p0 = gempyor_inference.inferpar.draw_initial(n_draw=nwalkers)
         for i in range(nwalkers):
@@ -316,8 +320,8 @@ def calibrate(
     )
     print("EMCEE Run done, doing sampling")
 
-    shutil.rmtree("model_output/", ignore_errors=True)
-    shutil.rmtree(os.path.join(project_path, "model_output/"), ignore_errors=True)
+    # shutil.rmtree("model_output/", ignore_errors=True)
+    # shutil.rmtree(os.path.join(project_path, "model_output/"), ignore_errors=True)
 
     max_indices = np.argsort(sampler.get_log_prob()[-1, :])[-nsamples:]
     samples = sampler.get_chain()[
