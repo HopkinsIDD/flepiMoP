@@ -1,4 +1,13 @@
+# Output files from tests
 tests/outcomes/test_pwrite.parquet
 tests/seir/data/parsed_compartment_compartments.test.parquet
 tests/seir/data/parsed_compartment_transitions.test.parquet
 tests/seir/test_pwrite.parquet
+
+# Docs
+docs/Rinterface.nb.html
+docs/build/
+docs/source/api/
+docs/source/generated/
+docs/full_graph*
+docs/readable_graph*
