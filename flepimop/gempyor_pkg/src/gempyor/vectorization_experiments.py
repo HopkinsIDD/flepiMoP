@@ -386,6 +386,262 @@ def assemble_flux(
     return dy_dt.ravel()
 
 
+# === Seeding ===
+
+import numpy as np
+from typing import Optional, Callable
+from scipy.integrate import solve_ivp
+
+# =========================
+# 1) Core seeding primitive
+# =========================
+
+
+def apply_seeding_for_day(
+    states_current: np.ndarray,  # shape: (C, N)  (modified in place)
+    day: int,  # integer "today"
+    seeding_data: dict[str, np.ndarray],  # legacy-style fields (see below)
+    seeding_amounts: np.ndarray,  # shape: (E,)
+    *,
+    daily_incidence: Optional[np.ndarray] = None,  # shape: (D, C, N) if provided
+) -> None:
+    """
+    Apply all seeding events scheduled for a given integer day.
+
+    Matches legacy semantics from rk4_integration:
+      - Events are indexed by seeding_data["day_start_idx"]; we apply events in
+        range [day_start_idx[day], day_start_idx[day+1]).
+      - We subtract the full amount from the source compartment and clamp to >= 0
+        *without* reducing the amount added to the destination (non-conservative if
+        the source is insufficient).
+      - We add the full amount to daily incidence at [day, destination, node].
+
+    Required seeding_data arrays (1D, length E unless noted):
+      - "day_start_idx": (D+1,) CSR-style starts by day (last element is E)
+      - "seeding_subpops": node indices (0..N-1)
+      - "seeding_sources": source compartment indices (0..C-1)
+      - "seeding_destinations": destination compartment indices (0..C-1)
+    """
+    # Fast exit if day has no events
+    starts = seeding_data["day_start_idx"]
+    if day < 0 or day + 1 >= starts.size:
+        return
+    start = int(starts[day])
+    stop = int(starts[day + 1])
+    if stop <= start:
+        return
+
+    nodes = seeding_data["seeding_subpops"][start:stop].astype(np.int64, copy=False)
+    srcs = seeding_data["seeding_sources"][start:stop].astype(np.int64, copy=False)
+    dsts = seeding_data["seeding_destinations"][start:stop].astype(np.int64, copy=False)
+    amts = seeding_amounts[start:stop].astype(states_current.dtype, copy=False)
+
+    C, N = states_current.shape
+
+    # Sanity (kept light; mirror legacy tolerance for performance)
+    if (
+        (nodes < 0).any()
+        or (nodes >= N).any()
+        or (srcs < 0).any()
+        or (srcs >= C).any()
+        or (dsts < 0).any()
+        or (dsts >= C).any()
+    ):
+        raise IndexError("Seeding indices out of bounds")
+
+    # Apply events sequentially (preserves exact legacy ordering semantics)
+    for e in range(amts.size):
+        g = int(nodes[e])
+        s = int(srcs[e])
+        d = int(dsts[e])
+        amt = float(amts[e])
+
+        # Subtract from source, then clamp to zero (legacy non-conservative behavior)
+        states_current[s, g] -= amt
+        if states_current[s, g] < 0.0:
+            states_current[s, g] = 0.0
+
+        # Add the full amount to destination (even if source was insufficient)
+        states_current[d, g] += amt
+
+        # Daily incidence bookkeeping (legacy: add full amount)
+        if daily_incidence is not None:
+            daily_incidence[day, d, g] += amt
+
+
+# ===========================================
+# 2) Adaptive-dt integration with day seeding
+# ===========================================
+
+
+def solve_ivp_daily_with_seeding(
+    rhs: Callable[[float, np.ndarray, np.ndarray], np.ndarray],
+    y0: np.ndarray,  # flattened state (C*N,)
+    t_span: tuple[float, float],  # (t0, tf)
+    parameters: np.ndarray,  # whatever your rhs expects (e.g., (P,T,N))
+    *,
+    ncompartments: int,
+    nspatial_nodes: int,
+    seeding_data: Optional[dict[str, np.ndarray]] = None,
+    seeding_amounts: Optional[np.ndarray] = None,
+    t_eval: Optional[np.ndarray] = None,
+    store_daily_prevalence: bool = False,
+    max_step: Optional[float] = None,
+    **solve_ivp_kwargs,
+):
+    """
+    Run solve_ivp in segments [day, day+1], applying seeding at the *start* of each day,
+    exactly like the legacy `is_a_new_day` block. This preserves behavior under adaptive dt.
+
+    Returns a dict with:
+      - "t": concatenated time points (like solve_ivp.t)
+      - "y": concatenated states (like solve_ivp.y)
+      - "daily_prevalence": (D+1, C, N) if store_daily_prevalence
+      - "daily_incidence": (D, C, N) if seeding_data provided (incidence from seeding only)
+      - "segments": list of raw solve_ivp results for each day (optional debugging)
+    """
+    t0, tf = float(t_span[0]), float(t_span[1])
+    assert t0 <= tf, "t_span must be increasing"
+
+    C, N = int(ncompartments), int(nspatial_nodes)
+    y = y0.astype(np.float64, copy=True)
+    states_current = y.reshape(C, N)
+
+    # Determine day range (integer boundaries)
+    day_start = int(np.floor(t0))
+    day_end = int(np.floor(tf - 1e-12))  # last full day boundary strictly < tf
+
+    # Optional daily arrays
+    daily_prev = None
+    daily_incid = None
+    if store_daily_prevalence:
+        # store prevalence at day boundaries INCLUDING the initial state at floor(t0)
+        daily_prev = np.zeros(
+            (day_end - day_start + 2, C, N), dtype=states_current.dtype
+        )
+    if seeding_data is not None:
+        # Store only the seeding-induced incidence (legacy added seeding to daily incidence)
+        D = day_end - day_start + 1
+        daily_incid = np.zeros((D, C, N), dtype=states_current.dtype)
+
+    # Helper to collect t_eval points that fall in a segment [a, b]
+    def _segment_t_eval(
+        a: float, b: float, t_eval_full: Optional[np.ndarray]
+    ) -> Optional[np.ndarray]:
+        if t_eval_full is None:
+            return None
+        mask = (t_eval_full >= a) & (t_eval_full <= b)
+        te = t_eval_full[mask]
+        # Ensure both endpoints are present for continuity
+        if te.size == 0 or te[0] > a + 1e-12:
+            te = np.concatenate(([a], te))
+        if te[-1] < b - 1e-12:
+            te = np.concatenate((te, [b]))
+        return te
+
+    all_t = []
+    all_y = []
+
+    segments = []
+    day_counter = 0
+
+    # If we start exactly at a day boundary, apply that day's seeding first
+    if abs(t0 - np.floor(t0)) < 1e-12 and seeding_data is not None:
+        apply_seeding_for_day(
+            states_current,
+            day_start,
+            seeding_data,
+            seeding_amounts,
+            daily_incidence=daily_incid,
+        )
+    if store_daily_prevalence:
+        # Save prevalence at the *beginning* of the starting day (after seeding if applied)
+        daily_prev[0, :, :] = states_current
+
+    t_left = t0
+    # Iterate over day segments up to tf
+    while t_left < tf - 1e-12:
+        next_boundary = min(np.floor(t_left) + 1.0, tf)
+        a, b = float(t_left), float(next_boundary)
+
+        seg_t_eval = _segment_t_eval(a, b, t_eval)
+
+        # Integrate this segment
+        sol = solve_ivp(
+            fun=lambda t, y: rhs(t, y, parameters),
+            t_span=(a, b),
+            y0=states_current.ravel(),
+            t_eval=seg_t_eval,
+            max_step=max_step,
+            **solve_ivp_kwargs,
+        )
+
+        # Append results (avoid duplicating the first time point if we have previous segment)
+        if len(all_t) > 0 and sol.t.size > 0 and abs(sol.t[0] - all_t[-1][-1]) < 1e-12:
+            all_t[-1] = np.concatenate((all_t[-1], sol.t[1:]))
+            all_y[-1] = np.concatenate((all_y[-1], sol.y[:, 1:]), axis=1)
+        else:
+            all_t.append(sol.t.copy())
+            all_y.append(sol.y.copy())
+        segments.append(sol)
+
+        # Advance state to the end of the segment
+        if sol.y.shape[1] == 0:
+            # No internal points (shouldn't happen with our teval padding), fallback to sol.y[:, -1] if available
+            states_current = (
+                sol.sol(b).reshape(C, N) if sol.sol is not None else states_current
+            )
+        else:
+            states_current = sol.y[:, -1].reshape(C, N)
+
+        t_left = b
+
+        # Apply seeding at the *start* of the next day (if we didn't reach tf)
+        if (
+            t_left < tf - 1e-12
+            and seeding_data is not None
+            and abs(t_left - round(t_left)) < 1e-12
+        ):
+            day_now = int(round(t_left))
+            apply_seeding_for_day(
+                states_current,
+                day_now,
+                seeding_data,
+                seeding_amounts,
+                daily_incidence=daily_incid,
+            )
+
+            if store_daily_prevalence:
+                day_counter += 1
+                daily_prev[day_counter, :, :] = states_current
+
+    # If we ended exactly at a day boundary and asked for daily prevalence, include the terminal snapshot
+    if store_daily_prevalence:
+        # Ensure we wrote the final boundary
+        if abs(tf - np.floor(tf)) < 1e-12:
+            # last index
+            daily_prev[day_counter + 1, :, :] = states_current
+
+    # Concatenate results
+    t_concat = np.concatenate(all_t) if all_t else np.array([t0, tf])
+    y_concat = (
+        np.concatenate(all_y, axis=1)
+        if all_y
+        else np.column_stack((y0, states_current.ravel()))
+    )
+
+    out = {
+        "t": t_concat,
+        "y": y_concat,
+        "segments": segments,
+    }
+    if store_daily_prevalence:
+        out["daily_prevalence"] = daily_prev
+    if daily_incid is not None:
+        out["daily_incidence"] = daily_incid
+    return out
+
+
 # === 6. RHS Builder (solve_ivp-compatible) ===
 
 
