@@ -45,9 +45,10 @@ def build_safe_param_expr_lookup(
 def modelinfo_from_config(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("model_input")
 
-    # Resolve tutorials dir relative to this test file
-    repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
-    tutorial_dir = repo_root / "examples" / "tutorials"
+    original_dir = Path(__file__).resolve()
+    while original_dir.name != "flepimop":
+        original_dir = original_dir.parent
+    tutorial_dir = original_dir.parent / "examples/tutorials"
 
     input_dir = tmp_path / "model_input"
     input_dir.mkdir()

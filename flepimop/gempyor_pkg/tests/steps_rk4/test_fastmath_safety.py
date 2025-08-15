@@ -15,7 +15,6 @@ from gempyor.vectorization_experiments import (
     compute_transition_amounts_serial,
     compute_transition_amounts_parallel,
     assemble_flux,
-    update,
     compute_transition_amounts_meta,
 )
 
@@ -24,14 +23,12 @@ from gempyor.vectorization_experiments import (
 def modelinfo_from_config(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("model_input")
 
-    original_dir = Path(__file__).resolve()
-    while original_dir.name != "flepimop":
-        original_dir = original_dir.parent
-    tutorial_dir = original_dir.parent / "examples/tutorials"
+    # Resolve tutorials dir relative to this test file
+    repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
+    tutorial_dir = repo_root / "examples" / "tutorials"
 
     input_dir = tmp_path / "model_input"
     input_dir.mkdir()
-
     input_files = [
         "geodata_sample_2pop.csv",
         "ic_2pop.csv",
@@ -130,8 +127,8 @@ def test_fastmath_equivalence_proportion_sums_exponents(model_and_inputs):
     )
     fn_fast = compute_proportion_sums_exponents
     fn_safe = njit(fastmath=False)(fn_fast.py_func)
-    total1, src1 = fn_safe(*args)
-    total2, src2 = fn_fast(*args)
+    total1, src1, mask1 = fn_safe(*args)
+    total2, src2, mask2 = fn_fast(*args)
     assert np.allclose(total1, total2, rtol=1e-5, atol=1e-7)
     assert np.allclose(src1, src2, rtol=1e-5, atol=1e-7)
 
@@ -139,7 +136,7 @@ def test_fastmath_equivalence_proportion_sums_exponents(model_and_inputs):
 def test_fastmath_equivalence_transition_amounts_serial(model_and_inputs):
     out = model_and_inputs
     param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
-    rates, sources = compute_proportion_sums_exponents(
+    rates, sources, _ = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
@@ -157,7 +154,7 @@ def test_fastmath_equivalence_transition_amounts_serial(model_and_inputs):
 def test_fastmath_equivalence_transition_amounts_parallel(model_and_inputs):
     out = model_and_inputs
     param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
-    rates, sources = compute_proportion_sums_exponents(
+    rates, sources, _ = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
@@ -175,7 +172,7 @@ def test_fastmath_equivalence_transition_amounts_parallel(model_and_inputs):
 def test_fastmath_equivalence_flux(model_and_inputs):
     out = model_and_inputs
     param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
-    rates, sources = compute_proportion_sums_exponents(
+    rates, sources, _ = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
@@ -203,18 +200,6 @@ def test_fastmath_equivalence_flux(model_and_inputs):
     assert np.allclose(out1, out2, rtol=1e-5, atol=1e-7)
 
 
-def test_fastmath_equivalence_update():
-    y = np.random.rand(20).astype(np.float64)
-    dy = np.random.randn(20).astype(np.float64)
-    dt = 0.123
-
-    fn_fast = update
-    fn_safe = njit(fastmath=False)(fn_fast.py_func)
-    out1 = fn_safe(y, dt, dy)
-    out2 = fn_fast(y, dt, dy)
-    assert np.allclose(out1, out2, rtol=1e-12, atol=0.0)
-
-
 def test_proportion_sums_edge_cases_zero_and_large(model_and_inputs):
     """
     Exercise 0**exp, 1**exp, and very large magnitudes to ensure no NaN/Inf and
@@ -235,14 +220,14 @@ def test_proportion_sums_edge_cases_zero_and_large(model_and_inputs):
     fn_fast = compute_proportion_sums_exponents
     fn_safe = njit(fastmath=False)(fn_fast.py_func)
 
-    total1, src1 = fn_safe(
+    total1, src1, mask1 = fn_safe(
         states,
         out["transitions"],
         out["proportion_info"],
         out["transition_sum_compartments"],
         param_t,
     )
-    total2, src2 = fn_fast(
+    total2, src2, mask2 = fn_fast(
         states,
         out["transitions"],
         out["proportion_info"],
@@ -289,7 +274,7 @@ def test_meta_dispatch_equivalence_serial_vs_parallel(monkeypatch, model_and_inp
     """
     out = model_and_inputs
     param_t = param_slice(out["params"], t=0.0, mode="step")  # (P, N)
-    rates, sources = compute_proportion_sums_exponents(
+    rates, sources, _ = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],
@@ -326,7 +311,7 @@ def test_end_to_end_rhs_dydt_finite(model_and_inputs):
     C, N = out["initial_array"].shape
     param_t = param_slice(out["params"], t=0.0, mode="step")
 
-    total_base, source_numbers = compute_proportion_sums_exponents(
+    total_base, source_numbers, _ = compute_proportion_sums_exponents(
         out["initial_array"],
         out["transitions"],
         out["proportion_info"],

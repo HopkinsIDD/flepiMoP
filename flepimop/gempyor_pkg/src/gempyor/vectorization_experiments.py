@@ -1,39 +1,7 @@
 import numpy as np
+import numpy.typing as npt
 from numba import njit, prange
-from scipy.interpolate import interp1d
 from collections.abc import Callable
-
-# === Debug switch ===
-DEBUG = False  # set to False to silence debug prints
-
-
-def _dbg_stats(name: str, arr: np.ndarray, prefix: str = "[DBG]"):
-    if not DEBUG:
-        return
-    a = np.asarray(arr)
-    if a.size == 0:
-        print(f"{prefix} {name}: EMPTY")
-        return
-    # Use nan-safe reductions
-    amin = np.nanmin(a)
-    amax = np.nanmax(a)
-    any_nan = np.isnan(a).any()
-    any_inf = np.isinf(a).any()
-    print(
-        f"{prefix} {name}: shape={a.shape}, dtype={a.dtype}, min={amin}, max={amax}, nan={any_nan}, inf={any_inf}"
-    )
-
-
-def _dbg_nonfinite(name: str, arr: np.ndarray, prefix: str = "[DBG]"):
-    if not DEBUG:
-        return
-    mask = ~np.isfinite(arr)
-    if mask.any():
-        idx = np.argwhere(mask)
-        sample = idx[:10]  # avoid huge dumps
-        print(
-            f"{prefix} NON-FINITE in {name}: count={mask.sum()}, sample_indices={sample.tolist()}"
-        )
 
 
 # === Constants ===
@@ -43,26 +11,31 @@ _PARALLEL_THRESHOLD = 1e7
 # === Parameter time slicing (for solve_ivp's continuous t) ===
 
 
-def param_slice(parameters: np.ndarray, t: float, mode: str = "linear") -> np.ndarray:
+def param_slice(
+    parameters: npt.NDArray[np.float64], t: float, mode: str = "linear"
+) -> npt.NDArray[np.float64]:
     """
-    Slice parameters at time t.
+    Slice parameters at a given time.
 
-    Parameters
-    ----------
-    parameters : np.ndarray
-        Shape (P, T, N) or (P, T). T is unit-spaced discrete time (0,1,2,...).
-        If (P, T), it's broadcast to (P, T, 1).
-    t : float
-        Continuous time used by the solver.
-    mode : {"step","linear"}
-        "step"  => piecewise-constant in time (floor(t))
-        "linear"=> linear interpolation between floor(t) and ceil(t)
+    Args:
+        parameters (npt.NDArray[np.float64]):
+            Array of shape (P, T, N) or (P, T).
+            - P: number of parameters.
+            - T: unit-spaced discrete time points (0, 1, 2, ...).
+            - N: number of spatial nodes (optional).
+            If shape is (P, T), it is broadcast to (P, T, 1).
+        t (float):
+            Continuous time used by the solver.
+        mode (str):
+            Interpolation mode. One of:
+            - `"step"`: piecewise-constant in time using ``floor(t)``.
+            - `"linear"`: linear interpolation between ``floor(t)`` and ``ceil(t)``.
 
-    Returns
-    -------
-    param_t : np.ndarray
-        Shape (P, N) view at time t.
+    Returns:
+        npt.NDArray[np.float64]:
+            Array of shape (P, N) representing the parameter values at time ``t``.
     """
+
     if parameters.ndim == 2:  # (P, T) -> (P, T, 1)
         parameters = parameters[:, :, None]
 
@@ -71,8 +44,6 @@ def param_slice(parameters: np.ndarray, t: float, mode: str = "linear") -> np.nd
     if mode == "step":
         i = int(np.clip(np.floor(t), 0, T - 1))
         out = parameters[:, i, :]
-        if DEBUG:
-            _dbg_stats("param_slice(step)", out)
         return out
 
     elif mode == "linear":
@@ -80,8 +51,7 @@ def param_slice(parameters: np.ndarray, t: float, mode: str = "linear") -> np.nd
         i1 = min(i0 + 1, T - 1)
         alpha = float(np.clip(t - i0, 0.0, 1.0))
         out = (1.0 - alpha) * parameters[:, i0, :] + alpha * parameters[:, i1, :]
-        if DEBUG:
-            _dbg_stats("param_slice(linear)", out)
+
         return out
 
     else:
@@ -93,25 +63,33 @@ def param_slice(parameters: np.ndarray, t: float, mode: str = "linear") -> np.nd
 
 def resolve_param_expr_from_slice(
     expr: str,
-    param_t: np.ndarray,  # (P, N)
+    param_t: npt.NDArray[np.float64],  # (P, N)
     param_name_to_row: dict[str, int],  # "beta" -> row index
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """
-    Resolve a product expression like 'beta * gamma' against a (P,N) parameter slice.
+    Resolve a product expression like ``'beta * gamma'`` against a (P, N) parameter slice.
 
-    Returns
-    -------
-    vec : np.ndarray of shape (N,)
+    Args:
+        param_slice (npt.NDArray[np.float64]):
+            Array of shape (P, N) containing parameter values.
+        expr (str):
+            A product expression consisting of parameter names joined by `*`,
+            for example ``"beta * gamma"``.
+        name_to_row (dict[str, int]):
+            Mapping from parameter name to its corresponding row index in ``param_slice``.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Array of shape (N,) containing the evaluated product.
     """
+
     terms = [s.strip() for s in expr.split("*")]
     out = None
     for name in terms:
         row = param_name_to_row[name]
         vec = param_t[row, :]  # (N,)
         out = vec if out is None else out * vec
-    if DEBUG:
-        _dbg_stats(f"resolve_param_expr_from_slice('{expr}')", out)
-        _dbg_nonfinite(f"resolve_param_expr_from_slice('{expr}')", out)
+
     return out
 
 
@@ -119,12 +97,23 @@ def resolve_param_expr_from_slice(
 
 
 @njit(fastmath=True)
-def prod_along_axis0(arr_2d: np.ndarray) -> np.ndarray:
+def prod_along_axis0(arr_2d: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     """
-    Computes the product along the first axis (axis=0) of a 2D array.
+    Compute the product along the first axis of a 2D array.
 
-    We don't use np.prod here to keep this nopython-friendly.
+    This function is implemented manually instead of using ``np.prod`` to
+    remain compatible with Numba's ``nopython`` mode.
+
+    Args:
+        arr_2d (npt.NDArray[np.float64]):
+            A 2D NumPy array of shape (M, N).
+
+    Returns:
+        npt.NDArray[np.float64]:
+            A 1D NumPy array of shape (N,) containing the product of values
+            along axis 0.
     """
+
     n_cols = arr_2d.shape[1]
     result = np.ones(n_cols, dtype=arr_2d.dtype)
     for i in range(arr_2d.shape[0]):
@@ -135,27 +124,45 @@ def prod_along_axis0(arr_2d: np.ndarray) -> np.ndarray:
 
 @njit(fastmath=True)
 def compute_proportion_sums_exponents(
-    states_current: np.ndarray,  # (C, N)
-    transitions: np.ndarray,  # (5, Tn)
-    proportion_info: np.ndarray,  # (3, Pk)
-    transition_sum_compartments: np.ndarray,  # (S,)
-    param_t: np.ndarray,  # (P, N)  <-- time-sliced parameters
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    states_current: npt.NDArray[np.float64],  # (C, N)
+    transitions: npt.NDArray[np.float64],  # (5, Tn)
+    proportion_info: npt.NDArray[np.float64],  # (3, Pk)
+    transition_sum_compartments: npt.NDArray[np.float64],  # (S,)
+    param_t: npt.NDArray[np.float64],  # (P, N)  <-- time-sliced parameters
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """
-    Compute multiplicative proportion terms, source sizes, and a flag for n_p == 1.
+    Compute multiplicative proportion terms, source sizes, and a flag for ``n_p == 1``.
 
-    Matches legacy `rk4_integration` math:
-    - If only one proportion term (n_p == 1), we normalize the first proportion term
-      and multiply by the rate parameter immediately.
-    - Otherwise, we compute proportion contributions for all terms and leave parameter
-      multiplication / mobility mixing to later.
+    Matches legacy ``rk4_integration`` math:
 
-    Returns
-    -------
-    total_rates : (Tn, N)  # proportion products (includes param if n_p==1)
-    source_numbers : (Tn, N)  # summed counts for first proportion term
-    single_prop_mask : (Tn,)  # boolean flag for n_p == 1 transitions
+    * If only one proportion term (``n_p == 1``), normalize the first proportion term
+    and multiply by the rate parameter immediately.
+    * Otherwise, compute proportion contributions for all terms and leave parameter
+    multiplication and mobility mixing to later.
+
+    Args:
+        states_current (npt.NDArray[np.float64]):
+            Array of shape (C, N) containing the current compartment states.
+        transitions (npt.NDArray[np.int64]):
+            Transition definition array of shape (5, Tn) describing source/destination compartments
+            and proportion term indices.
+        proportion_info (npt.NDArray[np.int64]):
+            Array containing proportion term configuration.
+        transition_sum_compartments (npt.NDArray[np.int64]):
+            Compartments summed to form proportion denominators.
+        parameters_t (npt.NDArray[np.float64]):
+            Parameter values for the current time step, shape (P, N).
+
+    Returns:
+        tuple:
+            total_rates (npt.NDArray[np.float64]):
+                Array of shape (Tn, N) containing proportion products (includes parameter if ``n_p == 1``).
+            source_numbers (npt.NDArray[np.float64]):
+                Array of shape (Tn, N) containing summed counts for the first proportion term.
+            single_prop_mask (npt.NDArray[np.bool_]):
+                Boolean array of shape (Tn,) where True indicates transitions with ``n_p == 1``.
     """
+
     n_transitions = transitions.shape[1]
     n_nodes = states_current.shape[1]
     n_props = proportion_info.shape[1]
@@ -210,26 +217,66 @@ def compute_proportion_sums_exponents(
     return total_rates, source_numbers, single_prop_mask
 
 
-# === 2. Transition Rate Computation ===
 def compute_transition_rates(
-    total_rates_base: np.ndarray,  # (Tn, N) e.g., I for S->E
-    source_numbers: np.ndarray,  # (Tn, N) e.g., S for S->E  (NOT used here)
-    transitions: np.ndarray,  # (5, Tn)
-    param_t: np.ndarray,  # (P, N)
+    total_rates_base: npt.NDArray[np.float64],  # (Tn, N) e.g., I for S->E
+    source_numbers: npt.NDArray[np.float64],  # (Tn, N) e.g., S for S->E (not used here)
+    transitions: npt.NDArray[np.float64],  # (5, Tn)
+    param_t: npt.NDArray[np.float64],  # (P, N)
     percent_day_away: float,
-    proportion_who_move: np.ndarray,  # (N,)
-    mobility_data: np.ndarray,
-    mobility_data_indices: np.ndarray,
-    mobility_row_indices: np.ndarray,
-    population: np.ndarray,  # (N,)
-    single_prop_mask: np.ndarray,  # (Tn,)
+    proportion_who_move: npt.NDArray[np.float64],  # (N,)
+    mobility_data: npt.NDArray[np.float64],
+    mobility_data_indices: npt.NDArray[np.float64],
+    mobility_row_indices: npt.NDArray[np.float64],
+    population: npt.NDArray[np.float64],  # (N,)
+    single_prop_mask: npt.NDArray[np.float64],  # (Tn,)
     param_expr_lookup: dict[int, str] | None = None,
     param_name_to_row: dict[str, int] | None = None,
-) -> np.ndarray:
-    if DEBUG:
-        _dbg_stats("compute_transition_rates.total_rates_base", total_rates_base)
-        _dbg_stats("compute_transition_rates.param_t", param_t)
+) -> npt.NDArray[np.float64]:
+    """
+    Compute total transition rates for each transition and node, applying parameter
+    scaling and mobility mixing according to model configuration.
 
+    If a transition has exactly one proportion term (``n_p == 1``), the associated
+    parameter is assumed to have been applied earlier in
+    ``compute_proportion_sums_exponents``, and no mobility mixing is performed.
+
+    Args:
+        total_rates_base (npt.NDArray[np.float64]):
+            Base rates for each transition and node, shape (Tn, N).
+        source_numbers (npt.NDArray[np.float64]):
+            Source compartment sizes for each transition and node, shape (Tn, N).
+            Not used in this function.
+        transitions (npt.NDArray[np.float64]):
+            Transition definition array of shape (5, Tn).
+        param_t (npt.NDArray[np.float64]):
+            Parameter values at the current time step, shape (P, N).
+        percent_day_away (float):
+            Fraction of the day individuals spend away from their home node.
+        proportion_who_move (npt.NDArray[np.float64]):
+            Fraction of individuals in each node who move, shape (N,).
+        mobility_data (npt.NDArray[np.float64]):
+            CSR-format data array for mobility between nodes.
+        mobility_data_indices (npt.NDArray[np.float64]):
+            CSR-format index pointer array for mobility data.
+        mobility_row_indices (npt.NDArray[np.float64]):
+            CSR-format row indices array for mobility data.
+        population (npt.NDArray[np.float64]):
+            Population counts per node, shape (N,).
+        single_prop_mask (npt.NDArray[np.float64]):
+            Boolean mask of shape (Tn,) where True indicates transitions
+            with exactly one proportion term.
+        param_expr_lookup (dict[int, str] | None):
+            Optional mapping from parameter index to an expression string
+            (e.g., ``"beta * gamma"``). If None, parameters are taken directly.
+        param_name_to_row (dict[str, int] | None):
+            Mapping from parameter names to their corresponding row indices
+            in ``param_t``. Required if ``param_expr_lookup`` is provided.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Total rates for each transition and node after parameter scaling and
+            mobility mixing, shape (Tn, N).
+    """
     n_transitions, n_nodes = total_rates_base.shape
     # IMPORTANT: start from zeros; we will assign the mixed “force of transition”
     total_rates = np.zeros_like(total_rates_base)
@@ -255,9 +302,6 @@ def compute_transition_rates(
                 )
             expr = param_expr_lookup[param_idx]
             param_vec = resolve_param_expr_from_slice(expr, param_t, param_name_to_row)
-
-        if DEBUG:
-            _dbg_stats(f"param_vec[t_idx={t_idx}]", param_vec)
 
         # Mix infectious pressure across mobility; never multiply by S here.
         for node in range(n_nodes):
@@ -289,9 +333,6 @@ def compute_transition_rates(
 
             total_rates[t_idx, node] = prop_keep * force_keep + force_change
 
-    if DEBUG:
-        _dbg_stats("compute_transition_rates.total_rates(OUT)", total_rates)
-
     return total_rates
 
 
@@ -300,14 +341,35 @@ def compute_transition_rates(
 
 
 def compute_transition_amounts_numpy_binomial(
-    source_numbers: np.ndarray, total_rates: np.ndarray, dt: float
-) -> np.ndarray:
+    source_numbers: npt.NDArray[np.float64],
+    total_rates: npt.NDArray[np.float64],
+    dt: float,
+) -> npt.NDArray[np.float64]:
     """
-    Binomial draws for stochastic updates over dt. Returns per-step counts (not dy/dt).
+    Perform binomial draws for stochastic updates over a time step.
+
+    Uses per-node, per-transition binomial sampling to determine the number of
+    individuals transitioning within the interval ``dt``, based on the total
+    transition rates. Returns per-step counts (not ``dy/dt``).
+
+    Args:
+        source_numbers (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the number of individuals
+            in the source compartment for each transition and node.
+        total_rates (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the per-capita transition
+            rates for each transition and node.
+        dt (float):
+            Duration of the time step.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Array of shape (Tn, N) containing the integer number of individuals
+            who transitioned in the given time step, as 64-bit floats.
     """
     probs = 1.0 - np.exp(-dt * total_rates)
-    draws = np.random.binomial(source_numbers.astype(np.int32), probs)
-    return draws.astype(np.float32)
+    draws = np.random.binomial(source_numbers, probs)
+    return draws
 
 
 # === 4. Transition Amounts (Deterministic dy/dt only) ===
@@ -315,11 +377,27 @@ def compute_transition_amounts_numpy_binomial(
 
 @njit(fastmath=True)
 def compute_transition_amounts_serial(
-    source_numbers: np.ndarray, total_rates: np.ndarray
-) -> np.ndarray:
+    source_numbers: npt.NDArray[np.float64], total_rates: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
     """
-    Deterministic instantaneous flux (dy/dt contribution), serial.
-    amounts = source * rate  (units: per time)
+    Compute deterministic instantaneous flux for each transition and node (serial).
+
+    Calculates the rate of change (``dy/dt``) as the product of the source compartment
+    size and the per-capita transition rate, without any stochasticity. This is a
+    serial implementation optimized with Numba.
+
+    Args:
+        source_numbers (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the number of individuals
+            in the source compartment for each transition and node.
+        total_rates (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the per-capita transition
+            rates for each transition and node.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Array of shape (Tn, N) containing the deterministic instantaneous
+            flux (``dy/dt`` contribution) for each transition and node.
     """
     n_transitions, n_nodes = total_rates.shape
     amounts = np.zeros((n_transitions, n_nodes))
@@ -333,10 +411,28 @@ def compute_transition_amounts_serial(
 
 @njit(parallel=True, fastmath=True)
 def compute_transition_amounts_parallel(
-    source_numbers: np.ndarray, total_rates: np.ndarray
-) -> np.ndarray:
+    source_numbers: npt.NDArray[np.float64], total_rates: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
     """
-    Deterministic instantaneous flux (dy/dt contribution), parallel.
+    Compute deterministic instantaneous flux for each transition and node (parallel).
+
+    Calculates the rate of change (``dy/dt``) as the product of the source compartment
+    size and the per-capita transition rate, without any stochasticity. This
+    implementation uses Numba's parallelization over transitions for improved
+    performance on larger workloads.
+
+    Args:
+        source_numbers (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the number of individuals
+            in the source compartment for each transition and node.
+        total_rates (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the per-capita transition
+            rates for each transition and node.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Array of shape (Tn, N) containing the deterministic instantaneous
+            flux (``dy/dt`` contribution) for each transition and node.
     """
     n_transitions, n_nodes = total_rates.shape
     amounts = np.zeros((n_transitions, n_nodes))
@@ -350,10 +446,27 @@ def compute_transition_amounts_parallel(
 
 @njit
 def compute_transition_amounts_meta(
-    source_numbers: np.ndarray, total_rates: np.ndarray
-) -> np.ndarray:
+    source_numbers: npt.NDArray[np.float64], total_rates: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
     """
-    Dispatch based on workload; returns dy/dt contributions (no dt, no method).
+    Select and execute the appropriate transition amount computation method.
+
+    Chooses between the serial and parallel deterministic flux computations
+    based on the total workload size. Returns the instantaneous flux (``dy/dt``)
+    without scaling by ``dt`` or applying any integration method.
+
+    Args:
+        source_numbers (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the number of individuals
+            in the source compartment for each transition and node.
+        total_rates (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the per-capita transition
+            rates for each transition and node.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Array of shape (Tn, N) containing the deterministic instantaneous
+            flux (``dy/dt`` contribution) for each transition and node.
     """
     workload = source_numbers.shape[0] * source_numbers.shape[1]
     if workload >= _PARALLEL_THRESHOLD:
@@ -367,13 +480,35 @@ def compute_transition_amounts_meta(
 
 @njit(fastmath=True)
 def assemble_flux(
-    amounts: np.ndarray,  # (Tn, N), instantaneous flux
-    transitions: np.ndarray,  # (5, Tn)
+    amounts: npt.NDArray[np.float64],  # (Tn, N), instantaneous flux
+    transitions: npt.NDArray[np.float64],  # (5, Tn)
     ncompartments: int,
     nspatial_nodes: int,
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """
-    Assemble dy/dt from transition fluxes.
+    Assemble the net rate of change (``dy/dt``) from individual transition fluxes.
+
+    For each transition, subtracts the instantaneous flux from the source compartment
+    and adds it to the destination compartment for every spatial node. The resulting
+    2D array is then flattened for use in solvers like ``solve_ivp``.
+
+    Args:
+        amounts (npt.NDArray[np.float64]):
+            Array of shape (Tn, N) containing the instantaneous flux
+            (e.g., from ``compute_transition_amounts_*``) for each transition and node.
+        transitions (npt.NDArray[np.float64]):
+            Array of shape (5, Tn) defining transitions, where
+            ``transitions[0, t_idx]`` is the source compartment index and
+            ``transitions[1, t_idx]`` is the destination compartment index.
+        ncompartments (int):
+            Total number of compartments in the model.
+        nspatial_nodes (int):
+            Total number of spatial nodes or subpopulations.
+
+    Returns:
+        npt.NDArray[np.float64]:
+            Flattened array of shape (ncompartments * nspatial_nodes,) containing
+            the net rate of change (``dy/dt``) for all compartments and nodes.
     """
     dy_dt = np.zeros((ncompartments, nspatial_nodes))
     for t_idx in range(amounts.shape[0]):
@@ -390,12 +525,44 @@ def assemble_flux(
 
 
 def apply_legacy_seeding(
-    states_current: np.ndarray,  # (C, N), modified in place
+    states_current: npt.NDArray[np.float64],  # (C, N), modified in place
     today: int,
-    seeding_data: dict[str, np.ndarray],
-    seeding_amounts: np.ndarray,
-    daily_incidence: np.ndarray | None = None,  # (D, C, N) if provided
+    seeding_data: dict[str, npt.NDArray[np.float64]],
+    seeding_amounts: npt.NDArray[np.float64],
+    daily_incidence: npt.NDArray[np.float64] | None = None,  # (D, C, N) if provided
 ) -> None:
+    """
+    Apply legacy-style seeding to the model state for a given day.
+
+    This replicates the seeding logic from the original ``rk4_integration``:
+    individuals are subtracted from source compartments and added to destination
+    compartments for specific subpopulations, based on seeding events scheduled
+    for the current day. Negative compartment counts are prevented by clamping
+    to zero.
+
+    Optionally, daily incidence counts can be updated to include seeded amounts.
+
+    Args:
+        states_current (npt.NDArray[np.float64]):
+            Array of shape (C, N) containing the current model state
+            (compartments × subpopulations). Modified in place.
+        today (int):
+            Current simulation day index.
+        seeding_data (dict[str, npt.NDArray[np.float64]]):
+            Dictionary containing seeding metadata with keys:
+              - ``"day_start_idx"``: 1D array of indices into the seeding arrays
+              - ``"seeding_subpops"``: 1D array of subpopulation indices
+              - ``"seeding_sources"``: 1D array of source compartment indices
+              - ``"seeding_destinations"``: 1D array of destination compartment indices
+        seeding_amounts (npt.NDArray[np.float64]):
+            1D array of seeding amounts corresponding to the events.
+        daily_incidence (npt.NDArray[np.float64], optional):
+            Array of shape (D, C, N) containing daily incidence counts.
+            If provided, seeded amounts are added to the relevant entries.
+
+    Returns:
+        None
+    """
     starts = seeding_data["day_start_idx"]
     if today < 0 or today + 1 >= starts.size:
         return
@@ -432,7 +599,55 @@ from scipy.integrate import solve_ivp
 
 class RHSfactory:
     """
-    Wraps precomputed structures and builds an rhs(t, y, parameters) method suitable for solve_ivp.
+    Wraps precomputed model structures and builds a right-hand-side (RHS)
+    function suitable for SciPy's ``solve_ivp`` integrator.
+
+    The factory stores simulation constants, parameter mappings, and optional
+    seeding information. It produces a callable of the form:
+    ``rhs(t, y, parameters) -> dy/dt``.
+
+    Required keys in ``precomputed`` define the model structure
+    (compartments, mobility, transitions, etc.). Optional keys provide
+    seeding metadata and incidence tracking.
+
+    Attributes:
+        REQUIRED_KEYS (list[str]):
+            Names of keys that must be present in ``precomputed`` for
+            successful initialization.
+        OPTIONAL_KEYS (list[str]):
+            Keys in ``precomputed`` that, if present, enable optional features
+            such as seeding and daily incidence tracking.
+        precomputed (dict):
+            Precomputed model structures passed during initialization.
+        param_expr_lookup (dict[int, str] | None):
+            Mapping from parameter row index to expression string (e.g.,
+            ``"beta * gamma"``). Optional.
+        param_name_to_row (dict[str, int] | None):
+            Mapping from parameter names to their row indices. Required if
+            ``param_expr_lookup`` is provided.
+        param_time_mode (str):
+            Parameter time-dependence mode. Either:
+              - ``"step"``: piecewise constant in time
+              - ``"linear"``: linearly interpolated in time
+        _last_day_applied (dict):
+            Tracks the last simulation day for which seeding was applied.
+        _rhs (Callable | None):
+            The cached RHS function built from the precomputed structures.
+
+    Args:
+        precomputed (dict):
+            Dictionary containing required and optional precomputed model
+            structures (see ``REQUIRED_KEYS`` and ``OPTIONAL_KEYS``).
+        param_expr_lookup (dict[int, str], optional):
+            Mapping from parameter row index to expression string.
+        param_name_to_row (dict[str, int], optional):
+            Mapping from parameter names to row indices, required if
+            ``param_expr_lookup`` is given.
+        param_time_mode (str, optional):
+            Parameter time interpolation mode. Defaults to ``"linear"``.
+
+    Raises:
+        KeyError: If any of the required keys are missing from ``precomputed``.
     """
 
     REQUIRED_KEYS = [
@@ -469,27 +684,76 @@ class RHSfactory:
 
         # tracker survives across RHS calls
         self._last_day_applied = {"day": None}
-        self._rhs: Callable[[float, np.ndarray, np.ndarray], np.ndarray] | None = None
+        self._rhs = None
 
         # build once using defaults present in precomputed (if any)
         self.build_rhs()
 
     def reset_seeding_tracker(self) -> None:
-        """Reset the day-change tracker (useful before a new solve)."""
+        """
+        Reset the internal seeding day-change tracker.
+
+        This clears the stored "last day applied" value used to prevent
+        multiple seeding applications within the same simulation day.
+        Call this before starting a new ``solve_ivp`` run or restarting
+        a simulation.
+
+        Returns:
+            None
+        """
         self._last_day_applied["day"] = None
 
     def build_rhs(
         self,
         *,
         param_time_mode: str | None = None,
-        seeding_data: dict[str, np.ndarray] | None = None,
-        seeding_amounts: np.ndarray | None = None,
-        daily_incidence: np.ndarray | None = None,
-    ) -> Callable[[float, np.ndarray, np.ndarray], np.ndarray]:
+        seeding_data: dict[str, npt.NDArray[np.float64]] | None = None,
+        seeding_amounts: npt.NDArray[np.float64] | None = None,
+        daily_incidence: npt.NDArray[np.float64] | None = None,
+    ) -> Callable[
+        [float, npt.NDArray[np.float64], npt.NDArray[np.float64]],
+        npt.NDArray[np.float64],
+    ]:
         """
-        Construct and store an RHS that optionally injects legacy seeding once per day boundary.
-        Call again to rebuild with different options.
+        Construct and store an ODE right-hand-side (RHS) function for ``solve_ivp``.
+
+        The generated RHS computes compartmental derivatives (dy/dt) for a spatial SEIR-type
+        model, including parameter time-slicing, proportion term calculation, mobility mixing,
+        and optional legacy seeding applied once per simulation day.
+
+        This method can be called again to rebuild the RHS with different parameters or seeding data.
+
+        Args:
+            param_time_mode (str | None, optional):
+                Parameter time interpolation mode. If ``None``, uses the factory's
+                default. Must be one of:
+                * ``"step"`` — piecewise-constant parameters based on floor(t).
+                * ``"linear"`` — linear interpolation between discrete time steps.
+            seeding_data (dict[str, npt.NDArray[np.float64]] | None, optional):
+                Legacy-style seeding specification. Expected keys include:
+                * ``"day_start_idx"`` — int array of start indices for each day.
+                * ``"seeding_subpops"`` — int array of subpopulation indices.
+                * ``"seeding_sources"`` — int array of source compartment indices.
+                * ``"seeding_destinations"`` — int array of destination compartment indices.
+                If ``None``, seeding is skipped.
+            seeding_amounts (npt.NDArray[np.float64] | None, optional):
+                Amounts to transfer for each seeding event, aligned with ``seeding_data``.
+                If ``None``, seeding is skipped.
+            daily_incidence (npt.NDArray[np.float64] | None, optional):
+                Optional array of shape ``(D, C, N)`` to accumulate seeded cases
+                per day, compartment, and node.
+
+        Returns:
+            Callable[[float, npt.NDArray[np.float64], npt.NDArray[np.float64]], npt.NDArray[np.float64]]:
+                A function ``rhs(t, y, parameters) -> dy/dt`` suitable for passing to SciPy's
+                ``solve_ivp``. This function:
+                1. Optionally applies seeding at the start of each day.
+                2. Slices parameters for time ``t``.
+                3. Computes proportion terms and source sizes.
+                4. Applies mobility mixing and parameter scaling.
+                5. Assembles the net flux ``dy/dt`` as a flattened array.
         """
+
         pc = self.precomputed
         C = int(pc["ncompartments"])
         N = int(pc["nspatial_nodes"])
@@ -519,7 +783,31 @@ class RHSfactory:
         last_day_applied = self._last_day_applied  # closure to persist across calls
 
         # ---- define RHS ----
-        def rhs(t: float, y: np.ndarray, parameters: np.ndarray) -> np.ndarray:
+        def rhs(
+            t: float, y: npt.NDArray[np.float64], parameters: npt.NDArray[np.float64]
+        ) -> npt.NDArray[np.float64]:
+            """
+            Compute the derivative dy/dt for the SEIR-style model at time ``t``.
+
+            This function is intended for use with SciPy's ``solve_ivp`` and
+            incorporates optional once-per-day seeding, parameter time-slicing,
+            proportion term computation, mobility mixing, and flux assembly.
+
+            Args:
+                t (float):
+                    Continuous simulation time in days.
+                y (npt.NDArray[np.float64]):
+                    Flattened state vector of shape ``(C*N,)`` where ``C`` is the
+                    number of compartments and ``N`` is the number of spatial nodes.
+                parameters (npt.NDArray[np.float64]):
+                    Parameter array of shape ``(P, T, N)`` or ``(P, T)`` giving
+                    time-dependent parameter values.
+
+            Returns:
+                npt.NDArray[np.float64]:
+                    Flattened array ``dy/dt`` of shape ``(C*N,)``.
+            """
+
             # 1) inject seeding (once per integer day) before computing rates
             if seeding_data is not None and seeding_amounts is not None:
                 # small epsilon to stabilize floor at boundaries
@@ -576,21 +864,62 @@ class RHSfactory:
         self._rhs = rhs
         return rhs
 
-    def create_rhs(self) -> Callable[[float, np.ndarray, np.ndarray], np.ndarray]:
-        """Return the currently built RHS (builds on demand if missing)."""
+    def create_rhs(
+        self,
+    ) -> Callable[
+        [float, npt.NDArray[np.float64], npt.NDArray[np.float64]],
+        npt.NDArray[np.float64],
+    ]:
+        """
+        Return the currently built ODE right-hand-side function.
+
+        If no RHS has been built yet, this method calls ``build_rhs()`` with
+        default parameters from the factory's precomputed data.
+
+        Returns:
+            Callable[[float, npt.NDArray[np.float64], npt.NDArray[np.float64]], npt.NDArray[np.float64]]:
+                A function ``rhs(t, y, parameters) -> dy/dt`` suitable for passing
+                to SciPy's ``solve_ivp``.
+        """
         if self._rhs is None:
             return self.build_rhs()
         return self._rhs
 
     def solve(
         self,
-        y0: np.ndarray,
-        parameters: np.ndarray,
+        y0: npt.NDArray[np.float64],
+        parameters: npt.NDArray[np.float64],
         t_span: tuple[float, float],
-        t_eval: np.ndarray | None = None,
+        t_eval: npt.NDArray[np.float64] | None = None,
         **solve_ivp_kwargs,
     ):
-        """Convenience wrapper around scipy.integrate.solve_ivp using the stored RHS."""
+        """
+        Integrate the model forward in time using the stored RHS.
+
+        This is a convenience wrapper around ``scipy.integrate.solve_ivp`` that
+        automatically resets the seeding tracker before each run and passes the
+        factory's currently built RHS function to the solver.
+
+        Args:
+            y0 (npt.NDArray[np.float64]):
+                Flattened initial state vector of shape ``(C*N,)``.
+            parameters (npt.NDArray[np.float64]):
+                Parameter array of shape ``(P, T, N)`` or ``(P, T)`` giving
+                time-dependent parameter values.
+            t_span (tuple[float, float]):
+                Start and end times for integration ``(t0, tf)``.
+            t_eval (npt.NDArray[np.float64] | None, optional):
+                Times at which to store the computed solution. If ``None``,
+                solver chooses its own step locations.
+            **solve_ivp_kwargs:
+                Additional keyword arguments passed to ``solve_ivp`` (e.g., ``method``,
+                ``rtol``, ``atol``, ``vectorized``).
+
+        Returns:
+            scipy.integrate.OdeResult:
+                The result object returned by ``solve_ivp``, with attributes
+                like ``t``, ``y``, and ``success``.
+        """
         self.reset_seeding_tracker()  # fresh run, re-apply day 0 seeding as needed
         rhs = self.create_rhs()
         return solve_ivp(
