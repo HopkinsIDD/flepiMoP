@@ -388,454 +388,51 @@ def assemble_flux(
 
 # === Seeding ===
 
-import numpy as np
-from typing import Optional, Callable
-from scipy.integrate import solve_ivp
 
-# =========================
-# 1) Core seeding primitive
-# =========================
-
-
-def apply_seeding_for_day(
-    states_current: np.ndarray,  # shape: (C, N)  (modified in place)
-    day: int,  # integer "today"
-    seeding_data: dict[str, np.ndarray],  # legacy-style fields (see below)
-    seeding_amounts: np.ndarray,  # shape: (E,)
-    *,
-    daily_incidence: Optional[np.ndarray] = None,  # shape: (D, C, N) if provided
+def apply_legacy_seeding(
+    states_current: np.ndarray,  # (C, N), modified in place
+    today: int,
+    seeding_data: dict[str, np.ndarray],
+    seeding_amounts: np.ndarray,
+    daily_incidence: np.ndarray | None = None,  # (D, C, N) if provided
 ) -> None:
-    """
-    Apply all seeding events scheduled for a given integer day.
-
-    Matches legacy semantics from rk4_integration:
-      - Events are indexed by seeding_data["day_start_idx"]; we apply events in
-        range [day_start_idx[day], day_start_idx[day+1]).
-      - We subtract the full amount from the source compartment and clamp to >= 0
-        *without* reducing the amount added to the destination (non-conservative if
-        the source is insufficient).
-      - We add the full amount to daily incidence at [day, destination, node].
-
-    Required seeding_data arrays (1D, length E unless noted):
-      - "day_start_idx": (D+1,) CSR-style starts by day (last element is E)
-      - "seeding_subpops": node indices (0..N-1)
-      - "seeding_sources": source compartment indices (0..C-1)
-      - "seeding_destinations": destination compartment indices (0..C-1)
-    """
-    # Fast exit if day has no events
     starts = seeding_data["day_start_idx"]
-    if day < 0 or day + 1 >= starts.size:
+    if today < 0 or today + 1 >= starts.size:
         return
-    start = int(starts[day])
-    stop = int(starts[day + 1])
-    if stop <= start:
+    start_idx = int(starts[today])
+    stop_idx = int(starts[min(today + 1, starts.size - 1)])
+    if stop_idx <= start_idx:
         return
 
-    nodes = seeding_data["seeding_subpops"][start:stop].astype(np.int64, copy=False)
-    srcs = seeding_data["seeding_sources"][start:stop].astype(np.int64, copy=False)
-    dsts = seeding_data["seeding_destinations"][start:stop].astype(np.int64, copy=False)
-    amts = seeding_amounts[start:stop].astype(states_current.dtype, copy=False)
+    nodes = seeding_data["seeding_subpops"][start_idx:stop_idx].astype(
+        np.int64, copy=False
+    )
+    srcs = seeding_data["seeding_sources"][start_idx:stop_idx].astype(
+        np.int64, copy=False
+    )
+    dsts = seeding_data["seeding_destinations"][start_idx:stop_idx].astype(
+        np.int64, copy=False
+    )
+    amts = seeding_amounts[start_idx:stop_idx].astype(states_current.dtype, copy=False)
 
-    C, N = states_current.shape
-
-    # Sanity (kept light; mirror legacy tolerance for performance)
-    if (
-        (nodes < 0).any()
-        or (nodes >= N).any()
-        or (srcs < 0).any()
-        or (srcs >= C).any()
-        or (dsts < 0).any()
-        or (dsts >= C).any()
-    ):
-        raise IndexError("Seeding indices out of bounds")
-
-    # Apply events sequentially (preserves exact legacy ordering semantics)
-    for e in range(amts.size):
-        g = int(nodes[e])
-        s = int(srcs[e])
-        d = int(dsts[e])
-        amt = float(amts[e])
-
-        # Subtract from source, then clamp to zero (legacy non-conservative behavior)
+    for g, s, d, amt in zip(nodes, srcs, dsts, amts):
         states_current[s, g] -= amt
         if states_current[s, g] < 0.0:
             states_current[s, g] = 0.0
-
-        # Add the full amount to destination (even if source was insufficient)
         states_current[d, g] += amt
-
-        # Daily incidence bookkeeping (legacy: add full amount)
         if daily_incidence is not None:
-            daily_incidence[day, d, g] += amt
+            daily_incidence[today, d, g] += amt
 
 
-# ===========================================
-# 2) Adaptive-dt integration with day seeding
-# ===========================================
+# === 9. factory class (solve_ivp-compatible) ===
 
-
-def solve_ivp_daily_with_seeding(
-    rhs: Callable[[float, np.ndarray, np.ndarray], np.ndarray],
-    y0: np.ndarray,  # flattened state (C*N,)
-    t_span: tuple[float, float],  # (t0, tf)
-    parameters: np.ndarray,  # whatever your rhs expects (e.g., (P,T,N))
-    *,
-    ncompartments: int,
-    nspatial_nodes: int,
-    seeding_data: Optional[dict[str, np.ndarray]] = None,
-    seeding_amounts: Optional[np.ndarray] = None,
-    t_eval: Optional[np.ndarray] = None,
-    store_daily_prevalence: bool = False,
-    max_step: Optional[float] = None,
-    **solve_ivp_kwargs,
-):
-    """
-    Run solve_ivp in segments [day, day+1], applying seeding at the *start* of each day,
-    exactly like the legacy `is_a_new_day` block. This preserves behavior under adaptive dt.
-
-    Returns a dict with:
-      - "t": concatenated time points (like solve_ivp.t)
-      - "y": concatenated states (like solve_ivp.y)
-      - "daily_prevalence": (D+1, C, N) if store_daily_prevalence
-      - "daily_incidence": (D, C, N) if seeding_data provided (incidence from seeding only)
-      - "segments": list of raw solve_ivp results for each day (optional debugging)
-    """
-    t0, tf = float(t_span[0]), float(t_span[1])
-    assert t0 <= tf, "t_span must be increasing"
-
-    C, N = int(ncompartments), int(nspatial_nodes)
-    y = y0.astype(np.float64, copy=True)
-    states_current = y.reshape(C, N)
-
-    # Determine day range (integer boundaries)
-    day_start = int(np.floor(t0))
-    day_end = int(np.floor(tf - 1e-12))  # last full day boundary strictly < tf
-
-    # Optional daily arrays
-    daily_prev = None
-    daily_incid = None
-    if store_daily_prevalence:
-        # store prevalence at day boundaries INCLUDING the initial state at floor(t0)
-        daily_prev = np.zeros(
-            (day_end - day_start + 2, C, N), dtype=states_current.dtype
-        )
-    if seeding_data is not None:
-        # Store only the seeding-induced incidence (legacy added seeding to daily incidence)
-        D = day_end - day_start + 1
-        daily_incid = np.zeros((D, C, N), dtype=states_current.dtype)
-
-    # Helper to collect t_eval points that fall in a segment [a, b]
-    def _segment_t_eval(
-        a: float, b: float, t_eval_full: Optional[np.ndarray]
-    ) -> Optional[np.ndarray]:
-        if t_eval_full is None:
-            return None
-        mask = (t_eval_full >= a) & (t_eval_full <= b)
-        te = t_eval_full[mask]
-        # Ensure both endpoints are present for continuity
-        if te.size == 0 or te[0] > a + 1e-12:
-            te = np.concatenate(([a], te))
-        if te[-1] < b - 1e-12:
-            te = np.concatenate((te, [b]))
-        return te
-
-    all_t = []
-    all_y = []
-
-    segments = []
-    day_counter = 0
-
-    # If we start exactly at a day boundary, apply that day's seeding first
-    if abs(t0 - np.floor(t0)) < 1e-12 and seeding_data is not None:
-        apply_seeding_for_day(
-            states_current,
-            day_start,
-            seeding_data,
-            seeding_amounts,
-            daily_incidence=daily_incid,
-        )
-    if store_daily_prevalence:
-        # Save prevalence at the *beginning* of the starting day (after seeding if applied)
-        daily_prev[0, :, :] = states_current
-
-    t_left = t0
-    # Iterate over day segments up to tf
-    while t_left < tf - 1e-12:
-        next_boundary = min(np.floor(t_left) + 1.0, tf)
-        a, b = float(t_left), float(next_boundary)
-
-        seg_t_eval = _segment_t_eval(a, b, t_eval)
-
-        # Integrate this segment
-        sol = solve_ivp(
-            fun=lambda t, y: rhs(t, y, parameters),
-            t_span=(a, b),
-            y0=states_current.ravel(),
-            t_eval=seg_t_eval,
-            max_step=max_step,
-            **solve_ivp_kwargs,
-        )
-
-        # Append results (avoid duplicating the first time point if we have previous segment)
-        if len(all_t) > 0 and sol.t.size > 0 and abs(sol.t[0] - all_t[-1][-1]) < 1e-12:
-            all_t[-1] = np.concatenate((all_t[-1], sol.t[1:]))
-            all_y[-1] = np.concatenate((all_y[-1], sol.y[:, 1:]), axis=1)
-        else:
-            all_t.append(sol.t.copy())
-            all_y.append(sol.y.copy())
-        segments.append(sol)
-
-        # Advance state to the end of the segment
-        if sol.y.shape[1] == 0:
-            # No internal points (shouldn't happen with our teval padding), fallback to sol.y[:, -1] if available
-            states_current = (
-                sol.sol(b).reshape(C, N) if sol.sol is not None else states_current
-            )
-        else:
-            states_current = sol.y[:, -1].reshape(C, N)
-
-        t_left = b
-
-        # Apply seeding at the *start* of the next day (if we didn't reach tf)
-        if (
-            t_left < tf - 1e-12
-            and seeding_data is not None
-            and abs(t_left - round(t_left)) < 1e-12
-        ):
-            day_now = int(round(t_left))
-            apply_seeding_for_day(
-                states_current,
-                day_now,
-                seeding_data,
-                seeding_amounts,
-                daily_incidence=daily_incid,
-            )
-
-            if store_daily_prevalence:
-                day_counter += 1
-                daily_prev[day_counter, :, :] = states_current
-
-    # If we ended exactly at a day boundary and asked for daily prevalence, include the terminal snapshot
-    if store_daily_prevalence:
-        # Ensure we wrote the final boundary
-        if abs(tf - np.floor(tf)) < 1e-12:
-            # last index
-            daily_prev[day_counter + 1, :, :] = states_current
-
-    # Concatenate results
-    t_concat = np.concatenate(all_t) if all_t else np.array([t0, tf])
-    y_concat = (
-        np.concatenate(all_y, axis=1)
-        if all_y
-        else np.column_stack((y0, states_current.ravel()))
-    )
-
-    out = {
-        "t": t_concat,
-        "y": y_concat,
-        "segments": segments,
-    }
-    if store_daily_prevalence:
-        out["daily_prevalence"] = daily_prev
-    if daily_incid is not None:
-        out["daily_incidence"] = daily_incid
-    return out
-
-
-# === 6. RHS Builder (solve_ivp-compatible) ===
-
-
-def build_rhs_for_solve_ivp(
-    ncompartments: int,
-    nspatial_nodes: int,
-    transitions: np.ndarray,
-    proportion_info: np.ndarray,
-    transition_sum_compartments: np.ndarray,
-    percent_day_away: float,
-    proportion_who_move: np.ndarray,
-    mobility_data: np.ndarray,
-    mobility_data_indices: np.ndarray,
-    mobility_row_indices: np.ndarray,
-    population: np.ndarray,
-    *,
-    param_expr_lookup: dict[int, str] | None = None,
-    param_name_to_row: dict[str, int] | None = None,
-    param_time_mode: str = "step",  # match legacy's discrete stepping by default
-) -> Callable[[float, np.ndarray, np.ndarray], np.ndarray]:
-    """
-    Construct an RHS suitable for SciPy's solve_ivp: f(t, y, parameters) -> dy/dt.
-
-    Assumptions / guarantees:
-      - Returns dy/dt (rates), never scaled by dt.
-      - Parameter time dependence is handled by `param_slice` using `param_time_mode`.
-      - Expects `compute_proportion_sums_exponents` to return
-          (total_base, source_numbers, single_prop_mask).
-      - Passes `single_prop_mask` to `compute_transition_rates` so transitions with a
-        single proportion skip mobility mixing (legacy behavior).
-    """
-
-    def rhs(t: float, y: np.ndarray, parameters: np.ndarray) -> np.ndarray:
-        # 0) Time-slice parameters to (P, N)
-        param_t = param_slice(parameters, t, mode=param_time_mode)
-
-        # 1) Reshape state vector into (C, N)
-        states_current = y.reshape((ncompartments, nspatial_nodes))
-
-        # 2) Proportion terms + source numbers (+ mask for n_p == 1)
-        total_base, source_numbers, single_prop_mask = (
-            compute_proportion_sums_exponents(
-                states_current,
-                transitions,
-                proportion_info,
-                transition_sum_compartments,
-                param_t,  # (P, N)
-            )
-        )
-
-        # 3) Apply parameter scaling + mobility mixing (mask controls mobility path)
-        total_rates = compute_transition_rates(
-            total_rates_base=total_base,
-            source_numbers=source_numbers,
-            transitions=transitions,
-            param_t=param_t,
-            percent_day_away=percent_day_away,
-            proportion_who_move=proportion_who_move,
-            mobility_data=mobility_data,
-            mobility_data_indices=mobility_data_indices,
-            mobility_row_indices=mobility_row_indices,
-            population=population,
-            param_expr_lookup=param_expr_lookup,
-            param_name_to_row=param_name_to_row,
-            # IMPORTANT: requires your edited compute_transition_rates to accept this kwarg
-            single_prop_mask=single_prop_mask,
-        )
-
-        # 4) Instantaneous flux (dy/dt)
-        amounts = compute_transition_amounts_meta(source_numbers, total_rates)
-
-        # 5) Assemble net change vector (flattened for solve_ivp)
-        dy = assemble_flux(amounts, transitions, ncompartments, nspatial_nodes)
-        return dy  # dy/dt
-
-    return rhs
-
-
-# === 7. Solver Step Functions (unchanged; for your custom runner) ===
-
-
-@njit(inline="always", fastmath=True)
-def update(y: np.ndarray, delta_t: float, dy: np.ndarray) -> np.ndarray:
-    """
-    y(t + dt) = y(t) + dt * dy
-    """
-    return y + delta_t * dy
-
-
-def rk4_step(
-    rhs_fn: Callable[[float, np.ndarray], np.ndarray],
-    y: np.ndarray,
-    t: float,
-    dt: float,
-) -> np.ndarray:
-    """
-    Single RK4 step assuming rhs_fn returns dy/dt.
-    """
-    k1 = rhs_fn(t, y)
-    k2 = rhs_fn(t + dt / 2, update(y, dt / 2, k1))
-    k3 = rhs_fn(t + dt / 2, update(y, dt / 2, k2))
-    k4 = rhs_fn(t + dt, update(y, dt, k3))
-    return update(y, dt / 6, k1 + 2 * k2 + 2 * k3 + k4)
-
-
-def euler_or_stochastic_step(
-    rhs_fn: Callable[[float, np.ndarray], np.ndarray],
-    y: np.ndarray,
-    t: float,
-    dt: float,
-) -> np.ndarray:
-    """
-    Forward Euler using dy/dt from rhs_fn.
-    """
-    return update(y, dt, rhs_fn(t, y))
-
-
-# === 8. Optional: your existing custom fixed-grid solver (works by currying parameters) ===
-
-
-def run_solver(
-    rhs_fn: Callable[[float, np.ndarray], np.ndarray],
-    y0: np.ndarray,
-    t_grid: np.ndarray,
-    method: str = "rk4",
-    record_daily: bool = False,
-    ncompartments: int | None = None,
-    nspatial_nodes: int | None = None,
-) -> tuple[np.ndarray, np.ndarray | None]:
-    """
-    Run a simple fixed-grid solver. Provide rhs_fn(t, y) that returns dy/dt.
-    To use with parameters, curry them: rhs_curried = functools.partial(rhs_with_params, parameters=theta)
-    """
-    state_shape = y0.shape
-    y = y0.copy().ravel()
-    n_steps = len(t_grid)
-    states = np.zeros((n_steps, *state_shape))
-    incid = np.zeros((n_steps, *state_shape)) if record_daily else None
-
-    if DEBUG:
-        print(f"[DBG] run_solver: start, method={method}, steps={n_steps}")
-        _dbg_stats("run_solver.y0", y)
-        _dbg_stats("run_solver.t_grid", t_grid)
-
-    for i, t in enumerate(t_grid):
-        states[i] = y.reshape(state_shape)
-
-        if record_daily and method != "rk4":
-            dy = rhs_fn(t, y).reshape(state_shape)
-            incid[i] = np.maximum(dy, 0.0)
-
-        if i < n_steps - 1:
-            dt = t_grid[i + 1] - t
-            if method == "rk4":
-                y = rk4_step(rhs_fn, y, t, dt)
-            elif method == "euler":
-                y = euler_or_stochastic_step(rhs_fn, y, t, dt)
-            else:
-                raise ValueError(f"Unknown method: {method}")
-
-            if DEBUG:
-                if not np.all(np.isfinite(y)):
-                    print(
-                        f"[DBG] run_solver: non-finite state after step i={i}, t={t}, dt={dt}"
-                    )
-                    _dbg_nonfinite("run_solver.y(after step)", y)
-                    # Optional: early break to reduce log noise during debug
-                    # break
-
-    # Interpolate from coarse to daily resolution, if applicable
-    if len(t_grid) >= 2 and (t_grid[1] - t_grid[0] == 2.0):
-        interp = interp1d(
-            t_grid[::2], states[::2], axis=0, kind="linear", fill_value="extrapolate"
-        )
-        states = interp(t_grid)
-        if record_daily:
-            incid /= 2
-            incid[1::2] = incid[:-1:2]
-
-    if DEBUG:
-        _dbg_stats("run_solver.states(out)", states)
-        if incid is not None:
-            _dbg_stats("run_solver.incid(out)", incid)
-
-    return states, incid
-
-
-# === 9. Optional factory class (solve_ivp-compatible) ===
+# --- factory with build_rhs as a method ---
+from scipy.integrate import solve_ivp
 
 
 class RHSfactory:
     """
-    Convenience wrapper. `precomputed` must provide the keys below; this class
-    builds an rhs(t, y, parameters) suitable for solve_ivp.
+    Wraps precomputed structures and builds an rhs(t, y, parameters) method suitable for solve_ivp.
     """
 
     REQUIRED_KEYS = [
@@ -851,6 +448,7 @@ class RHSfactory:
         "mobility_row_indices",
         "population",
     ]
+    OPTIONAL_KEYS = ["seeding_data", "seeding_amounts", "daily_incidence"]
 
     def __init__(
         self,
@@ -859,35 +457,146 @@ class RHSfactory:
         param_name_to_row: dict[str, int] | None = None,
         param_time_mode: str = "linear",
     ):
-        # Validate required keys
+        # validate keys
         for k in self.REQUIRED_KEYS:
             if k not in precomputed:
                 raise KeyError(f"precomputed is missing required key: '{k}'")
+
         self.precomputed = precomputed
         self.param_expr_lookup = param_expr_lookup
         self.param_name_to_row = param_name_to_row
         self.param_time_mode = param_time_mode
 
-        # Build the RHS once (it closes over static structures)
-        self._rhs = build_rhs_for_solve_ivp(
-            precomputed["ncompartments"],
-            precomputed["nspatial_nodes"],
-            precomputed["transitions"],
-            precomputed["proportion_info"],
-            precomputed["transition_sum_compartments"],
-            precomputed["percent_day_away"],
-            precomputed["proportion_who_move"],
-            precomputed["mobility_data"],
-            precomputed["mobility_data_indices"],
-            precomputed["mobility_row_indices"],
-            precomputed["population"],
-            param_expr_lookup=self.param_expr_lookup,
-            param_name_to_row=self.param_name_to_row,
-            param_time_mode=self.param_time_mode,
-        )
+        # tracker survives across RHS calls
+        self._last_day_applied = {"day": None}
+        self._rhs: Callable[[float, np.ndarray, np.ndarray], np.ndarray] | None = None
+
+        # build once using defaults present in precomputed (if any)
+        self.build_rhs()
+
+    def reset_seeding_tracker(self) -> None:
+        """Reset the day-change tracker (useful before a new solve)."""
+        self._last_day_applied["day"] = None
+
+    def build_rhs(
+        self,
+        *,
+        param_time_mode: str | None = None,
+        seeding_data: dict[str, np.ndarray] | None = None,
+        seeding_amounts: np.ndarray | None = None,
+        daily_incidence: np.ndarray | None = None,
+    ) -> Callable[[float, np.ndarray, np.ndarray], np.ndarray]:
+        """
+        Construct and store an RHS that optionally injects legacy seeding once per day boundary.
+        Call again to rebuild with different options.
+        """
+        pc = self.precomputed
+        C = int(pc["ncompartments"])
+        N = int(pc["nspatial_nodes"])
+
+        # default to ctor's values / precomputed payloads
+        if param_time_mode is None:
+            param_time_mode = self.param_time_mode
+        if seeding_data is None:
+            seeding_data = pc.get("seeding_data", None)
+        if seeding_amounts is None:
+            seeding_amounts = pc.get("seeding_amounts", None)
+        if daily_incidence is None:
+            daily_incidence = pc.get("daily_incidence", None)
+
+        # local aliases for speed/readability
+        transitions = pc["transitions"]
+        proportion_info = pc["proportion_info"]
+        transition_sum_compartments = pc["transition_sum_compartments"]
+        percent_day_away = pc["percent_day_away"]
+        proportion_who_move = pc["proportion_who_move"]
+        mobility_data = pc["mobility_data"]
+        mobility_data_indices = pc["mobility_data_indices"]
+        mobility_row_indices = pc["mobility_row_indices"]
+        population = pc["population"]
+        param_expr_lookup = self.param_expr_lookup
+        param_name_to_row = self.param_name_to_row
+        last_day_applied = self._last_day_applied  # closure to persist across calls
+
+        # ---- define RHS ----
+        def rhs(t: float, y: np.ndarray, parameters: np.ndarray) -> np.ndarray:
+            # 1) inject seeding (once per integer day) before computing rates
+            if seeding_data is not None and seeding_amounts is not None:
+                # small epsilon to stabilize floor at boundaries
+                today = int(np.floor(t + 1e-12))
+                if last_day_applied["day"] != today:
+                    states_current = y.reshape((C, N))
+                    apply_legacy_seeding(
+                        states_current,
+                        today,
+                        seeding_data,
+                        seeding_amounts,
+                        daily_incidence=daily_incidence,
+                    )
+                    y[:] = states_current.ravel()
+                    last_day_applied["day"] = today
+
+            # 2) parameter time-slice
+            param_t = param_slice(parameters, t, mode=param_time_mode)
+
+            # 3) base terms
+            states_current = y.reshape((C, N))
+            total_base, source_numbers, single_prop_mask = (
+                compute_proportion_sums_exponents(
+                    states_current,
+                    transitions,
+                    proportion_info,
+                    transition_sum_compartments,
+                    param_t,
+                )
+            )
+
+            # 4) scaling + mobility (mask controls single-proportion fast path)
+            total_rates = compute_transition_rates(
+                total_rates_base=total_base,
+                source_numbers=source_numbers,
+                transitions=transitions,
+                param_t=param_t,
+                percent_day_away=percent_day_away,
+                proportion_who_move=proportion_who_move,
+                mobility_data=mobility_data,
+                mobility_data_indices=mobility_data_indices,
+                mobility_row_indices=mobility_row_indices,
+                population=population,
+                param_expr_lookup=param_expr_lookup,
+                param_name_to_row=param_name_to_row,
+                single_prop_mask=single_prop_mask,
+            )
+
+            # 5) instantaneous flux and assembly: dy/dt
+            amounts = compute_transition_amounts_meta(source_numbers, total_rates)
+            dy = assemble_flux(amounts, transitions, C, N)
+            return dy
+
+        self._rhs = rhs
+        return rhs
 
     def create_rhs(self) -> Callable[[float, np.ndarray, np.ndarray], np.ndarray]:
-        """
-        Returns an rhs(t, y, parameters) function for solve_ivp.
-        """
+        """Return the currently built RHS (builds on demand if missing)."""
+        if self._rhs is None:
+            return self.build_rhs()
         return self._rhs
+
+    def solve(
+        self,
+        y0: np.ndarray,
+        parameters: np.ndarray,
+        t_span: tuple[float, float],
+        t_eval: np.ndarray | None = None,
+        **solve_ivp_kwargs,
+    ):
+        """Convenience wrapper around scipy.integrate.solve_ivp using the stored RHS."""
+        self.reset_seeding_tracker()  # fresh run, re-apply day 0 seeding as needed
+        rhs = self.create_rhs()
+        return solve_ivp(
+            fun=lambda t, y: rhs(t, y, parameters),
+            t_span=t_span,
+            y0=y0,
+            t_eval=t_eval,
+            **solve_ivp_kwargs,
+        )

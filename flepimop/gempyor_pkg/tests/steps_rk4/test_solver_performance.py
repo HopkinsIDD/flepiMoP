@@ -4,7 +4,9 @@ from functools import partial
 from scipy.integrate import solve_ivp
 
 from gempyor.steps_rk4 import rk4_integration
-from gempyor.vectorization_experiments import build_rhs_for_solve_ivp
+
+# UPDATED: use the factory instead of the old builder free function
+from gempyor.vectorization_experiments import RHSfactory
 
 import shutil
 from pathlib import Path
@@ -114,6 +116,22 @@ def model_and_inputs(modelinfo_from_config):
     dt = 0.1
     time_grid = np.linspace(t0, t1, int((t1 - t0) / dt) + 1).astype(np.float64)
 
+    # Build the precomputed dict for RHSfactory (seeding intentionally omitted: OFF)
+    precomputed = {
+        "ncompartments": initial_array.shape[0],
+        "nspatial_nodes": initial_array.shape[1],
+        "transitions": transitions,
+        "proportion_info": proportion_info,
+        "transition_sum_compartments": transition_sum_compartments,
+        "percent_day_away": 0.5,  # same as below
+        "proportion_who_move": proportion_who_move,
+        "mobility_data": mobility_data,
+        "mobility_data_indices": mobility_data_indices,
+        "mobility_row_indices": mobility_row_indices,
+        "population": population,
+        # NOTE: no 'seeding_data' / 'seeding_amounts' keys => seeding OFF
+    }
+
     return {
         "model": model,
         "initial_array": initial_array,
@@ -131,6 +149,7 @@ def model_and_inputs(modelinfo_from_config):
         "percent_day_away": 0.5,
         "param_expr_lookup": param_expr_lookup,
         "param_name_to_row": param_name_to_row,
+        "precomputed": precomputed,
     }
 
 
@@ -154,7 +173,7 @@ def test_legacy_solver_performance(benchmark, model_and_inputs):
             proportion_info=out["proportion_info"],
             transition_sum_compartments=out["transition_sum_compartments"],
             initial_conditions=out["initial_array"],
-            seeding_data={"day_start_idx": np.zeros(ndays_daily, dtype=int)},
+            seeding_data={"day_start_idx": np.zeros(ndays_daily, dtype=int)},  # OFF
             seeding_amounts=np.zeros(0),
             mobility_data=out["mobility_data"],
             mobility_row_indices=out["mobility_row_indices"],
@@ -173,22 +192,14 @@ def test_vectorized_solver_bdf_param_eval_grid(benchmark, model_and_inputs, eval
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
 
-    rhs = build_rhs_for_solve_ivp(
-        ncompartments=ncomp,
-        nspatial_nodes=nloc,
-        transitions=out["transitions"],
-        proportion_info=out["proportion_info"],
-        transition_sum_compartments=out["transition_sum_compartments"],
-        percent_day_away=out["percent_day_away"],
-        proportion_who_move=out["proportion_who_move"],
-        mobility_data=out["mobility_data"],
-        mobility_data_indices=out["mobility_data_indices"],
-        mobility_row_indices=out["mobility_row_indices"],
-        population=out["population"],
+    # Build factory and RHS (param_time_mode='step' to match legacy stepping)
+    factory = RHSfactory(
+        precomputed=out["precomputed"],
         param_expr_lookup=out["param_expr_lookup"],
         param_name_to_row=out["param_name_to_row"],
         param_time_mode="step",
     )
+    rhs = factory.create_rhs()
     f = partial(rhs, parameters=out["params"])
 
     t0 = 0.0
@@ -223,7 +234,7 @@ def test_overlay_rhs(model_and_inputs):
     ndays = out["model"].n_days
     t_daily = np.arange(0.0, float(ndays), 1.0, dtype=np.float64)
 
-    # Legacy RK4
+    # Legacy RK4 (seeding OFF)
     states_legacy, _ = rk4_integration(
         ncompartments=ncomp,
         nspatial_nodes=nloc,
@@ -234,7 +245,7 @@ def test_overlay_rhs(model_and_inputs):
         proportion_info=out["proportion_info"],
         transition_sum_compartments=out["transition_sum_compartments"],
         initial_conditions=out["initial_array"],
-        seeding_data={"day_start_idx": np.zeros(ndays, dtype=int)},
+        seeding_data={"day_start_idx": np.zeros(ndays, dtype=int)},  # OFF
         seeding_amounts=np.zeros(0),
         mobility_data=out["mobility_data"],
         mobility_row_indices=out["mobility_row_indices"],
@@ -244,23 +255,14 @@ def test_overlay_rhs(model_and_inputs):
         silent=True,
     )
 
-    # Vectorized RHS + BDF (existing path)
-    rhs_vec = build_rhs_for_solve_ivp(
-        ncompartments=ncomp,
-        nspatial_nodes=nloc,
-        transitions=out["transitions"],
-        proportion_info=out["proportion_info"],
-        transition_sum_compartments=out["transition_sum_compartments"],
-        percent_day_away=out["percent_day_away"],
-        proportion_who_move=out["proportion_who_move"],
-        mobility_data=out["mobility_data"],
-        mobility_data_indices=out["mobility_data_indices"],
-        mobility_row_indices=out["mobility_row_indices"],
-        population=out["population"],
+    # Vectorized RHS + BDF via factory
+    factory = RHSfactory(
+        precomputed=out["precomputed"],
         param_expr_lookup=out["param_expr_lookup"],
         param_name_to_row=out["param_name_to_row"],
         param_time_mode="step",
     )
+    rhs_vec = factory.create_rhs()
     f_vec = partial(rhs_vec, parameters=out["params"])
     sol_vec = solve_ivp(
         fun=f_vec,
@@ -276,9 +278,6 @@ def test_overlay_rhs(model_and_inputs):
     assert sol_vec.success, f"Vectorized BDF failed: {sol_vec.message}"
     states_vec = sol_vec.y.T.reshape(len(t_daily), ncomp, nloc)
 
-    # From here you can plot or assert…
-    # (keep your plotting code as before)
-
     # Overlay of I(t) total across nodes
     I_idx = 2
     y_legacy = states_legacy[:, I_idx, :].sum(axis=1)
@@ -286,11 +285,6 @@ def test_overlay_rhs(model_and_inputs):
 
     test_dir = Path(__file__).parent
     outpath = test_dir / "solver_overlay_I_total_daily_manual.png"
-
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
     ax.plot(t_daily, y_legacy, label="Legacy RK4 (daily)", linewidth=1.5)
