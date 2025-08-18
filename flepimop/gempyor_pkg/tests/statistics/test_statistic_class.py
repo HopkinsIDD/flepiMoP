@@ -337,7 +337,9 @@ class TestStatistic:
         assert statistic.name == mock_inputs.name
 
         # `regularizations` attribute
-        assert len(statistic.regularizations) == len(mock_inputs.config.get("regularize", []))
+        assert len(statistic.regularizations) == len(
+            mock_inputs.config.get("regularize", [])
+        )
         for reg_tuple in statistic.regularizations:
             assert callable(reg_tuple[0])
             assert isinstance(reg_tuple[1], dict)
@@ -531,7 +533,6 @@ class TestStatistic:
         assert log_likelihood.coords.identical(
             mock_inputs.gt_data[mock_inputs.config["data_var"]].coords
         )
-        
 
     @pytest.mark.parametrize("factory", [invalid_misshaped_data_factory])
     def test_compute_logloss_data_misshape_value_error(

@@ -2,17 +2,17 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 
+from pydantic import Field, AliasChoices
+
 from gempyor.likelihoods import LoglikelihoodABC
 
 
 class DummyLoglikelihood(LoglikelihoodABC):
     """A simple dummy implementation for testing the LoglikelihoodABC logic."""
 
-    distribution: str = "dummy"
+    distribution: str = Field(validation_alias=AliasChoices("distribution", "dist"))
 
-    def _loglikelihood(
-        self, gt_data: npt.NDArray, model_data: npt.NDArray
-    ) -> npt.NDArray:
+    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
         """
         A predictable dummy llik implementation.
         """
@@ -29,6 +29,11 @@ def test_loglikelihood_abc_wrapper() -> None:
     assert np.array_equal(result, expected)
 
 
+def test_loglikelihood_init_with_alias() -> None:
+    dist = DummyLoglikelihood(dist="dummy")
+    assert dist.distribution == "dummy"
+
+
 @pytest.mark.parametrize(
     "gt_data, model_data",
     [
@@ -38,9 +43,7 @@ def test_loglikelihood_abc_wrapper() -> None:
     ],
     ids=["positive_floats", "mixed_sign_floats", "identical_data"],
 )
-def test_loglikelihood_calculation(
-    gt_data: npt.NDArray, model_data: npt.NDArray
-) -> None:
+def test_loglikelihood_calculation(gt_data: npt.NDArray, model_data: npt.NDArray) -> None:
     dist = DummyLoglikelihood(distribution="dummy")
     result = dist.loglikelihood(gt_data=gt_data, model_data=model_data)
     expected = -((gt_data - model_data) ** 2)

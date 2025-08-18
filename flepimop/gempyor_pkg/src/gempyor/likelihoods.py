@@ -209,7 +209,7 @@ class WeibullLoglikelihood(LoglikelihoodABC):
         return scipy.stats.weibull_min.logpdf(x=gt_data, c=self.shape, scale=model_data)
 
 
-class BetaLoglikelihood(LoglikelihoodABC):
+class BetaLoglikelihood(LoglikelihoodABC):  # probably we can remove this for now?
     """
     Represents a beta distribution for calculating log-likelihood.
 
@@ -288,7 +288,7 @@ def loglikelihood_from_confuse_config(config: confuse.ConfigView) -> Loglikeliho
     Returns:
         A LoglikelihoodShape object.
     """
-    conf = config.get().copy() 
-    if 'dist' in conf:
-        conf['distribution'] = conf.pop('dist')
+    conf = config.get().copy()
+    if "dist" in conf:
+        conf["distribution"] = conf.pop("dist")
     return LOGLIKE_SHAPE_ADAPTER.validate_python(conf)
