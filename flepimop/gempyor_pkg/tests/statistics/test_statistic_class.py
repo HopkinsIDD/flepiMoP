@@ -11,6 +11,7 @@ import xarray as xr
 import re
 
 from gempyor.statistics import Statistic
+from gempyor.likelihoods import LoglikelihoodABC
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -46,8 +47,6 @@ def invalid_regularization_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidH",
             "data_var": "incidH",
-            "remove_na": True,
-            "add_one": True,
             "likelihood": {"dist": "rmse"},
             "regularize": [{"name": "forecast"}, {"name": "invalid"}],
         },
@@ -75,9 +74,7 @@ def invalid_misshaped_data_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidH",
             "data_var": "incidH",
-            "remove_na": True,
-            "add_one": True,
-            "likelihood": {"dist": "norm", "params": {"scale": 2.0}},
+            "likelihood": {"dist": "norm", "sigma": 2.0},
         },
         model_data=model_data,
         gt_data=gt_data,
@@ -110,9 +107,7 @@ def simple_valid_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidH",
             "data_var": "incidH",
-            "remove_na": True,
-            "add_one": True,
-            "likelihood": {"dist": "norm", "params": {"scale": 2.0}},
+            "likelihood": {"dist": "norm", "sigma": 2.0},
         },
         model_data=model_data,
         gt_data=gt_data,
@@ -145,8 +140,6 @@ def simple_valid_resample_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidH",
             "data_var": "incidH",
-            "remove_na": True,
-            "add_one": True,
             "likelihood": {"dist": "rmse"},
             "resample": {"freq": "MS", "aggregator": "sum"},
         },
@@ -181,8 +174,6 @@ def simple_valid_scale_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidH",
             "data_var": "incidH",
-            "remove_na": True,
-            "add_one": True,
             "likelihood": {"dist": "rmse"},
             "scale": "exp",
         },
@@ -217,8 +208,6 @@ def simple_valid_resample_and_scale_factory() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidD",
             "data_var": "incidD",
-            "remove_na": True,
-            "add_one": True,
             "likelihood": {"dist": "rmse"},
             "resample": {"freq": "W", "aggregator": "max"},
             "scale": "sin",
@@ -258,8 +247,6 @@ def simple_valid_factory_with_pois() -> MockStatisticInput:
             "name": "sum_hospitalizations",
             "sim_var": "incidH",
             "data_var": "incidH",
-            "remove_na": True,
-            "add_one": True,
             "likelihood": {"dist": "pois"},
         },
         model_data=model_data,
@@ -312,6 +299,7 @@ all_valid_factories = [
 ]
 
 
+# TODO for Emily: refactor these tests for new goempyor.statistics
 class TestStatistic:
     @pytest.mark.parametrize("factory", [invalid_regularization_factory])
     def test_unsupported_regularizations_value_error(
