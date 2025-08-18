@@ -288,5 +288,7 @@ def loglikelihood_from_confuse_config(config: confuse.ConfigView) -> Loglikeliho
     Returns:
         A LoglikelihoodShape object.
     """
-    conf = config.get()
+    conf = config.get().copy() 
+    if 'dist' in conf:
+        conf['distribution'] = conf.pop('dist')
     return LOGLIKE_SHAPE_ADAPTER.validate_python(conf)
