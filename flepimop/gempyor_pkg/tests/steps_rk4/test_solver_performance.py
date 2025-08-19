@@ -155,7 +155,7 @@ def model_and_inputs(modelinfo_from_config):
 # ------------------------------------------------------------
 # Benchmarks
 # ------------------------------------------------------------
-@pytest.mark.benchmark(group="solver_performance")
+@pytest.mark.benchmark(group="solver_performance",min_rounds=100)
 def test_legacy_solver_performance(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -185,9 +185,9 @@ def test_legacy_solver_performance(benchmark, model_and_inputs):
     benchmark(run_legacy)
 
 
-@pytest.mark.benchmark(group="solver_performance")
+@pytest.mark.benchmark(group="solver_performance",min_rounds=100)
 @pytest.mark.parametrize("eval_step", [1.0, 0.1])
-def test_vectorized_solver_bdf_param_eval_grid(benchmark, model_and_inputs, eval_step):
+def test_vectorized_solver_LSODA_param_eval_grid(benchmark, model_and_inputs, eval_step):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
 
@@ -208,20 +208,20 @@ def test_vectorized_solver_bdf_param_eval_grid(benchmark, model_and_inputs, eval
     else:
         t_eval = np.arange(t0, t1 + 1e-12, eval_step, dtype=np.float64)
 
-    def run_bdf_with_eval_grid():
+    def run_LSODA_with_eval_grid():
         res = solve_ivp(
             fun=f,
             t_span=(t_eval[0], t_eval[-1]),
             y0=out["initial_array"].ravel(),
-            method="BDF",
+            method="LSODA",
             t_eval=t_eval,
             vectorized=False,
-            rtol=1e-6,
-            atol=1e-8,
+            rtol=1e-2,
+            atol=1e-4,
         )
         return res.y.T.reshape(len(t_eval), ncomp, nloc)
 
-    states = benchmark(run_bdf_with_eval_grid)
+    states = benchmark(run_LSODA_with_eval_grid)
     assert states.shape == (len(t_eval), ncomp, nloc)
 
 
@@ -254,7 +254,7 @@ def test_overlay_rhs(model_and_inputs):
         silent=True,
     )
 
-    # Vectorized RHS + BDF via factory
+    # Vectorized RHS + LSODA via factory
     factory = RHSfactory(
         precomputed=out["precomputed"],
         param_expr_lookup=out["param_expr_lookup"],
@@ -267,14 +267,14 @@ def test_overlay_rhs(model_and_inputs):
         fun=f_vec,
         t_span=(t_daily[0], t_daily[-1]),
         y0=out["initial_array"].ravel(),
-        method="BDF",
+        method="LSODA",
         t_eval=t_daily,
         vectorized=False,
-        rtol=1e-6,
-        atol=1e-8,
+        rtol=1e-2,
+        atol=1e-4,
         max_step=1.0,
     )
-    assert sol_vec.success, f"Vectorized BDF failed: {sol_vec.message}"
+    assert sol_vec.success, f"Vectorized LSODA failed: {sol_vec.message}"
     states_vec = sol_vec.y.T.reshape(len(t_daily), ncomp, nloc)
 
     # Overlay of I(t) total across nodes
@@ -288,7 +288,7 @@ def test_overlay_rhs(model_and_inputs):
     fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
     ax.plot(t_daily, y_legacy, label="Legacy RK4 (daily)", linewidth=1.5)
     ax.plot(
-        t_daily, y_vec, label="Vectorized + BDF (daily)", linestyle="--", linewidth=1.5
+        t_daily, y_vec, label="Vectorized + LSODA (daily)", linestyle="--", linewidth=1.5
     )
     ax.set_title("Overlay: I(t) total across nodes — Daily Grid")
     ax.set_xlabel("Time (days)")

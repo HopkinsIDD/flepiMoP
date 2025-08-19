@@ -163,7 +163,7 @@ class MobilityFileRow(BaseModel):
 
     ori: str
     dest: str
-    amount: Annotated[int, Field(gt=0)]
+    amount: Annotated[int, Field(ge=0)]
 
     @model_validator(mode="after")
     def ori_and_dest_are_different(self) -> "MobilityFileRow":

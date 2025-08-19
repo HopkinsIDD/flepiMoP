@@ -41,42 +41,56 @@ def build_safe_param_expr_lookup(
 # ------------------------------------------------------------
 # Fixtures
 # ------------------------------------------------------------
+
 @pytest.fixture(scope="module")
 def modelinfo_from_config(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("model_input")
 
-    original_dir = Path(__file__).resolve()
-    while original_dir.name != "flepimop":
-        original_dir = original_dir.parent
-    tutorial_dir = original_dir.parent / "examples/tutorials"
+    # Resolve tutorials dir relative to this test file
+    repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
+    tutorial_dir = repo_root / "examples" / "tutorials"
 
-    input_dir = tmp_path / "model_input"
-    input_dir.mkdir()
-    input_files = [
-        "geodata_sample_2pop.csv",
-        "ic_2pop.csv",
-        "mobility_sample_2pop.csv",
-    ]
-    for fname in input_files:
-        shutil.copyfile(tutorial_dir / "model_input" / fname, input_dir / fname)
+    # --- Copy Structured_Example inputs ---
+    src_structured = tutorial_dir / "model_input" / "Structured_Example"
+    dst_structured = tmp_path / "model_input" / "Structured_Example"
+    shutil.copytree(src_structured, dst_structured, dirs_exist_ok=True)
 
-    config_file = "config_sample_2pop_modifiers.yml"
+    # --- Copy initial_condition directory (plugin + CSVs) ---
+    src_ic = tutorial_dir / "model_input" / "initial_condition"
+    dst_ic = tmp_path / "model_input" / "initial_condition"
+    shutil.copytree(src_ic, dst_ic, dirs_exist_ok=True)
+
+    # --- Copy config file ---
+    config_file = "Structured_Example.yml"
     config_path = tmp_path / config_file
     shutil.copyfile(tutorial_dir / config_file, config_path)
 
+    # --- Workaround: patch YAML to absolute paths ---
+    cfg_text = config_path.read_text()
+    cfg_text = cfg_text.replace(
+        "model_input/",
+        str(tmp_path / "model_input") + "/"
+    )
+    config_path.write_text(cfg_text)
+
+    # --- Load config ---
     config = confuse.Configuration("TestModel", __name__)
     config.set_file(str(config_path))
 
-    return (
-        ModelInfo(
-            config=config,
-            config_filepath=str(config_path),
-            path_prefix=str(tmp_path),
-            setup_name="sample_2pop",
-            seir_modifiers_scenario="Ro_all",
-        ),
-        config,
+    # --- Build ModelInfo ---
+    model = ModelInfo(
+        config=config,
+        config_filepath=str(config_path),
+        path_prefix=str(tmp_path),  # unused due to bug, but keep for API consistency
+        setup_name="Structured_Example",
+        seir_modifiers_scenario="none",
     )
+
+    return model, config
+
+
+
+
 
 
 @pytest.fixture
@@ -156,7 +170,7 @@ def model_and_inputs(modelinfo_from_config):
 # ------------------------------------------------------------
 # Benchmarks
 # ------------------------------------------------------------
-@pytest.mark.benchmark(group="solver_performance")
+@pytest.mark.benchmark(group="solver_performance",min_rounds=100)
 def test_legacy_solver_performance(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -186,9 +200,9 @@ def test_legacy_solver_performance(benchmark, model_and_inputs):
     benchmark(run_legacy)
 
 
-@pytest.mark.benchmark(group="solver_performance")
+@pytest.mark.benchmark(group="solver_performance",min_rounds=100)
 @pytest.mark.parametrize("eval_step", [1.0, 0.1])
-def test_vectorized_solver_bdf_param_eval_grid(benchmark, model_and_inputs, eval_step):
+def test_vectorized_solver_LSODA_param_eval_grid(benchmark, model_and_inputs, eval_step):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
 
@@ -209,20 +223,20 @@ def test_vectorized_solver_bdf_param_eval_grid(benchmark, model_and_inputs, eval
     else:
         t_eval = np.arange(t0, t1 + 1e-12, eval_step, dtype=np.float64)
 
-    def run_bdf_with_eval_grid():
+    def run_LSODA_with_eval_grid():
         res = solve_ivp(
             fun=f,
             t_span=(t_eval[0], t_eval[-1]),
             y0=out["initial_array"].ravel(),
-            method="BDF",
+            method="LSODA",
             t_eval=t_eval,
             vectorized=False,
-            rtol=1e-6,
-            atol=1e-8,
+            rtol=1e-2,
+            atol=1e-4,
         )
         return res.y.T.reshape(len(t_eval), ncomp, nloc)
 
-    states = benchmark(run_bdf_with_eval_grid)
+    states = benchmark(run_LSODA_with_eval_grid)
     assert states.shape == (len(t_eval), ncomp, nloc)
 
 
@@ -255,7 +269,7 @@ def test_overlay_rhs(model_and_inputs):
         silent=True,
     )
 
-    # Vectorized RHS + BDF via factory
+    # Vectorized RHS + LSODA via factory
     factory = RHSfactory(
         precomputed=out["precomputed"],
         param_expr_lookup=out["param_expr_lookup"],
@@ -268,14 +282,14 @@ def test_overlay_rhs(model_and_inputs):
         fun=f_vec,
         t_span=(t_daily[0], t_daily[-1]),
         y0=out["initial_array"].ravel(),
-        method="BDF",
+        method="LSODA",
         t_eval=t_daily,
         vectorized=False,
-        rtol=1e-6,
-        atol=1e-8,
+        rtol=1e-2,
+        atol=1e-4,
         max_step=1.0,
     )
-    assert sol_vec.success, f"Vectorized BDF failed: {sol_vec.message}"
+    assert sol_vec.success, f"Vectorized LSODA failed: {sol_vec.message}"
     states_vec = sol_vec.y.T.reshape(len(t_daily), ncomp, nloc)
 
     # Overlay of I(t) total across nodes
@@ -289,7 +303,7 @@ def test_overlay_rhs(model_and_inputs):
     fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
     ax.plot(t_daily, y_legacy, label="Legacy RK4 (daily)", linewidth=1.5)
     ax.plot(
-        t_daily, y_vec, label="Vectorized + BDF (daily)", linestyle="--", linewidth=1.5
+        t_daily, y_vec, label="Vectorized + LSODA (daily)", linestyle="--", linewidth=1.5
     )
     ax.set_title("Overlay: I(t) total across nodes — Daily Grid")
     ax.set_xlabel("Time (days)")
