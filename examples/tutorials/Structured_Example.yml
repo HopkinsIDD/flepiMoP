@@ -8,7 +8,6 @@ subpop_setup:
   geodata: model_input/Structured_Example/geodata_2019_statelevel.csv
   mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv
   state_level: TRUE
-  selected: ["56000"]
 
 initial_conditions: 
   method: plugin
