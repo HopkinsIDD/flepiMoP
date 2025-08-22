@@ -1,199 +1,63 @@
-"""
-Tools to forward simulate a model with `gempyor`.
-"""
+"""Tools to forward simulate a model with `gempyor`."""
 
-#!/usr/bin/env python
-
-##
-# @file
-# @brief Runs hospitalization model
-#
-# @details
-#
-# ## Configuration Items
-#
-# ```yaml
-# name: <string>
-# setup_name: <string>
-# start_date: <date>
-# end_date: <date>
-# dt: float
-# nslots: <integer> overridden by the -n/--nslots script parameter
-# subpop_setup:
-#   geodata: <path to file>
-#   mobility: <path to file>
-#
-# seir:
-#   parameters
-#     alpha: <float>
-#     sigma: <float>
-#     gamma: <random distribution>
-#     R0s: <random distribution>
-#
-# seir_modifiers:
-#   scenarios:
-#     - <scenario 1 name>
-#     - <scenario 2 name>
-#     - ...
-#   settings:
-#     <scenario 1 name>:
-#       method: choose one - "SinglePeriodModifier", ", "StackedModifier"
-#       ...
-#     <scenario 2 name>:
-#       method: choose one - "SinglePeriodModifier", "", "StackedModifier"
-#       ...
-#
-# seeding:
-#   method: choose one - "PoissonDistributed", "FolderDraw"
-# ```
-#
-# ### seir_modifiers::scenarios::settings::<scenario name>
-#
-# If {method} is
-# ```yaml
-# seir_modifiers:
-#   scenarios:
-#     <scenario name>:
-#       method: SinglePeriodModifier
-#       parameter: choose one - "alpha, sigma, gamma, r0"
-#       period_start_date: <date>
-#       period_end_date: <date>
-#       value: <random distribution>
-#       subpop: <list of strings> optional
-# ```
-#
-# If {method} is
-# ```yaml
-# seir_modifiers:
-#   scenarios:
-#     <scenario name>:
-#       method:
-#       period_start_date: <date>
-#       period_end_date: <date>
-#       value: <random distribution>
-#       subpop: <list of strings> optional
-# ```
-#
-# If {method} is StackedModifier
-# ```yaml
-# seir_modifiers:
-#   scenarios:
-#     <scenario name>:
-#       method: StackedModifier
-#       scenarios: <list of scenario names>
-# ```
-#
-# ### seeding
-#
-# If {seeding::method} is PoissonDistributed
-# ```yaml
-# seeding:
-#   method: PoissonDistributed
-#   lambda_file: <path to file>
-# ```
-#
-# If {seeding::method} is FolderDraw
-# ```yaml
-# seeding:
-#   method: FolderDraw
-#   folder_path: \<path to dir\>; make sure this ends in a '/'
-# ```
-#
-# ## Input Data
-#
-# * <b>{subpop_setup::geodata}</b> is a csv with columns {subpop_setup::subpop_names} and {subpop_setup::subpop_pop}
-# * <b>{subpop_setup::mobility}</b>
-#
-# If {seeding::method} is PoissonDistributed
-# * {seeding::lambda_file}
-#
-# If {seeding::method} is FolderDraw
-# * {seeding::folder_path}/[simulation ID].impa.csv
-#
-# ## Output Data
-#
-# * model_output/{setup_name}_[scenario]/[simulation ID].seir.[csv/parquet]
-# * model_parameters/{setup_name}_[scenario]/[simulation ID].spar.[csv/parquet]
-# * model_parameters/{setup_name}_[scenario]/[simulation ID].snpi.[csv/parquet]
-# ## Configuration Items
-#
-# ```yaml
-# outcomes:
-#  method: delayframe                   # Only fast is supported atm. Makes fast delay_table computations. Later agent-based method ?
-#  paths:
-#    param_from_file: TRUE               #
-#    param_subpop_file: <path.csv>       # OPTIONAL: File with param per csv. For each param in this file
-#  scenarios:                           # Outcomes scenarios to run
-#    - low_death_rate
-#    - mid_death_rate
-#  settings:                            # Setting for each scenario
-#    low_death_rate:
-#      new_comp1:                               # New compartement name
-#        source: incidence                      # Source of the new compartement: either an previously defined compartement or "incidence" for diffI of the SEIR
-#        probability:  <random distribution>           # Branching probability from source
-#        delay: <random distribution>                  # Delay from incidence of source to incidence of new_compartement
-#        duration: <random distribution>               # OPTIONAL ! Duration in new_comp. If provided, the model add to it's
-#                                                      #output "new_comp1_curr" with current amount in new_comp1
-#      new_comp2:                               # Example for a second compatiment
-#        source: new_comp1
-#        probability: <random distribution>
-#        delay: <random distribution>
-#        duration: <random distribution>
-#      death_tot:                               # Possibility to combine compartements for death.
-#        sum: ['death_hosp', 'death_ICU', 'death_incid']
-#
-#    mid_death_rate:
-#      ...
-#
-# ## Input Data
-#
-# * <b>{param_subpop_file}</b> is a csv with columns subpop, parameter, value. Parameter is constructed as, e.g for comp1:
-#                probability: Pnew_comp1|source
-#                delay:       Dnew_comp1
-#                duration:    Lnew_comp1
-
-
-# ## Output Data
-# * {output_path}/model_output/{setup_name}_[scenario]/[simulation ID].hosp.parquet
-
-
-## @cond
-
-import time, warnings, sys
-
-from pathlib import Path
+import pickle
+import subprocess
+import sys
+import time
+import warnings
 from collections.abc import Iterable
+from itertools import product
+from pathlib import Path
+from typing import Any
 
+import click
 from confuse import Configuration
-from click import Context, pass_context
 
-from . import seir, outcomes, model_info, utils
-from .shared_cli import (
-    config_files_argument,
-    config_file_options,
-    parse_config_files,
-    cli,
-    click_helpstring,
-    mock_context,
-)
-
-# from .profile import profile_options
+from . import outcomes, seir, utils
+from .model_info import ModelInfo
+from .output import Chains
+from .shared_cli import cli, config_file_options, config_files_argument, parse_config_files
 
 
-# @profile_options
-# @profile()
+def _simulate_seir_and_outcomes(
+    modinf: ModelInfo,
+    cfg: Configuration,
+    chains: Chains | None,
+    first_sim_index: int,
+    nslots: int,
+    jobs: int,
+    run_seir: bool = True,
+    run_outcomes: bool = True,
+) -> None:
+    """
+    Thin wrapper to run the SEIR and outcomes simulations in parallel.
+
+    Args:
+        modinf: A `ModelInfo` instance corresponding to the simulation to be run.
+        cfg: A `Configuration` instance containing the simulation configuration.
+        chains: Optional `Chains` instance containing MCMC samples to run the simulation
+            from. If `None`, the simulation will be run using the parameters in the
+            configuration file.
+        first_sim_index: The index of the first simulation to be run.
+        nslots: The number of simulation chains to be run.
+        jobs: The number of parallel jobs to use.
+        run_seir: Whether to run the SEIR model.
+        run_outcomes: Whether to run the outcomes model.
+    """
+    if run_seir:
+        seir.run_parallel_SEIR(modinf, cfg, n_jobs=jobs)
+    if run_outcomes:
+        outcomes.run_parallel_outcomes(
+            modinf,
+            sim_id2write=first_sim_index,
+            nslots=nslots,
+            n_jobs=jobs,
+        )
+
+
 def simulate(
     config_filepath: Configuration | Path | Iterable[Path],
-    id_run_id: str = None,
-    out_run_id: str = None,
-    seir_modifiers_scenarios: str | Iterable[str] = [],
-    outcome_modifiers_scenarios: str | Iterable[str] = [],
-    in_prefix: str = None,
-    nslots: int = None,
-    jobs: int = None,
-    write_csv: bool = False,
-    write_parquet: bool = True,
-    first_sim_index: int = 1,
+    from_chains: Path | None = None,
     verbose: bool = True,
 ) -> int:
     """
@@ -224,76 +88,117 @@ def simulate(
     else:
         cfg = config_filepath
 
-    scenarios_combinations = [
-        [s, d]
-        for s in (
-            cfg["seir_modifiers"]["scenarios"].as_str_seq()
-            if cfg["seir_modifiers"].exists()
-            else [None]
-        )
-        for d in (
-            cfg["outcome_modifiers"]["scenarios"].as_str_seq()
-            if cfg["outcome_modifiers"].exists()
-            else [None]
-        )
-    ]
+    seir_modifiers_scenarios = (
+        cfg["seir_modifiers"]["scenarios"].as_str_seq()
+        if cfg["seir_modifiers"].exists()
+        else [None]
+    )
+    outcome_modifiers_scenarios = (
+        cfg["outcome_modifiers"]["scenarios"].as_str_seq()
+        if cfg["outcome_modifiers"].exists()
+        else [None]
+    )
+    scenarios_combinations = list(
+        product(seir_modifiers_scenarios, outcome_modifiers_scenarios)
+    )
 
     if verbose:
         print("Combination of modifiers scenarios to be run: ")
         print(scenarios_combinations)
         for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
             print(
-                f"seir_modifier: {seir_modifiers_scenario}, outcomes_modifier: {outcome_modifiers_scenario}"
+                f"seir_modifier: {seir_modifiers_scenario}, "
+                f"outcomes_modifier: {outcome_modifiers_scenario}"
             )
 
-    nchains = cfg["nslots"].as_number()
+    nslots = cfg["nslots"].as_number()
 
     if verbose:
-        print(f"Simulations to be run: {nchains}")
+        print(f"Simulations to be run: {nslots}")
+
+    write_csv = cfg["write_csv"].get(bool)
+    write_parquet = cfg["write_parquet"].get(bool)
+    first_sim_index = cfg["first_sim_index"].get(int)
+    in_run_id = cfg["in_run_id"].get(str) if cfg["in_run_id"].exists() else None
+    out_run_id = cfg["out_run_id"].get(str) if cfg["out_run_id"].exists() else None
+    config_filepath = cfg["config_src"].as_str_seq()
+    n_jobs = cfg["jobs"].get(int)
+    run_seir = cfg["seir"].exists()
+    run_outcomes = cfg["outcomes"].exists()
+
+    # Load samples from chains if provided
+    chains: Chains | None = None
+    if from_chains is not None:
+        with from_chains.open("rb") as f:
+            chains = pickle.load(f)
+        if not isinstance(chains, Chains):
+            raise ValueError(f"Expected a Chains instance, got {type(chains)}")
+        if verbose:
+            print(
+                f"Loaded chains with shape {chains.shape} "
+                f"from {from_chains} for simulating."
+            )
+        n_chains, n_iterations, _ = chains.shape
+        if n_chains != n_jobs:
+            raise ValueError(
+                f"Number of chains in {from_chains} is {n_chains}, which "
+                f"does not match the number of jobs to be run, {n_jobs}."
+            )
+        if n_iterations < nslots:
+            raise ValueError(
+                f"Number of iterations in {from_chains} is {n_iterations}, "
+                f"which is less than the number of slots to be run, {nslots}."
+            )
 
     for seir_modifiers_scenario, outcome_modifiers_scenario in scenarios_combinations:
         start = time.monotonic()
         if verbose:
             print(f"Running {seir_modifiers_scenario}_{outcome_modifiers_scenario}")
 
-        modinf = model_info.ModelInfo(
+        modinf = ModelInfo(
             config=cfg,
-            nslots=nchains,
+            nslots=nslots,
             seir_modifiers_scenario=seir_modifiers_scenario,
             outcome_modifiers_scenario=outcome_modifiers_scenario,
-            write_csv=cfg["write_csv"].get(bool),
-            write_parquet=cfg["write_parquet"].get(bool),
-            first_sim_index=cfg["first_sim_index"].get(int),
-            in_run_id=cfg["in_run_id"].get(str) if cfg["in_run_id"].exists() else None,
-            # in_prefix=config["name"].get() + "/",
-            out_run_id=cfg["out_run_id"].get(str) if cfg["out_run_id"].exists() else None,
-            # out_prefix=config["name"].get() + "/" + str(seir_modifiers_scenario) + "/" + out_run_id + "/",
-            config_filepath=cfg["config_src"].as_str_seq(),
+            write_csv=write_csv,
+            write_parquet=write_parquet,
+            first_sim_index=first_sim_index,
+            in_run_id=in_run_id,
+            out_run_id=out_run_id,
+            config_filepath=config_filepath,
+        )
+
+        if verbose:
+            print(f">> Running from config {config_filepath}")
+            print(
+                f">> Starting {nslots} model runs beginning "
+                f"from {first_sim_index} on {n_jobs} processes"
+            )
+            print(
+                f">> ModelInfo *** {modinf.setup_name} "
+                f"*** from {modinf.ti} to {modinf.tf}"
+            )
+            print(
+                f">> Running scenario "
+                f"{seir_modifiers_scenario}_{outcome_modifiers_scenario}"
+            )
+            print(f">> using ***{modinf.get_engine()}*** engine for trajectories")
+
+        _simulate_seir_and_outcomes(
+            modinf,
+            cfg,
+            chains,
+            first_sim_index,
+            nslots,
+            n_jobs,
+            run_seir=run_seir,
+            run_outcomes=run_outcomes,
         )
 
         if verbose:
             print(
-                f"""
-        >> Running from config {cfg["config_src"].as_str_seq()}
-        >> Starting {modinf.nslots} model runs beginning from {modinf.first_sim_index} on {cfg["jobs"].get(int)} processes
-        >> ModelInfo *** {modinf.setup_name} *** from {modinf.ti} to {modinf.tf}
-        >> Running scenario {seir_modifiers_scenario}_{outcome_modifiers_scenario}
-        >> using ***{modinf.get_engine()}*** engine for trajectories
-        """
-            )
-        # (there should be a run function)
-        if cfg["seir"].exists():
-            seir.run_parallel_SEIR(modinf, config=cfg, n_jobs=cfg["jobs"].get(int))
-        if cfg["outcomes"].exists():
-            outcomes.run_parallel_outcomes(
-                sim_id2write=cfg["first_sim_index"].get(int),
-                modinf=modinf,
-                nslots=nchains,
-                n_jobs=cfg["jobs"].get(int),
-            )
-        if verbose:
-            print(
-                f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} completed in {time.monotonic() - start:.1f} seconds"
+                f">>> {seir_modifiers_scenario}_{outcome_modifiers_scenario} "
+                f"completed in {time.monotonic() - start:.1f} seconds"
             )
 
     return 0
@@ -301,22 +206,31 @@ def simulate(
 
 @cli.command(
     name="simulate",
-    params=[config_files_argument] + list(config_file_options.values()),
+    params=[config_files_argument]
+    + list(config_file_options.values())
+    + [
+        click.Option(
+            param_decls=["--from-chains"],
+            type=click.Path(exists=True, dir_okay=False),
+            default=None,
+            show_default=True,
+            help=(
+                "Optional path to a chains pickle file to run simulations from. "
+                "Will override the modifiers within the config file(s)."
+            ),
+        )
+    ],
     context_settings=dict(help_option_names=["-h", "--help"]),
 )
-@pass_context
-def _click_simulate(ctx: Context, **kwargs) -> int:
+@click.pass_context
+def _click_simulate(ctx: click.Context, **kwargs: Any) -> int:
     """Forward simulate a model using gempyor."""
     cfg = parse_config_files(utils.config, ctx, **kwargs)
-    return simulate(cfg)
+    return simulate(cfg, from_chains=kwargs.get("from_chains"))
 
 
-# will all be removed upon deprecated endpoint removal
-
-import subprocess
-
-
-def _deprecated_simulate(argv: list[str] = []) -> int:
+def _deprecated_simulate(argv: list[str] | None = None) -> int:
+    argv = argv or []
     if not argv:
         argv = sys.argv[1:]
     clickcmd = " ".join(["flepimop", "simulate"] + argv)
@@ -331,5 +245,3 @@ if __name__ == "__main__":
     clickcmd = " ".join(["flepimop", "simulate"] + argv)
     warnings.warn(f"Use the CLI instead: `{clickcmd}`", DeprecationWarning)
     _deprecated_simulate(argv)
-
-## @endcond
