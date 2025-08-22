@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from gempyor.distributions import DistributionABC
+from pydantic import PrivateAttr
 
 
 class DummyDistribution(DistributionABC):
@@ -8,9 +9,8 @@ class DummyDistribution(DistributionABC):
 
     distribution: str = "dummy"
 
-    def __call__(self) -> float | int:
-        """A shortcut for `self.sample(size=1)`."""
-        return self.sample(size=1).item()
+    _lower_bound: float = PrivateAttr(default=0.0)
+    _upper_bound: float = PrivateAttr(default=1.0)
 
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: np.random.Generator
@@ -32,7 +32,6 @@ def test_stochastic_sampling_with_default_rng() -> None:
     dist = DummyDistribution()
     sample1 = dist.sample(size=10)
     sample2 = dist.sample(size=10)
-
     assert not np.array_equal(sample1, sample2)
 
 

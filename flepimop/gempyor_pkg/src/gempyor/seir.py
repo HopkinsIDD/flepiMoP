@@ -17,7 +17,6 @@ from . import NPI, steps_rk4
 from .model_info import ModelInfo
 from .utils import Timer, _nslots_random_seeds, read_df
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -194,7 +193,10 @@ def build_step_source_arg(
     }
 
     check_parameter_positivity(
-        fnct_args["parameters"], modinf.parameters.pnames, modinf.dates, modinf.subpop_pop
+        fnct_args["parameters"],
+        modinf.parameters.pnames,
+        modinf.dates,
+        modinf.subpop_struct.subpop_names,
     )
 
     return fnct_args
