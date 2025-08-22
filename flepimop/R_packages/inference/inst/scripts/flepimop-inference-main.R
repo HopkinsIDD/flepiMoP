@@ -158,6 +158,10 @@ foreach(seir_modifiers_scenario = seir_modifiers_scenarios) %:%
         "-g", opt$subpop_len,
         sep = " "
     )
+    writeLines(
+      paste("Running inference slot with args:", paste(args, collapse = " ")),
+      con = gsub("inference_slot", "cmd", log_file, fixed = TRUE)
+    )
     err <- tryCatch({
         system2(
             command = opt$rpath, args = command, stdout = log_file, stderr = log_file

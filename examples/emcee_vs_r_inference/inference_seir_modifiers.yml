@@ -1,0 +1,66 @@
+seir_modifiers:
+  scenarios:
+    - seir_stacked
+  modifiers:
+    sigma_fit:
+      method: SinglePeriodModifier
+      parameter: sigma
+      subpop: "all"
+      subpop_groups: ["NC", "SC", "GA"]
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      value:
+        distribution: truncnorm
+        mean: 0.5
+        sd: 0.2
+        a: 0
+        b: 3
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    gamma_fit:
+      method: SinglePeriodModifier
+      parameter: gamma
+      subpop: "all"
+      subpop_groups: ["NC", "SC", "GA"]
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      value:
+        distribution: truncnorm
+        mean: 0.5
+        sd: 0.2
+        a: 0
+        b: 3
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    Ro_fit:
+      method: SinglePeriodModifier
+      parameter: Ro
+      subpop: "all"
+      period_start_date: 2024-01-01
+      period_end_date: 2024-12-31
+      value:
+        distribution: truncnorm
+        mean: 2.5
+        sd: 0.1
+        a: 0
+        b: 5
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.025
+        a: -0.1
+        b: 0.1
+    seir_stacked:
+      method: StackedModifier
+      modifiers:
+        - sigma_fit
+        - gamma_fit
+        - Ro_fit
