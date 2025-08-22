@@ -3,9 +3,9 @@ import datetime
 import numpy as np
 import pandas as pd
 
+from ..distributions import distribution_from_confuse_config
 from . import helpers
 from .base import NPIBase
-from ..distributions import distribution_from_confuse_config
 
 
 class MultiPeriodModifier(NPIBase):
@@ -168,7 +168,12 @@ class MultiPeriodModifier(NPIBase):
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
             this_spatial_group = helpers.get_spatial_groups(
-                grp_config, affected_subpops_grp
+                list(affected_subpops_grp),
+                (
+                    grp_config["subpop_groups"].get()
+                    if grp_config["subpop_groups"].exists()
+                    else None
+                ),
             )
             self.spatial_groups.append(this_spatial_group)
             # print(self.name, this_spatial_groups)
@@ -228,7 +233,12 @@ class MultiPeriodModifier(NPIBase):
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
             this_spatial_group = helpers.get_spatial_groups(
-                grp_config, affected_subpops_grp
+                list(affected_subpops_grp),
+                (
+                    grp_config["subpop_groups"].get()
+                    if grp_config["subpop_groups"].exists()
+                    else None
+                ),
             )
             self.spatial_groups.append(this_spatial_group)
 

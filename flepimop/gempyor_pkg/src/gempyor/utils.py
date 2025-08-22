@@ -2,34 +2,28 @@
 Helper functions for interacting with model I/O.
 """
 
-from collections import Counter
-from collections.abc import Iterable
 import datetime
 import functools
 import logging
-import numbers
 import os
-from pathlib import Path
 import random
-from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
-from typing import Any, Callable, Literal, overload
+from collections import Counter
+from collections.abc import Iterable
+from pathlib import Path
+from shlex import quote as shlex_quote
+from typing import Any, Literal, TypeVar, overload
 
 import confuse
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import pyarrow as pa
 import scipy.ndimage
-import scipy.stats
-import sympy.parsing.sympy_parser
 import yaml
 
 from . import file_paths
-from ._pydantic_ext import _evaled_expression
-
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +120,8 @@ def command_safe_run(
     Raises:
         RuntimeError: If fail_on_fail=True and the command fails, an error will be thrown.
     """
-    import subprocess
     import shlex  # using shlex to split the command because it's not obvious https://docs.python.org/3/library/subprocess.html#subprocess.Popen
+    import subprocess
 
     sr = subprocess.Popen(
         shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -192,7 +186,8 @@ def search_and_import_plugins_class(
     # Look for all possible plugins and import them
     # https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
     # unfortunatelly very complicated, this is cpython only ??
-    import sys, os
+    import os
+    import sys
 
     full_path = os.path.join(path_prefix, plugin_file_path)
     sys.path.append(os.path.dirname(full_path))
@@ -1196,3 +1191,96 @@ def _trim_s3_path(path: str | Path) -> str | Path:
         PosixPath('s3:/foo/bar.txt')
     """
     return path.lstrip("s3:") if isinstance(path, str) else path
+
+
+T = TypeVar("T")
+
+
+def _flatten_list_of_lists(value: list[list[T]] | list[T] | None) -> list[T]:
+    """
+    Flatten a list of lists into a single list.
+
+    Args:
+        value: A value to flatten.
+
+    Returns:
+        A flattened list. If `value` is None, an empty list is returned. If `value` is
+        not a list, it is returned as-is. If `value` is an empty list, an empty list is
+        returned. If `value` is a list of lists, it is flattened.
+
+    Examples:
+        >>> from gempyor.utils import _flatten_list_of_lists
+        >>> _flatten_list_of_lists(None)
+        []
+        >>> _flatten_list_of_lists(42)
+        [42]
+        >>> _flatten_list_of_lists([1, 2, 3])
+        [1, 2, 3]
+        >>> _flatten_list_of_lists([[1, 2], [3, 4]])
+        [1, 2, 3, 4]
+        >>> _flatten_list_of_lists([[1, 2], "a", "b", [2.1, [4.3, 5.6]]])
+        [1, 2, 'a', 'b', 2.1, 4.3, 5.6]
+    """
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        return [value]
+    if not value:
+        return []
+    return [x for subvalue in value for x in _flatten_list_of_lists(subvalue)]
+
+
+def _make_list_of_list(value: list[list[T]] | list[T] | T | None) -> list[list[T]]:
+    # pylint: disable=line-too-long
+    """
+    Construct a list of lists from a flat list-ish object.
+
+    Args:
+        value: A value to coerce into a list of lists.
+
+    Returns:
+        A list of lists. If `value` is None, an empty list is returned. If `value` is
+        not a list, it is wrapped in a single-element list of lists. If `value` is an
+        empty list, an empty list is returned. If `value` is a list of lists, it is
+        returned as-is.
+
+    Examples:
+        >>> from gempyor.utils import _make_list_of_list
+        >>> _make_list_of_list(None)
+        []
+        >>> _make_list_of_list(42)
+        [[42]]
+        >>> _make_list_of_list([1, 2, 3])
+        [[1, 2, 3]]
+        >>> _make_list_of_list([[1, 2], [3, 4]])
+        [[1, 2], [3, 4]]
+        >>> _make_list_of_list({"key": "value"})
+        [[{'key': 'value'}]]
+        >>> _make_list_of_list("string")
+        [['string']]
+        >>> _make_list_of_list([1, 2, [3, 4]])
+        Traceback (most recent call last):
+            ...
+        ValueError: value=[1, 2, [3, 4]] contains a mix of lists and non-lists, cannot coerce to list of lists.
+        >>> _make_list_of_list([])
+        []
+        >>> _make_list_of_list([[]])
+        [[]]
+
+    """
+    # pylint: enable=line-too-long
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        return [[value]]
+    if not value:
+        return []
+    if all(isinstance(x, list) for x in value):
+        return value
+    if any(isinstance(x, list) for x in value):
+        msg = (
+            f"{value=} contains a mix of lists and "
+            "non-lists, cannot coerce to list of lists."
+        )
+        raise ValueError(msg)
+    return [value]

@@ -5,8 +5,8 @@ Managing inference parameters in a vectorized way.
 import numpy as np
 import numpy.typing as npt
 
-from . import NPI
 from .distributions import distribution_from_confuse_config
+from .NPI.helpers import get_spatial_groups
 
 
 class InferenceParameters:
@@ -46,8 +46,13 @@ class InferenceParameters:
                 and parameter_config["subpop"].get() != "all"
             ):
                 affected_subpops = {str(n.get()) for n in parameter_config["subpop"]}
-            spatial_groups = NPI.helpers.get_spatial_groups(
-                parameter_config, list(affected_subpops)
+            spatial_groups = get_spatial_groups(
+                list(affected_subpops),
+                (
+                    parameter_config["subpop_groups"].get()
+                    if parameter_config["subpop_groups"].exists()
+                    else None
+                ),
             )
             # ungrouped subpop (all affected subpop by
             # default) have one parameter per subpop
@@ -90,9 +95,13 @@ class InferenceParameters:
                     affected_subpops_grp = affected_subpops
                 else:
                     affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
-
-                this_spatial_group = NPI.helpers.get_spatial_groups(
-                    grp_config, affected_subpops_grp
+                this_spatial_group = get_spatial_groups(
+                    affected_subpops_grp,
+                    (
+                        grp_config["subpop_groups"].get()
+                        if grp_config["subpop_groups"].exists()
+                        else None
+                    ),
                 )
                 # ungrouped subpop (all affected subpop by
                 # default) have one parameter per subpop

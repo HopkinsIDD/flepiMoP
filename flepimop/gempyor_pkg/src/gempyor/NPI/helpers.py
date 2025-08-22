@@ -1,12 +1,31 @@
-import pandas as pd
+"""Helpers for interacting with and using modifiers."""
+
+__all__ = ("SpatialGroups", "get_spatial_groups", "reduce_parameter")
+
+from typing import TypedDict
+
 import numpy as np
-import typing
+import pandas as pd
+
+from ..utils import _flatten_list_of_lists, _make_list_of_list
 
 
-# Helper function
+class SpatialGroups(TypedDict):
+    """
+    Modifier spatial groups.
+
+    Attributes:
+        grouped: List of lists of subpopulations that share the same modifier value.
+        ungrouped: List of subpopulations that have individual modifier values.
+    """
+
+    grouped: list[list[str]]
+    ungrouped: list[str]
+
+
 def reduce_parameter(
     parameter: np.ndarray,
-    modification: typing.Union[pd.DataFrame, float],
+    modification: pd.DataFrame | float,
     method: str = "product",
 ) -> np.ndarray:
     if isinstance(modification, pd.DataFrame):
@@ -23,77 +42,46 @@ def reduce_parameter(
         raise ValueError(f"Unknown method to do NPI reduction, got {method}")
 
 
-def get_spatial_groups(grp_config, affected_subpops: list) -> dict:
+def get_spatial_groups(
+    subpopulations: list[str],
+    subpopulation_groups: list[list[str]] | list[str] | str | None,
+) -> SpatialGroups:
     """
-    Spatial groups are defined in the config file as a list (of lists).
-    They have the same value.
-    grouped is a list of lists of subpops
-    ungrouped is a list of subpops
-    the list are ordered, and this is important so we can get back and forth
-    from the written to disk part that is comma separated
+    Get the spatial groupings from a modifier group config.
+
+    Args:
+        grp_config: Configuration view containing 'subpop_groups' key.
+        affected_subpops: List of subpopulations affected by the modifier.
+
+    Returns:
+        A `SpatialGroups` dictionary with 'grouped' and 'ungrouped' keys.
+
+    Examples:
+        >>> from gempyor.NPI.helpers import get_spatial_groups
+        >>> get_spatial_groups(["A", "B", "C"], None)
+        {'grouped': [], 'ungrouped': ['A', 'B', 'C']}
+        >>> get_spatial_groups(["A", "B", "C"], [["A", "B"], ["C"]])
+        {'grouped': [['A', 'B'], ['C']], 'ungrouped': []}
+        >>> get_spatial_groups(["A", "B", "C"], "all")
+        {'grouped': [['A', 'B', 'C']], 'ungrouped': []}
+        >>> get_spatial_groups(
+        ...     ["A", "B", "C", "D", "E", "F"],
+        ...     [["A", "B"], [], ["E", "F"]]
+        ... )
+        {'grouped': [['A', 'B'], ['E', 'F']], 'ungrouped': ['C', 'D']}
     """
-
-    spatial_groups = {"grouped": [], "ungrouped": []}
-
-    if not grp_config["subpop_groups"].exists():
-        spatial_groups["ungrouped"] = affected_subpops
+    spatial_groups = SpatialGroups(grouped=[], ungrouped=[])
+    if subpopulation_groups is None:
+        spatial_groups["ungrouped"] = subpopulations
+    elif subpopulation_groups == "all":
+        spatial_groups["grouped"] = [subpopulations]
     else:
-        if grp_config["subpop_groups"].get() == "all":
-            spatial_groups["grouped"] = [affected_subpops]
-        else:
-            spatial_groups["grouped"] = grp_config["subpop_groups"].get()
-            spatial_groups["ungrouped"] = list(
-                set(affected_subpops)
-                - set(flatten_list_of_lists(spatial_groups["grouped"]))
-            )
-
-    # flatten the list of lists of grouped subpops, so we can do some checks
-    flat_grouped_list = flatten_list_of_lists(spatial_groups["grouped"])
-    # check that all subpops are either grouped or ungrouped
-
-    # if set(flat_grouped_list + spatial_groups["ungrouped"]) != set(affected_subpops):
-    #    print("set of grouped and ungrouped subpops", set(flat_grouped_list + spatial_groups["ungrouped"]))
-    #    print("set of affected subpops             ", set(affected_subpops))
-    #    raise ValueError(f"The two above sets are differs for for intervention with config \n {grp_config}")
-    # if len(set(flat_grouped_list + spatial_groups["ungrouped"])) != len(
-    #    flat_grouped_list + spatial_groups["ungrouped"]
-    # ):
-    #    raise ValueError(
-    #        f"subpop_groups error. For intervention with config \n {grp_config} \n duplicate entries in the set of grouped and ungrouped subpops"
-    #        f" {flat_grouped_list + spatial_groups['ungrouped']} vs {set(flat_grouped_list + spatial_groups['ungrouped'])}"
-    #    )
-
-    spatial_groups["grouped"] = make_list_of_list(spatial_groups["grouped"])
-
-    # sort the lists
-    spatial_groups["grouped"] = [
-        sorted(list(set(x).intersection(affected_subpops)))
-        for x in spatial_groups["grouped"]
-    ]
-    spatial_groups["ungrouped"] = sorted(
-        list(set(spatial_groups["ungrouped"]).intersection(affected_subpops))
-    )
-
-    # remove empty sublist in grp{'grouped': [[], ['01000_14to15', '01000_17to18', '01000_22to23'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
-    spatial_groups["grouped"] = [x for x in spatial_groups["grouped"] if x]
-
+        spatial_groups["grouped"] = [
+            subgrp
+            for grp in _make_list_of_list(subpopulation_groups)
+            if (subgrp := sorted(list(set(grp).intersection(subpopulations))))
+        ]
+        spatial_groups["ungrouped"] = sorted(
+            set(subpopulations) - set(_flatten_list_of_lists(subpopulation_groups))
+        )
     return spatial_groups
-
-
-def flatten_list_of_lists(list_of_lists):
-    """flatten a list of lists into a single list, or return the original list if it is not a list of lists"""
-    if not list_of_lists:
-        return list_of_lists  # empty list
-    elif not isinstance(list_of_lists[0], list):
-        return list_of_lists
-    return [item for sublist in list_of_lists for item in sublist]
-
-
-def make_list_of_list(this_list):
-    """if the list contains its' values, nest it into another list"""
-    if not this_list:
-        return this_list  # empty list
-    elif isinstance(this_list[0], list):
-        return this_list
-    else:
-        return [this_list]

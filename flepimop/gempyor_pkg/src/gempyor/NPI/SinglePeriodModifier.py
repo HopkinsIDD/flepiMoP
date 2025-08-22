@@ -3,9 +3,9 @@ import datetime
 import numpy as np
 import pandas as pd
 
+from ..distributions import distribution_from_confuse_config
 from . import helpers
 from .base import NPIBase
-from ..distributions import distribution_from_confuse_config
 
 
 class SinglePeriodModifier(NPIBase):
@@ -150,7 +150,12 @@ class SinglePeriodModifier(NPIBase):
         )
         self.parameters["parameter"] = self.param_name
         self.spatial_groups = helpers.get_spatial_groups(
-            npi_config, list(self.affected_subpops)
+            list(self.affected_subpops),
+            (
+                npi_config["subpop_groups"].get()
+                if npi_config["subpop_groups"].exists()
+                else None
+            ),
         )
         if self.spatial_groups["ungrouped"]:
             self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = (
@@ -205,7 +210,12 @@ class SinglePeriodModifier(NPIBase):
         # that are not in the loaded_df.
 
         self.spatial_groups = helpers.get_spatial_groups(
-            npi_config, list(self.affected_subpops)
+            list(self.affected_subpops),
+            (
+                npi_config["subpop_groups"].get()
+                if npi_config["subpop_groups"].exists()
+                else None
+            ),
         )
         if self.spatial_groups["ungrouped"]:
             self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = loaded_df.loc[
