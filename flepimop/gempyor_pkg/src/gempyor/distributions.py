@@ -1,10 +1,11 @@
-"""Representations of distributions used for modifiers, likelihoods, etc."""
+"""
+Representations of distributions to be used throughout gempyor.
+"""
 
 __all__: tuple[str, ...] = (
+    "DistributionABC",
     "BetaDistribution",
     "BinomialDistribution",
-    "Distribution",
-    "DistributionABC",
     "FixedDistribution",
     "GammaDistribution",
     "LognormalDistribution",
@@ -25,13 +26,13 @@ import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
 from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator
-from scipy.stats import truncnorm
+import scipy.stats
 
 from ._pydantic_ext import EvaledFloat, EvaledInt
 
 
 class DistributionABC(ABC, BaseModel):
-    """Base class for distributions used in modifiers, likelihoods, etc."""
+    """Base class for distributions used in random sampling."""
 
     distribution: str
     allow_edge_cases: bool = False
@@ -258,7 +259,7 @@ class TruncatedNormalDistribution(DistributionABC):
 
         lower = (self.a - self.mean) / self.sd
         upper = (self.b - self.mean) / self.sd
-        return truncnorm.rvs(
+        return scipy.stats.truncnorm.rvs(
             a=lower,
             b=upper,
             loc=self.mean,
@@ -307,7 +308,7 @@ class PoissonDistribution(DistributionABC):
           Value error, Input for `lam` cannot be zero when `allow_edge_cases` is `False`. [type=value_error, ...
     """
 
-    distribution: Literal["poisson"] = "poisson"
+    distribution: Literal["poisson", "pois"] = "poisson"
     lam: EvaledFloat = Field(..., ge=0.0)
 
     def _sample_from_generator(
