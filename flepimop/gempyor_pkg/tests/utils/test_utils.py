@@ -88,14 +88,6 @@ def test_ISO8601Date_success():
     # assert t == datetime.datetime("2020-02-01").strftime("%Y-%m-%d")
 
 
-def test_get_truncated_normal_success():
-    utils.get_truncated_normal(mean=0, sd=1, a=-2, b=2)
-
-
-def test_get_log_normal_success():
-    utils.get_log_normal(meanlog=0, sdlog=1)
-
-
 def test_create_resume_out_filename():
     result = utils.create_resume_out_filename(
         flepi_run_index="123",

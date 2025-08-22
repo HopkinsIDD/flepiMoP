@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+WHICH_R=$( which R )
+WHICH_PYTHON=$( which python )
+CONDA_VERSION=$( conda --version | cut -d' ' -f2 )
+R_VERSION=$( R --version | head -n 1 | cut -d' ' -f3 )
+PYTHON_VERSION=$( python --version | cut -d' ' -f2 )
+GEMPYOR_VERSION=$( pip show gempyor | grep Version | cut -d' ' -f2 )
+R_PACKAGES=("flepicommon" "flepiconfig" "inference")
+
+echo "flepiMoP installation summary:"
+
+if command -v git &> /dev/null && [ -d "$FLEPI_PATH/.git" ]; then
+    FLEPI_VERSION=$( git -C "$FLEPI_PATH" rev-parse HEAD )
+    echo "> flepiMoP version: $FLEPI_VERSION"
+else
+    echo "> flepiMoP version: *could not determine version*"
+fi
+
+if test -n "$FLEPI_PATH"; then
+    echo "> flepiMoP path: $FLEPI_PATH"
+else
+    echo "> flepiMoP path: *not set*"
+fi
+
+if test -n "$FLEPI_CONDA"; then
+    echo "> flepiMoP conda env: $FLEPI_CONDA"
+else
+    echo "> flepiMoP conda env: *not set*"
+fi
+
+cat << EOF
+> conda: $CONDA_VERSION
+> R $R_VERSION: $WHICH_R
+> Python $PYTHON_VERSION: $WHICH_PYTHON
+> gempyor version: $GEMPYOR_VERSION
+EOF
+for pkg in "${R_PACKAGES[@]}"; do
+    PKG_VERSION=$( R -s -e "print(packageVersion('$pkg'))" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" )
+    echo "> R $pkg version: $PKG_VERSION"
+done

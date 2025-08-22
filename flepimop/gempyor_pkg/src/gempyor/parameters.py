@@ -19,8 +19,10 @@ import confuse
 import numpy as np
 from numpy import ndarray
 import pandas as pd
+import pydantic
 
 from . import NPI, utils
+from .distributions import distribution_from_confuse_config
 
 
 logger = logging.getLogger(__name__)
@@ -97,9 +99,11 @@ class Parameters:
             self.pdata[pn] = {}
             self.pdata[pn]["idx"] = idx
 
-            # Parameter characterized by it's distribution
+            # Parameter characterized by its distribution
             if self.pconfig[pn]["value"].exists():
-                self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
+                self.pdata[pn]["dist"] = distribution_from_confuse_config(
+                    self.pconfig[pn]["value"]
+                )
 
             # Parameter given as a file
             elif self.pconfig[pn]["timeseries"].exists():
@@ -182,7 +186,9 @@ class Parameters:
         """
         for pn in self.pnames:
             if "dist" in self.pdata[pn]:
-                self.pdata[pn]["dist"] = self.pconfig[pn]["value"].as_random_distribution()
+                self.pdata[pn]["dist"] = distribution_from_confuse_config(
+                    self.pconfig[pn]["value"]
+                )
 
     def get_pnames2pindex(self) -> dict:
         """
@@ -272,8 +278,7 @@ class Parameters:
                     f"PARAM: parameter {pn} NOT found in loadID file. "
                     "Drawing from config distribution"
                 )
-                pval = self.pdata[pn]["dist"]()
-                param_arr[idx] = np.full((n_days, nsubpops), pval)
+                param_arr[idx] = np.full((n_days, nsubpops), self.pdata[pn]["dist"]())
 
         return param_arr
 

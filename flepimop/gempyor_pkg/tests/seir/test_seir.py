@@ -404,6 +404,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
 
 
 @ignore_non_csv_mobility_warning
+@pytest.mark.slow
 def test_steps_SEIR_no_spread():
     os.chdir(os.path.dirname(__file__))
     print("test mobility with no spread")

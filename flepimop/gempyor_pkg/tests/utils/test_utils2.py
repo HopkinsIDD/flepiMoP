@@ -84,12 +84,7 @@ def test_ISO8601Date_success():
 	#assert t == datetime.datetime("2020-02-01").strftime("%Y-%m-%d")
 
 
-def test_get_truncated_normal_success():
-	utils.get_truncated_normal(mean=0, sd=1, a=-2, b=2)
 
-
-def test_get_log_normal_success():
-	utils.get_log_normal(meanlog=0, sdlog=1)
 """
 
 
@@ -108,116 +103,12 @@ def test_as_date_with_valid_date_string():
     assert result == datetime.date(2022, 1, 15)
 
 
-def test_as_evaled_expression_with_valid_expression():
-    # ConfigViewオブジェクトをモック化
-    mock_config_view = MagicMock(spec=confuse.ConfigView)
-    mock_config_view.as_evaled_expression.return_value = 7.5
-
-    # as_evaled_expressionメソッドを呼び出し、正しい結果を確認
-    result = mock_config_view.as_evaled_expression()
-
-    assert result == 7.5
-
-
 @pytest.fixture
 def config():
     config = confuse.Configuration("myapp", __name__)
     return config
 
 
-def test_as_evaled_expression_number(config):
-    config.add({"myvalue": 123})
-    assert config["myvalue"].as_evaled_expression() == 123
-
-
-def test_as_evaled_expression_number(config):
-    config.add({"myvalue": 1.10})
-    assert config["myvalue"].as_evaled_expression() == 1.1
-
-
-def test_as_evaled_expression_string(config):
-    config.add({"myvalue": "2 + 3"})
-    assert config["myvalue"].as_evaled_expression() == 5.0
-
-
-def test_as_evaled_expression_other(config):
-    config.add({"myvalue": [1, 2, 3]})
-    with pytest.raises(ValueError):
-        config["myvalue"].as_evaled_expression()
-
-
-def test_as_evaled_expression_Invalid_string(config):
-    config.add({"myvalue": "invalid"})
-    with pytest.raises(ValueError):
-        config["myvalue"].as_evaled_expression()
-
-
 def test_as_date(config):
     config.add({"myvalue": "2022-01-15"})
     assert config["myvalue"].as_date() == datetime.date(2022, 1, 15)
-
-
-def test_as_random_distribution_fixed(config):
-    config.add({"value": {"distribution": "fixed", "value": 1}})
-    dist = config["value"].as_random_distribution()
-    assert dist() == 1
-
-
-def test_as_random_distribution_uniform(config):
-    config.add({"value": {"distribution": "uniform", "low": 1, "high": 2.6}})
-    dist = config["value"].as_random_distribution()
-    assert 1 <= dist() <= 2.6
-
-
-def test_as_random_distribution_poisson(config):
-    config.add({"value": {"distribution": "poisson", "lam": 1}})
-    dist = config["value"].as_random_distribution()
-    assert isinstance(dist(), int)
-
-
-def test_as_random_distribution_binomial(config):
-    config.add({"value": {"distribution": "binomial", "n": 10, "p": 0.5}})
-    dist = config["value"].as_random_distribution()
-    assert 0 <= dist() <= 10
-
-
-def test_as_random_distribution_binomial_w_fraction(config):
-    config.add({"value": {"distribution": "binomial", "n": 10, "p": "1/2"}})
-    dist = config["value"].as_random_distribution()
-    assert 0 <= dist() <= 10
-
-
-def test_as_random_distribution_binomial_error(config):
-    config.add({"value": {"distribution": "binomial", "n": 10, "p": 1.1}})
-    with pytest.raises(ValueError, match=r".*p.*value.*"):
-        dist = config["value"].as_random_distribution()
-
-
-def test_as_random_distribution_binomial_w_fraction_error(config):
-    config.add({"value": {"distribution": "binomial", "n": 10, "p": "5/4"}})
-    with pytest.raises(ValueError, match=r".*p.*value.*"):
-        dist = config["value"].as_random_distribution()
-
-
-def test_as_random_distribution_truncnorm(config):
-    config.add(
-        {"value": {"distribution": "truncnorm", "mean": 0, "sd": 1, "a": -1, "b": 1}}
-    )
-    dist = config["value"].as_random_distribution()
-    rvs = dist(size=1000)
-    assert len(rvs) == 1000
-    assert all(-1 <= x <= 1 for x in rvs)
-
-
-def test_as_random_distribution_lognorm(config):
-    config.add({"value": {"distribution": "lognorm", "meanlog": 0, "sdlog": 1}})
-    dist = config["value"].as_random_distribution()
-    rvs = dist(size=1000)
-    assert len(rvs) == 1000
-    assert all(x > 0 for x in rvs)
-
-
-def test_as_random_distribution_unknown(config):
-    config.add({"value": {"distribution": "unknown", "mean": 0, "sd": 1}})
-    with pytest.raises(NotImplementedError):
-        config["value"].as_random_distribution()

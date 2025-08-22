@@ -16,6 +16,7 @@ from gempyor.utils import read_directory
 @pytest.mark.parametrize("n_jobs", (1, 2))
 @pytest.mark.parametrize("config_file", ("config_sample_2pop_vaccine_scenarios.yml",))
 @pytest.mark.parametrize("start_method", mp.get_all_start_methods())
+@pytest.mark.slow
 def test_run_parallel_outcomes_by_multiprocessing_start_method(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
