@@ -13,7 +13,7 @@ Infectious disease models require some infections to kick off transmission dynam
 | Main purpose            | Specifying compartments sizes at the initial time.                                      | Instantaneously transferring between compartments at arbitrary times.              |
 | Default functionality   | Each subpopulations entire population is placed in the first compartment.               | No seeding events occur.                                                           |
 | Config section needed   | Optional, results in warning that default functionality used.                           | Optional.                                                                          |
-| Required input files    | Depending on method could be a parquet or CSV file(s).                                  | Yes, a CSV describing seeding events with a format dependent on method used.       |
+| Required input files    | Yes, parquet or CSV file(s) (for fixed values) or a plugin script.                      | Yes, a CSV describing seeding events with a format dependent on method used.       |
 | Incidence or prevalence | Amounts specified are prevalence values, either as amounts or proportion of population. | Amounts specified are instantaneous incidence values.                              |
 | Inference integration   | Yes, initial condition plugins can request model parameters.                            | None, seeding does not integrate well with inference yet.                          |
 | Use cases               | Specifying the model's starting point.                                                  | Modeling importations, evolution of new strains, and modifying initial conditions. |
