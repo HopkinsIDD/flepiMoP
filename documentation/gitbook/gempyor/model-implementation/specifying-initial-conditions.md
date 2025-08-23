@@ -35,18 +35,19 @@ initial_conditions:
   method: Default
 ```
 
-Would place the entire subpopulation into the 'S' compartment. While this behavior is intuitive and helpful for small models, this can be surprising for larger models. For example:
+Would place the entire subpopulation into the 'S' compartment. For additional layers of stratification, the same logic applies. For example:
 
 ```yaml
 compartments:
   infection_stage: ["S", "I", "R"]
   age_group: ["child", "adult"]
+  vaccination_status: ["unvaxxed", "vaxxed"]
  
 initial_conditions:
   method: Default
 ```
 
-Would place the entire subpopulation into the 'S', 'child', 'unvaxxed' compartment. While 'S' usually makes sense for a model, declaring the entire subpopulation to be children is likely not reflective of reality. 
+Would place the entire subpopulation into the 'S', 'child', 'unvaxxed' compartment. The Default behavior is typically only useful when doing initial configuration troubleshooting (e.g. when correcting parsing errors): because all population is placed in the "first" compartment, there often won't be any dynamics (e.g. because all 'S' is the disease free equilibrium) and the population distribution may be nonsensical (e.g. creating an all-'child' Lord of the Flies situation).
 
 ### 'SetInitialConditions' Method
 
