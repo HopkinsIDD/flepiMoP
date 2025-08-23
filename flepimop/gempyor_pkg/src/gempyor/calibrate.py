@@ -7,10 +7,8 @@ Functions:
     calibrate: Reads a configuration file for simulation settings.
 """
 
-#!/usr/bin/env python
 import os
 import shutil
-import copy
 import pathlib
 import multiprocessing
 
@@ -18,14 +16,14 @@ import click
 import emcee
 import numpy as np
 
-import gempyor
-from gempyor import model_info, file_paths, config, inference_parameter
+from gempyor import config
+from gempyor.postprocess_inference import plot_chains, plot_fit
+from gempyor.file_paths import run_id as file_paths_run_id
 from gempyor.inference import GempyorInference
-from gempyor.utils import config, as_list
-import gempyor.postprocess_inference
+from gempyor._multiprocessing import _pool
+from gempyor.initial_conditions._plugins import _get_custom_initial_conditions_plugins
+from gempyor.utils import read_df, list_filenames
 
-
-# from .profile import profile_options
 
 # disable  operations using the MKL linear algebra.
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -124,8 +122,6 @@ os.environ["OMP_NUM_THREADS"] = "1"
     envvar="RESUME_LOCATION",
     help="The location (folder or an S3 bucket) to use as the initial to the first block of the current run",
 )
-# @profile_options
-# @profile()
 def calibrate(
     config_filepath: str | pathlib.Path,
     project_path: str,
@@ -142,10 +138,10 @@ def calibrate(
     """
     Calibrate using an `emcee` sampler to initialize a model based on a config.
     """
-    # Choose a run_id
+    # Determine the run id
     if input_run_id is None:
         base_run_id = pathlib.Path(config_filepath).stem.replace("config_", "")
-        run_id = f"{base_run_id}-{file_paths.run_id()}"
+        run_id = f"{base_run_id}-{file_paths_run_id()}"
         print(f"Auto-generating run_id: {run_id}")
     else:
         run_id = input_run_id
@@ -161,7 +157,8 @@ def calibrate(
             print(f"File {filename} does not exist, cannot resume")
             return
         print(
-            f"Doing a resume from {filename}, this only work with the same number of slot/walkers and parameters right now"
+            f"Doing a resume from {filename}, this only works with the "
+            "same number of slot/walkers and parameters right now"
         )
     else:
         filename = f"{run_id}_backend.h5"
@@ -177,19 +174,23 @@ def calibrate(
         first_sim_index=1,
         rng_seed=None,
         nslots=1,
-        inference_filename_prefix="global/final/",  # usually for {global or chimeric}/{intermediate or final}
+        # usually for {global or chimeric}/{intermediate or final}
+        inference_filename_prefix="global/final/",
         inference_filepath_suffix="",  # usually for the slot_id
         out_run_id=None,  # if out_run_id is different from in_run_id, fill this
         out_prefix=None,  # if out_prefix is different from in_prefix, fill this
         path_prefix=project_path,  # in case the data folder is on another directory
         autowrite_seir=False,
     )
+    custom_initial_conditions = _get_custom_initial_conditions_plugins()
 
     # Draw/get initial parameters:
     backend = emcee.backends.HDFBackend(filename)
     if resume or resume_location is not None:
-        # Normally one would put p0 = None to get the last State from the sampler, but that poses problems when the likelihood change
-        # and then acceptances are not guaranted, see issue #316. This solves this issue and greates a new chain with llik evaluation
+        # Normally one would put p0 = None to get the last State from the sampler, but
+        # that poses problems when the likelihood change and then acceptances are not
+        # guaranteed, see issue #316. This solves this issue and creates a new chain
+        # with log-likelihood evaluation
         p0 = backend.get_last_sample().coords
     else:
         backend.reset(nwalkers, gempyor_inference.inferpar.get_dim())
@@ -210,7 +211,7 @@ def calibrate(
         p_test = gempyor_inference.inferpar.draw_initial(n_draw=2)
         # test on single core so that errors are well reported
         gempyor_inference.perform_test_run()
-        with multiprocessing.Pool(ncpu) as pool:
+        with _pool(processes=ncpu, custom_plugins=custom_initial_conditions) as pool:
             lliks = pool.starmap(
                 gempyor_inference.get_logloss_as_single_number,
                 [
@@ -239,11 +240,11 @@ def calibrate(
     # Make a plot of the runs directly from config
     n_config_samples = min(30, nwalkers // 2)
     print(f"Making {n_config_samples} simulations from config to plot")
-    with multiprocessing.Pool(ncpu) as pool:
+    with _pool(processes=ncpu, custom_plugins=custom_initial_conditions) as pool:
         results = pool.starmap(
             gempyor_inference.simulate_proposal, [(p0[i],) for i in range(n_config_samples)]
         )
-    gempyor.postprocess_inference.plot_fit(
+    plot_fit(
         modinf=gempyor_inference.modinf,
         loss=gempyor_inference.logloss,
         plot_projections=True,
@@ -251,47 +252,25 @@ def calibrate(
         save_to=f"{run_id}_config.pdf",
     )
 
-    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    # @JOSEPH: find below a "cocktail" move proposal
+    # Moves 'cocktail' for the sampler.
+    # The first three moves are DEMoves which are good at "optimizing", based on this
+    # discussion: https://groups.google.com/g/emcee-users/c/FCAq459Y9OE. The last
+    # move is a StretchMove which gives good chain movement. Another move that works
+    # well (based on Tijs' personal experience with pySODM) is KDEMove, but it requires
+    # at least 3x more walkers than parameters, so it is not included here.
     moves = [
         (emcee.moves.DEMove(live_dangerously=True), 0.5 * 0.5 * 0.5),
         (emcee.moves.DEMove(gamma0=1.0, live_dangerously=True), 0.5 * 0.5 * 0.5),
-        (
-            emcee.moves.DESnookerMove(live_dangerously=True),
-            0.5 * 0.5,
-        ),  # First three moves: DEMove --> DE is good at "optimizing". Moves based on the (really great!) discussion in https://groups.google.com/g/emcee-users/c/FCAq459Y9OE
-        (
-            emcee.moves.StretchMove(live_dangerously=True),
-            0.5,
-        ),  # Stretch gives good chain movement
-        # (emcee.moves.KDEMove(live_dangerously=True, bw_method='scott'), 0.25)
-    ]  # Based on personal experience with pySODM (Tijs) - KDEMove works really well but I think it's important for this one to have at least 3x more walkers than parameters.
-    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    # moves = [(emcee.moves.StretchMove(live_dangerously=True), 1)]
+        (emcee.moves.DESnookerMove(live_dangerously=True), 0.5 * 0.5),
+        (emcee.moves.StretchMove(live_dangerously=True), 0.5),
+    ]
 
+    # Batch calibration by 10 iterations to avoid memory issues.
     gempyor_inference.set_silent(False)
-
-    # with multiprocessing.Pool(ncpu) as pool:
-    #    sampler = emcee.EnsembleSampler(
-    #        nwalkers,
-    #        gempyor_inference.inferpar.get_dim(),
-    #        gempyor_inference.get_logloss_as_single_number,
-    #        pool=pool,
-    #        backend=backend,
-    #        moves=moves,
-    #    )
-    #    state = sampler.run_mcmc(p0, niter, progress=True, skip_initial_state_check=True)
-
-    # hack around memory management: run by batch of 10 iterations
-    # TODO this fails for less thant 10 iterations
     nbatch = 10
     for i in range(niter // nbatch):
-        if i == 0:
-            start_val = p0
-        else:
-            start_val = None
-
-        with multiprocessing.Pool(ncpu) as pool:
+        start_val = p0 if i == 0 else None
+        with _pool(processes=ncpu, custom_plugins=custom_initial_conditions) as pool:
             sampler = emcee.EnsembleSampler(
                 nwalkers,
                 gempyor_inference.inferpar.get_dim(),
@@ -300,14 +279,14 @@ def calibrate(
                 backend=backend,
                 moves=moves,
             )
-            state = sampler.run_mcmc(
+            sampler.run_mcmc(
                 start_val, nbatch, progress=True, skip_initial_state_check=True
             )
     print(f"Done, mean acceptance fraction: {np.mean(sampler.acceptance_fraction):.3f}")
 
-    # plotting the chain
+    # Plot the calibrated chains
     sampler = emcee.backends.HDFBackend(filename, read_only=True)
-    gempyor.postprocess_inference.plot_chains(
+    plot_chains(
         inferpar=gempyor_inference.inferpar,
         chains=sampler.get_chain(),
         llik=sampler.get_log_prob(),
@@ -319,33 +298,31 @@ def calibrate(
     shutil.rmtree("model_output/", ignore_errors=True)
     shutil.rmtree(os.path.join(project_path, "model_output/"), ignore_errors=True)
 
+    # Save the last `nsamples` samples from the last iteration as the sampled values.
     max_indices = np.argsort(sampler.get_log_prob()[-1, :])[-nsamples:]
-    samples = sampler.get_chain()[
-        -1, max_indices, :
-    ]  # the last iteration, for selected slots
+    samples = sampler.get_chain()[-1, max_indices, :]
     gempyor_inference.set_save(True)
-    with multiprocessing.Pool(ncpu) as pool:
+    with _pool(processes=ncpu, custom_plugins=custom_initial_conditions) as pool:
         results = pool.starmap(
             gempyor_inference.get_logloss_as_single_number,
             [(samples[i, :],) for i in range(len(max_indices))],
         )
 
+    # Plot the sampled results
     results = []
-    for fn in gempyor.utils.list_filenames(
+    for fn in list_filenames(
         folder=os.path.join(project_path, "model_output/"), filters=[run_id, "hosp.parquet"]
     ):
-        df = gempyor.read_df(fn)
+        df = read_df(fn)
         df = df.set_index("date")
         results.append(df)
-
-    gempyor.postprocess_inference.plot_fit(
+    plot_fit(
         modinf=gempyor_inference.modinf,
         loss=gempyor_inference.logloss,
         list_of_df=results,
         save_to=f"{run_id}_fit.pdf",
     )
-
-    gempyor.postprocess_inference.plot_fit(
+    plot_fit(
         modinf=gempyor_inference.modinf,
         loss=gempyor_inference.logloss,
         plot_projections=True,
@@ -356,5 +333,3 @@ def calibrate(
 
 if __name__ == "__main__":
     calibrate()
-
-## @endcond

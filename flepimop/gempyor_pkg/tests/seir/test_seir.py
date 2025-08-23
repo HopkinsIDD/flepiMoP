@@ -11,8 +11,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from gempyor import model_info, seir, NPI, file_paths, subpopulation_structure
-
 from gempyor.utils import config
+from gempyor.testing import ignore_initial_conditions_missing_method_warning
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
@@ -24,6 +24,7 @@ ignore_non_csv_mobility_warning = pytest.mark.filterwarnings(
 )
 
 
+@ignore_initial_conditions_missing_method_warning
 @ignore_non_csv_mobility_warning
 def test_check_values():
     config.set_file(f"{DATA_DIR}/config.yml")
@@ -62,6 +63,7 @@ def test_check_values():
         assert "mobility" in str(w[1].message)
 
 
+@ignore_initial_conditions_missing_method_warning
 @ignore_non_csv_mobility_warning
 def test_constant_population_legacy_integration():
     config.set_file(f"{DATA_DIR}/config.yml")
@@ -83,11 +85,6 @@ def test_constant_population_legacy_integration():
 
     assert modinf.get_engine() == "euler"
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -100,8 +97,11 @@ def test_constant_population_legacy_integration():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -138,6 +138,7 @@ def test_constant_population_legacy_integration():
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
+@ignore_initial_conditions_missing_method_warning
 @ignore_non_csv_mobility_warning
 def test_constant_population_rk4jit_integration():
     # config.set_file(f"{DATA_DIR}/config.yml")
@@ -160,11 +161,6 @@ def test_constant_population_rk4jit_integration():
     # s.integration_method = "rk4.jit"
     assert modinf.seir_config["integration"]["method"].get() == "rk4"
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -177,8 +173,11 @@ def test_constant_population_rk4jit_integration():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -213,6 +212,7 @@ def test_constant_population_rk4jit_integration():
         assert completepop - 1e-3 < totalpop < completepop + 1e-3
 
 
+@ignore_initial_conditions_missing_method_warning
 @ignore_non_csv_mobility_warning
 def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
     os.chdir(os.path.dirname(__file__))
@@ -236,11 +236,6 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -253,8 +248,11 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -322,6 +320,7 @@ def test_steps_SEIR_nb_simple_spread_with_txt_matrices():
         )
 
 
+@ignore_initial_conditions_missing_method_warning
 @ignore_non_csv_mobility_warning
 def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
     os.chdir(os.path.dirname(__file__))
@@ -346,11 +345,6 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -363,8 +357,11 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -403,6 +400,7 @@ def test_steps_SEIR_nb_simple_spread_with_csv_matrices():
         )
 
 
+@ignore_initial_conditions_missing_method_warning
 @ignore_non_csv_mobility_warning
 @pytest.mark.slow
 def test_steps_SEIR_no_spread():
@@ -425,11 +423,6 @@ def test_steps_SEIR_no_spread():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     modinf.mobility.data = modinf.mobility.data * 0
 
     npi = NPI.NPIBase.execute(
@@ -444,8 +437,11 @@ def test_steps_SEIR_no_spread():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -676,6 +672,7 @@ def test_inference_resume():
     ## Clean up after ourselves
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_parallel_compartments_with_vacc():
     os.chdir(os.path.dirname(__file__))
     config.clear()
@@ -698,11 +695,6 @@ def test_parallel_compartments_with_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -715,8 +707,11 @@ def test_parallel_compartments_with_vacc():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,
@@ -770,6 +765,7 @@ def test_parallel_compartments_with_vacc():
         )
 
 
+@ignore_initial_conditions_missing_method_warning
 def test_parallel_compartments_no_vacc():
     config.clear()
     config.read(user=False)
@@ -792,11 +788,6 @@ def test_parallel_compartments_no_vacc():
         out_prefix=prefix,
     )
 
-    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
-    initial_conditions = modinf.initial_conditions.get_from_config(
-        sim_id=100, modinf=modinf
-    )
-
     npi = NPI.NPIBase.execute(
         npi_config=modinf.npi_config_seir,
         modinf_ti=modinf.ti,
@@ -809,8 +800,11 @@ def test_parallel_compartments_no_vacc():
         ],
     )
 
-    params = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
-    params = modinf.parameters.parameters_reduce(params, npi)
+    p_draw = modinf.parameters.parameters_quick_draw(modinf.n_days, modinf.nsubpops)
+    params = modinf.parameters.parameters_reduce(p_draw, npi)
+
+    seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id=100)
+    initial_conditions = modinf.get_initial_conditions_data(100, p_draw)
 
     (
         unique_strings,

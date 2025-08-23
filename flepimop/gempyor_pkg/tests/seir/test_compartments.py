@@ -11,8 +11,8 @@ import pyarrow.parquet as pq
 import filecmp
 
 from gempyor import compartments, seir, NPI, file_paths, model_info, subpopulation_structure
-
 from gempyor.utils import config
+from gempyor.testing import ignore_initial_conditions_missing_method_warning
 
 DATA_DIR = os.path.dirname(__file__) + "/data"
 os.chdir(os.path.dirname(__file__))
@@ -68,6 +68,7 @@ def test_check_transitions_parquet_writing_and_loading():
     assert lhs == rhs
 
 
+@ignore_initial_conditions_missing_method_warning
 @pytest.mark.filterwarnings(
     "ignore:Mobility files as matrices are not recommended. "
     "Please switch to long form csv files.:PendingDeprecationWarning"

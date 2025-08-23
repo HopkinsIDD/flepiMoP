@@ -15,7 +15,7 @@ from shlex import quote as shlex_quote
 import shutil
 import subprocess
 import time
-from typing import Any, Callable, Literal, overload
+from typing import Any, Callable, Literal, TypeVar, overload
 
 import confuse
 import numpy as np
@@ -1196,3 +1196,41 @@ def _trim_s3_path(path: str | Path) -> str | Path:
         PosixPath('s3:/foo/bar.txt')
     """
     return path.lstrip("s3:") if isinstance(path, str) else path
+
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+def _invert_into_dict(target: dict[T, list[U]], value: U, keys: list[T]) -> None:
+    """
+    Append a value to a list of keys of a dictionary inplace.
+
+    This utility function appends a `value` to the lists associated with the
+    specified `keys` in the `target` dictionary. If a key does not exist in
+    the `target`, it initializes that key with a new list containing the `value`.
+
+    Args:
+        target: The dictionary to append the `value` to the `keys` of.
+        value: The value to append to the lists of the `keys`.
+        keys: The keys of the `target` dictionary to append the `value` to.
+
+    Returns:
+        `None`, this function modifies the `target` dictionary in place.
+
+    Examples:
+        >>> from gempyor.utils import _invert_into_dict
+        >>> target = {"a": [1, 2], "b": [3]}
+        >>> _invert_into_dict(target, 4, ["a", "b"])
+        >>> target
+        {'a': [1, 2, 4], 'b': [3, 4]}
+        >>> _invert_into_dict(target, 5, ["a", "c"])
+        >>> target
+        {'a': [1, 2, 4, 5], 'b': [3, 4], 'c': [5]}
+
+    """
+    for k in keys:
+        if k in target:
+            target[k].append(value)
+            continue
+        target[k] = [value]

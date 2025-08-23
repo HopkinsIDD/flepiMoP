@@ -7,12 +7,11 @@ nslots: 2
 subpop_setup:
   geodata: model_input/data/geodata_2019_statelevel.csv
   mobility: model_input/data/mobility_2011-2015_statelevel.csv
-  selected: ["06000","36000"]# ,"12000","48000","06000"
-  #selected: ["06000"]
+  selected: ["06000","36000"]
 
 initial_conditions:
-  method: plugin
-  plugin_file_path: model_input/my_initial_conditions.py
+  method: FittedProportion
+  module: model_input/fitted_proportion_initial_conditions.py
 
 compartments:
   infection_stage: ["S", "E", "I", "R"]
@@ -28,6 +27,8 @@ seir:
       value: 1 / 5
     Ro:
       value: .97
+    So:
+      value: 1.0
   transitions:
     - source: ["S"]
       destination: ["E"]
@@ -85,9 +86,30 @@ seir_modifiers:
         sd: 0.025
         a: -1
         b: 1
+    So_mod:
+      method: SinglePeriodModifier
+      parameter: So
+      period_start_date: 2023-08-01
+      period_end_date: 2024-07-31
+      subpop: all
+      value:
+        distribution: truncnorm
+        mean: 0.0
+        sd: 2.0
+        a: -8.0
+        b: 8.0
+      perturbation:
+        distribution: truncnorm
+        mean: 0
+        sd: 0.25
+        a: -1
+        b: 1
     Ro_all:
       method: StackedModifier
-      modifiers: ["Ro_season","Ro_sunny"]
+      modifiers:
+        - Ro_season
+        - Ro_sunny
+        - So_mod
 
 
 outcomes:

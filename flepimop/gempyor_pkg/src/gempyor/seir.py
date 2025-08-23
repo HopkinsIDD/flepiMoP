@@ -16,6 +16,8 @@ import xarray as xr
 from . import NPI, steps_rk4
 from .model_info import ModelInfo
 from .utils import Timer, _nslots_random_seeds, read_df
+from .initial_conditions._plugins import _get_custom_initial_conditions_plugins
+from ._multiprocessing import _tqdm_map
 
 
 logger = logging.getLogger(__name__)
@@ -332,19 +334,6 @@ def onerun_SEIR(
             proportion_info,
         ) = modinf.compartments.get_transition_array()
 
-    with Timer("onerun_SEIR.seeding"):
-        if load_ID:
-            initial_conditions = modinf.initial_conditions.get_from_file(
-                sim_id2load, modinf=modinf
-            )
-        else:
-            initial_conditions = modinf.initial_conditions.get_from_config(
-                sim_id2write, modinf=modinf
-            )
-        seeding_data, seeding_amounts = modinf.get_seeding_data(
-            sim_id=sim_id2load if load_ID else sim_id2write
-        )
-
     with Timer("onerun_SEIR.parameters"):
         # Draw or load parameters
         if load_ID:
@@ -367,6 +356,11 @@ def onerun_SEIR(
             parameters, modinf.parameters.pnames, unique_strings
         )
         log_debug_parameters(parsed_parameters, "Unique Parameters used by transitions")
+
+    with Timer("onerun_SEIR.seeding"):
+        sim_id = sim_id2load if load_ID else sim_id2write
+        initial_conditions = modinf.get_initial_conditions_data(sim_id, parameters)
+        seeding_data, seeding_amounts = modinf.get_seeding_data(sim_id)
 
     with Timer("onerun_SEIR.compute"):
         states = steps_SEIR(
@@ -448,7 +442,7 @@ def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1) -> None:
                 config=config,
             )
     else:
-        tqdm.contrib.concurrent.process_map(
+        _tqdm_map(
             _onerun_SEIR_with_random_seed,
             random_seeds,
             sim_ids,
@@ -456,7 +450,8 @@ def run_parallel_SEIR(modinf: ModelInfo, config, *, n_jobs=1) -> None:
             itertools.repeat(False),
             itertools.repeat(None),
             itertools.repeat(config),
-            max_workers=n_jobs,
+            processes=n_jobs,
+            custom_plugins=_get_custom_initial_conditions_plugins(),
         )
 
     logging.info(
