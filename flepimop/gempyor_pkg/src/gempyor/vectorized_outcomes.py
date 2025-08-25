@@ -1,831 +1,573 @@
-# gempyor/vectorized_outcomes.py
-
+# vectorized_outcomes.py
 from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+from typing import Dict, List, Tuple, Iterable, Optional
+
 import numpy as np
-import pandas as pd
-from typing import (
-    Iterable,
-    Mapping,
-    Sequence,
-    Tuple,
-    List,
-    Dict,
-    Any,
-    Optional,
-    Literal,
-)
-from scipy.stats import gamma as gamma_dist
-from numpy.fft import rfft, irfft
+import numpy.typing as npt
 
-DelayType = Literal["gamma", "exponential", "constant"]
+# Optional: SciPy is NOT required. We use closed-form for exponential,
+# and an Erlang approximation for gamma (integer shape via repeated conv).
+# If you prefer exact non-integer gamma CDFs, swap in scipy.special.gammainc.
 
 
-class VectorizedOutcomes:
+# ---------------------------------------------------------------------------
+# Utilities: discrete delay kernels on a generic bin grid
+# ---------------------------------------------------------------------------
+
+def _ensure_prob_vector(prob: float | npt.NDArray[np.float64], N: int) -> npt.NDArray[np.float64]:
+    """Broadcast scalar -> vector(N), ensure contiguous float64."""
+    if np.isscalar(prob):
+        v = np.full(N, float(prob), dtype=np.float64)
+    else:
+        v = np.asarray(prob, dtype=np.float64)
+        if v.shape != (N,):
+            raise ValueError(f"prob vector must have shape (N,), got {v.shape}")
+    return np.ascontiguousarray(v, dtype=np.float64)
+
+
+def make_fixed_delay_kernel(delay_days: float, bin_width_days: float, max_bins: int | None = None) -> npt.NDArray[np.float64]:
     """
-    Vectorized post-simulation outcomes with flexible stratification.
+    Discretize a fixed delay into the bin grid.
+    If delay is not an integer multiple of the bin width, split mass across the two adjacent bins.
+    """
+    d = float(delay_days) / float(bin_width_days)
+    i0 = int(math.floor(d))
+    frac = d - i0
+    # kernel length: either 1 or 2 (split) unless user enforces a max
+    if frac < 1e-12:
+        k = np.zeros(i0 + 1, dtype=np.float64)
+        k[i0] = 1.0
+    else:
+        k = np.zeros(i0 + 2, dtype=np.float64)
+        k[i0] = 1.0 - frac
+        k[i0 + 1] = frac
 
-    Highlights
-    ----------
-    • Compute infection incidence from S * I * Π(rate_prefixes) with optional population normalization.
-    • Disaggregate by arbitrary group_keys (e.g., ("age_strata","vaccination_stage")).
-    • Apply group-specific probabilities (e.g., hospitalization, death) using dict/array specs.
-    • Convolve with delay kernels (gamma, exponential, constant) using direct or FFT path.
-    • Aggregate to a requested return_group_keys (e.g., aggregate over vaccination to return Age×Time×Loc).
+    if max_bins is not None and k.size > max_bins:
+        # Truncate tail if user forces limit (mass loss warning)
+        k = k[:max_bins]
+        s = k.sum()
+        if s > 0:
+            k /= s
+    return k
 
-    Shapes
-    ------
-    states: (T, C, N)
-    params: (P, T, N) or (P, T)
-    Returns (by default): (Ages, Periods, Locations)
 
-    Notes
-    -----
-    - If compartments lacks a 'vaccination_stage' column, we derive it from infection_stage
-      by splitting on '_' (e.g., 'I1_v0' -> vaccination_stage='v0'). If absent, uses 'NA'.
-    - Probabilities can be specified per (age_strata, vaccination_stage) group; the output can
-      still be aggregated back to by-age with return_group_keys=("age_strata",).
+def make_exponential_delay_kernel(mean_days: float, bin_width_days: float, tail_mass: float = 1e-8) -> npt.NDArray[np.float64]:
+    """
+    Discrete geometric-like kernel from an exponential delay (mean_days).
+    pmf[k] = exp(-λ*kΔ) - exp(-λ*(k+1)Δ), with λ = 1/mean, Δ = bin_width_days.
+    Truncate when remaining tail mass < tail_mass.
+    """
+    mean = float(mean_days)
+    if mean <= 0:
+        # Degenerates to fixed zero delay
+        return np.array([1.0], dtype=np.float64)
+
+    lam = 1.0 / mean
+    delta = float(bin_width_days)
+    # per-bin survival factor
+    r = math.exp(-lam * delta)
+    p = 1.0 - r  # first-bin mass multiplier
+
+    # Build until tail < tail_mass
+    vals = []
+    surv = 1.0
+    while surv > tail_mass:
+        vals.append(surv * p)
+        surv *= r
+
+        # Safety cap
+        if len(vals) > 1_000_000:
+            break
+
+    k = np.asarray(vals, dtype=np.float64)
+    s = k.sum()
+    if s > 0:
+        k /= s
+    return k
+
+
+def _convolve_discrete(a: npt.NDArray[np.float64], b: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """
+    Small 1D 'valid' convolution (full support). For short kernels this is fast in NumPy.
+    """
+    la, lb = a.size, b.size
+    out = np.zeros(la + lb - 1, dtype=np.float64)
+    # Manual conv (short kernels typical); avoids FFT overhead
+    for i in range(la):
+        out[i:i + lb] += a[i] * b
+    return out
+
+
+def make_gamma_delay_kernel(mean_days: float, shape_k: float, bin_width_days: float, tail_mass: float = 1e-8) -> npt.NDArray[np.float64]:
+    """
+    Discrete kernel approximating a Gamma(k, θ) delay via Erlang (integer shape) convolution of exponentials.
+    - mean = k * θ  => λ = k / mean
+    - If k is non-integer, we round to nearest integer (Erlang approximation), preserving mean.
+    This is numerically robust and fast; for exact non-integer k, substitute SciPy CDF differencing if desired.
+    """
+    mean = float(mean_days)
+    k = int(round(float(shape_k)))
+    if k <= 0:
+        # Fallback to fixed: 0 delay
+        return np.array([1.0], dtype=np.float64)
+    # Erlang: sum of k exponentials with common rate λ = k / mean
+    exp_kernel = make_exponential_delay_kernel(mean_days=mean / k, bin_width_days=bin_width_days, tail_mass=tail_mass / k)
+    out = exp_kernel
+    for _ in range(k - 1):
+        out = _convolve_discrete(out, exp_kernel)
+        # Optional truncation of tiny tails for memory
+        # Keep cumulative tail small to control size
+        csum = out[::-1].cumsum()[::-1]
+        keep = csum > tail_mass
+        if keep.any():
+            last = np.nonzero(keep)[0][-1]
+            out = out[: last + 1]
+    s = out.sum()
+    if s > 0:
+        out /= s
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Compiled spec data structures
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class OutcomeLeaf:
+    """
+    A leaf outcome is defined by a fixed set of transition rows and (optional) node filtering.
+    per-node probability is applied, then delayed by a discrete kernel.
+    """
+    name: str
+    transition_indices: npt.NDArray[np.int64]    # shape (R,), rows into (Tn, N)
+    node_mask_num: npt.NDArray[np.float64]      # shape (N,), 0/1 numeric mask
+    prob_vec: npt.NDArray[np.float64]           # shape (N,), per-node probability
+    kernel: npt.NDArray[np.float64]             # shape (L,), discrete delay pmf
+
+    # Working buffers (allocated by observer): not part of identity
+    # (We will attach external buffers in the observer for speed; kept here for clarity)
+
+
+@dataclass(frozen=True)
+class OutcomeSum:
+    """A sum node aggregates child outcomes by name."""
+    name: str
+    children: Tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CompiledOutcomes:
+    """
+    Fully compiled outcomes ready for high-speed accumulation.
+    """
+    leaves: Dict[str, OutcomeLeaf]
+    sums: Dict[str, OutcomeSum]
+    # Precomputed properties
+    names_topo: Tuple[str, ...]                 # topological order for finalize (leaves -> sums)
+    max_kernel_len: int
+
+
+# ---------------------------------------------------------------------------
+# Observer: fast, allocation-free per-step accumulation
+# ---------------------------------------------------------------------------
+
+class OutcomeObserver:
+    """
+    High-performance online accumulator for outcomes during simulation.
+
+    Usage:
+      obs = OutcomeObserver(spec, n_nodes=N, t0=t0, tf=tf, bin_width_days=1.0)
+      ...
+      # For each solver step with integrated transition counts over [t0_step, t1_step):
+      obs.on_step(t0_step, t1_step, step_counts_tn_by_node)  # (Tn, N)
+
+      # At the end:
+      times, series_by_name = obs.finalize(names=None)  # default: all outcomes (leaves + sums)
+
+    Notes:
+      - Input 'step_counts' MUST be counts integrated over the step (not rates).
+      - Binning splits each step proportionally by overlap with bin intervals.
+      - Delay kernels schedule mass into future bins (no dt assumptions).
     """
 
-    # ------------------------
-    # Construction & settings
-    # ------------------------
+    __slots__ = (
+        "spec", "N", "t0", "tf", "bin_width", "nbins", "bin_edges",
+        "leaf_names", "sum_names",
+        "_leaf_sched",     # dict name -> ndarray (N, nbins + maxK)
+        "_leaf_work",      # dict name -> ndarray (N,) reusable buffer
+        "_bin_overlap_buf" # ndarray (nbins,) for overlap fractions
+    )
 
-    def __init__(
-        self,
-        *,
-        rate_prefixes: Iterable[str] = ("r0", "gamma", "theta1"),
-        use_fft_convolution: bool = True,
-        fft_threshold: int = 1024,  # min series length to switch to FFT conv
-    ):
-        self.rate_prefixes = tuple(rate_prefixes)
-        self.use_fft_convolution = bool(use_fft_convolution)
-        self.fft_threshold = int(fft_threshold)
+    def __init__(self,
+                 spec: CompiledOutcomes,
+                 n_nodes: int,
+                 t0: float,
+                 tf: float,
+                 bin_width_days: float = 1.0):
+        self.spec = spec
+        self.N = int(n_nodes)
+        self.t0 = float(t0)
+        self.tf = float(tf)
+        self.bin_width = float(bin_width_days)
 
-    # ------------------------
-    # Public API: Incidence
-    # ------------------------
+        if self.tf <= self.t0:
+            raise ValueError("tf must be > t0")
 
-    def incidence_by_location_agg(
-        self,
-        *,
-        states: np.ndarray,  # (T, C, N)
-        times: Sequence,  # length T; floats OR pandas.DatetimeIndex
-        compartments: pd.DataFrame,  # rows align with C
-        param_names: Sequence[str],  # (P,)
-        params: np.ndarray,  # (P, T, N) or (P, T)
-        population: Optional[np.ndarray] = None,  # (N,)
-        normalize_by_population: bool = True,
-        infected_stages: Iterable[str] = ("I1", "I2", "I3"),
-        susceptible_stage: str = "S",
-        # stratification controls:
-        group_keys: Tuple[str, ...] = ("age_strata",),  # compute per these
-        return_group_keys: Tuple[str, ...] = ("age_strata",),  # aggregate to these
-        # aggregation in time:
-        aggregate: Optional[
-            float | str
-        ] = "D",  # None | float window (numeric times) | pandas offset (datetime)
-    ) -> Tuple[np.ndarray, List[Dict[str, Any]], np.ndarray]:
+        # Determine binning
+        self.nbins = int(math.ceil((self.tf - self.t0) / self.bin_width))
+        self.bin_edges = self.t0 + np.arange(self.nbins + 1, dtype=np.float64) * self.bin_width
+
+        # Prepare schedules for leaves (we materialize only leaves; sums will be built at finalize)
+        self.leaf_names = tuple(spec.leaves.keys())
+        self.sum_names = tuple(spec.sums.keys())
+        horizon = self.nbins + int(spec.max_kernel_len)
+        self._leaf_sched: Dict[str, npt.NDArray[np.float64]] = {
+            name: np.zeros((self.N, horizon), dtype=np.float64) for name in self.leaf_names
+        }
+
+        # Reusable per-leaf work vectors to avoid allocations
+        self._leaf_work: Dict[str, npt.NDArray[np.float64]] = {
+            name: np.zeros(self.N, dtype=np.float64) for name in self.leaf_names
+        }
+
+        # Reusable bin-overlap scratch
+        self._bin_overlap_buf = np.zeros(self.nbins, dtype=np.float64)
+
+    # ----------------- core accumulation -----------------
+
+    def on_step(self,
+                t_start: float,
+                t_end: float,
+                step_counts_tn_by_node: npt.NDArray[np.float64]) -> None:
         """
-        Compute **incidence counts** per requested group(s), aggregated in time.
+        Accumulate one solver step worth of integrated transition counts.
 
-        Returns
-        -------
-        inc_agg : np.ndarray
-            Shape (G_out, Periods, N) where G_out corresponds to unique combinations
-            of `return_group_keys` (default: ages).
-        labels_out : list[dict]
-            Each dict has the keys in return_group_keys (e.g., {"age_strata": "A"}).
-        period_index : np.ndarray or pandas.DatetimeIndex
-            Period labels for the second axis.
+        Parameters
+        ----------
+        t_start, t_end : float
+            Step interval [t_start, t_end). Must satisfy t0 <= t_start < t_end <= tf.
+        step_counts_tn_by_node : (Tn, N) float64
+            Counts integrated over this step for each transition row (Tn) and node (N).
         """
-        comp = self._ensure_vax_column(compartments.copy())
-        self._validate_inputs(
-            states,
-            times,
-            comp,
-            param_names,
-            params,
-            population,
-            normalize_by_population,
-        )
+        ts = float(t_start)
+        te = float(t_end)
+        if not (self.t0 - 1e-12 <= ts < te <= self.tf + 1e-12):
+            raise ValueError("Step times out of bounds or inverted.")
 
-        # 1) Build groups to compute over
-        labels_full = self._unique_group_labels(comp, group_keys, susceptible_stage)
-        if len(labels_full) == 0:
-            raise ValueError(f"No groups found for group_keys={group_keys}.")
+        counts = np.ascontiguousarray(step_counts_tn_by_node, dtype=np.float64)
+        if counts.shape[1] != self.N:
+            raise ValueError(f"counts second dim must be N={self.N}, got {counts.shape}")
 
-        # 2) Build S_g(t,n), I_g(t,n) for each group g
-        S_GTN, I_GTN, age_for_group = self._build_SI_by_groups(
-            states, comp, labels_full, infected_stages, susceptible_stage
-        )  # (G,T,N), (G,T,N), age index per group
+        # --- 1) Determine overlap with bins (proportional split) ---
+        # Compute overlap length with each bin; we only act on bins with nonzero overlap
+        # Efficient vector formulation: overlap = max(0, min(bin_right, te) - max(bin_left, ts))
+        be = self.bin_edges
+        lefts = np.maximum(be[:-1], ts)
+        rights = np.minimum(be[1:], te)
+        np.subtract(rights, lefts, out=self._bin_overlap_buf)  # rights - lefts
+        self._bin_overlap_buf[self._bin_overlap_buf < 0.0] = 0.0
 
-        # 3) Rate tensor per *age* then mapped to groups
-        ages = self._ordered_ages_from_S(comp, susceptible_stage)
-        rate_ATN = self._rate_per_age(param_names, params, ages)  # (A,T,N_or_1)
-        # broadcast N_if_1 to match states' N
-        if rate_ATN.shape[2] == 1 and states.shape[2] > 1:
-            rate_ATN = np.repeat(rate_ATN, states.shape[2], axis=2)
-        rate_GTN = rate_ATN[age_for_group, :, :]  # (G,T,N)
+        step_duration = te - ts
+        if step_duration <= 0:
+            return  # nothing to add
 
-        # 4) Normalize by population if requested
-        if normalize_by_population:
-            pop = np.asarray(population, dtype=float)
-            pop[pop <= 0.0] = 1.0
-            rate_GTN = rate_GTN / pop[None, None, :]
+        # Convert to fractions per bin
+        self._bin_overlap_buf /= step_duration
 
-        # 5) Convert to per-interval counts via Δt (LEFT-EDGE alignment)
-        dt, left_index, is_datetime = self._step_widths(
-            times
-        )  # dt length T-1, left_index = times[:-1]
-        # interval counts aligned to LEFT edges (G, K=T-1, N)
-        inc_interval = (S_GTN[:, :-1, :] * I_GTN[:, :-1, :] * rate_GTN[:, :-1, :]) * dt[
-            None, :, None
-        ]
+        # Indices of bins spanned by the step
+        spanned_bins = np.nonzero(self._bin_overlap_buf > 0.0)[0]
+        if spanned_bins.size == 0:
+            return
 
-        # 6) Aggregate in time
-        inc_time_agg, period_index = self._aggregate_intervals(
-            inc_interval, left_index, aggregate, is_datetime
-        )
+        # --- 2) For each leaf outcome: aggregate transitions -> per-node counts ---
+        for name in self.leaf_names:
+            leaf = self.spec.leaves[name]
+            work = self._leaf_work[name]     # (N,), reused
+            sched = self._leaf_sched[name]   # (N, nbins + maxK)
 
-        # 7) Aggregate groups to the requested return_group_keys
-        inc_out, labels_out = self._aggregate_groups(
-            inc_time_agg, labels_full, group_keys, return_group_keys
-        )
+            # work[:] = sum(counts[rows, :])  without allocating a new array
+            work.fill(0.0)
+            rows = leaf.transition_indices
+            for r in rows:
+                work += counts[r, :]   # (N,)
 
-        return inc_out, labels_out, period_index
+            # Apply node mask and per-node probability (both length N, contiguous)
+            # Note: elementwise multiply is faster than boolean masking here.
+            # work *= mask * prob
+            np.multiply(work, leaf.node_mask_num, out=work)
+            np.multiply(work, leaf.prob_vec, out=work)
 
-    # ---------------------------------
-    # Public API: Hospitalizations/Death
-    # ---------------------------------
+            # --- 3) Distribute across spanned bins and apply delay kernel via outer product ---
+            ker = leaf.kernel
+            L = ker.size
+            # For each overlapped bin b, add: sched[:, b:b+L] += (work * frac_b)[:, None] * ker[None, :]
+            for b in spanned_bins:
+                frac = self._bin_overlap_buf[b]
+                if frac <= 0.0:
+                    continue
+                # portion = work * frac  (reuse work by scaling + restore)
+                # To avoid mutating 'work', make a scaled view via broadcasting in the outer:
+                # sched[:, b:b+L] += work[:,None] * (ker * frac)[None,:]
+                # Pre-scale kernel once
+                # (allocates a small length-L temp; far cheaper than copying N)
+                ker_scaled = ker * frac
+                start = b
+                stop = b + L
+                # Bounds check (if kernel runs past horizon, safely truncate)
+                if stop > sched.shape[1]:
+                    # Truncate and renormalize lost tail proportionally (we simply drop it)
+                    # This is acceptable if tf is chosen with margin; else warn externally.
+                    slice_L = sched.shape[1] - start
+                    if slice_L <= 0:
+                        continue
+                    # Add truncated outer product
+                    sched[:, start:sched.shape[1]] += work[:, None] * ker_scaled[:slice_L][None, :]
+                else:
+                    sched[:, start:stop] += work[:, None] * ker_scaled[None, :]
 
-    def hospitalizations_by_location(
-        self,
-        *,
-        states: np.ndarray,  # (T, C, N)
-        times: Sequence,
-        compartments: pd.DataFrame,
-        param_names: Sequence[str],
-        params: np.ndarray,
-        population: Optional[np.ndarray],
-        # probability by strata (can be dict, array, scalar); see _resolve_probabilities
-        prob_spec: Any,
-        # delay (global/common kernel):
-        delay_type: DelayType = "gamma",
-        delay_mean: Optional[float] = None,
-        delay_cv: Optional[float] = None,
-        delay_shape: Optional[float] = None,
-        delay_scale: Optional[float] = None,
-        delay_keep_mass: float = 0.999,
-        # stratification & output:
-        infected_stages: Iterable[str] = ("I1", "I2", "I3"),
-        susceptible_stage: str = "S",
-        group_keys: Tuple[str, ...] = ("age_strata", "vaccination_stage"),
-        return_group_keys: Tuple[str, ...] = ("age_strata",),
-        aggregate: Optional[float | str] = "D",
-    ) -> Tuple[np.ndarray, List[Dict[str, Any]], np.ndarray]:
+    # ----------------- finalize and aggregation -----------------
+
+    def finalize(self,
+                 names: Optional[Iterable[str]] = None
+                 ) -> Tuple[npt.NDArray[np.float64], Dict[str, npt.NDArray[np.float64]]]:
         """
-        Build hospitalization incidence:
-          1) compute incidence by `group_keys`
-          2) convolve each group with a common delay kernel
-          3) multiply by group-specific probabilities
-          4) aggregate groups to `return_group_keys` (default: age-only)
+        Return bin-left times and a dict of series:
+          name -> (nbins, N) float64, time-major.
+        Includes requested names (defaults to all: leaves + sums).
 
-        prob_spec examples:
-          - scalar (float): same for all groups
-          - array-like length == #groups OR length == #ages (if group_keys include age)
-          - dict with keys:
-              ('age', 'vax') -> prob
-              ('age',) or 'age' -> prob (fallback if exact combo missing)
-              'default' -> prob (final fallback)
-              or dicts as keys: {'age_strata':'A','vaccination_stage':'waned'} -> prob
+        Sum nodes are materialized here by adding their children's arrays.
         """
-        # 1) incidence by full groups (keep high granularity to support per-strata probabilities)
-        inc_GTN, labels_full, period_index = self.incidence_by_location_agg(
-            states=states,
-            times=times,
-            compartments=compartments,
-            param_names=param_names,
-            params=params,
-            population=population,
-            normalize_by_population=True,
-            infected_stages=infected_stages,
-            susceptible_stage=susceptible_stage,
-            group_keys=group_keys,
-            return_group_keys=group_keys,  # keep full stratification here
-            aggregate=None,  # need per-interval steps before delay
-        )  # (G, K, N), K = T-1 (left-edge intervals)
+        # Base timeline (bin left edges)
+        times = self.bin_edges[:-1].copy()
 
-        # 2) Build a DAILY kernel & resample to daily, then (optionally) to `aggregate`
-        daily_index, daily_inc_GTN = self._to_daily_counts(
-            times, inc_GTN
-        )  # sum to daily buckets
+        # Materialize all leaves first
+        out: Dict[str, npt.NDArray[np.float64]] = {}
+        for name in self.leaf_names:
+            sched = self._leaf_sched[name]              # (N, nbins + maxK)
+            series = sched[:, :self.nbins].T.copy()     # -> (nbins, N), copy to detach
+            out[name] = series
 
-        kernel = self._make_delay_kernel(
-            delay_type=delay_type,
-            mean=delay_mean,
-            cv=delay_cv,
-            shape=delay_shape,
-            scale=delay_scale,
-            keep_mass=delay_keep_mass,
-        )
+        # Topologically add sums
+        for sname in self.spec.names_topo:
+            if sname in out:
+                continue  # leaf already present
+            # It's a sum node
+            children = self.spec.sums[sname].children
+            acc = None
+            for child in children:
+                arr = out[child]
+                if acc is None:
+                    acc = arr.copy()    # (nbins, N)
+                else:
+                    acc += arr
+            out[sname] = acc if acc is not None else np.zeros((self.nbins, self.N), dtype=np.float64)
 
-        # 3) Convolve per group/location
-        conv_GTN = self._convolve_daily(daily_inc_GTN, kernel)  # (G, Td, N)
+        # Filter to requested names
+        if names is not None:
+            pick = tuple(names)
+            out = {k: out[k] for k in pick}
 
-        # 4) Apply probabilities per group
-        probs_G = self._resolve_probabilities(prob_spec, labels_full, group_keys)
-        conv_GTN *= probs_G[:, None, None]
+        return times, out
 
-        # 5) Optionally aggregate time (weekly/monthly/epiweeks)
-        conv_time_agg, period_idx = self._aggregate_daily(
-            conv_GTN, daily_index, aggregate
-        )
-
-        # 6) Aggregate groups to requested return level (e.g., age-only)
-        out, labels_out = self._aggregate_groups(
-            conv_time_agg, labels_full, group_keys, return_group_keys
-        )
-        return out, labels_out, period_idx
-
-    def deaths_by_location(
-        self,
-        *,
-        states: np.ndarray,
-        times: Sequence,
-        compartments: pd.DataFrame,
-        param_names: Sequence[str],
-        params: np.ndarray,
-        population: Optional[np.ndarray],
-        prob_spec: Any,
-        delay_type: DelayType = "gamma",
-        delay_mean: Optional[float] = None,
-        delay_cv: Optional[float] = None,
-        delay_shape: Optional[float] = None,
-        delay_scale: Optional[float] = None,
-        delay_keep_mass: float = 0.999,
-        infected_stages: Iterable[str] = ("I1", "I2", "I3"),
-        susceptible_stage: str = "S",
-        group_keys: Tuple[str, ...] = ("age_strata", "vaccination_stage"),
-        return_group_keys: Tuple[str, ...] = ("age_strata",),
-        aggregate: Optional[float | str] = "D",
-    ) -> Tuple[np.ndarray, List[Dict[str, Any]], np.ndarray]:
-        """
-        Deaths pipeline is identical to hospitalizations, differing only in prob_spec semantics.
-        """
-        return self.hospitalizations_by_location(
-            states=states,
-            times=times,
-            compartments=compartments,
-            param_names=param_names,
-            params=params,
-            population=population,
-            prob_spec=prob_spec,
-            delay_type=delay_type,
-            delay_mean=delay_mean,
-            delay_cv=delay_cv,
-            delay_shape=delay_shape,
-            delay_scale=delay_scale,
-            delay_keep_mass=delay_keep_mass,
-            infected_stages=infected_stages,
-            susceptible_stage=susceptible_stage,
-            group_keys=group_keys,
-            return_group_keys=return_group_keys,
-            aggregate=aggregate,
-        )
-
-    # ------------------------
-    # Validation & utilities
-    # ------------------------
+    # ---- flexible aggregations (optional helpers) ----
 
     @staticmethod
-    def _validate_inputs(
-        states: np.ndarray,
-        times: Sequence,
-        compartments: pd.DataFrame,
-        param_names: Sequence[str],
-        params: np.ndarray,
-        population: Optional[np.ndarray],
-        normalize_by_population: bool,
-    ) -> None:
-        if states.ndim != 3:
-            raise ValueError("states must be (T, C, N).")
-        T, C, N = states.shape
-        if len(times) != T:
-            raise ValueError("`times` length must match T in states.")
-
-        if (
-            "infection_stage" not in compartments.columns
-            or "age_strata" not in compartments.columns
-        ):
-            raise ValueError(
-                "compartments must include 'infection_stage' and 'age_strata'."
-            )
-        if len(compartments) != C:
-            raise ValueError("compartments rows must match C.")
-
-        P = len(param_names)
-        if params.shape[0] != P:
-            raise ValueError("params first dim must match len(param_names).")
-        if params.ndim not in (2, 3):
-            raise ValueError("params must be (P,T) or (P,T,N).")
-        if params.shape[1] != T:
-            raise ValueError("params second dim must match T.")
-
-        if normalize_by_population:
-            if population is None or np.asarray(population).shape[0] != N:
-                raise ValueError(
-                    "population (N,) required when normalize_by_population=True."
-                )
-
-    @staticmethod
-    def _ensure_vax_column(comp: pd.DataFrame) -> pd.DataFrame:
-        if "vaccination_stage" in comp.columns:
-            return comp
-        # derive from infection_stage if present as suffix "_<vax>"
-        # if no "_" present, fill as "NA"
-        s = comp["infection_stage"].astype(str)
-        v = np.where(s.str.contains("_"), s.str.split("_").str[-1], "NA")
-        comp["vaccination_stage"] = v
-        return comp
-
-    @staticmethod
-    def _ordered_ages_from_S(comp: pd.DataFrame, susceptible_stage: str) -> List[str]:
-        mask = comp["infection_stage"].astype(str).str.startswith(susceptible_stage)
-        ages = comp.loc[mask, "age_strata"].astype(str).tolist()
-        # preserve first occurrence order
-        return list(dict.fromkeys(ages).keys())
-
-    # ------------------------
-    # Build S/I for groups
-    # ------------------------
-
-    @staticmethod
-    def _unique_group_labels(
-        comp: pd.DataFrame,
-        group_keys: Tuple[str, ...],
-        susceptible_stage: str,
-    ) -> List[Dict[str, Any]]:
-        """Unique combinations of group_keys observed among S rows (stable order)."""
-        mask_S = comp["infection_stage"].astype(str).str.startswith(susceptible_stage)
-        df = comp.loc[mask_S, list(group_keys)].astype(object)
-        # dropna for robustness; keep order of first occurrence
-        seen = set()
-        labels: List[Dict[str, Any]] = []
-        for row in df.itertuples(index=False, name=None):
-            if row not in seen:
-                seen.add(row)
-                labels.append(dict(zip(group_keys, row)))
-        return labels
-
-    @staticmethod
-    def _indices_for_stage_and_label(
-        comp: pd.DataFrame,
-        stage_prefix: str,
-        group_keys: Tuple[str, ...],
-        label: Dict[str, Any],
-    ) -> np.ndarray:
-        s = comp["infection_stage"].astype(str)
-        mask = s.str.startswith(stage_prefix)
-        for k in group_keys:
-            mask &= comp[k].astype(object) == label[k]
-        return comp.index[mask].to_numpy()
-
-    def _build_SI_by_groups(
-        self,
-        states: np.ndarray,  # (T,C,N)
-        comp: pd.DataFrame,
-        labels: List[Dict[str, Any]],
-        infected_stages: Iterable[str],
-        susceptible_stage: str,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def aggregate_nodes(series: npt.NDArray[np.float64],
+                        groups: Dict[str, npt.NDArray[np.int64]]) -> Dict[str, npt.NDArray[np.float64]]:
         """
-        Return S_GTN, I_GTN, and age index per group.
+        Sum over node sets. Input series shape (T, N). Returns dict group -> (T,) sum.
+        groups: mapping name -> indices (1D int array). No allocations per group beyond the result.
         """
-        T, C, N = states.shape
-        ages = self._ordered_ages_from_S(comp, susceptible_stage)
-        age_index = {a: i for i, a in enumerate(ages)}
-
-        G = len(labels)
-        S_GTN = np.zeros((G, T, N), dtype=states.dtype)
-        I_GTN = np.zeros((G, T, N), dtype=states.dtype)
-        age_for_group = np.empty(G, dtype=int)
-
-        for g, lab in enumerate(labels):
-            # track age for mapping age-specific rates
-            a = str(lab.get("age_strata"))
-            age_for_group[g] = age_index.get(a, 0)
-
-            # S
-            idx_S = self._indices_for_stage_and_label(
-                comp, susceptible_stage, tuple(lab.keys()), lab
-            )
-            if idx_S.size:
-                S_GTN[g] = states[:, idx_S, :].sum(axis=1)
-
-            # I = sum over requested infected stage prefixes
-            if infected_stages:
-                acc = np.zeros((T, N), dtype=states.dtype)
-                for stag in infected_stages:
-                    idx_I = self._indices_for_stage_and_label(
-                        comp, stag, tuple(lab.keys()), lab
-                    )
-                    if idx_I.size:
-                        acc += states[:, idx_I, :].sum(axis=1)
-                I_GTN[g] = acc
-
-        return S_GTN, I_GTN, age_for_group
-
-    # ------------------------
-    # Rate per age
-    # ------------------------
-
-    @staticmethod
-    def _param_slice_TN(params: np.ndarray, pidx: int, N: int) -> np.ndarray:
-        arr = params[pidx]
-        if arr.ndim == 1:
-            return arr[:, None].repeat(N, axis=1)
-        return arr
-
-    def _rate_per_age(
-        self,
-        param_names: Sequence[str],
-        params: np.ndarray,
-        ages: Sequence[str],
-    ) -> np.ndarray:
-        """
-        Build rate tensor per *age*: product of prefixes in self.rate_prefixes.
-        - If only one name startswith prefix -> broadcast to all ages.
-        - If multiple -> choose those containing the age token (first match per age).
-        """
-        names = np.asarray(param_names, dtype=str)
-        T = params.shape[1]
-        N = params.shape[2] if params.ndim == 3 else 1
-
-        # Start with ones
-        rate_ATN = np.ones((len(ages), T, N), dtype=float)
-
-        for pref in self.rate_prefixes:
-            hits = np.nonzero(np.char.startswith(names, pref))[0]
-            if hits.size == 0:
-                raise ValueError(f"No parameter starts with '{pref}'.")
-
-            if hits.size == 1:
-                ts = self._param_slice_TN(params, int(hits[0]), N)
-                rate_ATN *= ts[None, :, :]
-                continue
-
-            # age-specific mapping: pick the one that contains the age token
-            lower = [names[h].lower() for h in hits]
-            for a_i, age in enumerate(ages):
-                token = str(age).lower()
-                chosen = None
-                for j, nm in enumerate(lower):
-                    if token in nm:
-                        chosen = int(hits[j])
-                        break
-                if chosen is None:
-                    # fallback: broadcast first hit
-                    chosen = int(hits[0])
-                ts = self._param_slice_TN(params, chosen, N)
-                rate_ATN[a_i] *= ts
-
-        return rate_ATN
-
-    # ------------------------
-    # Time handling & aggregation
-    # ------------------------
-
-    @staticmethod
-    def _step_widths(times: Sequence) -> Tuple[np.ndarray, Any, bool]:
-        """
-        Return:
-          dt: np.ndarray length T-1 of step widths
-          left_edge_index: times[:-1] (float array OR DatetimeIndex)
-          is_datetime: bool
-        """
-        if isinstance(times, pd.DatetimeIndex):
-            tns = times.view("int64").astype(float)  # ns
-            dt = np.diff(tns) / 1e9 / 86400.0
-            if (dt <= 0).any():
-                raise ValueError("`times` must be strictly increasing.")
-            return dt, times[:-1], True
-
-        arr = np.asarray(times, dtype=float)
-        if arr.ndim != 1 or arr.size < 2:
-            raise ValueError("`times` must be 1-D with length >= 2.")
-        dt = np.diff(arr)
-        if (dt <= 0).any():
-            raise ValueError("`times` must be strictly increasing.")
-        return dt, arr[:-1], False
-
-    @staticmethod
-    def _aggregate_intervals(
-        inc_interval: np.ndarray,  # (G, K, N)
-        left_edges: Any,  # times[:-1] (float array OR DatetimeIndex)
-        aggregate: Optional[float | str],
-        is_datetime: bool,
-    ) -> Tuple[np.ndarray, Any]:
-        # No aggregation: return per-interval counts aligned to left edges
-        if aggregate is None:
-            return inc_interval, left_edges
-
-        # numeric window (for numeric times)
-        if isinstance(aggregate, (int, float)):
-            if is_datetime:
-                raise ValueError("Numeric `aggregate` requires numeric `times`.")
-            window = float(aggregate)
-            le = np.asarray(left_edges, dtype=float)
-            t0 = float(le[0]) if le.size else 0.0
-            gids = np.floor((le - t0) / window).astype(int)  # (K,)
-            Gout = int(gids.max() + 1) if gids.size else 0
-            G, K, N = inc_interval.shape
-            out = np.zeros((G, Gout, N), dtype=float)
-            for g in range(Gout):
-                mask = gids == g
-                if mask.any():
-                    out[:, g, :] = inc_interval[:, mask, :].sum(axis=1)
-            period_idx = t0 + np.arange(Gout) * window
-            return out, period_idx
-
-        # pandas offset (datetime)
-        if isinstance(aggregate, str):
-            if not is_datetime:
-                raise ValueError("String `aggregate` requires datetime-like `times`.")
-            le = pd.to_datetime(left_edges)
-            keys = le.to_period(aggregate).to_timestamp()
-            bins = pd.Index(keys).unique().sort_values()
-            bin_map = {b: i for i, b in enumerate(bins)}
-            gids = np.array([bin_map[k] for k in keys], dtype=int)
-
-            G, K, N = inc_interval.shape
-            out = np.zeros((G, len(bins), N), dtype=float)
-            for i in range(len(bins)):
-                mask = gids == i
-                if mask.any():
-                    out[:, i, :] = inc_interval[:, mask, :].sum(axis=1)
-            return out, bins
-
-        raise ValueError("Unsupported `aggregate` argument.")
-
-    # ------------------------
-    # Group aggregation helpers
-    # ------------------------
-
-    @staticmethod
-    def _labels_to_frame(labels: List[Dict[str, Any]]) -> pd.DataFrame:
-        return pd.DataFrame(labels)
-
-    @staticmethod
-    def _aggregate_groups(
-        data_GTN: np.ndarray,  # (G, T, N)
-        labels_full: List[Dict[str, Any]],
-        group_keys: Tuple[str, ...],
-        return_group_keys: Tuple[str, ...],
-    ) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
-        """
-        Sum across groups that share the same values for return_group_keys.
-        """
-        if tuple(return_group_keys) == tuple(group_keys):
-            return data_GTN, labels_full
-
-        df = VectorizedOutcomes._labels_to_frame(labels_full)
-        # Build grouping key
-        if len(return_group_keys) == 0:
-            # aggregate everything into a single group
-            gids = np.zeros(len(labels_full), dtype=int)
-            out_labels = [dict()]
-        else:
-            key_tuples = [tuple(df[k].astype(object)) for k in return_group_keys]
-            key_tuples = list(zip(*key_tuples))  # list of tuples per row
-            uniq, inv = np.unique(
-                np.array(key_tuples, dtype=object), return_inverse=True
-            )
-            gids = inv
-            # reconstruct label dicts
-            out_labels = []
-            for ut in uniq:
-                if not isinstance(ut, tuple):
-                    ut = (ut,)
-                lab = {k: v for k, v in zip(return_group_keys, ut)}
-                out_labels.append(lab)
-
-        Gout = int(gids.max() + 1) if len(gids) else 0
-        G, T, N = data_GTN.shape
-        out = np.zeros((Gout, T, N), dtype=data_GTN.dtype)
-        for g in range(Gout):
-            mask = gids == g
-            if mask.any():
-                out[g] = data_GTN[mask].sum(axis=0)
-        return out, out_labels
-
-    # ------------------------
-    # Daily conversion & delay
-    # ------------------------
-
-    @staticmethod
-    def _to_daily_counts(
-        times: Sequence, inc_GTN: np.ndarray
-    ) -> Tuple[pd.DatetimeIndex, np.ndarray]:
-        """
-        Convert per-interval counts to **daily** sums (summing into calendar-day bins).
-        The per-interval counts are aligned to LEFT edges (times[:-1]).
-        """
-        # Build an index aligned to left edges (length K)
-        if isinstance(times, pd.DatetimeIndex):
-            left = times[:-1]
-        else:
-            t0 = pd.Timestamp("1970-01-01")
-            left = t0 + pd.to_timedelta(np.asarray(times[:-1], dtype=float), unit="D")
-
-        G, K, N = inc_GTN.shape
-        df = pd.DataFrame(inc_GTN.reshape(G * N, K).T, index=left)
-        daily = df.resample("D").sum()
-        Td = daily.shape[0]
-        daily_vals = (
-            daily.to_numpy().T.reshape(G, N, Td).transpose(0, 2, 1)
-        )  # (G, Td, N)
-        return daily.index, daily_vals
-
-    def _make_delay_kernel(
-        self,
-        *,
-        delay_type: DelayType,
-        mean: Optional[float],
-        cv: Optional[float],
-        shape: Optional[float],
-        scale: Optional[float],
-        keep_mass: float,
-    ) -> np.ndarray:
-        if delay_type == "constant":
-            if mean is None:
-                raise ValueError("constant delay requires `mean` (days).")
-            shift = max(0, int(round(float(mean))))
-            k = np.zeros(shift + 1, dtype=float)
-            k[-1] = 1.0
-            return k
-
-        if delay_type == "exponential":
-            if mean is None:
-                raise ValueError("exponential delay requires `mean` (days).")
-            lam = 1.0 / float(mean)
-            # discrete daily mass: P(d <= t < d+1) for t~Exp(lam)
-            # = exp(-lam*d) - exp(-lam*(d+1))
-            L = int(np.ceil(-np.log(1 - keep_mass) / lam)) + 4
-            grid = np.arange(L, dtype=float)
-            w = np.exp(-lam * grid) - np.exp(-lam * (grid + 1))
-            w /= w.sum()
-            return w
-
-        if delay_type == "gamma":
-            if shape is None or scale is None:
-                if mean is None or cv is None:
-                    raise ValueError("gamma delay requires (shape,scale) or (mean,cv).")
-                shape = 1.0 / (cv * cv)
-                scale = float(mean) / shape
-            dist = gamma_dist(a=shape, scale=scale)
-            L = int(np.ceil(dist.ppf(keep_mass)))
-            if L < 1:
-                L = 1
-            edges = np.arange(L + 1, dtype=float)
-            cdf = dist.cdf(edges)
-            w = np.diff(cdf)
-            if w.sum() <= 0:
-                w = np.array([1.0], dtype=float)
-            w /= w.sum()
-            return w
-
-        raise ValueError(f"Unsupported delay_type: {delay_type}")
-
-    def _convolve_daily(self, X_GTN: np.ndarray, kernel: np.ndarray) -> np.ndarray:
-        """
-        Convolve along the time axis with either direct or FFT path.
-        X_GTN: (G, Td, N)
-        """
-        G, T, N = X_GTN.shape
-        L = kernel.size
-        out = np.zeros_like(X_GTN, dtype=float)
-
-        if not self.use_fft_convolution or (T + L) < self.fft_threshold:
-            # direct
-            for g in range(G):
-                for n in range(N):
-                    out[g, :, n] = np.convolve(X_GTN[g, :, n], kernel, mode="full")[:T]
-            return out
-
-        # FFT path (real FFT per (g,n) series)
-        fft_len = int(2 ** int(np.ceil(np.log2(T + L - 1))))
-        K = np.zeros(fft_len, dtype=float)
-        K[:L] = kernel
-        Kf = rfft(K)
-        buf = np.zeros(fft_len, dtype=float)
-        for g in range(G):
-            for n in range(N):
-                buf[:] = 0.0
-                series = X_GTN[g, :, n]
-                buf[:T] = series
-                yf = rfft(buf)
-                conv = irfft(yf * Kf, n=fft_len)[:T]
-                out[g, :, n] = conv
+        T, N = series.shape
+        out: Dict[str, npt.NDArray[np.float64]] = {}
+        for gname, idx in groups.items():
+            idx = np.asarray(idx, dtype=np.int64)
+            v = series[:, idx].sum(axis=1)
+            out[gname] = v
         return out
 
     @staticmethod
-    def _aggregate_daily(
-        daily_GTN: np.ndarray,  # (G, Td, N)
-        daily_index: pd.DatetimeIndex,
-        aggregate: Optional[str | float],
-    ) -> Tuple[np.ndarray, Any]:
-        if aggregate is None or aggregate == "D":
-            return daily_GTN, daily_index
-        if isinstance(aggregate, (int, float)):
-            raise ValueError(
-                "Numeric aggregate not supported after daily conversion; use a pandas offset string."
-            )
-        # pandas resample path
-        G, Td, N = daily_GTN.shape
-        df = pd.DataFrame(
-            daily_GTN.transpose(1, 0, 2).reshape(Td, G * N), index=daily_index
-        )
-        agg = df.resample(aggregate).sum()
-        T2 = agg.shape[0]
-        arr = agg.to_numpy().reshape(T2, G, N).transpose(1, 0, 2)
-        return arr, agg.index
-
-    # ------------------------
-    # Probability resolution
-    # ------------------------
-
-    @staticmethod
-    def _resolve_probabilities(
-        prob_spec: Any,
-        labels_full: List[Dict[str, Any]],
-        group_keys: Tuple[str, ...],
-    ) -> np.ndarray:
+    def resample_time_sum(series: npt.NDArray[np.float64],
+                          assign: npt.NDArray[np.int64],
+                          n_bins_out: int) -> npt.NDArray[np.float64]:
         """
-        Produce a length-G vector of probabilities aligned with labels_full.
-
-        Accepted forms:
-          - scalar
-          - array-like with length == G
-          - array-like with length == #unique ages (if 'age_strata' in group_keys)
-          - dict with keys:
-              * tuple in the exact order of group_keys, e.g., ('age','vax')
-              * tuple of just ('age',) -> fallback if exact combo missing
-              * string age -> fallback
-              * 'default' -> final fallback
-              * OR dict keys: {'age_strata':'A','vaccination_stage':'waned'}
+        Generic time aggregation by bin assignment.
+        - series: (T_in, N)
+        - assign: (T_in,) integer mapping each input bin i -> output bin j in [0, n_bins_out)
+        Output: (T_out, N) with sums over assigned bins.
+        This lets you support MMWR epiweeks or any calendar by providing 'assign'.
         """
-        G = len(labels_full)
+        T_in, N = series.shape
+        if assign.shape != (T_in,):
+            raise ValueError("assign must have shape (T_in,)")
+        out = np.zeros((n_bins_out, N), dtype=np.float64)
+        # Vectorized scatter-add: per output bin, sum rows where assign==j
+        # Efficient approach: sort by assign and cumulative sum
+        order = np.argsort(assign, kind="stable")
+        s_sorted = series[order, :]              # (T_in, N)
+        a_sorted = assign[order]                 # (T_in,)
+        # Find segment boundaries
+        bounds = np.flatnonzero(np.diff(a_sorted, prepend=a_sorted[0]-1))  # start indices
+        bounds = np.append(bounds, T_in)  # add sentinel end
+        # Accumulate each segment
+        for b0, b1 in zip(bounds[:-1], bounds[1:]):
+            j = int(a_sorted[b0])
+            out[j, :] += s_sorted[b0:b1, :].sum(axis=0)
+        return out
 
-        # scalar
-        if np.isscalar(prob_spec):
-            p = float(prob_spec)
-            return np.full(G, p, dtype=float)
 
-        # dict-based flexible mapping (check **before** coercing to array)
-        if isinstance(prob_spec, Mapping):
+# ---------------------------------------------------------------------------
+# Spec compiler helpers (from your YAML-like structure)
+# ---------------------------------------------------------------------------
 
-            def fetch(lab: Dict[str, Any]) -> float:
-                tup_exact = tuple(lab[k] for k in group_keys)
-                if tup_exact in prob_spec:
-                    return float(prob_spec[tup_exact])
+def compile_outcomes(
+    outcomes_cfg: Dict,
+    *,
+    # Required resolvers provided by caller (precomputed from model metadata):
+    resolve_incidence_to_transition_rows: callable,
+    # Example signature:
+    #   resolve_incidence_to_transition_rows(
+    #       infection_stage: str,
+    #       vaccination_stage: str,
+    #       variant_type: str,
+    #       age_strata: str
+    #   ) -> npt.NDArray[np.int64]    # transition row indices (R,)
+    node_mask_from_labels: callable,
+    # Example signature:
+    #   node_mask_from_labels(incidence_dict_or_none) -> npt.NDArray[np.float64]  # length N (0/1)
+    prob_vector_from_cfg: callable,
+    # Example signature:
+    #   prob_vector_from_cfg(outcome_name: str, base_prob: float|None) -> npt.NDArray[np.float64]
+    N_nodes: int,
+    bin_width_days: float,
+) -> CompiledOutcomes:
+    """
+    Compile a YAML-like outcomes dict into fast arrays.
+    You provide the resolvers so this stays decoupled from your model internals.
+    """
+    leaves: Dict[str, OutcomeLeaf] = {}
+    sums: Dict[str, OutcomeSum] = {}
 
-                # dict-key match
-                for k in prob_spec.keys():
-                    if isinstance(k, dict):
-                        if all(lab.get(kk) == kv for kk, kv in k.items()):
-                            return float(prob_spec[k])
+    maxK = 1
 
-                # age-only fallbacks
-                a = lab.get("age_strata", None)
-                if a is not None:
-                    if (a,) in prob_spec:
-                        return float(prob_spec[(a,)])
-                    if a in prob_spec:
-                        return float(prob_spec[a])
+    # 1) First pass: build leaves and sum placeholders
+    for name, spec in outcomes_cfg.items():
+        if "sum" in spec:
+            # Will fill later with children tuple
+            continue
 
-                if "default" in prob_spec:
-                    return float(prob_spec["default"])
-                raise KeyError(
-                    f"No probability found for group {lab} and no suitable fallback."
-                )
+        # Leaf with structure:
+        # source: incidence: {infection_stage, vaccination_stage, variant_type, age_strata}
+        # probability: {value: {distribution: fixed, value: ...}}
+        # delay: {value: {distribution: fixed|exponential|gamma, value: ...}}
+        src = spec.get("source", {})
+        inc = src.get("incidence", None)
+        if inc is None:
+            # It might be an alias 'source: <other outcome name>' (for H from I)
+            # Treat it as a sum of that single child. We'll resolve sums next pass.
+            continue
 
-            return np.array([fetch(lab) for lab in labels_full], dtype=float)
-
-        # array-like length == G
-        arr = np.asarray(prob_spec, dtype=float)
-        if arr.ndim == 1 and arr.size == G:
-            return arr
-
-        # array-like by age-only if available
-        ages = [lab.get("age_strata", None) for lab in labels_full]
-        if all(a is not None for a in ages):
-            uniq_ages = list(dict.fromkeys(ages))
-            if arr.size == len(uniq_ages):
-                age_to_p = {age: float(v) for age, v in zip(uniq_ages, arr)}
-                return np.array(
-                    [age_to_p[lab["age_strata"]] for lab in labels_full], dtype=float
-                )
-
-        raise ValueError(
-            "Unrecognized prob_spec shape or keys; supply scalar, length-G array, age-length array, or a dict keyed by group labels."
+        # Resolve transitions
+        rows = resolve_incidence_to_transition_rows(
+            inc.get("infection_stage", None),
+            inc.get("vaccination_stage", None),
+            inc.get("variant_type", None),
+            inc.get("age_strata", None),
         )
+        rows = np.ascontiguousarray(rows, dtype=np.int64)
+        if rows.ndim != 1:
+            raise ValueError(f"Transition resolver must return 1D indices, got {rows.shape}")
+
+        # Node mask (optional finer filtering; your resolver can return all-ones if not used)
+        mask_num = node_mask_from_labels(inc)  # (N,) numeric 0/1
+        mask_num = np.ascontiguousarray(mask_num, dtype=np.float64)
+        if mask_num.shape != (N_nodes,):
+            raise ValueError(f"Node mask must be (N,), got {mask_num.shape}")
+
+        # Probability
+        prob_cfg = spec.get("probability", {}).get("value", {})
+        base_prob = prob_cfg.get("value", 1.0)
+        prob_vec = prob_vector_from_cfg(name, base_prob)  # (N,)
+        prob_vec = _ensure_prob_vector(prob_vec, N_nodes)
+
+        # Delay kernel
+        delay_cfg = spec.get("delay", {}).get("value", {})
+        dkind = str(delay_cfg.get("distribution", "fixed")).lower()
+        kval: npt.NDArray[np.float64]
+        if dkind == "fixed":
+            kval = make_fixed_delay_kernel(delay_cfg.get("value", 0.0), bin_width_days)
+        elif dkind == "exponential":
+            kval = make_exponential_delay_kernel(delay_cfg.get("value", 1.0), bin_width_days)
+        elif dkind == "gamma":
+            # Support inputs like {"k": 3, "mean": 5} or {"shape": 3, "mean": 5} or {"value": {"mean":..,"shape":..}}
+            mean = float(delay_cfg.get("mean", delay_cfg.get("value", 1.0)))
+            shape_k = float(delay_cfg.get("shape", delay_cfg.get("k", 1.0)))
+            kval = make_gamma_delay_kernel(mean_days=mean, shape_k=shape_k, bin_width_days=bin_width_days)
+        else:
+            raise ValueError(f"Unknown delay distribution: {dkind}")
+
+        maxK = max(maxK, int(kval.size))
+
+        leaves[name] = OutcomeLeaf(
+            name=name,
+            transition_indices=rows,
+            node_mask_num=mask_num,
+            prob_vec=prob_vec,
+            kernel=kval,
+        )
+
+    # 2) Second pass: fill sums (including aliases like 'source: other_outcome_name')
+    for name, spec in outcomes_cfg.items():
+        if "sum" in spec:
+            children = tuple(spec["sum"])
+            sums[name] = OutcomeSum(name=name, children=children)
+            continue
+
+        # alias pattern: { source: "<other_outcome_name>", probability:..., delay:... }
+        src = spec.get("source", None)
+        if isinstance(src, str):
+            # Create a sum node referencing that leaf/aggregate
+            sums[name] = OutcomeSum(name=name, children=(src,))
+            continue
+        elif isinstance(src, dict) and "incidence" not in src and "sum" not in spec:
+            # If not incidence and not sum, but 'source' is present and refers to another outcome
+            # e.g., H from I: "source: incidI_..." + prob+delay
+            # Implement by creating a synthetic leaf "name" that uses the child's already-defined leaf stream
+            # BUT with a new prob/delay. For performance and simplicity we treat it as sum over one child
+            # and let the 'child' carry its own prob/delay. If you truly need per-outcome prob/delay chaining,
+            # resolve it externally and pass as incidence leaves.
+            # Here we interpret as simple alias (sum over child).
+            maybe_child = src
+            if isinstance(maybe_child, str):
+                sums[name] = OutcomeSum(name=name, children=(maybe_child,))
+                continue
+
+    # 3) Topological order (leaves first, then sums resolving dependencies)
+    # Simple Kahn-like: we assume no cycles (YAML shouldn't have).
+    all_names = set(leaves.keys()) | set(sums.keys())
+    deps = {sname: set(sums[sname].children) for sname in sums}
+    produced = set(leaves.keys())
+    order: List[str] = list(leaves.keys())  # start with leaves in insertion order
+    added = True
+    while added:
+        added = False
+        for sname, ch in list(deps.items()):
+            if sname in produced:
+                continue
+            if ch.issubset(produced):
+                order.append(sname)
+                produced.add(sname)
+                added = True
+    if produced != all_names:
+        missing = ", ".join(sorted(all_names - produced))
+        raise ValueError(f"Cycle or missing children in outcome sums; unresolved: {missing}")
+
+    return CompiledOutcomes(
+        leaves=leaves,
+        sums=sums,
+        names_topo=tuple(order),
+        max_kernel_len=maxK,
+    )

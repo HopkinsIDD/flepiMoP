@@ -227,7 +227,7 @@ def _prepare_case(cfg_name: str, tmp_path_factory):
 # ------------------------------------------------------------
 # Fixtures (parametrized over original vs alt config)
 # ------------------------------------------------------------
-@pytest.fixture(scope="module", params=["Structured_Example.yml", "Structured_Example_Seeding_Alt.yml"], ids=["orig", "alt"])
+@pytest.fixture(scope="module", params=["Structured_Example_Seeding_Alt.yml","Structured_Example.yml"], ids=["alt", "orig"])
 # @pytest.fixture(scope="module", params=["Structured_Example.yml"], ids=["orig"])
 def model_and_inputs(request, tmp_path_factory):
     return _prepare_case(request.param, tmp_path_factory)
