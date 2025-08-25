@@ -1,0 +1,757 @@
+name: USA
+setup_name: minimal
+start_date: 2024-07-28
+end_date: 2025-06-07
+nslots: 1
+
+subpop_setup:
+  geodata: model_input/Structured_Example/geodata_2019_statelevel.csv
+  mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv
+  state_level: TRUE
+
+initial_conditions: 
+  method: plugin
+  plugin_file_path: model_input/initial_condition/sample_initial_conditions.py
+  config_name: "Structured_Example"
+  seasons: ["19to20"]
+
+seeding:
+  method: FromFile
+  seeding_file: model_input/Structured_Example/seeding_territories.csv
+
+compartments:
+  infection_stage: ["S", "E", "I1", "I2", "I3", "R"] 
+  vaccination_stage: ["unvaccinated", "1dose", "waned"] 
+  variant_type: ["AllFlu"] 
+  age_strata: ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"] 
+
+seir:
+  integration:
+    method: rk4
+    dt: 2.000
+  parameters:
+    sigma_AllFlu:
+      value:
+        distribution: fixed
+        value: 1
+    alpha:
+      value:
+        distribution: fixed
+        value: 1
+    gamma:
+      value:
+        distribution: fixed
+        value: 0.25
+    epsilon:
+      value:
+        distribution: fixed
+        value: 0.00455456052934666
+    r0:
+      timeseries: model_input/Structured_Example/r0s_ts_24to25.csv
+    nu1age0to4:
+      timeseries: model_input/Structured_Example/Structured_Example_age0to4_dose1_medVax.csv
+    nu1age5to17:
+      timeseries: model_input/Structured_Example/Structured_Example_age5to17_dose1_medVax.csv
+    nu1age18to49:
+      timeseries: model_input/Structured_Example/Structured_Example_age18to49_dose1_medVax.csv
+    nu1age50to64:
+      timeseries: model_input/Structured_Example/Structured_Example_age50to64_dose1_medVax.csv
+    nu1age65to100:
+      timeseries: model_input/Structured_Example/Structured_Example_age65to100_dose1_medVax.csv
+    theta1_age0to4_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.55
+    thetaW_age0to4_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.3
+    theta1_age18to49_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.3
+    thetaW_age18to49_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.15
+    theta1_age50to64_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.25
+    thetaW_age50to64_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.15
+    theta1_age5to17_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.25
+    thetaW_age5to17_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.15
+    theta1_age65to100_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.15
+    thetaW_age65to100_AllFlu:
+      stacked_modifier_method: sum
+      value:
+        distribution: fixed
+        value: 1 - 0.05
+
+  transitions:
+    - source: [["S"], ["unvaccinated"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      destination: [["E"], ["unvaccinated"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      rate: [["r0*gamma"], ["1"], ["1"], "1"]
+      proportional_to: [
+        "source",
+        [
+          [["I1","I2","I3"]],
+          [["unvaccinated", "1dose", "waned"]],
+          [["AllFlu"]],
+          [["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]]
+        ]
+      ]
+      proportion_exponent: [
+        [["1"],"1","1","1"],
+        [["alpha"],"1","1","1"]]
+
+    - source: [["S"], ["1dose"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      destination: [["E"], ["1dose"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      rate: [["r0*gamma"], ["1"], ["1"], ["theta1_age0to4_AllFlu", "theta1_age5to17_AllFlu", "theta1_age18to49_AllFlu", "theta1_age50to64_AllFlu", "theta1_age65to100_AllFlu"]]
+      proportional_to: [
+        "source",
+        [
+          [["I1","I2","I3"]],
+          [["unvaccinated", "1dose", "waned"]],
+          [["AllFlu"]],
+          [["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]]
+        ]
+      ]
+      proportion_exponent: [
+        [["1"],"1","1","1"],
+        [["alpha"],"1","1","1"]]
+
+    - source: [["S"], ["waned"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      destination: [["E"], ["waned"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      rate: [["r0*gamma"], ["1"], ["1"], ["thetaW_age0to4_AllFlu", "thetaW_age5to17_AllFlu", "thetaW_age18to49_AllFlu", "thetaW_age50to64_AllFlu", "thetaW_age65to100_AllFlu"]]
+      proportional_to: [
+        "source",
+        [
+          [["I1","I2","I3"]],
+          [["unvaccinated", "1dose", "waned"]],
+          [["AllFlu"]],
+          [["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"],
+           ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]]
+        ]
+      ]
+      proportion_exponent: [
+        [["1"],"1","1","1"],
+        [["alpha"],"1","1","1"]]
+
+    - source: [["E", "I1", "I2", "I3"], ["unvaccinated", "1dose", "waned"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      destination: [["I1", "I2", "I3", "R"], ["unvaccinated", "1dose", "waned"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      rate: [["sigma_AllFlu", "3*gamma", "3*gamma", "3*gamma"], "1", ["1"], "1"]
+      proportional_to: ["source"]
+      proportion_exponent: [["1","1","1","1"]]
+
+    - source: [["S", "E", "R"], ["unvaccinated"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      destination: [["S", "E", "R"], ["1dose"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      rate: ["1", ["1"], ["1"], ["nu1age0to4", "nu1age5to17", "nu1age18to49", "nu1age50to64", "nu1age65to100"]]
+      proportional_to: ["source"]
+      proportion_exponent: [["1","1","1","1"]]
+
+    - source: [["S", "E", "R"], ["1dose"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      destination: [["S", "E", "R"], ["waned"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
+      rate: ["epsilon", ["1"], ["1"], "1"]
+      proportional_to: ["source"]
+      proportion_exponent: [["1","1","1","1"]]
+
+
+seir_modifiers:
+  scenarios:
+    - none
+  modifiers:
+    local_var_r0:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2024-07-28
+      period_end_date: 2025-06-07
+      value:
+        distribution: fixed
+        value: 1
+      perturbation:
+        distribution: fixed
+        value: 0
+    Seas_oct:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2024-10-01
+      period_end_date: 2024-10-31
+      value:
+        distribution: fixed
+        value: 0.965756197353694
+      perturbation:
+        distribution: fixed
+        value: 0
+    Seas_nov:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2024-11-01
+      period_end_date: 2024-11-30
+      value:
+        distribution: fixed
+        value: 0.928179065502909
+      perturbation:
+        distribution: fixed
+        value: 0
+    Seas_dec:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2024-12-01
+      period_end_date: 2024-12-31
+      value:
+        distribution: fixed
+        value: 0.951041627366124
+      perturbation:
+        distribution: fixed
+        value: 0
+    Seas_jan:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2025-01-01
+      period_end_date: 2025-01-31
+      value:
+        distribution: fixed
+        value: 1.07616152252893
+      perturbation:
+        distribution: fixed
+        value: 0
+        b: 1
+    Seas_feb:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2025-02-01
+      period_end_date: 2025-02-28
+      value:
+        distribution: fixed
+        value: 1.05544076097506
+      perturbation:
+        distribution: fixed
+        value: 0
+    Seas_mar:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2025-03-01
+      period_end_date: 2025-03-31
+      value:
+        distribution: fixed
+        value: 1.02304661417066
+      perturbation:
+        distribution: fixed
+        value: 0
+    Seas_apr:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2025-04-01
+      period_end_date: 2025-04-30
+      value:
+        distribution: fixed
+        value: 1.00770731659418
+      perturbation:
+        distribution: fixed
+        value: 0
+        b: 1
+    winter_holiday:
+      method: SinglePeriodModifier
+      parameter: r0
+      subpop: "all"
+      period_start_date: 2024-12-21
+      period_end_date: 2025-01-02
+      value:
+        distribution: fixed
+        value: 0.9
+      perturbation:
+        distribution: fixed
+        value: 0
+    local_var:
+      method: StackedModifier
+      modifiers: ["local_var_r0"]
+    npi:
+      method: StackedModifier
+      modifiers: ["winter_holiday"]
+    seasonal:
+      method: StackedModifier
+      modifiers: ["Seas_oct", "Seas_nov", "Seas_dec", "Seas_jan", "Seas_feb", "Seas_mar", "Seas_apr"]
+    none:
+      method: StackedModifier
+      modifiers: ["local_var", "npi", "seasonal"]
+
+outcome_modifiers:
+  scenarios:
+    - fake
+  modifiers:
+    fake_mod:
+      method: SinglePeriodModifier
+      parameter: incidI_1dose_AllFlu_age0to4::probability
+      subpop: "all"
+      period_start_date: 2024-07-28
+      period_end_date: 2025-06-07
+      value:
+        distribution: fixed
+        value: 1
+    fake:
+      method: StackedModifier
+      modifiers: ["fake_mod"]
+
+outcomes:
+  method: delayframe
+  param_from_file: TRUE
+  param_subpop_file: "model_input/Structured_Example/outcome-subpop-ratios_Flu_2024_R1_allflu-D.parquet"
+  outcomes:
+    incidI_1dose_AllFlu_age0to4:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "1dose"
+          variant_type: "AllFlu"
+          age_strata: "age0to4"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_waned_AllFlu_age0to4:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "waned"
+          variant_type: "AllFlu"
+          age_strata: "age0to4"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_unvaccinated_AllFlu_age0to4:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "unvaccinated"
+          variant_type: "AllFlu"
+          age_strata: "age0to4"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_1dose_AllFlu_age18to49:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "1dose"
+          variant_type: "AllFlu"
+          age_strata: "age18to49"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_waned_AllFlu_age18to49:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "waned"
+          variant_type: "AllFlu"
+          age_strata: "age18to49"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_unvaccinated_AllFlu_age18to49:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "unvaccinated"
+          variant_type: "AllFlu"
+          age_strata: "age18to49"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_1dose_AllFlu_age50to64:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "1dose"
+          variant_type: "AllFlu"
+          age_strata: "age50to64"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_waned_AllFlu_age50to64:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "waned"
+          variant_type: "AllFlu"
+          age_strata: "age50to64"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_unvaccinated_AllFlu_age50to64:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "unvaccinated"
+          variant_type: "AllFlu"
+          age_strata: "age50to64"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_1dose_AllFlu_age5to17:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "1dose"
+          variant_type: "AllFlu"
+          age_strata: "age5to17"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_waned_AllFlu_age5to17:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "waned"
+          variant_type: "AllFlu"
+          age_strata: "age5to17"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_unvaccinated_AllFlu_age5to17:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "unvaccinated"
+          variant_type: "AllFlu"
+          age_strata: "age5to17"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_1dose_AllFlu_age65to100:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "1dose"
+          variant_type: "AllFlu"
+          age_strata: "age65to100"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_waned_AllFlu_age65to100:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "waned"
+          variant_type: "AllFlu"
+          age_strata: "age65to100"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_unvaccinated_AllFlu_age65to100:
+      source:
+        incidence:
+          infection_stage: "I1"
+          vaccination_stage: "unvaccinated"
+          variant_type: "AllFlu"
+          age_strata: "age65to100"
+      probability:
+        value:
+          distribution: fixed
+          value: 1
+      delay:
+        value:
+          distribution: fixed
+          value: 0
+    incidI_AllFlu:
+      sum: [
+        incidI_1dose_AllFlu_age0to4,
+        incidI_waned_AllFlu_age0to4,
+        incidI_unvaccinated_AllFlu_age0to4,
+        incidI_1dose_AllFlu_age18to49,
+        incidI_waned_AllFlu_age18to49,
+        incidI_unvaccinated_AllFlu_age18to49,
+        incidI_1dose_AllFlu_age50to64,
+        incidI_waned_AllFlu_age50to64,
+        incidI_unvaccinated_AllFlu_age50to64,
+        incidI_1dose_AllFlu_age5to17,
+        incidI_waned_AllFlu_age5to17,
+        incidI_unvaccinated_AllFlu_age5to17,
+        incidI_1dose_AllFlu_age65to100,
+        incidI_waned_AllFlu_age65to100,
+        incidI_unvaccinated_AllFlu_age65to100
+      ]
+    incidI:
+      sum: ['incidI_AllFlu']
+    incidH_1dose_AllFlu_age0to4:
+      source: incidI_1dose_AllFlu_age0to4
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00370892996392104
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_waned_AllFlu_age0to4:
+      source: incidI_waned_AllFlu_age0to4
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00370892996392104
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_unvaccinated_AllFlu_age0to4:
+      source: incidI_unvaccinated_AllFlu_age0to4
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00557713003231944
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_1dose_AllFlu_age18to49:
+      source: incidI_1dose_AllFlu_age18to49
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00202920003648216
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_waned_AllFlu_age18to49:
+      source: incidI_waned_AllFlu_age18to49
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00202920003648216
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_unvaccinated_AllFlu_age18to49:
+      source: incidI_unvaccinated_AllFlu_age18to49
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00224521003707588
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_1dose_AllFlu_age50to64:
+      source: incidI_1dose_AllFlu_age50to64
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00485426996652384
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_waned_AllFlu_age50to64:
+      source: incidI_waned_AllFlu_age50to64
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00485426996652384
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_unvaccinated_AllFlu_age50to64:
+      source: incidI_unvaccinated_AllFlu_age50to64
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00530235997580844
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_1dose_AllFlu_age5to17:
+      source: incidI_1dose_AllFlu_age5to17
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00136895997841884
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_waned_AllFlu_age5to17:
+      source: incidI_waned_AllFlu_age5to17
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00136895997841884
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_unvaccinated_AllFlu_age5to17:
+      source: incidI_unvaccinated_AllFlu_age5to17
+      probability:
+        value:
+          distribution: fixed
+          value: 0.00150802998417324
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_1dose_AllFlu_age65to100:
+      source: incidI_1dose_AllFlu_age65to100
+      probability:
+        value:
+          distribution: fixed
+          value: 0.047911609963282
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_waned_AllFlu_age65to100:
+      source: incidI_waned_AllFlu_age65to100
+      probability:
+        value:
+          distribution: fixed
+          value: 0.047911609963282
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_unvaccinated_AllFlu_age65to100:
+      source: incidI_unvaccinated_AllFlu_age65to100
+      probability:
+        value:
+          distribution: fixed
+          value: 0.0500000599769983
+      delay:
+        value:
+          distribution: fixed
+          value: 5
+    incidH_AllFlu:
+      sum: [
+        incidH_1dose_AllFlu_age0to4,
+        incidH_waned_AllFlu_age0to4,
+        incidH_unvaccinated_AllFlu_age0to4,
+        incidH_1dose_AllFlu_age18to49,
+        incidH_waned_AllFlu_age18to49,
+        incidH_unvaccinated_AllFlu_age18to49,
+        incidH_1dose_AllFlu_age50to64,
+        incidH_waned_AllFlu_age50to64,
+        incidH_unvaccinated_AllFlu_age50to64,
+        incidH_1dose_AllFlu_age5to17,
+        incidH_waned_AllFlu_age5to17,
+        incidH_unvaccinated_AllFlu_age5to17,
+        incidH_1dose_AllFlu_age65to100,
+        incidH_waned_AllFlu_age65to100,
+        incidH_unvaccinated_AllFlu_age65to100
+      ]
+    incidH:
+      sum: ['incidH_AllFlu']
+
+
