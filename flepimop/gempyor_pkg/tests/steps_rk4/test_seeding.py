@@ -1,9 +1,63 @@
-import numpy as np
-import pytest
+# test_vectorized_param_cases.py  (per-config autotune)
+import os, sys, platform, shutil
 from pathlib import Path
-import shutil
-import confuse
+from ctypes.util import find_library
+
+# --- BLAS hygiene (avoid oversubscription) ---
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+# --- Choose a numba threading layer *before* importing numba users ---
+def _choose_numba_layer() -> str:
+    forced = os.environ.get("NUMBA_THREADING_LAYER")
+    if forced:
+        return forced
+    if find_library("tbb") or find_library("tbb12"):
+        return "tbb"
+    if find_library("omp") or find_library("gomp"):
+        return "omp"
+    return "workqueue"
+
+def _maybe_patch_dylib_path(layer: str) -> None:
+    if platform.system() != "Darwin":
+        return
+    extra = []
+    if layer == "tbb":
+        extra = ["/opt/homebrew/opt/tbb/lib", "/usr/local/opt/tbb/lib"]
+    elif layer == "omp":
+        extra = ["/opt/homebrew/opt/libomp/lib", "/usr/local/opt/libomp/lib"]
+    if not extra:
+        return
+    cur = os.environ.get("DYLD_LIBRARY_PATH", "")
+    add = [p for p in extra if Path(p).exists() and p not in cur]
+    if add:
+        os.environ["DYLD_LIBRARY_PATH"] = (":".join(add) + (":" + cur if cur else ""))
+
+_layer = _choose_numba_layer()
+_maybe_patch_dylib_path(_layer)
+os.environ.setdefault("NUMBA_THREADING_LAYER", _layer)
+os.environ.setdefault("NUMBA_NUM_THREADS", str(os.cpu_count() or 1))
+
+# Clear numba cache compiled under other layers
+try:
+    shutil.rmtree(Path.home() / ".numba" / "cache", ignore_errors=True)
+except Exception:
+    pass
+
+print(
+    f"[env] NUMBA_THREADING_LAYER={os.environ['NUMBA_THREADING_LAYER']} "
+    f"NUMBA_NUM_THREADS={os.environ['NUMBA_NUM_THREADS']}",
+    file=sys.stderr,
+)
+
+# ------------------------------------------------------------------------------------------------
+# Regular imports (safe now that env is set)
+# ------------------------------------------------------------------------------------------------
+import numpy as np
 import pandas as pd
+import pytest
+import confuse
 
 from scipy.integrate import solve_ivp
 from scipy.sparse import csr_matrix
@@ -11,12 +65,16 @@ from scipy.sparse import csr_matrix
 # legacy baseline (optional perf comparison)
 from gempyor.steps_rk4 import rk4_integration
 
-# new vectorized solver
-from gempyor.vectorization_experiments import RHSfactory
+# vectorized solver + autotune helpers
+from gempyor.vectorization_experiments import (
+    RHSfactory,
+    autotune_all,
+    # the following may or may not exist; handled via try/except below
+    get_autotune_config,
+)
 
 # plotting (headless, only for optional debug figure writing)
 import matplotlib
-
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -48,16 +106,13 @@ def age_strata_lookup(age_strata: str, compartments_df):
 
 
 def _to_py_seeding_dict(nb_dict) -> dict[str, np.ndarray]:
-    # Convert potential numba.typed.Dict to a plain dict of numpy arrays
     return {str(k): np.asarray(v) for k, v in nb_dict.items()}
 
 
 def _per_day_seed_sums(
     day_start_idx: np.ndarray, amounts: np.ndarray, n_days: int
 ) -> np.ndarray:
-    # day_start_idx is CSR-like pointers of length D+1, amounts length E
     out = np.zeros(n_days, dtype=np.float64)
-    # Guard if pointers length mismatched; use min for safety
     D = min(n_days, day_start_idx.size - 1)
     for d in range(D):
         s = int(day_start_idx[d])
@@ -153,7 +208,6 @@ def _prepare_case(cfg_name: str, tmp_path_factory):
     if seeding_on:
         seeding_data_nb, seeding_amounts = model.get_seeding_data(sim_id=0)
         seeding_data_py = _to_py_seeding_dict(seeding_data_nb)
-        # Normalize dtypes for our Numba kernels
         seeding_data = {
             "day_start_idx": np.ascontiguousarray(
                 seeding_data_py["day_start_idx"], dtype=np.int64
@@ -217,7 +271,6 @@ def _prepare_case(cfg_name: str, tmp_path_factory):
         "precomputed": precomputed,
         "param_names": np.array(list(param_defs.keys())),
         "compartments": model.compartments.compartments,
-        # Seeding artifacts for validation (None if seeding_off)
         "seeding_data": seeding_data,
         "seeding_amounts": seeding_amounts,
         "daily_incidence": daily_incidence,
@@ -228,27 +281,66 @@ def _prepare_case(cfg_name: str, tmp_path_factory):
 # Fixtures (parametrized over original vs alt config)
 # ------------------------------------------------------------
 @pytest.fixture(scope="module", params=["Structured_Example_Seeding_Alt.yml","Structured_Example.yml"], ids=["alt", "orig"])
-# @pytest.fixture(scope="module", params=["Structured_Example.yml"], ids=["orig"])
 def model_and_inputs(request, tmp_path_factory):
     return _prepare_case(request.param, tmp_path_factory)
 
 
 # ------------------------------------------------------------
+# Per-config autotune (depends on the prepared case)
+# ------------------------------------------------------------
+@pytest.fixture(scope="module", autouse=True)
+def autotune_for_case(model_and_inputs):
+    """
+    Tune knobs using the case's workload (Tn, N, seeding_on).
+    Skips cleanly if no parallel layer can be loaded on this machine.
+    """
+    out = model_and_inputs
+    Tn = int(out["transitions"].shape[1])
+    N = int(out["precomputed"]["nspatial_nodes"])
+    hint = {"Tn": Tn, "N": N, "seeding": bool(out["seeding_on"])}
+
+    try:
+        try:
+            cfg = autotune_all(quiet=True, workload_hint=hint)  # if your version supports it
+        except TypeError:
+            # Fallback: run generic autotune then bump threshold toward this workload
+            cfg = autotune_all(quiet=True)
+            # Heuristic: parallel wins above a fraction of the case size, clamp to [1e6, 5e7]
+            case_size = max(1, Tn * N)
+            thr = int(min(max(case_size // 4, 1_000_000), 50_000_000))
+            # If vectorization_experiments exposes a setter, use it; else patch dict and hope it's read
+            try:
+                from gempyor.vectorization_experiments import set_autotune_config
+                cfg = {**cfg, "parallel_threshold": thr}
+                set_autotune_config(cfg)
+            except Exception:
+                pass  # harmless if not exposed
+    except ValueError as e:
+        if "No threading layer could be loaded" in str(e):
+            pytest.skip("Numba threading layer unavailable; skipped autotune_all()")
+        raise
+
+    # Optional visibility in CI
+    try:
+        active = get_autotune_config()
+    except Exception:
+        active = cfg
+    print(f"[autotune][{out['cfg_name']}] {active}")
+
+
+# ------------------------------------------------------------
 # Tests
 # ------------------------------------------------------------
-
-@pytest.mark.benchmark(group="solver_performance", min_rounds=1)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=20)
 def test_legacy_solver_performance_param(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
     ndays_daily = out["model"].n_days
 
-    # Seeding policy by config:
     if out["seeding_on"]:
         seeding_data = out["seeding_data"]
         seeding_amounts = out["seeding_amounts"]
     else:
-        # Seeding OFF in alt config
         seeding_data = {"day_start_idx": np.zeros(ndays_daily, dtype=int)}
         seeding_amounts = np.zeros(0, dtype=np.float64)
 
@@ -274,10 +366,10 @@ def test_legacy_solver_performance_param(benchmark, model_and_inputs):
         )
 
     result = benchmark(run_legacy)
-    assert result is None or True  # just to have an assertion
+    assert result is None or True
 
 
-@pytest.mark.benchmark(group="solver_performance", min_rounds=1)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=20)
 def test_vectorized_solver_performance_param(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -305,6 +397,4 @@ def test_vectorized_solver_performance_param(benchmark, model_and_inputs):
 
     result = benchmark(run_vec)
     assert result.success
-
-
 

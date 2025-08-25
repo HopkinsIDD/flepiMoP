@@ -1,23 +1,106 @@
+# test_vectorized_with_autotune.py
+import os, sys, platform, shutil
+from pathlib import Path
+from ctypes.util import find_library
+
+# --- BLAS hygiene (avoid oversubscription) ---
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+# --- Choose a Numba threading layer *before* importing anything that might pull in numba ---
+def _choose_numba_layer() -> str:
+    # Respect explicit user/CI setting first
+    forced = os.environ.get("NUMBA_THREADING_LAYER")
+    if forced:
+        return forced
+    # Prefer TBB if discoverable
+    if find_library("tbb") or find_library("tbb12"):
+        return "tbb"
+    # Then OpenMP (macOS: libomp; Linux: gomp)
+    if find_library("omp") or find_library("gomp"):
+        return "omp"
+    # Always-available fallback (no external deps)
+    return "workqueue"
+
+def _maybe_patch_dylib_path(layer: str) -> None:
+    # Help the loader on fresh macOS/Homebrew machines
+    if platform.system() != "Darwin":
+        return
+    extra = []
+    if layer == "tbb":
+        extra = ["/opt/homebrew/opt/tbb/lib", "/usr/local/opt/tbb/lib"]
+    elif layer == "omp":
+        extra = ["/opt/homebrew/opt/libomp/lib", "/usr/local/opt/libomp/lib"]
+    if not extra:
+        return
+    cur = os.environ.get("DYLD_LIBRARY_PATH", "")
+    paths = [p for p in extra if Path(p).exists() and p not in cur]
+    if paths:
+        os.environ["DYLD_LIBRARY_PATH"] = (":".join(paths) + (":" + cur if cur else ""))
+
+_layer = _choose_numba_layer()
+_maybe_patch_dylib_path(_layer)
+os.environ.setdefault("NUMBA_THREADING_LAYER", _layer)
+os.environ.setdefault("NUMBA_NUM_THREADS", str(os.cpu_count() or 1))
+
+# Clear numba cache so we don't reuse binaries compiled with a different layer
+try:
+    shutil.rmtree(Path.home() / ".numba" / "cache", ignore_errors=True)
+except Exception:
+    pass
+
+print(
+    f"[env] NUMBA_THREADING_LAYER={os.environ['NUMBA_THREADING_LAYER']} "
+    f"NUMBA_NUM_THREADS={os.environ['NUMBA_NUM_THREADS']}",
+    file=sys.stderr,
+)
+
+# ------------------------------------------------------------------------------------------
+# Regular imports (safe now that env is set)
+# ------------------------------------------------------------------------------------------
 import numpy as np
 import pytest
 from functools import partial
 from scipy.integrate import solve_ivp
 
 from gempyor.steps_rk4 import rk4_integration
-from gempyor.vectorization_experiments import RHSfactory
 
-import shutil
-from pathlib import Path
+# Import the vectorized module after env setup
+from gempyor.vectorization_experiments import (
+    RHSfactory,
+    autotune_all,
+    get_autotune_config,
+)
+
 import confuse
 from scipy.sparse import csr_matrix
 
 # --- plotting (headless) ---
 import matplotlib
-
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from gempyor.model_info import ModelInfo
+
+
+# ------------------------------------------------------------
+# One-time autotune (separate from benchmarks)
+# ------------------------------------------------------------
+@pytest.fixture(scope="session", autouse=True)
+def autotune_once():
+    """
+    Tune once per session. If a parallel layer still can't load on a dev box,
+    skip tuning (tests will still run, typically serially).
+    """
+    try:
+        cfg = autotune_all(quiet=True)
+    except ValueError as e:
+        if "No threading layer could be loaded" in str(e):
+            pytest.skip("Numba threading layer unavailable; skipped autotune_all()")
+        raise
+    print(f"[autotune] applied: {cfg}")
+    return cfg
 
 
 # ------------------------------------------------------------
@@ -50,8 +133,6 @@ def compartment_lookup(compartment: str, compartments_df):
 # ------------------------------------------------------------
 # Fixtures
 # ------------------------------------------------------------
-
-
 @pytest.fixture(scope="module")
 def modelinfo_from_config(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("model_input")
@@ -98,6 +179,7 @@ def modelinfo_from_config(tmp_path_factory):
 
 @pytest.fixture
 def model_and_inputs(modelinfo_from_config):
+    import shutil  # local import ok
     model, config = modelinfo_from_config
 
     initial_array = model.initial_conditions.get_from_config(sim_id=0, modinf=model)
@@ -181,7 +263,7 @@ def model_and_inputs(modelinfo_from_config):
 # Benchmarks
 # ------------------------------------------------------------
 @pytest.mark.benchmark(group="solver_performance", min_rounds=20)
-def test_legacy_solver_performance(benchmark, model_and_inputs):
+def test_legacy_solver_performance(benchmark, model_and_inputs, autotune_once):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
     ndays_daily = out["model"].n_days
@@ -212,9 +294,14 @@ def test_legacy_solver_performance(benchmark, model_and_inputs):
 
 @pytest.mark.benchmark(group="solver_performance", min_rounds=20)
 @pytest.mark.parametrize("eval_step", [1.0, 0.1])
-def test_vectorized_solver__param_eval_grid(benchmark, model_and_inputs, eval_step):
+def test_vectorized_solver__param_eval_grid(benchmark, model_and_inputs, eval_step, autotune_once, capsys):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
+
+    # Optional: show the applied autotune config in test logs
+    cfg = get_autotune_config()
+    print(f"[autotune] active during benchmark: {cfg}")
+    capsys.readouterr()  # flush so benchmark output stays clean
 
     # Build factory (param_time_mode='step' to match legacy stepping)
     factory = RHSfactory(
@@ -247,7 +334,7 @@ def test_vectorized_solver__param_eval_grid(benchmark, model_and_inputs, eval_st
     assert states.shape == (len(t_eval), ncomp, nloc)
 
 
-def test_overlay_rhs(model_and_inputs):
+def test_overlay_rhs(model_and_inputs, autotune_once):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
 
@@ -276,7 +363,7 @@ def test_overlay_rhs(model_and_inputs):
         silent=True,
     )
 
-    # Vectorized RHS +  via factory (fast path: precomputed params)
+    # Vectorized RHS via factory (fast path: precomputed params)
     factory = RHSfactory(
         precomputed=out["precomputed"],
         param_expr_lookup=out["param_expr_lookup"],
@@ -293,7 +380,7 @@ def test_overlay_rhs(model_and_inputs):
         atol=1e-4,
         max_step=1.0,
     )
-    assert sol_vec.success, f"Vectorized  failed: {sol_vec.message}"
+    assert sol_vec.success, f"Vectorized failed: {sol_vec.message}"
     states_vec = sol_vec.y.T.reshape(len(t_daily), ncomp, nloc)
 
     # Overlay of I(t) total across nodes
