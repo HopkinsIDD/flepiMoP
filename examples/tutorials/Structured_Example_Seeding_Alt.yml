@@ -192,11 +192,11 @@ seir:
       proportional_to: ["source"]
       proportion_exponent: [["1","1","1","1"]]
 
-    - source: ["S", "unvaccinated", "AllFlu", "age18to49"]
-      destination: ["E", "unvaccinated", "AllFlu", "age18to49"]
-      rate: ["lambda_ext"]
+    - source: [["S"], ["unvaccinated"], ["AllFlu"], ["age18to49"]]
+      destination: [["E"], ["unvaccinated"], ["AllFlu"], ["age18to49"]]
+      rate: [["lambda_ext"], [1], [1], [1]]
       proportional_to: ["source"]
-      proportion_exponent: [1]
+      proportion_exponent: [[1, 1, 1, 1]]
 
 
 
