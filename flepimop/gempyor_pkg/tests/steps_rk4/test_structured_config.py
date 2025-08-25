@@ -13,6 +13,7 @@ from scipy.sparse import csr_matrix
 
 # --- plotting (headless) ---
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -49,6 +50,7 @@ def compartment_lookup(compartment: str, compartments_df):
 # ------------------------------------------------------------
 # Fixtures
 # ------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def modelinfo_from_config(tmp_path_factory):
@@ -297,17 +299,14 @@ def test_overlay_rhs(model_and_inputs):
     # Overlay of I(t) total across nodes
     I_idx = compartment_lookup("I", out["compartments"])
     y_legacy = states_legacy[:, I_idx, :].sum(axis=(1, 2))  # (T,)
-    y_vec    = states_vec[:,    I_idx, :].sum(axis=(1, 2))  # (T,)
-
+    y_vec = states_vec[:, I_idx, :].sum(axis=(1, 2))  # (T,)
 
     test_dir = Path(__file__).parent
     outpath = test_dir / "solver_overlay_I_total_daily_manual.png"
 
     fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
     ax.plot(t_daily, y_legacy, label="Legacy (daily)", linewidth=1.5)
-    ax.plot(
-        t_daily, y_vec, label="Vectorized (daily)", linestyle="--", linewidth=1.5
-    )
+    ax.plot(t_daily, y_vec, label="Vectorized (daily)", linestyle="--", linewidth=1.5)
     ax.set_title("Overlay: I(t) total across nodes — Daily Grid")
     ax.set_xlabel("Time (days)")
     ax.set_ylabel("Individuals")
