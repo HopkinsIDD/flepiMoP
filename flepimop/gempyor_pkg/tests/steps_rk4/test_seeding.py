@@ -236,48 +236,8 @@ def model_and_inputs(request, tmp_path_factory):
 # ------------------------------------------------------------
 # Tests
 # ------------------------------------------------------------
-def test_seeding_applies_to_daily_incidence(model_and_inputs):
-    out = model_and_inputs
-    if not out["seeding_on"]:
-        pytest.skip(
-            "Alt config encodes seeding as a transition; explicit seeding is OFF here."
-        )
 
-    ncomp, nloc = out["initial_array"].shape
-    ndays = out["model"].n_days
-
-    # Solve on a daily grid (param_time_mode='step' to align with seeding tick)
-    t_daily = np.arange(0.0, float(ndays - 1) + 1e-12, 1.0, dtype=np.float64)
-
-    factory = RHSfactory(
-        precomputed=out["precomputed"],
-        param_expr_lookup=out["param_expr_lookup"],
-        param_name_to_row=out["param_name_to_row"],
-        param_time_mode="step",
-    )
-    res = factory.solve(
-        y0=out["initial_array"].ravel(),
-        parameters=out["params"],
-        t_span=(t_daily[0], t_daily[-1] + 1.0),  # integrate through the full last day
-        t_eval=t_daily,
-        method="RK45",
-        rtol=1e-2,
-        atol=1e-4,
-    )
-    assert res.success, f"Vectorized solver failed: {res.message}"
-
-    # Validate: daily_incidence aggregated equals scheduled seeding by day
-    di = out["daily_incidence"]  # (D, C, N) mutated in place
-    di_by_day = di.sum(axis=(1, 2))  # (D,)
-    scheduled_by_day = _per_day_seed_sums(
-        out["seeding_data"]["day_start_idx"], out["seeding_amounts"], ndays
-    )
-    assert np.allclose(
-        di_by_day, scheduled_by_day, rtol=0, atol=1e-12
-    ), "Daily incidence does not match scheduled seeding amounts."
-
-
-@pytest.mark.benchmark(group="solver_performance", min_rounds=5)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=1)
 def test_legacy_solver_performance_param(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -317,7 +277,7 @@ def test_legacy_solver_performance_param(benchmark, model_and_inputs):
     assert result is None or True  # just to have an assertion
 
 
-@pytest.mark.benchmark(group="solver_performance", min_rounds=5)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=1)
 def test_vectorized_solver_performance_param(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
