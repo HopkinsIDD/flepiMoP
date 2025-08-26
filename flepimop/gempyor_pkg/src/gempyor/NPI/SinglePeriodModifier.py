@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 from ..distributions import distribution_from_confuse_config
-from . import helpers
 from .base import NPIBase
+from .helpers import SpatialGroups
 
 
 class SinglePeriodModifier(NPIBase):
@@ -149,7 +149,7 @@ class SinglePeriodModifier(NPIBase):
             else self.end_date
         )
         self.parameters["parameter"] = self.param_name
-        self.spatial_groups = helpers.get_spatial_groups(
+        self.spatial_groups = SpatialGroups.from_subpopulations(
             list(self.affected_subpops),
             (
                 npi_config["subpop_groups"].get()
@@ -157,14 +157,14 @@ class SinglePeriodModifier(NPIBase):
                 else None
             ),
         )
-        if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = (
-                self.dist.sample(size=len(self.spatial_groups["ungrouped"]))
+        if self.spatial_groups.ungrouped:
+            self.parameters.loc[list(self.spatial_groups.ungrouped), "value"] = (
+                self.dist.sample(size=len(self.spatial_groups.ungrouped))
             )
-        if self.spatial_groups["grouped"]:
-            for group in self.spatial_groups["grouped"]:
+        if self.spatial_groups.grouped:
+            for group in self.spatial_groups.grouped:
                 drawn_value = np.repeat(self.dist(), len(group))
-                self.parameters.loc[group, "value"] = drawn_value
+                self.parameters.loc[list(group), "value"] = drawn_value
 
     def __createFromDf(self, loaded_df, npi_config):
         loaded_df.index = loaded_df.subpop
@@ -209,7 +209,7 @@ class SinglePeriodModifier(NPIBase):
         # TODO: to be consistent with MTR, we want to also draw the values for the subpops
         # that are not in the loaded_df.
 
-        self.spatial_groups = helpers.get_spatial_groups(
+        self.spatial_groups = SpatialGroups.from_subpopulations(
             list(self.affected_subpops),
             (
                 npi_config["subpop_groups"].get()
@@ -217,14 +217,14 @@ class SinglePeriodModifier(NPIBase):
                 else None
             ),
         )
-        if self.spatial_groups["ungrouped"]:
-            self.parameters.loc[self.spatial_groups["ungrouped"], "value"] = loaded_df.loc[
-                self.spatial_groups["ungrouped"], "value"
-            ]
-        if self.spatial_groups["grouped"]:
-            for group in self.spatial_groups["grouped"]:
-                self.parameters.loc[group, "value"] = loaded_df.loc[
-                    ",".join(group), "value"
+        if self.spatial_groups.ungrouped:
+            self.parameters.loc[list(self.spatial_groups.ungrouped), "value"] = (
+                loaded_df.loc[list(self.spatial_groups.ungrouped), "value"]
+            )
+        if self.spatial_groups.grouped:
+            for group in self.spatial_groups.grouped:
+                self.parameters.loc[(list(group)), "value"] = loaded_df.loc[
+                    ",".join(list(group)), "value"
                 ]
 
     def get_default(self, param):
@@ -245,14 +245,14 @@ class SinglePeriodModifier(NPIBase):
     def getReductionToWrite(self):
         # spatially ungrouped dataframe
         df = self.parameters[
-            self.parameters.index.isin(self.spatial_groups["ungrouped"])
+            self.parameters.index.isin(self.spatial_groups.ungrouped)
         ].copy()
         df.index.name = "subpop"
         df["start_date"] = df["start_date"].astype("str")
         df["end_date"] = df["end_date"].astype("str")
 
         # spatially grouped dataframe
-        for group in self.spatial_groups["grouped"]:
+        for group in self.spatial_groups.grouped:
             # we use the first subpop to represent the group
             df_group = self.parameters[self.parameters.index == group[0]].copy()
 

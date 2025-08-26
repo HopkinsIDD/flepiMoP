@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .distributions import distribution_from_confuse_config
-from .NPI.helpers import get_spatial_groups
+from .NPI.helpers import SpatialGroups
 
 
 class InferenceParameters:
@@ -46,7 +46,7 @@ class InferenceParameters:
                 and parameter_config["subpop"].get() != "all"
             ):
                 affected_subpops = {str(n.get()) for n in parameter_config["subpop"]}
-            spatial_groups = get_spatial_groups(
+            spatial_groups = SpatialGroups.from_subpopulations(
                 list(affected_subpops),
                 (
                     parameter_config["subpop_groups"].get()
@@ -56,8 +56,8 @@ class InferenceParameters:
             )
             # ungrouped subpop (all affected subpop by
             # default) have one parameter per subpop
-            if spatial_groups["ungrouped"]:
-                for sp in spatial_groups["ungrouped"]:
+            if spatial_groups.ungrouped:
+                for sp in spatial_groups.ungrouped:
                     dist = distribution_from_confuse_config(parameter_config["value"])
                     lower, upper = dist.support
                     self.add_single_parameter(
@@ -69,8 +69,8 @@ class InferenceParameters:
                         ub=upper,
                     )
             # grouped subpop have one parameter per group
-            if spatial_groups["grouped"]:
-                for group in spatial_groups["grouped"]:
+            if spatial_groups.grouped:
+                for group in spatial_groups.grouped:
                     dist = distribution_from_confuse_config(parameter_config["value"])
                     lower, upper = dist.support
                     self.add_single_parameter(
@@ -95,7 +95,7 @@ class InferenceParameters:
                     affected_subpops_grp = affected_subpops
                 else:
                     affected_subpops_grp = [str(n.get()) for n in grp_config["subpop"]]
-                this_spatial_group = get_spatial_groups(
+                this_spatial_group = SpatialGroups.from_subpopulations(
                     affected_subpops_grp,
                     (
                         grp_config["subpop_groups"].get()
@@ -105,8 +105,8 @@ class InferenceParameters:
                 )
                 # ungrouped subpop (all affected subpop by
                 # default) have one parameter per subpop
-                if this_spatial_group["ungrouped"]:
-                    for sp in this_spatial_group["ungrouped"]:
+                if this_spatial_group.ungrouped:
+                    for sp in this_spatial_group.ungrouped:
                         dist = distribution_from_confuse_config(parameter_config["value"])
                         lower, upper = dist.support
                         self.add_single_parameter(
@@ -118,8 +118,8 @@ class InferenceParameters:
                             ub=upper,
                         )
                 # grouped subpop have one parameter per group
-                if this_spatial_group["grouped"]:
-                    for group in this_spatial_group["grouped"]:
+                if this_spatial_group.grouped:
+                    for group in this_spatial_group.grouped:
                         dist = distribution_from_confuse_config(parameter_config["value"])
                         lower, upper = dist.support
                         self.add_single_parameter(

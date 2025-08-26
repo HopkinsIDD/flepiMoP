@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 from ..distributions import distribution_from_confuse_config
-from . import helpers
 from .base import NPIBase
+from .helpers import SpatialGroups
 
 
 class MultiPeriodModifier(NPIBase):
@@ -167,7 +167,7 @@ class MultiPeriodModifier(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            this_spatial_group = helpers.get_spatial_groups(
+            this_spatial_group = SpatialGroups.from_subpopulations(
                 list(affected_subpops_grp),
                 (
                     grp_config["subpop_groups"].get()
@@ -180,11 +180,11 @@ class MultiPeriodModifier(NPIBase):
 
             # unfortunately, we cannot use .loc here, because it is not possible to assign a list of list
             # to a subset of a dataframe... so we iterate.
-            for subpop in this_spatial_group["ungrouped"]:
+            for subpop in this_spatial_group.ungrouped:
                 self.parameters.at[subpop, "start_date"] = start_dates
                 self.parameters.at[subpop, "end_date"] = end_dates
                 self.parameters.at[subpop, "value"] = dist()
-            for group in this_spatial_group["grouped"]:
+            for group in this_spatial_group.grouped:
                 drawn_value = dist()
                 for subpop in group:
                     self.parameters.at[subpop, "start_date"] = start_dates
@@ -232,7 +232,7 @@ class MultiPeriodModifier(NPIBase):
             else:
                 start_dates = [self.start_date]
                 end_dates = [self.end_date]
-            this_spatial_group = helpers.get_spatial_groups(
+            this_spatial_group = SpatialGroups.from_subpopulations(
                 list(affected_subpops_grp),
                 (
                     grp_config["subpop_groups"].get()
@@ -242,7 +242,7 @@ class MultiPeriodModifier(NPIBase):
             )
             self.spatial_groups.append(this_spatial_group)
 
-            for subpop in this_spatial_group["ungrouped"]:
+            for subpop in this_spatial_group.ungrouped:
                 if not subpop in loaded_df.index:
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
@@ -252,7 +252,7 @@ class MultiPeriodModifier(NPIBase):
                     self.parameters.at[subpop, "start_date"] = start_dates
                     self.parameters.at[subpop, "end_date"] = end_dates
                     self.parameters.at[subpop, "value"] = loaded_df.at[subpop, "value"]
-            for group in this_spatial_group["grouped"]:
+            for group in this_spatial_group.grouped:
                 if ",".join(group) in loaded_df.index:  # ordered, so it's ok
                     for subpop in group:
                         self.parameters.at[subpop, "start_date"] = start_dates
@@ -316,7 +316,7 @@ class MultiPeriodModifier(NPIBase):
         for this_spatial_groups in self.spatial_groups:
             # spatially ungrouped dataframe
             df_ungroup = self.parameters[
-                self.parameters.index.isin(this_spatial_groups["ungrouped"])
+                self.parameters.index.isin(this_spatial_groups.ungrouped)
             ].copy()
             df_ungroup.index.name = "subpop"
             df_ungroup["start_date"] = df_ungroup["start_date"].apply(
@@ -328,7 +328,7 @@ class MultiPeriodModifier(NPIBase):
             df_list.append(df_ungroup)
             # spatially grouped dataframe. They are nested within multitime reduce groups,
             # so we can set the same dates for allof them
-            for group in this_spatial_groups["grouped"]:
+            for group in this_spatial_groups.grouped:
                 # we use the first subpop to represent the group
                 df_group = self.parameters[self.parameters.index == group[0]].copy()
 
