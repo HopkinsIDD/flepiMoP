@@ -15,7 +15,10 @@ import scipy.stats
 import xarray as xr
 
 # from .distributions import DistributionABC, distribution_from_confuse_config
-from .likelihoods import LoglikelihoodABC, loglikelihood_from_confuse_config
+from .objective_functions import (
+    ObjectiveFunctionABC,
+    objective_function_from_confuse_config,
+)
 
 
 class Statistic:
@@ -106,7 +109,7 @@ class Statistic:
             self.scale = True
             self.scale_func = getattr(np, statistic_config["scale"].get())
 
-        self.dist: LoglikelihoodABC = loglikelihood_from_confuse_config(
+        self.dist: ObjectiveFunctionABC = objective_function_from_confuse_config(
             statistic_config["likelihood"]
         )
 
@@ -249,7 +252,7 @@ class Statistic:
             model_data = model_data.where(model_data != 0, 1)
             gt_data = gt_data.where(gt_data != 0, 1)
 
-        likelihood = self.dist.loglikelihood(gt_data.values, model_data.values)
+        likelihood = self.dist.error_metric_calculation(gt_data.values, model_data.values)
 
         return xr.DataArray(likelihood, coords=gt_data.coords, dims=gt_data.dims)
 

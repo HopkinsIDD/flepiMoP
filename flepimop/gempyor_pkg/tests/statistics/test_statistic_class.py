@@ -11,7 +11,7 @@ import xarray as xr
 import re
 
 from gempyor.statistics import Statistic
-from gempyor.likelihoods import LoglikelihoodABC
+from gempyor.objective_functions import ObjectiveFunctionABC
 from gempyor.testing import create_confuse_configview_from_dict
 
 
@@ -329,7 +329,7 @@ class TestStatistic:
         assert statistic.data_var == mock_inputs.config["data_var"]
 
         # `dist` attribute
-        assert isinstance(statistic.dist, LoglikelihoodABC)
+        assert isinstance(statistic.dist, ObjectiveFunctionABC)
         expected_dist_name = mock_inputs.config.get("likelihood", {}).get("dist")
         assert statistic.dist.distribution == expected_dist_name
 

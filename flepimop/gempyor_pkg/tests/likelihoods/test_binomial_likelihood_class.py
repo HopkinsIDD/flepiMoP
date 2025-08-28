@@ -19,12 +19,42 @@ def test_binomial_loglikelihood_init_invalid_n(invalid_n: int) -> None:
         BinomialLoglikelihood(n=invalid_n)
 
 
-def test_binomial_loglikelihood_calculation() -> None:
+@pytest.mark.parametrize(
+    "gt_data, model_data",
+    [
+        (np.array([0, 5, 10, 15, 20]), np.array([0, 0.25, 0.5, 0.75, 1.0])),
+        (np.array([1]), np.array([0.5])),
+        (np.array([]), np.array([])),
+    ],
+    ids=["original_case", "single_value", "empty_arrays"],
+)
+def test_binomial_loglikelihood_calculation_valid(gt_data, model_data) -> None:
     n_trials = 20
     dist = BinomialLoglikelihood(n=n_trials)
-    gt_data = np.array([0, 5, 10, 15, 20])
-    model_data = np.array([-0.5, 0.25, 0.5, 0.75, 1.5])
+
     result = dist.loglikelihood(gt_data=gt_data, model_data=model_data)
-    clipped_p = np.clip(model_data, 0, 1)
-    expected = scipy.stats.binom.logpmf(k=gt_data, n=n_trials, p=clipped_p)
+    expected = scipy.stats.binom.logpmf(k=gt_data, n=n_trials, p=model_data)
+
     assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    "invalid_model_data",
+    [
+        (np.array([-0.5, 0.25, 0.5, 0.75, 1.5])),
+        (np.array([1.1, 0.9])),
+        (np.array([-0.1])),
+    ],
+    ids=["p_below_and_above_range", "p_above_1", "p_below_0"],
+)
+def test_binomial_loglikelihood_calculation_invalid_p_raises_error(
+    invalid_model_data,
+) -> None:
+    n_trials = 20
+    dist = BinomialLoglikelihood(n=n_trials)
+    gt_data = np.zeros_like(invalid_model_data)
+
+    with pytest.raises(
+        ValueError, match="probabilities in `model_data` must be in the range"
+    ):
+        dist.loglikelihood(gt_data=gt_data, model_data=invalid_model_data)
