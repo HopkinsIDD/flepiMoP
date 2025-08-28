@@ -1,13 +1,21 @@
+# src/gempyor/vectorization_experiments.py
+from __future__ import annotations
+
 import os
 import math
 import time
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 
 import numpy as np
-import numpy.typing as npt
+from numpy.typing import NDArray
 from numba import njit, prange
 from scipy.integrate import solve_ivp
 from scipy.sparse import csr_matrix
+
+# Type aliases
+FloatArray = NDArray[np.float64]
+IntArray = NDArray[np.int64]
+U8Array = NDArray[np.uint8]
 
 # =============================================================================
 # Global config (autotune will modify these)
@@ -26,19 +34,31 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("NUMBA_THREADING_LAYER", "tbb")  # or "omp"
 
+
 def set_parallel_threshold(n: int) -> None:
+    """Set the elementwise workload threshold for switching to the parallel kernel.
+
+    Args:
+        n: Total element count (M*N) where parallelization becomes beneficial.
+    """
     global _PARALLEL_THRESHOLD
     _PARALLEL_THRESHOLD = int(n)
 
+
 def set_force_serial(flag: bool) -> None:
+    """Force the serial kernel regardless of workload."""
     global _FORCE_SERIAL
     _FORCE_SERIAL = bool(flag)
 
+
 def set_fastmath_enabled(flag: bool) -> None:
+    """Enable/disable Numba fastmath for the elementwise hotspot."""
     global _FASTMATH_ENABLED
     _FASTMATH_ENABLED = bool(flag)
 
+
 def get_autotune_config() -> dict:
+    """Return the current autotune configuration flags."""
     return {
         "threshold": _PARALLEL_THRESHOLD,
         "force_serial": _FORCE_SERIAL,
@@ -49,7 +69,18 @@ def get_autotune_config() -> dict:
 # Utilities (timing, helpers)
 # =============================================================================
 
-def _timeit(fn, *args, repeats: int = 5, warmup: int = 1) -> float:
+def _timeit(fn: Callable, *args, repeats: int = 5, warmup: int = 1) -> float:
+    """Time a function call with warmup and averaging.
+
+    Args:
+        fn: Callable to time.
+        *args: Positional args forwarded to `fn`.
+        repeats: Number of measurements to average.
+        warmup: Number of warmup runs not included in timing.
+
+    Returns:
+        Average elapsed time in seconds.
+    """
     for _ in range(warmup):
         fn(*args)
     t0 = time.perf_counter()
@@ -58,12 +89,16 @@ def _timeit(fn, *args, repeats: int = 5, warmup: int = 1) -> float:
     t1 = time.perf_counter()
     return (t1 - t0) / repeats
 
-def _make_rect_from_size(total_elems: int) -> Tuple[int, int]:
+
+def _make_rect_from_size(total_elems: int) -> tuple[int, int]:
+    """Heuristic M×N rectangle for a given total element count."""
     m = max(64, int(math.sqrt(total_elems)))
     n = max(64, total_elems // m)
     return m, n
 
-def _max_rel_err(a: np.ndarray, b: np.ndarray, eps: float = 1e-300) -> float:
+
+def _max_rel_err(a: FloatArray, b: FloatArray, eps: float = 1e-300) -> float:
+    """Maximum relative error between arrays, safe near zero."""
     denom = np.maximum(np.abs(a), np.abs(b))
     denom = np.where(denom < eps, 1.0, denom)
     return float(np.max(np.abs(a - b) / denom))
@@ -72,33 +107,63 @@ def _max_rel_err(a: np.ndarray, b: np.ndarray, eps: float = 1e-300) -> float:
 # Setup helpers (one-time)
 # =============================================================================
 
-def _prep_param_interpolator(parameters: npt.NDArray[np.float64], use_deltas: bool = False):
+def _prep_param_interpolator(parameters: FloatArray, use_deltas: bool = False) -> tuple[FloatArray, FloatArray | None]:
+    """Prepare parameter tensor for fast slicing at time t.
+
+    Args:
+        parameters: Parameter tensor (P,T,N) or (P,T). If (P,T), a trailing singleton node axis is added.
+        use_deltas: If True and linear mode is used, precompute (T-1,P,N) deltas for axpy blending.
+
+    Returns:
+        params_t: Array of shape (T,P,N) in C-order.
+        deltas: Optional (T-1,P,N) deltas (or None).
+    """
     if parameters.ndim == 2:
         parameters = parameters[:, :, None]  # (P,T) -> (P,T,1)
     params_t = np.moveaxis(parameters, 1, 0).copy(order="C")  # (T,P,N)
-    deltas = None
+    deltas: FloatArray | None = None
     if use_deltas and params_t.shape[0] >= 2:
         deltas = np.ascontiguousarray(params_t[1:] - params_t[:-1])  # (T-1,P,N)
     return params_t, deltas
 
+
 @njit(cache=True, fastmath=True)
-def _blend_linear(A: np.ndarray, B: np.ndarray, alpha: float, out: np.ndarray) -> None:
+def _blend_linear(A: FloatArray, B: FloatArray, alpha: float, out: FloatArray) -> None:
+    """Compute out = A + alpha*(B-A) elementwise."""
     P, N = out.shape
     for p in range(P):
         for n in range(N):
             out[p, n] = A[p, n] + alpha * (B[p, n] - A[p, n])
 
+
 @njit(cache=True, fastmath=True)
-def _axpy_linear(A: np.ndarray, D: np.ndarray, alpha: float, out: np.ndarray) -> None:
+def _axpy_linear(A: FloatArray, D: FloatArray, alpha: float, out: FloatArray) -> None:
+    """Compute out = A + alpha*D elementwise (D is precomputed B-A)."""
     P, N = out.shape
     for p in range(P):
         for n in range(N):
             out[p, n] = A[p, n] + alpha * D[p, n]
 
+
 def _param_slice(
-    params_t: npt.NDArray[np.float64], t: float, mode: str = "linear",
-    out: npt.NDArray[np.float64] | None = None, deltas: npt.NDArray[np.float64] | None = None
-) -> npt.NDArray[np.float64]:
+    params_t: FloatArray,
+    t: float,
+    mode: str = "linear",
+    out: FloatArray | None = None,
+    deltas: FloatArray | None = None,
+) -> FloatArray:
+    """Slice parameters at (possibly fractional) time t.
+
+    Args:
+        params_t: Parameters laid out as (T,P,N) in C-order.
+        t: Time in days (may be fractional).
+        mode: "step" (nearest-left day) or "linear" interpolation.
+        out: Optional output buffer (P,N).
+        deltas: Optional (T-1,P,N) deltas for axpy when mode="linear".
+
+    Returns:
+        param_t at time t, shape (P,N).
+    """
     T, P, N = params_t.shape
     if out is None:
         out = np.empty((P, N), dtype=np.float64)
@@ -132,7 +197,12 @@ def _param_slice(
 # Helper for symbolic parameter expressions (from a time slice)
 # =============================================================================
 
-def _compile_param_expr(expr: str, param_name_to_row: dict[str, int]) -> np.ndarray:
+def _compile_param_expr(expr: str, param_name_to_row: dict[str, int]) -> IntArray:
+    """Compile a '*' product expression into a vector of row indices.
+
+    Example:
+        expr="a*b*c" -> rows=[row(a), row(b), row(c)]
+    """
     terms = [s.strip() for s in expr.split("*") if s.strip()]
     if not terms:
         raise ValueError("Empty parameter expression.")
@@ -142,8 +212,10 @@ def _compile_param_expr(expr: str, param_name_to_row: dict[str, int]) -> np.ndar
         raise KeyError(f"Unknown parameter in expression: {e}") from None
     return rows
 
+
 @njit(cache=True, fastmath=True)
-def _product_rows_into(param_t: np.ndarray, rows: np.ndarray, out: np.ndarray) -> None:
+def _product_rows_into(param_t: FloatArray, rows: IntArray, out: FloatArray) -> None:
+    """Multiply parameter rows (per node): out[n] = Π_k param_t[rows[k], n]."""
     K = rows.shape[0]
     N = param_t.shape[1]
     r0 = rows[0]
@@ -154,12 +226,24 @@ def _product_rows_into(param_t: np.ndarray, rows: np.ndarray, out: np.ndarray) -
         for n in range(N):
             out[n] *= param_t[rk, n]
 
+
 def _resolve_param_expr_from_slice(
-    expr: str | np.ndarray,
-    param_t: npt.NDArray[np.float64],
+    expr: str | IntArray,
+    param_t: FloatArray,
     param_name_to_row: dict[str, int] | None = None,
-    out: npt.NDArray[np.float64] | None = None,
-) -> npt.NDArray[np.float64]:
+    out: FloatArray | None = None,
+) -> FloatArray:
+    """Resolve an expression or row-list into a per-node vector from a (P,N) time slice.
+
+    Args:
+        expr: Either a "*" expression string or an array of row indices.
+        param_t: Slice (P,N) at the current time.
+        param_name_to_row: Lookup for names when expr is a string.
+        out: Optional output buffer (N,).
+
+    Returns:
+        1D vector (N,) with the product across rows (or the single row).
+    """
     if isinstance(expr, str):
         if param_name_to_row is None:
             raise ValueError("param_name_to_row must be provided when expr is a string.")
@@ -173,21 +257,38 @@ def _resolve_param_expr_from_slice(
     _product_rows_into(param_t, rows, out)
     return out
 
+
+def _safe_param_expr_lookup(unique_strings: Sequence[str]) -> tuple[dict[int, str] | None, dict[str, int]]:
+    """Build a safe param-expression lookup for any '*' rows in a parameter name list.
+
+    Args:
+        unique_strings: Parameter names as defined by the model building process.
+
+    Returns:
+        (expr_lookup or None, name->row mapping)
+    """
+    name_to_row = {name: i for i, name in enumerate(unique_strings)}
+    expr_lookup: dict[int, str] = {}
+    for idx, s in enumerate(unique_strings):
+        if "*" in s:
+            terms = [t.strip() for t in s.split("*")]
+            if all(term in name_to_row for term in terms):
+                expr_lookup[idx] = s
+    return (expr_lookup if expr_lookup else None, name_to_row)
+
 # =============================================================================
 # 1) Core Proportion Logic
-#    Two implementations:
-#    A) Manual Numba subset sums (original)
-#    B) Using precomputed sums (produced by dense GEMM or sparse SpMM)
 # =============================================================================
 
 @njit(parallel=True, cache=True, fastmath=True)
 def _compute_proportion_sums_exponents_manual(
-    states_current: npt.NDArray[np.float64],       # (C, N)
-    transitions: npt.NDArray[np.int64],            # (5, Tn)
-    proportion_info: npt.NDArray[np.int64],        # (3, Pk)
-    transition_sum_compartments: npt.NDArray[np.int64],  # (S,)
-    param_t: npt.NDArray[np.float64],              # (P, N)
-) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.uint8]]:
+    states_current: FloatArray,                    # (C, N)
+    transitions: IntArray,                         # (5, Tn)
+    proportion_info: IntArray,                     # (3, Pk)
+    transition_sum_compartments: IntArray,         # (S,)
+    param_t: FloatArray,                           # (P, N)
+) -> tuple[FloatArray, FloatArray, U8Array]:
+    """Compute total base rates and sources with subset sums performed on the fly."""
     n_transitions = transitions.shape[1]
     n_nodes = states_current.shape[1]
     total_rates = np.ones((n_transitions, n_nodes), dtype=np.float64)
@@ -226,13 +327,15 @@ def _compute_proportion_sums_exponents_manual(
 
     return total_rates, source_numbers, single_prop_mask
 
+
 @njit(parallel=True, cache=True, fastmath=True)
 def _compute_proportion_sums_exponents_from_sums(
-    sums_all: npt.NDArray[np.float64],            # (Pk, N) precomputed sums
-    transitions: npt.NDArray[np.int64],           # (5, Tn)
-    proportion_info: npt.NDArray[np.int64],       # (3, Pk)
-    param_t: npt.NDArray[np.float64],             # (P, N)
-) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.uint8]]:
+    sums_all: FloatArray,                          # (Pk, N) precomputed sums
+    transitions: IntArray,                         # (5, Tn)
+    proportion_info: IntArray,                     # (3, Pk)
+    param_t: FloatArray,                           # (P, N)
+) -> tuple[FloatArray, FloatArray, U8Array]:
+    """Same as above, but proportion subset sums are precomputed via S @ states."""
     n_transitions = transitions.shape[1]
     n_nodes = sums_all.shape[1]
     total_rates = np.ones((n_transitions, n_nodes), dtype=np.float64)
@@ -274,17 +377,18 @@ def _compute_proportion_sums_exponents_from_sums(
 
 @njit(parallel=True, cache=True, fastmath=True)
 def _compute_transition_rates_core(
-    total_rates_base: npt.NDArray[np.float64],  # (Tn, N)
-    transitions: npt.NDArray[np.int64],         # (5, Tn)
-    param_vec_by_tr: npt.NDArray[np.float64],   # (Tn, N)
+    total_rates_base: FloatArray,  # (Tn, N)
+    transitions: IntArray,         # (5, Tn)
+    param_vec_by_tr: FloatArray,   # (Tn, N)
     percent_day_away: float,
-    prop_who_move: npt.NDArray[np.float64],     # (N,)
-    csr_data: npt.NDArray[np.float64],          # (nnz,)
-    csr_indptr: npt.NDArray[np.int64],          # (N+1,)
-    csr_indices: npt.NDArray[np.int64],         # (nnz,)
-    population: npt.NDArray[np.float64],        # (N,)
-    single_prop_mask: npt.NDArray[np.uint8],    # (Tn,)
-) -> npt.NDArray[np.float64]:
+    prop_who_move: FloatArray,     # (N,)
+    csr_data: FloatArray,          # (nnz,)
+    csr_indptr: IntArray,          # (N+1,)
+    csr_indices: IntArray,         # (nnz,)
+    population: FloatArray,        # (N,)
+    single_prop_mask: U8Array,     # (Tn,)
+) -> FloatArray:
+    """Mix per-node forces across mobility graph; handle single-proportion fast path."""
     Tn, N = total_rates_base.shape
     out = np.empty_like(total_rates_base)
 
@@ -320,21 +424,23 @@ def _compute_transition_rates_core(
 
     return out
 
+
 def _compute_transition_rates(
-    total_rates_base: npt.NDArray[np.float64],  # (Tn, N)
-    source_numbers: npt.NDArray[np.float64],    # (Tn, N)
-    transitions: npt.NDArray[np.int64],         # (5, Tn)
-    param_t: npt.NDArray[np.float64],           # (P, N)
+    total_rates_base: FloatArray,  # (Tn, N)
+    source_numbers: FloatArray,    # (Tn, N)  (not used here but kept for API symmetry/future)
+    transitions: IntArray,         # (5, Tn)
+    param_t: FloatArray,           # (P, N)
     percent_day_away: float,
-    proportion_who_move: npt.NDArray[np.float64],  # (N,)
-    mobility_data: npt.NDArray[np.float64],        # (nnz,)
-    mobility_data_indices: npt.NDArray[np.int64],  # (N+1,)
-    mobility_row_indices: npt.NDArray[np.int64],   # (nnz,)
-    population: npt.NDArray[np.float64],           # (N,)
-    single_prop_mask: npt.NDArray[np.uint8],       # (Tn,)
-    param_expr_lookup: dict[int, str | np.ndarray] | None = None,
+    proportion_who_move: FloatArray,      # (N,)
+    mobility_data: FloatArray,            # (nnz,)
+    mobility_data_indices: IntArray,      # (N+1,)
+    mobility_row_indices: IntArray,       # (nnz,)
+    population: FloatArray,               # (N,)
+    single_prop_mask: U8Array,            # (Tn,)
+    param_expr_lookup: dict[int, str | IntArray] | None = None,
     param_name_to_row: dict[str, int] | None = None,
-) -> npt.NDArray[np.float64]:
+) -> FloatArray:
+    """Resolve per-transition parameter vectors and mix across mobility."""
     Tn, N = total_rates_base.shape
     param_vec_by_tr = np.empty((Tn, N), dtype=np.float64)
     if param_expr_lookup is None:
@@ -374,10 +480,11 @@ def _compute_transition_rates(
 # =============================================================================
 
 def _compute_transition_amounts_numpy_binomial(
-    source_numbers: npt.NDArray[np.float64],
-    total_rates: npt.NDArray[np.float64],
+    source_numbers: FloatArray,
+    total_rates: FloatArray,
     dt: float,
-) -> npt.NDArray[np.float64]:
+) -> FloatArray:
+    """Sample binomial draws for transition amounts (used outside the deterministic RHS)."""
     probs = 1.0 - np.exp(-dt * total_rates)
     probs = np.clip(probs, 0.0, 1.0)
     n = np.clip(source_numbers, 0, np.inf).astype(np.int64, copy=False)
@@ -390,16 +497,19 @@ def _compute_transition_amounts_numpy_binomial(
 
 # Non-fastmath variants
 @njit(cache=True, fastmath=False)
-def _compute_transition_amounts_serial_nm(source_numbers, total_rates):
+def _compute_transition_amounts_serial_nm(source_numbers: FloatArray, total_rates: FloatArray) -> FloatArray:
+    """Elementwise multiply (serial, no fastmath)."""
     m, n = total_rates.shape
     out = np.empty((m, n), dtype=np.float64)
     for i in range(m):
         for j in range(n):
             out[i, j] = source_numbers[i, j] * total_rates[i, j]
     return out
+
 
 @njit(parallel=True, cache=True, fastmath=False)
-def _compute_transition_amounts_parallel_nm(source_numbers, total_rates):
+def _compute_transition_amounts_parallel_nm(source_numbers: FloatArray, total_rates: FloatArray) -> FloatArray:
+    """Elementwise multiply (parallel, no fastmath)."""
     m, n = total_rates.shape
     size = m * n
     out = np.empty((m, n), dtype=np.float64)
@@ -410,9 +520,10 @@ def _compute_transition_amounts_parallel_nm(source_numbers, total_rates):
         outf[k] = src[k] * rate[k]
     return out
 
-# Fastmath variants (your originals)
+# Fastmath variants
 @njit(cache=True, fastmath=True)
-def _compute_transition_amounts_serial_fm(source_numbers, total_rates):
+def _compute_transition_amounts_serial_fm(source_numbers: FloatArray, total_rates: FloatArray) -> FloatArray:
+    """Elementwise multiply (serial, fastmath)."""
     m, n = total_rates.shape
     out = np.empty((m, n), dtype=np.float64)
     for i in range(m):
@@ -420,8 +531,10 @@ def _compute_transition_amounts_serial_fm(source_numbers, total_rates):
             out[i, j] = source_numbers[i, j] * total_rates[i, j]
     return out
 
+
 @njit(parallel=True, cache=True, fastmath=True)
-def _compute_transition_amounts_parallel_fm(source_numbers, total_rates):
+def _compute_transition_amounts_parallel_fm(source_numbers: FloatArray, total_rates: FloatArray) -> FloatArray:
+    """Elementwise multiply (parallel, fastmath)."""
     m, n = total_rates.shape
     size = m * n
     out = np.empty((m, n), dtype=np.float64)
@@ -432,11 +545,20 @@ def _compute_transition_amounts_parallel_fm(source_numbers, total_rates):
         outf[k] = src[k] * rate[k]
     return out
 
+
 def compute_transition_amounts_meta(
-    source_numbers: npt.NDArray[np.float64],
-    total_rates: npt.NDArray[np.float64],
-) -> npt.NDArray[np.float64]:
-    """Python dispatcher selecting kernel based on autotuned flags."""
+    source_numbers: FloatArray,
+    total_rates: FloatArray,
+) -> FloatArray:
+    """Dispatch to the best elementwise multiply kernel given autotune flags.
+
+    Args:
+        source_numbers: (Tn,N) sources.
+        total_rates: (Tn,N) rates.
+
+    Returns:
+        (Tn,N) amounts.
+    """
     workload = source_numbers.shape[0] * source_numbers.shape[1]
     if _FASTMATH_ENABLED:
         serial_fn = _compute_transition_amounts_serial_fm
@@ -456,11 +578,22 @@ def compute_transition_amounts_meta(
 
 @njit(cache=True, fastmath=True)
 def _assemble_flux(
-    amounts: npt.NDArray[np.float64],  # (Tn, N)
-    transitions: npt.NDArray[np.int64],  # (5, Tn)
+    amounts: FloatArray,         # (Tn, N)
+    transitions: IntArray,       # (5, Tn)
     ncompartments: int,
     nspatial_nodes: int,
-) -> npt.NDArray[np.float64]:
+) -> FloatArray:
+    """Assemble dy/dt from transition amounts and transition edges.
+
+    Args:
+        amounts: Transition amounts (Tn,N).
+        transitions: (src,dst,param,prop_start,prop_stop) rows shaped (5,Tn).
+        ncompartments: Number of compartments (rows in state per node).
+        nspatial_nodes: Number of spatial nodes.
+
+    Returns:
+        Flattened dy/dt vector shape (C*N,).
+    """
     Tn = amounts.shape[0]
     N = nspatial_nodes
     dy_dt = np.zeros((ncompartments, N), dtype=np.float64)
@@ -482,16 +615,17 @@ def _assemble_flux(
 
 @njit(cache=True, fastmath=True)
 def _apply_legacy_seeding_core(
-    states_current: np.ndarray,  # (C, N), modified in place
+    states_current: FloatArray,   # (C, N), modified in place
     today: int,
-    day_start_idx: np.ndarray,  # (D+1,)
-    seeding_subpops: np.ndarray,
-    seeding_sources: np.ndarray,
-    seeding_dests: np.ndarray,
-    seeding_amounts: np.ndarray,
-    daily_incidence: np.ndarray,  # (D, C, N) or (0,0,0)
+    day_start_idx: IntArray,      # (D+1,)
+    seeding_subpops: IntArray,
+    seeding_sources: IntArray,
+    seeding_dests: IntArray,
+    seeding_amounts: FloatArray,
+    daily_incidence: FloatArray,  # (D, C, N) or (0,0,0)
     update_incidence: int,
 ) -> None:
+    """Apply discrete seeding events for a given day index."""
     if today < 0 or today + 1 >= day_start_idx.size:
         return
     start_idx = int(day_start_idx[today])
@@ -510,13 +644,15 @@ def _apply_legacy_seeding_core(
         if update_incidence == 1:
             daily_incidence[today, d, g] += amt
 
+
 def _apply_legacy_seeding(
-    states_current: npt.NDArray[np.float64],
+    states_current: FloatArray,
     today: int,
-    seeding_data: dict[str, npt.NDArray[np.float64]],
-    seeding_amounts: npt.NDArray[np.float64],
-    daily_incidence: npt.NDArray[np.float64] | None = None,
+    seeding_data: dict[str, FloatArray],
+    seeding_amounts: FloatArray,
+    daily_incidence: FloatArray | None = None,
 ) -> None:
+    """Python wrapper to call the njit seeding kernel with properly typed arrays."""
     day_start_idx   = np.ascontiguousarray(seeding_data["day_start_idx"], dtype=np.int64)
     seeding_subpops = np.ascontiguousarray(seeding_data["seeding_subpops"], dtype=np.int64)
     seeding_sources = np.ascontiguousarray(seeding_data["seeding_sources"], dtype=np.int64)
@@ -530,11 +666,11 @@ def _apply_legacy_seeding(
                                seeding_subpops, seeding_sources, seeding_dests, amts, di, upd)
 
 # =============================================================================
-# 7) Factory class (solve_ivp-compatible) with auto-dispatch
-#     Per-model tuning of selector-matrix path happens here.
+# 7) Factory class (solve_ivp-compatible) with auto-dispatch + accumulators
 # =============================================================================
 
 def _has_seeding(precomputed: dict) -> bool:
+    """Return True if precomputed includes one or more seeding events."""
     sd = precomputed.get("seeding_data", None)
     sa = precomputed.get("seeding_amounts", None)
     if sd is None or sa is None:
@@ -548,7 +684,9 @@ def _has_seeding(precomputed: dict) -> bool:
     has_events = bool(dsi[-1] > 0)
     return has_events and (np.asarray(sa).size > 0)
 
-def _build_selector_dense(proportion_info: np.ndarray, transition_sum_compartments: np.ndarray, C: int) -> np.ndarray:
+
+def _build_selector_dense(proportion_info: IntArray, transition_sum_compartments: IntArray, C: int) -> FloatArray:
+    """Build a dense selector matrix (Pk,C) where row p selects compartments to sum."""
     Pk = proportion_info.shape[1]
     S = np.zeros((Pk, C), dtype=np.float64, order="F")  # Fortran order for GEMM
     for p_idx in range(Pk):
@@ -560,11 +698,13 @@ def _build_selector_dense(proportion_info: np.ndarray, transition_sum_compartmen
                 S[p_idx, int(c)] = 1.0
     return S
 
-def _build_selector_csr(proportion_info: np.ndarray, transition_sum_compartments: np.ndarray, C: int) -> csr_matrix:
+
+def _build_selector_csr(proportion_info: IntArray, transition_sum_compartments: IntArray, C: int) -> csr_matrix:
+    """Build a CSR selector matrix (Pk,C) like above."""
     Pk = proportion_info.shape[1]
     indptr = np.zeros(Pk + 1, dtype=np.int64)
-    indices_list = []
-    data_list = []
+    indices_list: list[int] = []
+    data_list: list[float] = []
     nnz = 0
     for p_idx in range(Pk):
         sum_start = int(proportion_info[0, p_idx])
@@ -578,7 +718,52 @@ def _build_selector_csr(proportion_info: np.ndarray, transition_sum_compartments
     data    = np.array(data_list, dtype=np.float64)
     return csr_matrix((data, indices, indptr), shape=(Pk, C))
 
+
 class RHSfactory:
+    """Create a solve_ivp-compatible RHS callable with model-specific tuning.
+
+    Required `precomputed` keys:
+        - "ncompartments": int
+        - "nspatial_nodes": int
+        - "transitions": int64 array (5,Tn)
+        - "proportion_info": int64 array (3,Pk)
+        - "transition_sum_compartments": int64 array (S,)
+        - "percent_day_away": float
+        - "proportion_who_move": float64 array (N,)
+        - "mobility_data": float64 array (nnz,)
+        - "mobility_data_indices": int64 array (N+1,)
+        - "mobility_row_indices": int64 array (nnz,)
+        - "population": float64 array (N,)
+
+    Optional `precomputed` keys:
+        - "seeding_data": dict with int64 arrays like {"day_start_idx", "seeding_*"}
+        - "seeding_amounts": float64 array
+        - "daily_incidence": float64 array (D,C,N) used by legacy seeding
+        - "accumulators": dict describing optional accumulator compartments:
+
+            accumulators = {
+                "n_acc": int A,
+                "offsets": int64 array (A,),          # first compartment row for each accumulator
+                "nstages": int64 array (A,),          # 1 => instant cumulative sink; k>=1 => k-stage Erlang chain
+                "cum_offsets": int64 array (A,),      # cumulative sink row per acc, or -1 to skip
+                # Flattened transition groups:
+                "acc_tr_indices": int64 array (K,),   # concatenated transition indices
+                "acc_tr_starts": int64 array (A+1,),  # boundaries per accumulator into acc_tr_indices
+                # Per (acc,transition) probability spec, flattened to length K:
+                "acc_prob_param_row_flat": int64 array (K,),   # param row for prob, or -1 for constant-only
+                "acc_prob_const_flat": float64 array (K,),     # constant multiplier per (acc, tr)
+                # Delay mean (days) per accumulator:
+                "delay_mean_param_row": int64 array (A,),      # param row index for mean days, or -1
+                "delay_mean_const": float64 array (A,),         # constant mean days if no param row
+            }
+
+        With this interface you can realize age×vaccination-specific hospitalization
+        probabilities by choosing transition groups that correspond to specific
+        (age, vacc) strata and supplying `acc_prob_param_row_flat` that references
+        parameter rows encoding those per-stratum probabilities (or just leave rows
+        at -1 and use `acc_prob_const_flat` if probabilities are static constants).
+    """
+
     REQUIRED_KEYS = [
         "ncompartments", "nspatial_nodes", "transitions",
         "proportion_info", "transition_sum_compartments",
@@ -586,7 +771,7 @@ class RHSfactory:
         "mobility_data", "mobility_data_indices", "mobility_row_indices",
         "population",
     ]
-    OPTIONAL_KEYS = ["seeding_data", "seeding_amounts", "daily_incidence"]
+    OPTIONAL_KEYS = ["seeding_data", "seeding_amounts", "daily_incidence", "accumulators"]
 
     def __init__(
         self,
@@ -595,31 +780,43 @@ class RHSfactory:
         param_name_to_row: dict[str, int] | None = None,
         param_time_mode: str = "linear",
     ):
+        """Initialize the factory and pre-tune selector path.
+
+        Args:
+            precomputed: Static tensors and constants required by the RHS.
+            param_expr_lookup: Optional mapping {row_idx: "*" expression}. Internal use.
+            param_name_to_row: Name→row mapping used when resolving expressions.
+            param_time_mode: "step" or "linear" interpolation for parameters.
+        """
         for k in self.REQUIRED_KEYS:
             if k not in precomputed:
                 raise KeyError(f"precomputed is missing required key: '{k}'")
         self.precomputed = precomputed
-        self.param_expr_lookup = param_expr_lookup
+        self._param_expr_lookup = param_expr_lookup
         self.param_name_to_row = param_name_to_row
         self.param_time_mode = param_time_mode
 
         # Selector tuning storage
         self._selector_mode = "manual"       # 'manual' | 'dense' | 'sparse'
-        self._selector_dense = None          # np.ndarray (Pk, C) if used
-        self._selector_csr = None            # csr_matrix if used
+        self._selector_dense: FloatArray | None = None
+        self._selector_csr: csr_matrix | None = None
+
+        # Accumulator spec (parsed lazily in build_rhs)
+        self._acc: dict | None = None
 
         self._last_day_applied = {"day": None}
-        self._rhs = None
-        self._rhs_core = None
+        self._rhs: Callable | None = None
+        self._rhs_core: Callable | None = None
 
         self.build_rhs()
 
     def _reset_seeding_tracker(self) -> None:
+        """Reset internal seeding state between solves."""
         self._last_day_applied["day"] = None
 
     def _tune_selector_path(
-        self, C: int, N: int, Pk: int, transitions: np.ndarray,
-        proportion_info: np.ndarray, transition_sum_compartments: np.ndarray
+        self, C: int, N: int, Pk: int, transitions: IntArray,
+        proportion_info: IntArray, transition_sum_compartments: IntArray
     ) -> None:
         """Per-model autotune: choose manual vs dense GEMM vs sparse SpMM for sums."""
         if Pk == 0 or C == 0:
@@ -631,7 +828,6 @@ class RHSfactory:
         S_csr   = _build_selector_csr(proportion_info, transition_sum_compartments, C)
 
         # Synthetic but shape-faithful inputs
-        # P must cover both param rows from proportion_info and transitions[2,:]
         max_param_row = int(np.max(proportion_info[2, :])) if Pk > 0 else 0
         max_param_idx = int(np.max(transitions[2, :])) if transitions.size > 0 else 0
         P = max(max_param_row, max_param_idx) + 1
@@ -677,14 +873,121 @@ class RHSfactory:
             self._selector_dense = None
             self._selector_csr = None
 
+    # ---------- Accumulator utilities ----------
+
+    @staticmethod
+    def _parse_accumulators(pc: dict) -> dict | None:
+        """Parse and validate the optional accumulators spec from precomputed."""
+        acc = pc.get("accumulators", None)
+        if not acc:
+            return None
+        required = [
+            "n_acc", "offsets", "nstages", "acc_tr_indices", "acc_tr_starts",
+            "acc_prob_param_row_flat", "acc_prob_const_flat",
+            "delay_mean_param_row", "delay_mean_const", "cum_offsets"
+        ]
+        for k in required:
+            if k not in acc:
+                raise KeyError(f"accumulators missing key '{k}'")
+        A = int(acc["n_acc"])
+        offsets = np.asarray(acc["offsets"], dtype=np.int64)
+        nstages = np.asarray(acc["nstages"], dtype=np.int64)
+        cum_offsets = np.asarray(acc["cum_offsets"], dtype=np.int64)
+
+        acc_tr_indices = np.asarray(acc["acc_tr_indices"], dtype=np.int64)
+        acc_tr_starts  = np.asarray(acc["acc_tr_starts"], dtype=np.int64)
+        if acc_tr_starts.shape[0] != A + 1:
+            raise ValueError("acc_tr_starts must have length A+1")
+
+        prob_rows_flat  = np.asarray(acc["acc_prob_param_row_flat"], dtype=np.int64)
+        prob_const_flat = np.asarray(acc["acc_prob_const_flat"], dtype=np.float64)
+        if prob_rows_flat.shape[0] != acc_tr_indices.shape[0] or prob_const_flat.shape[0] != acc_tr_indices.shape[0]:
+            raise ValueError("acc_prob_*_flat must align with acc_tr_indices length")
+
+        delay_row = np.asarray(acc["delay_mean_param_row"], dtype=np.int64)
+        delay_const = np.asarray(acc["delay_mean_const"], dtype=np.float64)
+        if delay_row.shape[0] != A or delay_const.shape[0] != A:
+            raise ValueError("delay arrays must be length A")
+
+        return {
+            "A": A,
+            "offsets": offsets,
+            "nstages": nstages,
+            "cum_offsets": cum_offsets,
+            "acc_tr_indices": acc_tr_indices,
+            "acc_tr_starts": acc_tr_starts,
+            "prob_rows_flat": prob_rows_flat,
+            "prob_const_flat": prob_const_flat,
+            "delay_row": delay_row,
+            "delay_const": delay_const,
+        }
+
+    @staticmethod
+    def _accumulate_fluxes_for_groups(
+        amounts: FloatArray,                # (Tn,N)
+        param_t_slice: FloatArray,         # (P,N)
+        acc: dict,
+    ) -> FloatArray:
+        """Compute per-accumulator incident flux vectors (A,N).
+
+        Each accumulator a sums selected transitions t in its group:
+            flux_a = Σ_t amounts[t,:] * prob_const[a,t] * prob_vec[a,t,:]
+
+        Where prob_vec[a,t,:] is drawn from a parameter row index (or 1.0 if -1).
+        """
+        A = int(acc["A"])
+        N = amounts.shape[1]
+        out = np.zeros((A, N), dtype=np.float64)
+
+        trs = acc["acc_tr_indices"]          # (K,)
+        starts = acc["acc_tr_starts"]        # (A+1,)
+        prob_rows = acc["prob_rows_flat"]    # (K,)
+        prob_const = acc["prob_const_flat"]  # (K,)
+
+        for a in range(A):
+            s0 = int(starts[a]); s1 = int(starts[a+1])
+            if s1 <= s0:
+                continue
+            idxs = trs[s0:s1]                 # transitions for this acc (len=g)
+            rows = prob_rows[s0:s1]           # row per transition (len=g)
+            consts = prob_const[s0:s1]        # const per transition (len=g)
+
+            g = idxs.shape[0]
+            # Build per-transition probability vectors (g,N)
+            # Handle -1 => ones
+            row_clipped = np.where(rows >= 0, rows, 0).astype(np.int64)
+            prob_mat = param_t_slice[row_clipped, :].copy()
+            if np.any(rows < 0):
+                prob_mat[rows < 0, :] = 1.0
+            # Apply constants
+            if g > 1:
+                prob_mat *= consts[:, None]
+                contrib = amounts[idxs, :] * prob_mat
+                out[a, :] = contrib.sum(axis=0)
+            else:
+                prob_mat *= consts[:, None]
+                out[a, :] = amounts[idxs[0], :] * prob_mat[0, :]
+        return out
+
     def build_rhs(
         self,
         *,
         param_time_mode: str | None = None,
-        seeding_data: dict[str, npt.NDArray[np.float64]] | None = None,
-        seeding_amounts: npt.NDArray[np.float64] | None = None,
-        daily_incidence: npt.NDArray[np.float64] | None = None,
-    ) -> Callable[[float, npt.NDArray[np.float64], npt.NDArray[np.float64]], npt.NDArray[np.float64]]:
+        seeding_data: dict[str, FloatArray] | None = None,
+        seeding_amounts: FloatArray | None = None,
+        daily_incidence: FloatArray | None = None,
+    ) -> Callable[[float, FloatArray, FloatArray], FloatArray]:
+        """Construct the RHS function and cache tuned paths.
+
+        Args:
+            param_time_mode: Optional override for parameter interpolation mode.
+            seeding_data: Optional legacy seeding dict (if present in precomputed).
+            seeding_amounts: Optional seeding amounts.
+            daily_incidence: Optional daily incidence buffer for legacy seeding.
+
+        Returns:
+            A function rhs(t, y, parameters) -> dy of shape (C*N,).
+        """
         pc = self.precomputed
         C = int(pc["ncompartments"])
         N = int(pc["nspatial_nodes"])
@@ -709,23 +1012,27 @@ class RHSfactory:
         population = np.ascontiguousarray(pc["population"], dtype=np.float64)
 
         # Precompile parameter expressions (if provided) to row-index arrays once
-        param_rows_lookup: dict[int, np.ndarray] | None = None
-        if self.param_expr_lookup is not None:
+        param_rows_lookup: dict[int, IntArray] | None = None
+        if self._param_expr_lookup is not None:
             if self.param_name_to_row is None:
                 raise ValueError("param_name_to_row required when param_expr_lookup is provided.")
             param_rows_lookup = {
-                k: _compile_param_expr(v, self.param_name_to_row) for k, v in self.param_expr_lookup.items()
+                k: _compile_param_expr(v, self.param_name_to_row) for k, v in self._param_expr_lookup.items()
             }
 
         # Per-model autotune: choose selector path
         Pk = int(proportion_info.shape[1])
         self._tune_selector_path(C, N, Pk, transitions, proportion_info, transition_sum_compartments)
 
+        # Accumulators (optional)
+        self._acc = self._parse_accumulators(pc)
+
         # ---- core RHS used by both solve paths ----
-        def _rhs_core(t: float, y: npt.NDArray[np.float64], param_t_slice: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        def _rhs_core(t: float, y: FloatArray, param_t_slice: FloatArray) -> FloatArray:
+            """Compute dy/dt at time t for flattened state y."""
             states_current = y.reshape((C, N))
 
-            # 3) base proportion terms + source sizes
+            # 1) base proportion terms + source sizes
             if self._selector_mode == "dense":
                 sums_all = self._selector_dense @ states_current  # (Pk, N)
                 total_base, source_numbers, single_prop_mask = _compute_proportion_sums_exponents_from_sums(
@@ -741,7 +1048,7 @@ class RHSfactory:
                     states_current, transitions, proportion_info, transition_sum_compartments, param_t_slice
                 )
 
-            # 4) parameter scaling + mobility mixing
+            # 2) parameter scaling + mobility mixing
             total_rates = _compute_transition_rates(
                 total_rates_base=total_base,
                 source_numbers=source_numbers,
@@ -758,12 +1065,61 @@ class RHSfactory:
                 param_name_to_row=None,
             )
 
-            # 5) instantaneous flux and assembly: dy/dt
-            amounts = compute_transition_amounts_meta(source_numbers, total_rates)
-            dy = _assemble_flux(amounts, transitions, C, N)
-            return dy
+            # 3) instantaneous flux and assembly: dy/dt for base compartments
+            amounts = compute_transition_amounts_meta(source_numbers, total_rates)  # (Tn,N)
+            dy = _assemble_flux(amounts, transitions, C, N).reshape((C, N))
 
-        def rhs(t: float, y: npt.NDArray[np.float64], parameters: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+            # 4) optional accumulators (instantaneous or Erlang delay chains)
+            if self._acc is not None:
+                acc = self._acc
+                A = int(acc["A"])
+                offsets: IntArray = acc["offsets"]
+                nstages: IntArray = acc["nstages"]
+                cum_offsets: IntArray = acc["cum_offsets"]
+                delay_row: IntArray = acc["delay_row"]
+                delay_const: FloatArray = acc["delay_const"]
+
+                # 4a) incident fluxes per accumulator (A,N)
+                acc_flux = self._accumulate_fluxes_for_groups(amounts, param_t_slice, acc)
+
+                # 4b) inject into accumulator compartments
+                for a in range(A):
+                    off = int(offsets[a])
+                    k   = int(nstages[a])
+                    # mean delay (days) -> rate mu per node
+                    mu_vec: FloatArray
+                    row_idx = int(delay_row[a])
+                    if row_idx >= 0:
+                        mean_vec = np.maximum(param_t_slice[row_idx, :], 1e-12)
+                        mu_vec = (k / mean_vec) if k > 0 else np.zeros_like(mean_vec)
+                    else:
+                        mean_c = float(delay_const[a])
+                        if k > 0 and mean_c > 0:
+                            mu_vec = np.full(N, k / mean_c, dtype=np.float64)
+                        else:
+                            mu_vec = np.zeros(N, dtype=np.float64)
+
+                    if k <= 1 and not np.any(mu_vec > 0):  # pure cumulative sink (instant)
+                        dy[off, :] += acc_flux[a, :]
+                    else:
+                        # Erlang chain of k stages at rate mu_vec, feed stage 0 with acc_flux
+                        # dX0/dt = in - mu*k*X0
+                        # dXi/dt = mu*k*X_{i-1} - mu*k*Xi
+                        rate = mu_vec * float(max(1, k))
+                        # stage 0
+                        dy[off + 0, :] += acc_flux[a, :] - rate * states_current[off + 0, :]
+                        # intermediate stages
+                        for s in range(1, k):
+                            dy[off + s, :] += (rate * states_current[off + s - 1, :]) - (rate * states_current[off + s, :])
+                        # optional cumulative outflow sink
+                        c_off = int(cum_offsets[a])
+                        if c_off >= 0:
+                            dy[c_off, :] += rate * states_current[off + k - 1, :]
+
+            return dy.ravel()
+
+        def rhs(t: float, y: FloatArray, parameters: FloatArray) -> FloatArray:
+            """solve_ivp-compatible RHS wrapper resolving param slice at time t."""
             params_t, deltas = _prep_param_interpolator(parameters, use_deltas=(param_time_mode == "linear"))
             buf = np.empty((params_t.shape[1], params_t.shape[2]), dtype=np.float64)
             param_t_slice = _param_slice(params_t, t, mode=param_time_mode, out=buf, deltas=deltas)
@@ -773,23 +1129,36 @@ class RHSfactory:
         self._rhs = rhs
         return rhs
 
-    def create_rhs(self) -> Callable[[float, npt.NDArray[np.float64], npt.NDArray[np.float64]], npt.NDArray[np.float64]]:
+    def create_rhs(self) -> Callable[[float, FloatArray, FloatArray], FloatArray]:
+        """Return the cached RHS (build if needed)."""
         if self._rhs is None:
             return self.build_rhs()
         return self._rhs
 
     def solve(
         self,
-        y0: npt.NDArray[np.float64],
-        parameters: npt.NDArray[np.float64],  # (P,T,N) or (P,T)
+        y0: FloatArray,
+        parameters: FloatArray,               # (P,T,N) or (P,T)
         t_span: tuple[float, float],
-        t_eval: npt.NDArray[np.float64] | None = None,
+        t_eval: FloatArray | None = None,
         **solve_ivp_kwargs,
     ):
+        """Integrate the system, applying daily seeding boundaries if configured.
+
+        Args:
+            y0: Flattened initial state (C*N,) or (C,N). Will be flattened internally.
+            parameters: (P,T,N) or (P,T) parameter tensor.
+            t_span: (t0, tf) integration window.
+            t_eval: Optional evaluation grid.
+            **solve_ivp_kwargs: Forwarded to scipy.integrate.solve_ivp.
+
+        Returns:
+            A namespace like solve_ivp’s result (t, y, success, message).
+        """
         self._reset_seeding_tracker()
         if self._rhs_core is None:
             self.build_rhs()
-        rhs_core = self._rhs_core
+        rhs_core = self._rhs_core  # type: ignore[assignment]
 
         use_deltas = self.param_time_mode == "linear"
         params_t, deltas = _prep_param_interpolator(parameters, use_deltas=use_deltas)
@@ -797,12 +1166,15 @@ class RHSfactory:
         N = int(self.precomputed["nspatial_nodes"])
         buf = np.empty((params_t.shape[1], params_t.shape[2]), dtype=np.float64)
 
-        def rhs_from_prepped(t: float, y: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        # Ensure y0 is flat (C*N,)
+        y0_flat = y0.ravel() if y0.ndim != 1 else y0
+
+        def rhs_from_prepped(t: float, y: FloatArray) -> FloatArray:
             param_t_slice = _param_slice(params_t, t, mode=self.param_time_mode, out=buf, deltas=deltas)
-            return rhs_core(t, y, param_t_slice)
+            return rhs_core(t, y, param_t_slice)  # type: ignore[misc]
 
         if not _has_seeding(self.precomputed):
-            return solve_ivp(fun=rhs_from_prepped, t_span=t_span, y0=y0, t_eval=t_eval, **solve_ivp_kwargs)
+            return solve_ivp(fun=rhs_from_prepped, t_span=t_span, y0=y0_flat, t_eval=t_eval, **solve_ivp_kwargs)
 
         import types
         pc = self.precomputed
@@ -812,11 +1184,11 @@ class RHSfactory:
 
         t0, tf = float(t_span[0]), float(t_span[1])
         eps = 1e-12
-        acc_t: list[np.ndarray] = []
-        acc_y: list[np.ndarray] = []
+        acc_t: list[FloatArray] = []
+        acc_y: list[FloatArray] = []
         total_success = True
         last_message = ""
-        y_cur = np.array(y0, dtype=np.float64, copy=True)
+        y_cur = np.array(y0_flat, dtype=np.float64, copy=True)
         t_cur = t0
 
         def _slice_t_eval(t_start: float, t_end: float, first_segment: bool):
@@ -864,7 +1236,7 @@ class RHSfactory:
                 Y = np.concatenate(acc_y, axis=1)
             else:
                 T = np.array([], dtype=float)
-                Y = np.empty((y0.size, 0), dtype=float)
+                Y = np.empty((y0_flat.size, 0), dtype=float)
             return types.SimpleNamespace(t=T, y=Y, success=bool(total_success), message=last_message)
 
         return types.SimpleNamespace(t=np.array([tf]), y=y_cur.reshape(-1, 1), success=bool(total_success), message=last_message)
@@ -881,11 +1253,15 @@ def autotune_all(
     fm_tol: float = 1e-11,
     quiet: bool = False,
 ) -> dict:
-    """
+    """Autotune Numba threads, fastmath, and serial↔parallel crossover.
+
     Tunes:
       - NUMBA_NUM_THREADS
       - fastmath on/off for the elementwise hotspot (w/ accuracy guard)
       - parallel threshold (serial↔parallel crossover)
+
+    Returns:
+      A dict with selected values.
     """
     import numba
     from numba import set_num_threads, get_num_threads, threading_layer
@@ -944,7 +1320,7 @@ def autotune_all(
 
     # -------- serial↔parallel crossover threshold -----------------------------
     serial_fn = _compute_transition_amounts_serial_fm if _FASTMATH_ENABLED else _compute_transition_amounts_serial_nm
-    cross_at = None
+    cross_at: int | None = None
     for total in size_grid:
         m, n = _make_rect_from_size(total)
         src = rng.random((m, n), dtype=dtype)
@@ -978,4 +1354,3 @@ def autotune_all(
         "forced_serial": forced_serial,
         "fastmath": _FASTMATH_ENABLED,
     }
-

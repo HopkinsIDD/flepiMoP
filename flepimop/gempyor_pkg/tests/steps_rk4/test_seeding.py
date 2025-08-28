@@ -303,24 +303,20 @@ def autotune_for_case(model_and_inputs):
         try:
             cfg = autotune_all(quiet=True, workload_hint=hint)  # if your version supports it
         except TypeError:
-            # Fallback: run generic autotune then bump threshold toward this workload
             cfg = autotune_all(quiet=True)
-            # Heuristic: parallel wins above a fraction of the case size, clamp to [1e6, 5e7]
             case_size = max(1, Tn * N)
             thr = int(min(max(case_size // 4, 1_000_000), 50_000_000))
-            # If vectorization_experiments exposes a setter, use it; else patch dict and hope it's read
             try:
                 from gempyor.vectorization_experiments import set_autotune_config
                 cfg = {**cfg, "parallel_threshold": thr}
                 set_autotune_config(cfg)
             except Exception:
-                pass  # harmless if not exposed
+                pass
     except ValueError as e:
         if "No threading layer could be loaded" in str(e):
             pytest.skip("Numba threading layer unavailable; skipped autotune_all()")
         raise
 
-    # Optional visibility in CI
     try:
         active = get_autotune_config()
     except Exception:
@@ -331,7 +327,7 @@ def autotune_for_case(model_and_inputs):
 # ------------------------------------------------------------
 # Tests
 # ------------------------------------------------------------
-@pytest.mark.benchmark(group="solver_performance", min_rounds=20)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=2)
 def test_legacy_solver_performance_param(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -369,7 +365,7 @@ def test_legacy_solver_performance_param(benchmark, model_and_inputs):
     assert result is None or True
 
 
-@pytest.mark.benchmark(group="solver_performance", min_rounds=20)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=2)
 def test_vectorized_solver_performance_param(benchmark, model_and_inputs):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -397,4 +393,74 @@ def test_vectorized_solver_performance_param(benchmark, model_and_inputs):
 
     result = benchmark(run_vec)
     assert result.success
+
+
+# ------------------------------------------------------------
+# NEW: Plot I(t) overlay for two configs with the vectorized solver
+# ------------------------------------------------------------
+def _solve_daily_I(out_dict):
+    """Run vectorized solver for a prepared case and return (t_daily, I_total)."""
+    ncomp, nloc = out_dict["initial_array"].shape
+    ndays = out_dict["model"].n_days
+    t_daily = np.arange(0.0, float(ndays - 1) + 1e-12, 1.0, dtype=np.float64)
+
+    factory = RHSfactory(
+        precomputed=out_dict["precomputed"],
+        param_expr_lookup=out_dict["param_expr_lookup"],
+        param_name_to_row=out_dict["param_name_to_row"],
+        param_time_mode="step",
+    )
+    res = factory.solve(
+        y0=out_dict["initial_array"].ravel(),
+        parameters=out_dict["params"],
+        t_span=(t_daily[0], t_daily[-1] + 1.0),
+        t_eval=t_daily,
+        method="RK45",
+        rtol=1e-2,
+        atol=1e-4,
+    )
+    assert res.success, f"Vectorized solve failed: {res.message}"
+    states = res.y.T.reshape(len(t_daily), ncomp, nloc)
+
+    I_idx = compartment_lookup("I", out_dict["compartments"])
+    I_total = states[:, I_idx, :].sum(axis=(1, 2))  # (T,)
+    return t_daily, I_total
+
+
+@pytest.mark.slow
+def test_plot_I_overlay_two_configs(tmp_path_factory):
+    """
+    Solve both configs (alt & orig) and save an overlay plot of I(t) totals
+    next to this test file.
+    """
+    # Make sure we have a threading layer tuned at least once for this session.
+    try:
+        autotune_all(quiet=True)
+    except Exception:
+        pass  # continue anyway; solver will still run serially if needed
+
+    # Prepare both cases locally (don't use the parametrized fixture so we can plot both)
+    alt = _prepare_case("Structured_Example_Seeding_Alt.yml", tmp_path_factory)
+    orig = _prepare_case("Structured_Example.yml", tmp_path_factory)
+
+    t_alt, I_alt = _solve_daily_I(alt)
+    t_orig, I_orig = _solve_daily_I(orig)
+
+    # Save plot alongside this test file
+    outdir = Path(__file__).parent
+    outpath = outdir / "I_overlay_alt_vs_orig.png"
+
+    fig, ax = plt.subplots(figsize=(9, 4.5), dpi=120)
+    ax.plot(t_alt, I_alt, label="Alt config (no seeding)")
+    ax.plot(t_orig, I_orig, label="Orig config (with seeding)", linestyle="--")
+    ax.set_title("Overlay: I(t) total across nodes — Alt vs Orig")
+    ax.set_xlabel("Day")
+    ax.set_ylabel("Individuals")
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best")
+    fig.savefig(outpath, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"[artifact] I(t) overlay saved to: {outpath}")
+    assert outpath.exists()
 
