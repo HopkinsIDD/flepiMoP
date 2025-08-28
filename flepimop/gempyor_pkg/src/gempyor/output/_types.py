@@ -4,12 +4,27 @@ __all__: tuple[str, ...] = ()
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal
+from typing import Literal, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 
 from .._pydantic_ext import _ensure_list
+
+
+class ModifiersDataFrames(NamedTuple):
+    """
+    DataFrames to hold modifier information.
+
+    Attributes:
+        snpi: List of DataFrames for SEIR modifiers.
+        hnpi: List of DataFrames for outcome modifiers.
+
+    """
+
+    snpi: list[pd.DataFrame]
+    hnpi: list[pd.DataFrame]
 
 
 @dataclass(frozen=True)
@@ -99,6 +114,7 @@ class ModifierInfo:
 
 @dataclass(frozen=True)
 class Chains:
+    # pylint: disable=line-too-long
     """
     Dataclass to hold the chains of a model output.
 
@@ -187,8 +203,18 @@ class Chains:
         (2, 3, 2)
         >>> chains.flatten_samples().shape
         (120, 2)
+        >>> modifiers_dfs = chains.to_modifiers_dataframes()
+        >>> len(modifiers_dfs.snpi)
+        120
+        >>> modifiers_dfs.snpi[0]
+            subpop  modifier_name             start_date               end_date parameter     value
+        0  subpop1  seasonal_beta  2020-01-01,2020-07-01  2020-06-30,2020-12-31      beta -0.811887
+        >>> modifiers_dfs.hnpi[0]
+                    subpop         modifier_name  start_date    end_date          parameter     value
+        0  subpop1,subpop2  hospitalization_rate  2020-01-01  2020-12-31  hosp::probability -0.025538
 
     """
+    # pylint: enable=line-too-long
 
     shape: tuple[int, int, int]
     log_probability: npt.NDArray[np.float64]
@@ -233,3 +259,71 @@ class Chains:
 
         """
         return self.samples.reshape(-1, self.shape[2])
+
+    def to_modifiers_dataframes(self) -> ModifiersDataFrames:
+        """
+        Convert the chains to a `ModifiersDataFrames` instance.
+
+        Returns:
+            A `ModifiersDataFrames` instance containing DataFrames for SEIR and outcome
+            modifiers with their corresponding sampled values.
+        """
+        # Construct base DataFrames without values
+        empty_base_df = pd.DataFrame(
+            columns=[
+                "subpop",
+                "modifier_name",
+                "start_date",
+                "end_date",
+                "parameter",
+                "value",
+            ]
+        )
+        snpi_param_idx = []
+        hnpi_param_idx = []
+        snpi_base = []
+        hnpi_base = []
+        for i, modifier in enumerate(self.modifiers):
+            param_idx = snpi_param_idx if modifier.kind == "seir" else hnpi_param_idx
+            base = snpi_base if modifier.kind == "seir" else hnpi_base
+            param_idx.append(i)
+            base.append(
+                {
+                    "subpop": ",".join(modifier.subpops),
+                    "modifier_name": modifier.name,
+                    "start_date": ",".join(
+                        [p.start_date.strftime("%Y-%m-%d") for p in modifier.periods]
+                    ),
+                    "end_date": ",".join(
+                        [p.end_date.strftime("%Y-%m-%d") for p in modifier.periods]
+                    ),
+                    "parameter": modifier.parameter,
+                }
+            )
+        snpi_base_df = (
+            pd.DataFrame.from_records(snpi_base) if snpi_base else empty_base_df.copy()
+        )
+        hnpi_base_df = (
+            pd.DataFrame.from_records(hnpi_base) if hnpi_base else empty_base_df.copy()
+        )
+        # Expand the base DataFrame for each chain and iteration
+        nchains, niterations, _ = self.shape
+        do_snpi = bool(snpi_param_idx)
+        do_hnpi = bool(hnpi_param_idx)
+        snpi_dfs = []
+        hnpi_dfs = []
+        for i in range(nchains):
+            for j in range(niterations):
+                snpi_df = snpi_base_df.copy()
+                if do_snpi:
+                    snpi_df["value"] = self.samples[i, j, snpi_param_idx]
+                hnpi_df = hnpi_base_df.copy()
+                if do_hnpi:
+                    hnpi_df["value"] = self.samples[i, j, hnpi_param_idx]
+                snpi_dfs.append(snpi_df)
+                hnpi_dfs.append(hnpi_df)
+
+        return ModifiersDataFrames(
+            snpi=snpi_dfs,
+            hnpi=hnpi_dfs,
+        )
