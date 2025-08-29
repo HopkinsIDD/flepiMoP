@@ -348,7 +348,8 @@ class WeeklyHospPipeline:
         self.NC, self.NL = self.initial_array.shape
         self.start_date: dt.date = self.model.ti
         self.end_date: dt.date = self.model.tf
-        self.T = (self.end_date - self.start_date).days + 1  # number of *calendar days* (inclusive)
+        # number of *calendar days* (inclusive)
+        self.T = (self.end_date - self.start_date).days + 1
 
         # Parameters (P, T_days, L)
         self.param_defs = conf["seir"]["parameters"].get()
@@ -371,6 +372,41 @@ class WeeklyHospPipeline:
             prop_move[i] = min(total_flux / pop_i, 1.0) if pop_i > 0 else 0.0
         self.prop_move = prop_move
 
+        # ---------- Optional seeding wiring ----------
+        # These attributes are useful for debugging/inspection.
+        self.seeding_on = False
+        self.seeding_amounts = None
+        self.seeding_data = None
+
+        # Try to pull seeding from the config/model; if available, add to precomputed.
+        # Shapes follow the seeding tests: daily_incidence is (T_days, NC, NL).
+        try:
+            seeding_nb_dict, seeding_amounts = self.model.get_seeding_data(sim_id=0)
+            # Convert numba-dicts to plain numpy arrays with safe dtypes
+            def _to_py(d):
+                return {str(k): np.ascontiguousarray(v) for k, v in d.items()}
+
+            sd = _to_py(seeding_nb_dict)
+            seeding_data = {
+                "day_start_idx": np.ascontiguousarray(sd["day_start_idx"], dtype=np.int64),
+                "seeding_subpops": np.ascontiguousarray(sd["seeding_subpops"], dtype=np.int64),
+                "seeding_sources": np.ascontiguousarray(sd["seeding_sources"], dtype=np.int64),
+                "seeding_destinations": np.ascontiguousarray(sd["seeding_destinations"], dtype=np.int64),
+            }
+            seeding_amounts = np.ascontiguousarray(seeding_amounts, dtype=np.float64)
+            daily_incidence = np.zeros((self.T, self.NC, self.NL), dtype=np.float64)
+
+            self.seeding_on = True
+            self.seeding_amounts = seeding_amounts
+            self.seeding_data = seeding_data
+        except Exception:
+            # No seeding configured; proceed without it.
+            seeding_data = None
+            seeding_amounts = None
+            daily_incidence = None
+            self.seeding_on = False
+
+        # Base precomputed for RHSfactory
         self.precomputed = {
             "ncompartments": self.NC,
             "nspatial_nodes": self.NL,
@@ -384,6 +420,15 @@ class WeeklyHospPipeline:
             "mobility_row_indices": self.mobility_indices.astype(np.int64, copy=False),
             "population": self.population,
         }
+        # Inject seeding keys only if available
+        if self.seeding_on:
+            self.precomputed.update(
+                {
+                    "seeding_data": seeding_data,
+                    "seeding_amounts": seeding_amounts,
+                    "daily_incidence": daily_incidence,
+                }
+            )
 
         # Solver factory (autotune preserved)
         self.param_expr_lookup, self.param_name_to_row__unique = _safe_param_expr_lookup(self.unique_strings)
@@ -417,7 +462,7 @@ class WeeklyHospPipeline:
             raise ValueError("No age-specific hospitalization outcomes (incidH_*_age...) found.")
 
         # Modifiers
-        from gempyor.vectorized_modifiers import compile_seir_modifiers  # keep local import to avoid cycles
+        from gempyor.vectorized_modifiers import compile_seir_modifiers  # local import to avoid cycles
         self.mod_applier = compile_seir_modifiers(
             seir_modifiers_cfg=conf["seir_modifiers"].get(),
             start_date=self.start_date,
@@ -426,6 +471,7 @@ class WeeklyHospPipeline:
             param_names=self.param_names,
         )
         self.leaf_order = self.mod_applier.list_leaf_modifiers()
+
 
     # -------------------------- public API --------------------------
 

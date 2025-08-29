@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+
+from pathlib import Path
+
+
 from dataclasses import dataclass
 from pathlib import Path
 import datetime as _dt
@@ -396,16 +400,306 @@ class WeeklyHospAndFinalSOp(Op):
 
 # ------------------------------ model builder ------------------------------
 
+# src/gempyor/pymc_weekly_op.py
+"""
+Weekly hospitalization pipeline Op(s) + PyMC5 model with:
+- coords over age, week, location, and modifier,
+- hierarchical modifier hyperpriors (mean & sd per modifier) with location-level draws,
+- hierarchical prior over initial immune fraction R(0) by age & location,
+- location-structured lambda_ext hyperprior (log-space) with injection into params,
+- final susceptible S(T) saved by age & location.
+
+The Op accepts:
+  • mods (1D) in pipeline.leaf order,
+  • pR (2D) age×location,
+  • lambda_ext_loc (1D) per location (overwrites the lambda_ext parameter row).
+
+Evaluation grid dt can be reduced via config key:
+  inference:
+    dt_eval_days: 0.25
+
+The model builder supports two likelihood shapes:
+  • age-stratified:  y_obs.shape == (A, W, L)  -> NB on weekly_pred (age, week, location)
+  • age-aggregated:  y_obs.shape == (W, L)    -> NB on weekly_pred_sum_age (week, location)
+"""
+
+
+
+# ------------------------------ utilities ------------------------------
+
+def _extract_yaml_value(spec) -> float:
+    """Robust numeric extractor for modifier 'value' nodes."""
+    v = spec.get("value", None)
+    if isinstance(v, (int, float)):
+        return float(v)
+    if isinstance(v, dict):
+        v1 = v.get("value", v.get("val", v.get("mult", None)))
+        if isinstance(v1, (int, float)):
+            return float(v1)
+        if isinstance(v1, dict):
+            v2 = v1.get("value", v1.get("val", v1.get("mult", None)))
+            if isinstance(v2, (int, float)):
+                return float(v2)
+    return 1.0
+
+
+def _yaml_defaults_in_leaf_order(config_path: Path, leaf_order: Tuple[str, ...]) -> np.ndarray:
+    conf = confuse.Configuration("WeeklyHospPipelineDefaults", __name__)
+    conf.set_file(str(config_path))
+    sm = conf["seir_modifiers"].get()
+    mods = sm["modifiers"]
+    return np.asarray([_extract_yaml_value(mods[nm]) for nm in leaf_order], dtype=np.float64)
+
+
+def _normalize_age_token(s: str) -> str:
+    """Make '0-17', '0_17', '0–17' and '0to17' comparable -> '0_17'; '65+' -> '65p'."""
+    s = str(s).lower().replace("to", "-").replace("–", "-").replace("—", "-")
+    out = []
+    for ch in s:
+        if ch.isdigit():
+            out.append(ch)
+        elif ch in "-_":
+            out.append("_")
+        elif ch == "+":
+            out.append("p")
+    key = []
+    for c in out:
+        if not (key and key[-1] == "_" and c == "_"):
+            key.append(c)
+    return "".join(key).strip("_")
+
+
+@dataclass(frozen=True)
+class AgeMasks:
+    """Masks to aggregate compartments by age & infection stage."""
+    age_labels: Tuple[str, ...]
+    s_mask_by_age: Tuple[np.ndarray, ...]      # per-age (NC,) bool
+    total_mask_by_age: Tuple[np.ndarray, ...]  # per-age (NC,) bool (all stages)
+
+
+def _build_age_masks(pipeline: WeeklyHospPipeline) -> AgeMasks:
+    """Map pipeline.age_labels onto compartments dataframe columns."""
+    df = pipeline.model.compartments.compartments  # pandas.DataFrame
+    NC = pipeline.NC
+
+    comp_age_norm = df["age_strata"].astype(str).map(_normalize_age_token).values
+    comp_stage = df["infection_stage"].astype(str).values
+
+    masks_s = []
+    masks_tot = []
+    for age_token in pipeline.age_labels:
+        key = _normalize_age_token(age_token.replace("age", "", 1))
+        m_age = (comp_age_norm == key)
+        if not m_age.any():
+            m_age = np.ones(NC, dtype=bool)
+        m_s = m_age & np.fromiter((str(st).startswith("S") for st in comp_stage), dtype=bool, count=NC)
+        masks_s.append(m_s)
+        masks_tot.append(m_age)
+    return AgeMasks(tuple(pipeline.age_labels), tuple(masks_s), tuple(masks_tot))
+
+
+def _mmwr_assign_from(start_date: np.datetime64 | object, T: int) -> Tuple[np.ndarray, int]:
+    """
+    Build week assignments (0..W-1) for T consecutive *daily bins* starting at `start_date`,
+    aligned to MMWR (Sunday starts). The first bin runs from `start_date` up to the next
+    Saturday; subsequent bins are 7 days each. Returns (assign, n_weeks).
+    """
+    if T <= 0:
+        return np.zeros(0, dtype=np.int64), 0
+    import datetime as _dt
+    if isinstance(start_date, np.datetime64):
+        start = _dt.date.fromtimestamp((start_date - np.datetime64('1970-01-01')) / np.timedelta64(1, 's'))
+    else:
+        start = start_date  # assume datetime.date
+    offset_to_sun = (6 - start.weekday()) % 7  # Monday=0..Sunday=6
+    first_len = 7 if offset_to_sun == 0 else offset_to_sun
+    first_len = min(first_len, T)
+
+    assign = np.empty(T, dtype=np.int64)
+    assign[:first_len] = 0
+    if T > first_len:
+        rest = T - first_len
+        assign[first_len:] = 1 + (np.arange(rest, dtype=np.int64) // 7)
+    n_weeks = int(assign.max()) + 1
+    return assign, n_weeks
+
+
+# ------------------------------ Op ------------------------------
+
+class WeeklyHospAndFinalSOp(Op):
+    """
+    Inputs:
+      mods (1D): replacement modifier values in pipeline.leaf order
+      pR   (2D): fraction immune at t=0, shape (age, location)
+      lambda_ext_loc (1D): per-location exogenous force of infection
+
+    Outputs:
+      weekly (3D): (age, week, location)
+      S_final (2D): end-of-sim susceptible counts (age, location)
+    """
+    itypes = [pt.dvector, pt.dmatrix, pt.dvector]
+    otypes = [pt.dtensor3, pt.dmatrix]
+
+    def __init__(self, pipeline: WeeklyHospPipeline):
+        super().__init__()
+        self.pipe = pipeline
+        self.leaf_order = pipeline.modifier_order()
+        self.age_masks = _build_age_masks(pipeline)
+
+        # Configurable evaluation dt
+        try:
+            conf = confuse.Configuration("WeeklyHospPipelineOpCfg", __name__)
+            conf.set_file(str(pipeline.config_path))
+            self._dt_eval = float(conf["inference"]["dt_eval_days"].get(float) or 1.0)
+        except Exception:
+            self._dt_eval = float(getattr(pipeline, "dt_eval_days", 1.0))
+
+        # Probe weekly shape with defaults (fixes W)
+        defaults = _yaml_defaults_in_leaf_order(pipeline.config_path, self.leaf_order)
+        wk, _, _ = pipeline.evaluate(defaults)
+        self._weekly_shape = wk.shape  # (A,W,L)
+        self._A, self._W, self._L = self._weekly_shape
+
+        # Totals per (age, location) from baseline IC
+        base = pipeline.initial_array  # (NC, L)
+        N_age_loc = np.zeros((self._A, self._L), dtype=np.float64)
+        for a, m_tot in enumerate(self.age_masks.total_mask_by_age):
+            N_age_loc[a, :] = base[m_tot, :].sum(axis=0)
+        self._N_age_loc = N_age_loc
+
+        # Parameter row mapping helper
+        self._param_name_to_idx = {}
+        if hasattr(self.pipe, "param_name_to_idx"):
+            self._param_name_to_idx = dict(self.pipe.param_name_to_idx)
+        elif hasattr(self.pipe, "mod_applier"):
+            self._param_name_to_idx = dict(getattr(self.pipe.mod_applier, "param_name_to_idx", {}))
+
+    def _get_param_row(self, name: str) -> int:
+        try:
+            return int(self._param_name_to_idx[name])
+        except Exception as e:
+            raise KeyError(f"Parameter row '{name}' not found in pipeline mapping.") from e
+
+    def make_node(self, mods, pR, lambda_ext_loc):
+        mods = pt.as_tensor_variable(mods)
+        pR = pt.as_tensor_variable(pR)
+        lambda_ext_loc = pt.as_tensor_variable(lambda_ext_loc)
+        if mods.ndim != 1:
+            raise TypeError("mods must be 1D")
+        if pR.ndim != 2:
+            raise TypeError("pR must be 2D (age, location)")
+        if lambda_ext_loc.ndim != 1:
+            raise TypeError("lambda_ext_loc must be 1D (location,)")
+        return Apply(self, [mods, pR, lambda_ext_loc], [pt.dtensor3(), pt.dmatrix()])
+
+    def perform(self, node, inputs, outputs):
+        mods, pR, lambda_ext_loc = inputs
+        if mods.shape[0] != len(self.leaf_order):
+            raise ValueError(f"mods length {mods.shape[0]} != {len(self.leaf_order)}")
+        if pR.shape != (self._A, self._L):
+            raise ValueError(f"pR shape {pR.shape} != {(self._A, self._L)}")
+        if lambda_ext_loc.shape != (self._L,):
+            raise ValueError(f"lambda_ext_loc shape {lambda_ext_loc.shape} != {(self._L,)}")
+        pR = np.clip(pR, 1e-6, 1 - 1e-6)
+
+        # 1) apply replacements (modifiers)
+        params_mod = self.pipe.mod_applier.apply_to_params(
+            self.pipe.base_params, leaf_value_array=np.asarray(mods, dtype=np.float64), scenario="none"
+        )
+
+        # 1b) inject lambda_ext per-location across all time
+        if "lambda_ext" in self._param_name_to_idx:
+            pidx = self._get_param_row("lambda_ext")
+            params_mod[pidx, :, :] = np.asarray(lambda_ext_loc, dtype=np.float64)[None, :]
+
+        # 2) override IC using pR by age×location
+        y0 = self.pipe.initial_array.copy()
+        df = self.pipe.model.compartments.compartments
+        for a, (m_s, m_tot) in enumerate(zip(self.age_masks.s_mask_by_age, self.age_masks.total_mask_by_age)):
+            N_al = self._N_age_loc[a, :]
+            R_counts = pR[a, :] * N_al
+            S_counts = (1.0 - pR[a, :]) * N_al
+
+            y0[m_s, :] = 0.0
+            n_s_rows = int(m_s.sum())
+            if n_s_rows > 0:
+                y0[m_s, :] += (S_counts[None, :] / n_s_rows)
+
+            m_r = (df["infection_stage"].astype(str).str.startswith("R").values) & m_tot
+            y0[m_r, :] = 0.0
+            n_r_rows = int(m_r.sum())
+            if n_r_rows > 0:
+                y0[m_r, :] += (R_counts[None, :] / n_r_rows)
+
+            m_other = (~m_s) & (~m_r) & m_tot
+            y0[m_other, :] = 0.0
+
+        # 3) OUTCOMES FROM pipeline.evaluate (delayframe graph)
+        saved_params = self.pipe.base_params
+        saved_y0 = self.pipe.initial_array
+        try:
+            self.pipe.base_params = params_mod
+            self.pipe.initial_array = y0
+            ones = np.ones_like(mods, dtype=np.float64)  # avoid double-applying modifiers
+            weekly_age, _, _ = self.pipe.evaluate(ones)  # (A, W, L)
+        finally:
+            self.pipe.base_params = saved_params
+            self.pipe.initial_array = saved_y0
+
+        # 4) final S by age×location (single integration for terminal state)
+        dt_eval = float(self._dt_eval if self._dt_eval and self._dt_eval > 0 else 1.0)
+        t_eval = np.arange(0.0, float(self.pipe.T), dt_eval, dtype=np.float64)
+        if t_eval[-1] < float(self.pipe.T):
+            t_eval = np.append(t_eval, float(self.pipe.T))
+
+        res = self.pipe.factory.solve(
+            y0=y0.ravel(),
+            parameters=params_mod,
+            t_span=(t_eval[0], t_eval[-1]),
+            t_eval=t_eval,
+            method="RK45",
+            rtol=1e-3,
+            atol=1e-6,
+        )
+        if not res.success:
+            raise RuntimeError(f"Integration failed: {res.message}")
+
+        states = res.y.T.reshape(len(t_eval), self.pipe.NC, self.pipe.NL)
+        last = states[-1]
+        A = len(self.pipe.age_labels)
+        S_final = np.zeros((A, self._L), dtype=np.float64)
+        for a_idx, m_s in enumerate(self.age_masks.s_mask_by_age):
+            S_final[a_idx, :] = last[m_s, :].sum(axis=0)
+
+        outputs[0][0] = np.asarray(weekly_age, dtype=np.float64)
+        outputs[1][0] = S_final
+
+    @property
+    def weekly_shape(self) -> Tuple[int, int, int]:
+        return self._weekly_shape
+
+    @property
+    def n_weeks(self) -> int:
+        return self._W
+
+    @property
+    def age_labels(self) -> Tuple[str, ...]:
+        return tuple(self.pipe.age_labels)
+
+    @property
+    def locations(self) -> int:
+        return self._L
+
+
+# ------------------------------ model builder ------------------------------
+
 def build_weekly_model(
     pipeline: WeeklyHospPipeline,
-    op: WeeklyHospAndFinalSOp | None = None,
+    op: "WeeklyHospAndFinalSOp" | None = None,
     *,
     y_obs: np.ndarray | None = None,
-    modifier_prior_specs: dict[str, dict[str, float]] | None = None,
+    use_nb: bool = False,              # set True if you still want NB
 ) -> pm.Model:
-    """
-    Construct a PyMC model wrapping the Op; supports (A×W×L) or (W×L) observations.
-    """
     if op is None:
         op = WeeklyHospAndFinalSOp(pipeline)
 
@@ -419,82 +713,97 @@ def build_weekly_model(
     }
 
     defaults = _yaml_defaults_in_leaf_order(pipeline.config_path, mod_names)
-    if modifier_prior_specs is None:
-        modifier_prior_specs = {
-            name: {"dist": "lognormal", "mu": float(np.log(val + 1e-12)), "sigma": 0.35}
-            for name, val in zip(mod_names, defaults)
-        }
 
-    # Center for lambda_ext prior from base params (robust)
-    try:
-        pmap = getattr(pipeline, "param_name_to_idx", None) or getattr(pipeline.mod_applier, "param_name_to_idx", {})
-        pidx_lex = int(pmap["lambda_ext"])
-        lam_base = np.asarray(pipeline.base_params[pidx_lex, :, :], dtype=np.float64)  # (T, L)
-        lambda_default = float(np.median(lam_base)) if np.isfinite(lam_base).any() else 2.5e-5
-    except Exception:
-        lambda_default = 2.5e-5
+    # Identify seasonal / holiday leaves by name (simple substring rules)
+    def _is_month_leaf(n):
+        s = n.lower()
+        return any(m in s for m in ["seas_oct","seas_nov","seas_dec","seas_jan","seas_feb","seas_mar","seas_apr"])
+    def _is_holiday_leaf(n):
+        return "winter" in n.lower() or "holiday" in n.lower()
 
     with pm.Model(coords=coords) as m:
-        # ----- Hierarchical modifiers
-        mods_loc_list = []
+        # ---- Shared (global) process modifiers (one scalar per leaf)
+        shared_mods = []
         for i, name in enumerate(mod_names):
-            spec = modifier_prior_specs.get(name, {})
-            dist = str(spec.get("dist", "lognormal")).lower()
-            if dist == "lognormal":
-                mu_i = pm.Normal(f"{name}_mu", mu=float(spec.get("mu", np.log(defaults[i] + 1e-12))), sigma=0.5)
-                sigma_i = pm.HalfNormal(f"{name}_sigma", sigma=float(spec.get("sigma", 0.35)))
-                mods_i_loc = pm.LogNormal(f"{name}_loc", mu=mu_i, sigma=sigma_i, dims=("location",))
-            elif dist == "gamma":
-                mean0 = float(spec.get("mean", defaults[i]))
-                sd0 = float(spec.get("sd", max(0.25 * defaults[i], 0.05)))
-                mean_i = pm.HalfNormal(f"{name}_mean", sigma=2.0 * mean0)
-                sd_i = pm.HalfNormal(f"{name}_sd", sigma=2.0 * sd0)
-                alpha_i = pm.Deterministic(f"{name}_alpha", (mean_i / (sd_i + 1e-12)) ** 2)
-                beta_i = pm.Deterministic(f"{name}_beta", mean_i / (sd_i ** 2 + 1e-12))
-                mods_i_loc = pm.Gamma(f"{name}_loc", alpha=alpha_i, beta=beta_i, dims=("location",))
+            mu0 = float(np.log(defaults[i] + 1e-12))
+
+            if _is_month_leaf(name):
+                # season should move most: loosen prior
+                sigma = 0.5
+            elif _is_holiday_leaf(name):
+                # allow strong dip/spike if needed
+                sigma = 0.8
             else:
-                raise ValueError(f"Unknown modifier prior dist for {name}: {dist}")
-            mods_loc_list.append(mods_i_loc)
+                sigma = 0.35
 
-        mods_loc = pm.Deterministic(
-            "mods_loc", pt.stack([pt.as_tensor_variable(v) for v in mods_loc_list], axis=0),
-            dims=("modifier", "location"),
-        )
-        mods_vec = pm.Deterministic("mods", mods_loc.mean(axis=1), dims=("modifier",))
+            shared_mods.append(pm.LogNormal(name, mu=mu0, sigma=sigma))
+        mods_vec = pm.Deterministic("mods", pt.stack(shared_mods), dims=("modifier",))
 
-        # ----- Hierarchical logit-normal for pR
+        # ---- pR (kept but simpler, since we match S/R only once)
+        # Shared center; small location deviation on logit scale
         mu0 = float(np.log(0.40 / (1.0 - 0.40)))
-        mu = pm.Normal("mu_R_logit", mu=mu0, sigma=0.5)
-        sigma_age = pm.HalfNormal("sigma_age", sigma=0.5)
-        sigma_loc = pm.HalfNormal("sigma_loc", sigma=0.5)
-        a_age = pm.Normal("a_age", mu=0.0, sigma=sigma_age, dims=("age",))
-        b_loc = pm.Normal("b_loc", mu=0.0, sigma=sigma_loc, dims=("location",))
-        eta = pm.Deterministic("eta_R_logit", mu + a_age[:, None] + b_loc[None, :], dims=("age", "location"))
-        pR = pm.Deterministic("pR", pt.sigmoid(eta), dims=("age", "location"))
+        mu_R = pm.Normal("mu_R_logit", mu=mu0, sigma=0.5)
+        sd_loc = pm.HalfNormal("sigma_R_loc", sigma=0.3)
+        b_loc = pm.Normal("b_loc", mu=0.0, sigma=sd_loc, dims=("location",))
+        eta = mu_R + b_loc[None, :]
+        pR = pm.Deterministic("pR", pt.sigmoid(eta).repeat(A, axis=0), dims=("age","location"))
 
-        # ----- Hierarchical log-normal for lambda_ext by location
-        mu_lex = pm.Normal("lambda_ext_mu_log", mu=np.log(lambda_default + 1e-16), sigma=0.1)
-        sd_lex = pm.HalfNormal("lambda_ext_sigma_log", sigma=0.1)
+        # ---- exogenous FOI scale per location (shared center)
+        lam_center = 2.5e-5
+        mu_lex = pm.Normal("lambda_ext_mu_log", mu=np.log(lam_center + 1e-16), sigma=0.3)
+        sd_lex = pm.HalfNormal("lambda_ext_sigma_log", sigma=0.2)
         lambda_ext_loc = pm.LogNormal("lambda_ext_loc", mu=mu_lex, sigma=sd_lex, dims=("location",))
         pm.Deterministic("inv_lambda_ext_loc", 1.0 / (lambda_ext_loc + 1e-16), dims=("location",))
 
-        # ----- Forward op (single-solve simulator)
+        # ---- Forward model (single solve)
         weekly_pred_t, S_final_t = op(mods_vec, pR, lambda_ext_loc)
-        weekly = pm.Deterministic("weekly_pred", weekly_pred_t, dims=("age", "week", "location"))
-        weekly_sum_age = pm.Deterministic("weekly_pred_sum_age", weekly.sum(axis=0), dims=("week", "location"))
-        S_final = pm.Deterministic("S_final", S_final_t, dims=("age", "location"))
+        weekly = pm.Deterministic("weekly_pred", weekly_pred_t, dims=("age","week","location"))
+        weekly_sum_age = pm.Deterministic("weekly_pred_sum_age", weekly.sum(axis=0), dims=("week","location"))
+        pm.Deterministic("S_final", S_final_t, dims=("age","location"))
 
-        # ----- Likelihood (optional)
+        # ---- OBSERVATION SIDE
+        # Location multiplier that scales ALL ages equally (matches age-aggregated data)
+        obs_loc_scale = pm.LogNormal("obs_loc_scale", mu=0.0, sigma=0.5, dims=("location",))
+        mu_obs = weekly_sum_age * obs_loc_scale[None, :]
+
+        # Optional holiday reporting notch (shared across locations, only for affected weeks)
+        # If you want it, pre-compute a boolean mask of holiday weeks aligned to pipeline.start_date.
+        # Example scaffold (replace week indices appropriately):
+        # holiday_weeks = np.array([...], dtype=int)
+        # obs_holiday = pm.LogNormal("obs_holiday_mult", mu=np.log(0.8), sigma=0.7)
+        # mu_obs = pm.Deterministic("mu_obs",
+        #     pt.set_subtensor(mu_obs[holiday_weeks, :], mu_obs[holiday_weeks, :] * obs_holiday)
+        # )
+
+        # ---- Likelihood
         if y_obs is not None:
             y_obs = np.asarray(y_obs, dtype=np.float64)
-            alpha = pm.HalfNormal("alpha_nb", sigma=10.0)
-            if y_obs.shape == (A, W, L):
-                pm.NegativeBinomial("y", mu=weekly, alpha=alpha, observed=y_obs, dims=("age", "week", "location"))
-            elif y_obs.shape == (W, L):
-                pm.NegativeBinomial("y", mu=weekly_sum_age, alpha=alpha, observed=y_obs, dims=("week", "location"))
+            assert y_obs.shape == (W, L), f"y_obs must be (W,L); got {y_obs.shape}"
+
+            if use_nb:
+                alpha_loc = pm.HalfNormal("alpha_nb_loc", sigma=10.0, dims=("location",))
+                pm.NegativeBinomial("y", mu=mu_obs, alpha=alpha_loc, observed=y_obs, dims=("week","location"))
             else:
-                raise ValueError(f"y_obs shape must be (A,W,L)=({A},{W},{L}) or (W,L)=({W},{L}); got {y_obs.shape}")
+                pm.Poisson("y", mu=mu_obs, observed=y_obs, dims=("week","location"))
+
     return m
+
+
+
+# ------------------------------ convenience ------------------------------
+
+def build_op_and_model_from_config(
+    config_path: str | Path,
+    *,
+    y_obs: np.ndarray | None = None,
+    modifier_prior_specs: dict[str, dict[str, float]] | None = None,
+) -> tuple[WeeklyHospPipeline, WeeklyHospAndFinalSOp, pm.Model]:
+    """Create the pipeline, Op (weekly + S_final), and PyMC5 model with coords."""
+    pipe = build_pipeline_from_config(config_path)
+    op = WeeklyHospAndFinalSOp(pipe)
+    model = build_weekly_model(pipe, op, y_obs=y_obs, modifier_prior_specs=modifier_prior_specs)
+    return pipe, op, model
+
 
 
 def build_op_and_model_from_config(
