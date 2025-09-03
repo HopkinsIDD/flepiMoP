@@ -1,8 +1,9 @@
 # Calibrate to real hospitalization data in a CSV using the Structured_Example config
 # (with seeding), the WeeklyHospPipeline, and our Op. We:
 # (1) align & aggregate the long CSV to MMWR weeks aligned to the model start,
-# (2) calibrate only on observed weeks (subset-of-weeks allowed),
-# (3) save per-location posterior predictive panels (aggregated + by age).
+# (2) run a PRIOR PREDICTIVE injection check & plots (before inference),
+# (3) calibrate only on observed weeks (subset-of-weeks allowed),
+# (4) save per-location posterior predictive panels (aggregated + by age).
 #
 # CSV must have columns: date, source, incidH
 # Order: grouped/organized by location first, then by date (long format, daily totals).
@@ -89,7 +90,7 @@ def _materialize_structured_example(tmp_path_factory) -> Path:
 
     # Config with seeding support
     # cfg_name = "Structured_Example_Seeding_Alt.yml"
-    cfg_name = "Structured_Example.yml"
+    cfg_name = "Structured_Example_Seeding_Alt.yml"
     cfg_path = tmp_root / cfg_name
     shutil.copyfile(tutorial_dir / cfg_name, cfg_path)
 
@@ -161,7 +162,9 @@ def _load_and_align_csv_to_weeks(csv_path: Path, pipe: WeeklyHospPipeline, op: W
     df = pd.read_csv(csv_path, parse_dates=["date"])
     required = {"date", "source", "incidH"}
     if not required.issubset(df.columns):
-        raise ValueError(f"CSV must contain columns: {sorted(required)}")
+        # pandas.Series doesn't have issubset; fix:
+        missing = sorted(list(required - set(df.columns)))
+        raise ValueError(f"CSV missing required columns: {missing}")
 
     df = df.copy()
     df["incidH"] = pd.to_numeric(df["incidH"], errors="coerce").fillna(0.0).clip(lower=0.0)
@@ -215,9 +218,10 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
     """
     For each location:
       - Top: aggregated posterior predictive (mean + 95% HDI) vs observed (on observed weeks only)
-      - Lower: per-age posterior predictive (mean + 95% HDI), no observed overlay
+      - Bottom: one subplot per unique age group (mean + 95% HDI), in a single row
     """
-    A = len(pipe.age_labels)
+    ages = tuple(pipe.age_labels)  # preserve order from config
+    A = len(ages)
     W = y_obs_full.shape[0]
 
     agg_ppc = idata.posterior_predictive["weekly_pred_sum_age"].values   # (chain, draw, W, L)
@@ -226,11 +230,16 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
     weeks = np.arange(W)
 
     for loc_idx, loc_name in enumerate(loc_names):
-        fig = plt.figure(figsize=(14, 8), dpi=120)
-        gs = fig.add_gridspec(3, 2, height_ratios=[1.2, 1, 1])
-        ax_agg = fig.add_subplot(gs[0, :])
+        # Auto width so all ages fit on one row; cap to avoid comically huge figures
+        fig_width = min(30, max(14, 3.2 * A))
+        fig = plt.figure(figsize=(fig_width, 7.5), dpi=120)
 
-        # Aggregated: restrict to observed weeks for overlay
+        # 2-row layout: top agg, bottom 1xA subplots
+        gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1.3, 1.0], hspace=0.35)
+        ax_agg = fig.add_subplot(gs[0, 0])
+        bottom = gs[1].subgridspec(1, A, wspace=0.25)
+
+        # ----- Aggregated (observed overlay on observed weeks only)
         if obs_weeks.size > 0:
             samples = agg_ppc[:, :, obs_weeks, loc_idx]   # (chain, draw, W_obs)
             mean = samples.mean(axis=(0, 1))
@@ -246,23 +255,22 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
         ax_agg.grid(True, alpha=0.3)
         ax_agg.legend(loc="upper right")
 
-        # Age-stratified panels
-        sub_axes = []
-        for r in (1, 2):
-            for c in (0, 1):
-                sub_axes.append(fig.add_subplot(gs[r, c]))
+        # ----- Per-age row (one subplot per age)
         for a_idx in range(A):
-            ax = sub_axes[a_idx % len(sub_axes)]
+            ax = fig.add_subplot(bottom[0, a_idx], sharex=None if a_idx == 0 else fig.axes[-1])
+
             samples_a = age_ppc[:, :, a_idx, :, loc_idx]  # (chain, draw, W)
             mean_a = samples_a.mean(axis=(0, 1))
             hdi_a = az.hdi(samples_a, hdi_prob=0.95)      # (W, 2)
 
-            ax.fill_between(weeks, hdi_a[:, 0], hdi_a[:, 1], alpha=0.2, step="mid")
+            ax.fill_between(weeks, hdi_a[:, 0], hdi_a[:, 1], alpha=0.20, step="mid")
             ax.plot(weeks, mean_a, linewidth=1.2)
-            ax.set_title(str(pipe.age_labels[a_idx]))
+            ax.set_title(str(ages[a_idx]))
             ax.grid(True, alpha=0.3)
             ax.set_xlabel("MMWR week")
-            ax.set_ylabel("Hosp")
+            # Y label only on the first age panel to save space
+            if a_idx == 0:
+                ax.set_ylabel("Hosp")
 
         fig.suptitle(f"Posterior predictive — {loc_name}", y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
@@ -270,6 +278,30 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
         outpng = outdir / f"ppc_panel_{loc_idx:02d}_{loc_name}.png"
         fig.savefig(outpng, bbox_inches="tight")
         plt.close(fig)
+
+
+
+# ---------- prior predictive helpers (PyMC5: prior vs prior_predictive) ----------
+
+def _idata_get(idata, var_name: str):
+    """Fetch a variable from either `prior_predictive` or `prior` InferenceData group."""
+    for grp in ("prior_predictive", "prior"):
+        grp_obj = getattr(idata, grp, None)
+        if grp_obj is not None and var_name in grp_obj:
+            return grp_obj[var_name].values
+    raise AssertionError(f"Variable '{var_name}' not found in prior/prior_predictive groups.")
+
+def _stack_samples(arr: np.ndarray) -> np.ndarray:
+    """
+    Accept weekly_pred array shaped (draw, A, W, L) or (chain, draw, A, W, L)
+    and return (S, A, W, L) where S = total samples.
+    """
+    if arr.ndim == 4:
+        return arr
+    if arr.ndim == 5:
+        c, d, A, W, L = arr.shape
+        return arr.reshape(c * d, A, W, L)
+    raise ValueError(f"Unexpected ndim for weekly_pred: {arr.shape}")
 
 
 # ----------------------------- fixtures ---------------------------------
@@ -280,11 +312,7 @@ def pipeline_and_op(tmp_path_factory):
     pipe = build_pipeline_from_config(cfg_path)
 
     # hardware optimization
-    try:
-        _ = autotune_all(quiet=False)
-        print(f"[autotune active] {get_autotune_config()}")
-    except Exception:
-        pass
+    _safe_autotune()
 
     # Assert seeding is wired in (this config uses seeding)
     assert getattr(pipe, "seeding_on", False) is True, "Seeding should be ON for Structured_Example.yml"
@@ -335,13 +363,13 @@ def test_seeding_is_active_and_op_runs_once(pipeline_and_op):
 @pytest.mark.slow
 def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     """
-    1) Build pipeline/op/model (no built-in likelihood).
-    2) Load CSV (daily), collapse to daily totals, align to model horizon, aggregate to MMWR weekly, build y_obs on observed weeks only.
-    3) Add NB likelihood on weekly_pred_sum_age[obs_weeks].
-    4) Run short posterior, posterior predictive.
-    5) Save per-location panel figures into model_output/.
+    Pipeline on real CSV:
+      1) Load CSV (daily) → weekly (W,L) aligned to model.
+      2) PRIOR PREDICTIVE (50 draws) — verify modifier injection & save spaghetti plots.
+      3) Build likelihood on observed weeks and run a short posterior.
+      4) Posterior predictive panels + summary.
     """
-    csv_path = _locate_csv_or_skip('')
+    csv_path = _locate_csv_or_skip()
 
     pipe, op = pipeline_and_op
 
@@ -352,26 +380,86 @@ def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     if obs_weeks.size == 0:
         pytest.skip("No observed weeks after alignment; skipping.")
 
-    # Observed-only arrays
-    y_obs_obsweeks = y_full[obs_weeks, :].astype(np.float64, copy=False)
+    # Output directory
+    outdir_env = os.environ.get("E2E_OUTDIR", "").strip()
+    outdir = Path(outdir_env) if outdir_env else (Path.cwd() / "model_output")
+    outdir.mkdir(parents=True, exist_ok=True)
 
-    # ---------------- Build model WITHOUT built-in likelihood ----------------
+    # ---------------- PRIOR PREDICTIVE INJECTION CHECK (before inference) ----------------
+    with build_weekly_model(pipe, op=op, y_obs=None) as prior_model:
+        # PyMC 5: use samples= and pull from prior/prior_predictive
+        prior_idata = pm.sample_prior_predictive(samples=50, random_seed=123,
+                                                 var_names=["weekly_pred", "mods"])
+
+    weekly_vals = _idata_get(prior_idata, "weekly_pred")
+    weekly = _stack_samples(weekly_vals)  # (S, A, W, L)
+    mods_vals = _idata_get(prior_idata, "mods")
+    if mods_vals.ndim == 2:
+        mods_samples = mods_vals  # (S, M)
+    else:
+        c, d, M = mods_vals.shape
+        mods_samples = mods_vals.reshape(c * d, M)
+
+    S, A, Wm, Lm = weekly.shape
+    assert Wm == W and Lm == L, "Weekly shape mismatch between Op and data alignment."
+
+    # Numeric variance check to ensure injection happened
+    locs_to_plot = [0, min(L - 1, max(0, L // 2))]
+    for loc in locs_to_plot:
+        series = weekly[:, :, :, loc].sum(axis=1)  # (S, W)
+        var_per_week = series.var(axis=0)
+        assert float(var_per_week.max()) > 0.0, (
+            "No variation in prior-predictive weekly trajectories — modifiers may not be injected."
+        )
+
+    # Spaghetti plots per selected location (sum over ages)
+    weeks = np.arange(W)
+    for loc in locs_to_plot:
+        series = weekly[:, :, :, loc].sum(axis=1)  # (S, W)
+        fig, ax = plt.subplots(1, 1, figsize=(12, 4), dpi=120)
+        for s in range(min(50, S)):
+            ax.plot(weeks, series[s], alpha=0.25, linewidth=1.0)
+        ax.set_title(f"Prior predictive trajectories — sum over ages, location {loc}")
+        ax.set_xlabel("MMWR week")
+        ax.set_ylabel("Weekly hospitalizations (sum over age)")
+        ax.grid(True, alpha=0.3)
+        outpng = outdir / f"prior_trajs_loc{loc}.png"
+        fig.tight_layout()
+        fig.savefig(outpng, bbox_inches="tight")
+        plt.close(fig)
+
+    # Quick modifiers scatter (first ~12)
+    M_show = min(12, mods_samples.shape[1])
+    fig, axes = plt.subplots(M_show, 1, figsize=(10, 1.6 * M_show), dpi=120, sharex=True)
+    if M_show == 1:
+        axes = [axes]
+    for i in range(M_show):
+        ax = axes[i]
+        ax.plot(mods_samples[:min(50, mods_samples.shape[0]), i], ".", alpha=0.7, markersize=4)
+        ax.set_ylabel(f"mod[{i}]")
+        ax.grid(True, alpha=0.2)
+    axes[-1].set_xlabel("sample index (prior)")
+    fig.suptitle("Modifier samples (subset) — should vary under prior", y=0.98)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(outdir / "prior_modifiers_subset.png", bbox_inches="tight")
+    plt.close(fig)
+
+    # ---------------- Build model WITH likelihood on observed weeks ----------------
     with build_weekly_model(pipe, op=op, y_obs=None) as model:
         weekly_sum = model["weekly_pred_sum_age"]  # dims: (week, location)
 
         # Slice to observed weeks for likelihood
         mu_obs = weekly_sum[obs_weeks, :]
 
-        # NB dispersion and likelihood on observed weeks only
-        # alpha = pm.HalfNormal("alpha_nb", sigma=10.0)
-        pm.Poisson("y", mu=mu_obs, observed=y_obs_obsweeks)
+        # Poisson likelihood on observed weeks only (NB is easy to swap back in)
+        pm.Poisson("y", mu=mu_obs, observed=y_full[obs_weeks, :].astype(np.float64))
 
         # --------------- Sampling (moderate for CI/runtime) ---------------
-        prior_idata = pm.sample_prior_predictive(draws=300, random_seed=123)
+        # make sure autotune is in effect (already called in fixture)
         ncores = min(4, os.cpu_count() or 1)
         idata = pm.sample(
-            draws=200,
-            tune=200,
+            draws=2000,
+            tune=3000,
             chains=ncores,
             cores=ncores,
             step=pm.DEMetropolisZ(),
@@ -387,7 +475,6 @@ def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
         )
 
     # Merge for ArviZ convenience
-    idata.extend(prior_idata)
     idata.extend(ppc)
 
     # ---------------- Basic sanity assertions ----------------
@@ -411,10 +498,6 @@ def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     assert np.isfinite(summ["mean"].values).all()
 
     # ---------------- Save artifacts ----------------
-    outdir_env = os.environ.get("E2E_OUTDIR", "").strip()
-    outdir = Path(outdir_env) if outdir_env else (Path.cwd() / "model_output")
-    outdir.mkdir(parents=True, exist_ok=True)
-
     # compact trace plot (subset of variables)
     try:
         az.plot_trace(

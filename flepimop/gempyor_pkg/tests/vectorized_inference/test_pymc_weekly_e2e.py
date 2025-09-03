@@ -1,24 +1,23 @@
 # tests/vectorized_inference/test_pymc_weekly_e2e.py
-# End-to-end PyMC test using the Structured_Example config, our WeeklyHospPipeline,
-# and the WeeklyHospAndFinalSOp Op. We generate synthetic data directly from the Op
-# (which uses real transition amounts + YAML probabilities + delays), then run a short
-# calibration and write prior/posterior predictive and trace plots.
-#
-# NOTE: This is a slow test (full 51 locations). Marked as @pytest.mark.slow.
-# TIP: run with -s to see tqdm progress bars in the terminal:
-#   E2E_OUTDIR=tests/vectorized_inference/_artifacts pytest -s tests/vectorized_inference/test_pymc_weekly_e2e.py
+# Prior-predictive sanity tests for WeeklyHospPipeline + WeeklyHospAndFinalSOp.
+# We:
+#   • build the Structured_Example case,
+#   • construct PyMC models wiring modifiers -> Op -> weekly_pred,
+#   • sample PRIOR predictive (draws),
+#   • plot INDIVIDUAL trajectories (no HDIs) to verify modifiers are injected,
+#   • explicitly test the new location-structured modifier path (4th Op arg).
 
 import os
 import platform
 from ctypes.util import find_library
+import pytensor.tensor as pt
 
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
-# Force PyMC/tqdm progressbars in CLI
 os.environ.setdefault("PYMC_PROGRESSBAR", "1")
 
-# --- Choose a numba threading layer *before* importing any numba users ---
+# --- Choose numba threading layer before importing numba users ---
 def _choose_numba_layer() -> str:
     forced = os.environ.get("NUMBA_THREADING_LAYER")
     if forced:
@@ -47,9 +46,7 @@ def _maybe_patch_dylib_path(layer: str) -> None:
 _layer = _choose_numba_layer()
 _maybe_patch_dylib_path(_layer)
 os.environ.setdefault("NUMBA_THREADING_LAYER", _layer)
-# 4 chains -> reserve up to 4 threads by default (adjust if fewer cores)
-_default_threads = str(min(4, max(1, os.cpu_count() or 1)))
-os.environ.setdefault("NUMBA_NUM_THREADS", _default_threads)
+os.environ.setdefault("NUMBA_NUM_THREADS", str(min(4, max(1, os.cpu_count() or 1))))
 
 # ---------------------------------------------------------------------------------
 # Regular imports (SAFE now that env is set)
@@ -58,12 +55,11 @@ from pathlib import Path
 import shutil
 import numpy as np
 import pytest
-import confuse
-import arviz as az
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pymc as pm
+import confuse
 
 from gempyor.vectorization_experiments import autotune_all, get_autotune_config
 from gempyor.hosp_weekly_pipeline import build_pipeline_from_config
@@ -74,8 +70,8 @@ from gempyor.pymc_weekly_op import (
 
 # ----------------------------- helpers ---------------------------------
 def _materialize_structured_example(tmp_path_factory) -> Path:
-    """Copy examples/tutorials/Structured_Example.yml & inputs into a temp root with absolute paths."""
-    tmp_root = tmp_path_factory.mktemp("weekly_infer_case")
+    """Copy examples/tutorials/Structured_Example_Seeding_Alt.yml & inputs into a temp root with absolute paths."""
+    tmp_root = tmp_path_factory.mktemp("weekly_prior_case")
 
     repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
     tutorial_dir = repo_root / "examples" / "tutorials"
@@ -100,168 +96,6 @@ def _materialize_structured_example(tmp_path_factory) -> Path:
     cfg_path.write_text(text)
 
     return cfg_path
-
-
-def _yaml_defaults_in_leaf_order(config_path: Path, leaf_order: tuple[str, ...]) -> np.ndarray:
-    """Robustly extract default replacement multipliers in the pipeline’s leaf order."""
-    conf = confuse.Configuration("WeeklyE2EDefaults", __name__)
-    conf.set_file(str(config_path))
-    sm = conf["seir_modifiers"].get()
-    mods = sm["modifiers"]
-
-    def _extract(spec):
-        v = spec.get("value", None)
-        if isinstance(v, (int, float)):
-            return float(v)
-        if isinstance(v, dict):
-            v1 = v.get("value", v.get("val", v.get("mult", None)))
-            if isinstance(v1, (int, float)):
-                return float(v1)
-            if isinstance(v1, dict):
-                v2 = v1.get("value", v1.get("val", v1.get("mult", None)))
-                if isinstance(v2, (int, float)):
-                    return float(v2)
-        return 1.0
-
-    return np.asarray([_extract(mods[nm]) for nm in leaf_order], dtype=np.float64)
-
-
-def _normalize_age_token(s: str) -> str:
-    s = str(s).lower().replace("to", "-").replace("–", "-").replace("—", "-")
-    out = []
-    for ch in s:
-        if ch.isdigit():
-            out.append(ch)
-        elif ch in "-_":
-            out.append("_")
-        elif ch == "+":
-            out.append("p")
-    key = []
-    for c in out:
-        if not (key and key[-1] == "_" and c == "_"):
-            key.append(c)
-    return "".join(key).strip("_")
-
-
-def _pR_from_initial_sr_share(pipe, op) -> np.ndarray:
-    """
-    Build baseline pR per (age, location) from the initial state BUT using the Op's
-    S/R-redistribution semantics: pR is the fraction of R within (S+R), not within total.
-    """
-    df = pipe.model.compartments.compartments
-    is_S = df["infection_stage"].astype(str).str.startswith("S").values
-    is_R = df["infection_stage"].astype(str).str.startswith("R").values
-
-    A = len(pipe.age_labels)
-    L = pipe.NL
-    pR = np.zeros((A, L), dtype=np.float64)
-    for a_idx, (m_s, m_tot, m_r) in enumerate(
-        zip(op.age_masks.s_mask_by_age, op.age_masks.total_mask_by_age, op.age_masks.r_mask_by_age)
-    ):
-        m_other = m_tot & (~m_s) & (~m_r)
-        N = pipe.initial_array
-        N_total = N[m_tot, :].sum(axis=0)
-        N_other = N[m_other, :].sum(axis=0)
-        N_sr = np.maximum(N_total - N_other, 1e-9)
-        R_counts = N[m_r, :].sum(axis=0)
-        pR[a_idx, :] = np.clip(R_counts / N_sr, 1e-6, 1 - 1e-6)
-    return pR
-
-
-def _run_op_forward(op: WeeklyHospAndFinalSOp, mods: np.ndarray, pR: np.ndarray, lambda_ext_loc: np.ndarray):
-    """Call the Op directly to obtain (weekly, S_final) as numpy arrays."""
-    out_w = [None]
-    out_S = [None]
-    op.perform(None, [mods, pR, lambda_ext_loc], [out_w, out_S])
-    weekly = np.asarray(out_w[0], dtype=np.float64)
-    S_final = np.asarray(out_S[0], dtype=np.float64)
-    return weekly, S_final
-
-
-def _make_synthetic_hosp_from_op(pipe, op, rng: np.random.Generator) -> np.ndarray:
-    """
-    Generate synthetic weekly hospitalization data shaped (A,W,L) by:
-      1) Using YAML-default replacement modifiers in pipeline order,
-      2) Running the Op forward (true transition amounts + YAML incidence→hosp transforms),
-      3) Drawing Negative Binomial noise around the weekly mean.
-    """
-    defaults = _yaml_defaults_in_leaf_order(pipe.config_path, pipe.modifier_order())
-    pR0 = _pR_from_initial_sr_share(pipe, op)
-    lambda1 = np.ones(pipe.NL, dtype=np.float64)
-
-    weekly_mean, _ = _run_op_forward(op, defaults, pR0, lambda1)  # (A,W,L)
-    mu = np.maximum(weekly_mean, 0.0) + 1e-6
-
-    alpha = 10.0
-    rate = alpha / mu
-    lam = rng.gamma(shape=alpha, scale=1.0 / rate)  # Gamma-Poisson mixture
-    y = rng.poisson(lam)
-    return y.astype(np.int64, copy=False)
-
-
-def _save_trace_plot(idata, outpng: Path):
-    """Save a compact trace plot for a subset of parameters."""
-    try:
-        az.plot_trace(
-            idata,
-            var_names=["mods", "mu_R_logit", "sigma_age", "sigma_loc", "alpha_nb"],
-            compact=True,
-            figsize=(12, 6)
-        )
-        plt.tight_layout()
-        plt.savefig(outpng, bbox_inches="tight")
-        plt.close()
-    except Exception:
-        pass
-
-
-def _posterior_predictive_panels_two_locations(idata, y_obs, pipe, outdir: Path):
-    """
-    Create panel figures for two locations. For each location, plot posterior predictive
-    envelopes (mean + 95% HDI) vs observed for the first K age groups (K<=4) across weeks.
-    Uses ArviZ across (chain, draw) to avoid shape warnings.
-    """
-    A = y_obs.shape[0]
-    W = y_obs.shape[1]
-    ages = np.array(pipe.age_labels, dtype=object)
-    weeks = np.arange(W)
-
-    L = y_obs.shape[2]
-    locs = [0, min(L - 1, L // 2)]
-    K = min(4, A)
-
-    ppc = idata.posterior_predictive["y"].values  # (chain, draw, A, W, L)
-
-    for loc in locs:
-        fig, axes = plt.subplots(2, 2, figsize=(13, 7), dpi=120, sharex=True)
-        axes = axes.ravel()
-        for a_idx in range(K):
-            ax = axes[a_idx]
-            y_loc = y_obs[a_idx, :, loc]
-            # samples has shape (chain, draw, W)
-            samples = ppc[:, :, a_idx, :, loc]
-            mean = samples.mean(axis=(0, 1))  # (W,)
-            # HDI across (chain, draw), returns (W, 2)
-            hdi = az.hdi(samples, hdi_prob=0.95)
-
-            ax.fill_between(weeks, hdi[:, 0], hdi[:, 1], alpha=0.25, step="mid", label="95% HDI")
-            ax.plot(weeks, mean, linewidth=1.5, label="Posterior mean")
-            ax.step(weeks, y_loc, where="mid", linewidth=1.2, label="Observed")
-            ax.set_title(f"Loc {loc} — {ages[a_idx]}")
-            ax.grid(True, alpha=0.3)
-            if a_idx in (2, 3):
-                ax.set_xlabel("MMWR week")
-            if a_idx in (0, 2):
-                ax.set_ylabel("Hosp")
-
-        handles, labels = axes[0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc="upper right")
-        fig.suptitle(f"Posterior predictive — Location {loc} (first {K} ages)", y=0.98)
-        fig.tight_layout(rect=[0, 0, 0.96, 0.95])
-
-        outpng = outdir / f"ppc_loc{loc}.png"
-        fig.savefig(outpng, bbox_inches="tight")
-        plt.close(fig)
 
 
 def _safe_autotune():
@@ -289,151 +123,249 @@ def _safe_autotune():
         pass
 
 
-# ----------------------------- tests -----------------------------------
+def _stack_samples(arr: np.ndarray) -> np.ndarray:
+    """
+    Accept prior/prior_predictive weekly_pred array with shape either
+      (draw, A, W, L)  or  (chain, draw, A, W, L)
+    and return (S, A, W, L) where S=total samples.
+    """
+    if arr.ndim == 4:
+        return arr  # (draw, A, W, L)
+    if arr.ndim == 5:
+        c, d, A, W, L = arr.shape
+        return arr.reshape(c * d, A, W, L)
+    raise ValueError(f"Unexpected weekly_pred ndim={arr.ndim}, shape={arr.shape}")
+
+
+def _idata_get(idata, var_name: str) -> np.ndarray:
+    """
+    Fetch a variable from either the `prior_predictive` or `prior` group (PyMC 5 changed behavior
+    when there are no observed RVs). Returns the numpy array values.
+    """
+    for grp in ("prior_predictive", "prior"):
+        grp_obj = getattr(idata, grp, None)
+        if grp_obj is not None and var_name in grp_obj:
+            return grp_obj[var_name].values
+    raise AssertionError(f"Variable '{var_name}' not found in prior/prior_predictive groups.")
+
+
+def _yaml_defaults_in_leaf_order(config_path: Path, leaf_order: tuple[str, ...]) -> np.ndarray:
+    """Robustly extract default replacement multipliers in the pipeline’s leaf order."""
+    conf = confuse.Configuration("WeeklyPriorDefaults", __name__)
+    conf.set_file(str(config_path))
+    sm = conf["seir_modifiers"].get()
+    mods = sm["modifiers"]
+
+    def _extract(spec):
+        v = spec.get("value", None)
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, dict):
+            v1 = v.get("value", v.get("val", v.get("mult", None)))
+            if isinstance(v1, (int, float)):
+                return float(v1)
+            if isinstance(v1, dict):
+                v2 = v1.get("value", v1.get("val", v1.get("mult", None)))
+                if isinstance(v2, (int, float)):
+                    return float(v2)
+        return 1.0
+
+    return np.asarray([_extract(mods[nm]) for nm in leaf_order], dtype=np.float64)
+
+
+def _run_op_forward(op: WeeklyHospAndFinalSOp, mods: np.ndarray, pR: np.ndarray, lambda_ext: np.ndarray, mods_loc: np.ndarray | None = None):
+    """Invoke Op.perform directly (3 or 4 inputs) and return (weekly, S_final) as numpy arrays."""
+    outs_w = [None]
+    outs_s = [None]
+    if mods_loc is None:
+        op.perform(None, [mods, pR, lambda_ext], [outs_w, outs_s])
+    else:
+        op.perform(None, [mods, pR, lambda_ext, mods_loc], [outs_w, outs_s])
+    return np.asarray(outs_w[0], dtype=np.float64), np.asarray(outs_s[0], dtype=np.float64)
+
+
+# ----------------------------- fixtures --------------------------------
 
 @pytest.fixture(scope="module")
 def pipeline_and_op(tmp_path_factory):
     cfg_path = _materialize_structured_example(tmp_path_factory)
     pipe = build_pipeline_from_config(cfg_path)
-
-    # Perform hardware optimization after resetting Numba params.
     _safe_autotune()
-
     op = WeeklyHospAndFinalSOp(pipe)
     return pipe, op
 
 
+# ------------------------------ tests -----------------------------------
+
 @pytest.mark.slow
-def test_pymc_weekly_e2e_inference(pipeline_and_op, tmp_path):
+def test_prior_predictive_trajectories_show_modifier_injection(pipeline_and_op, tmp_path):
     """
-    End-to-end test with visible CLI progress:
-      1) Build model with coords.
-      2) Generate synthetic weekly hospitalization data from the Op (true transition amounts).
-      3) Validate λ_ext scaling and pR override invariants.
-      4) Prior predictive.
-      5) Run short posterior.
-      6) Posterior predictive; save summary + plots.
+    Prior-predictive check (3-input Op path): sample 200 draws and plot INDIVIDUAL weekly trajectories
+    (sum over age) for a couple of locations. If modifiers are injected correctly,
+    trajectories should visibly vary (and stats should confirm nonzero variance).
     """
     pipe, op = pipeline_and_op
-    rng = np.random.default_rng(123)
 
-    # --- Synthetic observations from the *Op* path (uses true transition amounts) ---
-    y_obs = _make_synthetic_hosp_from_op(pipe, op, rng)
-    A, W, L = y_obs.shape
-    assert (A, W, L) == op.weekly_shape
+    # Build model WITHOUT observed data — we want pure prior predictive.
+    with build_weekly_model(pipe, op=op, y_obs=None) as model:
+        idata = pm.sample_prior_predictive(samples=200, random_seed=123, var_names=["weekly_pred", "mods"])
 
-    # --- Sanity checks specific to recent fixes ---
+    # Extract weekly prior(-predictive) samples and modifiers
+    weekly_vals = _idata_get(idata, "weekly_pred")   # (draw, A, W, L) or (chain, draw, A, W, L)
+    weekly = _stack_samples(weekly_vals)             # -> (S, A, W, L)
 
-    # (1) λ_ext scaling: Only enforce an increase if the underlying lambda_ext time series is non-zero.
-    defaults = _yaml_defaults_in_leaf_order(pipe.config_path, pipe.modifier_order())
-    pR0 = _pR_from_initial_sr_share(pipe, op)
-    weekly_base, _ = _run_op_forward(op, defaults, pR0, np.ones(L))
-    weekly_scaled, _ = _run_op_forward(op, defaults, pR0, np.full(L, 2.0))
-    tot_base = float(weekly_base.sum())
-    tot_scaled = float(weekly_scaled.sum())
-    assert np.isfinite(tot_base) and np.isfinite(tot_scaled)
-
-    # Examine lambda_ext in the pipeline
-    pmap = getattr(pipe, "param_name_to_idx", None) or getattr(pipe.mod_applier, "param_name_to_idx", {})
-    if "lambda_ext" in pmap:
-        pidx = int(pmap["lambda_ext"])
-        lam_base = np.asarray(pipe.base_params[pidx, :, :], dtype=np.float64)
-        if np.allclose(lam_base, 0.0, rtol=0.0, atol=1e-14):
-            # No exogenous force configured -> scaling should do nothing
-            np.testing.assert_allclose(tot_scaled, tot_base, rtol=0.0, atol=1e-9)
-        else:
-            # With nonzero exogenous force, totals should increase noticeably
-            assert tot_scaled > 1.01 * tot_base
+    mods_vals = _idata_get(idata, "mods")            # (draw, M) or (chain, draw, M)
+    if mods_vals.ndim == 2:
+        mods_samples = mods_vals                     # (S, M)
     else:
-        # No such parameter -> scaling should do nothing
-        np.testing.assert_allclose(tot_scaled, tot_base, rtol=0.0, atol=1e-9)
+        c, d, M = mods_vals.shape
+        mods_samples = mods_vals.reshape(c * d, M)
 
-    # (2) pR override preserves non-(S|R) mass (e.g., E/I seeding) per (age, location)
-    df = pipe.model.compartments.compartments
-    is_E_or_I = df["infection_stage"].astype(str).str.startswith(("E", "I")).values
-    y0_orig = pipe.initial_array
-    # Push pR to an extreme to stress the override
-    pR_extreme = np.clip(pR0 * 0 + 0.9, 1e-6, 1 - 1e-6)
-    y0_new = op._override_ic_with_pR_preserve_others(y0_orig, pR_extreme)
-    for a_idx, m_tot in enumerate(op.age_masks.total_mask_by_age):
-        m_ei = m_tot & is_E_or_I
-        before = y0_orig[m_ei, :].sum(axis=0)
-        after = y0_new[m_ei, :].sum(axis=0)
-        np.testing.assert_allclose(after, before, rtol=0, atol=1e-9)
+    S, A, W, L = weekly.shape
+    assert S >= 1 and A >= 1 and W >= 1 and L >= 1
 
-    # --- Build model (uses Negative Binomial likelihood if y_obs is provided) ---
-    with build_weekly_model(pipe, op=op, y_obs=y_obs) as model:
-        # Prior predictive (show progress)
-        prior_idata = pm.sample_prior_predictive(draws=500, random_seed=123)
-
-        # Posterior — 4 chains across 4 cores (show progress)
-        ncores = min(4, os.cpu_count() or 1)
-        idata = pm.sample(
-            draws=200,
-            tune=200,
-            chains=ncores,
-            cores=ncores,
-            step=pm.DEMetropolisZ(),  # derivative-free black-box
-            random_seed=123,
-            progressbar=True,         # <-- ensure CLI tqdm bars
+    # ----- NUMERIC sanity: require *some* variance across samples per week, per plotted location
+    locs_to_plot = [0, min(L - 1, L // 2)]
+    for loc in locs_to_plot:
+        series = weekly[:, :, :, loc].sum(axis=1)  # (S, W): sum over age
+        var_per_week = series.var(axis=0)
+        assert float(var_per_week.max()) > 0.0, (
+            "No variation in prior-predictive weekly trajectories — modifiers may not be injected."
         )
 
-        # Posterior predictive (show progress)
-        ppc = pm.sample_posterior_predictive(
-            idata, var_names=["y", "weekly_pred", "S_final"], random_seed=123, progressbar=True
-        )
-
-    # Merge for ArviZ convenience
-    idata.extend(prior_idata)
-    idata.extend(ppc)
-
-    # Basic sanity assertions
-    assert "weekly_pred" in idata.posterior
-    assert "S_final" in idata.posterior
-    assert "y" in idata.posterior_predictive
-    posterior_vars = set(idata.posterior.data_vars)
-    # New external-force parameter should be present (allow either naming pattern)
-    assert any(v in posterior_vars for v in ["lambda_ext_loc", "lambda_ext_log", "lambda_ext_log_loc"])
-
-    # Choose output dir:
+    # ----- PLOTS: individual trajectories (no HDIs)
     outdir_env = os.environ.get("E2E_OUTDIR", "").strip()
     outdir = Path(outdir_env) if outdir_env else Path(tmp_path)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    # Save artifacts
-    def _save_trace_plot(idata, outpng: Path):
-        try:
-            az.plot_trace(
-                idata,
-                var_names=["mods", "mu_R_logit", "sigma_age", "sigma_loc", "alpha_nb"],
-                compact=True,
-                figsize=(12, 6)
-            )
-            plt.tight_layout()
-            plt.savefig(outpng, bbox_inches="tight")
-            plt.close()
-        except Exception:
-            pass
+    weeks = np.arange(W)
 
-    _save_trace_plot(idata, outdir / "trace_compact.png")
-    _posterior_predictive_panels_two_locations(idata, y_obs, pipe, outdir)
+    # 1) Per-location trajectory spaghetti plots (sum over age)
+    for loc in locs_to_plot:
+        series = weekly[:, :, :, loc].sum(axis=1)  # (S, W)
+        fig, ax = plt.subplots(1, 1, figsize=(12, 4), dpi=120)
+        for s in range(min(200, S)):
+            ax.plot(weeks, series[s], alpha=0.8, linewidth=1.0)
+        ax.set_title(f"Prior predictive trajectories — sum over ages, location {loc}")
+        ax.set_xlabel("MMWR week")
+        ax.set_ylabel("Weekly hospitalizations (sum over age)")
+        ax.grid(True, alpha=0.3)
+        outpng = outdir / f"prior_trajs_loc{loc}.png"
+        fig.tight_layout()
+        fig.savefig(outpng, bbox_inches="tight")
+        plt.close(fig)
+        print(f"[artifact] saved: {outpng}")
+        assert outpng.exists()
 
-    # Prior predictive quick check
-    if "y" in idata.prior_predictive:
-        prior_y = idata.prior_predictive["y"].values  # (chain, draw, A, W, L)
-        mu = prior_y.mean(axis=(0, 1))
-        hdi = az.hdi(prior_y, hdi_prob=0.95)          # (A, W, L, 2)
-        assert np.isfinite(mu).all()
-        assert np.isfinite(hdi).all()
+    # 2) Quick view of modifier samples (first ~12 leaves)
+    M_show = min(12, mods_samples.shape[1])
+    fig, axes = plt.subplots(M_show, 1, figsize=(10, 1.6 * M_show), dpi=120, sharex=True)
+    if M_show == 1:
+        axes = [axes]
+    for i in range(M_show):
+        ax = axes[i]
+        ax.plot(mods_samples[:min(200, mods_samples.shape[0]), i], ".", alpha=0.7, markersize=4)
+        ax.set_ylabel(f"mod[{i}]")
+        ax.grid(True, alpha=0.2)
+    axes[-1].set_xlabel("sample index (prior)")
+    fig.suptitle("Modifier samples (subset) — should vary under prior", y=0.98)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    outpng = outdir / "prior_modifiers_subset.png"
+    fig.savefig(outpng, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[artifact] saved: {outpng}")
+    assert outpng.exists()
 
-    # Quick posterior check on S_final deterministics (finite, nonnegative)
-    S_final = idata.posterior["S_final"].values  # (chain, draw, A, L)
-    assert np.isfinite(S_final).all()
-    assert (S_final >= 0.0).all()
 
-    # Persist a small text summary (useful in CI logs)
-    core_vars = ["mods", "mu_R_logit", "sigma_age", "sigma_loc", "alpha_nb"]
-    core_vars += [v for v in ["lambda_ext_loc", "lambda_ext_log", "lambda_ext_log_loc"] if v in posterior_vars]
-    summ = az.summary(idata, var_names=core_vars)
-    (outdir / "summary.txt").write_text(summ.to_string())
-    print("[artifact] wrote:", outdir / "summary.txt")
+@pytest.mark.slow
+def test_location_modifier_injection_affects_locations_differently(pipeline_and_op):
+    """
+    Direct Op check (4-input path): bump a single leaf in a single location via mods_loc
+    and confirm the change in that location is more concentrated than a shared bump.
+    This exercises the new per-location modifier injection path.
+    """
+    pipe, op = pipeline_and_op
+    A, W, L = op.weekly_shape
+    M = len(pipe.modifier_order())
+
+    # Baseline controls
+    defaults = _yaml_defaults_in_leaf_order(pipe.config_path, pipe.modifier_order())
+    pR = np.full((A, L), 0.40, dtype=np.float64)
+    lambda_ext = np.ones(L, dtype=np.float64)
+
+    weekly_base, _ = _run_op_forward(op, defaults, pR, lambda_ext, mods_loc=None)
+    agg_base = weekly_base.sum(axis=0).sum(axis=0)  # (L,)
+
+    # Pick a leaf to bump (use the first by convention; absolute change will be measured)
+    leaf_idx = 0
+    bump = 1.20
+
+    # Shared bump (3-input path): bump the same leaf in ALL locations
+    shared = defaults.copy()
+    shared[leaf_idx] *= bump
+    weekly_shared, _ = _run_op_forward(op, shared, pR, lambda_ext, mods_loc=None)
+    agg_shared = weekly_shared.sum(axis=0).sum(axis=0)  # (L,)
+    delta_shared = np.abs(agg_shared - agg_base)        # (L,)
+
+    # Location-specific bump (4-input path): bump only location 0 for the same leaf
+    mods_loc = np.ones((M, L), dtype=np.float64)
+    mods_loc[leaf_idx, 0] = bump
+    weekly_loc, _ = _run_op_forward(op, defaults, pR, lambda_ext, mods_loc=mods_loc)
+    agg_loc = weekly_loc.sum(axis=0).sum(axis=0)        # (L,)
+    delta_loc = np.abs(agg_loc - agg_base)              # (L,)
+
+    # Concentration check: the per-location bump should concentrate more change in loc 0
+    eps = 1e-9
+    frac_other_shared = (delta_shared.sum() - delta_shared[0]) / (delta_shared.sum() + eps)
+    frac_other_loc = (delta_loc.sum() - delta_loc[0]) / (delta_loc.sum() + eps)
+
+    assert delta_loc[0] > 0.0, "Per-location bump produced no change in target location."
+    assert frac_other_loc < 0.95 * frac_other_shared, (
+        "Per-location modifier did not concentrate change in the targeted location as expected."
+    )
+
+
+@pytest.mark.slow
+def test_prior_predictive_with_location_modifiers_compiles_and_varies(pipeline_and_op):
+    """
+    Build a minimal PyMC model that **passes mods_loc** (4th argument) into the Op,
+    then sample prior predictive and verify between-location variability exists.
+    """
+    pipe, op = pipeline_and_op
+    A, W, L = op.weekly_shape
+    mod_names = tuple(pipe.modifier_order())
+    M = len(mod_names)
+
+    coords = {
+        "age": np.array(pipe.age_labels, dtype=object),
+        "week": np.arange(W),
+        "location": np.arange(L),
+        "modifier": np.array(mod_names, dtype=object),
+    }
+
+    defaults = _yaml_defaults_in_leaf_order(pipe.config_path, mod_names)
+
+    with pm.Model(coords=coords) as m:
+        # Shared center on modifiers
+        shared_mods = pm.LogNormal("mods_shared", mu=np.log(defaults + 1e-12), sigma=0.4, dims=("modifier",))
+        # Location deviations (LogNormal ~ centered at 1.0)
+        mods_loc = pm.LogNormal("mods_loc", mu=0.0, sigma=0.25, dims=("modifier", "location"))
+        # pR constant for simplicity (replicated across age)
+        pR = pm.Deterministic("pR", pt.full((A, L), 0.40), dims=("age", "location"))
+        # lambda_ext per location ~ LogNormal close to 1.0
+        lambda_ext_loc = pm.LogNormal("lambda_ext_loc", mu=0.0, sigma=0.05, dims=("location",))
+
+        weekly_t, _ = op(shared_mods, pR, lambda_ext_loc, mods_loc)  # <-- 4-input call
+        weekly = pm.Deterministic("weekly_pred", weekly_t, dims=("age", "week", "location"))
+
+        idata = pm.sample_prior_predictive(samples=100, random_seed=321, var_names=["weekly_pred", "mods_shared", "mods_loc"])
+
+    weekly_vals = _idata_get(idata, "weekly_pred")   # (draw, A, W, L) or (chain, draw, A, W, L)
+    weekly = _stack_samples(weekly_vals)             # (S, A, W, L)
+    S, A, W, L = weekly.shape
+
+    # Aggregate and check there is between-location variability across samples
+    agg = weekly.sum(axis=1).sum(axis=1)  # (S, L)
+    var_across_samples = agg.var(axis=0)  # per-location variance across samples
+    assert np.isfinite(var_across_samples).all()
+    assert (var_across_samples > 0).any(), "No variability across locations under prior with location modifiers."

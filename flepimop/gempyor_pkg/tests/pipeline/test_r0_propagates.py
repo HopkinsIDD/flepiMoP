@@ -1,11 +1,11 @@
-# tests/modifiers/test_r0_propagates_to_incidence.py
+# tests/pipeline/test_r0_propagates.py
 from __future__ import annotations
 
+# ---------------- env hygiene BEFORE importing gempyor -----------------
 import os, sys, platform, shutil
 from pathlib import Path
 from ctypes.util import find_library
 
-# ----------------------------- env hygiene (BEFORE any gempyor imports) ----
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -39,8 +39,6 @@ _layer = _choose_numba_layer()
 _maybe_patch_dylib_path(_layer)
 os.environ.setdefault("NUMBA_THREADING_LAYER", _layer)
 os.environ.setdefault("NUMBA_NUM_THREADS", str(os.cpu_count() or 1))
-
-# Clear numba cache compiled under other layers (best-effort)
 try:
     shutil.rmtree(Path.home() / ".numba" / "cache", ignore_errors=True)
 except Exception:
@@ -52,7 +50,7 @@ print(
     file=sys.stderr,
 )
 
-# ----------------------------- regular imports ------------------------------
+# ---------------- regular imports --------------------------------------
 import datetime as dt
 import numpy as np
 import pytest
@@ -62,16 +60,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Import AFTER env is fully set
+from gempyor.vectorized_modifiers import compile_seir_modifiers
+from gempyor.vectorization_experiments import RHSfactory
 from gempyor.hosp_weekly_pipeline import (
     build_pipeline_from_config,
     _compile_outcomes_from_config,
+    _param_slice_step,
+    _compute_amounts_for_step,
 )
-from gempyor.vectorized_modifiers import compile_seir_modifiers
 
-
-# ----------------------------- helpers ---------------------------------
-
+# ---------------- helpers ----------------------------------------------
 def _materialize_structured_example(tmp_path_factory) -> Path:
     tmp_root = tmp_path_factory.mktemp("r0_propagates_case")
 
@@ -125,7 +123,7 @@ def _leaf_defaults_in_order(conf, leaf_order: tuple[str, ...]) -> np.ndarray:
 
 
 def _leaves_targeting_r0_overlapping_window(conf, start: dt.date, end: dt.date) -> set[str]:
-    """Return leaf names where method==SinglePeriodModifier, parameter=='r0', and the period overlaps [start,end]."""
+    """Leaf names where method==SinglePeriodModifier, parameter=='r0', and period overlaps [start,end]."""
     sm = conf["seir_modifiers"].get()
     mods = sm["modifiers"]
     out = set()
@@ -143,12 +141,30 @@ def _leaves_targeting_r0_overlapping_window(conf, start: dt.date, end: dt.date) 
     return out
 
 
-def _build_series_on_step_grid(pipe, params):
+def _sum_with_fallback(series_dict: dict[str, np.ndarray], top_key: str, prefix: str) -> np.ndarray:
     """
-    Build only incidI/incidH on the pipeline step grid using the compiled outcomes.
-    Returns dict(name)->(n_steps,L), and the delay/prob maps.
+    Prefer top-level key if present and nonzero; otherwise sum all leaf series with the given prefix.
+    Returns a 1D vector over time (summed over locations).
     """
-    # Compile outcome maps on the same bin width as the pipeline
+    if top_key in series_dict and np.any(series_dict[top_key]):
+        return series_dict[top_key].sum(axis=1)
+    total = None
+    for k, v in series_dict.items():
+        if k.startswith(prefix):
+            s = v.sum(axis=1)
+            total = s if total is None else (total + s)
+    if total is None:
+        any_arr = next(iter(series_dict.values()))
+        total = np.zeros(any_arr.shape[0], dtype=np.float64)
+    return total
+
+
+def _build_series_on_step_grid(pipe, params_base_like):
+    """
+    Build incidI/incidH on the pipeline step grid using compiled outcomes.
+    Pattern #2: parse BASE -> UNIQUE once; direct-indexing RHS & amounts.
+    """
+    # Compile outcomes for this step width
     outcomes_cfg = pipe.outcomes_cfg
     resolve_map, prob_map, delay_steps_map, sum_map, order = _compile_outcomes_from_config(
         outcomes_cfg,
@@ -158,13 +174,26 @@ def _build_series_on_step_grid(pipe, params):
         bin_width_days=pipe.dt,
     )
 
-    # integrate
+    # ---- BASE -> UNIQUE conversion (align P with transitions[2,*]) ----
+    params_unique = pipe.model.compartments.parse_parameters(
+        params_base_like,          # (P_base, T, L)
+        pipe.param_defs,           # base param defs
+        pipe.unique_strings,       # unique names (incl. expanded expressions)
+    )  # -> (P_unique, T, L)
+
+    # Direct-indexing RHS (no expression wiring)
+    factory = RHSfactory(
+        precomputed=pipe.precomputed,
+        param_time_mode="step",
+    )
+
     total_days = float(pipe.T - 1)
     n_steps = max(1, int(round(total_days / pipe.dt)))
     t_eval = np.linspace(0.0, total_days, n_steps + 1, dtype=np.float64)
-    res = pipe.factory.solve(
+
+    res = factory.solve(
         y0=pipe.initial_array.ravel(),
-        parameters=params,
+        parameters=params_unique,            # UNIQUE tensor
         t_span=(t_eval[0], t_eval[-1]),
         t_eval=t_eval,
         method="RK45",
@@ -174,14 +203,12 @@ def _build_series_on_step_grid(pipe, params):
     C, L = pipe.NC, pipe.NL
     states = res.y.T.reshape(len(t_eval), C, L)
 
-    # step loop (leaf-incidence only), then sums/aliases
+    # Leaf-incidence on step grid
     series = {name: np.zeros((n_steps, L), dtype=np.float64) for name in order}
     pc = pipe.precomputed
-    from gempyor.hosp_weekly_pipeline import _param_slice_step, _compute_amounts_for_step  # reuse same helpers
-
     for i in range(n_steps):
         t0 = t_eval[i]
-        param_t_slice = _param_slice_step(params, t0)  # (P,L)
+        param_t_slice = _param_slice_step(params_unique, t0)  # (P_unique, L)
         amounts, _ = _compute_amounts_for_step(
             states_current=states[i],
             transitions=pipe.transitions,
@@ -194,6 +221,9 @@ def _build_series_on_step_grid(pipe, params):
             mobility_indptr=pc["mobility_data_indices"],
             mobility_indices=pc["mobility_row_indices"],
             population=pc["population"],
+            # DIRECT indexing path to match UNIQUE tensor
+            param_expr_lookup=None,
+            param_name_to_row=None,
         )
         for name, rows in resolve_map.items():
             if rows.size == 0:
@@ -205,7 +235,7 @@ def _build_series_on_step_grid(pipe, params):
             if j < n_steps:
                 series[name][j, :] += inc_vec * p_vec
 
-    # sums/aliases
+    # Sums / aliases
     unresolved = set(sum_map.keys())
     guard = 0
     while unresolved and guard < 10000:
@@ -254,14 +284,13 @@ def pipe(tmp_path_factory):
 @pytest.mark.slow
 def test_r0_window_bump_increases_incidI_and_incidH(pipe):
     """
-    Multiply all r0 SinglePeriodModifier leaves that overlap a chosen window by 1.3,
+    Multiply all r0 SinglePeriodModifier leaves overlapping a mid-season window by 1.3,
     then verify incidI increases within the window and incidH increases after the
-    compiled delay. Also check overall totals increase.
+    compiled delay; also overall totals should increase.
     """
     conf = confuse.Configuration("R0Bump", __name__)
     conf.set_file(str(pipe.config_path))
 
-    # modifier applier
     applier = compile_seir_modifiers(
         seir_modifiers_cfg=conf["seir_modifiers"].get(),
         start_date=pipe.start_date,
@@ -272,7 +301,7 @@ def test_r0_window_bump_increases_incidI_and_incidH(pipe):
     leaves = pipe.modifier_order()
     defaults = _leaf_defaults_in_order(conf, leaves)
 
-    # choose a mid-season window (~6 weeks)
+    # ~6-week mid-season window
     win_start = pipe.start_date + dt.timedelta(days=120)
     win_end   = win_start + dt.timedelta(days=42)
 
@@ -283,23 +312,20 @@ def test_r0_window_bump_increases_incidI_and_incidH(pipe):
         if name in r0_leaves:
             bumped[i] = float(bumped[i]) * 1.3
 
-    # params & series: baseline vs bumped
+    # Apply modifiers to BASE params (converted to UNIQUE inside builder)
     params_base = applier.apply_to_params(pipe.base_params, leaf_value_array=defaults, scenario="none")
     params_bump = applier.apply_to_params(pipe.base_params, leaf_value_array=bumped,   scenario="none")
 
-    series_base, delay_map, prob_map = _build_series_on_step_grid(pipe, params_base)
-    series_bump, _, _ = _build_series_on_step_grid(pipe, params_bump)
+    series_base, delay_map, _ = _build_series_on_step_grid(pipe, params_base)
+    series_bump, _, _          = _build_series_on_step_grid(pipe, params_bump)
 
-    # helper to sum over nodes
-    def _sum_nodes(arr):  # (T,L)->(T,)
-        return arr.sum(axis=1)
+    # robust aggregation
+    I_base = _sum_with_fallback(series_base, "incidI", "incidI_")
+    I_bump = _sum_with_fallback(series_bump, "incidI", "incidI_")
+    H_base = _sum_with_fallback(series_base, "incidH", "incidH_")
+    H_bump = _sum_with_fallback(series_bump, "incidH", "incidH_")
 
-    I_base = _sum_nodes(series_base["incidI"])
-    I_bump = _sum_nodes(series_bump["incidI"])
-    H_base = _sum_nodes(series_base["incidH"])
-    H_bump = _sum_nodes(series_bump["incidH"])
-
-    # step indices for window (use day indices from 0..T-2 since steps index by start-of-step day)
+    # step indices for window (steps index by start-of-step day)
     step_per_day = int(round(1.0 / pipe.dt))  # 10 for 0.1
     i0 = max(0, ((win_start - pipe.start_date).days) * step_per_day)
     i1 = min(I_base.shape[0] - 1, ((win_end - pipe.start_date).days) * step_per_day)
@@ -307,16 +333,16 @@ def test_r0_window_bump_increases_incidI_and_incidH(pipe):
     # incidI should be larger in-window
     sum_I_base = float(I_base[i0:i1+1].sum())
     sum_I_bump = float(I_bump[i0:i1+1].sum())
-    assert sum_I_bump > sum_I_base * 1.02, f"incidI didn't increase enough in window: {sum_I_bump} vs {sum_I_base}"
+    assert sum_I_bump > sum_I_base * 1.02, f"incidI didn't increase enough: {sum_I_bump} vs {sum_I_base}"
 
-    # incidH should be larger after an average delay; use the most common delay_steps for H leaves
+    # incidH should be larger after a common delay
     any_h = next((k for k in delay_map if k.startswith("incidH_") and isinstance(delay_map[k], int)), None)
     shift = int(delay_map.get(any_h, 0))
     j0 = min(H_base.shape[0]-1, i0 + shift)
     j1 = min(H_base.shape[0]-1, i1 + shift)
     sum_H_base = float(H_base[j0:j1+1].sum())
     sum_H_bump = float(H_bump[j0:j1+1].sum())
-    assert sum_H_bump > sum_H_base * 1.02, f"incidH didn't increase enough after delay: {sum_H_bump} vs {sum_H_base}"
+    assert sum_H_bump > sum_H_base * 1.02, f"incidH didn't increase enough: {sum_H_bump} vs {sum_H_base}"
 
     # overall totals should also increase
     assert H_bump.sum() > H_base.sum()
@@ -326,7 +352,7 @@ def test_r0_window_bump_increases_incidI_and_incidH(pipe):
 @pytest.mark.slow
 def test_plot_incidence_panels_baseline_vs_bump(pipe):
     """
-    Save visual panels for quick inspection: daily incidI and incidH (summed over locations)
+    Save panels for quick inspection: daily incidI and incidH (summed over locations)
     baseline vs r0-bumped scenario.
     """
     conf = confuse.Configuration("R0BumpPlot", __name__)
@@ -355,11 +381,15 @@ def test_plot_incidence_panels_baseline_vs_bump(pipe):
     series_base, _, _ = _build_series_on_step_grid(pipe, params_base)
     series_bump, _, _ = _build_series_on_step_grid(pipe, params_bump)
 
-    t = np.arange(series_base["incidI"].shape[0]) * pipe.dt  # in days since t0
-    I_base = series_base["incidI"].sum(axis=1)
-    I_bump = series_bump["incidI"].sum(axis=1)
-    H_base = series_base["incidH"].sum(axis=1)
-    H_bump = series_bump["incidH"].sum(axis=1)
+    # robust incidence aggregation
+    I_base = _sum_with_fallback(series_base, "incidI", "incidI_")
+    I_bump = _sum_with_fallback(series_bump, "incidI", "incidI_")
+    H_base = _sum_with_fallback(series_base, "incidH", "incidH_")
+    H_bump = _sum_with_fallback(series_bump, "incidH", "incidH_")
+
+    # derive timeline length robustly
+    any_arr = next(iter(series_base.values()))
+    t = np.arange(any_arr.shape[0]) * pipe.dt  # days since t0
 
     outdir = Path(__file__).parent
     outpng = outdir / "incidence_panels_baseline_vs_r0_bump.png"

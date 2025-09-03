@@ -107,7 +107,7 @@ seir:
     lambda_ext:
       value:
         distribution: fixed
-        value: 0.00002
+        value: 0.00005
 
   transitions:
     - source: [["S"], ["unvaccinated"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
@@ -209,7 +209,7 @@ seir_modifiers:
       period_end_date: 2025-06-07
       value:
         distribution: fixed
-        value: 1
+        value: 0.95
       perturbation:
         distribution: fixed
         value: 0
@@ -221,7 +221,7 @@ seir_modifiers:
       period_end_date: 2024-10-31
       value:
         distribution: fixed
-        value: 0.965756197353694
+        value: 1.25
       perturbation:
         distribution: fixed
         value: 0
@@ -233,7 +233,7 @@ seir_modifiers:
       period_end_date: 2024-11-30
       value:
         distribution: fixed
-        value: 0.928179065502909
+        value: 1.0
       perturbation:
         distribution: fixed
         value: 0
@@ -245,7 +245,7 @@ seir_modifiers:
       period_end_date: 2024-12-31
       value:
         distribution: fixed
-        value: 0.951041627366124
+        value: 0.85
       perturbation:
         distribution: fixed
         value: 0
@@ -257,7 +257,7 @@ seir_modifiers:
       period_end_date: 2025-01-31
       value:
         distribution: fixed
-        value: 1.07616152252893
+        value: 0.75
       perturbation:
         distribution: fixed
         value: 0
@@ -270,7 +270,7 @@ seir_modifiers:
       period_end_date: 2025-02-28
       value:
         distribution: fixed
-        value: 1.05544076097506
+        value: 0.95
       perturbation:
         distribution: fixed
         value: 0
@@ -282,7 +282,7 @@ seir_modifiers:
       period_end_date: 2025-03-31
       value:
         distribution: fixed
-        value: 1.02304661417066
+        value: 0.75
       perturbation:
         distribution: fixed
         value: 0
@@ -294,7 +294,7 @@ seir_modifiers:
       period_end_date: 2025-04-30
       value:
         distribution: fixed
-        value: 1.00770731659418
+        value: 1.0
       perturbation:
         distribution: fixed
         value: 0
@@ -307,7 +307,7 @@ seir_modifiers:
       period_end_date: 2025-01-02
       value:
         distribution: fixed
-        value: 0.9
+        value: 0.75
       perturbation:
         distribution: fixed
         value: 0
