@@ -148,7 +148,7 @@ def _axpy_linear(A: FloatArray, D: FloatArray, alpha: float, out: FloatArray) ->
 def _param_slice(
     params_t: FloatArray,
     t: float,
-    mode: str = "linear",
+    mode: str = "step",
     out: FloatArray | None = None,
     deltas: FloatArray | None = None,
 ) -> FloatArray:
@@ -233,17 +233,7 @@ def _resolve_param_expr_from_slice(
     param_name_to_row: dict[str, int] | None = None,
     out: FloatArray | None = None,
 ) -> FloatArray:
-    """Resolve an expression or row-list into a per-node vector from a (P,N) time slice.
-
-    Args:
-        expr: Either a "*" expression string or an array of row indices.
-        param_t: Slice (P,N) at the current time.
-        param_name_to_row: Lookup for names when expr is a string.
-        out: Optional output buffer (N,).
-
-    Returns:
-        1D vector (N,) with the product across rows (or the single row).
-    """
+    """Resolve an expression or row-list into a per-node vector from a (P,N) time slice."""
     if isinstance(expr, str):
         if param_name_to_row is None:
             raise ValueError("param_name_to_row must be provided when expr is a string.")
@@ -259,14 +249,7 @@ def _resolve_param_expr_from_slice(
 
 
 def _safe_param_expr_lookup(unique_strings: Sequence[str]) -> tuple[dict[int, str] | None, dict[str, int]]:
-    """Build a safe param-expression lookup for any '*' rows in a parameter name list.
-
-    Args:
-        unique_strings: Parameter names as defined by the model building process.
-
-    Returns:
-        (expr_lookup or None, name->row mapping)
-    """
+    """Build a safe param-expression lookup for any '*' rows in a parameter name list."""
     name_to_row = {name: i for i, name in enumerate(unique_strings)}
     expr_lookup: dict[int, str] = {}
     for idx, s in enumerate(unique_strings):
@@ -583,17 +566,7 @@ def _assemble_flux(
     ncompartments: int,
     nspatial_nodes: int,
 ) -> FloatArray:
-    """Assemble dy/dt from transition amounts and transition edges.
-
-    Args:
-        amounts: Transition amounts (Tn,N).
-        transitions: (src,dst,param,prop_start,prop_stop) rows shaped (5,Tn).
-        ncompartments: Number of compartments (rows in state per node).
-        nspatial_nodes: Number of spatial nodes.
-
-    Returns:
-        Flattened dy/dt vector shape (C*N,).
-    """
+    """Assemble dy/dt from transition amounts and transition edges."""
     Tn = amounts.shape[0]
     N = nspatial_nodes
     dy_dt = np.zeros((ncompartments, N), dtype=np.float64)
@@ -666,7 +639,95 @@ def _apply_legacy_seeding(
                                seeding_subpops, seeding_sources, seeding_dests, amts, di, upd)
 
 # =============================================================================
-# 7) Factory class (solve_ivp-compatible) with auto-dispatch + accumulators
+# 7) Accumulator kernels (JIT, streaming, no big temporaries)
+# =============================================================================
+
+@njit(parallel=True, cache=True, fastmath=True)
+def _accumulate_fluxes_for_groups_core(
+    amounts: FloatArray,                # (Tn, N)
+    param_t_slice: FloatArray,          # (P, N)
+    acc_tr_indices: IntArray,           # (K,)
+    acc_tr_starts: IntArray,            # (A+1,)
+    prob_rows_flat: IntArray,           # (K,)  row idx or -1
+    prob_const_flat: FloatArray,        # (K,)
+    out: FloatArray                     # (A, N), preallocated, overwritten
+) -> None:
+    """Compute per-accumulator incident flux vectors out[a, n] = Σ_t amounts[t,n]*const*prob(row,n)."""
+    A = acc_tr_starts.shape[0] - 1
+    N = amounts.shape[1]
+    for a in prange(A):
+        s0 = acc_tr_starts[a]
+        s1 = acc_tr_starts[a + 1]
+        if s1 <= s0:
+            for n in range(N):
+                out[a, n] = 0.0
+            continue
+        for n in range(N):
+            acc_val = 0.0
+            for k in range(s0, s1):
+                t_idx  = acc_tr_indices[k]
+                prow   = prob_rows_flat[k]
+                pconst = prob_const_flat[k]
+                pval   = 1.0 if prow < 0 else param_t_slice[prow, n]
+                acc_val += amounts[t_idx, n] * (pconst * pval)
+            out[a, n] = acc_val
+
+
+@njit(parallel=True, cache=True, fastmath=True)
+def _apply_accumulators_core(
+    dy: FloatArray,                 # (C, N) in-place
+    states_current: FloatArray,     # (C, N)
+    acc_flux: FloatArray,           # (A, N)
+    offsets: IntArray,              # (A,)
+    nstages: IntArray,              # (A,)
+    cum_offsets: IntArray,          # (A,)
+    delay_row: IntArray,            # (A,)    row idx or -1
+    delay_const: FloatArray,        # (A,)
+    param_t_slice: FloatArray       # (P, N)
+) -> None:
+    """Apply accumulator influx to chains (instant sink or Erlang k-stage with per-node rate)."""
+    A = offsets.shape[0]
+    N = acc_flux.shape[1]
+    for a in prange(A):
+        off = int(offsets[a])
+        k   = int(nstages[a])
+        row = int(delay_row[a])
+
+        if row >= 0:
+            for n in range(N):
+                mean = param_t_slice[row, n]
+                if k <= 1 and mean <= 1e-12:
+                    # pure cumulative sink into first accumulator cell
+                    dy[off, n] += acc_flux[a, n]
+                else:
+                    mu = (k / mean) if (k > 0 and mean > 1e-12) else 0.0
+                    rate = mu * max(1, k)
+                    # stage 0
+                    dy[off + 0, n] += acc_flux[a, n] - rate * states_current[off + 0, n]
+                    # intermediate stages
+                    for s in range(1, k):
+                        dy[off + s, n] += rate * states_current[off + s - 1, n] - rate * states_current[off + s, n]
+                    # optional cumulative outflow sink
+                    c_off = int(cum_offsets[a])
+                    if c_off >= 0 and k > 0:
+                        dy[c_off, n] += rate * states_current[off + k - 1, n]
+        else:
+            mean_c = delay_const[a]
+            if k <= 1 and mean_c <= 0.0:
+                for n in range(N):
+                    dy[off, n] += acc_flux[a, n]
+            else:
+                rate = (k / mean_c) if (k > 0 and mean_c > 0.0) else 0.0
+                for n in range(N):
+                    dy[off + 0, n] += acc_flux[a, n] - rate * states_current[off + 0, n]
+                    for s in range(1, k):
+                        dy[off + s, n] += rate * states_current[off + s - 1, n] - rate * states_current[off + s, n]
+                    c_off = int(cum_offsets[a])
+                    if c_off >= 0 and k > 0:
+                        dy[c_off, n] += rate * states_current[off + k - 1, n]
+
+# =============================================================================
+# 8) Factory class (solve_ivp-compatible) with auto-dispatch + accumulators
 # =============================================================================
 
 def _has_seeding(precomputed: dict) -> bool:
@@ -756,12 +817,6 @@ class RHSfactory:
                 "delay_mean_param_row": int64 array (A,),      # param row index for mean days, or -1
                 "delay_mean_const": float64 array (A,),         # constant mean days if no param row
             }
-
-        With this interface you can realize age×vaccination-specific hospitalization
-        probabilities by choosing transition groups that correspond to specific
-        (age, vacc) strata and supplying `acc_prob_param_row_flat` that references
-        parameter rows encoding those per-stratum probabilities (or just leave rows
-        at -1 and use `acc_prob_const_flat` if probabilities are static constants).
     """
 
     REQUIRED_KEYS = [
@@ -778,16 +833,9 @@ class RHSfactory:
         precomputed: dict,
         param_expr_lookup: dict[int, str] | None = None,
         param_name_to_row: dict[str, int] | None = None,
-        param_time_mode: str = "linear",
+        param_time_mode: str = "step",
     ):
-        """Initialize the factory and pre-tune selector path.
-
-        Args:
-            precomputed: Static tensors and constants required by the RHS.
-            param_expr_lookup: Optional mapping {row_idx: "*" expression}. Internal use.
-            param_name_to_row: Name→row mapping used when resolving expressions.
-            param_time_mode: "step" or "linear" interpolation for parameters.
-        """
+        """Initialize the factory and pre-tune selector path."""
         for k in self.REQUIRED_KEYS:
             if k not in precomputed:
                 raise KeyError(f"precomputed is missing required key: '{k}'")
@@ -801,8 +849,9 @@ class RHSfactory:
         self._selector_dense: FloatArray | None = None
         self._selector_csr: csr_matrix | None = None
 
-        # Accumulator spec (parsed lazily in build_rhs)
+        # Accumulator spec and buffers
         self._acc: dict | None = None
+        self._acc_flux_buf: FloatArray | None = None  # (A, N) reused buffer
 
         self._last_day_applied = {"day": None}
         self._rhs: Callable | None = None
@@ -890,22 +939,22 @@ class RHSfactory:
             if k not in acc:
                 raise KeyError(f"accumulators missing key '{k}'")
         A = int(acc["n_acc"])
-        offsets = np.asarray(acc["offsets"], dtype=np.int64)
-        nstages = np.asarray(acc["nstages"], dtype=np.int64)
-        cum_offsets = np.asarray(acc["cum_offsets"], dtype=np.int64)
+        offsets = np.ascontiguousarray(np.asarray(acc["offsets"], dtype=np.int64))
+        nstages = np.ascontiguousarray(np.asarray(acc["nstages"], dtype=np.int64))
+        cum_offsets = np.ascontiguousarray(np.asarray(acc["cum_offsets"], dtype=np.int64))
 
-        acc_tr_indices = np.asarray(acc["acc_tr_indices"], dtype=np.int64)
-        acc_tr_starts  = np.asarray(acc["acc_tr_starts"], dtype=np.int64)
+        acc_tr_indices = np.ascontiguousarray(np.asarray(acc["acc_tr_indices"], dtype=np.int64))
+        acc_tr_starts  = np.ascontiguousarray(np.asarray(acc["acc_tr_starts"], dtype=np.int64))
         if acc_tr_starts.shape[0] != A + 1:
             raise ValueError("acc_tr_starts must have length A+1")
 
-        prob_rows_flat  = np.asarray(acc["acc_prob_param_row_flat"], dtype=np.int64)
-        prob_const_flat = np.asarray(acc["acc_prob_const_flat"], dtype=np.float64)
+        prob_rows_flat  = np.ascontiguousarray(np.asarray(acc["acc_prob_param_row_flat"], dtype=np.int64))
+        prob_const_flat = np.ascontiguousarray(np.asarray(acc["acc_prob_const_flat"], dtype=np.float64))
         if prob_rows_flat.shape[0] != acc_tr_indices.shape[0] or prob_const_flat.shape[0] != acc_tr_indices.shape[0]:
             raise ValueError("acc_prob_*_flat must align with acc_tr_indices length")
 
-        delay_row = np.asarray(acc["delay_mean_param_row"], dtype=np.int64)
-        delay_const = np.asarray(acc["delay_mean_const"], dtype=np.float64)
+        delay_row = np.ascontiguousarray(np.asarray(acc["delay_mean_param_row"], dtype=np.int64))
+        delay_const = np.ascontiguousarray(np.asarray(acc["delay_mean_const"], dtype=np.float64))
         if delay_row.shape[0] != A or delay_const.shape[0] != A:
             raise ValueError("delay arrays must be length A")
 
@@ -922,53 +971,6 @@ class RHSfactory:
             "delay_const": delay_const,
         }
 
-    @staticmethod
-    def _accumulate_fluxes_for_groups(
-        amounts: FloatArray,                # (Tn,N)
-        param_t_slice: FloatArray,         # (P,N)
-        acc: dict,
-    ) -> FloatArray:
-        """Compute per-accumulator incident flux vectors (A,N).
-
-        Each accumulator a sums selected transitions t in its group:
-            flux_a = Σ_t amounts[t,:] * prob_const[a,t] * prob_vec[a,t,:]
-
-        Where prob_vec[a,t,:] is drawn from a parameter row index (or 1.0 if -1).
-        """
-        A = int(acc["A"])
-        N = amounts.shape[1]
-        out = np.zeros((A, N), dtype=np.float64)
-
-        trs = acc["acc_tr_indices"]          # (K,)
-        starts = acc["acc_tr_starts"]        # (A+1,)
-        prob_rows = acc["prob_rows_flat"]    # (K,)
-        prob_const = acc["prob_const_flat"]  # (K,)
-
-        for a in range(A):
-            s0 = int(starts[a]); s1 = int(starts[a+1])
-            if s1 <= s0:
-                continue
-            idxs = trs[s0:s1]                 # transitions for this acc (len=g)
-            rows = prob_rows[s0:s1]           # row per transition (len=g)
-            consts = prob_const[s0:s1]        # const per transition (len=g)
-
-            g = idxs.shape[0]
-            # Build per-transition probability vectors (g,N)
-            # Handle -1 => ones
-            row_clipped = np.where(rows >= 0, rows, 0).astype(np.int64)
-            prob_mat = param_t_slice[row_clipped, :].copy()
-            if np.any(rows < 0):
-                prob_mat[rows < 0, :] = 1.0
-            # Apply constants
-            if g > 1:
-                prob_mat *= consts[:, None]
-                contrib = amounts[idxs, :] * prob_mat
-                out[a, :] = contrib.sum(axis=0)
-            else:
-                prob_mat *= consts[:, None]
-                out[a, :] = amounts[idxs[0], :] * prob_mat[0, :]
-        return out
-
     def build_rhs(
         self,
         *,
@@ -977,17 +979,7 @@ class RHSfactory:
         seeding_amounts: FloatArray | None = None,
         daily_incidence: FloatArray | None = None,
     ) -> Callable[[float, FloatArray, FloatArray], FloatArray]:
-        """Construct the RHS function and cache tuned paths.
-
-        Args:
-            param_time_mode: Optional override for parameter interpolation mode.
-            seeding_data: Optional legacy seeding dict (if present in precomputed).
-            seeding_amounts: Optional seeding amounts.
-            daily_incidence: Optional daily incidence buffer for legacy seeding.
-
-        Returns:
-            A function rhs(t, y, parameters) -> dy of shape (C*N,).
-        """
+        """Construct the RHS function and cache tuned paths."""
         pc = self.precomputed
         C = int(pc["ncompartments"])
         N = int(pc["nspatial_nodes"])
@@ -1026,6 +1018,7 @@ class RHSfactory:
 
         # Accumulators (optional)
         self._acc = self._parse_accumulators(pc)
+        self._acc_flux_buf = None  # reset; will lazily (re)allocate sized to (A,N)
 
         # ---- core RHS used by both solve paths ----
         def _rhs_core(t: float, y: FloatArray, param_t_slice: FloatArray) -> FloatArray:
@@ -1073,54 +1066,33 @@ class RHSfactory:
             if self._acc is not None:
                 acc = self._acc
                 A = int(acc["A"])
-                offsets: IntArray = acc["offsets"]
-                nstages: IntArray = acc["nstages"]
-                cum_offsets: IntArray = acc["cum_offsets"]
-                delay_row: IntArray = acc["delay_row"]
-                delay_const: FloatArray = acc["delay_const"]
 
-                # 4a) incident fluxes per accumulator (A,N)
-                acc_flux = self._accumulate_fluxes_for_groups(amounts, param_t_slice, acc)
+                # Reuse a single (A, N) buffer across RHS calls
+                if (self._acc_flux_buf is None) or (self._acc_flux_buf.shape[0] != A) or (self._acc_flux_buf.shape[1] != N):
+                    self._acc_flux_buf = np.zeros((A, N), dtype=np.float64, order="C")
+                acc_flux = self._acc_flux_buf  # (A, N)
 
-                # 4b) inject into accumulator compartments
-                for a in range(A):
-                    off = int(offsets[a])
-                    k   = int(nstages[a])
-                    # mean delay (days) -> rate mu per node
-                    mu_vec: FloatArray
-                    row_idx = int(delay_row[a])
-                    if row_idx >= 0:
-                        mean_vec = np.maximum(param_t_slice[row_idx, :], 1e-12)
-                        mu_vec = (k / mean_vec) if k > 0 else np.zeros_like(mean_vec)
-                    else:
-                        mean_c = float(delay_const[a])
-                        if k > 0 and mean_c > 0:
-                            mu_vec = np.full(N, k / mean_c, dtype=np.float64)
-                        else:
-                            mu_vec = np.zeros(N, dtype=np.float64)
+                # 4a) incident fluxes per accumulator (A,N) — JIT streaming
+                _accumulate_fluxes_for_groups_core(
+                    amounts, param_t_slice,
+                    acc["acc_tr_indices"], acc["acc_tr_starts"],
+                    acc["prob_rows_flat"], acc["prob_const_flat"],
+                    acc_flux
+                )
 
-                    if k <= 1 and not np.any(mu_vec > 0):  # pure cumulative sink (instant)
-                        dy[off, :] += acc_flux[a, :]
-                    else:
-                        # Erlang chain of k stages at rate mu_vec, feed stage 0 with acc_flux
-                        # dX0/dt = in - mu*k*X0
-                        # dXi/dt = mu*k*X_{i-1} - mu*k*Xi
-                        rate = mu_vec * float(max(1, k))
-                        # stage 0
-                        dy[off + 0, :] += acc_flux[a, :] - rate * states_current[off + 0, :]
-                        # intermediate stages
-                        for s in range(1, k):
-                            dy[off + s, :] += (rate * states_current[off + s - 1, :]) - (rate * states_current[off + s, :])
-                        # optional cumulative outflow sink
-                        c_off = int(cum_offsets[a])
-                        if c_off >= 0:
-                            dy[c_off, :] += rate * states_current[off + k - 1, :]
+                # 4b) inject into accumulator compartments — JIT chain/sink
+                _apply_accumulators_core(
+                    dy, states_current, acc_flux,
+                    acc["offsets"], acc["nstages"], acc["cum_offsets"],
+                    acc["delay_row"], acc["delay_const"],
+                    param_t_slice
+                )
 
             return dy.ravel()
 
         def rhs(t: float, y: FloatArray, parameters: FloatArray) -> FloatArray:
             """solve_ivp-compatible RHS wrapper resolving param slice at time t."""
-            params_t, deltas = _prep_param_interpolator(parameters, use_deltas=(param_time_mode == "linear"))
+            params_t, deltas = _prep_param_interpolator(parameters, use_deltas=(param_time_mode == "step"))
             buf = np.empty((params_t.shape[1], params_t.shape[2]), dtype=np.float64)
             param_t_slice = _param_slice(params_t, t, mode=param_time_mode, out=buf, deltas=deltas)
             return _rhs_core(t, y, param_t_slice)
@@ -1143,24 +1115,13 @@ class RHSfactory:
         t_eval: FloatArray | None = None,
         **solve_ivp_kwargs,
     ):
-        """Integrate the system, applying daily seeding boundaries if configured.
-
-        Args:
-            y0: Flattened initial state (C*N,) or (C,N). Will be flattened internally.
-            parameters: (P,T,N) or (P,T) parameter tensor.
-            t_span: (t0, tf) integration window.
-            t_eval: Optional evaluation grid.
-            **solve_ivp_kwargs: Forwarded to scipy.integrate.solve_ivp.
-
-        Returns:
-            A namespace like solve_ivp’s result (t, y, success, message).
-        """
+        """Integrate the system, applying daily seeding boundaries if configured."""
         self._reset_seeding_tracker()
         if self._rhs_core is None:
             self.build_rhs()
         rhs_core = self._rhs_core  # type: ignore[assignment]
 
-        use_deltas = self.param_time_mode == "linear"
+        use_deltas = self.param_time_mode == "step"
         params_t, deltas = _prep_param_interpolator(parameters, use_deltas=use_deltas)
         C = int(self.precomputed["ncompartments"])
         N = int(self.precomputed["nspatial_nodes"])
@@ -1242,7 +1203,7 @@ class RHSfactory:
         return types.SimpleNamespace(t=np.array([tf]), y=y_cur.reshape(-1, 1), success=bool(total_success), message=last_message)
 
 # =============================================================================
-# 8) Global AUTOTUNE: threads, fastmath on/off, threshold crossover
+# 9) Global AUTOTUNE: threads, fastmath on/off, threshold crossover
 # =============================================================================
 
 def autotune_all(

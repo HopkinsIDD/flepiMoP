@@ -65,7 +65,7 @@ import matplotlib.pyplot as plt
 import pymc as pm
 
 from gempyor.vectorization_experiments import autotune_all, get_autotune_config
-from gempyor.hosp_weekly_pipeline import build_pipeline_from_config
+from gempyor.hosp_weekly_pipeline import build_pipeline_from_config, WeeklyHospPipeline
 from gempyor.pymc_weekly_op import WeeklyHospAndFinalSOp, build_weekly_model
 
 
@@ -88,6 +88,7 @@ def _materialize_structured_example(tmp_path_factory) -> Path:
     shutil.copytree(src_ic, dst_ic, dirs_exist_ok=True)
 
     # Config with seeding support
+    # cfg_name = "Structured_Example_Seeding_Alt.yml"
     cfg_name = "Structured_Example.yml"
     cfg_path = tmp_root / cfg_name
     shutil.copyfile(tutorial_dir / cfg_name, cfg_path)
@@ -144,7 +145,7 @@ def _mmwr_week_assign(model_start_date, n_days: int) -> np.ndarray:
     return assign
 
 
-def _load_and_align_csv_to_weeks(csv_path: Path, pipe: "WeeklyHospipeline", op: WeeklyHospAndFinalSOp):
+def _load_and_align_csv_to_weeks(csv_path: Path, pipe: WeeklyHospPipeline, op: WeeklyHospAndFinalSOp):
     """
     Read long CSV of *daily* total hospitalizations -> weekly aggregated matrix (W,L) aligned to model start_date.
     CSV columns expected: 'date', 'source', 'incidH'.
@@ -156,11 +157,6 @@ def _load_and_align_csv_to_weeks(csv_path: Path, pipe: "WeeklyHospipeline", op: 
       • aggregate to weekly totals per location
       • pivot to (week, location) with weeks [0..op.n_weeks-1]
       • preserve **first-appearance** order of 'source' (no sorting)
-
-    Returns:
-      y_obs_full (W,L) float64 with NaN for weeks with no data,
-      week_indices_observed (sorted np.ndarray of int),
-      location_names (tuple[str, ...])
     """
     df = pd.read_csv(csv_path, parse_dates=["date"])
     required = {"date", "source", "incidH"}
@@ -171,10 +167,7 @@ def _load_and_align_csv_to_weeks(csv_path: Path, pipe: "WeeklyHospipeline", op: 
     df["incidH"] = pd.to_numeric(df["incidH"], errors="coerce").fillna(0.0).clip(lower=0.0)
 
     # Collapse to daily totals per (source, date)
-    df = (
-        df.groupby(["source", "date"], sort=False, as_index=False)["incidH"]
-          .sum()
-    )
+    df = df.groupby(["source", "date"], sort=False, as_index=False)["incidH"].sum()
 
     # Align to model horizon
     start_date = pipe.start_date
@@ -218,18 +211,15 @@ def _load_and_align_csv_to_weeks(csv_path: Path, pipe: "WeeklyHospipeline", op: 
     return y_full, obs_weeks, loc_names
 
 
-def _panel_per_location(
-    idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: Path
-):
+def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: Path):
     """
     For each location:
-      - Top panel: aggregated posterior predictive (mean + 95% HDI) vs observed (on observed weeks only)
-      - Lower panels: per-age posterior predictive (mean + 95% HDI), no observed overlay
+      - Top: aggregated posterior predictive (mean + 95% HDI) vs observed (on observed weeks only)
+      - Lower: per-age posterior predictive (mean + 95% HDI), no observed overlay
     """
     A = len(pipe.age_labels)
     W = y_obs_full.shape[0]
 
-    # Pull posterior predictive arrays
     agg_ppc = idata.posterior_predictive["weekly_pred_sum_age"].values   # (chain, draw, W, L)
     age_ppc = idata.posterior_predictive["weekly_pred"].values           # (chain, draw, A, W, L)
 
@@ -248,7 +238,6 @@ def _panel_per_location(
 
             ax_agg.fill_between(obs_weeks, hdi[:, 0], hdi[:, 1], alpha=0.25, step="mid", label="95% HDI")
             ax_agg.plot(obs_weeks, mean, linewidth=1.5, label="Posterior mean")
-            # Observed points
             y_loc = y_obs_full[obs_weeks, loc_idx]
             ax_agg.step(obs_weeks, y_loc, where="mid", linewidth=1.2, label="Observed")
         ax_agg.set_title(f"{loc_name} — Aggregated hospitalizations (all ages)")
@@ -297,9 +286,8 @@ def pipeline_and_op(tmp_path_factory):
     except Exception:
         pass
 
-    # ---- NEW: assert seeding is wired in the pipeline ----
+    # Assert seeding is wired in (this config uses seeding)
     assert getattr(pipe, "seeding_on", False) is True, "Seeding should be ON for Structured_Example.yml"
-    # presence of seeding keys in precomputed
     pc = getattr(pipe, "precomputed", {})
     for k in ("seeding_data", "seeding_amounts", "daily_incidence"):
         assert k in pc, f"Missing '{k}' in factory precomputed when seeding is ON"
@@ -311,7 +299,7 @@ def pipeline_and_op(tmp_path_factory):
 # ------------------------------- tests -----------------------------------
 
 def _locate_csv_or_skip() -> Path:
-    csv_env = os.environ.get("REALDATA_CSV") or "/Users/josh/Documents/test_data.csv"
+    csv_env = os.environ.get("REALDATA_CSV") or "/Users/josh/Documents/test_data_alt.csv"
     csv_path = Path(csv_env)
     if not csv_path.exists():
         pytest.skip(f"REALDATA_CSV not found at {csv_path}; skipping real-data test.")
@@ -321,20 +309,17 @@ def _locate_csv_or_skip() -> Path:
 @pytest.mark.slow
 def test_seeding_is_active_and_op_runs_once(pipeline_and_op):
     """
-    Small smoke test that:
-      • confirms seeding is ON at the pipeline level and present in precomputed, and
-      • runs the Op forward once to make sure nothing crashes.
+    Smoke test:
+      • confirms seeding is ON at the pipeline level and present in precomputed
+      • runs the Op forward once to make sure nothing crashes
     """
     pipe, op = pipeline_and_op
-    # quick forward call with defaults
-    # We don't need y_obs here; just ensure the op returns arrays in the right shapes.
     A, W, L = op.weekly_shape
     defaults = np.ones(len(pipe.modifier_order()), dtype=np.float64)
     # pR baseline: 40% immune, uniform (shape A×L)
     pR = np.full((A, L), 0.40, dtype=np.float64)
     lambda_ext = np.ones(L, dtype=np.float64)
 
-    # Call the Op directly (won’t re-run factory twice)
     out_w = [None]
     out_S = [None]
     op.perform(None, [defaults, pR, lambda_ext], [out_w, out_S])
@@ -350,15 +335,13 @@ def test_seeding_is_active_and_op_runs_once(pipeline_and_op):
 @pytest.mark.slow
 def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     """
-    Workflow:
-      1) Build pipeline/op/model (no built-in likelihood).
-      2) Load CSV (daily), collapse to daily totals, align to model horizon, aggregate to MMWR weekly, build y_obs on observed weeks only.
-      3) Add NB likelihood on weekly_pred_sum_age[obs_weeks].
-      4) Run short posterior, posterior predictive.
-      5) Save per-location panel figures into model_output/.
+    1) Build pipeline/op/model (no built-in likelihood).
+    2) Load CSV (daily), collapse to daily totals, align to model horizon, aggregate to MMWR weekly, build y_obs on observed weeks only.
+    3) Add NB likelihood on weekly_pred_sum_age[obs_weeks].
+    4) Run short posterior, posterior predictive.
+    5) Save per-location panel figures into model_output/.
     """
-    # Locate CSV from env (skip if missing)
-    csv_path = _locate_csv_or_skip()
+    csv_path = _locate_csv_or_skip('')
 
     pipe, op = pipeline_and_op
 
@@ -369,22 +352,21 @@ def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     if obs_weeks.size == 0:
         pytest.skip("No observed weeks after alignment; skipping.")
 
-    # Construct observed-only arrays
+    # Observed-only arrays
     y_obs_obsweeks = y_full[obs_weeks, :].astype(np.float64, copy=False)
 
     # ---------------- Build model WITHOUT built-in likelihood ----------------
     with build_weekly_model(pipe, op=op, y_obs=None) as model:
-        # Deterministics provided by builder
         weekly_sum = model["weekly_pred_sum_age"]  # dims: (week, location)
 
         # Slice to observed weeks for likelihood
         mu_obs = weekly_sum[obs_weeks, :]
 
         # NB dispersion and likelihood on observed weeks only
-        alpha = pm.HalfNormal("alpha_nb", sigma=10.0)
-        pm.NegativeBinomial("y", mu=mu_obs, alpha=alpha, observed=y_obs_obsweeks)
+        # alpha = pm.HalfNormal("alpha_nb", sigma=10.0)
+        pm.Poisson("y", mu=mu_obs, observed=y_obs_obsweeks)
 
-        # --------------- Sampling (keep moderate for CI/runtime) ---------------
+        # --------------- Sampling (moderate for CI/runtime) ---------------
         prior_idata = pm.sample_prior_predictive(draws=300, random_seed=123)
         ncores = min(4, os.cpu_count() or 1)
         idata = pm.sample(
@@ -411,10 +393,20 @@ def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     # ---------------- Basic sanity assertions ----------------
     assert "weekly_pred_sum_age" in idata.posterior_predictive
     assert "weekly_pred" in idata.posterior_predictive
+
+    # Match current model variable names (no legacy sigma_age/sigma_loc)
     summ = az.summary(
         idata,
-        var_names=["mods", "mu_R_logit", "sigma_age", "sigma_loc", "lambda_ext_mu_log"],
+        var_names=[
+            "mods",
+            "mu_R_logit",
+            "sigma_R_loc",
+            "lambda_ext_mu_log",
+            "lambda_ext_sigma_log",
+            "obs_loc_scale",
+        ],
         kind="stats",
+        extend=True,
     )
     assert np.isfinite(summ["mean"].values).all()
 
@@ -427,7 +419,7 @@ def test_pymc_weekly_inference_with_real_csv(pipeline_and_op):
     try:
         az.plot_trace(
             idata,
-            var_names=["mods", "mu_R_logit", "sigma_age", "sigma_loc", "lambda_ext_mu_log", "alpha_nb"],
+            var_names=["mods", "lambda_ext_loc", "obs_loc_scale"],
             compact=True,
             figsize=(12, 6),
         )

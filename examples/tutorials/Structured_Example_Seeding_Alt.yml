@@ -15,10 +15,6 @@ initial_conditions:
   config_name: "Structured_Example"
   seasons: ["19to20"]
 
-seeding:
-  method: FromFile
-  seeding_file: model_input/Structured_Example/seeding_territories.csv
-
 compartments:
   infection_stage: ["S", "E", "I1", "I2", "I3", "R"] 
   vaccination_stage: ["unvaccinated", "1dose", "waned"] 

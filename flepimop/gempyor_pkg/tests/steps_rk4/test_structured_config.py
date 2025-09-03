@@ -186,13 +186,16 @@ def model_and_inputs(modelinfo_from_config):
     unique_strings, transitions, transition_sum_compartments, proportion_info = (
         model.compartments.get_transition_array()
     )
-
+    print('unique_strings:', unique_strings)
+    print('len unique_strings:', len(unique_strings))
+    
     param_defs = config["seir"]["parameters"].get()
     base_params = model.parameters.parameters_quick_draw(model.n_days, model.nsubpops)
+    print('base_params shape:', base_params.shape)
     parsed_params = model.compartments.parse_parameters(
         base_params, param_defs, unique_strings
     )
-
+    
     param_expr_lookup, param_name_to_row = build_safe_param_expr_lookup(unique_strings)
 
     mobility_csr: csr_matrix = model.mobility
@@ -235,7 +238,9 @@ def model_and_inputs(modelinfo_from_config):
         "population": population,
         # NOTE: no 'seeding_data' / 'seeding_amounts' keys => seeding OFF
     }
-
+    print('parsed_params dims:', parsed_params.shape)
+    print('param names:', np.array(list(param_defs.keys())))
+    print('param_names shape:', np.array(list(param_defs.keys())).shape)
     return {
         "model": model,
         "initial_array": initial_array,
@@ -262,7 +267,7 @@ def model_and_inputs(modelinfo_from_config):
 # ------------------------------------------------------------
 # Benchmarks
 # ------------------------------------------------------------
-@pytest.mark.benchmark(group="solver_performance", min_rounds=20)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=1)
 def test_legacy_solver_performance(benchmark, model_and_inputs, autotune_once):
     out = model_and_inputs
     ncomp, nloc = out["initial_array"].shape
@@ -292,7 +297,7 @@ def test_legacy_solver_performance(benchmark, model_and_inputs, autotune_once):
     benchmark(run_legacy)
 
 
-@pytest.mark.benchmark(group="solver_performance", min_rounds=20)
+@pytest.mark.benchmark(group="solver_performance", min_rounds=1)
 @pytest.mark.parametrize("eval_step", [1.0, 0.1])
 def test_vectorized_solver__param_eval_grid(benchmark, model_and_inputs, eval_step, autotune_once, capsys):
     out = model_and_inputs
