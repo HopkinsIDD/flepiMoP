@@ -15,9 +15,6 @@ initial_conditions:
   config_name: "Structured_Example"
   seasons: ["19to20"]
 
-seeding:
-  method: FromFile
-  seeding_file: model_input/Structured_Example/seeding_territories.csv
 
 compartments:
   infection_stage: ["S", "E", "I1", "I2", "I3", "R"] 
@@ -47,7 +44,9 @@ seir:
         distribution: fixed
         value: 0.00455456052934666
     r0:
-      timeseries: model_input/Structured_Example/r0s_ts_24to25.csv
+      value:
+        distribution: fixed
+        value: 1.5
     nu1age0to4:
       timeseries: model_input/Structured_Example/Structured_Example_age0to4_dose1_medVax.csv
     nu1age5to17:
@@ -193,116 +192,21 @@ seir_modifiers:
   scenarios:
     - none
   modifiers:
-    Seas_oct:
+    local_var_gamma:
       method: SinglePeriodModifier
-      parameter: r0
+      parameter: gamma
       subpop: "all"
-      period_start_date: 2024-10-01
-      period_end_date: 2024-10-31
+      period_start_date: 2024-07-28
+      period_end_date: 2025-06-07
       value:
         distribution: fixed
-        value: 0.9
-      perturbation:
-        distribution: fixed
-        value: 0
-    Seas_nov:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2024-11-01
-      period_end_date: 2024-11-30
-      value:
-        distribution: fixed
-        value: 0.9
-      perturbation:
-        distribution: fixed
-        value: 0
-    Seas_dec:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2024-12-01
-      period_end_date: 2024-12-31
-      value:
-        distribution: fixed
-        value: 0.9
-      perturbation:
-        distribution: fixed
-        value: 0
-    Seas_jan:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2025-01-01
-      period_end_date: 2025-01-31
-      value:
-        distribution: fixed
-        value: 0.9
-      perturbation:
-        distribution: fixed
-        value: 0
-        b: 1
-    Seas_feb:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2025-02-01
-      period_end_date: 2025-02-28
-      value:
-        distribution: fixed
-        value: 1.1
-      perturbation:
-        distribution: fixed
-        value: 0
-    Seas_mar:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2025-03-01
-      period_end_date: 2025-03-31
-      value:
-        distribution: fixed
-        value: 1.1
-      perturbation:
-        distribution: fixed
-        value: 0
-    Seas_apr:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2025-04-01
-      period_end_date: 2025-04-30
-      value:
-        distribution: fixed
-        value: 1.05
-      perturbation:
-        distribution: fixed
-        value: 0
-        b: 1
-    winter_holiday:
-      method: SinglePeriodModifier
-      parameter: r0
-      subpop: "all"
-      period_start_date: 2024-12-21
-      period_end_date: 2025-01-02
-      value:
-        distribution: fixed
-        value: 0.9
-      perturbation:
-        distribution: fixed
-        value: 0
+        value: 1.0
     local_var:
       method: StackedModifier
-      modifiers: ["local_var_r0"]
-    npi:
-      method: StackedModifier
-      modifiers: ["winter_holiday"]
-    seasonal:
-      method: StackedModifier
-      modifiers: ["Seas_oct", "Seas_nov", "Seas_dec", "Seas_jan", "Seas_feb", "Seas_mar", "Seas_apr"]
+      modifiers: ["local_var_gamma"]
     none:
       method: StackedModifier
-      modifiers: ["local_var", "npi", "seasonal"]
+      modifiers: ["local_var"]
 
 outcome_modifiers:
   scenarios:
@@ -741,5 +645,3 @@ outcomes:
       ]
     incidH:
       sum: ['incidH_AllFlu']
-
-

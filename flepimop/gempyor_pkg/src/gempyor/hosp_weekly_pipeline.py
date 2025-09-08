@@ -312,9 +312,9 @@ class WeeklyHospPipeline:
     L: # locations
     """
 
-    def __init__(self, config_path: str | Path, *, dt_days: float = 0.1):
+    def __init__(self, config_path: str | Path, *, dt_days: float = 1.0):
         self.config_path = Path(config_path)
-        self.dt = float(dt_days)  # integration & outcome step (e.g., 0.1 day)
+        self.dt = float(dt_days)  # integration & outcome step (e.g., 1.0 day)
 
         conf = confuse.Configuration("WeeklyHospPipeline", __name__)
         conf.set_file(str(self.config_path))
