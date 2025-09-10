@@ -94,8 +94,8 @@ class NormalLoglikelihood(ObjectiveFunctionABC):
         >>> dist = NormalLoglikelihood(sigma=2.0)
         >>> gt_data = np.array([10.0, 12.0, 15.0])
         >>> model_data = np.array([11.0, 11.0, 16.0])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
-        array([-2.0439, -2.0439, -2.0439])
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
+        array([-1.7371, -1.7371, -1.7371])
     """
 
     distribution: Literal["norm"] = "norm"
@@ -118,8 +118,8 @@ class LognormalLoglikelihood(ObjectiveFunctionABC):
         >>> dist = LognormalLoglikelihood(sdlog=0.5)
         >>> gt_data = np.array([10.0, 20.0, 30.0])
         >>> model_data = np.array([12.0, 18.0, 35.0])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
-        array([-2.5519, -2.9698, -3.6199])
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
+        array([-2.5949, -3.2437, -3.6745])
     """
 
     distribution: Literal["lognorm"] = "lognorm"
@@ -144,8 +144,8 @@ class PoissonLoglikelihood(ObjectiveFunctionABC):
         >>> dist = PoissonLoglikelihood()
         >>> gt_data = np.array([4, 10, 15])
         >>> model_data = np.array([5.5, 9.5, 16.0])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
-        array([-1.9333, -2.3999, -2.6109])
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
+        array([-1.8591, -2.0915, -2.3104])
     """
 
     distribution: Literal["poisson", "pois"] = "poisson"
@@ -167,8 +167,8 @@ class BinomialLoglikelihood(ObjectiveFunctionABC):
         >>> dist = BinomialLoglikelihood(n=20)
         >>> gt_data = np.array([5, 15, 10])
         >>> model_data = np.array([0.2, 0.8, 0.5])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
-        array([-1.7456, -2.0357, -1.8252])
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
+        array([-1.7455, -1.7455, -1.7362])
     """
 
     distribution: Literal["binomial"] = "binomial"
@@ -196,8 +196,8 @@ class GammaLoglikelihood(ObjectiveFunctionABC):
         >>> dist = GammaLoglikelihood(shape=2.0)
         >>> gt_data = np.array([5.0, 10.0, 15.0])
         >>> model_data = np.array([6.0, 9.0, 14.0])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
-        array([-2.6225, -2.3023, -2.7161])
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
+        array([-2.8074, -3.203 , -3.6415])
     """
 
     distribution: Literal["gamma"] = "gamma"
@@ -220,8 +220,8 @@ class WeibullLoglikelihood(ObjectiveFunctionABC):
         >>> dist = WeibullLoglikelihood(shape=1.5)
         >>> gt_data = np.array([5.0, 10.0, 15.0])
         >>> model_data = np.array([6.0, 12.0, 16.0])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
-        array([-2.1287, -2.7126, -2.9363])
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
+        array([-2.2382, -2.9313, -3.3071])
     """
 
     distribution: Literal["weibull"] = "weibull"
@@ -246,7 +246,7 @@ class AbsoluteError(ObjectiveFunctionABC):
         >>> dist = AbsoluteError()
         >>> gt_data = np.array([1, 2, 6])
         >>> model_data = np.array([3, 2, 4])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
         array([-1.3863, -1.3863, -1.3863])
     """
 
@@ -273,7 +273,7 @@ class RMSE(ObjectiveFunctionABC):
         >>> dist = RMSE()
         >>> gt_data = np.array([1, 2, 6])
         >>> model_data = np.array([3, 4, 4])
-        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
         array([-0.6931, -0.6931, -0.6931])
     """
 
