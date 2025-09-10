@@ -3,7 +3,7 @@ import pytest
 import scipy.stats
 from pydantic import ValidationError
 
-from gempyor.likelihoods import LognormalLoglikelihood
+from gempyor.objective_functions import LognormalLoglikelihood
 
 
 @pytest.mark.parametrize(
@@ -11,7 +11,7 @@ from gempyor.likelihoods import LognormalLoglikelihood
 )
 def test_lognormal_loglikelihood_init_valid(sdlog: float) -> None:
     dist = LognormalLoglikelihood(sdlog=sdlog)
-    assert dist.sdlog == sdlog
+    assert dist.sigmalog == sdlog
     assert dist.distribution == "lognorm"
 
 
@@ -26,10 +26,10 @@ def test_lognormal_loglikelihood_init_invalid_sdlog(invalid_sdlog: float) -> Non
 @pytest.mark.parametrize(
     "sdlog", [0.5, 1.0, 2.0], ids=["sdlog_0.5", "sdlog_1.0", "sdlog_2.0"]
 )
-def test_lognormal_loglikelihood_calculation(sdlog: float) -> None:
+def test_lognormal_loglikelihood_error_metric_calculation(sdlog: float) -> None:
     dist = LognormalLoglikelihood(sdlog=sdlog)
     gt_data = np.array([10, 15, 20, 25])
     model_data = np.array([11, 14, 22, 25])
-    result = dist.loglikelihood(gt_data=gt_data, model_data=model_data)
+    result = dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
     expected = scipy.stats.lognorm.logpdf(x=gt_data, s=sdlog, scale=model_data)
     assert np.allclose(result, expected)

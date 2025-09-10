@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from gempyor.likelihoods import AbsoluteErrorLoglikelihood
+from gempyor.objective_functions import AbsoluteError
 
 
-def test_absolute_error_loglikelihood_init() -> None:
-    dist = AbsoluteErrorLoglikelihood()
+def test_absolute_error_init() -> None:
+    dist = AbsoluteError()
     assert dist.distribution == "absolute_error"
 
 
@@ -20,11 +20,11 @@ def test_absolute_error_loglikelihood_init() -> None:
     ],
     ids=["integers", "floats_and_nan", "mixed_sign", "zero_error"],
 )
-def test_absolute_error_loglikelihood_calculation(
+def test_absolute_error_error_metric_calculation(
     gt_data: np.ndarray, model_data: np.ndarray
 ) -> None:
-    dist = AbsoluteErrorLoglikelihood()
-    result = dist.loglikelihood(gt_data, model_data)
+    dist = AbsoluteError()
+    result = dist.error_metric_calculation(gt_data, model_data)
     absolute_error = np.abs(gt_data - model_data)
     total_absolute_error = np.nansum(absolute_error)
     expected_value = -np.log(total_absolute_error)

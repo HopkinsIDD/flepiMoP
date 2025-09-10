@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from gempyor.likelihoods import FixedLoglikelihood
+from gempyor.objective_functions import FixedLoglikelihood
 
 
 @pytest.mark.parametrize(
@@ -34,10 +34,10 @@ def test_fixed_loglikelihood_init_valid(value: float) -> None:
     ],
     ids=["mixed_match", "all_match", "none_match"],
 )
-def test_fixed_loglikelihood_calculation(
+def test_fixed_loglikelihood_error_metric_calculation(
     value: float, gt_data: np.ndarray, expected: np.ndarray
 ) -> None:
     dist = FixedLoglikelihood(value=value)
     model_data = np.random.rand(*gt_data.shape) * 100
-    result = dist.loglikelihood(gt_data=gt_data, model_data=model_data)
+    result = dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
     assert np.array_equal(result, expected)

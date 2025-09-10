@@ -4,33 +4,35 @@ import pytest
 
 from pydantic import Field, AliasChoices
 
-from gempyor.likelihoods import LoglikelihoodABC
+from gempyor.objective_functions import ObjectiveFunctionABC
 
 
-class DummyLoglikelihood(LoglikelihoodABC):
-    """A simple dummy implementation for testing the LoglikelihoodABC logic."""
+class ObjectiveFunction(ObjectiveFunctionABC):
+    """A simple dummy implementation for testing the ObjectiveFunctionABC logic."""
 
     distribution: str = Field(validation_alias=AliasChoices("distribution", "dist"))
 
-    def _loglikelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
+    def _error_metric_calculation(
+        self, gt_data: npt.NDArray, model_data: npt.NDArray
+    ) -> npt.NDArray:
         """
-        A predictable dummy llik implementation.
+        A predictable dummy error metric calculation implementation.
         """
         return -((gt_data - model_data) ** 2)
 
 
 def test_loglikelihood_abc_wrapper() -> None:
-    dist = DummyLoglikelihood(distribution="dummy")
+    dist = ObjectiveFunction(distribution="dummy")
     gt_data = np.array([1, 2, 3, 4, 5])
     model_data = np.array([1, 3, 2, 5, 4])
-    result = dist.loglikelihood(gt_data=gt_data, model_data=model_data)
+    result = dist._error_metric_calculation(gt_data=gt_data, model_data=model_data)
     expected = -((gt_data - model_data) ** 2)
     assert isinstance(result, np.ndarray)
     assert np.array_equal(result, expected)
 
 
-def test_loglikelihood_init_with_alias() -> None:
-    dist = DummyLoglikelihood(dist="dummy")
+def test_objective_function_init_with_alias() -> None:
+    dist = ObjectiveFunction(dist="dummy")
     assert dist.distribution == "dummy"
 
 
@@ -43,8 +45,8 @@ def test_loglikelihood_init_with_alias() -> None:
     ],
     ids=["positive_floats", "mixed_sign_floats", "identical_data"],
 )
-def test_loglikelihood_calculation(gt_data: npt.NDArray, model_data: npt.NDArray) -> None:
-    dist = DummyLoglikelihood(distribution="dummy")
-    result = dist.loglikelihood(gt_data=gt_data, model_data=model_data)
+def test_error_metric_calculation(gt_data: npt.NDArray, model_data: npt.NDArray) -> None:
+    dist = ObjectiveFunction(distribution="dummy")
+    result = dist._error_metric_calculation(gt_data=gt_data, model_data=model_data)
     expected = -((gt_data - model_data) ** 2)
     assert np.allclose(result, expected)

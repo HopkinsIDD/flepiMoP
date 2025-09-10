@@ -19,11 +19,6 @@ class DummyDistribution(DistributionABC):
         """A fake sampling implementation."""
         return rng.random(size)
 
-    def _likelihood(self, gt_data: npt.NDArray, model_data: npt.NDArray) -> npt.NDArray:
-        """Dummy likelihood implementation."""
-        # dummy, predictable output
-        return -((gt_data - model_data) ** 2)
-
 
 def test_reproducible_sampling_with_seeded_rng() -> None:
     dist = DummyDistribution()

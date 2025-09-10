@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from gempyor.likelihoods import RMSELoglikelihood
+from gempyor.objective_functions import RMSE
 
 
-def test_rmse_loglikelihood_init() -> None:
-    dist = RMSELoglikelihood()
+def test_rmse_init() -> None:
+    dist = RMSE()
     assert dist.distribution == "rmse"
 
 
@@ -19,11 +19,9 @@ def test_rmse_loglikelihood_init() -> None:
     ],
     ids=["basic_case", "with_nan", "zero_error"],
 )
-def test_rmse_loglikelihood_calculation(
-    gt_data: np.ndarray, model_data: np.ndarray
-) -> None:
-    dist = RMSELoglikelihood()
-    result = dist.loglikelihood(gt_data, model_data)
+def test_rmse_error_metric_calculation(gt_data: np.ndarray, model_data: np.ndarray) -> None:
+    dist = RMSE()
+    result = dist.error_metric_calculation(gt_data, model_data)
     squared_error = (gt_data - model_data) ** 2
     mean_squared_error = np.nanmean(squared_error)
     rmse = np.sqrt(mean_squared_error)

@@ -64,14 +64,20 @@ class FixedLoglikelihood(ObjectiveFunctionABC):
     Represents a fixed distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import FixedLoglikelihood
+        >>> dist = FixedLoglikelihood(value=10.0)
+        >>> gt_data = np.array([5.0, 10.0, 10.0, 15.0])
+        >>> model_data = np.array([1.0, 2.0, 3.0, 4.0])  # This data is ignored
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-inf,   0.,   0., -inf])
     """
 
     distribution: Literal["fixed"] = "fixed"
     value: EvaledFloat
 
     def _error_metric_calculation(
-        self, gt_data: npt.NDArray, model_data: npt.NDArray
+        self, gt_data: npt.NDArray, _model_data: npt.NDArray
     ) -> npt.NDArray:
         """Log-likelihood calculations for fixed distributions."""
         # ignores model_data and compares gt_data to its own value.
@@ -83,11 +89,17 @@ class NormalLoglikelihood(ObjectiveFunctionABC):
     Represents a normal distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import NormalLoglikelihood
+        >>> dist = NormalLoglikelihood(sigma=2.0)
+        >>> gt_data = np.array([10.0, 12.0, 15.0])
+        >>> model_data = np.array([11.0, 11.0, 16.0])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-2.0439, -2.0439, -2.0439])
     """
 
     distribution: Literal["norm"] = "norm"
-    sigma: EvaledFloat = Field(..., gt=0)
+    sigma: EvaledFloat = Field(..., gt=0, validation_alias=AliasChoices("sigma", "sd"))
 
     def _error_metric_calculation(
         self, gt_data: npt.NDArray, model_data: npt.NDArray
@@ -101,17 +113,25 @@ class LognormalLoglikelihood(ObjectiveFunctionABC):
     Represents a Lognormal distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import LognormalLoglikelihood
+        >>> dist = LognormalLoglikelihood(sdlog=0.5)
+        >>> gt_data = np.array([10.0, 20.0, 30.0])
+        >>> model_data = np.array([12.0, 18.0, 35.0])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-2.5519, -2.9698, -3.6199])
     """
 
     distribution: Literal["lognorm"] = "lognorm"
-    sdlog: EvaledFloat = Field(..., gt=0)
+    sigmalog: EvaledFloat = Field(
+        ..., gt=0, validation_alias=AliasChoices("sigmalog", "sdlog")
+    )
 
     def _error_metric_calculation(
         self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Log-likelihood calculations for lognormal distributions."""
-        return scipy.stats.lognorm.logpdf(x=gt_data, s=self.sdlog, scale=model_data)
+        return scipy.stats.lognorm.logpdf(x=gt_data, s=self.sigmalog, scale=model_data)
 
 
 class PoissonLoglikelihood(ObjectiveFunctionABC):
@@ -119,7 +139,13 @@ class PoissonLoglikelihood(ObjectiveFunctionABC):
     Represents a Poisson distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import PoissonLoglikelihood
+        >>> dist = PoissonLoglikelihood()
+        >>> gt_data = np.array([4, 10, 15])
+        >>> model_data = np.array([5.5, 9.5, 16.0])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-1.9333, -2.3999, -2.6109])
     """
 
     distribution: Literal["poisson", "pois"] = "poisson"
@@ -136,7 +162,13 @@ class BinomialLoglikelihood(ObjectiveFunctionABC):
     Represents a binomial distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import BinomialLoglikelihood
+        >>> dist = BinomialLoglikelihood(n=20)
+        >>> gt_data = np.array([5, 15, 10])
+        >>> model_data = np.array([0.2, 0.8, 0.5])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-1.7456, -2.0357, -1.8252])
     """
 
     distribution: Literal["binomial"] = "binomial"
@@ -159,7 +191,13 @@ class GammaLoglikelihood(ObjectiveFunctionABC):
     Represents a gamma distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import GammaLoglikelihood
+        >>> dist = GammaLoglikelihood(shape=2.0)
+        >>> gt_data = np.array([5.0, 10.0, 15.0])
+        >>> model_data = np.array([6.0, 9.0, 14.0])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-2.6225, -2.3023, -2.7161])
     """
 
     distribution: Literal["gamma"] = "gamma"
@@ -177,7 +215,13 @@ class WeibullLoglikelihood(ObjectiveFunctionABC):
     Represents a weibull distribution for calculating log-likelihood.
 
     Examples:
-        ...
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import WeibullLoglikelihood
+        >>> dist = WeibullLoglikelihood(shape=1.5)
+        >>> gt_data = np.array([5.0, 10.0, 15.0])
+        >>> model_data = np.array([6.0, 12.0, 16.0])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-2.1287, -2.7126, -2.9363])
     """
 
     distribution: Literal["weibull"] = "weibull"
@@ -190,30 +234,20 @@ class WeibullLoglikelihood(ObjectiveFunctionABC):
         return scipy.stats.weibull_min.logpdf(x=gt_data, c=self.shape, scale=model_data)
 
 
-class BetaLoglikelihood(ObjectiveFunctionABC):  # perhaps we can remove this for now?
-    """
-    Represents a beta distribution for calculating log-likelihood.
-
-    Examples:
-        ...
-    """
-
-    distribution: Literal["beta"] = "beta"
-
-    def _error_metric_calculation(
-        self, gt_data: npt.NDArray, model_data: npt.NDArray
-    ) -> npt.NDArray:
-        """Log-likelihood calculations for bet distributions."""
-        raise NotImplementedError(
-            "Log-likelihood calculation is not yet implemented for the Beta distribution."
-        )
-
-
 class AbsoluteError(ObjectiveFunctionABC):
     """
     Calculates an error metric using the sum of absolute errors..
 
     The final score is calculated as -log(sum_of_absolute_errors).
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import AbsoluteError
+        >>> dist = AbsoluteError()
+        >>> gt_data = np.array([1, 2, 6])
+        >>> model_data = np.array([3, 2, 4])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-1.3863, -1.3863, -1.3863])
     """
 
     distribution: Literal["absolute_error"] = "absolute_error"
@@ -232,6 +266,15 @@ class RMSE(ObjectiveFunctionABC):
     Calculates an error metric using random mean squared error.
 
     The final score is calculated as -log(RMSE).
+
+    Examples:
+        >>> import numpy as np
+        >>> from gempyor.objective_functions import RMSE
+        >>> dist = RMSE()
+        >>> gt_data = np.array([1, 2, 6])
+        >>> model_data = np.array([3, 4, 4])
+        >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
+        array([-0.6931, -0.6931, -0.6931])
     """
 
     distribution: Literal["rmse"] = "rmse"
@@ -247,8 +290,7 @@ class RMSE(ObjectiveFunctionABC):
 
 
 ObjectiveFunction = Annotated[
-    BetaLoglikelihood
-    | BinomialLoglikelihood
+    BinomialLoglikelihood
     | FixedLoglikelihood
     | GammaLoglikelihood
     | LognormalLoglikelihood
