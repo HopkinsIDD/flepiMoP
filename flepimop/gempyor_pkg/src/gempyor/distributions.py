@@ -25,7 +25,7 @@ from typing import Annotated, Literal
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator
+from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator, computed_field
 import scipy.stats
 
 from ._pydantic_ext import EvaledFloat, EvaledInt
@@ -46,8 +46,9 @@ class DistributionABC(ABC, BaseModel):
         Draw random sample(s) from the distribution.
 
         Args:
-            size: The desired output size of samples to be drawn.
+            size: The desired output size and shape (if provided a tuple) of samples to be drawn.
             rng: A NumPy random number generator instance used for sampling.
+                Defaults to numpy.random.default_rng() if not provided.
 
         Returns:
             A NumPy array of either floats/ints (depending on distribution)
@@ -57,7 +58,7 @@ class DistributionABC(ABC, BaseModel):
         return self._sample_from_generator(size=size, rng=rng)
 
     def __call__(self) -> float | int:
-        """A shortcut for `self.sample(size=1)`."""
+        """A shortcut for `self.sample(size=1).item()`."""
         return self.sample(size=1).item()
 
     @abstractmethod
@@ -248,20 +249,34 @@ class TruncatedNormalDistribution(DistributionABC):
     a: EvaledFloat
     b: EvaledFloat
 
+    @computed_field
+    @property
+    def a_trunc(self) -> float:
+        """The standardized lower bound for scipy's truncnorm."""
+        return (self.a - self.mean) / self.sd
+
+    @computed_field
+    @property
+    def b_trunc(self) -> float:
+        """The standardized upper bound for scipy's truncnorm."""
+        return (self.b - self.mean) / self.sd
+
+    @computed_field
+    @property
+    def fixed_allowed(self) -> bool:
+        """Whether or not this distribution can be represented as a fixed value."""
+        return isclose(self.a, self.b) and self.allow_edge_cases
+
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
         """Sampling logic for truncated normal distributions."""
-        if (
-            isclose(self.a, self.b) and self.allow_edge_cases
-        ):  # use this logic b/c scipy.truncnorm doesn't support equal bounds
+        if (self.fixed_allowed): # scipy.truncnorm doesn't support equal bounds
             return np.full(size, self.a)
 
-        lower = (self.a - self.mean) / self.sd
-        upper = (self.b - self.mean) / self.sd
         return scipy.stats.truncnorm.rvs(
-            a=lower,
-            b=upper,
+            a=self.a_trunc,
+            b=self.b_trunc,
             loc=self.mean,
             scale=self.sd,
             size=size,
