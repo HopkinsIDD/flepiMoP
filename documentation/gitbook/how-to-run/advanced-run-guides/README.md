@@ -10,10 +10,6 @@ For longer inference runs across multiple slots, we provide instructions and scr
 [running-with-docker-locally.md](running-with-docker-locally.md)
 {% endcontent-ref %}
 
-{% content-ref url="quick-start-guide-conda.md" %}
-[quick-start-guide-conda.md](quick-start-guide-conda.md)
-{% endcontent-ref %}
-
 ## Running longer inference runs across multiple slots
 
 {% content-ref url="running-on-aws.md" %}
