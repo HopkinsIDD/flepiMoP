@@ -30,7 +30,7 @@ from ._pydantic_ext import EvaledFloat, EvaledInt
 
 
 class ObjectiveFunctionABC(ABC, BaseModel):
-    """Base class for distributions used to calculate log-likelihoods."""
+    """Base class for for objective functions, e.g. distribution log-likelihoods."""
 
     distribution: str = Field(validation_alias=AliasChoices("distribution", "dist"))
 
@@ -68,20 +68,19 @@ class FixedLoglikelihood(ObjectiveFunctionABC):
         >>> from gempyor.objective_functions import FixedLoglikelihood
         >>> dist = FixedLoglikelihood(value=10.0)
         >>> gt_data = np.array([5.0, 10.0, 10.0, 15.0])
-        >>> model_data = np.array([1.0, 2.0, 3.0, 4.0])  # This data is ignored
+        >>> model_data = np.array([1.0, 10.0, 10.0, 4.0])
         >>> dist.error_metric_calculation(gt_data=gt_data, model_data=model_data)
         array([-inf,   0.,   0., -inf])
     """
 
     distribution: Literal["fixed"] = "fixed"
-    value: EvaledFloat
 
     def _error_metric_calculation(
-        self, gt_data: npt.NDArray, _model_data: npt.NDArray
+        self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Log-likelihood calculations for fixed distributions."""
         # ignores model_data and compares gt_data to its own value.
-        return np.where(np.isclose(gt_data, self.value), 0.0, -np.inf)
+        return np.where(np.isclose(gt_data, model_data), 0.0, -np.inf)
 
 
 class NormalLoglikelihood(ObjectiveFunctionABC):
@@ -131,7 +130,8 @@ class LognormalLoglikelihood(ObjectiveFunctionABC):
         self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Log-likelihood calculations for lognormal distributions."""
-        return scipy.stats.lognorm.logpdf(x=gt_data, s=self.sigmalog, scale=model_data)
+        expmulog = model_data / np.exp(self.sigmalog**2 / 2)  # Convert to scale parameter
+        return scipy.stats.lognorm.logpdf(x=gt_data, s=self.sigmalog, scale=expmulog)
 
 
 class PoissonLoglikelihood(ObjectiveFunctionABC):
@@ -231,7 +231,8 @@ class WeibullLoglikelihood(ObjectiveFunctionABC):
         self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Log-likelihood calculations for weibull distributions."""
-        return scipy.stats.weibull_min.logpdf(x=gt_data, c=self.shape, scale=model_data)
+        scale = model_data / scipy.special.gamma(1 + 1 / self.shape)  # Convert to scale parameter
+        return scipy.stats.weibull_min.logpdf(x=gt_data, c=self.shape, scale=scale)
 
 
 class AbsoluteError(ObjectiveFunctionABC):
@@ -284,9 +285,7 @@ class RMSE(ObjectiveFunctionABC):
     ) -> npt.NDArray:
         """Calculates the error metric from RMSE."""
         squared_error = (gt_data - model_data) ** 2
-        mean_squared_error = np.nanmean(squared_error)
-        rmse = np.sqrt(mean_squared_error)
-        return np.full(gt_data.shape, -np.log(rmse))
+        return -np.log(np.sqrt(np.nanmean(squared_error)))
 
 
 ObjectiveFunction = Annotated[
