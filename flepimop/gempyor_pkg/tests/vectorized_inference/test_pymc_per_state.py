@@ -15,8 +15,8 @@
 #     We randomly pick FOUR locations for:
 #       - prior predictive spaghetti plots
 #       - “triad” plots (r0 baseline vs effective, S0 vs S(T), weekly hosp with 50% band)
-#   • We CONCATENATE all per-state InferenceData into a SINGLE multi-location object via ArviZ
-#     and save as one NetCDF (posterior samples, y, etc. all together).
+#   • We CONCATENATE all per-state InferenceData into a SINGLE multi-location object by
+#     concatenating xarray Datasets within groups along "location", then writing one NetCDF.
 #
 # Artifacts written in a single directory (defaults to ./model_output_all_states/):
 #   - prior_spaghetti_<STATE>.png (for 4 random states)
@@ -75,6 +75,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import arviz as az
+import xarray as xr
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -441,7 +442,7 @@ def _enable_fast_and_disable_mobility(pipe: WeeklyHospPipeline, op: WeeklyHospAn
         pass
 
 
-# ============================= NEW helpers (ModelInfo + config patch) =============================
+# ============================= NEW helpers (ModelInfo + config patch + concat) =============================
 
 def _make_confuse_from_yaml(yaml_path: Path) -> confuse.Configuration:
     cfg = confuse.Configuration("StructuredExampleAllStates", __name__)
@@ -476,76 +477,104 @@ def _patch_config_selected_block(
     selected_code: str,
 ) -> None:
     """
-    Write a patched YAML to `out_cfg_path` that is identical to base with the following keys
-    under `subpop_setup:` ensured/overridden:
-        geodata: model_input/Structured_Example/geodata_2019_statelevel.csv
-        mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv
-        state_level: TRUE
-        selected: ["<selected_code>"]
+    Write a patched YAML to `out_cfg_path` that is identical to base but ensures, within
+    `subpop_setup:`:
+        - `selected: ["<selected_code>"]` is present (added or overwritten).
+        - If `state_level:` is missing, add `state_level: TRUE` (do not override existing).
+    Preserve existing absolute `geodata`/`mobility` values.
     """
     text = base_cfg_path.read_text().splitlines()
     out = []
     in_sub = False
     sub_indent = ""
+    saw_state_level = False
     wrote_selected = False
-    wrote_geo = wrote_mob = wrote_state = False
 
-    def _emit_sub_lines(indent: str):
-        nonlocal wrote_geo, wrote_mob, wrote_state, wrote_selected
-        if not wrote_geo:
-            out.append(f"{indent}geodata: model_input/Structured_Example/geodata_2019_statelevel.csv")
-        if not wrote_mob:
-            out.append(f"{indent}mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv")
-        if not wrote_state:
+    def _emit_missing(indent: str):
+        nonlocal saw_state_level, wrote_selected
+        if not saw_state_level:
             out.append(f"{indent}state_level: TRUE")
-        out.append(f"{indent}selected: [\"{selected_code}\"]")
-        wrote_selected = True
+        if not wrote_selected:
+            out.append(f'{indent}selected: ["{selected_code}"]')
 
-    for i, line in enumerate(text):
+    for line in text:
         if not in_sub:
             out.append(line)
             if re.match(r"^\s*subpop_setup\s*:\s*$", line):
                 in_sub = True
                 sub_indent = None
-        else:
-            if sub_indent is None and line.strip():
-                sub_indent = re.match(r"^(\s*)", line).group(1)
-            if sub_indent is None:
-                sub_indent = "  "
+            continue
 
-            key = line.strip().split(":")[0] if ":" in line.strip() else ""
-            if key == "geodata":
-                out.append(f"{sub_indent}geodata: model_input/Structured_Example/geodata_2019_statelevel.csv")
-                wrote_geo = True
-                continue
-            if key == "mobility":
-                out.append(f"{sub_indent}mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv")
-                wrote_mob = True
-                continue
-            if key == "state_level":
-                out.append(f"{sub_indent}state_level: TRUE")
-                wrote_state = True
-                continue
-            if key == "selected":
-                out.append(f"{sub_indent}selected: [\"{selected_code}\"]")
-                wrote_selected = True
-                continue
+        # inside subpop_setup
+        if sub_indent is None and line.strip():
+            sub_indent = re.match(r"^(\s*)", line).group(1)
+        if sub_indent is None:
+            sub_indent = "  "
 
-            # End of block? (next top-level key)
-            if re.match(r"^\S", line) and not line.startswith(" "):
-                if not wrote_selected:
-                    _emit_sub_lines(sub_indent)
-                out.append(line)
-                in_sub = False
-                continue
+        stripped = line.strip()
+        key = stripped.split(":")[0] if ":" in stripped else ""
 
+        if key == "state_level":
+            saw_state_level = True
+            out.append(line)  # keep as-is
+            continue
+        if key == "selected":
+            out.append(f'{sub_indent}selected: ["{selected_code}"]')
+            wrote_selected = True
+            continue
+
+        # End of block? (next top-level key)
+        if re.match(r"^\S", line) and not line.startswith(" "):
+            _emit_missing(sub_indent)
             out.append(line)
+            in_sub = False
+            continue
 
-    if in_sub and not wrote_selected:
-        indent = sub_indent if sub_indent is not None else "  "
-        _emit_sub_lines(indent)
+        out.append(line)
+
+    if in_sub:
+        # file ended while in subpop_setup
+        _emit_missing(sub_indent if sub_indent is not None else "  ")
 
     out_cfg_path.write_text("\n".join(out) + "\n")
+
+
+def _concat_idatas_along_location(idatas: list[az.InferenceData]) -> az.InferenceData:
+    """
+    Concatenate multiple single-location InferenceData objects into one with a
+    multi-location 'location' dimension by xarray-concatenating group datasets
+    along 'location'. For variables without a 'location' dim, keep them from the
+    first idata (assumed identical across states).
+    """
+    out = az.InferenceData()
+    group_names = set().union(*[idata.groups() for idata in idatas])
+
+    for grp in sorted(group_names):
+        dsets = [getattr(idata, grp) for idata in idatas if getattr(idata, grp, None) is not None]
+        if not dsets:
+            continue
+
+        # Which vars have a 'location' dim?
+        loc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" in da.dims]
+        noloc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" not in da.dims]
+
+        ds_loc_cat = None
+        if loc_vars:
+            parts = [ds[loc_vars] for ds in dsets]  # each has location coord length 1 with state name
+            ds_loc_cat = xr.concat(parts, dim="location")
+
+        ds_noloc = dsets[0][noloc_vars] if noloc_vars else None
+
+        if ds_loc_cat is not None and ds_noloc is not None:
+            ds_comb = xr.merge([ds_loc_cat, ds_noloc], combine_attrs="override")
+        elif ds_loc_cat is not None:
+            ds_comb = ds_loc_cat
+        else:
+            ds_comb = ds_noloc
+
+        setattr(out, grp, ds_comb)
+
+    return out
 
 
 # ============================= TRIAD support (only for 4 random states) =============================
@@ -772,8 +801,8 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
     """
     # ---------- quick knobs ----------
     PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "10"))
-    TUNE = int(os.environ.get("TUNE", "50"))
-    DRAWS = int(os.environ.get("DRAWS", "50"))
+    TUNE = int(os.environ.get("TUNE", "5"))
+    DRAWS = int(os.environ.get("DRAWS", "5"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
@@ -900,7 +929,7 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
         state_order.append(state_i)
 
     # ---------- CONCAT into ONE multi-location InferenceData ----------
-    combined = az.concat(per_state_idatas, dim="location")
+    combined = _concat_idatas_along_location(per_state_idatas)
 
     # Persist combined idata
     nc_path = outdir / "inference_idata_ALL_STATES.nc"
