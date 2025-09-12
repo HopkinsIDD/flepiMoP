@@ -158,6 +158,12 @@ class WeeklyHospAndFinalSOp(Op):
         self._day_to_week, self._n_weeks = _mmwr_assign_from(pipeline.start_date, pipeline.T)
         self._week_centers = self._compute_week_centers(self._day_to_week)
 
+        # ------------------------------------------------------------
+        # FIX: Align Op's internal week count to model's weekly array.
+        # The model's W (from pipeline.evaluate) is authoritative.
+        self._n_weeks = self._W
+        # ------------------------------------------------------------
+
         outcomes_cfg = (
             pipeline.outcomes_cfg
             if hasattr(pipeline, "outcomes_cfg")
@@ -320,8 +326,11 @@ class WeeklyHospAndFinalSOp(Op):
         if self._has_r0_modifiers and (not self._allow_r0_weekly_scale_with_modifiers):
             return
         pidx = self._get_param_row("r0")
-        W = int(self._n_weeks)
+        # ------------------------------------------------------------
+        # FIX: validate against model-sized weeks (self._W)
+        W = int(self._W)
         expected = (W, self._L)
+        # ------------------------------------------------------------
         if r0_weekly_scale.shape != expected:
             raise ValueError(f"r0_weekly_scale shape {r0_weekly_scale.shape} != {expected}")
         T_days = params_base.shape[1]
@@ -613,7 +622,7 @@ class WeeklyHospAndFinalSOp(Op):
 
     @property
     def n_weeks(self) -> int:
-        return self._W
+        return self._W  # authoritative week count
 
     @property
     def age_labels(self) -> tuple[str, ...]:

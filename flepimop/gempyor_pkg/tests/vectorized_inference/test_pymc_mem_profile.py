@@ -1,30 +1,18 @@
-# Fast-mode + no-mobility calibration test that LOOPS over each state present in the
-# empirical calibration CSV and builds ONE combined (51-location) InferenceData.
+# Fast-mode + no-mobility calibration that loops over 5 states (in CSV/model order),
+# profiles memory usage as states are added, and builds ONE combined (multi-location)
+# InferenceData saved as a single NetCDF.
 #
-# Key requirements implemented:
-#   • CSV `source` column contains actual state names (Alabama, Alaska, …).
-#     The CSV is already ordered the SAME WAY as ModelInfo’s internal subpop order.
-#     We use that alignment directly: for index i, we pair
-#        - model code := model_info.subpop_names[i]   (e.g., "01000")
-#        - csv state  := csv_sources[i]               (e.g., "Alabama")
-#   • We patch the config per-state to `selected: ["<model_code>"]`, run a SINGLE-location
-#     inference, and tag its InferenceData with that state's name.
-#   • We ONLY run Numba autotune ONCE at the beginning.
-#   • We SAVE everything (plots + final combined NetCDF) into ONE directory (no per-state subdirs).
-#   • We generate posterior predictive plots for ALL locations.
-#     We randomly pick FOUR locations for:
-#       - prior predictive spaghetti plots
-#       - “triad” plots (r0 baseline vs effective, S0 vs S(T), weekly hosp with 50% band)
-#   • We CONCATENATE all per-state InferenceData into a SINGLE multi-location object by
-#     concatenating xarray Datasets within groups along "location", then writing one NetCDF.
+# Memory profiling:
+#   • Logs parent+children RSS before sampling, after PPC, and after concatenation.
+#   • Tracks per-state peak RSS during sampling via a background sampler thread.
+#   • Writes memory_usage_summary.csv with one row per state.
 #
-# Artifacts written in a single directory (defaults to ./model_output_all_states/):
-#   - prior_spaghetti_<STATE>.png (for 4 random states)
+# Artifacts (single dir, defaults to ./model_output_5_states/):
+#   - prior_spaghetti_<STATE>.png (for 4 random picked states out of the 5)
 #   - triad_<STATE>.png          (for the same 4 states)
-#   - ppc_panel_<idx>_<STATE>.png (for ALL states)
-#   - inference_idata_ALL_STATES.nc (combined trace)
-#
-# NOTE: This file is a full replacement for the previous “three-states” test.
+#   - ppc_panel_<idx>_<STATE>.png (for ALL 5 states)
+#   - inference_idata_5_STATES.nc (combined trace)
+#   - memory_usage_summary.csv
 
 import os
 import platform
@@ -82,25 +70,92 @@ import matplotlib.pyplot as plt
 import pymc as pm
 import re
 import confuse
+import gc
+import time
+import csv
+import threading
+import psutil
+import sys
 
 from gempyor.vectorization_experiments import autotune_all, get_autotune_config
 from gempyor.hosp_weekly_pipeline import build_pipeline_from_config, WeeklyHospPipeline
 from gempyor.pymc_weekly_op import (
     WeeklyHospAndFinalSOp,
-     build_weekly_model,
+    build_weekly_model,
     _yaml_defaults_in_leaf_order,
 )
 from gempyor.vectorized_modifiers import compile_seir_modifiers
-
-# ModelInfo for discovering permissible codes / structure
 from gempyor.model_info import ModelInfo  # adjust path if your repo layout differs
+
+
+# ============================= Memory helpers =============================
+
+def _rss_family_bytes():
+    """RSS of this process + all children (recursive)."""
+    try:
+        p = psutil.Process(os.getpid())
+        rss = p.memory_info().rss
+        for ch in p.children(recursive=True):
+            rss += ch.memory_info().rss
+        return rss
+    except Exception:
+        return 0
+
+def _peak_bytes_parent():
+    """Best-effort peak (parent only). Linux ru_maxrss in KB; macOS in bytes."""
+    try:
+        import resource
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        if sys.platform == "darwin":
+            return int(peak)  # bytes
+        return int(peak) * 1024
+    except Exception:
+        return 0
+
+def _fmt_gb(b): return f"{b / (1024**3):.2f} GB"
+
+class MemorySampler:
+    """Background sampler writing (t_s, rss_family_GB) CSV, tracking max RSS."""
+    def __init__(self, out_csv, interval=0.5):
+        self.out_csv = str(out_csv)
+        self.interval = float(interval)
+        self._stop = False
+        self._thr = None
+        self.max_rss = 0
+
+    def start(self):
+        self._stop = False
+        self._thr = threading.Thread(target=self._run, daemon=True)
+        self._thr.start()
+
+    def stop(self):
+        self._stop = True
+        if self._thr:
+            self._thr.join()
+
+    def _run(self):
+        t0 = time.perf_counter()
+        with open(self.out_csv, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["t_s", "rss_family_GB"])
+            while not self._stop:
+                rss = _rss_family_bytes()
+                self.max_rss = max(self.max_rss, rss)
+                w.writerow([round(time.perf_counter() - t0, 3),
+                            f"{rss / (1024**3):.3f}"])
+                f.flush()
+                time.sleep(self.interval)
+
+def _log_mem(label: str):
+    print(f"[mem] {label}: rss_family={_fmt_gb(_rss_family_bytes())}, "
+          f"peak_parent={_fmt_gb(_peak_bytes_parent())}", flush=True)
 
 
 # ============================= helpers =============================
 
 def _materialize_structured_example(tmp_path_factory) -> Path:
     """Copy Structured_Example.yml & inputs into a temp root with absolute paths (seeding ON)."""
-    tmp_root = tmp_path_factory.mktemp("weekly_infer_realdata_all_states")
+    tmp_root = tmp_path_factory.mktemp("weekly_infer_realdata_5_states")
 
     repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
     tutorial_dir = repo_root / "examples" / "tutorials"
@@ -129,8 +184,7 @@ def _materialize_structured_example(tmp_path_factory) -> Path:
 def _safe_autotune():
     """Run autotune once; keep threads within NUMBA_NUM_THREADS if needed."""
     try:
-        autotune_all(quiet=False)
-        return
+        autotune_all(quiet=False); return
     except TypeError:
         pass
     except ValueError:
@@ -176,7 +230,7 @@ def _load_and_align_csv_to_weeks(
     """
     Read long CSV of *daily* total hospitalizations -> weekly aggregated matrix (W,L) aligned to model start_date.
     CSV columns expected: 'date', 'source', 'incidH'. `source` are state names.
-    If `subset_sources` is provided, only those sources are considered and columns are ordered exactly as given.
+    If `subset_sources` is provided, only those sources are considered and columns ordered exactly as given.
     """
     df = pd.read_csv(csv_path, parse_dates=["date"])
     required = {"date", "source", "incidH"}
@@ -369,25 +423,7 @@ def _week_centers_from_assign(assign: np.ndarray) -> np.ndarray:
     return centers
 
 def _interp_weekly_to_daily(scale_w: np.ndarray, centers: np.ndarray, T_days: int) -> np.ndarray:
-    """
-    Interpolate a weekly scale (length W) to daily. If centers length != W
-    (e.g., off-by-one due to horizon alignment), truncate/pad centers to match W.
-    """
     t = np.arange(T_days, dtype=float)
-    W = len(scale_w)
-    if len(centers) != W:
-        if len(centers) > W:
-            centers = centers[:W]
-        else:
-            # Pad centers forward with ~weekly spacing
-            if len(centers) >= 2:
-                step = centers[-1] - centers[-2]
-                if not np.isfinite(step) or abs(step) < 1e-9:
-                    step = 7.0
-            else:
-                step = 7.0
-            pad = centers[-1] + step * np.arange(1, W - len(centers) + 1)
-            centers = np.concatenate([centers, pad])
     return np.interp(t, centers, scale_w.astype(float),
                      left=float(scale_w[0]), right=float(scale_w[-1]))
 
@@ -460,18 +496,18 @@ def _enable_fast_and_disable_mobility(pipe: WeeklyHospPipeline, op: WeeklyHospAn
         pass
 
 
-# ============================= NEW helpers (ModelInfo + config patch + concat) =============================
+# ============================= config / ModelInfo helpers =============================
 
 def _make_confuse_from_yaml(yaml_path: Path) -> confuse.Configuration:
-    cfg = confuse.Configuration("StructuredExampleAllStates", __name__)
+    cfg = confuse.Configuration("StructuredExample5States", __name__)
     cfg.set_file(str(yaml_path))
     return cfg
 
 def _discover_permissible_codes_and_build_mapping(cfg_path: Path, csv_path: Path) -> tuple[list[str], list[str]]:
     """
     Build a ModelInfo WITHOUT 'selected' (inflates all locations) to read `subpop_names`
-    -> model codes in order. Read CSV unique sources (state names) IN ORDER as they first
-    appear; we assume CSV order matches ModelInfo order (per user). Returns:
+    (model codes) in order. Read CSV unique sources (state names) in the order they first
+    appear; we assume CSV order matches ModelInfo order. Returns:
         model_codes: [code0, code1, ...]
         csv_states:  [state0, state1, ...]  (same length/order as model_codes)
     """
@@ -483,37 +519,36 @@ def _discover_permissible_codes_and_build_mapping(cfg_path: Path, csv_path: Path
     csv_states = list(pd.unique(df["source"]))
     if len(csv_states) != len(model_codes):
         raise AssertionError(
-            f"CSV has {len(csv_states)} unique sources but ModelInfo has {len(model_codes)} subpops. "
-            "Expected equal counts with the same order."
+            f"CSV has {len(csv_states)} unique sources but ModelInfo has {len(model_codes)} subpops."
         )
     return model_codes, csv_states
 
-def _patch_config_selected_block(
-    base_cfg_path: Path,
-    out_cfg_path: Path,
-    *,
-    selected_code: str,
-) -> None:
+def _patch_config_selected_block(base_cfg_path: Path, out_cfg_path: Path, *, selected_code: str) -> None:
     """
-    Write a patched YAML to `out_cfg_path` that is identical to base but ensures, within
-    `subpop_setup:`:
-        - `selected: ["<selected_code>"]` is present (added or overwritten).
-        - If `state_level:` is missing, add `state_level: TRUE` (do not override existing).
-    Preserve existing absolute `geodata`/`mobility` values.
+    Write a patched YAML to `out_cfg_path` that is identical to base with the following keys
+    under `subpop_setup:` ensured/overridden:
+        geodata: model_input/Structured_Example/geodata_2019_statelevel.csv
+        mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv
+        state_level: TRUE
+        selected: ["<selected_code>"]
     """
     text = base_cfg_path.read_text().splitlines()
     out = []
     in_sub = False
     sub_indent = ""
-    saw_state_level = False
     wrote_selected = False
+    wrote_geo = wrote_mob = wrote_state = False
 
-    def _emit_missing(indent: str):
-        nonlocal saw_state_level, wrote_selected
-        if not saw_state_level:
+    def _emit_sub_lines(indent: str):
+        nonlocal wrote_geo, wrote_mob, wrote_state, wrote_selected
+        if not wrote_geo:
+            out.append(f"{indent}geodata: model_input/Structured_Example/geodata_2019_statelevel.csv")
+        if not wrote_mob:
+            out.append(f"{indent}mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv")
+        if not wrote_state:
             out.append(f"{indent}state_level: TRUE")
-        if not wrote_selected:
-            out.append(f'{indent}selected: ["{selected_code}"]')
+        out.append(f"{indent}selected: [\"{selected_code}\"]")
+        wrote_selected = True
 
     for line in text:
         if not in_sub:
@@ -521,81 +556,40 @@ def _patch_config_selected_block(
             if re.match(r"^\s*subpop_setup\s*:\s*$", line):
                 in_sub = True
                 sub_indent = None
-            continue
+        else:
+            if sub_indent is None and line.strip():
+                sub_indent = re.match(r"^(\s*)", line).group(1)
+            if sub_indent is None:
+                sub_indent = "  "
 
-        # inside subpop_setup
-        if sub_indent is None and line.strip():
-            sub_indent = re.match(r"^(\s*)", line).group(1)
-        if sub_indent is None:
-            sub_indent = "  "
+            key = line.strip().split(":")[0] if ":" in line.strip() else ""
+            if key == "geodata":
+                out.append(f"{sub_indent}geodata: model_input/Structured_Example/geodata_2019_statelevel.csv"); wrote_geo = True; continue
+            if key == "mobility":
+                out.append(f"{sub_indent}mobility: model_input/Structured_Example/mobility_2011-2015_statelevel.csv"); wrote_mob = True; continue
+            if key == "state_level":
+                out.append(f"{sub_indent}state_level: TRUE"); wrote_state = True; continue
+            if key == "selected":
+                out.append(f"{sub_indent}selected: [\"{selected_code}\"]"); wrote_selected = True; continue
 
-        stripped = line.strip()
-        key = stripped.split(":")[0] if ":" in stripped else ""
+            # End of block? (next top-level key)
+            if re.match(r"^\S", line) and not line.startswith(" "):
+                if not wrote_selected:
+                    _emit_sub_lines(sub_indent)
+                out.append(line)
+                in_sub = False
+                continue
 
-        if key == "state_level":
-            saw_state_level = True
-            out.append(line)  # keep as-is
-            continue
-        if key == "selected":
-            out.append(f'{sub_indent}selected: ["{selected_code}"]')
-            wrote_selected = True
-            continue
-
-        # End of block? (next top-level key)
-        if re.match(r"^\S", line) and not line.startswith(" "):
-            _emit_missing(sub_indent)
             out.append(line)
-            in_sub = False
-            continue
 
-        out.append(line)
-
-    if in_sub:
-        # file ended while in subpop_setup
-        _emit_missing(sub_indent if sub_indent is not None else "  ")
+    if in_sub and not wrote_selected:
+        indent = sub_indent if sub_indent is not None else "  "
+        _emit_sub_lines(indent)
 
     out_cfg_path.write_text("\n".join(out) + "\n")
 
 
-def _concat_idatas_along_location(idatas: list[az.InferenceData]) -> az.InferenceData:
-    """
-    Concatenate multiple single-location InferenceData objects into one with a
-    multi-location 'location' dimension by xarray-concatenating group datasets
-    along 'location'. For variables without a 'location' dim, keep them from the
-    first idata (assumed identical across states).
-    """
-    out = az.InferenceData()
-    group_names = set().union(*[idata.groups() for idata in idatas])
-
-    for grp in sorted(group_names):
-        dsets = [getattr(idata, grp) for idata in idatas if getattr(idata, grp, None) is not None]
-        if not dsets:
-            continue
-
-        # Which vars have a 'location' dim?
-        loc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" in da.dims]
-        noloc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" not in da.dims]
-
-        ds_loc_cat = None
-        if loc_vars:
-            parts = [ds[loc_vars] for ds in dsets]  # each has location coord length 1 with state name
-            ds_loc_cat = xr.concat(parts, dim="location")
-
-        ds_noloc = dsets[0][noloc_vars] if noloc_vars else None
-
-        if ds_loc_cat is not None and ds_noloc is not None:
-            ds_comb = xr.merge([ds_loc_cat, ds_noloc], combine_attrs="override")
-        elif ds_loc_cat is not None:
-            ds_comb = ds_loc_cat
-        else:
-            ds_comb = ds_noloc
-
-        setattr(out, grp, ds_comb)
-
-    return out
-
-
-# ============================= TRIAD support (only for 4 random states) =============================
+# ============================= TRIAD (only for 4 random states) =============================
 
 def _precompute_sr_mass0(pipe: WeeklyHospPipeline) -> np.ndarray:
     """sr_mass0[a, l] = (total mass in age a, loc l) minus (non S/R mass) at t0."""
@@ -645,12 +639,10 @@ def _triad_plot_for_state(outdir: Path,
                           idata_state: az.InferenceData,
                           y_full_state: np.ndarray):
     """Make the 3-panel 'triad' figure for a SINGLE-location run."""
-    # Needed posterior tensors
     post = idata_state.posterior
     chains = post.dims["chain"]
     draws = post.dims["draw"]
 
-    # choose two posterior samples to overlay
     rng = np.random.default_rng(20240831)
     flat_ix = rng.choice(chains * draws, size=2, replace=False)
     sample_pairs = [(ix // draws, ix % draws) for ix in flat_ix]
@@ -666,7 +658,6 @@ def _triad_plot_for_state(outdir: Path,
 
     sr_mass0 = _precompute_sr_mass0(pipe)
 
-    # r0-effective prep
     applier = getattr(pipe, "mod_applier", None)
     if applier is None:
         applier = compile_seir_modifiers(
@@ -677,7 +668,6 @@ def _triad_plot_for_state(outdir: Path,
             param_names=pipe.param_names,
         )
 
-    # Locate r0 row
     param_names = np.array(list(pipe.param_defs.keys()))
     if "r0" in param_names:
         r0_idx = int(np.where(param_names == "r0")[0][0])
@@ -698,7 +688,6 @@ def _triad_plot_for_state(outdir: Path,
     S_final = post["S_final"].values
     r0_weekly_scale_post = post["r0_weekly_scale"].values if "r0_weekly_scale" in post else None
 
-    # Seasonal prior-mean leaf set (monthly/holiday)
     leaf_names = tuple(pipe.modifier_order())
     defaults = _yaml_defaults_in_leaf_order(pipe.config_path, leaf_names)
     mh_idx = [i for i, nm in enumerate(leaf_names) if ("month" in nm.lower()) or ("holi" in nm.lower())]
@@ -709,7 +698,7 @@ def _triad_plot_for_state(outdir: Path,
     fig = plt.figure(figsize=(12, 9), dpi=130)
     gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1.2, 1.0, 1.2], hspace=0.28)
 
-    # Panel 1: r0 baseline vs effective injected (after weekly interp + smoothing)
+    # Panel 1
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.plot(t_days, base[r0_idx, :, 0], label="baseline r0", linewidth=1.6, color=BASELINE_R0_COLOR)
     s0_points, sT_points = [], []
@@ -753,7 +742,7 @@ def _triad_plot_for_state(outdir: Path,
     ax1.set_xlabel("day"); ax1.set_ylabel("r0(t)")
     ax1.grid(True, alpha=0.3); ax1.legend(loc="best")
 
-    # Panel 2: S0 vs S(T)
+    # Panel 2
     ax2 = fig.add_subplot(gs[1, 0])
     for k, (x, y) in enumerate(zip(s0_points, sT_points)):
         ax2.scatter([x], [y], s=36, color=colors[k], label=f"sample {k+1}")
@@ -764,7 +753,7 @@ def _triad_plot_for_state(outdir: Path,
     ax2.set_xlabel("S0 (agg over age)"); ax2.set_ylabel("S(T) (agg over age)")
     ax2.set_title(f"{state_name} — S0 vs S(T)"); ax2.grid(True, alpha=0.3); ax2.legend(loc="best")
 
-    # Panel 3: Weekly hosp with 50% noise bands + target
+    # Panel 3
     ax3 = fig.add_subplot(gs[2, 0])
     W = y_full_state.shape[0]
     w = np.arange(W)
@@ -800,6 +789,39 @@ def _triad_plot_for_state(outdir: Path,
     print(f"[artifact] saved: {outfile}")
 
 
+# ============================= concat by 'location' =============================
+
+def concat_by_location(idatas: list[az.InferenceData]) -> az.InferenceData:
+    """
+    Concatenate multiple single-location InferenceData objects along a 'location' dimension
+    using xarray.concat per group. Groups without a 'location' dimension are taken from the
+    FIRST idata (assumed identical across states).
+    """
+    # Union of group names
+    groups = set()
+    for idata in idatas:
+        groups |= set(idata.groups())
+    out_kwargs = {}
+    for g in groups:
+        parts = []
+        any_has_loc = False
+        for idata in idatas:
+            ds = getattr(idata, g, None)
+            if ds is None:
+                continue
+            parts.append(ds)
+            if ("location" in ds.dims) or ("location" in getattr(ds, "coords", {})):
+                any_has_loc = True
+        if not parts:
+            continue
+        if any_has_loc:
+            comb = xr.concat(parts, dim="location", data_vars="minimal", coords="minimal", combine_attrs="drop_conflicts")
+        else:
+            comb = parts[0]
+        out_kwargs[g] = comb
+    return az.InferenceData(**out_kwargs)
+
+
 # ============================= main test =============================
 
 def _locate_csv_or_skip() -> Path:
@@ -811,20 +833,21 @@ def _locate_csv_or_skip() -> Path:
 
 
 @pytest.mark.slow
-def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
+def test_pymc_weekly_inference_5_states_with_memory(tmp_path_factory):
     """
-    Full run over ALL states in the CSV (aligned to ModelInfo order),
-    concatenated into ONE multi-location InferenceData and saved as a single NetCDF.
-    Prior spaghetti + triads are produced for 4 RANDOM states; PPC panels for ALL states.
+    Run over 5 states (CSV/model order), concatenate incrementally into ONE InferenceData,
+    and profile memory usage (peak per-state during sampling; total after each concat).
     """
-    # ---------- quick knobs ----------
+    # ---------- knobs ----------
+    N_STATES = int(os.environ.get("N_STATES", "5"))
     PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "10"))
-    TUNE = int(os.environ.get("TUNE", "5"))
-    DRAWS = int(os.environ.get("DRAWS", "5"))
+    TUNE = int(os.environ.get("TUNE", "700"))
+    DRAWS = int(os.environ.get("DRAWS", "300"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
-    # ----------------------------------
+    SAMPLE_INTERVAL_S = float(os.environ.get("MEM_INTERVAL_S", "0.5"))  # Memory sampler period
+    # --------------------------
 
     base_cfg_path = _materialize_structured_example(tmp_path_factory)
     csv_path = _locate_csv_or_skip()
@@ -832,31 +855,41 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
     # Autotune ONCE
     _safe_autotune()
 
-    # Discover (model_code, state_name) ordered pairs
-    model_codes, csv_states = _discover_permissible_codes_and_build_mapping(base_cfg_path, csv_path)
-    L_total = len(model_codes)
-    assert L_total == len(csv_states) and L_total >= 1
+    # Discover full order, then keep first N_STATES
+    model_codes_all, csv_states_all = _discover_permissible_codes_and_build_mapping(base_cfg_path, csv_path)
+    L_total = len(model_codes_all)
+    assert L_total == len(csv_states_all) and L_total >= 1
+    idx_keep = list(range(min(N_STATES, L_total)))
+    model_codes = [model_codes_all[i] for i in idx_keep]
+    csv_states = [csv_states_all[i] for i in idx_keep]
+    L_sel = len(model_codes)
 
-    # Choose 4 random states (or fewer if <4 total) for prior spaghetti + triad plots
+    # Choose 4 random states (or fewer if <4) for prior spaghetti + triads
     rng = np.random.default_rng(RNG_SEED)
-    four_idx = set(rng.choice(L_total, size=min(4, L_total), replace=False).tolist())
+    four_idx = set(rng.choice(L_sel, size=min(4, L_sel), replace=False).tolist())
 
     # Output directory (single)
-    outdir = Path(os.environ.get("E2E_OUTDIR", "") or (Path.cwd() / "model_output_all_states"))
+    outdir = Path(os.environ.get("E2E_OUTDIR", "") or (Path.cwd() / "model_output_5_states"))
     outdir.mkdir(parents=True, exist_ok=True)
 
-    per_state_idatas: list[az.InferenceData] = []
-    state_order: list[str] = []
+    # Memory summary CSV
+    mem_csv = outdir / "memory_usage_summary.csv"
+    with open(mem_csv, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["state_idx", "state_name", "rss_pre_gb", "peak_during_sample_gb", "rss_post_ppc_gb", "rss_after_concat_gb"])
 
-    # We'll also accumulate y_full columns to build a combined (W, L_total) for PPC panels later
+    # Incremental combined idata
+    combined_idata: az.InferenceData | None = None
+
+    # We'll accumulate y_full columns to build a combined (W, L_sel) for PPC panels later
     combined_y_cols = []
     W_ref = None
-    last_pipe = None  # keep last pipe for age labels
+    last_pipe = None  # keep for age labels
 
-    for i in range(L_total):
+    for i in range(L_sel):
         code_i = model_codes[i]   # e.g., "01000"
         state_i = csv_states[i]   # e.g., "Alabama"
-        print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) ===")
+        print(f"\n=== [{i+1}/{L_sel}] State={state_i} (code {code_i}) ===")
 
         # Patch config for this state into a temp file
         cfg_state = base_cfg_path.with_name(f"{base_cfg_path.stem}__{code_i}.yml")
@@ -880,8 +913,6 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
             W_ref = y_full.shape[0]
         else:
             assert y_full.shape[0] == W_ref, "All states should have same W after alignment."
-
-        # Save the column to assemble combined (W, L_total) later
         combined_y_cols.append(y_full[:, 0])
 
         # Optional PRIOR spaghetti ONLY for selected 4 states
@@ -895,7 +926,6 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
                     random_seed=123 + i,
                     var_names=prior_vars,
                 )
-            # spaghetti: sum over age
             weekly_vals = _idata_get(prior_idata, "weekly_pred")
             weekly = _stack_samples(weekly_vals)  # (S, A, W, 1)
             series = weekly.sum(axis=1)[:, :, 0]  # (S, W)
@@ -910,7 +940,12 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
             fig.savefig(outdir / f"prior_spaghetti_{state_i}.png", bbox_inches="tight")
             plt.close(fig)
 
-        # ---- POSTERIOR for this state ----
+        # ---- POSTERIOR for this state with memory profiling ----
+        rss_pre = _rss_family_bytes()
+        sampler = MemorySampler(outdir / f"mem_{state_i}.csv", interval=SAMPLE_INTERVAL_S)
+        sampler.start()
+        _log_mem(f"pre-sample {state_i}")
+
         with build_weekly_model(pipe, op=op, y_obs=y_full, use_nb=True, force_r0_weekly_scale=True) as model:
             idata = pm.sample(
                 draws=DRAWS,
@@ -929,7 +964,12 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
             )
         idata.extend(ppc)
 
-        # Tag with *state name* so concatenation along "location" is meaningful to humans
+        sampler.stop()
+        peak_during = sampler.max_rss
+        rss_post = _rss_family_bytes()
+        _log_mem(f"post-ppc {state_i}")
+
+        # Tag with state name so concat along "location" is human-readable
         idata = idata.copy()
         for group_name in idata.groups():
             ds = getattr(idata, group_name)
@@ -942,27 +982,47 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
         if i in four_idx:
             _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
 
-        # Stash
-        per_state_idatas.append(idata)
-        state_order.append(state_i)
+        # Incremental CONCAT into combined idata to see growth
+        if combined_idata is None:
+            combined_idata = idata
+        else:
+            combined_idata = concat_by_location([combined_idata, idata])
 
-    # ---------- CONCAT into ONE multi-location InferenceData ----------
-    combined = _concat_idatas_along_location(per_state_idatas)
+        # Free per-state idata ASAP
+        del idata
+        gc.collect()
+
+        rss_after_concat = _rss_family_bytes()
+        _log_mem(f"after-concat {state_i}")
+
+        # Append memory row
+        with open(mem_csv, "a", newline="") as f:
+            w = csv.writer(f)
+            w.writerow([
+                i, state_i,
+                f"{rss_pre / (1024**3):.3f}",
+                f"{peak_during / (1024**3):.3f}",
+                f"{rss_post / (1024**3):.3f}",
+                f"{rss_after_concat / (1024**3):.3f}",
+            ])
+
+    assert combined_idata is not None, "No states processed."
 
     # Persist combined idata
-    nc_path = outdir / "inference_idata_ALL_STATES.nc"
-    az.to_netcdf(combined, nc_path)
+    nc_path = outdir / "inference_idata_5_STATES.nc"
+    az.to_netcdf(combined_idata, nc_path)
     print("[artifact] saved combined idata:", nc_path)
 
-    # Build combined y_full (W, L_total) for PPC panels over ALL locations
+    # Build combined y_full (W, L_sel) for PPC panels over ALL selected locations
     combined_y = np.column_stack(combined_y_cols)
-    assert combined_y.shape == (W_ref, L_total)
+    assert combined_y.shape == (W_ref, L_sel)
 
     # Panels for ALL locations
-    _panel_per_location(combined, combined_y, np.arange(W_ref), tuple(state_order), last_pipe, outdir)
+    _panel_per_location(combined_idata, combined_y, np.arange(W_ref), tuple(csv_states), last_pipe, outdir)
 
     # Minimal sanity checks
-    assert "weekly_pred" in combined.posterior_predictive
-    assert "y" in combined.posterior_predictive
-    loc_coord = combined.posterior.coords.get("location", None)
-    assert loc_coord is not None and list(map(str, loc_coord.values)) == list(map(str, state_order))
+    assert "weekly_pred" in combined_idata.posterior_predictive
+    assert "y" in combined_idata.posterior_predictive
+    loc_coord = combined_idata.posterior.coords.get("location", None)
+    assert loc_coord is not None and list(map(str, loc_coord.values)) == list(map(str, csv_states[:L_sel]))
+    print("[artifact] memory summary:", mem_csv)
