@@ -33,7 +33,8 @@ dependencies = [
     "tqdm",
     "xarray",
     "pymc",
-    "arviz"
+    "arviz",
+    "tbb"
 ]
 name = "gempyor"
 readme = "README.md"

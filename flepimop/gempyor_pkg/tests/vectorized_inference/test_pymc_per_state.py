@@ -831,7 +831,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
     FOURIER_SCALE = bool(int(os.environ.get("FOURIER_SCALE", "1")))  
-    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "16"))          # K
+    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "64"))          # K
     FOURIER_PERIOD_DAYS = float(os.environ.get("FOURIER_PERIOD_DAYS", "365.25"))
     PROGRESS_BAR = bool(int(os.environ.get("PROGRESS_BAR", "1")))
     USE_NB = bool(int(os.environ.get("USE_NB", "0")))
