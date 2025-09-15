@@ -1,30 +1,12 @@
-# Fast-mode + no-mobility calibration test that LOOPS over each state present in the
-# empirical calibration CSV and builds ONE combined (51-location) InferenceData.
+# Fast-mode + no-mobility calibration that LOOPS over each state present in the
+# empirical calibration CSV and writes ONE NetCDF PER STATE (single-location traces),
+# using the FOURIER r0(t) prior/scale path.
 #
-# Key requirements implemented:
-#   • CSV `source` column contains actual state names (Alabama, Alaska, …).
-#     The CSV is already ordered the SAME WAY as ModelInfo’s internal subpop order.
-#     We use that alignment directly: for index i, we pair
-#        - model code := model_info.subpop_names[i]   (e.g., "01000")
-#        - csv state  := csv_sources[i]               (e.g., "Alabama")
-#   • We patch the config per-state to `selected: ["<model_code>"]`, run a SINGLE-location
-#     inference, and tag its InferenceData with that state's name.
-#   • We ONLY run Numba autotune ONCE at the beginning.
-#   • We SAVE everything (plots + final combined NetCDF) into ONE directory (no per-state subdirs).
-#   • We generate posterior predictive plots for ALL locations.
-#     We randomly pick FOUR locations for:
-#       - prior predictive spaghetti plots
-#       - “triad” plots (r0 baseline vs effective, S0 vs S(T), weekly hosp with 50% band)
-#   • We CONCATENATE all per-state InferenceData into a SINGLE multi-location object by
-#     concatenating xarray Datasets within groups along "location", then writing one NetCDF.
-#
-# Artifacts written in a single directory (defaults to ./model_output_all_states/):
-#   - prior_spaghetti_<STATE>.png (for 4 random states)
-#   - triad_<STATE>.png          (for the same 4 states)
-#   - ppc_panel_<idx>_<STATE>.png (for ALL states)
-#   - inference_idata_ALL_STATES.nc (combined trace)
-#
-# NOTE: This file is a full replacement for the previous “three-states” test.
+# Expected artifacts in a single directory (defaults to ./model_output_all_states/):
+#   - inference_idata_<STATE>.nc            (one per state)
+#   - prior_spaghetti_<STATE>.png           (for 4 random states)
+#   - triad_<STATE>.png                     (for 4 random states)
+#   - ppc_panel_00_<STATE>.png              (for ALL states)
 
 import os
 import platform
@@ -87,7 +69,7 @@ from gempyor.vectorization_experiments import autotune_all, get_autotune_config
 from gempyor.hosp_weekly_pipeline import build_pipeline_from_config, WeeklyHospPipeline
 from gempyor.pymc_weekly_op import (
     WeeklyHospAndFinalSOp,
-     build_weekly_model,
+    build_weekly_model,
     _yaml_defaults_in_leaf_order,
 )
 from gempyor.vectorized_modifiers import compile_seir_modifiers
@@ -100,7 +82,7 @@ from gempyor.model_info import ModelInfo  # adjust path if your repo layout diff
 
 def _materialize_structured_example(tmp_path_factory) -> Path:
     """Copy Structured_Example.yml & inputs into a temp root with absolute paths (seeding ON)."""
-    tmp_root = tmp_path_factory.mktemp("weekly_infer_realdata_all_states")
+    tmp_root = tmp_path_factory.mktemp("weekly_infer_realdata_all_states_fourier")
 
     repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
     tutorial_dir = repo_root / "examples" / "tutorials"
@@ -266,7 +248,7 @@ def _age_lower_bound(label: str) -> int:
 
 def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: Path):
     """
-    For each location:
+    For each location (here L=1):
       - Top: aggregated posterior predictive of y (mean + 95% HDI) vs observed.
       - Bottom: one subplot per age group (mean + 95% HDI) in ascending age-bin order.
     """
@@ -559,10 +541,10 @@ def _patch_config_selected_block(
 
 def _concat_idatas_along_location(idatas: list[az.InferenceData]) -> az.InferenceData:
     """
+    (Unused in this per-state writer, kept for convenience.)
     Concatenate multiple single-location InferenceData objects into one with a
     multi-location 'location' dimension by xarray-concatenating group datasets
-    along 'location'. For variables without a 'location' dim, keep them from the
-    first idata (assumed identical across states).
+    along 'location'.
     """
     out = az.InferenceData()
     group_names = set().union(*[idata.groups() for idata in idatas])
@@ -645,12 +627,10 @@ def _triad_plot_for_state(outdir: Path,
                           idata_state: az.InferenceData,
                           y_full_state: np.ndarray):
     """Make the 3-panel 'triad' figure for a SINGLE-location run."""
-    # Needed posterior tensors
     post = idata_state.posterior
     chains = post.dims["chain"]
     draws = post.dims["draw"]
 
-    # choose two posterior samples to overlay
     rng = np.random.default_rng(20240831)
     flat_ix = rng.choice(chains * draws, size=2, replace=False)
     sample_pairs = [(ix // draws, ix % draws) for ix in flat_ix]
@@ -709,7 +689,7 @@ def _triad_plot_for_state(outdir: Path,
     fig = plt.figure(figsize=(12, 9), dpi=130)
     gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1.2, 1.0, 1.2], hspace=0.28)
 
-    # Panel 1: r0 baseline vs effective injected (after weekly interp + smoothing)
+    # Panel 1: r0 baseline vs effective injected (after weekly interp; Fourier)
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.plot(t_days, base[r0_idx, :, 0], label="baseline r0", linewidth=1.6, color=BASELINE_R0_COLOR)
     s0_points, sT_points = [], []
@@ -723,7 +703,7 @@ def _triad_plot_for_state(outdir: Path,
             scale_w=None, day_to_week=day_to_week, smooth_N=smooth_N
         )
         ax1.plot(t_days, r0_seasonal, linestyle=":", linewidth=1.8, color="black",
-                 label="seasonal prior-mean (smoothed)")
+                 label="seasonal prior-mean")
 
     smooth_N = int(getattr(op, "_smooth_r0_days", 0) or 0)
     for k, (c, d) in enumerate(sample_pairs):
@@ -743,13 +723,13 @@ def _triad_plot_for_state(outdir: Path,
             scale_w=scale_w, day_to_week=day_to_week, smooth_N=smooth_N
         )
         ax1.plot(t_days, r0_eff, linestyle="--", linewidth=1.4, color=colors[k],
-                 label=f"sample {k+1} (eff r0)")
+                 label=f"sample {k+1} (eff r0 via Fourier)")
 
         pR_samp = pR[c, d, :, 0]
         S0_agg = np.sum((1.0 - pR_samp) * sr_mass0[:, 0]); s0_points.append(S0_agg)
         Sfinal_agg = np.sum(S_final[c, d, :, 0]); sT_points.append(Sfinal_agg)
 
-    ax1.set_title(f"{state_name} — r0 baseline vs effective injected (after RW2+smooth)")
+    ax1.set_title(f"{state_name} — r0 baseline vs effective injected (Fourier scale, unit-mean)")
     ax1.set_xlabel("day"); ax1.set_ylabel("r0(t)")
     ax1.grid(True, alpha=0.3); ax1.legend(loc="best")
 
@@ -800,6 +780,30 @@ def _triad_plot_for_state(outdir: Path,
     print(f"[artifact] saved: {outfile}")
 
 
+# ============================= NetCDF sanity check =============================
+
+def _assert_netcdf_has_posterior(nc_path: Path) -> None:
+    """Open a freshly-written NetCDF and assert it contains a non-empty posterior group."""
+    if (not nc_path.exists()) or nc_path.stat().st_size == 0:
+        raise RuntimeError(f"NetCDF appears empty or missing: {nc_path}")
+    try:
+        idata = az.from_netcdf(nc_path)
+    except Exception as e:
+        raise RuntimeError(f"Failed to read NetCDF ({nc_path}): {e}") from e
+
+    if not hasattr(idata, "posterior") or idata.posterior is None:
+        raise RuntimeError(f"No 'posterior' group found in NetCDF: {nc_path}")
+
+    ds = idata.posterior
+    for dim in ("chain", "draw"):
+        if dim not in ds.dims or int(ds.dims[dim]) <= 0:
+            raise RuntimeError(f"'posterior' has non-positive {dim} in NetCDF: {nc_path}")
+
+    expected_any = ["weekly_pred", "pR", "mods_loc", "beta0_loc"]
+    if not any(v in ds.data_vars for v in expected_any):
+        raise RuntimeError(f"'posterior' missing expected vars {expected_any} in NetCDF: {nc_path}")
+
+
 # ============================= main test =============================
 
 def _locate_csv_or_skip() -> Path:
@@ -811,19 +815,26 @@ def _locate_csv_or_skip() -> Path:
 
 
 @pytest.mark.slow
-def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
+def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     """
-    Full run over ALL states in the CSV (aligned to ModelInfo order),
-    concatenated into ONE multi-location InferenceData and saved as a single NetCDF.
-    Prior spaghetti + triads are produced for 4 RANDOM states; PPC panels for ALL states.
+    Full run over ALL states in the CSV (aligned to ModelInfo order).
+    For EACH state, run single-location inference with the FOURIER r0-scale prior and write ONE NetCDF per state:
+        inference_idata_<STATE>.nc
+    Also write PPC and triad plots per state.
+    After the FIRST state's NetCDF is written, re-open it and verify it's non-empty.
     """
     # ---------- quick knobs ----------
     PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "10"))
-    TUNE = int(os.environ.get("TUNE", "5"))
-    DRAWS = int(os.environ.get("DRAWS", "5"))
+    TUNE = int(os.environ.get("TUNE", "700"))
+    DRAWS = int(os.environ.get("DRAWS", "300"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
+    FOURIER_SCALE = bool(int(os.environ.get("FOURIER_SCALE", "1")))  
+    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "16"))          # K
+    FOURIER_PERIOD_DAYS = float(os.environ.get("FOURIER_PERIOD_DAYS", "365.25"))
+    PROGRESS_BAR = bool(int(os.environ.get("PROGRESS_BAR", "1")))
+    USE_NB = bool(int(os.environ.get("USE_NB", "0")))
     # ----------------------------------
 
     base_cfg_path = _materialize_structured_example(tmp_path_factory)
@@ -845,18 +856,12 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
     outdir = Path(os.environ.get("E2E_OUTDIR", "") or (Path.cwd() / "model_output_all_states"))
     outdir.mkdir(parents=True, exist_ok=True)
 
-    per_state_idatas: list[az.InferenceData] = []
-    state_order: list[str] = []
-
-    # We'll also accumulate y_full columns to build a combined (W, L_total) for PPC panels later
-    combined_y_cols = []
-    W_ref = None
-    last_pipe = None  # keep last pipe for age labels
+    first_nc_checked = False
 
     for i in range(L_total):
         code_i = model_codes[i]   # e.g., "01000"
         state_i = csv_states[i]   # e.g., "Alabama"
-        print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) ===")
+        print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) — Fourier K={FOURIER_HARMONICS}, P={FOURIER_PERIOD_DAYS} ===")
 
         # Patch config for this state into a temp file
         cfg_state = base_cfg_path.with_name(f"{base_cfg_path.stem}__{code_i}.yml")
@@ -869,24 +874,21 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
             pipe = build_pipeline_from_config(cfg_state, dt_days=0.5)
         op = WeeklyHospAndFinalSOp(pipe, fast_mode=True, disable_mobility=True)
         _enable_fast_and_disable_mobility(pipe, op)
-        last_pipe = pipe
 
         # Align CSV to THIS single-location model (subset to just this state name)
         y_full, obs_weeks, loc_names = _load_and_align_csv_to_weeks(
             csv_path, pipe, op, subset_sources=(state_i,)
         )
         assert y_full.shape[1] == 1 and op.locations == 1, "Single-location run expected."
-        if W_ref is None:
-            W_ref = y_full.shape[0]
-        else:
-            assert y_full.shape[0] == W_ref, "All states should have same W after alignment."
 
-        # Save the column to assemble combined (W, L_total) later
-        combined_y_cols.append(y_full[:, 0])
-
-        # Optional PRIOR spaghetti ONLY for selected 4 states
+        # Optional PRIOR spaghetti ONLY for selected 4 states (Fourier prior)
         if i in four_idx:
-            with build_weekly_model(pipe, op=op, y_obs=None, force_r0_weekly_scale=True) as prior_model:
+            with build_weekly_model(
+                pipe, op=op, y_obs=None,
+                force_r0_fourier_scale=FOURIER_SCALE,
+                fourier_harmonics=FOURIER_HARMONICS,
+                fourier_period_days=FOURIER_PERIOD_DAYS,
+            ) as prior_model:
                 present = set(prior_model.named_vars.keys())
                 requested = ["weekly_pred", "mods_loc", "mods_mu_log_loc", "r0_weekly_scale"]
                 prior_vars = [v for v in requested if v in present]
@@ -903,15 +905,20 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
             fig, ax = plt.subplots(1, 1, figsize=(12, 4), dpi=120)
             for s in range(min(PRIOR_SAMPLES, series.shape[0])):
                 ax.plot(weeks, series[s], alpha=0.25, linewidth=1.0)
-            ax.set_title(f"Prior predictive — sum over ages, {state_i}")
+            ax.set_title(f"Prior predictive (Fourier r0-scale) — sum over ages, {state_i}")
             ax.set_xlabel("Week"); ax.set_ylabel("Weekly hospitalizations (sum over age)")
             ax.grid(True, alpha=0.3)
             fig.tight_layout()
             fig.savefig(outdir / f"prior_spaghetti_{state_i}.png", bbox_inches="tight")
             plt.close(fig)
 
-        # ---- POSTERIOR for this state ----
-        with build_weekly_model(pipe, op=op, y_obs=y_full, use_nb=True, force_r0_weekly_scale=True) as model:
+        # ---- POSTERIOR for this state (Fourier path) ----
+        with build_weekly_model(
+            pipe, op=op, y_obs=y_full, use_nb=USE_NB,
+            force_r0_fourier_scale=FOURIER_SCALE,
+            fourier_harmonics=FOURIER_HARMONICS,
+            fourier_period_days=FOURIER_PERIOD_DAYS,
+        ) as model:
             idata = pm.sample(
                 draws=DRAWS,
                 tune=TUNE,
@@ -919,17 +926,17 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
                 cores=CORES,
                 step=pm.DEMetropolisZ(tune_interval=100),
                 random_seed=777 + i,
-                progressbar=True,
+                progressbar=PROGRESS_BAR,
             )
             ppc = pm.sample_posterior_predictive(
                 idata,
                 var_names=["y", "weekly_pred_sum_age_shifted", "weekly_pred"],
                 random_seed=888 + i,
-                progressbar=True,
+                progressbar=PROGRESS_BAR,
             )
         idata.extend(ppc)
 
-        # Tag with *state name* so concatenation along "location" is meaningful to humans
+        # Tag with *state name* so saved tensors have a human-readable location coord
         idata = idata.copy()
         for group_name in idata.groups():
             ds = getattr(idata, group_name)
@@ -938,31 +945,20 @@ def test_pymc_weekly_inference_all_states_single_dir(tmp_path_factory):
             if "location" in ds.dims or "location" in ds.coords:
                 setattr(idata, group_name, ds.assign_coords(location=[str(state_i)]))
 
-        # Optional TRIAD ONLY for selected 4 states
+        # Per-state PPC + (optionally) TRIAD plots
+        _panel_per_location(idata, y_full, np.arange(y_full.shape[0]), (state_i,), pipe, outdir)
         if i in four_idx:
             _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
 
-        # Stash
-        per_state_idatas.append(idata)
-        state_order.append(state_i)
+        # ---- SAVE *ONE FILE PER STATE* ----
+        nc_path = outdir / f"inference_idata_{state_i}.nc"
+        az.to_netcdf(idata, nc_path)
+        print(f"[artifact] saved per-state idata:", nc_path)
 
-    # ---------- CONCAT into ONE multi-location InferenceData ----------
-    combined = _concat_idatas_along_location(per_state_idatas)
+        # After FIRST state's file is written, check it's not empty
+        if not first_nc_checked:
+            _assert_netcdf_has_posterior(nc_path)
+            print(f"[sanity] verified non-empty posterior in: {nc_path}")
+            first_nc_checked = True
 
-    # Persist combined idata
-    nc_path = outdir / "inference_idata_ALL_STATES.nc"
-    az.to_netcdf(combined, nc_path)
-    print("[artifact] saved combined idata:", nc_path)
-
-    # Build combined y_full (W, L_total) for PPC panels over ALL locations
-    combined_y = np.column_stack(combined_y_cols)
-    assert combined_y.shape == (W_ref, L_total)
-
-    # Panels for ALL locations
-    _panel_per_location(combined, combined_y, np.arange(W_ref), tuple(state_order), last_pipe, outdir)
-
-    # Minimal sanity checks
-    assert "weekly_pred" in combined.posterior_predictive
-    assert "y" in combined.posterior_predictive
-    loc_coord = combined.posterior.coords.get("location", None)
-    assert loc_coord is not None and list(map(str, loc_coord.values)) == list(map(str, state_order))
+    print("\n[done] Wrote one NetCDF per state + plots to:", outdir)

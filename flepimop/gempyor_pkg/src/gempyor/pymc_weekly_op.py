@@ -22,7 +22,6 @@ from gempyor.hosp_weekly_pipeline import (
 )
 from gempyor.vectorization_experiments import RHSfactory
 
-
 # ------------------------------ utilities ------------------------------
 
 def _extract_yaml_value(spec) -> float:
@@ -111,7 +110,6 @@ def _mmwr_assign_from(start_date: np.datetime64 | object, T: int) -> tuple[np.nd
     n_weeks = int(assign.max()) + 1
     return assign, n_weeks
 
-
 # ------------------------------ Op ------------------------------
 
 class WeeklyHospAndFinalSOp(Op):
@@ -158,11 +156,8 @@ class WeeklyHospAndFinalSOp(Op):
         self._day_to_week, self._n_weeks = _mmwr_assign_from(pipeline.start_date, pipeline.T)
         self._week_centers = self._compute_week_centers(self._day_to_week)
 
-        # ------------------------------------------------------------
-        # FIX: Align Op's internal week count to model's weekly array.
-        # The model's W (from pipeline.evaluate) is authoritative.
+        # Align to model's weekly array
         self._n_weeks = self._W
-        # ------------------------------------------------------------
 
         outcomes_cfg = (
             pipeline.outcomes_cfg
@@ -326,11 +321,8 @@ class WeeklyHospAndFinalSOp(Op):
         if self._has_r0_modifiers and (not self._allow_r0_weekly_scale_with_modifiers):
             return
         pidx = self._get_param_row("r0")
-        # ------------------------------------------------------------
-        # FIX: validate against model-sized weeks (self._W)
         W = int(self._W)
         expected = (W, self._L)
-        # ------------------------------------------------------------
         if r0_weekly_scale.shape != expected:
             raise ValueError(f"r0_weekly_scale shape {r0_weekly_scale.shape} != {expected}")
         T_days = params_base.shape[1]
@@ -389,7 +381,6 @@ class WeeklyHospAndFinalSOp(Op):
         return True
 
     def _solve_fast(self, y0_vec: np.ndarray, params_unique: np.ndarray, t_eval: np.ndarray):
-        """Run RK45 once; return result on success, else None."""
         res = self._rhs.solve(
             y0=y0_vec,
             parameters=params_unique,
@@ -489,7 +480,6 @@ class WeeklyHospAndFinalSOp(Op):
         n_steps = max(1, int(round(total_days / self.pipe.dt)))
         t_eval = np.linspace(0.0, total_days, n_steps + 1, dtype=np.float64)
 
-        # Guard for invalid inputs -> NaN outputs
         if not self._precheck(params_unique, y0):
             assign_steps, n_weeks = _steps_to_weeks_assign(
                 start=self.pipe.start_date, T_days=self.pipe.T - 1, T_steps=n_steps, dt_days=float(self.pipe.dt)
@@ -500,7 +490,6 @@ class WeeklyHospAndFinalSOp(Op):
             outputs[1][0] = S_final
             return
 
-        # Fast RK45 only; on failure -> NaNs
         res = self._solve_fast(y0.ravel(), params_unique, t_eval)
         if res is None:
             assign_steps, n_weeks = _steps_to_weeks_assign(
@@ -622,7 +611,7 @@ class WeeklyHospAndFinalSOp(Op):
 
     @property
     def n_weeks(self) -> int:
-        return self._W  # authoritative week count
+        return self._W
 
     @property
     def age_labels(self) -> tuple[str, ...]:
@@ -645,6 +634,61 @@ class WeeklyHospAndFinalSOp(Op):
         return self._r0_modifier_leaves
 
 
+# ------------------------------ Fourier helpers (new) ------------------------------
+
+def _fourier_names(K: int) -> list[str]:
+    names = ["c0"]
+    for k in range(1, K + 1):
+        names.append(f"cos{k}")
+        names.append(f"sin{k}")
+    return names
+
+def _fourier_design(t: np.ndarray, K: int, period_days: float) -> np.ndarray:
+    """
+    Build design matrix for times t (days) with columns [1, cos(2πk t/P), sin(2πk t/P)] for k=1..K.
+    Returns shape (len(t), 1 + 2K).
+    """
+    t = np.asarray(t, dtype=float).reshape(-1)
+    M = 1 + 2 * K
+    X = np.empty((t.size, M), dtype=float)
+    X[:, 0] = 1.0
+    if K == 0:
+        return X
+    w = (2.0 * np.pi / float(period_days))
+    col = 1
+    for k in range(1, K + 1):
+        ang = w * k * t
+        X[:, col] = np.cos(ang); col += 1
+        X[:, col] = np.sin(ang); col += 1
+    return X
+
+def _ls_init_fourier(
+    r0_daily: np.ndarray,
+    t_daily: np.ndarray,
+    K: int,
+    period_days: float,
+) -> tuple[np.ndarray, float]:
+    """
+    Quick LS fit on log(r0_daily) to get theta_hat and residual std.
+    Returns (theta_hat[M], resid_std).
+    """
+    y = np.log(np.clip(np.asarray(r0_daily, dtype=float).reshape(-1), 1e-12, np.inf))
+    X = _fourier_design(np.asarray(t_daily, dtype=float), K, period_days)
+    # Least squares
+    theta_hat, *_ = np.linalg.lstsq(X, y, rcond=None)
+    resid = y - X @ theta_hat
+    resid_std = float(np.sqrt(np.maximum(np.mean(resid**2), 1e-12)))
+    return theta_hat, resid_std
+
+def _weekly_from_theta(theta: np.ndarray, week_centers: np.ndarray, K: int, period_days: float) -> np.ndarray:
+    """
+    Evaluate weekly f(w) = Xw @ theta, then return exp(f - mean(f)) as scale (unit geometric mean).
+    """
+    Xw = _fourier_design(np.asarray(week_centers, dtype=float), K, period_days)
+    fw = Xw @ theta.reshape(-1)
+    fw_center = fw - np.mean(fw)
+    return np.exp(fw_center).astype(float)  # (W,)
+
 # ------------------------------ model builder ------------------------------
 
 def build_weekly_model(
@@ -654,25 +698,46 @@ def build_weekly_model(
     y_obs: np.ndarray | None = None,
     use_nb: bool = False,
     force_r0_weekly_scale: bool = False,
+    # ---- NEW Fourier knobs ----
+    force_r0_fourier_scale: bool = False,
+    fourier_harmonics: int = 3,
+    fourier_period_days: float = 365.25,
 ) -> pm.Model:
     """
     If L == 1: build the original vectorized model.
 
     If L > 1: create *per-location* random variables (names end with `_l{idx}`),
-    then stack them back into tensors and expose the usual Deterministic names
-    (`mods_loc`, `pR`, `lambda_ext_loc`, `r0_weekly_scale`, `delta_week`, …).
-    This preserves downstream variable names while enabling location-blocked MCMC.
+    then stack them back into tensors and expose the usual Deterministic names.
+
+    New:
+      - `force_r0_fourier_scale`: use a Fourier series to generate r0 weekly multiplicative scale.
+        Mutually exclusive with `force_r0_weekly_scale`.
     """
     if op is None:
         op = WeeklyHospAndFinalSOp(pipeline)
-    if force_r0_weekly_scale:
+
+    # ---- Mutual exclusion guard ----
+    if force_r0_weekly_scale and force_r0_fourier_scale:
+        raise ValueError("Choose at most one of {force_r0_weekly_scale, force_r0_fourier_scale}.")
+
+    # If either path is chosen, make sure Op allows weekly scaling alongside modifiers
+    if force_r0_weekly_scale or force_r0_fourier_scale:
         try:
             setattr(op, "_allow_r0_weekly_scale_with_modifiers", True)
         except Exception:
             pass
 
+    # Disable Op smoothing when using Fourier (to avoid double-smoothing)
+    if force_r0_fourier_scale:
+        try:
+            setattr(op, "_smooth_r0_days", 0)
+        except Exception:
+            pass
+
     A, W, L = op.weekly_shape
     mod_names = tuple(pipeline.modifier_order())
+
+    # coords
     coords = {
         "age": np.array(op.age_labels, dtype=object),
         "week": np.arange(W),
@@ -680,6 +745,12 @@ def build_weekly_model(
         "modifier": np.array(mod_names, dtype=object),
         "lag": np.arange(5),
     }
+
+    # If Fourier: add coeff coord (1 + 2K)
+    if force_r0_fourier_scale:
+        K = int(max(0, fourier_harmonics))
+        coeff_names = _fourier_names(K)
+        coords["fourier_coeff"] = np.array(coeff_names, dtype=object)
 
     # population exposure
     pop_loc = None
@@ -698,12 +769,49 @@ def build_weekly_model(
 
     defaults = _yaml_defaults_in_leaf_order(pipeline.config_path, mod_names)
 
+    # ---------- Precompute Fourier LS in NumPy (for priors), if requested ----------
+    K = int(max(0, fourier_harmonics))
+    period_days = float(fourier_period_days)
+    theta_hat_loc = None
+    resid_std_loc = None
+    Xw_shared = None
+
+    if force_r0_fourier_scale:
+        # Access baseline r0 daily from base_params
+        param_names = np.array(list(pipeline.param_defs.keys()))
+        if "r0" in param_names:
+            r0_idx = int(np.where(param_names == "r0")[0][0])
+        else:
+            aliases = ["R0", "r_0", "basic_reproduction_number"]
+            found = [nm for nm in aliases if nm in param_names]
+            if not found:
+                raise RuntimeError("Could not locate 'r0' parameter row in base params.")
+            r0_idx = int(np.where(param_names == found[0])[0][0])
+
+        base = pipeline.base_params  # (P, T_days, L)
+        T_days = base.shape[1]
+        t_days = np.arange(T_days, dtype=float)
+
+        # week centers from Op (authoritative W)
+        week_centers = np.asarray(getattr(op, "_week_centers", np.arange(W) * 7.0), dtype=float)[:W]
+        Xw_shared = _fourier_design(week_centers, K, period_days)  # (W, M)
+
+        M = 1 + 2 * K
+        theta_hat_loc = np.zeros((M, L), dtype=float)
+        resid_std_loc = np.zeros((L,), dtype=float)
+
+        for l in range(L):
+            r0_daily = base[r0_idx, :, l].astype(float)
+            th, rs = _ls_init_fourier(r0_daily, t_days, K, period_days)
+            theta_hat_loc[:, l] = th
+            resid_std_loc[l] = rs
+
     with pm.Model(coords=coords) as m:
         sigma_mod_log = 0.35
         mu_log_base = np.log(defaults + 1e-12) - 0.5 * (sigma_mod_log ** 2)
         mods_vec = pm.Deterministic("mods", pt.ones((len(mod_names),)), dims=("modifier",))
 
-        # ---- single-location path (unchanged) ----
+        # ===== SINGLE-LOCATION =====
         if L == 1:
             mods_mu_log_loc = pm.Normal(
                 "mods_mu_log_loc", mu=mu_log_base[:, None], sigma=0.30, dims=("modifier", "location")
@@ -716,14 +824,31 @@ def build_weekly_model(
                 lambda_ext_loc = pm.LogNormal("lambda_ext_loc", mu=0.0, sigma=0.25, dims=("location",))
                 pm.Deterministic("inv_lambda_ext_loc", 1.0 / (lambda_ext_loc + 1e-16), dims=("location",))
 
+            # ---------- r0 scale (RW2 vs Fourier vs none) ----------
             r0_weekly_scale_full = None
             base_scale = pt.ones((W, L))
+
             if not op.has_r0_modifiers:
                 u_loc = pm.Beta("r0_global_unit_loc", alpha=5.0, beta=5.0, dims=("location",))
                 r0_global_loc = pm.Deterministic("r0_global_loc", 0.8 + 0.4 * u_loc, dims=("location",))
                 base_scale = r0_global_loc[None, :] * base_scale
 
-            if force_r0_weekly_scale or (not op.has_r0_modifiers):
+            if force_r0_fourier_scale:
+                # Priors around LS init
+                M = 1 + 2 * K
+                th0 = theta_hat_loc[:, 0]
+                # Use resid_std as a rough scale; cap to a sensible range
+                scale = float(np.clip(resid_std_loc[0], 0.05, 1.0))
+                theta = pm.Normal("r0_fourier_coef_loc", mu=th0, sigma=scale, dims=("fourier_coeff",))
+                Xw = pt.as_tensor_variable(Xw_shared)  # (W, M)
+                f_w = Xw @ theta  # (W,)
+                f_w_center = f_w - pt.mean(f_w)
+                r0_weekly_scale_full = pm.Deterministic(
+                    "r0_weekly_scale", base_scale[:, 0:1] * pt.exp(f_w_center)[:, None],  # (W,1)
+                    dims=("week", "location"),
+                )
+
+            elif force_r0_weekly_scale or (not op.has_r0_modifiers):
                 r0_sigma_loc = pm.HalfNormal("r0_weekly_sigma_loc", 0.03, dims=("location",))
                 eps2 = pm.Normal("r0_rw2_eps", 0.0, r0_sigma_loc[None, :], dims=("week", "location"))
                 eps1 = pt.cumsum(eps2, axis=0)
@@ -747,6 +872,7 @@ def build_weekly_model(
 
             weekly = pm.Deterministic("weekly_pred", weekly_pred_t, dims=("age", "week", "location"))
 
+            # Age scaling
             sigma_age_loc = pm.HalfNormal("sigma_age_loc", 0.15, dims=("location",))
             z_age_loc = pm.Normal("z_age_loc", 0.0, 1.0, dims=("age", "location"))
             theta_age_loc = pm.Deterministic("theta_age_loc", z_age_loc * sigma_age_loc[None, :], dims=("age", "location"))
@@ -806,7 +932,7 @@ def build_weekly_model(
                     pm.Poisson("y", mu=mu_obs, observed=y_obs, dims=("week", "location"))
             return m
 
-        # ---- multi-location path: per-location RVs, then stack ----
+        # ===== MULTI-LOCATION =====
         mods_mu_log_ls, mods_loc_ls, pR_ls = [], [], []
         lambda_ls, r0_scale_ls = [], []
 
@@ -823,6 +949,11 @@ def build_weekly_model(
             pm.Deterministic("r0_global_loc", r0_global_loc, dims=("location",))
             base_scale = r0_global_loc[None, :] * base_scale
 
+        # Prepare shared Xw if Fourier
+        if force_r0_fourier_scale:
+            Xw = pt.as_tensor_variable(Xw_shared)  # (W, M)
+            M = Xw_shared.shape[1]
+
         for l in range(L):
             mods_mu_log_l = pm.Normal(f"mods_mu_log_loc_l{l}", mu=mu_log_base, sigma=0.30, dims=("modifier",))
             mods_l = pm.LogNormal(f"mods_loc_l{l}", mu=mods_mu_log_l, sigma=sigma_mod_log, dims=("modifier",))
@@ -836,14 +967,23 @@ def build_weekly_model(
                 lambda_ls.append(lam_l)
 
             r0_scale_l = None
-            if force_r0_weekly_scale or (not op.has_r0_modifiers):
+            if force_r0_fourier_scale:
+                th0 = theta_hat_loc[:, l]
+                scale = float(np.clip(resid_std_loc[l], 0.05, 1.0))
+                theta_l = pm.Normal(f"r0_fourier_coef_loc_l{l}", mu=th0, sigma=scale, dims=("fourier_coeff",))
+                f_w_l = Xw @ theta_l  # (W,)
+                f_w_l_center = f_w_l - pt.mean(f_w_l)
+                # include global baseline if present
+                r0_scale_l = pt.exp(f_w_l_center) * (r0_global_loc[l] if r0_global_loc is not None else 1.0)
+
+            elif force_r0_weekly_scale or (not op.has_r0_modifiers):
                 r0_sigma_l = pm.HalfNormal(f"r0_weekly_sigma_loc_l{l}", 0.03)
                 eps2_l = pm.Normal(f"r0_rw2_eps_l{l}", 0.0, r0_sigma_l, dims=("week",))
                 eps1_l = pt.cumsum(eps2_l)
                 eps_l = pt.cumsum(eps1_l)
                 eps_center_l = eps_l - pt.mean(eps_l)
-                # multiply by global baseline if present
-                r0_scale_l = pt.exp(eps_center_l) * (base_scale[:, l] if r0_global_loc is not None else 1.0)
+                r0_scale_l = pt.exp(eps_center_l) * (r0_global_loc[l] if r0_global_loc is not None else 1.0)
+
             r0_scale_ls.append(r0_scale_l)
 
             sigma_age_l = pm.HalfNormal(f"sigma_age_loc_l{l}", 0.15)
@@ -860,7 +1000,7 @@ def build_weekly_model(
             if use_nb:
                 alpha_nb_ls.append(pm.LogNormal(f"alpha_nb_loc_l{l}", mu=np.log(25.0), sigma=0.5))
 
-        # Stack back to standard shapes + publish Deterministic tensors with familiar names
+        # Stack back
         mods_loc = pm.Deterministic("mods_loc", pt.stack(mods_loc_ls, axis=1), dims=("modifier", "location"))
         pm.Deterministic("mods_mu_log_loc", pt.stack(mods_mu_log_ls, axis=1), dims=("modifier", "location"))
         pR = pm.Deterministic("pR", pt.stack(pR_ls, axis=1), dims=("age", "location"))
@@ -870,7 +1010,16 @@ def build_weekly_model(
         else:
             lambda_ext_loc = None
 
-        if force_r0_weekly_scale or (not op.has_r0_modifiers):
+        if force_r0_fourier_scale:
+            r0_weekly_scale_full = pm.Deterministic(
+                "r0_weekly_scale",
+                pt.stack(
+                    [ (r if r is not None else pt.ones((W,))) for r in r0_scale_ls ],
+                    axis=1
+                ) * (base_scale),
+                dims=("week", "location"),
+            )
+        elif force_r0_weekly_scale or (not op.has_r0_modifiers):
             r0_weekly_scale_full = pm.Deterministic(
                 "r0_weekly_scale",
                 pt.stack([r if r is not None else pt.ones((W,)) for r in r0_scale_ls], axis=1),
@@ -879,7 +1028,7 @@ def build_weekly_model(
         else:
             r0_weekly_scale_full = None
 
-        # forward pass through Op
+        # forward pass
         if op.has_lambda_ext and (r0_weekly_scale_full is not None):
             weekly_pred_t, S_final_t = op(mods_vec, pR, lambda_ext_loc=lambda_ext_loc,
                                           mods_loc=mods_loc, r0_weekly_scale=r0_weekly_scale_full)
@@ -892,8 +1041,8 @@ def build_weekly_model(
 
         weekly = pm.Deterministic("weekly_pred", weekly_pred_t, dims=("age", "week", "location"))
 
-        # Age scaling (per loc pieces were RVs; now stack)
-        theta_age = pt.stack([z_age_ls[l] * sigma_age_ls[l] for l in range(L)], axis=1)  # (age, location)
+        # Age scaling
+        theta_age = pt.stack([z_age_ls[l] * sigma_age_ls[l] for l in range(L)], axis=1)
         theta_age_loc = pm.Deterministic("theta_age_loc", theta_age, dims=("age", "location"))
         scale_raw = pt.exp(theta_age_loc)
         w = 1.0 - pR
@@ -908,7 +1057,7 @@ def build_weekly_model(
                                           dims=("week", "location"))
         pm.Deterministic("S_final", S_final_t, dims=("age", "location"))
 
-        # Weekly residuals + lag (stack)
+        # Weekly residuals + lag
         delta_week_cum = pt.stack([pt.cumsum(z_week_ls[l] * sigma_week_ls[l]) for l in range(L)], axis=1)
         delta_week = pm.Deterministic("delta_week",
                                       delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
@@ -949,7 +1098,6 @@ def build_weekly_model(
 
     return m
 
-
 # ------------------------------ blocked step helper ------------------------------
 
 def make_location_blocked_step(
@@ -957,21 +1105,12 @@ def make_location_blocked_step(
     step_cls=pm.DEMetropolisZ,
     **kwargs,
 ) -> pm.CompoundStep | pm.ArrayStep:
-    """
-    Build a CompoundStep that samples *independent location blocks*.
-
-    We infer the location from the *base* (untransformed) RV name that ends with `_l{idx}`,
-    while passing the actual transformed free RV objects to the step method (PyMC 5).
-    """
-    # Try PyMC utilities; fall back to simple heuristics if unavailable.
     try:
         from pymc.util import get_untransformed_name, is_transformed_name
     except Exception:
         def is_transformed_name(name: str) -> bool:
-            # Heuristic: PyMC transformed names usually end with "__"
             return name.endswith("__")
         def get_untransformed_name(name: str) -> str:
-            # Heuristic untransform: drop trailing "__" and last transform token
             if not is_transformed_name(name):
                 return name
             base = name[:-2]
@@ -984,14 +1123,13 @@ def make_location_blocked_step(
         return step_cls(vars=[], **kwargs)
 
     import os, re
-    loc_re = re.compile(r"_l(?P<idx>\d+)(?:$|_)")  # matches "..._l3" or "..._l3_something"
+    loc_re = re.compile(r"_l(?P<idx>\d+)(?:$|_)")
 
     by_loc: dict[int, list] = {}
     globals_group: list = []
 
     for rv in free:
         tname = str(rv.name)
-        # Only untransform if it is actually transformed
         base = get_untransformed_name(tname) if is_transformed_name(tname) else tname
         m = loc_re.search(base)
         if m:
@@ -1000,7 +1138,6 @@ def make_location_blocked_step(
         else:
             globals_group.append(rv)
 
-    # Optional debug: print group sizes to help diagnose shape issues
     if os.environ.get("WEEKLY_BLOCK_DEBUG", "").strip() == "1":
         try:
             print("[make_location_blocked_step] groups:",
@@ -1019,7 +1156,6 @@ def make_location_blocked_step(
         steps.append(step_cls(vars=globals_group, **kwargs))
 
     if not steps:
-        # Safety: fall back to a single step over everything
         return step_cls(vars=free, **kwargs)
     if len(steps) == 1:
         return steps[0]
@@ -1027,20 +1163,10 @@ def make_location_blocked_step(
 
 
 def make_location_blocked_step_factory(step_cls=pm.DEMetropolisZ, **kwargs):
-    """
-    Return a callable that builds the location-blocked step *inside* the worker's
-    model context. Pass the returned callable directly to `pm.sample(step=...)`.
-
-    Example:
-        step = make_location_blocked_step_factory(pm.DEMetropolisZ, tune_interval=50)
-        idata = pm.sample(..., step=step, cores=CORES)
-    """
     def _factory(model: pm.Model | None = None):
-        # If `model` is None, let PyMC resolve the current context
         mdl = model if model is not None else pm.modelcontext(model)
         return make_location_blocked_step(mdl, step_cls=step_cls, **kwargs)
     return _factory
-
 
 # ------------------------------ convenience ------------------------------
 
