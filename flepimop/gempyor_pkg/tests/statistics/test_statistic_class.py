@@ -520,6 +520,10 @@ class TestStatistic:
         mock_inputs = factory()
         statistic = mock_inputs.create_statistic_instance()
 
+        # Skip RMSE hard-coded factories while it is under construction
+        if mock_inputs.config["likelihood"]["dist"] == "rmse":
+            pytest.skip("Skipping test for 'rmse' as it is not implemented")
+
         # Tests
         log_likelihood = statistic.llik(
             mock_inputs.model_data[mock_inputs.config["sim_var"]],
@@ -556,6 +560,11 @@ class TestStatistic:
         # Setup
         mock_inputs = factory()
         statistic = mock_inputs.create_statistic_instance()
+
+        # Skip RMSE hard-coded factories while it is under construction
+        if mock_inputs.config["likelihood"]["dist"] == "rmse":
+            pytest.skip("Skipping test for 'rmse' as it is not implemented")
+
         log_likelihood, regularization = statistic.compute_logloss(
             mock_inputs.model_data, mock_inputs.gt_data
         )

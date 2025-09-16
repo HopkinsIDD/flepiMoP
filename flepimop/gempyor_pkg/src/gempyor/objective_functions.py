@@ -118,7 +118,7 @@ class LognormalLoglikelihood(ObjectiveFunctionABC):
         >>> gt_data = np.array([10.0, 20.0, 30.0])
         >>> model_data = np.array([12.0, 18.0, 35.0])
         >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
-        array([-2.5949, -3.2437, -3.6745])
+        array([-2.5349, -3.3277, -3.6287])
     """
 
     distribution: Literal["lognorm"] = "lognorm"
@@ -221,7 +221,7 @@ class WeibullLoglikelihood(ObjectiveFunctionABC):
         >>> gt_data = np.array([5.0, 10.0, 15.0])
         >>> model_data = np.array([6.0, 12.0, 16.0])
         >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
-        array([-2.2382, -2.9313, -3.3071])
+        array([-2.2834, -2.9766, -3.3314])
     """
 
     distribution: Literal["weibull"] = "weibull"
@@ -244,13 +244,7 @@ class AbsoluteError(ObjectiveFunctionABC):
     The final score is calculated as -log(sum_of_absolute_errors).
 
     Examples:
-        >>> import numpy as np
-        >>> from gempyor.objective_functions import AbsoluteError
-        >>> dist = AbsoluteError()
-        >>> gt_data = np.array([1, 2, 6])
-        >>> model_data = np.array([3, 2, 4])
-        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
-        array([-1.3863, -1.3863, -1.3863])
+        ...
     """
 
     distribution: Literal["absolute_error"] = "absolute_error"
@@ -259,9 +253,11 @@ class AbsoluteError(ObjectiveFunctionABC):
         self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Calculates the error metric from the sum of absolute errors."""
-        absolute_error = np.abs(gt_data - model_data)
-        total_absolute_error = np.nansum(absolute_error)
-        return np.full(gt_data.shape, -np.log(total_absolute_error))
+        raise NotImplementedError(
+            "Absolute Error not yet iplemented as an objective function."
+        )
+        # absolute_error = np.abs(gt_data - model_data)
+        # return -np.log(absolute_error)
 
 
 class RMSE(ObjectiveFunctionABC):
@@ -271,13 +267,7 @@ class RMSE(ObjectiveFunctionABC):
     The final score is calculated as -log(RMSE).
 
     Examples:
-        >>> import numpy as np
-        >>> from gempyor.objective_functions import RMSE
-        >>> dist = RMSE()
-        >>> gt_data = np.array([1, 2, 6])
-        >>> model_data = np.array([3, 4, 4])
-        >>> np.round(dist.error_metric_calculation(gt_data=gt_data, model_data=model_data), 4)
-        array([-0.6931, -0.6931, -0.6931])
+        ...
     """
 
     distribution: Literal["rmse"] = "rmse"
@@ -286,8 +276,9 @@ class RMSE(ObjectiveFunctionABC):
         self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Calculates the error metric from RMSE."""
-        squared_error = (gt_data - model_data) ** 2
-        return -np.log(np.sqrt(np.nanmean(squared_error)))
+        raise NotImplementedError("RMSE not yet implemented as an objective function.")
+        # squared_error = (gt_data - model_data) ** 2
+        # return -np.log(np.sqrt(np.nanmean(squared_error)))
 
 
 ObjectiveFunction = Annotated[

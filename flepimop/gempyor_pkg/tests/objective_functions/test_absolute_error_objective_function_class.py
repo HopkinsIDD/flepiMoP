@@ -5,8 +5,8 @@ from gempyor.objective_functions import AbsoluteError
 
 
 def test_absolute_error_init() -> None:
-    dist = AbsoluteError()
-    assert dist.distribution == "absolute_error"
+    objfunc = AbsoluteError()
+    assert objfunc.distribution == "absolute_error"
 
 
 @pytest.mark.filterwarnings("ignore:divide by zero encountered in log")
@@ -20,13 +20,9 @@ def test_absolute_error_init() -> None:
     ],
     ids=["integers", "floats_and_nan", "mixed_sign", "zero_error"],
 )
-def test_absolute_error_error_metric_calculation(
+def test_absolute_error_error_metric_calculation_raises_notimplemented_error(
     gt_data: np.ndarray, model_data: np.ndarray
 ) -> None:
-    dist = AbsoluteError()
-    result = dist.error_metric_calculation(gt_data, model_data)
-    absolute_error = np.abs(gt_data - model_data)
-    total_absolute_error = np.nansum(absolute_error)
-    expected_value = -np.log(total_absolute_error)
-    expected_array = np.full(gt_data.shape, expected_value)
-    assert np.allclose(result, expected_array)
+    objfunc = AbsoluteError()
+    with pytest.raises(NotImplementedError):
+        objfunc.error_metric_calculation(gt_data=gt_data, model_data=model_data)

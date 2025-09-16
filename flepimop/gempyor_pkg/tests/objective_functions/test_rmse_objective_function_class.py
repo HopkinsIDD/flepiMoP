@@ -5,8 +5,8 @@ from gempyor.objective_functions import RMSE
 
 
 def test_rmse_init() -> None:
-    dist = RMSE()
-    assert dist.distribution == "rmse"
+    objfunc = RMSE()
+    assert objfunc.distribution == "rmse"
 
 
 @pytest.mark.filterwarnings("ignore:divide by zero encountered in log")
@@ -19,12 +19,9 @@ def test_rmse_init() -> None:
     ],
     ids=["basic_case", "with_nan", "zero_error"],
 )
-def test_rmse_error_metric_calculation(gt_data: np.ndarray, model_data: np.ndarray) -> None:
-    dist = RMSE()
-    result = dist.error_metric_calculation(gt_data, model_data)
-    squared_error = (gt_data - model_data) ** 2
-    mean_squared_error = np.nanmean(squared_error)
-    rmse = np.sqrt(mean_squared_error)
-    expected_value = -np.log(rmse)
-    expected_array = np.full(gt_data.shape, expected_value)
-    assert np.allclose(result, expected_array)
+def test_absolute_error_error_metric_calculation_raises_notimplemented_error(
+    gt_data: np.ndarray, model_data: np.ndarray
+) -> None:
+    objfunc = RMSE()
+    with pytest.raises(NotImplementedError):
+        objfunc.error_metric_calculation(gt_data=gt_data, model_data=model_data)
