@@ -874,11 +874,12 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
-    FOURIER_SCALE = bool(int(os.environ.get("FOURIER_SCALE", "0")))  
-    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "64"))          # K
+    FOURIER_SCALE = bool(int(os.environ.get("FOURIER_SCALE", "1")))
+    WEEKLY_SCALE = bool(int(os.environ.get("WEEKLY_SCALE", "0")))
+    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "4"))          # K
     FOURIER_PERIOD_DAYS = float(os.environ.get("FOURIER_PERIOD_DAYS", "365.25"))
     PROGRESS_BAR = bool(int(os.environ.get("PROGRESS_BAR", "1")))
-    USE_NB = bool(int(os.environ.get("USE_NB", "0")))
+    USE_NB = bool(int(os.environ.get("USE_NB", "1")))
     # ----------------------------------
 
     base_cfg_path = _materialize_structured_example(tmp_path_factory)
@@ -937,6 +938,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             with build_weekly_model(
                 pipe, op=op, y_obs=None,
                 force_r0_fourier_scale=FOURIER_SCALE,
+                force_r0_weekly_scale=WEEKLY_SCALE,
                 fourier_harmonics=FOURIER_HARMONICS,
                 fourier_period_days=FOURIER_PERIOD_DAYS,
             ) as prior_model:
@@ -967,6 +969,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
         with build_weekly_model(
             pipe, op=op, y_obs=y_full, use_nb=USE_NB,
             force_r0_fourier_scale=FOURIER_SCALE,
+            force_r0_weekly_scale=WEEKLY_SCALE,
             fourier_harmonics=FOURIER_HARMONICS,
             fourier_period_days=FOURIER_PERIOD_DAYS,
         ) as model:

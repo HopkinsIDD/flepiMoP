@@ -916,7 +916,7 @@ def build_weekly_model(
             weekly_sum_age_shifted = pm.Deterministic("weekly_pred_sum_age_shifted", shifted_sum,
                                                       dims=("week", "location"))
 
-            beta0_loc = pm.Normal("beta0_loc", 0.0, 1.0, dims=("location",))
+            beta0_loc = pm.Normal("beta0_loc", 0.0, 2.0, dims=("location",))
             pop = pt.as_tensor_variable(pop_loc)
             rate_pred = weekly_sum_age_shifted / (pop[None, :] + 1e-12)
             log_rate = pt.log(rate_pred + 1e-12) + beta0_loc[None, :] + delta_week
