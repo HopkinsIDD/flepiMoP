@@ -34,6 +34,7 @@ dependencies = [
     "xarray",
     "pymc",
     "arviz",
+    "pytensor",
 ]
 name = "gempyor"
 readme = "README.md"

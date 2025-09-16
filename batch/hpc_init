@@ -13,9 +13,8 @@ if [[ $1 == "longleaf" ]]; then
 
     # Load required modules
     module purge
-    module load gcc/9.1.0
-    module load anaconda/2023.03
-    module load git
+    module load gcc
+    module load anaconda
 elif [[ $1 == "rockfish" ]]; then
     # Setup general purspose user variables needed for RockFish
     WORKDIR=$( realpath "/scratch4/struelo1/flepimop-code/$USER/"  )
@@ -75,13 +74,14 @@ if [[ "$COMPATIBLE_ARROW_VERSION" -ne 1 ]]; then
 fi
 
 # Make sure the credentials is is where we expect and have the right perms
-if [ ! -f "$USERDIR/slack_credentials.sh" ]; then
-    echo "You should place sensitive credentials in '$USERDIR/slack_credentials.sh'."
-else
-    chmod 600 $USERDIR/slack_credentials.sh
-    source $USERDIR/slack_credentials.sh
+WHICH_PYTHON=$( which python )
+WHICH_R=$( which R )
+PYTHON_ARROW_VERSION=$( python -c "import pyarrow; print(pyarrow.__version__)" )
+R_ARROW_VERSION=$( Rscript -e "cat(as.character(packageVersion('arrow')))" )
+COMPATIBLE_ARROW_VERSION=$( echo "$R_ARROW_VERSION" | grep "$PYTHON_ARROW_VERSION" | wc -l )
+if [[ "$COMPATIBLE_ARROW_VERSION" -ne 1 ]]; then
+    echo "The R version of arrow is '$R_ARROW_VERSION' and the python version is '$PYTHON_ARROW_VERSION'. These may not be compatible versions."
 fi
-
 # Set correct env vars
 export FLEPI_RESET_CHIMERICS=TRUE
 export TODAY=`date --rfc-3339='date'`

@@ -834,17 +834,29 @@ def build_weekly_model(
                 base_scale = r0_global_loc[None, :] * base_scale
 
             if force_r0_fourier_scale:
-                # Priors around LS init
+                # Priors around LS init with moderate shrinkage (per-harmonic decay) and bounded amplitude
                 M = 1 + 2 * K
                 th0 = theta_hat_loc[:, 0]
-                # Use resid_std as a rough scale; cap to a sensible range
-                scale = float(np.clip(resid_std_loc[0], 0.05, 1.0))
-                theta = pm.Normal("r0_fourier_coef_loc", mu=th0, sigma=scale, dims=("fourier_coeff",))
+                # Base per-location scale from residuals, capped
+                base_sigma = float(np.clip(resid_std_loc[0], 0.05, 0.8))
+                # Decay ~ 1/k for cos/sin blocks; leave intercept less shrunk
+                decay = np.ones(M, dtype=float)
+                if K > 0:
+                    dk = np.repeat(1.0 / np.arange(1, K + 1), 2)  # [1,1, 1/2,1/2, ...]
+                    decay[1:] = dk
+                # If user sets very large K, damp overall variance to keep total wiggle modest
+                if K > 10:
+                    decay *= np.sqrt(10.0 / K)
+                sigma_vec = base_sigma * decay
+                theta = pm.Normal("r0_fourier_coef_loc", mu=th0, sigma=sigma_vec, dims=("fourier_coeff",))
                 Xw = pt.as_tensor_variable(Xw_shared)  # (W, M)
                 f_w = Xw @ theta  # (W,)
                 f_w_center = f_w - pt.mean(f_w)
+                # Bounded amplitude via tanh ⇒ exp(±amp) envelope on weekly scale
+                amp = pm.HalfNormal("r0_fourier_amp_loc", sigma=0.7)  # moderate amplitude
                 r0_weekly_scale_full = pm.Deterministic(
-                    "r0_weekly_scale", base_scale[:, 0:1] * pt.exp(f_w_center)[:, None],  # (W,1)
+                    "r0_weekly_scale",
+                    base_scale[:, 0:1] * pt.exp(amp * pt.tanh(f_w_center))[:, None],  # (W,1)
                     dims=("week", "location"),
                 )
 
@@ -916,7 +928,9 @@ def build_weekly_model(
             weekly_sum_age_shifted = pm.Deterministic("weekly_pred_sum_age_shifted", shifted_sum,
                                                       dims=("week", "location"))
 
-            beta0_loc = pm.Normal("beta0_loc", 0.0, 1.0, dims=("location",))
+            # ---- Intercept (wider prior)
+            beta0_loc = pm.Normal("beta0_loc", 0.0, 2.0, dims=("location",))
+
             pop = pt.as_tensor_variable(pop_loc)
             rate_pred = weekly_sum_age_shifted / (pop[None, :] + 1e-12)
             log_rate = pt.log(rate_pred + 1e-12) + beta0_loc[None, :] + delta_week
@@ -926,7 +940,8 @@ def build_weekly_model(
                 y_obs = np.asarray(y_obs, dtype=np.float64)
                 assert y_obs.shape == (W, L)
                 if use_nb:
-                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    # slightly looser dispersion prior
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.7, dims=("location",))
                     pm.NegativeBinomial("y", mu=mu_obs, alpha=alpha_nb_loc, observed=y_obs, dims=("week", "location"))
                 else:
                     pm.Poisson("y", mu=mu_obs, observed=y_obs, dims=("week", "location"))
@@ -969,12 +984,21 @@ def build_weekly_model(
             r0_scale_l = None
             if force_r0_fourier_scale:
                 th0 = theta_hat_loc[:, l]
-                scale = float(np.clip(resid_std_loc[l], 0.05, 1.0))
-                theta_l = pm.Normal(f"r0_fourier_coef_loc_l{l}", mu=th0, sigma=scale, dims=("fourier_coeff",))
+                base_sigma = float(np.clip(resid_std_loc[l], 0.05, 0.8))
+                decay = np.ones(M, dtype=float)
+                if K > 0:
+                    dk = np.repeat(1.0 / np.arange(1, K + 1), 2)
+                    decay[1:] = dk
+                if K > 10:
+                    decay *= np.sqrt(10.0 / K)
+                sigma_vec = base_sigma * decay
+                theta_l = pm.Normal(f"r0_fourier_coef_loc_l{l}", mu=th0, sigma=sigma_vec, dims=("fourier_coeff",))
                 f_w_l = Xw @ theta_l  # (W,)
                 f_w_l_center = f_w_l - pt.mean(f_w_l)
-                # include global baseline if present
-                r0_scale_l = pt.exp(f_w_l_center) * (r0_global_loc[l] if r0_global_loc is not None else 1.0)
+                amp_l = pm.HalfNormal(f"r0_fourier_amp_loc_l{l}", sigma=0.7)
+                r0_scale_l = pt.exp(amp_l * pt.tanh(f_w_l_center)) * (
+                    r0_global_loc[l] if r0_global_loc is not None else 1.0
+                )
 
             elif force_r0_weekly_scale or (not op.has_r0_modifiers):
                 r0_sigma_l = pm.HalfNormal(f"r0_weekly_sigma_loc_l{l}", 0.03)
@@ -998,7 +1022,7 @@ def build_weekly_model(
             lag_w_ls.append(pm.Dirichlet(f"lag_weights_l{l}", a=np.array([0.25, 0.5, 98.5, 0.5, 0.25])))
 
             if use_nb:
-                alpha_nb_ls.append(pm.LogNormal(f"alpha_nb_loc_l{l}", mu=np.log(25.0), sigma=0.5))
+                alpha_nb_ls.append(pm.LogNormal(f"alpha_nb_loc_l{l}", mu=np.log(25.0), sigma=0.7))
 
         # Stack back
         mods_loc = pm.Deterministic("mods_loc", pt.stack(mods_loc_ls, axis=1), dims=("modifier", "location"))
@@ -1080,8 +1104,15 @@ def build_weekly_model(
         weekly_sum_age_shifted = pm.Deterministic("weekly_pred_sum_age_shifted", shifted_sum,
                                                   dims=("week", "location"))
 
-        # likelihood
-        beta0_loc = pm.Deterministic("beta0_loc", pt.stack(beta0_ls, axis=0), dims=("location",))
+        # ---- Intercept: hierarchical across locations
+        mu_beta0 = pm.Normal("mu_beta0", 0.0, 2.0)
+        sigma_beta0 = pm.HalfNormal("sigma_beta0", 1.0)
+        beta0_loc = pm.Deterministic(
+            "beta0_loc",
+            pt.stack([pm.Normal(f"beta0_loc_l{l}", mu_beta0, sigma_beta0) for l in range(L)], axis=0),
+            dims=("location",),
+        )
+
         pop = pt.as_tensor_variable(pop_loc)
         rate_pred = weekly_sum_age_shifted / (pop[None, :] + 1e-12)
         log_rate = pt.log(rate_pred + 1e-12) + beta0_loc[None, :] + delta_week
