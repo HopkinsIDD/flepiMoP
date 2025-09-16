@@ -231,7 +231,9 @@ class WeibullLoglikelihood(ObjectiveFunctionABC):
         self, gt_data: npt.NDArray, model_data: npt.NDArray
     ) -> npt.NDArray:
         """Log-likelihood calculations for weibull distributions."""
-        scale = model_data / scipy.special.gamma(1 + 1 / self.shape)  # Convert to scale parameter
+        scale = model_data / scipy.special.gamma(
+            1 + 1 / self.shape
+        )  # Convert to scale parameter
         return scipy.stats.weibull_min.logpdf(x=gt_data, c=self.shape, scale=scale)
 
 

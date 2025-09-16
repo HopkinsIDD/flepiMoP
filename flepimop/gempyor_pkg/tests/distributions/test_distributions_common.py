@@ -60,3 +60,15 @@ def test_distribution_abc_callable() -> None:
     assert isinstance(
         sample_callable_result, float
     )  # b/c rng.random always returns a float
+
+
+def test_distribution_abc_initializes_allow_edge_cases() -> None:
+    # Verify `allow_edge_cases` is initialized correctly
+
+    # Should be set to False
+    dist_default = DummyDistribution()
+    assert dist_default.allow_edge_cases is False
+
+    # Should be set to True
+    dist_true = DummyDistribution(allow_edge_cases=True)
+    assert dist_true.allow_edge_cases is True

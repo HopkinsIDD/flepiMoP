@@ -81,3 +81,57 @@ def test_truncated_normal_distribution_sample_range_edge_case() -> None:
     )
     sample = dist.sample(size=(10, 10))
     assert np.all(sample == 7.0)
+
+
+@pytest.mark.parametrize(
+    "mean, sd, a, b, allow_edge_cases, expected_a_trunc, expected_b_trunc, expected_fixed_allowed",
+    [
+        (
+            10.0,
+            2.0,
+            8.0,
+            14.0,
+            False,
+            -1.0,
+            2.0,
+            False,
+        ),  # standard case
+        (
+            5.0,
+            2.0,
+            7.0,
+            7.0,
+            True,
+            1.0,
+            1.0,
+            True,
+        ),  # fixed_allowed is True
+        (
+            0.0,
+            5.0,
+            -10.0,
+            10.0,
+            False,
+            -2.0,
+            2.0,
+            False,
+        ),  # centered around zero
+    ],
+    ids=["standard", "edge_case_fixed", "centered_zero"],
+)
+def test_truncated_normal_computed_fields(  # Tests the computed_fields property
+    mean: float,
+    sd: float,
+    a: float,
+    b: float,
+    allow_edge_cases: bool,
+    expected_a_trunc: float,
+    expected_b_trunc: float,
+    expected_fixed_allowed: bool,
+) -> None:
+    dist = TruncatedNormalDistribution(
+        mean=mean, sd=sd, a=a, b=b, allow_edge_cases=allow_edge_cases
+    )
+    assert dist.a_trunc == expected_a_trunc
+    assert dist.b_trunc == expected_b_trunc
+    assert dist.fixed_allowed is expected_fixed_allowed
