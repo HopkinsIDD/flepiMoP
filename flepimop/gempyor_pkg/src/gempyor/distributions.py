@@ -1,10 +1,11 @@
-"""Representations of distributions used for modifiers, likelihoods, etc."""
+"""
+Representations of distributions to be used throughout gempyor.
+"""
 
 __all__: tuple[str, ...] = (
+    "DistributionABC",
     "BetaDistribution",
     "BinomialDistribution",
-    "Distribution",
-    "DistributionABC",
     "FixedDistribution",
     "GammaDistribution",
     "LognormalDistribution",
@@ -24,14 +25,21 @@ from typing import Annotated, Literal
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from pydantic import BaseModel, PrivateAttr, Field, TypeAdapter, model_validator
-from scipy.stats import truncnorm
+from pydantic import (
+    BaseModel,
+    PrivateAttr,
+    Field,
+    TypeAdapter,
+    model_validator,
+    computed_field,
+)
+import scipy.stats
 
 from ._pydantic_ext import EvaledFloat, EvaledInt
 
 
 class DistributionABC(ABC, BaseModel):
-    """Base class for distributions used in modifiers, likelihoods, etc."""
+    """Base class for distributions used in random sampling."""
 
     distribution: str
     allow_edge_cases: bool = False
@@ -45,8 +53,9 @@ class DistributionABC(ABC, BaseModel):
         Draw random sample(s) from the distribution.
 
         Args:
-            size: The desired output size of samples to be drawn.
+            size: The desired output size and shape (if provided a tuple) of samples to be drawn.
             rng: A NumPy random number generator instance used for sampling.
+                Defaults to numpy.random.default_rng() if not provided.
 
         Returns:
             A NumPy array of either floats/ints (depending on distribution)
@@ -56,7 +65,7 @@ class DistributionABC(ABC, BaseModel):
         return self._sample_from_generator(size=size, rng=rng)
 
     def __call__(self) -> float | int:
-        """A shortcut for `self.sample(size=1)`."""
+        """A shortcut for `self.sample(size=1).item()`."""
         return self.sample(size=1).item()
 
     @abstractmethod
@@ -221,7 +230,7 @@ class TruncatedNormalDistribution(DistributionABC):
         >>> rng = np.random.default_rng(42)
         >>> dist = TruncatedNormalDistribution(mean=1.0, sd=1.0, a=0.0, b=10.0)
         >>> dist
-        TruncatedNormalDistribution(distribution='truncnorm', allow_edge_cases=False, mean=1.0, sd=1.0, a=0.0, b=10.0)
+        TruncatedNormalDistribution(distribution='truncnorm', allow_edge_cases=False, mean=1.0, sd=1.0, a=0.0, b=10.0, a_trunc=-1.0, b_trunc=9.0, fixed_allowed=False)
         >>> dist.sample(rng=rng)
         array([1.87722989])
         >>> dist.sample(size=(3, 5), rng=rng)
@@ -247,20 +256,34 @@ class TruncatedNormalDistribution(DistributionABC):
     a: EvaledFloat
     b: EvaledFloat
 
+    @computed_field
+    @property
+    def a_trunc(self) -> float:
+        """The standardized lower bound for scipy's truncnorm."""
+        return (self.a - self.mean) / self.sd
+
+    @computed_field
+    @property
+    def b_trunc(self) -> float:
+        """The standardized upper bound for scipy's truncnorm."""
+        return (self.b - self.mean) / self.sd
+
+    @computed_field
+    @property
+    def fixed_allowed(self) -> bool:
+        """Whether or not this distribution can be represented as a fixed value."""
+        return isclose(self.a, self.b) and self.allow_edge_cases
+
     def _sample_from_generator(
         self, size: int | tuple[int, ...], rng: Generator
     ) -> npt.NDArray[np.float64]:
         """Sampling logic for truncated normal distributions."""
-        if (
-            isclose(self.a, self.b) and self.allow_edge_cases
-        ):  # use this logic b/c scipy.truncnorm doesn't support equal bounds
+        if self.fixed_allowed:  # scipy.truncnorm doesn't support equal bounds
             return np.full(size, self.a)
 
-        lower = (self.a - self.mean) / self.sd
-        upper = (self.b - self.mean) / self.sd
-        return truncnorm.rvs(
-            a=lower,
-            b=upper,
+        return scipy.stats.truncnorm.rvs(
+            a=self.a_trunc,
+            b=self.b_trunc,
             loc=self.mean,
             scale=self.sd,
             size=size,
@@ -307,7 +330,7 @@ class PoissonDistribution(DistributionABC):
           Value error, Input for `lam` cannot be zero when `allow_edge_cases` is `False`. [type=value_error, ...
     """
 
-    distribution: Literal["poisson"] = "poisson"
+    distribution: Literal["poisson", "pois"] = "poisson"
     lam: EvaledFloat = Field(..., ge=0.0)
 
     def _sample_from_generator(
@@ -351,8 +374,7 @@ class BinomialDistribution(DistributionABC):
         Traceback (most recent call last):
             ...
         pydantic_core._pydantic_core.ValidationError: 1 validation error for BinomialDistribution
-          Value error, Input for `p` cannot be 0 or 1 when `allow_edge_cases` is `False`. [type=value_error, input_value={'n': 10, 'p': 0.0}, input_type=dict]
-            For further information visit https://errors.pydantic.dev/2.11/v/value_error
+          Value error, Input for `p` cannot be 0 or 1 when `allow_edge_cases` is `False`. [type=value_error, ...
     """
 
     distribution: Literal["binomial"] = "binomial"
