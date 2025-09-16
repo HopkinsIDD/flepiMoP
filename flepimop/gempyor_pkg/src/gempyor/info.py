@@ -30,6 +30,10 @@ Notes:
     function being used via the `search_paths` argument.
 
 Examples:
+    >>> import os
+    >>> import pytest
+    >>> if "FLEPI_PATH" not in os.environ:
+    ...     pytest.skip("FLEPI_PATH environment variable is not set.")
     >>> from pprint import pprint
     >>> from gempyor.info import get_cluster_info
     >>> cluster_info = get_cluster_info("longleaf")
@@ -37,9 +41,9 @@ Examples:
     'longleaf'
     >>> pprint(cluster_info.modules)
     [Module(name='gcc', version='9.1.0'),
-    Module(name='anaconda', version='2023.03'),
-    Module(name='git', version=None),
-    Module(name='aws', version=None)]
+     Module(name='anaconda', version='2023.03'),
+     Module(name='git', version=None),
+     Module(name='aws', version=None)]
 """
 
 __all__ = ["Cluster", "Module", "PathExport", "get_cluster_info"]
@@ -188,6 +192,10 @@ def get_cluster_info(
         An object containing the information about the `name` cluster.
 
     Examples:
+        >>> import os
+        >>> import pytest
+        >>> if "FLEPI_PATH" not in os.environ:
+        ...     pytest.skip("FLEPI_PATH environment variable is not set.")
         >>> from gempyor.info import get_cluster_info
         >>> cluster_info = get_cluster_info("longleaf")
         >>> cluster_info.name

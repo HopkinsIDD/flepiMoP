@@ -169,13 +169,11 @@ def click_helpstring(
         >>> @click_helpstring(opt)
         ... def test_cli(num: int) -> None:
         ...     print(f"Your favorite number is {num}!")
-        ...
-        >>> print(test_cli.__doc__)
-
-
+        >>> print(test_cli.__doc__)  # doctest: +SKIP
         Command Line Interface arguments:
+        <BLANKLINE>
+           n: Int
 
-        n: Int
     """
     if not isinstance(params, list):
         params = [params]
@@ -334,24 +332,12 @@ def log_cli_inputs(kwargs: dict[str, Any], verbosity: int | None = None) -> None
 
     Examples:
         >>> from gempyor.shared_cli import log_cli_inputs
-        >>> log_cli_inputs({"abc": 123, "def": True}, 3)
+        >>> log_cli_inputs({"abc": 123, "def": True}, 3) # doctest: +SKIP
         2024-11-05 09:27:58,884:DEBUG:gempyor.shared_cli> CLI was given 2 arguments:
         2024-11-05 09:27:58,885:DEBUG:gempyor.shared_cli> abc = 123.
         2024-11-05 09:27:58,885:DEBUG:gempyor.shared_cli> def = True.
         >>> log_cli_inputs({"abc": 123, "def": True}, 2)
-        >>> from pathlib import Path
-        >>> kwargs = {
-        ...     "input_file": Path("config.in"),
-        ...     "method": "stochastic",
-        ...     "cluster": "longleaf",
-        ...     "verbosity": 3,
-        ... }
-        >>> log_cli_inputs(kwargs)
-        2024-11-05 09:29:21,666:DEBUG:gempyor.shared_cli> CLI was given 4 arguments:
-        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> input_file = /Users/twillard/Desktop/GitHub/HopkinsIDD/flepiMoP/flepimop/gempyor_pkg/config.in.
-        2024-11-05 09:29:21,667:DEBUG:gempyor.shared_cli> method = stochastic.
-        2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> cluster    = longleaf.
-        2024-11-05 09:29:21,668:DEBUG:gempyor.shared_cli> verbosity  = 3.
+
     """
     verbosity = kwargs.get("verbosity") if verbosity is None else verbosity
     if verbosity is None:

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+if [[ -z "$FLEPI_PATH" ]]; then
+    FLEPI_PATH=$( pwd )
+fi
+CONDA_R_LIBS=$( realpath "$CONDA_PREFIX/lib/R/library" )
+R -e "install.packages('epidatr', '$CONDA_R_LIBS', repos='https://cloud.r-project.org')"
+RETURNTO=$( pwd )
+cd $FLEPI_PATH/flepimop/R_packages/
+R_PACKAGES=("flepicommon" "flepiconfig" "inference")
+for pkg in "${R_PACKAGES[@]}"; do
+    if [ -d "$pkg" ]; then
+        R_LIBS=$CONDA_R_LIBS R CMD INSTALL --install-tests $pkg
+    else
+        echo "WARNING: The R package '$pkg' does not exist in '$FLEPI_PATH/flepimop/R_packages/'. Skipping installation." >&2
+    fi
+done
+cd $RETURNTO
+R -e "library(inference); inference::install_cli()"

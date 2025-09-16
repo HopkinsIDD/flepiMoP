@@ -1,0 +1,53 @@
+name: flepiMoP Install
+description: Install flepiMoP and its dependencies
+inputs:
+  python-version:
+    description: Python version to use
+    required: true
+    default: "3.11"
+  R-version:
+    description: R version to use
+    required: true
+    default: "4.3"
+runs:
+  using: "composite"
+  steps:
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install \
+          libcurl4-openssl-dev \
+          libharfbuzz-dev \
+          libfribidi-dev \
+          libtiff5-dev \
+          libudunits2-dev \
+          libgdal-dev \
+          libgeos-dev \
+          libproj-dev \
+          libfontconfig1-dev \
+          pandoc
+      shell: bash
+    - name: Setup miniconda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-update-conda: true
+    - name: Conda venv cache
+      id: conda-venv-cache
+      uses: actions/cache@v4
+      with:
+        key: flepimop-conda-${{ runner.os }}-${{ inputs.R-version }}-${{ inputs.python-version }}-${{ hashFiles('flepimop/R_packages/flepicommon/DESCRIPTION', 'flepimop/R_packages/flepicommon/NAMESPACE', 'flepimop/R_packages/flepiconfig/DESCRIPTION', 'flepimop/R_packages/flepiconfig/NAMESPACE', 'flepimop/R_packages/inference/DESCRIPTION', 'flepimop/R_packages/inference/NAMESPACE', 'flepimop/gempyor_pkg/pyproject.toml', 'environment.yml') }}
+        path: './venv'
+    - name: Install flepiMoP
+      if: steps.conda-venv-cache.outputs.cache-hit != 'true'
+      run: |
+        rm -rf venv/
+        sed -i 's/^- python.*$/- python=${{ inputs.python-version}}/g' environment.yml
+        sed -i 's/^- r-base.*$/- r-base=${{ inputs.R-version}}/g' environment.yml
+        ./bin/flepimop-install-dev
+      shell: bash -el {0}
+    - name: flepiMoP install info
+      run: |
+        conda activate venv/
+        export FLEPI_PATH=$(pwd)
+        ./bin/flepimop-install-info
+      shell: bash -el {0}

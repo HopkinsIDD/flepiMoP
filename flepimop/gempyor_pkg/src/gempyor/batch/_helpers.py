@@ -39,12 +39,8 @@ def _job_name(name: str | None, timestamp: datetime | None) -> str:
         ValueError: If `name` does not start with a letter and contains characters other
             than the alphabet, numbers, underscores or dashes.
     Examples:
-        >>> from gempyor.batch import _job_name
-        >>> _job_name(None, None)
-        '20241105T153818'
-        >>> _job_name("foobar", None)
-        'foobar-20241105T153831'
         >>> from datetime import datetime, timezone
+        >>> from gempyor.batch._helpers import _job_name
         >>> _job_name(None, datetime(2024, 1, 1, tzinfo=timezone.utc))
         '20240101T000000'
     """
@@ -66,7 +62,7 @@ def _parse_extra_options(extra: Iterable[str] | None) -> dict[str, str]:
         A dictionary of the parsed extra options.
 
     Examples:
-        >>> from gempyor.batch import _parse_extra_options
+        >>> from gempyor.batch._helpers import _parse_extra_options
         >>> _parse_extra_options(["abc=def", "ghi=jkl"])
         {'abc': 'def', 'ghi': 'jkl'}
         >>> _parse_extra_options([

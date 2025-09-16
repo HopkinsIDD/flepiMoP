@@ -365,6 +365,51 @@ def valid_2pop_with_csv_mobility_factory(
     )
 
 
+def valid_2pop_with_csv_explicit_no_mobility_factory(
+    tmp_path: Path,
+) -> MockSubpopulationStructureInput:
+    """
+    Factory for geodata file with two valid subpopulations and explicit no mobility.
+
+    Returns:
+        A `MockSubpopulationStructureInput` instance with a geodata file that contains
+        two valid subpopulations and a mobility matrix.
+    """
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
+        {
+            "geodata": "geodata.csv",
+            "mobility": "mobility.csv",
+        },
+        pd.DataFrame.from_records(
+            [
+                {
+                    "subpop": "USA",
+                    "population": 100,
+                },
+                {
+                    "subpop": "Canada",
+                    "population": 50,
+                },
+            ]
+        ),
+        mobility=pd.DataFrame.from_records(
+            [
+                {
+                    "ori": "USA",
+                    "dest": "Canada",
+                    "amount": 0,
+                },
+                {
+                    "ori": "Canada",
+                    "dest": "USA",
+                    "amount": 2,
+                },
+            ]
+        ),
+    )
+
+
 def valid_2pop_with_parquet_mobility_factory(
     tmp_path: Path,
 ) -> MockSubpopulationStructureInput:
@@ -684,6 +729,29 @@ def mobility_zero_or_less_factory(tmp_path: Path) -> MockSubpopulationStructureI
     )
 
 
+def larger_mobility_zero_or_less_factory(tmp_path: Path) -> MockSubpopulationStructureInput:
+    return MockSubpopulationStructureInput.create_mock_input(
+        tmp_path,
+        {
+            "geodata": "geodata.parquet",
+            "mobility": "mobility.parquet",
+        },
+        pd.DataFrame(
+            data={
+                "subpop": ["USA", "Canada", "Mexico"],
+                "population": [100, 50, 25],
+            },
+        ),
+        mobility=pd.DataFrame(
+            data={
+                "ori": ["USA", "Canada", "Mexico", "Canada", "USA", "Mexico"],
+                "dest": ["Canada", "USA", "Canada", "Mexico", "Mexico", "USA"],
+                "amount": [0, -1, 1, 0, -1, 0],
+            },
+        ),
+    )
+
+
 def selected_missing_from_geodata(tmp_path: Path) -> MockSubpopulationStructureInput:
     return MockSubpopulationStructureInput.create_mock_input(
         tmp_path,
@@ -711,6 +779,7 @@ VALID_FACTORIES: Final = [
     valid_2pop_geodata_parquet_only_factory,
     valid_2pop_with_txt_mobility_factory,
     valid_2pop_with_csv_mobility_factory,
+    valid_2pop_with_csv_explicit_no_mobility_factory,
     valid_2pop_with_parquet_mobility_factory,
     valid_2pop_with_npz_mobility_factory,
     valid_selected_pop_with_no_mobility_factory,
@@ -810,13 +879,25 @@ def test_subpopulation_structure_instance_attributes(
     assert len(caplog.records) == int(mock_input.mobility is None)
 
 
-def test_mobility_zero_or_less_raises_validation_error(tmp_path: Path) -> None:
-    """Test that a ValueError is raised when mobility is zero or less."""
-    mock_input = mobility_zero_or_less_factory(tmp_path)
-    assert (zero_or_less := (mock_input.mobility["amount"] <= 0).sum()) > 0
-    raises_match = rf"^{zero_or_less} validation errors.*"
+@pytest.mark.parametrize(
+    "factory", [mobility_zero_or_less_factory, larger_mobility_zero_or_less_factory]
+)
+def test_mobility_less_than_zero_raises_validation_error(
+    tmp_path: Path, factory: Callable[[Path], MockSubpopulationStructureInput]
+) -> None:
+    """Test that a ValueError is raised when mobility is less than zero."""
+    mock_input = factory(tmp_path)
+    assert (
+        less_than_zero_indices := (
+            mock_input.mobility.index[mock_input.mobility["amount"] < 0]
+        ).tolist()
+    )
+    raises_match = rf"^{len(less_than_zero_indices)} validation error.*"
     raises_match += ".*".join(
-        [rf"{i}\.amount\s+Input should be greater than 0" for i in range(zero_or_less)]
+        [
+            rf"{i}\.amount\s+Input should be greater than or equal to 0"
+            for i in less_than_zero_indices
+        ]
     )
     with pytest.raises(
         ValidationError,

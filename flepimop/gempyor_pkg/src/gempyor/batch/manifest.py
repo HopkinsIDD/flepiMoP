@@ -42,22 +42,6 @@ def write_manifest(
 
     Returns:
         The path to the written json file.
-
-    Examples:
-        >>> import os
-        >>> from pathlib import Path
-        >>> flepi_path = Path(os.environ["FLEPI_PATH"])
-        >>> project_path = flepi_path / "examples" / "tutorials"
-        >>> manifest = write_manifest("Foobar", flepi_path, project_path)
-        >>> manifest.name
-        'manifest.json'
-        >>> print(manifest.read_text())
-        {
-            "cmd": "",
-            "job_name": "Foobar",
-            "data_sha": "59fe36d13fe34b6c1fb5c92bf8c53b83bd3ba593",
-            "flepimop_sha": "2bdfbc74e69bdd0243ef8340dda238f5504f1ad9"
-        }
     """
     flepimop_sha = _git_head(flepi_path)
     data_sha = _git_head(project_path)

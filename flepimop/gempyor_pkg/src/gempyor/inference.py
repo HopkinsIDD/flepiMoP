@@ -125,8 +125,9 @@ def simulation_atomic(
         seeding_amounts,
     )
     if save:
-        seir.write_spar_snpi(sim_id=random_id, modinf=modinf, p_draw=p_draw, npi=npi_seir)
-        seir.write_seir(sim_id=random_id, modinf=modinf, states=states)
+        out_df = seir.states2Df(modinf, states)
+        seir.write_spar_snpi(random_id, modinf, p_draw, npi_seir)
+        seir.write_seir(random_id, modinf, out_df)
 
     # Compute outcomes
     outcomes_df, hpar_df = outcomes.compute_all_multioutcomes(
@@ -616,7 +617,8 @@ class GempyorInference:
     def write_last_seir(self, sim_id2write=None):
         if sim_id2write is None:
             sim_id2write = self.lastsim_sim_id2write
-        out_df = seir.write_seir(sim_id2write, self.modinf, self.lastsim_states)
+        out_df = seir.states2Df(self.modinf, self.lastsim_states)
+        seir.write_seir(sim_id2write, self.modinf, out_df)
         return out_df
 
     # @profile()
@@ -783,7 +785,8 @@ class GempyorInference:
                 if self.modinf.write_csv or self.modinf.write_parquet:
                     seir.write_spar_snpi(sim_id2write, self.modinf, p_draw, npi_seir)
                     if self.autowrite_seir:
-                        out_df = seir.write_seir(sim_id2write, self.modinf, states)
+                        out_df = seir.states2Df(self.modinf, states)
+                        seir.write_seir(sim_id2write, self.modinf, out_df)
                         self.lastsim_out_df = out_df
 
             loaded_values = None

@@ -133,7 +133,7 @@ class GeodataFileTable(RootModel):
     root: list[GeodataFileRow]
 
     @model_validator(mode="after")
-    def subpop_is_primary_key(self) -> "GeodataFileTable":
+    def _subpop_is_primary_key(self) -> "GeodataFileTable":
         """
         Validate that the subpopulation names are unique.
 
@@ -163,10 +163,10 @@ class MobilityFileRow(BaseModel):
 
     ori: str
     dest: str
-    amount: Annotated[int, Field(gt=0)]
+    amount: Annotated[int, Field(ge=0)]
 
     @model_validator(mode="after")
-    def ori_and_dest_are_different(self) -> "MobilityFileRow":
+    def _ori_and_dest_are_different(self) -> "MobilityFileRow":
         """
         Validate that the origin and destination subpopulation names are different.
 
@@ -194,7 +194,7 @@ class MobilityFileTable(RootModel):
     root: list[MobilityFileRow]
 
     @model_validator(mode="after")
-    def ori_and_dest_are_primary_key(self) -> "MobilityFileTable":
+    def _ori_and_dest_are_primary_key(self) -> "MobilityFileTable":
         """
         Validate that the origin and destination subpopulation names are unique.
 
