@@ -159,6 +159,8 @@ def _load_and_align_csv_to_weeks(
     Read long CSV of *daily* total hospitalizations -> weekly aggregated matrix (W,L) aligned to model start_date.
     CSV columns expected: 'date', 'source', 'incidH'. `source` are state names.
     If `subset_sources` is provided, only those sources are considered and columns are ordered exactly as given.
+
+    NOTE: Missing weeks remain as NaN (no zero-filling). Use obs_weeks to index the likelihood.
     """
     df = pd.read_csv(csv_path, parse_dates=["date"])
     required = {"date", "source", "incidH"}
@@ -167,7 +169,10 @@ def _load_and_align_csv_to_weeks(
         raise ValueError(f"CSV missing required columns: {missing}")
 
     df = df.copy()
-    df["incidH"] = pd.to_numeric(df["incidH"], errors="coerce").fillna(0.0).clip(lower=0.0)
+    # Keep true missing values as NaN; drop non-numeric rows; clip negatives to 0
+    df["incidH"] = pd.to_numeric(df["incidH"], errors="coerce")
+    df = df.dropna(subset=["incidH"])
+    df["incidH"] = df["incidH"].clip(lower=0.0)
 
     if subset_sources:
         df = df[df["source"].isin(subset_sources)]
@@ -222,8 +227,8 @@ def _load_and_align_csv_to_weeks(
     # Observed weeks: any location has data
     obs_weeks = np.flatnonzero(pivot.notna().any(axis=1).values)
 
-    # For inference, fill missing with 0.0 (PyMC cannot take NaN in observed)
-    y_full = pivot.fillna(0.0).to_numpy(dtype=float)  # (W, L)
+    # Preserve NaNs for unobserved weeks — do NOT fill with zeros
+    y_full = pivot.to_numpy(dtype=float)  # (W, L) with NaNs where missing
 
     # Convert category back to string
     loc_names = tuple(map(str, loc_names))
@@ -245,13 +250,67 @@ def _age_lower_bound(label: str) -> int:
     m = re.search(r"(\d+)", s)
     return int(m.group(1)) if m else 0
 
+def _assert_age_proportions_consistent(pipe: WeeklyHospPipeline) -> None:
+    """
+    Sanity-check that age proportions in the *initial state* are well-formed.
+    We DO NOT parse or alter any inputs here — we only read `pipe.initial_array`.
+
+    Checks per location:
+      - age shares sum to ~1
+      - no NaNs / infs / negatives
+      - each share within [0, 1]
+    """
+    initial = np.asarray(pipe.initial_array, dtype=float)     # (C, L)
+    df = pipe.model.compartments.compartments
+    comp_age = df["age_strata"].astype(str).values
+    comp_stage = df["infection_stage"].astype(str).values
+    ages = tuple(pipe.age_labels)
+    NC, NL = initial.shape
+
+    def _norm_age(s: str) -> str:
+        s = str(s).lower().replace("age", "").replace("to", "-").replace("–", "-").replace("—", "-")
+        out = []
+        for ch in s:
+            if ch.isdigit(): out.append(ch)
+            elif ch in "-_": out.append("_")
+            elif ch == "+": out.append("p")
+        key = []
+        for c in out:
+            if not (key and key[-1] == "_" and c == "_"):
+                key.append(c)
+        return "".join(key).strip("_")
+
+    comp_age_norm = np.array([_norm_age(a) for a in comp_age], dtype=object)
+    age_tokens = tuple(_norm_age(a) for a in ages)
+
+    # For each age, sum over all compartments (S/E/I/R…)
+    age_tot = np.zeros((len(ages), NL), dtype=float)
+    for a_idx, tok in enumerate(age_tokens):
+        m_age = (comp_age_norm == tok)
+        if not m_age.any():
+            # If an age label can't be matched to compartments, fail loudly.
+            raise AssertionError(f"Age label '{ages[a_idx]}' does not match any compartments.")
+        age_tot[a_idx, :] = initial[m_age, :].sum(axis=0)
+
+    # Normalize shares per location
+    loc_tot = age_tot.sum(axis=0, keepdims=True)
+    if not np.all(np.isfinite(loc_tot)) or np.any(loc_tot <= 0):
+        raise AssertionError("Initial state totals are non-finite or non-positive.")
+
+    shares = age_tot / loc_tot  # (A, L)
+
+    if not np.all(np.isfinite(shares)):
+        raise AssertionError("Age shares contain non-finite values.")
+    if np.any(shares < -1e-12) or np.any(shares > 1+1e-12):
+        raise AssertionError("Age shares fall outside [0,1] (beyond tiny tolerance).")
+
+    sums = shares.sum(axis=0)
+    if not np.allclose(sums, 1.0, atol=1e-6):
+        raise AssertionError(f"Age shares per location do not sum to 1 (min/max sums: {sums.min():.6f}/{sums.max():.6f})")
+
+
 
 def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: Path):
-    """
-    For each location (here L=1):
-      - Top: aggregated posterior predictive of y (mean + 95% HDI) vs observed.
-      - Bottom: one subplot per age group (mean + 95% HDI) in ascending age-bin order.
-    """
     ages = tuple(pipe.age_labels)
     A = len(ages)
     W = y_obs_full.shape[0]
@@ -259,31 +318,43 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
     order = np.argsort([_age_lower_bound(a) for a in ages])
     ages_sorted = [ages[i] for i in order]
 
-    # Prefer observation-level predictive if present
-    if "y" in idata.posterior_predictive:
-        agg_ppc = idata.posterior_predictive["y"].values  # (chain, draw, W, L)
-        mean_label = "Posterior mean (obs model)"
-    else:
-        if "weekly_pred_sum_age_shifted" in idata.posterior_predictive:
-            agg_ppc = idata.posterior_predictive["weekly_pred_sum_age_shifted"].values
-        else:
-            agg_ppc = idata.posterior_predictive["weekly_pred_sum_age"].values
-        mean_label = "Posterior mean (process)"
+    # --- Choose an aggregated posterior-predictive with week dimension == W ---
+    agg_ppc = None
+    mean_label = "Posterior mean (process)"
+    pp = getattr(idata, "posterior_predictive", None)
+    if pp is not None:
+        if "y" in pp:
+            y_ppc = pp["y"].values  # (chain, draw, W' , L)
+            if y_ppc.ndim == 4 and y_ppc.shape[2] == W:
+                agg_ppc = y_ppc
+                mean_label = "Posterior mean (obs model)"
+        if agg_ppc is None:
+            if "weekly_pred_sum_age_shifted" in pp:
+                agg_ppc = pp["weekly_pred_sum_age_shifted"].values  # (chain, draw, W, L)
+            else:
+                agg_ppc = pp["weekly_pred_sum_age"].values          # (chain, draw, W, L)
 
+    if agg_ppc is None:
+        raise RuntimeError("No suitable posterior predictive found for aggregated plot.")
+
+    # Per-age weekly posterior predictive
     age_ppc = idata.posterior_predictive["weekly_pred"].values  # (chain, draw, A, W, L)
     weeks = np.arange(W)
 
     L = y_obs_full.shape[1]
     for loc_idx in range(L):
         loc_name = str(loc_names[loc_idx])
-        fig_width = min(30, max(14, 3.2 * A))
-        fig = plt.figure(figsize=(fig_width, 7.5), dpi=120)
 
-        gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1.3, 1.0], hspace=0.35)
+        # 3 rows: (1) aggregated, (2) per-age weekly (A columns), (3) one-wide cumulative-per-age
+        fig_width = min(36, max(16, 3.2 * max(A, 5)))
+        fig = plt.figure(figsize=(fig_width, 10.0), dpi=120)
+
+        gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1.3, 1.0, 1.0], hspace=0.38)
         ax_agg = fig.add_subplot(gs[0, 0])
-        bottom = gs[1].subgridspec(1, A, wspace=0.25)
+        mid = gs[1].subgridspec(1, A, wspace=0.28)
+        ax_cum = fig.add_subplot(gs[2, 0])
 
-        # Aggregated
+        # ===== Row 1: aggregated (length W) =====
         samples = agg_ppc[:, :, :, loc_idx]            # (chain, draw, W)
         mean = samples.mean(axis=(0, 1))               # (W,)
         hdi = az.hdi(samples, hdi_prob=0.95)           # (W, 2)
@@ -291,17 +362,16 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
         ax_agg.plot(weeks, mean, linewidth=1.5, label=mean_label)
         y_loc = y_obs_full[:, loc_idx]
         _plot_weekly_targets(ax_agg, y_loc, label="Observed", color="0.1")
-
         ax_agg.set_title(f"{loc_name} — Aggregated hospitalizations (all ages)")
         ax_agg.set_xlabel("Week")
         ax_agg.set_ylabel("Hosp")
         ax_agg.grid(True, alpha=0.3)
         ax_agg.legend(loc="upper right")
 
-        # Per-age
+        # ===== Row 2: per-age weekly (A columns) =====
         for j, a_idx in enumerate(order):
-            ax = fig.add_subplot(bottom[0, j], sharex=None if j == 0 else fig.axes[-1])
-            samples_a = age_ppc[:, :, a_idx, :, loc_idx]
+            ax = fig.add_subplot(mid[0, j], sharex=None if j == 0 else fig.axes[-1])
+            samples_a = age_ppc[:, :, a_idx, :, loc_idx]  # (chain, draw, W)
             mean_a = samples_a.mean(axis=(0, 1))
             hdi_a = az.hdi(samples_a, hdi_prob=0.95)
             ax.fill_between(weeks, hdi_a[:, 0], hdi_a[:, 1], alpha=0.20, step="mid")
@@ -312,11 +382,33 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
             if j == 0:
                 ax.set_ylabel("Hosp")
 
+        # ===== Row 3: cumulative per-age (all ages in ONE plot, color-coded) =====
+        color_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", None)
+        for j, a_idx in enumerate(order):
+            samples_a = age_ppc[:, :, a_idx, :, loc_idx]  # (chain, draw, W)
+            # stack samples and take cumulative over weeks
+            S = samples_a.reshape(-1, W)                  # (samples, W)
+            S_cum = np.cumsum(S, axis=1)                  # cumulative over weeks
+            mean_cum = S_cum.mean(axis=0)
+            hdi_cum = az.hdi(S_cum, hdi_prob=0.95)        # (W, 2)
+
+            col = None if color_cycle is None else color_cycle[j % len(color_cycle)]
+            ax_cum.fill_between(weeks, hdi_cum[:, 0], hdi_cum[:, 1], alpha=0.15, step="mid", color=col)
+            ax_cum.plot(weeks, mean_cum, linewidth=1.3, label=str(ages_sorted[j]), color=col)
+
+        ax_cum.set_title("Cumulative hospitalizations by age (posterior predictive)")
+        ax_cum.set_xlabel("Week")
+        ax_cum.set_ylabel("Cumulative hosp")
+        ax_cum.grid(True, alpha=0.3)
+        ax_cum.legend(loc="upper left", ncols=2, fontsize=9)
+
         fig.suptitle(f"Posterior predictive — {loc_name}", y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
         outpng = outdir / f"ppc_panel_{loc_idx:02d}_{loc_name}.png"
         fig.savefig(outpng, bbox_inches="tight")
         plt.close(fig)
+
+
 
 
 def _idata_get(idata, var_name: str):
@@ -690,6 +782,12 @@ def _triad_plot_for_state(outdir: Path,
 
     sr_mass0 = _precompute_sr_mass0(pipe)
 
+    # --- total population for proportions (single location: index 0)
+    try:
+        pop_total = float(np.asarray(pipe.population, dtype=float)[0])
+    except Exception:
+        pop_total = float(np.sum(np.asarray(pipe.initial_array, dtype=float)[:, 0]))
+
     # r0-effective prep
     applier = getattr(pipe, "mod_applier", None)
     if applier is None:
@@ -769,29 +867,32 @@ def _triad_plot_for_state(outdir: Path,
         ax1.plot(t_days, r0_eff, linestyle="--", linewidth=1.4, color=colors[k],
                  label=f"sample {k+1} (eff r0 via Fourier)")
 
+        # --- convert S0 and S(T) to proportions of total population
         pR_samp = pR[c, d, :, 0]
-        S0_agg = np.sum((1.0 - pR_samp) * sr_mass0[:, 0]); s0_points.append(S0_agg)
-        Sfinal_agg = np.sum(S_final[c, d, :, 0]); sT_points.append(Sfinal_agg)
+        S0_agg = np.sum((1.0 - pR_samp) * sr_mass0[:, 0])
+        Sfinal_agg = np.sum(S_final[c, d, :, 0])
+        s0_points.append(S0_agg / max(pop_total, 1e-12))
+        sT_points.append(Sfinal_agg / max(pop_total, 1e-12))
 
     ax1.set_title(f"{state_name} — r0 baseline vs effective injected (Fourier scale, unit-mean)")
     ax1.set_xlabel("day"); ax1.set_ylabel("r0(t)")
     ax1.grid(True, alpha=0.3); ax1.legend(loc="best")
 
-    # Panel 2: S0 vs S(T)
+    # Panel 2: S0 vs S(T) — proportions of population
     ax2 = fig.add_subplot(gs[1, 0])
     for k, (x, y) in enumerate(zip(s0_points, sT_points)):
         ax2.scatter([x], [y], s=36, color=colors[k], label=f"sample {k+1}")
-    lo = min(s0_points + sT_points) * 0.95
-    hi = max(s0_points + sT_points) * 1.05
-    ax2.plot([lo, hi], [lo, hi], linewidth=1.0, alpha=0.4, color="0.3")
-    ax2.set_xlim(lo, hi); ax2.set_ylim(lo, hi)
-    ax2.set_xlabel("S0 (agg over age)"); ax2.set_ylabel("S(T) (agg over age)")
-    ax2.set_title(f"{state_name} — S0 vs S(T)"); ax2.grid(True, alpha=0.3); ax2.legend(loc="best")
+    # diagonal in proportion space
+    ax2.plot([0, 1], [0, 1], linewidth=1.0, alpha=0.4, color="0.3")
+    ax2.set_xlim(0.0, 1.0); ax2.set_ylim(0.0, 1.0)
+    ax2.set_xlabel("S0 / population"); ax2.set_ylabel("S(T) / population")
+    ax2.set_title(f"{state_name} — S0 vs S(T) (proportions)"); ax2.grid(True, alpha=0.3); ax2.legend(loc="best")
 
-    # Panel 3: Weekly hosp with 50% noise bands + target
+    # Panel 3: Weekly hosp with 50% noise bands + target (log y-axis)
     ax3 = fig.add_subplot(gs[2, 0])
     W = y_full_state.shape[0]
     w = np.arange(W)
+    eps = 1e-2  # avoid log(0)
 
     for k, (c, d) in enumerate(sample_pairs):
         mu_t = np.asarray(mu_shifted[c, d, :, 0], dtype=float) * np.exp(
@@ -804,17 +905,22 @@ def _triad_plot_for_state(outdir: Path,
             var_t = mu_t
         sd_t = np.sqrt(np.maximum(var_t, 1e-12))
         z50 = 0.67448975
-        lo50 = np.clip(mu_t - z50 * sd_t, 0.0, np.inf)
-        hi50 = mu_t + z50 * sd_t
+        lo50 = np.clip(mu_t - z50 * sd_t, eps, np.inf)
+        hi50 = np.clip(mu_t + z50 * sd_t, eps, np.inf)
+        mu_plot = np.clip(mu_t, eps, np.inf)
 
         ax3.fill_between(w, lo50, hi50, alpha=0.20, step="mid", color=colors[k],
                          label=f"sample {k+1} 50% band")
-        ax3.plot(w, mu_t, linewidth=1.6, color=colors[k], label=f"sample {k+1} mean")
+        ax3.plot(w, mu_plot, linewidth=1.6, color=colors[k], label=f"sample {k+1} mean")
 
-    _plot_weekly_targets(ax3, y_full_state[:, 0].astype(float), label="Target (data)", color="0.1")
-    ax3.set_xlabel("Week"); ax3.set_ylabel("Hosp (sum over age)")
+    # target, clipped for log scale
+    y_target = np.clip(y_full_state[:, 0].astype(float), eps, np.inf)
+    _plot_weekly_targets(ax3, y_target, label="Target (data)", color="0.1")
+
+    ax3.set_xlabel("Week"); ax3.set_ylabel("Hosp (sum over age, log scale)")
+    ax3.set_yscale("log")
     ax3.set_title(f"{state_name} — Weekly hosp (samples + 50% noise band vs target)")
-    ax3.grid(True, alpha=0.3); ax3.legend(loc="best")
+    ax3.grid(True, which="both", alpha=0.3); ax3.legend(loc="best")
 
     fig.suptitle(f"Three-panel summary — {state_name}", y=0.98)
     fig.tight_layout(rect=[0, 0, 1, 0.96])
@@ -869,14 +975,14 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     """
     # ---------- quick knobs ----------
     PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "10"))
-    TUNE = int(os.environ.get("TUNE", "700"))
+    TUNE = int(os.environ.get("TUNE", "900"))
     DRAWS = int(os.environ.get("DRAWS", "300"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
     FOURIER_SCALE = bool(int(os.environ.get("FOURIER_SCALE", "1")))
     WEEKLY_SCALE = bool(int(os.environ.get("WEEKLY_SCALE", "0")))
-    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "4"))          # K
+    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "64"))          # K
     FOURIER_PERIOD_DAYS = float(os.environ.get("FOURIER_PERIOD_DAYS", "365.25"))
     PROGRESS_BAR = bool(int(os.environ.get("PROGRESS_BAR", "1")))
     USE_NB = bool(int(os.environ.get("USE_NB", "1")))
@@ -906,7 +1012,10 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     for i in range(L_total):
         code_i = model_codes[i]   # e.g., "01000"
         state_i = csv_states[i]   # e.g., "Alabama"
-        print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) — Fourier K={FOURIER_HARMONICS}, P={FOURIER_PERIOD_DAYS} ===")
+        if FOURIER_SCALE:
+            print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) — Fourier K={FOURIER_HARMONICS}, P={FOURIER_PERIOD_DAYS} ===")
+        else:
+            print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) ===")
 
         # Patch config for this state into a temp file
         cfg_state = base_cfg_path.with_name(f"{base_cfg_path.stem}__{code_i}.yml")
@@ -918,6 +1027,9 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
         except TypeError:
             pipe = build_pipeline_from_config(cfg_state, dt_days=0.5)
         op = WeeklyHospAndFinalSOp(pipe, fast_mode=True, disable_mobility=True)
+
+        _assert_age_proportions_consistent(pipe)
+
         _enable_fast_and_disable_mobility(pipe, op)
 
         # Align CSV to THIS single-location model (subset to just this state name)
@@ -932,24 +1044,25 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
         if y_full.shape[1] != 1 or op.locations != 1:
             print(f"[warn] Skipping state {state_i} due to unexpected shape: L_data={y_full.shape[1]}, L_model={op.locations}")
             continue
-
+        y_obs = y_full[obs_weeks, :]
         # Optional PRIOR spaghetti ONLY for selected 4 states (Fourier prior)
-        if i in four_idx:
-            with build_weekly_model(
-                pipe, op=op, y_obs=None,
-                force_r0_fourier_scale=FOURIER_SCALE,
-                force_r0_weekly_scale=WEEKLY_SCALE,
-                fourier_harmonics=FOURIER_HARMONICS,
-                fourier_period_days=FOURIER_PERIOD_DAYS,
-            ) as prior_model:
-                present = set(prior_model.named_vars.keys())
-                requested = ["weekly_pred", "mods_loc", "mods_mu_log_loc", "r0_weekly_scale"]
-                prior_vars = [v for v in requested if v in present]
-                prior_idata = pm.sample_prior_predictive(
-                    samples=PRIOR_SAMPLES,
-                    random_seed=123 + i,
-                    var_names=prior_vars,
-                )
+        # if i in four_idx:
+        with build_weekly_model(
+            pipe, op=op, y_obs=None,
+            force_r0_fourier_scale=FOURIER_SCALE,
+            force_r0_weekly_scale=WEEKLY_SCALE,
+            fourier_harmonics=FOURIER_HARMONICS,
+            fourier_period_days=FOURIER_PERIOD_DAYS,
+            
+        ) as prior_model:
+            present = set(prior_model.named_vars.keys())
+            requested = ["weekly_pred", "mods_loc", "mods_mu_log_loc", "r0_weekly_scale"]
+            prior_vars = [v for v in requested if v in present]
+            prior_idata = pm.sample_prior_predictive(
+                samples=PRIOR_SAMPLES,
+                random_seed=123 + i,
+                var_names=prior_vars,
+            )
             # spaghetti: sum over age
             weekly_vals = _idata_get(prior_idata, "weekly_pred")
             weekly = _stack_samples(weekly_vals)  # (S, A, W, 1)
@@ -967,11 +1080,15 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
 
         # ---- POSTERIOR for this state (Fourier path) ----
         with build_weekly_model(
-            pipe, op=op, y_obs=y_full, use_nb=USE_NB,
+            pipe, op=op, y_obs=y_obs, use_nb=USE_NB,
             force_r0_fourier_scale=FOURIER_SCALE,
             force_r0_weekly_scale=WEEKLY_SCALE,
             fourier_harmonics=FOURIER_HARMONICS,
             fourier_period_days=FOURIER_PERIOD_DAYS,
+            obs_weeks = np.asarray(obs_weeks, dtype=int),
+            sT_mean = 0.7,
+            sT_ci = (0.50, 0.95),   # interpreted as ~95% interval
+            sT_weight = 1.0
         ) as model:
             idata = pm.sample(
                 draws=DRAWS,
@@ -984,10 +1101,11 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             )
             ppc = pm.sample_posterior_predictive(
                 idata,
-                var_names=["y", "weekly_pred_sum_age_shifted", "weekly_pred"],
+                var_names=["y", "weekly_pred_sum_age_shifted", "weekly_pred", "weekly_pred_scaled"],
                 random_seed=888 + i,
                 progressbar=PROGRESS_BAR,
             )
+
         idata.extend(ppc)
 
         # Tag with *state name* so saved tensors have a human-readable location coord
@@ -1001,8 +1119,8 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
 
         # Per-state PPC + (optionally) TRIAD plots
         _panel_per_location(idata, y_full, np.arange(y_full.shape[0]), (state_i,), pipe, outdir)
-        if i in four_idx:
-            _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
+        # if i in four_idx:
+        _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
 
         # ---- SAVE *ONE FILE PER STATE* ----
         nc_path = outdir / f"inference_idata_{state_i}.nc"

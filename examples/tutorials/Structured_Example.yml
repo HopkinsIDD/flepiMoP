@@ -108,7 +108,7 @@ seir:
     lambda_ext:
       value:
         distribution: fixed
-        value: 0.00005
+        value: 0.0005
 
   transitions:
     - source: [["S"], ["unvaccinated"], ["AllFlu"], ["age0to4", "age5to17", "age18to49", "age50to64", "age65to100"]] 
@@ -298,12 +298,36 @@ seir_modifiers:
       perturbation:
         distribution: fixed
         value: 0
+    seeding_off:
+      method: SinglePeriodModifier
+      parameter: lambda_ext
+      subpop: "all"
+      period_start_date: 2025-02-01
+      period_end_date: 2025-06-07
+      value:
+        distribution: fixed
+        value: 1.0
+      perturbation:
+        distribution: fixed
+        value: 0
+    waning_rate:
+      method: SinglePeriodModifier
+      parameter: epsilon
+      subpop: "all"
+      period_start_date: 2024-07-28
+      period_end_date: 2025-06-07
+      value:
+        distribution: fixed
+        value: 1.0
+      perturbation:
+        distribution: fixed
+        value: 0
     npi:
       method: StackedModifier
       modifiers: ["winter_holiday"]
     seasonal:
       method: StackedModifier
-      modifiers: ["Seas_oct", "Seas_nov", "Seas_dec", "Seas_jan", "Seas_feb", "Seas_mar", "Seas_apr"]
+      modifiers: ["Seas_oct", "Seas_nov", "Seas_dec", "Seas_jan", "Seas_feb", "Seas_mar", "Seas_apr", "seeding_off", "waning_rate"]
     none:
       method: StackedModifier
       modifiers: ["npi", "seasonal"]

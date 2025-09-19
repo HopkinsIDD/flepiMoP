@@ -8,10 +8,18 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 from pathlib import Path
 import datetime as dt
+import warnings  # <<< NEW
 
 import numpy as np
 import confuse
 from scipy.sparse import csr_matrix
+
+# <<< NEW (optional dependency; only used if config points to a parquet file)
+try:
+    import pandas as pd
+except Exception:  # pragma: no cover
+    pd = None
+# >>> NEW
 
 from gempyor.model_info import ModelInfo
 from gempyor.vectorization_experiments import (
@@ -312,7 +320,14 @@ class WeeklyHospPipeline:
     L: # locations
     """
 
-    def __init__(self, config_path: str | Path, *, dt_days: float = 1.0):
+    def __init__(
+        self,
+        config_path: str | Path,
+        *,
+        dt_days: float = 1.0,
+        age_props_csv: str | Path | None = None,
+        age_props_location_col: str | None = None,
+    ):
         self.config_path = Path(config_path)
         self.dt = float(dt_days)  # integration & outcome step (e.g., 1.0 day)
 
@@ -333,6 +348,62 @@ class WeeklyHospPipeline:
             self.model.compartments.get_transition_array()
         )
         self.NC, self.NL = self.initial_array.shape
+
+        # >>> NEW: optionally scale initial conditions by age-specific proportions
+        if age_props_csv is not None:
+            import pandas as pd
+            df = pd.read_csv(age_props_csv)
+            if age_props_location_col and age_props_location_col in df.columns:
+                # expect columns: [age_group columns..., <location_col>]
+                df = df.set_index(age_props_location_col)
+                def _to_subpop_code(v):
+                    # Accept ints/strings like 1, "1", 01, 1000, "01000", 10, 10000, etc.
+                    s = str(v).strip()
+                    # if it's already 5 chars like "01000" or "10000", keep it
+                    if s.isdigit() and len(s) == 5:
+                        return s
+                    # pure 1–2 digit state FIPS? -> pad to 2 and add "000"
+                    if s.isdigit() and len(s) <= 2:
+                        return f"{int(s):02d}000"
+                    # 3–4 digit numeric like 1000 -> zero-pad to 5 ("01000")
+                    if s.isdigit() and len(s) in (3, 4):
+                        return f"{int(s):05d}"
+                    # last resort: try int-cast then 5-digit pad
+                    try:
+                        return f"{int(float(s)):05d}"
+                    except Exception:
+                        return s  # will fail later with a clear error if it doesn't match
+
+                df.index = df.index.map(_to_subpop_code)
+
+                if not all(loc in df.index for loc in self.model.subpop_struct.subpop_names):
+                    missing = set(self.model.subpop_struct.subpop_names) - set(df.index)
+                    raise ValueError(f"Missing age proportions for locations: {missing}")
+                ages = sorted([c for c in df.columns if c.startswith("age")])
+                props = df.loc[self.model.subpop_struct.subpop_names, ages].to_numpy(dtype=np.float64).T  # (A,L)
+            else:
+                ages = sorted([c for c in df.columns if c.startswith("age")])
+                props = df[ages].iloc[0].to_numpy(dtype=np.float64)[:, None]  # (A,1)
+                props = np.tile(props, (1, self.NL))
+            # normalize defensively per location
+            props /= np.sum(props, axis=0, keepdims=True) + 1e-12
+            self.age_props = props  # (A,L)
+
+            # scale initial_array: split per-age population evenly across matching compartments
+            total_per_loc = self.initial_array.sum(axis=0, keepdims=True)  # (1,L)
+            comp_df = self.model.compartments.compartments
+            age_strata = comp_df["age_strata"].astype(str).values
+            for a_idx, age in enumerate(sorted(set(age_strata))):
+                mask_age = (age_strata == age)
+                n_rows = mask_age.sum()
+                if n_rows == 0:
+                    continue
+                mass = props[a_idx, :][None, :] * total_per_loc
+                self.initial_array[mask_age, :] = mass / n_rows
+        else:
+            self.age_props = None
+        # <<< END new block
+
         self.start_date: dt.date = self.model.ti
         self.end_date: dt.date = self.model.tf
         # number of *calendar days* (inclusive)
@@ -409,14 +480,13 @@ class WeeklyHospPipeline:
                 }
             )
 
-        # Solver factory (autotune preserved). We will pass **PARSED** parameters at solve-time,
-        # so no param_expr_lookup is needed here.
+        # Solver factory
         self.factory = RHSfactory(
             precomputed=self.precomputed,
             param_time_mode="step",
         )
 
-        # ---- Outcomes: compile from ACTUAL config (leaf incidence + sums/aliases)
+        # ---- Outcomes: compile from config
         self.outcomes_cfg = conf["outcomes"]["outcomes"].get()
         (
             self._out_resolve_rows,
@@ -432,25 +502,74 @@ class WeeklyHospPipeline:
             bin_width_days=self.dt,
         )
 
+        # >>> NEW: optionally scale leaf probabilities by per-subpop relative ratios from a parquet file
+        try:
+            use_file = False
+            if "outcomes" in conf and "param_from_file" in conf["outcomes"]:
+                use_file = bool(conf["outcomes"]["param_from_file"].get())
+            if use_file:
+                if pd is None:
+                    warnings.warn("[WeeklyHospPipeline] pandas/pyarrow not available; ignoring param_from_file.", RuntimeWarning)
+                else:
+                    rel_file = Path(self.model.path_prefix) / conf["outcomes"]["param_subpop_file"].as_str()
+                    if not rel_file.exists():
+                        warnings.warn(f"[WeeklyHospPipeline] relative-probability file not found: {rel_file}; using YAML probabilities.", RuntimeWarning)
+                    else:
+                        df = pd.read_parquet(rel_file)  # expects columns: outcome, quantity, subpop, value
+                        required = {"outcome", "quantity", "subpop", "value"}
+                        if not required.issubset(set(df.columns)):
+                            warnings.warn(f"[WeeklyHospPipeline] file {rel_file} missing required columns {required}; using YAML probabilities.", RuntimeWarning)
+                        else:
+                            df = df[df["quantity"] == "relative_probability"].copy()
+                            # Align order to model subpops
+                            subpops = list(self.model.subpop_names)
+                            # Build outcome -> vector(len L) if complete coverage
+                            for name in self._out_all_names:
+                                # Only apply to leaf-incidence nodes (direct source to incidence)
+                                if self._out_resolve_rows.get(name, np.array([])).size == 0:
+                                    continue
+                                block = df[df["outcome"] == name]
+                                if block.empty:
+                                    continue  # silent skip: no override for this leaf
+                                # Pivot to (subpop -> value)
+                                vec = np.full(self.NL, np.nan, dtype=float)
+                                m = block.set_index("subpop")["value"]
+                                missing = [sp for sp in subpops if sp not in m.index]
+                                if missing:
+                                    warnings.warn(f"[WeeklyHospPipeline] outcome '{name}' missing {len(missing)} subpops in {rel_file}; skipping scaling for this outcome.", RuntimeWarning)
+                                    continue
+                                for i, sp in enumerate(subpops):
+                                    vec[i] = float(m.loc[sp])
+                                # numeric hygiene: clip & handle NaNs/inf
+                                vec = np.where(np.isfinite(vec), vec, 1.0)
+                                vec = np.clip(vec, 0.0, 1.0)
+                                # multiply into per-location probability
+                                self._out_prob_map[name] = np.clip(self._out_prob_map[name] * vec, 0.0, 1.0)
+                        # Keep for debugging
+                        self._relprob_source_path = str(rel_file)
+        except Exception as e:  # pragma: no cover
+            warnings.warn(f"[WeeklyHospPipeline] Error applying relative probabilities from file: {e!r}; using YAML probabilities.", RuntimeWarning)
+        # <<< NEW
+
         # Age groups for aggregation
         self.age_to_names = _age_group_hosp_outcomes(self.outcomes_cfg)
         self.age_labels = list(self.age_to_names.keys())
         if not self.age_labels:
             raise ValueError("No age-specific hospitalization outcomes (incidH_*_age...) found.")
 
-        # Modifiers — compile against **BASE** parameter names/order
-        from gempyor.vectorized_modifiers import compile_seir_modifiers  # local import to avoid cycles
+        # Modifiers — compile against BASE parameter names/order
+        from gempyor.vectorized_modifiers import compile_seir_modifiers
         self.mod_applier = compile_seir_modifiers(
             seir_modifiers_cfg=conf["seir_modifiers"].get(),
             start_date=self.start_date,
             n_days=self.T,
             n_loc=self.NL,
-            param_names=self.param_names,  # base names order (P axis)
+            param_names=self.param_names,
         )
         self.leaf_order = self.mod_applier.list_leaf_modifiers()
 
-        # Expose attributes used by tests/helpers (kept for compatibility)
-        self.param_expr_lookup = None  # we run with **PARSED** params, so expression path is unused
+        # Expose attributes used by tests/helpers
+        self.param_expr_lookup = None
 
 
     # -------------------------- public API --------------------------
@@ -614,5 +733,16 @@ class WeeklyHospPipeline:
 
 # -------------------------- convenience entrypoint --------------------------
 
-def build_pipeline_from_config(config_path: str | Path, *, dt_days: float = 1.0) -> WeeklyHospPipeline:
-    return WeeklyHospPipeline(config_path, dt_days=dt_days)
+def build_pipeline_from_config(
+    config_path: str | Path,
+    *,
+    dt_days: float = 1.0,
+    age_props_csv: str | Path | None = None,
+    age_props_location_col: str | None = None,
+) -> WeeklyHospPipeline:
+    return WeeklyHospPipeline(
+        config_path,
+        dt_days=dt_days,
+        age_props_csv=age_props_csv,
+        age_props_location_col=age_props_location_col,
+    )
