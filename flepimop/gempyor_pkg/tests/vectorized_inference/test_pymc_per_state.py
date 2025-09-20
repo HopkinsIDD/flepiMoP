@@ -1,10 +1,10 @@
 # Fast-mode + no-mobility calibration that LOOPS over each state present in the
 # empirical calibration CSV and writes ONE NetCDF PER STATE (single-location traces),
-# using the FOURIER r0(t) prior/scale path.
+# using the FOURIER r0(t) prior/scale path, and MARGINALIZING over plausible pR scenarios.
 #
 # Expected artifacts in a single directory (defaults to ./model_output_all_states/):
 #   - inference_idata_<STATE>.nc            (one per state)
-#   - prior_spaghetti_<STATE>.png           (for 4 random states)
+#   - prior_spaghetti_<STATE>.png
 #   - triad_<STATE>.png                     (for 4 random states)
 #   - ppc_panel_00_<STATE>.png              (for ALL states)
 
@@ -111,8 +111,7 @@ def _materialize_structured_example(tmp_path_factory) -> Path:
 def _safe_autotune():
     """Run autotune once; keep threads within NUMBA_NUM_THREADS if needed."""
     try:
-        autotune_all(quiet=False)
-        return
+        autotune_all(quiet=False); return
     except TypeError:
         pass
     except ValueError:
@@ -156,11 +155,8 @@ def _load_and_align_csv_to_weeks(
     subset_sources: tuple[str, ...] | None = None,
 ):
     """
-    Read long CSV of *daily* total hospitalizations -> weekly aggregated matrix (W,L) aligned to model start_date.
-    CSV columns expected: 'date', 'source', 'incidH'. `source` are state names.
-    If `subset_sources` is provided, only those sources are considered and columns are ordered exactly as given.
-
-    NOTE: Missing weeks remain as NaN (no zero-filling). Use obs_weeks to index the likelihood.
+    Read long CSV of *daily* total hospitalizations -> weekly (W,L) aligned to model start_date.
+    CSV columns expected: 'date', 'source', 'incidH'. Missing weeks remain NaN.
     """
     df = pd.read_csv(csv_path, parse_dates=["date"])
     required = {"date", "source", "incidH"}
@@ -169,7 +165,6 @@ def _load_and_align_csv_to_weeks(
         raise ValueError(f"CSV missing required columns: {missing}")
 
     df = df.copy()
-    # Keep true missing values as NaN; drop non-numeric rows; clip negatives to 0
     df["incidH"] = pd.to_numeric(df["incidH"], errors="coerce")
     df = df.dropna(subset=["incidH"])
     df["incidH"] = df["incidH"].clip(lower=0.0)
@@ -183,10 +178,8 @@ def _load_and_align_csv_to_weeks(
     else:
         loc_names = None
 
-    # Daily totals per (state_name, date)
     df = df.groupby(["source", "date"], sort=False, as_index=False)["incidH"].sum()
 
-    # Align to model horizon
     start_date = pipe.start_date
     T = pipe.T
     df["day_index"] = (df["date"].dt.date - start_date).apply(lambda d: d.days)
@@ -194,28 +187,18 @@ def _load_and_align_csv_to_weeks(
     if df.empty:
         raise ValueError("No rows overlap the model horizon after alignment.")
 
-    # Map to model-aligned MMWR weeks
     assign = _mmwr_week_assign(start_date, T)
     df["week_idx"] = df["day_index"].map(lambda i: int(assign[i]))
 
-    # Determine location names/order
     if loc_names is None:
         loc_names = tuple(pd.unique(df["source"]))
     L_data = len(loc_names)
-    L_model = op.locations
-    if L_data != L_model:
+    if L_data != op.locations:
         raise AssertionError(
-            f"Location count mismatch after filtering: data has {L_data} 'source' values vs model L={L_model}."
+            f"Location count mismatch after filtering: data L={L_data} vs model L={op.locations}."
         )
 
-    # Weekly totals per location
-    weekly = (
-        df.groupby(["week_idx", "source"], sort=False)["incidH"]
-          .sum()
-          .reset_index()
-    )
-
-    # Pivot to (W, L) using the Op’s week count and the enforced column order
+    weekly = df.groupby(["week_idx", "source"], sort=False)["incidH"].sum().reset_index()
     W = op.n_weeks
     pivot = (
         weekly.pivot(index="week_idx", columns="source", values="incidH")
@@ -224,42 +207,25 @@ def _load_and_align_csv_to_weeks(
               .reindex(columns=list(loc_names))
     )
 
-    # Observed weeks: any location has data
     obs_weeks = np.flatnonzero(pivot.notna().any(axis=1).values)
-
-    # Preserve NaNs for unobserved weeks — do NOT fill with zeros
     y_full = pivot.to_numpy(dtype=float)  # (W, L) with NaNs where missing
-
-    # Convert category back to string
     loc_names = tuple(map(str, loc_names))
-
     return y_full, obs_weeks, loc_names
 
 
 def _plot_weekly_targets(ax: plt.Axes, y_vec: np.ndarray, *, label: str = "Target (data)", color="0.1"):
-    """Plot weekly targets (zeros stand in for missing weeks)."""
     W = y_vec.shape[0]
     weeks = np.arange(W)
     ax.step(weeks, y_vec, where="mid", linewidth=1.4, alpha=0.95, label=label, color=color)
 
 
 def _age_lower_bound(label: str) -> int:
-    """Extract lower-edge integer from an age label (handles 'age0to4', '5–17', '65+', etc.)."""
     s = str(label).lower().replace("age", "").replace("to", "-").replace("–", "-").replace("—", "-")
     s = s.replace("plus", "+").replace("p", "+")
-    m = re.search(r"(\d+)", s)
-    return int(m.group(1)) if m else 0
+    m = re.search(r"(\d+)", s); return int(m.group(1)) if m else 0
+
 
 def _assert_age_proportions_consistent(pipe: WeeklyHospPipeline) -> None:
-    """
-    Sanity-check that age proportions in the *initial state* are well-formed.
-    We DO NOT parse or alter any inputs here — we only read `pipe.initial_array`.
-
-    Checks per location:
-      - age shares sum to ~1
-      - no NaNs / infs / negatives
-      - each share within [0, 1]
-    """
     initial = np.asarray(pipe.initial_array, dtype=float)     # (C, L)
     df = pipe.model.compartments.compartments
     comp_age = df["age_strata"].astype(str).values
@@ -283,31 +249,25 @@ def _assert_age_proportions_consistent(pipe: WeeklyHospPipeline) -> None:
     comp_age_norm = np.array([_norm_age(a) for a in comp_age], dtype=object)
     age_tokens = tuple(_norm_age(a) for a in ages)
 
-    # For each age, sum over all compartments (S/E/I/R…)
     age_tot = np.zeros((len(ages), NL), dtype=float)
     for a_idx, tok in enumerate(age_tokens):
         m_age = (comp_age_norm == tok)
         if not m_age.any():
-            # If an age label can't be matched to compartments, fail loudly.
             raise AssertionError(f"Age label '{ages[a_idx]}' does not match any compartments.")
         age_tot[a_idx, :] = initial[m_age, :].sum(axis=0)
 
-    # Normalize shares per location
     loc_tot = age_tot.sum(axis=0, keepdims=True)
     if not np.all(np.isfinite(loc_tot)) or np.any(loc_tot <= 0):
         raise AssertionError("Initial state totals are non-finite or non-positive.")
 
-    shares = age_tot / loc_tot  # (A, L)
-
+    shares = age_tot / loc_tot
     if not np.all(np.isfinite(shares)):
         raise AssertionError("Age shares contain non-finite values.")
     if np.any(shares < -1e-12) or np.any(shares > 1+1e-12):
-        raise AssertionError("Age shares fall outside [0,1] (beyond tiny tolerance).")
-
+        raise AssertionError("Age shares fall outside [0,1].")
     sums = shares.sum(axis=0)
     if not np.allclose(sums, 1.0, atol=1e-6):
         raise AssertionError(f"Age shares per location do not sum to 1 (min/max sums: {sums.min():.6f}/{sums.max():.6f})")
-
 
 
 def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: Path):
@@ -318,34 +278,34 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
     order = np.argsort([_age_lower_bound(a) for a in ages])
     ages_sorted = [ages[i] for i in order]
 
-    # --- Choose an aggregated posterior-predictive with week dimension == W ---
-    agg_ppc = None
-    mean_label = "Posterior mean (process)"
+    # --- Aggregate posterior-predictive (handle optional scenario dim) ---
     pp = getattr(idata, "posterior_predictive", None)
-    if pp is not None:
-        if "y" in pp:
-            y_ppc = pp["y"].values  # (chain, draw, W' , L)
-            if y_ppc.ndim == 4 and y_ppc.shape[2] == W:
-                agg_ppc = y_ppc
-                mean_label = "Posterior mean (obs model)"
-        if agg_ppc is None:
-            if "weekly_pred_sum_age_shifted" in pp:
-                agg_ppc = pp["weekly_pred_sum_age_shifted"].values  # (chain, draw, W, L)
-            else:
-                agg_ppc = pp["weekly_pred_sum_age"].values          # (chain, draw, W, L)
+    if pp is None:
+        raise RuntimeError("No posterior_predictive group found.")
+    def _collapse_scenario(da):
+        if "scenario" in da.dims:
+            return da.mean(dim="scenario")
+        return da
 
-    if agg_ppc is None:
-        raise RuntimeError("No suitable posterior predictive found for aggregated plot.")
+    if "y" in pp:
+        agg_ppc = _collapse_scenario(pp["y"]).values  # (chain,draw,W,L)
+        mean_label = "Posterior mean (obs model)"
+    elif "weekly_pred_sum_age_shifted" in pp:
+        agg_ppc = _collapse_scenario(pp["weekly_pred_sum_age_shifted"]).values  # (chain,draw,W,L)
+        mean_label = "Posterior mean (process)"
+    else:
+        agg_ppc = _collapse_scenario(pp["weekly_pred_sum_age"]).values  # (chain,draw,W,L)
+        mean_label = "Posterior mean (process)"
 
-    # Per-age weekly posterior predictive
-    age_ppc = idata.posterior_predictive["weekly_pred"].values  # (chain, draw, A, W, L)
+    age_ppc_src = pp.get("weekly_pred", None)
+    if age_ppc_src is None:
+        raise RuntimeError("weekly_pred not found in posterior_predictive.")
+    age_ppc = _collapse_scenario(age_ppc_src).values  # (chain,draw,A,W,L)
+
     weeks = np.arange(W)
-
     L = y_obs_full.shape[1]
     for loc_idx in range(L):
         loc_name = str(loc_names[loc_idx])
-
-        # 3 rows: (1) aggregated, (2) per-age weekly (A columns), (3) one-wide cumulative-per-age
         fig_width = min(36, max(16, 3.2 * max(A, 5)))
         fig = plt.figure(figsize=(fig_width, 10.0), dpi=120)
 
@@ -354,65 +314,54 @@ def _panel_per_location(idata, y_obs_full, obs_weeks, loc_names, pipe, outdir: P
         mid = gs[1].subgridspec(1, A, wspace=0.28)
         ax_cum = fig.add_subplot(gs[2, 0])
 
-        # ===== Row 1: aggregated (length W) =====
+        # Row 1: aggregated
         samples = agg_ppc[:, :, :, loc_idx]            # (chain, draw, W)
-        mean = samples.mean(axis=(0, 1))               # (W,)
-        hdi = az.hdi(samples, hdi_prob=0.95)           # (W, 2)
+        mean = samples.mean(axis=(0, 1))
+        hdi = az.hdi(samples, hdi_prob=0.95)
         ax_agg.fill_between(weeks, hdi[:, 0], hdi[:, 1], alpha=0.25, step="mid", label="95% HDI")
         ax_agg.plot(weeks, mean, linewidth=1.5, label=mean_label)
         y_loc = y_obs_full[:, loc_idx]
         _plot_weekly_targets(ax_agg, y_loc, label="Observed", color="0.1")
         ax_agg.set_title(f"{loc_name} — Aggregated hospitalizations (all ages)")
-        ax_agg.set_xlabel("Week")
-        ax_agg.set_ylabel("Hosp")
-        ax_agg.grid(True, alpha=0.3)
-        ax_agg.legend(loc="upper right")
+        ax_agg.set_xlabel("Week"); ax_agg.set_ylabel("Hosp")
+        ax_agg.grid(True, alpha=0.3); ax_agg.legend(loc="upper right")
 
-        # ===== Row 2: per-age weekly (A columns) =====
+        # Row 2: per-age weekly
         for j, a_idx in enumerate(order):
             ax = fig.add_subplot(mid[0, j], sharex=None if j == 0 else fig.axes[-1])
-            samples_a = age_ppc[:, :, a_idx, :, loc_idx]  # (chain, draw, W)
+            samples_a = age_ppc[:, :, a_idx, :, loc_idx]
             mean_a = samples_a.mean(axis=(0, 1))
             hdi_a = az.hdi(samples_a, hdi_prob=0.95)
             ax.fill_between(weeks, hdi_a[:, 0], hdi_a[:, 1], alpha=0.20, step="mid")
             ax.plot(weeks, mean_a, linewidth=1.2)
-            ax.set_title(str(ages_sorted[j]))
-            ax.grid(True, alpha=0.3)
+            ax.set_title(str(ages_sorted[j])); ax.grid(True, alpha=0.3)
             ax.set_xlabel("Week")
             if j == 0:
                 ax.set_ylabel("Hosp")
 
-        # ===== Row 3: cumulative per-age (all ages in ONE plot, color-coded) =====
+        # Row 3: cumulative per-age
         color_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", None)
         for j, a_idx in enumerate(order):
-            samples_a = age_ppc[:, :, a_idx, :, loc_idx]  # (chain, draw, W)
-            # stack samples and take cumulative over weeks
-            S = samples_a.reshape(-1, W)                  # (samples, W)
-            S_cum = np.cumsum(S, axis=1)                  # cumulative over weeks
+            samples_a = age_ppc[:, :, a_idx, :, loc_idx]
+            S = samples_a.reshape(-1, W)
+            S_cum = np.cumsum(S, axis=1)
             mean_cum = S_cum.mean(axis=0)
-            hdi_cum = az.hdi(S_cum, hdi_prob=0.95)        # (W, 2)
-
+            hdi_cum = az.hdi(S_cum, hdi_prob=0.95)
             col = None if color_cycle is None else color_cycle[j % len(color_cycle)]
             ax_cum.fill_between(weeks, hdi_cum[:, 0], hdi_cum[:, 1], alpha=0.15, step="mid", color=col)
             ax_cum.plot(weeks, mean_cum, linewidth=1.3, label=str(ages_sorted[j]), color=col)
 
         ax_cum.set_title("Cumulative hospitalizations by age (posterior predictive)")
-        ax_cum.set_xlabel("Week")
-        ax_cum.set_ylabel("Cumulative hosp")
-        ax_cum.grid(True, alpha=0.3)
-        ax_cum.legend(loc="upper left", ncols=2, fontsize=9)
+        ax_cum.set_xlabel("Week"); ax_cum.set_ylabel("Cumulative hosp")
+        ax_cum.grid(True, alpha=0.3); ax_cum.legend(loc="upper left", ncols=2, fontsize=9)
 
         fig.suptitle(f"Posterior predictive — {loc_name}", y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
         outpng = outdir / f"ppc_panel_{loc_idx:02d}_{loc_name}.png"
-        fig.savefig(outpng, bbox_inches="tight")
-        plt.close(fig)
-
-
+        fig.savefig(outpng, bbox_inches="tight"); plt.close(fig)
 
 
 def _idata_get(idata, var_name: str):
-    """Fetch a variable from either `prior_predictive` or `prior` InferenceData group."""
     for grp in ("prior_predictive", "prior"):
         grp_obj = getattr(idata, grp, None)
         if grp_obj is not None and var_name in grp_obj:
@@ -420,13 +369,17 @@ def _idata_get(idata, var_name: str):
     raise AssertionError(f"Variable '{var_name}' not found in prior/prior_predictive groups.")
 
 
-def _stack_samples(arr: np.ndarray) -> np.ndarray:
-    """weekly_pred array (draw,A,W,L) or (chain,draw,A,W,L) -> (S,A,W,L)."""
-    if arr.ndim == 4:
-        return arr
+def _stack_samples_handle_scenario(arr) -> np.ndarray:
+    """
+    Accept (chain,draw,A,W,L) OR (chain,draw,scenario,A,W,L) -> (S,A,W,L) by averaging scenarios.
+    """
+    if arr.ndim == 6 and arr.shape[2] > 1:  # has scenario
+        arr = arr.mean(axis=2)              # collapse scenario
     if arr.ndim == 5:
         c, d, A, W, L = arr.shape
         return arr.reshape(c * d, A, W, L)
+    if arr.ndim == 4:
+        return arr
     raise ValueError(f"Unexpected ndim for weekly_pred: {arr.shape}")
 
 
@@ -443,22 +396,14 @@ def _week_centers_from_assign(assign: np.ndarray) -> np.ndarray:
     return centers
 
 def _interp_weekly_to_daily(scale_w: np.ndarray, centers: np.ndarray, T_days: int) -> np.ndarray:
-    """
-    Interpolate a weekly scale (length W) to daily. If centers length != W
-    (e.g., off-by-one due to horizon alignment), truncate/pad centers to match W.
-    """
     t = np.arange(T_days, dtype=float)
     W = len(scale_w)
     if len(centers) != W:
         if len(centers) > W:
             centers = centers[:W]
         else:
-            # Pad centers forward with ~weekly spacing
-            if len(centers) >= 2:
-                step = centers[-1] - centers[-2]
-                if not np.isfinite(step) or abs(step) < 1e-9:
-                    step = 7.0
-            else:
+            step = (centers[-1] - centers[-2]) if len(centers) >= 2 else 7.0
+            if not np.isfinite(step) or abs(step) < 1e-9:
                 step = 7.0
             pad = centers[-1] + step * np.arange(1, W - len(centers) + 1)
             centers = np.concatenate([centers, pad])
@@ -536,7 +481,6 @@ def _enable_fast_and_disable_mobility(pipe: WeeklyHospPipeline, op: WeeklyHospAn
 
 # ============================= NEW safeguards (canonical FIPS mapping) =============================
 
-# Canonical two-digit FIPS order (50 states + DC)
 FIPS_2 = {
     "Alabama": "01", "Alaska": "02", "Arizona": "04", "Arkansas": "05", "California": "06",
     "Colorado": "08", "Connecticut": "09", "Delaware": "10", "District of Columbia": "11",
@@ -558,25 +502,16 @@ def _make_confuse_from_yaml(yaml_path: Path) -> confuse.Configuration:
     return cfg
 
 def _discover_permissible_codes_and_build_mapping(cfg_path: Path, csv_path: Path) -> tuple[list[str], list[str]]:
-    """
-    Build mapping from state -> model code robust to missing/misaligned states.
-    - Read ModelInfo subpops -> model_codes.
-    - Map two-digit FIPS (first 2 chars of model code) -> first matching model code (preserve model order).
-    - Read CSV unique 'source' names; filter & order them to canonical FIPS order.
-    - Return lists of (model_code, state_name) pairs only where both exist.
-    """
     conf = _make_confuse_from_yaml(cfg_path)
     mi = ModelInfo(config=conf)
     all_model_codes = list(map(str, mi.subpop_struct.subpop_names))
 
-    # First seen code per FIPS-2, preserving model order
     fips2_to_code: dict[str, str] = {}
     for code in all_model_codes:
         key = str(code)[:2]
         if key not in fips2_to_code:
             fips2_to_code[key] = str(code)
 
-    # Unique states in data
     df = pd.read_csv(csv_path, usecols=["source"])
     raw_states = list(pd.unique(df["source"]))
 
@@ -606,19 +541,7 @@ def _discover_permissible_codes_and_build_mapping(cfg_path: Path, csv_path: Path
         raise AssertionError("No overlapping states between CSV and model config after filtering.")
     return model_codes, csv_states
 
-def _patch_config_selected_block(
-    base_cfg_path: Path,
-    out_cfg_path: Path,
-    *,
-    selected_code: str,
-) -> None:
-    """
-    Write a patched YAML to `out_cfg_path` that is identical to base but ensures, within
-    `subpop_setup:`:
-        - `selected: ["<selected_code>"]` is present (added or overwritten).
-        - If `state_level:` is missing, add `state_level: TRUE` (do not override existing).
-    Preserve existing absolute `geodata`/`mobility` values.
-    """
+def _patch_config_selected_block(base_cfg_path: Path, out_cfg_path: Path, *, selected_code: str) -> None:
     text = base_cfg_path.read_text().splitlines()
     out = []
     in_sub = False
@@ -641,7 +564,6 @@ def _patch_config_selected_block(
                 sub_indent = None
             continue
 
-        # inside subpop_setup
         if sub_indent is None and line.strip():
             sub_indent = re.match(r"^(\s*)", line).group(1)
         if sub_indent is None:
@@ -652,51 +574,33 @@ def _patch_config_selected_block(
 
         if key == "state_level":
             saw_state_level = True
-            out.append(line)  # keep as-is
-            continue
+            out.append(line); continue
         if key == "selected":
-            out.append(f'{sub_indent}selected: ["{selected_code}"]')
-            wrote_selected = True
-            continue
+            out.append(f'{sub_indent}selected: ["{selected_code}"]'); wrote_selected = True; continue
 
-        # End of block? (next top-level key)
         if re.match(r"^\S", line) and not line.startswith(" "):
-            _emit_missing(sub_indent)
-            out.append(line)
-            in_sub = False
-            continue
+            _emit_missing(sub_indent); out.append(line); in_sub = False; continue
 
         out.append(line)
 
     if in_sub:
-        # file ended while in subpop_setup
         _emit_missing(sub_indent if sub_indent is not None else "  ")
-
     out_cfg_path.write_text("\n".join(out) + "\n")
 
 
 def _concat_idatas_along_location(idatas: list[az.InferenceData]) -> az.InferenceData:
-    """
-    (Unused in this per-state writer, kept for convenience.)
-    Concatenate multiple single-location InferenceData objects into one with a
-    multi-location 'location' dimension by xarray-concatenating group datasets
-    along 'location'.
-    """
     out = az.InferenceData()
     group_names = set().union(*[idata.groups() for idata in idatas])
-
     for grp in sorted(group_names):
         dsets = [getattr(idata, grp) for idata in idatas if getattr(idata, grp, None) is not None]
         if not dsets:
             continue
-
-        # Which vars have a 'location' dim?
         loc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" in da.dims]
         noloc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" not in da.dims]
 
         ds_loc_cat = None
         if loc_vars:
-            parts = [ds[loc_vars] for ds in dsets]  # each has location coord length 1 with state name
+            parts = [ds[loc_vars] for ds in dsets]
             ds_loc_cat = xr.concat(parts, dim="location")
 
         ds_noloc = dsets[0][noloc_vars] if noloc_vars else None
@@ -709,14 +613,12 @@ def _concat_idatas_along_location(idatas: list[az.InferenceData]) -> az.Inferenc
             ds_comb = ds_noloc
 
         setattr(out, grp, ds_comb)
-
     return out
 
 
 # ============================= TRIAD support (only for 4 random states) =============================
 
 def _precompute_sr_mass0(pipe: WeeklyHospPipeline) -> np.ndarray:
-    """sr_mass0[a, l] = (total mass in age a, loc l) minus (non S/R mass) at t0."""
     initial = pipe.initial_array
     df = pipe.model.compartments.compartments
     comp_age = df["age_strata"].astype(str).values
@@ -762,27 +664,40 @@ def _triad_plot_for_state(outdir: Path,
                           op: WeeklyHospAndFinalSOp,
                           idata_state: az.InferenceData,
                           y_full_state: np.ndarray):
-    """Make the 3-panel 'triad' figure for a SINGLE-location run."""
     post = idata_state.posterior
-    chains = post.dims["chain"]
-    draws = post.dims["draw"]
-
+    chains = post.dims["chain"]; draws = post.dims["draw"]
     rng = np.random.default_rng(20240831)
     flat_ix = rng.choice(chains * draws, size=2, replace=False)
     sample_pairs = [(ix // draws, ix % draws) for ix in flat_ix]
 
-    mu_shifted_name = "weekly_pred_sum_age_shifted"
-    if mu_shifted_name not in post:
-        raise AssertionError(f"'{mu_shifted_name}' not found in posterior.")
+    # Pull scenario-mean versions of deterministics
+    def _pmu(name):
+        if name not in post:
+            raise AssertionError(f"{name} not in posterior.")
+        da = post[name]
+        return (da.mean(dim="scenario") if "scenario" in da.dims else da).values
 
-    mu_shifted = post[mu_shifted_name].values            # (chain, draw, W, 1)
+    mu_shifted = _pmu("weekly_pred_sum_age_shifted")     # (chain, draw, W, 1)
     beta0_loc = post["beta0_loc"].values                 # (chain, draw, 1)
     delta_week = post["delta_week"].values               # (chain, draw, W, 1)
     alpha_nb_loc = post["alpha_nb_loc"].values if "alpha_nb_loc" in post else None
 
+    # S_final present with scenario dim; scenario-mean for plotting
+    S_final = _pmu("S_final")                            # (chain, draw, A, 1)
+
+    # pR: if not a sampled RV (scenario path), get mean across scenarios from constant_data
+    if "pR" in post:
+        pR_post = post["pR"].values                      # (chain, draw, A, 1)
+    else:
+        const = getattr(idata_state, "constant_data", None)
+        if const is None or "pR_scenarios_data" not in const:
+            raise AssertionError("pR_scenarios_data not found in constant_data for scenario path.")
+        pR_mean = const["pR_scenarios_data"].mean(dim="scenario").values  # (A, 1)
+        # tile to match (chain, draw, A, 1) for simplicity
+        pR_post = np.broadcast_to(pR_mean, (chains, draws, pR_mean.shape[0], pR_mean.shape[1]))
+
     sr_mass0 = _precompute_sr_mass0(pipe)
 
-    # --- total population for proportions (single location: index 0)
     try:
         pop_total = float(np.asarray(pipe.population, dtype=float)[0])
     except Exception:
@@ -798,8 +713,6 @@ def _triad_plot_for_state(outdir: Path,
             n_loc=pipe.NL,
             param_names=pipe.param_names,
         )
-
-    # Locate r0 row
     param_names = np.array(list(pipe.param_defs.keys()))
     if "r0" in param_names:
         r0_idx = int(np.where(param_names == "r0")[0][0])
@@ -816,22 +729,19 @@ def _triad_plot_for_state(outdir: Path,
 
     mods_loc = post["mods_loc"].values                  # (chain,draw,modifier,1)
     mods = post["mods"].values if "mods" in post else None
-    pR = post["pR"].values
-    S_final = post["S_final"].values
     r0_weekly_scale_post = post["r0_weekly_scale"].values if "r0_weekly_scale" in post else None
 
-    # Seasonal prior-mean leaf set (monthly/holiday)
     leaf_names = tuple(pipe.modifier_order())
     defaults = _yaml_defaults_in_leaf_order(pipe.config_path, leaf_names)
     mh_idx = [i for i, nm in enumerate(leaf_names) if ("month" in nm.lower()) or ("holi" in nm.lower())]
 
     colors = ["C0", "C1", "C2"]
-    BASELINE_R0_COLOR = "0.5"   # gray
+    BASELINE_R0_COLOR = "0.5"
 
     fig = plt.figure(figsize=(12, 9), dpi=130)
     gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1.2, 1.0, 1.2], hspace=0.28)
 
-    # Panel 1: r0 baseline vs effective injected (after weekly interp; Fourier)
+    # Panel 1: r0 baseline vs effective injected
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.plot(t_days, base[r0_idx, :, 0], label="baseline r0", linewidth=1.6, color=BASELINE_R0_COLOR)
     s0_points, sT_points = [], []
@@ -867,8 +777,7 @@ def _triad_plot_for_state(outdir: Path,
         ax1.plot(t_days, r0_eff, linestyle="--", linewidth=1.4, color=colors[k],
                  label=f"sample {k+1} (eff r0 via Fourier)")
 
-        # --- convert S0 and S(T) to proportions of total population
-        pR_samp = pR[c, d, :, 0]
+        pR_samp = pR_post[c, d, :, 0]
         S0_agg = np.sum((1.0 - pR_samp) * sr_mass0[:, 0])
         Sfinal_agg = np.sum(S_final[c, d, :, 0])
         s0_points.append(S0_agg / max(pop_total, 1e-12))
@@ -878,26 +787,22 @@ def _triad_plot_for_state(outdir: Path,
     ax1.set_xlabel("day"); ax1.set_ylabel("r0(t)")
     ax1.grid(True, alpha=0.3); ax1.legend(loc="best")
 
-    # Panel 2: S0 vs S(T) — proportions of population
+    # Panel 2: S0 vs S(T)
     ax2 = fig.add_subplot(gs[1, 0])
     for k, (x, y) in enumerate(zip(s0_points, sT_points)):
         ax2.scatter([x], [y], s=36, color=colors[k], label=f"sample {k+1}")
-    # diagonal in proportion space
     ax2.plot([0, 1], [0, 1], linewidth=1.0, alpha=0.4, color="0.3")
     ax2.set_xlim(0.0, 1.0); ax2.set_ylim(0.0, 1.0)
     ax2.set_xlabel("S0 / population"); ax2.set_ylabel("S(T) / population")
-    ax2.set_title(f"{state_name} — S0 vs S(T) (proportions)"); ax2.grid(True, alpha=0.3); ax2.legend(loc="best")
+    ax2.set_title(f"{state_name} — S0 vs S(T) (proportions)")
+    ax2.grid(True, alpha=0.3); ax2.legend(loc="best")
 
-    # Panel 3: Weekly hosp with 50% noise bands + target (log y-axis)
+    # Panel 3: Weekly hosp (log scale)
     ax3 = fig.add_subplot(gs[2, 0])
-    W = y_full_state.shape[0]
-    w = np.arange(W)
-    eps = 1e-2  # avoid log(0)
-
+    W = y_full_state.shape[0]; w = np.arange(W); eps = 1e-2
     for k, (c, d) in enumerate(sample_pairs):
-        mu_t = np.asarray(mu_shifted[c, d, :, 0], dtype=float) * np.exp(
-            float(beta0_loc[c, d, 0])
-        ) * np.exp(np.asarray(delta_week[c, d, :, 0], dtype=float))
+        mu_t = np.asarray(mu_shifted[c, d, :, 0], dtype=float) * np.exp(float(beta0_loc[c, d, 0])) \
+               * np.exp(np.asarray(delta_week[c, d, :, 0], dtype=float))
         if alpha_nb_loc is not None:
             alpha_loc = float(alpha_nb_loc[c, d, 0])
             var_t = mu_t + (mu_t ** 2) / max(alpha_loc, 1e-12)
@@ -908,32 +813,27 @@ def _triad_plot_for_state(outdir: Path,
         lo50 = np.clip(mu_t - z50 * sd_t, eps, np.inf)
         hi50 = np.clip(mu_t + z50 * sd_t, eps, np.inf)
         mu_plot = np.clip(mu_t, eps, np.inf)
-
         ax3.fill_between(w, lo50, hi50, alpha=0.20, step="mid", color=colors[k],
                          label=f"sample {k+1} 50% band")
         ax3.plot(w, mu_plot, linewidth=1.6, color=colors[k], label=f"sample {k+1} mean")
 
-    # target, clipped for log scale
     y_target = np.clip(y_full_state[:, 0].astype(float), eps, np.inf)
     _plot_weekly_targets(ax3, y_target, label="Target (data)", color="0.1")
-
     ax3.set_xlabel("Week"); ax3.set_ylabel("Hosp (sum over age, log scale)")
     ax3.set_yscale("log")
     ax3.set_title(f"{state_name} — Weekly hosp (samples + 50% noise band vs target)")
     ax3.grid(True, which="both", alpha=0.3); ax3.legend(loc="best")
 
     fig.suptitle(f"Three-panel summary — {state_name}", y=0.98)
-    fig.tight_layout(rect=[0, 0, 1, 0.96])
     outfile = outdir / f"triad_{state_name}.png"
-    fig.savefig(outfile, bbox_inches="tight")
-    plt.close(fig)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(outfile, bbox_inches="tight"); plt.close(fig)
     print(f"[artifact] saved: {outfile}")
 
 
 # ============================= NetCDF sanity check =============================
 
 def _assert_netcdf_has_posterior(nc_path: Path) -> None:
-    """Open a freshly-written NetCDF and assert it contains a non-empty posterior group."""
     if (not nc_path.exists()) or nc_path.stat().st_size == 0:
         raise RuntimeError(f"NetCDF appears empty or missing: {nc_path}")
     try:
@@ -949,9 +849,33 @@ def _assert_netcdf_has_posterior(nc_path: Path) -> None:
         if dim not in ds.dims or int(ds.dims[dim]) <= 0:
             raise RuntimeError(f"'posterior' has non-positive {dim} in NetCDF: {nc_path}")
 
-    expected_any = ["weekly_pred", "pR", "mods_loc", "beta0_loc"]
+    expected_any = ["weekly_pred", "mods_loc", "beta0_loc"]
     if not any(v in ds.data_vars for v in expected_any):
         raise RuntimeError(f"'posterior' missing expected vars {expected_any} in NetCDF: {nc_path}")
+
+
+# ============================= pR scenario builder =============================
+
+def _build_pr_scenarios_for_state(pipe: WeeklyHospPipeline,
+                                  alpha: float = 8.0, beta: float = 12.0,
+                                  S: int = 5) -> np.ndarray:
+    """
+    Build (S, A, 1) plausible scenarios by taking equally spaced Beta quantiles.
+    Defaults match the prior used previously for multi-location pR_l.
+    """
+    A = len(tuple(pipe.age_labels))
+    qs = np.linspace(0.1, 0.9, S)  # middle mass; adjust via env if desired
+    # Use scipy-free Beta quantiles approximation via logit-normal matching
+    # but to keep things simple and dependency-free, sample a dense grid and
+    # pick nearest quantiles.
+    rng = np.random.default_rng(12345)
+    grid = rng.beta(alpha, beta, size=(20000,))  # approximate inverse-CDF
+    grid.sort()
+    idx = (qs * (grid.size - 1)).astype(int)
+    vals = grid[idx]  # length S
+    pr = np.tile(vals[:, None, None], (1, A, 1))  # (S, A, 1)
+    # Lightly taper older ages to higher pR if desired (optional; leave flat)
+    return pr
 
 
 # ============================= main test =============================
@@ -979,60 +903,58 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     DRAWS = int(os.environ.get("DRAWS", "300"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
+    print("CPUS:", os.cpu_count())
     RNG_SEED = int(os.environ.get("STATE_SAMPLE_SEED", "20240901"))
     FOURIER_SCALE = bool(int(os.environ.get("FOURIER_SCALE", "1")))
     WEEKLY_SCALE = bool(int(os.environ.get("WEEKLY_SCALE", "0")))
-    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "64"))          # K
+    FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "64"))
     FOURIER_PERIOD_DAYS = float(os.environ.get("FOURIER_PERIOD_DAYS", "365.25"))
     PROGRESS_BAR = bool(int(os.environ.get("PROGRESS_BAR", "1")))
     USE_NB = bool(int(os.environ.get("USE_NB", "1")))
+    S_SCEN = int(os.environ.get("PR_SCENARIOS", "0"))
+    PR_ALPHA = float(os.environ.get("PR_BETA_ALPHA", "8.0"))
+    PR_BETA = float(os.environ.get("PR_BETA_BETA", "12.0"))
     # ----------------------------------
 
     base_cfg_path = _materialize_structured_example(tmp_path_factory)
     csv_path = _locate_csv_or_skip()
 
-    # Autotune ONCE
     _safe_autotune()
 
-    # Discover (model_code, state_name) ordered pairs — with safeguards
     model_codes, csv_states = _discover_permissible_codes_and_build_mapping(base_cfg_path, csv_path)
     L_total = len(model_codes)
     assert L_total == len(csv_states) and L_total >= 1
 
-    # Choose 4 random states (or fewer if <4 total) for prior spaghetti + triad plots
     rng = np.random.default_rng(RNG_SEED)
     four_idx = set(rng.choice(L_total, size=min(4, L_total), replace=False).tolist())
 
-    # Output directory (single)
     outdir = Path(os.environ.get("E2E_OUTDIR", "") or (Path.cwd() / "model_output_all_states"))
     outdir.mkdir(parents=True, exist_ok=True)
 
     first_nc_checked = False
 
     for i in range(L_total):
-        code_i = model_codes[i]   # e.g., "01000"
-        state_i = csv_states[i]   # e.g., "Alabama"
+        code_i = model_codes[i]
+        state_i = csv_states[i]
         if FOURIER_SCALE:
             print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) — Fourier K={FOURIER_HARMONICS}, P={FOURIER_PERIOD_DAYS} ===")
         else:
             print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) ===")
 
-        # Patch config for this state into a temp file
         cfg_state = base_cfg_path.with_name(f"{base_cfg_path.stem}__{code_i}.yml")
         _patch_config_selected_block(base_cfg_path, cfg_state, selected_code=code_i)
 
-        # Build single-location pipeline/op
         try:
             pipe = build_pipeline_from_config(cfg_state, dt_days=0.5, fast_mode=True, disable_mobility=True)
         except TypeError:
             pipe = build_pipeline_from_config(cfg_state, dt_days=0.5)
+        # Bound scenario worker threads inside the Op (if supported by Op implementation)
+        os.environ.setdefault("WEEKLY_OP_SCEN_THREADS", str(min(S_SCEN, CORES)))
         op = WeeklyHospAndFinalSOp(pipe, fast_mode=True, disable_mobility=True)
 
         _assert_age_proportions_consistent(pipe)
-
         _enable_fast_and_disable_mobility(pipe, op)
 
-        # Align CSV to THIS single-location model (subset to just this state name)
         try:
             y_full, obs_weeks, loc_names = _load_and_align_csv_to_weeks(
                 csv_path, pipe, op, subset_sources=(state_i,)
@@ -1044,16 +966,22 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
         if y_full.shape[1] != 1 or op.locations != 1:
             print(f"[warn] Skipping state {state_i} due to unexpected shape: L_data={y_full.shape[1]}, L_model={op.locations}")
             continue
+
         y_obs = y_full[obs_weeks, :]
-        # Optional PRIOR spaghetti ONLY for selected 4 states (Fourier prior)
-        # if i in four_idx:
+
+        # --------- Build pR scenarios for this state ---------
+        pR_scen = None
+        if S_SCEN > 0:
+            pR_scen = _build_pr_scenarios_for_state(pipe, alpha=PR_ALPHA, beta=PR_BETA, S=S_SCEN)  # (S,A,1)
+
+        # --------- PRIOR spaghetti (Fourier) ----------
         with build_weekly_model(
             pipe, op=op, y_obs=None,
             force_r0_fourier_scale=FOURIER_SCALE,
             force_r0_weekly_scale=WEEKLY_SCALE,
             fourier_harmonics=FOURIER_HARMONICS,
             fourier_period_days=FOURIER_PERIOD_DAYS,
-            
+            pR_scenarios=pR_scen,
         ) as prior_model:
             present = set(prior_model.named_vars.keys())
             requested = ["weekly_pred", "mods_loc", "mods_mu_log_loc", "r0_weekly_scale"]
@@ -1063,32 +991,30 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
                 random_seed=123 + i,
                 var_names=prior_vars,
             )
-            # spaghetti: sum over age
-            weekly_vals = _idata_get(prior_idata, "weekly_pred")
-            weekly = _stack_samples(weekly_vals)  # (S, A, W, 1)
-            series = weekly.sum(axis=1)[:, :, 0]  # (S, W)
+            weekly_vals = _idata_get(prior_idata, "weekly_pred")  # may have scenario
+            weekly = _stack_samples_handle_scenario(weekly_vals)  # (Samp, A, W, 1)
+            series = weekly.sum(axis=1)[:, :, 0]                  # (Samp, W)
             weeks = np.arange(series.shape[1])
             fig, ax = plt.subplots(1, 1, figsize=(12, 4), dpi=120)
             for s in range(min(PRIOR_SAMPLES, series.shape[0])):
                 ax.plot(weeks, series[s], alpha=0.25, linewidth=1.0)
-            ax.set_title(f"Prior predictive (Fourier r0-scale) — sum over ages, {state_i}")
+            ax.set_title(f"Prior predictive (Fourier r0-scale; scenario-avg) — {state_i}")
             ax.set_xlabel("Week"); ax.set_ylabel("Weekly hospitalizations (sum over age)")
             ax.grid(True, alpha=0.3)
-            fig.tight_layout()
-            fig.savefig(outdir / f"prior_spaghetti_{state_i}.png", bbox_inches="tight")
+            fig.tight_layout(); fig.savefig(outdir / f"prior_spaghetti_{state_i}.png", bbox_inches="tight")
             plt.close(fig)
 
-        # ---- POSTERIOR for this state (Fourier path) ----
+        # --------- POSTERIOR (Fourier + scenario mixture + censoring via obs_weeks) ----------
         with build_weekly_model(
             pipe, op=op, y_obs=y_obs, use_nb=USE_NB,
             force_r0_fourier_scale=FOURIER_SCALE,
             force_r0_weekly_scale=WEEKLY_SCALE,
             fourier_harmonics=FOURIER_HARMONICS,
             fourier_period_days=FOURIER_PERIOD_DAYS,
-            obs_weeks = np.asarray(obs_weeks, dtype=int),
-            sT_mean = 0.7,
-            sT_ci = (0.50, 0.95),   # interpreted as ~95% interval
-            sT_weight = 1.0
+            obs_weeks=np.asarray(obs_weeks, dtype=int),
+            pR_scenarios=pR_scen,                # <<<<<< scenario mixture in-model
+            # censor_cap_factor left at default (1.5×min(first,last))
+            sT_mean=0.7, sT_ci=(0.50, 0.95), sT_weight=1.0,
         ) as model:
             idata = pm.sample(
                 draws=DRAWS,
@@ -1099,16 +1025,19 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
                 random_seed=777 + i,
                 progressbar=PROGRESS_BAR,
             )
+            # ---- presence-filtered posterior predictive var_names (compatible with scenario path) ----
+            present = set(model.named_vars.keys())
+            pp_vars = [v for v in ("y", "weekly_pred_sum_age_shifted", "weekly_pred", "weekly_pred_scaled") if v in present]
             ppc = pm.sample_posterior_predictive(
                 idata,
-                var_names=["y", "weekly_pred_sum_age_shifted", "weekly_pred", "weekly_pred_scaled"],
+                var_names=pp_vars,
                 random_seed=888 + i,
                 progressbar=PROGRESS_BAR,
             )
 
         idata.extend(ppc)
 
-        # Tag with *state name* so saved tensors have a human-readable location coord
+        # Tag with state name for 'location' coord
         idata = idata.copy()
         for group_name in idata.groups():
             ds = getattr(idata, group_name)
@@ -1117,17 +1046,16 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             if "location" in ds.dims or "location" in ds.coords:
                 setattr(idata, group_name, ds.assign_coords(location=[str(state_i)]))
 
-        # Per-state PPC + (optionally) TRIAD plots
+        # Plots
         _panel_per_location(idata, y_full, np.arange(y_full.shape[0]), (state_i,), pipe, outdir)
-        # if i in four_idx:
-        _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
+        if i in four_idx:
+            _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
 
-        # ---- SAVE *ONE FILE PER STATE* ----
+        # Save one file per state
         nc_path = outdir / f"inference_idata_{state_i}.nc"
         az.to_netcdf(idata, nc_path)
         print(f"[artifact] saved per-state idata:", nc_path)
 
-        # After FIRST state's file is written, check it's not empty
         if not first_nc_checked:
             _assert_netcdf_has_posterior(nc_path)
             print(f"[sanity] verified non-empty posterior in: {nc_path}")

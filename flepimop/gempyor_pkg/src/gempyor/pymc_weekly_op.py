@@ -5,12 +5,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Tuple, Iterable, List, Dict, Any
 import datetime as _dt
+import os
 import confuse
 import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
 from pytensor.graph.basic import Apply
 from pytensor.graph.op import Op
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from gempyor.hosp_weekly_pipeline import (
     WeeklyHospPipeline,
@@ -114,13 +116,17 @@ def _mmwr_assign_from(start_date: np.datetime64 | object, T: int) -> tuple[np.nd
 
 class WeeklyHospAndFinalSOp(Op):
     """
-    Runs the simulator once and returns:
-      • weekly   : (age, week, location) accumulated outcomes from config
-      • S_final  : (age, location) final susceptible counts
+    Simulator Op returning:
+      • weekly   : (age, week, location) if single pR, or (scenario, age, week, location) if pR has a scenario axis
+      • S_final  : (age, location)        if single pR, or (scenario, age, location) if scenario axis
 
     Robustness:
       • Single fast path only (RK45). If RK45 fails or returns non-finite
         values, the Op returns arrays of NaN with the correct shapes.
+
+    Parallel scenarios:
+      • If pR is (S, A, L), each scenario is simulated independently using a thread pool.
+        Max workers = min(S, env WEEKLY_OP_SCEN_THREADS or os.cpu_count()).
     """
 
     def __init__(
@@ -133,6 +139,7 @@ class WeeklyHospAndFinalSOp(Op):
         atol: float = 1e-6,
         allow_r0_weekly_scale_with_modifiers: bool = False,
         smooth_r0_days: int = 5,
+        scenario_threads: int | None = None,   # NEW: optional max threads for scenario mode
     ):
         super().__init__()
         self.pipe = pipeline
@@ -145,6 +152,7 @@ class WeeklyHospAndFinalSOp(Op):
         self._atol = 5e-5 if fast_mode else float(atol)
         self._allow_r0_weekly_scale_with_modifiers = bool(allow_r0_weekly_scale_with_modifiers)
         self._smooth_r0_days = int(max(0, smooth_r0_days))
+        self._scenario_threads = None if scenario_threads is None else int(max(1, scenario_threads))
 
         defaults = _yaml_defaults_in_leaf_order(pipeline.config_path, self.leaf_order)
         wk, _, _ = pipeline.evaluate(defaults)
@@ -170,8 +178,7 @@ class WeeklyHospAndFinalSOp(Op):
             self._sum_map         = pipeline._out_sum_map
             self._out_order       = pipeline._out_all_names
         else:
-            # Fallback: recompile from YAML (older pipelines) — warn because this path
-            # does NOT apply per-subpop relative_probability weights from file.
+            # Fallback: recompile from YAML (older pipelines)
             import warnings
             warnings.warn(
                 "WeeklyHospAndFinalSOp: falling back to local outcome compilation. "
@@ -204,7 +211,7 @@ class WeeklyHospAndFinalSOp(Op):
         if hasattr(self.pipe, "param_name_to_idx"):
             self._param_name_to_idx = dict(self.pipe.param_name_to_idx)
         elif hasattr(self.pipe, "mod_applier"):
-            self._param_name_to_idx = dict(getattr(self.pipe.mod_applier, "param_name_to_idx", {}))
+            self._param_name_to_idx = dict(getattr(self.pipe, "mod_applier").param_name_to_idx)
 
         self._has_lambda_ext = ("lambda_ext" in self._param_name_to_idx)
         self._has_r0 = ("r0" in self._param_name_to_idx)
@@ -414,6 +421,17 @@ class WeeklyHospAndFinalSOp(Op):
         ok = bool(getattr(res, "success", False)) and np.isfinite(res.y).all()
         return res if ok else None
 
+    def _scenario_workers(self, S: int) -> int:
+        if S <= 1:
+            return 1
+        # env override
+        env = os.environ.get("WEEKLY_OP_SCEN_THREADS", "").strip()
+        if env.isdigit():
+            return max(1, min(int(env), S))
+        if self._scenario_threads is not None:
+            return max(1, min(self._scenario_threads, S))
+        return max(1, min(S, os.cpu_count() or 1))
+
     # ---- Op API --------------------------------------------------------
 
     def make_node(self, mods, pR, lambda_ext_loc=None, mods_loc=None, r0_weekly_scale=None):
@@ -421,8 +439,8 @@ class WeeklyHospAndFinalSOp(Op):
         pR = pt.as_tensor_variable(pR)
         if mods.ndim != 1:
             raise TypeError("mods must be 1D")
-        if pR.ndim != 2:
-            raise TypeError("pR must be 2D (age, location)")
+        if pR.ndim not in (2, 3):
+            raise TypeError("pR must be 2D (age, location) or 3D (scenario, age, location)")
 
         inputs = [mods, pR]
 
@@ -444,11 +462,16 @@ class WeeklyHospAndFinalSOp(Op):
                 raise TypeError("r0_weekly_scale must be 2D (week, location)")
             inputs.append(r0_weekly_scale)
 
-        return Apply(self, inputs, [pt.dtensor3(), pt.dmatrix()])
+        # Output ranks depend on whether pR carries a scenario dimension.
+        if pR.ndim == 2:
+            return Apply(self, inputs, [pt.dtensor3(), pt.dmatrix()])
+        else:
+            # weekly: (S,A,W,L), S_final: (S,A,L)
+            return Apply(self, inputs, [pt.dtensor4(), pt.dtensor3()])
 
     def perform(self, node, inputs, outputs):
         mods = inputs[0]
-        pR = inputs[1]
+        pR_in = inputs[1]  # shape (A,L) or (S,A,L)
         lambda_ext_loc = None
         mods_loc = None
         r0_weekly_scale = None
@@ -472,8 +495,19 @@ class WeeklyHospAndFinalSOp(Op):
 
         if mods.shape[0] != len(self.leaf_order):
             raise ValueError(f"mods length {mods.shape[0]} != {len(self.leaf_order)}")
-        if pR.shape != (self._A, self._L):
-            raise ValueError(f"pR shape {pR.shape} != {(self._A, self._L)}")
+
+        # Normalize pR input to scenario list
+        if pR_in.ndim == 2:
+            if pR_in.shape != (self._A, self._L):
+                raise ValueError(f"pR shape {pR_in.shape} != {(self._A, self._L)}")
+            pR_scenarios = [np.asarray(pR_in, dtype=np.float64)]
+            S = 1
+        else:
+            if pR_in.shape[1:] != (self._A, self._L):
+                raise ValueError(f"pR shape {pR_in.shape} must be (S,{self._A},{self._L})")
+            pR_scenarios = [np.asarray(pR_in[s, :, :], dtype=np.float64) for s in range(pR_in.shape[0])]
+            S = len(pR_scenarios)
+
         if (lambda_ext_loc is not None) and (np.shape(lambda_ext_loc) != (self._L,)):
             raise ValueError(f"lambda_ext_loc shape {np.shape(lambda_ext_loc)} != {(self._L,)}")
         if (mods_loc is not None) and (np.shape(mods_loc) != (len(self.leaf_order), self._L)):
@@ -481,6 +515,7 @@ class WeeklyHospAndFinalSOp(Op):
         if (r0_weekly_scale is not None) and (np.shape(r0_weekly_scale) != (self._W, self._L)):
             raise ValueError(f"r0_weekly_scale shape {np.shape(r0_weekly_scale)} != {(self._W, self._L)}")
 
+        # -------- Shared precomputation (once per perform) --------
         params_base = self._apply_modifiers_locationwise(mods, mods_loc)
 
         if r0_weekly_scale is not None:
@@ -495,38 +530,16 @@ class WeeklyHospAndFinalSOp(Op):
             params_base, self.pipe.param_defs, self.pipe.unique_strings
         )
 
-        y0 = self._override_ic_with_pR_preserve_others(self.pipe.initial_array, np.asarray(pR, dtype=np.float64))
-
         total_days = float(self.pipe.T - 1)
         n_steps = max(1, int(round(total_days / self.pipe.dt)))
         t_eval = np.linspace(0.0, total_days, n_steps + 1, dtype=np.float64)
 
-        if not self._precheck(params_unique, y0):
-            assign_steps, n_weeks = _steps_to_weeks_assign(
-                start=self.pipe.start_date, T_days=self.pipe.T - 1, T_steps=n_steps, dt_days=float(self.pipe.dt)
-            )
-            weekly_age = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
-            S_final = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
-            outputs[0][0] = weekly_age
-            outputs[1][0] = S_final
-            return
+        assign_steps, n_weeks = _steps_to_weeks_assign(
+            start=self.pipe.start_date, T_days=self.pipe.T - 1, T_steps=n_steps, dt_days=float(self.pipe.dt)
+        )
 
-        res = self._solve_fast(y0.ravel(), params_unique, t_eval)
-        if res is None:
-            assign_steps, n_weeks = _steps_to_weeks_assign(
-                start=self.pipe.start_date, T_days=self.pipe.T - 1, T_steps=n_steps, dt_days=float(self.pipe.dt)
-            )
-            weekly_age = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
-            S_final = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
-            outputs[0][0] = weekly_age
-            outputs[1][0] = S_final
-            return
-
-        states = res.y.T.reshape(len(t_eval), self.pipe.NC, self._L)
-
-        series = {name: np.zeros((n_steps, self._L), dtype=np.float64) for name in self._out_order}
+        # Mobility view (read-only)
         pc = self.pipe.precomputed
-
         if self._disable_mobility:
             mob_data = np.zeros_like(pc["mobility_data"])
             mob_indptr = pc["mobility_data_indices"]
@@ -536,93 +549,139 @@ class WeeklyHospAndFinalSOp(Op):
             mob_indptr = pc["mobility_data_indices"]
             mob_indices = pc["mobility_row_indices"]
 
-        for i in range(n_steps):
-            t0 = t_eval[i]
-            param_t_slice = _param_slice_step(params_unique, t0)
-            amounts, _ = _compute_amounts_for_step(
-                states_current=states[i],
-                transitions=self.pipe.transitions,
-                proportion_info=self.pipe.proportion_info,
-                transition_sum_compartments=self.pipe.transition_sum_compartments,
-                param_t_slice=param_t_slice,
-                percent_day_away=pc["percent_day_away"],
-                prop_who_move=pc["proportion_who_move"],
-                mobility_data=mob_data,
-                mobility_indptr=mob_indptr,
-                mobility_indices=mob_indices,
-                population=pc["population"],
-                param_expr_lookup=None,
-                param_name_to_row=None,
-            )
-            for name, rows in self._resolve_map.items():
-                if rows.size == 0:
-                    continue
-                inc_vec = amounts[rows, :].sum(axis=0)
-                p_vec = self._prob_map.get(name, np.ones(self._L))
-                shift = int(self._delay_steps_map.get(name, 0))
-                j = i + shift
-                if j < n_steps:
-                    series[name][j, :] += inc_vec * p_vec
+        # Small worker for one scenario
+        def _run_one(pR_slice: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+            # Prepare IC for this scenario
+            y0 = self._override_ic_with_pR_preserve_others(self.pipe.initial_array, pR_slice)
 
-        unresolved = set(self._sum_map.keys())
-        guard = 0
-        while unresolved and guard < 10000:
-            guard += 1
-            progressed = False
-            for name in list(unresolved):
-                kids = self._sum_map[name]
-                if not all(k in series for k in kids):
-                    continue
-                combined = sum(series[k] for k in kids)
-                p_vec = self._prob_map.get(name, np.ones(self._L))
-                shift = int(self._delay_steps_map.get(name, 0))
-                if shift:
-                    out = np.zeros_like(combined)
-                    if shift < combined.shape[0]:
-                        out[shift:, :] = combined[:-shift, :] * p_vec
-                else:
-                    out = combined * p_vec
-                series[name] = out
-                unresolved.remove(name)
-                progressed = True
-            if not progressed:
-                break
-        if unresolved:
-            assign_steps, n_weeks = _steps_to_weeks_assign(
-                start=self.pipe.start_date, T_days=self.pipe.T - 1, T_steps=n_steps, dt_days=float(self.pipe.dt)
-            )
-            weekly_age = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
-            S_final = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
+            if not self._precheck(params_unique, y0):
+                weekly_age_nan = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
+                S_final_nan = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
+                return weekly_age_nan, S_final_nan
+
+            res = self._solve_fast(y0.ravel(), params_unique, t_eval)
+            if res is None:
+                weekly_age_nan = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
+                S_final_nan = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
+                return weekly_age_nan, S_final_nan
+
+            states = res.y.T.reshape(len(t_eval), self.pipe.NC, self._L)
+
+            # Accumulate flow series
+            series = {name: np.zeros((n_steps, self._L), dtype=np.float64) for name in self._out_order}
+            for i in range(n_steps):
+                t0 = t_eval[i]
+                param_t_slice = _param_slice_step(params_unique, t0)
+                amounts, _ = _compute_amounts_for_step(
+                    states_current=states[i],
+                    transitions=self.pipe.transitions,
+                    proportion_info=self.pipe.proportion_info,
+                    transition_sum_compartments=self.pipe.transition_sum_compartments,
+                    param_t_slice=param_t_slice,
+                    percent_day_away=pc["percent_day_away"],
+                    prop_who_move=pc["proportion_who_move"],
+                    mobility_data=mob_data,
+                    mobility_indptr=mob_indptr,
+                    mobility_indices=mob_indices,
+                    population=pc["population"],
+                    param_expr_lookup=None,
+                    param_name_to_row=None,
+                )
+                for name, rows in self._resolve_map.items():
+                    if rows.size == 0:
+                        continue
+                    inc_vec = amounts[rows, :].sum(axis=0)
+                    p_vec = self._prob_map.get(name, np.ones(self._L))
+                    shift = int(self._delay_steps_map.get(name, 0))
+                    j = i + shift
+                    if j < n_steps:
+                        series[name][j, :] += inc_vec * p_vec
+
+            # Resolve sums with delays
+            unresolved = set(self._sum_map.keys())
+            guard = 0
+            while unresolved and guard < 10000:
+                guard += 1
+                progressed = False
+                for name in list(unresolved):
+                    kids = self._sum_map[name]
+                    if not all(k in series for k in kids):
+                        continue
+                    combined = sum(series[k] for k in kids)
+                    p_vec = self._prob_map.get(name, np.ones(self._L))
+                    shift = int(self._delay_steps_map.get(name, 0))
+                    if shift:
+                        out = np.zeros_like(combined)
+                        if shift < combined.shape[0]:
+                            out[shift:, :] = combined[:-shift, :] * p_vec
+                    else:
+                        out = combined * p_vec
+                    series[name] = out
+                    unresolved.remove(name)
+                    progressed = True
+                if not progressed:
+                    break
+            if unresolved:
+                weekly_age_nan = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
+                S_final_nan = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
+                return weekly_age_nan, S_final_nan
+
+            # Weekly aggregation per age
+            weekly_age = np.zeros((len(self._age_labels), n_weeks, self._L), dtype=np.float64)
+            for a_idx, age in enumerate(self._age_labels):
+                step_sum = None
+                for out_name in self._age_to_names[age]:
+                    if out_name in series:
+                        arr = series[out_name]
+                        step_sum = arr if step_sum is None else (step_sum + arr)
+                if step_sum is None:
+                    step_sum = np.zeros((n_steps, self._L), dtype=np.float64)
+                Wk = np.zeros((n_weeks, self._L), dtype=np.float64)
+                for w in range(n_weeks):
+                    mask = (assign_steps == w)
+                    if mask.any():
+                        Wk[w, :] = step_sum[mask, :].sum(axis=0)
+                weekly_age[a_idx, :, :] = Wk
+
+            # Final S by age
+            last = states[-1]
+            S_final = np.zeros((len(self._age_labels), self._L), dtype=np.float64)
+            for a_idx, m_s in enumerate(self.age_masks.s_mask_by_age):
+                S_final[a_idx, :] = last[m_s, :].sum(axis=0)
+
+            return weekly_age, S_final
+
+        # -------- Execute scenarios (possibly in parallel) --------
+        if len(pR_scenarios) == 1:
+            weekly_age, S_final = _run_one(pR_scenarios[0])
             outputs[0][0] = weekly_age
             outputs[1][0] = S_final
             return
 
-        assign_steps, n_weeks = _steps_to_weeks_assign(
-            start=self.pipe.start_date, T_days=self.pipe.T - 1, T_steps=n_steps, dt_days=float(self.pipe.dt)
-        )
-        weekly_age = np.zeros((len(self._age_labels), n_weeks, self._L), dtype=np.float64)
-        for a_idx, age in enumerate(self._age_labels):
-            step_sum = None
-            for out_name in self._age_to_names[age]:
-                if out_name in series:
-                    arr = series[out_name]
-                    step_sum = arr if step_sum is None else (step_sum + arr)
-            if step_sum is None:
-                step_sum = np.zeros((n_steps, self._L), dtype=np.float64)
-            W = np.zeros((n_weeks, self._L), dtype=np.float64)
-            for w in range(n_weeks):
-                mask = (assign_steps == w)
-                if mask.any():
-                    W[w, :] = step_sum[mask, :].sum(axis=0)
-            weekly_age[a_idx, :, :] = W
+        # Multi-scenario: thread pool
+        S = len(pR_scenarios)
+        workers = self._scenario_workers(S)
+        weekly_list: list[np.ndarray] = [None] * S
+        sfinal_list: list[np.ndarray] = [None] * S
 
-        last = states[-1]
-        S_final = np.zeros((len(self._age_labels), self._L), dtype=np.float64)
-        for a_idx, m_s in enumerate(self.age_masks.s_mask_by_age):
-            S_final[a_idx, :] = last[m_s, :].sum(axis=0)
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="WeeklyOp") as ex:
+            fut_to_idx = {ex.submit(_run_one, pR_scenarios[s]): s for s in range(S)}
+            for fut in as_completed(fut_to_idx):
+                s = fut_to_idx[fut]
+                try:
+                    w_s, sf_s = fut.result()
+                except Exception:
+                    # Hard fail-safe: return NaNs for this scenario
+                    w_s = np.full((len(self._age_labels), n_weeks, self._L), np.nan, dtype=np.float64)
+                    sf_s = np.full((len(self._age_labels), self._L), np.nan, dtype=np.float64)
+                weekly_list[s] = w_s
+                sfinal_list[s] = sf_s
 
-        outputs[0][0] = weekly_age
-        outputs[1][0] = S_final
+        weekly_stack = np.stack(weekly_list, axis=0)   # (S,A,W,L)
+        sfinal_stack = np.stack(sfinal_list, axis=0)   # (S,A,L)
+
+        outputs[0][0] = weekly_stack
+        outputs[1][0] = sfinal_stack
 
     # ---- metadata ------------------------------------------------------
 
@@ -712,8 +771,6 @@ def _weekly_from_theta(theta: np.ndarray, week_centers: np.ndarray, K: int, peri
 
 # ------------------------------ model builder ------------------------------
 
-# ------------------------------ model builder ------------------------------
-
 def build_weekly_model(
     pipeline: WeeklyHospPipeline,
     op: WeeklyHospAndFinalSOp | None = None,
@@ -727,6 +784,10 @@ def build_weekly_model(
     fourier_period_days: float = 365.25,
     # ---- NEW: only evaluate likelihood on these week indices ----
     obs_weeks: np.ndarray | None = None,
+    # ---- NEW: scenario-marginalization input over plausible pR ----
+    pR_scenarios: np.ndarray | None = None,   # shape (S, A, L)
+    # ---- NEW: right-censor unobserved weeks at cap_factor × min(first,last) ----
+    censor_cap_factor: float | None = 1.5,
     # ---- NEW: soft prior on terminal susceptible fraction S(T)/N ----
     sT_mean: float = 0.70,
     sT_ci: tuple[float, float] = (0.50, 0.95),   # interpreted as ~95% interval
@@ -738,12 +799,13 @@ def build_weekly_model(
     If L > 1: create *per-location* random variables (names end with `_l{idx}`),
     then stack them back into tensors and expose the usual Deterministic names.
 
-    New:
-      - `force_r0_fourier_scale`: use a Fourier series to generate r0 weekly multiplicative scale.
-        Mutually exclusive with `force_r0_weekly_scale`.
-      - `obs_weeks`: if provided, the likelihood is computed only on these week rows.
-      - Soft prior on terminal susceptible fraction S(T)/N via Beta(logp), controlled by
-        `sT_mean`, `sT_ci` (interpreted as ~95%), and `sT_weight`.
+    Additions:
+      - `force_r0_fourier_scale`: Fourier series weekly r0 scaling (unit geometric mean).
+      - `obs_weeks`: likelihood can target only observed weeks.
+      - `pR_scenarios`: list of plausible pR scenarios (S, A, L); Op runs them in parallel and returns
+         tensors with a leading scenario dimension.
+      - Censoring: for weeks not in `obs_weeks`, add P(Y ≤ cap) with cap = floor(1.5 × min(first,last)).
+      - Soft prior on terminal susceptible fraction S(T)/N via Beta(logp).
     """
     if op is None:
         op = WeeklyHospAndFinalSOp(pipeline)
@@ -781,6 +843,7 @@ def build_weekly_model(
     # NEW: observed-week coord (optional)
     obs_weeks_arr = None
     W_obs = None
+    unobs_mask = None
     if obs_weeks is not None:
         obs_weeks_arr = np.asarray(obs_weeks, dtype=int).reshape(-1)
         if obs_weeks_arr.size == 0:
@@ -789,7 +852,9 @@ def build_weekly_model(
             if np.any((obs_weeks_arr < 0) | (obs_weeks_arr >= W)):
                 raise ValueError(f"obs_weeks contains out-of-range indices for W={W}: {obs_weeks_arr}")
             W_obs = int(obs_weeks_arr.size)
-            coords["obs_week"] = obs_weeks_arr  # use same name in dims below
+            coords["obs_week"] = obs_weeks_arr
+            mask = np.zeros(W, dtype=bool); mask[obs_weeks_arr] = True
+            unobs_mask = ~mask
 
     # If Fourier: add coeff coord (1 + 2K)
     if force_r0_fourier_scale:
@@ -828,7 +893,7 @@ def build_weekly_model(
             r0_idx = int(np.where(param_names == "r0")[0][0])
         else:
             aliases = ["R0", "r_0", "basic_reproduction_number"]
-            found = [nm for nm in param_names]
+            found = [nm for nm in aliases if nm in param_names]
             if not found:
                 raise RuntimeError("Could not locate 'r0' parameter row in base params.")
             r0_idx = int(np.where(param_names == found[0])[0][0])
@@ -851,40 +916,23 @@ def build_weekly_model(
             theta_hat_loc[:, l] = th
             resid_std_loc[l] = rs
 
-    with pm.Model(coords=coords) as m:
-        sigma_mod_log = 0.35
-        mu_log_base = np.log(defaults + 1e-12) - 0.5 * (sigma_mod_log ** 2)
-        mods_vec = pm.Deterministic("mods", pt.ones((len(mod_names),)), dims=("modifier",))
+    # ---- Helper to build a common r0_weekly_scale (if requested) ----
+    def _make_r0_weekly_scale_randomvars():
+        base_scale = pt.ones((W, L))
+        r0_weekly_scale_full = None
+        r0_global_loc = None
+        if not op.has_r0_modifiers:
+            u_loc = pm.Beta("r0_global_unit_loc", alpha=5.0, beta=5.0, dims=("location",))
+            r0_global_loc = pm.Deterministic("r0_global_loc", 0.8 + 0.4 * u_loc, dims=("location",))
+            base_scale = r0_global_loc[None, :] * base_scale
 
-        # ===== SINGLE-LOCATION =====
-        if L == 1:
-            mods_mu_log_loc = pm.Normal(
-                "mods_mu_log_loc", mu=mu_log_base[:, None], sigma=0.30, dims=("modifier", "location")
-            )
-            mods_loc = pm.LogNormal("mods_loc", mu=mods_mu_log_loc, sigma=sigma_mod_log, dims=("modifier", "location"))
-            pR = pm.Beta("pR", alpha=3.0, beta=12.0, dims=("age", "location"))
-
-            lambda_ext_loc = None
-            if op.has_lambda_ext:
-                lambda_ext_loc = pm.LogNormal("lambda_ext_loc", mu=0.0, sigma=0.25, dims=("location",))
-                pm.Deterministic("inv_lambda_ext_loc", 1.0 / (lambda_ext_loc + 1e-16), dims=("location",))
-
-            # ---------- r0 scale (RW2 vs Fourier vs none) ----------
-            r0_weekly_scale_full = None
-            base_scale = pt.ones((W, L))
-
-            if not op.has_r0_modifiers:
-                u_loc = pm.Beta("r0_global_unit_loc", alpha=5.0, beta=5.0, dims=("location",))
-                r0_global_loc = pm.Deterministic("r0_global_loc", 0.8 + 0.4 * u_loc, dims=("location",))
-                base_scale = r0_global_loc[None, :] * base_scale
-
-            if force_r0_fourier_scale:
-                # Priors around LS init
-                M = 1 + 2 * K
+        if force_r0_fourier_scale:
+            M = 1 + 2 * K
+            Xw = pt.as_tensor_variable(Xw_shared)  # (W, M)
+            if L == 1:
                 th0 = theta_hat_loc[:, 0]
                 scale = float(np.clip(resid_std_loc[0], 0.05, 1.0))
                 theta = pm.Normal("r0_fourier_coef_loc", mu=th0, sigma=scale, dims=("fourier_coeff",))
-                Xw = pt.as_tensor_variable(Xw_shared)  # (W, M)
                 f_w = Xw @ theta  # (W,)
                 f_w_center = f_w - pt.mean(f_w)
                 r0_weekly_scale_full = pm.Deterministic(
@@ -892,8 +940,20 @@ def build_weekly_model(
                     base_scale[:, 0:1] * pt.exp(f_w_center)[:, None],  # (W,1)
                     dims=("week", "location"),
                 )
-
-            elif force_r0_weekly_scale or (not op.has_r0_modifiers):
+            else:
+                theta_ls = []
+                scales = [float(np.clip(resid_std_loc[l], 0.05, 1.0)) for l in range(L)]
+                for l in range(L):
+                    theta_ls.append(pm.Normal(f"r0_fourier_coef_loc_l{l}", mu=theta_hat_loc[:, l],
+                                              sigma=scales[l], dims=("fourier_coeff",)))
+                f_w = pt.stack([Xw @ th for th in theta_ls], axis=1)  # (W,L)
+                f_w_center = f_w - pt.mean(f_w, axis=0, keepdims=True)
+                r0_weekly_scale_full = pm.Deterministic(
+                    "r0_weekly_scale",
+                    base_scale * pt.exp(f_w_center), dims=("week", "location")
+                )
+        elif force_r0_weekly_scale or (not op.has_r0_modifiers):
+            if L == 1:
                 r0_sigma_loc = pm.HalfNormal("r0_weekly_sigma_loc", 0.03, dims=("location",))
                 eps2 = pm.Normal("r0_rw2_eps", 0.0, r0_sigma_loc[None, :], dims=("week", "location"))
                 eps1 = pt.cumsum(eps2, axis=0)
@@ -902,8 +962,123 @@ def build_weekly_model(
                 r0_weekly_scale_full = pm.Deterministic(
                     "r0_weekly_scale", base_scale * pt.exp(eps_center), dims=("week", "location")
                 )
+            else:
+                eps_center_ls = []
+                for l in range(L):
+                    r0_sigma_l = pm.HalfNormal(f"r0_weekly_sigma_loc_l{l}", 0.02)
+                    eps2_l = pm.Normal(f"r0_rw2_eps_l{l}", 0.0, r0_sigma_l, dims=("week",))
+                    eps1_l = pt.cumsum(eps2_l)
+                    eps_l = pt.cumsum(eps1_l)
+                    eps_center_ls.append(eps_l - pt.mean(eps_l))
+                eps_center = pt.stack(eps_center_ls, axis=1)  # (W,L)
+                r0_weekly_scale_full = pm.Deterministic(
+                    "r0_weekly_scale", base_scale * pt.exp(eps_center), dims=("week", "location")
+                )
+        return r0_weekly_scale_full
 
-            # forward
+    with pm.Model(coords=coords) as m:
+        sigma_mod_log = 0.35
+        mu_log_base = np.log(defaults + 1e-12) - 0.5 * (sigma_mod_log ** 2)
+        mods_vec = pm.Deterministic("mods", pt.ones((len(mod_names),)), dims=("modifier",))
+
+        # Location-specific modifiers
+        if L == 1:
+            mods_mu_log_loc = pm.Normal(
+                "mods_mu_log_loc", mu=mu_log_base[:, None], sigma=0.30, dims=("modifier", "location")
+            )
+            mods_loc = pm.LogNormal("mods_loc", mu=mods_mu_log_loc, sigma=sigma_mod_log, dims=("modifier", "location"))
+        else:
+            mods_mu_log_ls = []
+            mods_loc_ls = []
+            for l in range(L):
+                mods_mu_log_l = pm.Normal(f"mods_mu_log_loc_l{l}", mu=mu_log_base, sigma=0.30, dims=("modifier",))
+                mods_l = pm.LogNormal(f"mods_loc_l{l}", mu=mods_mu_log_l, sigma=sigma_mod_log, dims=("modifier",))
+                mods_mu_log_ls.append(mods_mu_log_l)
+                mods_loc_ls.append(mods_l)
+            pm.Deterministic("mods_mu_log_loc", pt.stack(mods_mu_log_ls, axis=1), dims=("modifier", "location"))
+            mods_loc = pm.Deterministic("mods_loc", pt.stack(mods_loc_ls, axis=1), dims=("modifier", "location"))
+
+        # lambda_ext if present
+        if op.has_lambda_ext:
+            if L == 1:
+                lambda_ext_loc = pm.LogNormal("lambda_ext_loc", mu=0.0, sigma=0.25, dims=("location",))
+                pm.Deterministic("inv_lambda_ext_loc", 1.0 / (lambda_ext_loc + 1e-16), dims=("location",))
+            else:
+                lambda_ls = [pm.LogNormal(f"lambda_ext_loc_l{l}", mu=0.0, sigma=0.25) for l in range(L)]
+                lambda_ext_loc = pm.Deterministic("lambda_ext_loc", pt.stack(lambda_ls, axis=0), dims=("location",))
+                pm.Deterministic("inv_lambda_ext_loc", 1.0 / (lambda_ext_loc + 1e-16), dims=("location",))
+        else:
+            lambda_ext_loc = None
+
+        # r0 weekly scale (if requested)
+        r0_weekly_scale_full = _make_r0_weekly_scale_randomvars()
+
+        # Age scaling (not normalized by pR)
+        if L == 1:
+            sigma_age_loc = pm.HalfNormal("sigma_age_loc", 0.15, dims=("location",))
+            z_age_loc = pm.Normal("z_age_loc", 0.0, 1.0, dims=("age", "location"))
+            theta_age_loc = pm.Deterministic("theta_age_loc", z_age_loc * sigma_age_loc[None, :], dims=("age", "location"))
+        else:
+            sigma_age_ls = [pm.HalfNormal(f"sigma_age_loc_l{l}", 0.15) for l in range(L)]
+            z_age_ls = [pm.Normal(f"z_age_loc_l{l}", 0.0, 1.0, dims=("age",)) for l in range(L)]
+            theta_age_loc = pm.Deterministic(
+                "theta_age_loc",
+                pt.stack([z_age_ls[l] * sigma_age_ls[l] for l in range(L)], axis=1),
+                dims=("age", "location"),
+            )
+        scale_raw = pt.exp(theta_age_loc)  # (A,L)
+        pm.Deterministic("age_scale", scale_raw, dims=("age", "location"))
+
+        # Weekly residual structure (delta_week)
+        if L == 1:
+            sigma_week_loc = pm.HalfNormal("sigma_week_loc", 0.1, dims=("location",))
+            z_week = pm.Normal("z_week", 0.0, 1.0, dims=("week", "location"))
+            delta_week_cum = pt.cumsum(z_week * sigma_week_loc[None, :], axis=0)
+            delta_week = pm.Deterministic(
+                "delta_week", delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
+                dims=("week", "location")
+            )
+        else:
+            sigma_week_ls = [pm.HalfNormal(f"sigma_week_loc_l{l}", 0.35) for l in range(L)]
+            z_week_ls = [pm.Normal(f"z_week_l{l}", 0.0, 1.0, dims=("week",)) for l in range(L)]
+            delta_week_cum = pt.stack([pt.cumsum(z_week_ls[l] * sigma_week_ls[l]) for l in range(L)], axis=1)
+            delta_week = pm.Deterministic(
+                "delta_week",
+                delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
+                dims=("week", "location")
+            )
+
+        # Lag kernel
+        S_lag = 5
+        pads = S_lag // 2
+        shifts = list(range(-pads, pads + 1))
+        if L == 1:
+            a0 = np.array([0.25, 0.5, 98.5, 0.5, 0.25], dtype=np.float64)
+            a_dir = np.tile(a0, (L, 1))
+            lag_weights = pm.Dirichlet("lag_weights", a=a_dir, dims=("location", "lag"))
+        else:
+            lag_w_ls = [pm.Dirichlet(f"lag_weights_l{l}", a=np.array([0.25, 0.5, 98.5, 0.5, 0.25])) for l in range(L)]
+            lag_weights = pm.Deterministic("lag_weights", pt.stack(lag_w_ls, axis=0), dims=("location", "lag"))
+
+        # Baseline intercept
+        if L == 1:
+            beta0_loc = pm.Normal("beta0_loc", 0.0, 0.5, dims=("location",))
+        else:
+            beta0_ls = [pm.Normal(f"beta0_loc_l{l}", 0.5, 1.0) for l in range(L)]
+            beta0_loc = pm.Deterministic("beta0_loc", pt.stack(beta0_ls, axis=0), dims=("location",))
+
+        pop = pt.as_tensor_variable(pop_loc)
+
+        # ---------- PATH 1: NO pR SCENARIOS ----------
+        if pR_scenarios is None:
+            # pR as usual random variable
+            if L == 1:
+                pR = pm.Beta("pR", alpha=3.0, beta=12.0, dims=("age", "location"))
+            else:
+                pR_ls = [pm.Beta(f"pR_l{l}", alpha=8.0, beta=12.0, dims=("age",)) for l in range(L)]
+                pR = pm.Deterministic("pR", pt.stack(pR_ls, axis=1), dims=("age", "location"))
+
+            # forward pass
             if op.has_lambda_ext and (r0_weekly_scale_full is not None):
                 weekly_pred_t, S_final_t = op(
                     mods_vec, pR,
@@ -918,16 +1093,8 @@ def build_weekly_model(
                 weekly_pred_t, S_final_t = op(mods_vec, pR, mods_loc=mods_loc)
 
             weekly = pm.Deterministic("weekly_pred", weekly_pred_t, dims=("age", "week", "location"))
-
-            # Age scaling (unnormalized per your revision)
-            sigma_age_loc = pm.HalfNormal("sigma_age_loc", 0.15, dims=("location",))
-            z_age_loc = pm.Normal("z_age_loc", 0.0, 1.0, dims=("age", "location"))
-            theta_age_loc = pm.Deterministic("theta_age_loc", z_age_loc * sigma_age_loc[None, :], dims=("age", "location"))
-            scale_raw = pt.exp(theta_age_loc)
-            age_scale = pm.Deterministic("age_scale", scale_raw, dims=("age", "location"))
-
             weekly_scaled = pm.Deterministic(
-                "weekly_pred_scaled", weekly * age_scale[:, None, :], dims=("age", "week", "location")
+                "weekly_pred_scaled", weekly * scale_raw[:, None, :], dims=("age", "week", "location")
             )
             weekly_sum_age = pm.Deterministic(
                 "weekly_pred_sum_age", weekly_scaled.sum(axis=0), dims=("week", "location")
@@ -936,10 +1103,8 @@ def build_weekly_model(
 
             # -------- Soft prior on terminal susceptible fraction S(T)/N --------
             S_T_loc = pt.sum(S_final_t, axis=0)                     # (L,)
-            pop = pt.as_tensor_variable(pop_loc)                    # (L,)
             sT = pt.clip(S_T_loc / (pop + 1e-12), 1e-6, 1 - 1e-6)   # (L,)
 
-            # convert (mean, 95% CI) -> Beta(alpha,beta) via normal approx
             mu_sT = float(sT_mean)
             lo_sT, hi_sT = float(sT_ci[0]), float(sT_ci[1])
             z95 = 1.959963984540054
@@ -953,22 +1118,7 @@ def build_weekly_model(
             pm.Potential("prior_S_terminal_frac", pm.logp(sT_beta, sT).sum())
             # -------------------------------------------------------------------
 
-            # Weekly residual structure & lag kernel
-            sigma_week_loc = pm.HalfNormal("sigma_week_loc", 0.1, dims=("location",))
-            z_week = pm.Normal("z_week", 0.0, 1.0, dims=("week", "location"))
-            delta_week_cum = pt.cumsum(z_week * sigma_week_loc[None, :], axis=0)
-            delta_week = pm.Deterministic(
-                "delta_week", delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
-                dims=("week", "location")
-            )
-
-            S_lag = 5
-            pads = S_lag // 2
-            shifts = list(range(-pads, pads + 1))
-            a0 = np.array([0.25, 0.5, 98.5, 0.5, 0.25], dtype=np.float64)
-            a_dir = np.tile(a0, (L, 1))
-            lag_weights = pm.Dirichlet("lag_weights", a=a_dir, dims=("location", "lag"))
-
+            # Lagging
             top_pad = pt.repeat(weekly_sum_age[:1, :], pads, axis=0)
             bot_pad = pt.repeat(weekly_sum_age[-1:, :], pads, axis=0)
             padded = pt.concatenate([top_pad, weekly_sum_age, bot_pad], axis=0)
@@ -982,12 +1132,11 @@ def build_weekly_model(
                 "weekly_pred_sum_age_shifted", shifted_sum, dims=("week", "location")
             )
 
-            beta0_loc = pm.Normal("beta0_loc", 0.0, 0.5, dims=("location",))
             rate_pred = weekly_sum_age_shifted / (pop[None, :] + 1e-12)
             log_rate = pt.log(rate_pred + 1e-12) + beta0_loc[None, :] + delta_week
-            mu_obs = pt.exp(log_rate) * pop[None, :]  # (W, L)
+            mu_obs = pt.exp(log_rate) * pop[None, :]
 
-            # ---- Likelihood (optionally sliced to observed weeks) ----
+            # ---- Likelihood + censoring (if obs_weeks) ----
             if y_obs is not None:
                 y_np = np.asarray(y_obs, dtype=np.float64)
                 if obs_weeks_arr is None:
@@ -1008,178 +1157,136 @@ def build_weekly_model(
                                             observed=y_np, dims=("obs_week", "location"))
                     else:
                         pm.Poisson("y", mu=mu_slice, observed=y_np, dims=("obs_week", "location"))
-            # Safety: ensure we’re returning the model, not a scalar
-            assert isinstance(m, pm.Model), f"Internal error: not returning a PyMC Model (got {type(m)})"
+
+                    # ---- Censored contribution for unobserved weeks ----
+                    if (unobs_mask is not None) and (censor_cap_factor is not None):
+                        idx_unobs = np.nonzero(unobs_mask)[0].astype("int64")
+                        if idx_unobs.size > 0:
+                            # cap = floor(1.5 * min(first,last))
+                            first_vals = y_np[0, :]
+                            last_vals = y_np[-1, :]
+                            caps_loc = np.floor(censor_cap_factor * np.maximum(np.minimum(first_vals, last_vals), 150.0)).astype(np.int64)
+                            mu_unobs = pt.take(mu_obs, idx_unobs, axis=0)  # (W_unobs, L)
+                            cap_vec = pt.as_tensor_variable(caps_loc).astype("int64")
+                            cap_mat = pt.repeat(cap_vec[None, :], idx_unobs.size, axis=0)  # (W_unobs, L)
+                            if use_nb:
+                                nb_dist = pm.NegativeBinomial.dist(mu=mu_unobs, alpha=alpha_nb_loc[None, :])
+                                log_cdf = pm.logcdf(nb_dist, cap_mat)
+                            else:
+                                pois_dist = pm.Poisson.dist(mu=mu_unobs)
+                                log_cdf = pm.logcdf(pois_dist, cap_mat)
+                            pm.Potential("censor_unobs_weeks", pt.sum(log_cdf))
+
+            assert isinstance(m, pm.Model)
             return m
 
+        # ---------- PATH 2: pR SCENARIOS (single Op call; Op returns scenario-stacked tensors) ----------
+        pR_scen_np = np.asarray(pR_scenarios, dtype=np.float64)
+        assert pR_scen_np.shape[1:] == (A, L), f"pR_scenarios shape must be (S,{A},{L}), got {pR_scen_np.shape}"
+        S = int(pR_scen_np.shape[0])
+        coords["scenario"] = np.arange(S)
 
+        pR_scen_shared = pm.Data("pR_scenarios_data", pR_scen_np, dims=("scenario","age","location"))
 
-
-        # ===== MULTI-LOCATION =====
-        mods_mu_log_ls, mods_loc_ls, pR_ls = [], [], []
-        lambda_ls, r0_scale_ls = [], []
-
-        sigma_age_ls, z_age_ls = [], []
-        sigma_week_ls, z_week_ls = [], []
-        beta0_ls, lag_w_ls = [], []
-        alpha_nb_ls = []  # optional
-
-        base_scale = pt.ones((W, L))
-        r0_global_loc = None
-        if not op.has_r0_modifiers:
-            u_loc_ls = [pm.Beta(f"r0_global_unit_loc_l{l}", alpha=5.0, beta=5.0) for l in range(L)]
-            r0_global_loc = pt.stack([0.8 + 0.4 * u for u in u_loc_ls], axis=0)
-            pm.Deterministic("r0_global_loc", r0_global_loc, dims=("location",))
-            base_scale = r0_global_loc[None, :] * base_scale
-
-        # Prepare shared Xw if Fourier
-        if force_r0_fourier_scale:
-            Xw = pt.as_tensor_variable(Xw_shared)  # (W, M)
-            M = Xw_shared.shape[1]
-
-        for l in range(L):
-            mods_mu_log_l = pm.Normal(f"mods_mu_log_loc_l{l}", mu=mu_log_base, sigma=0.30, dims=("modifier",))
-            mods_l = pm.LogNormal(f"mods_loc_l{l}", mu=mods_mu_log_l, sigma=sigma_mod_log, dims=("modifier",))
-            mods_mu_log_ls.append(mods_mu_log_l); mods_loc_ls.append(mods_l)
-
-            pR_l = pm.Beta(f"pR_l{l}", alpha=8.0, beta=12.0, dims=("age",))
-            pR_ls.append(pR_l)
-
-            if op.has_lambda_ext:
-                lam_l = pm.LogNormal(f"lambda_ext_loc_l{l}", mu=0.0, sigma=0.25)
-                lambda_ls.append(lam_l)
-
-            r0_scale_l = None
-            if force_r0_fourier_scale:
-                th0 = theta_hat_loc[:, l]
-                scale = float(np.clip(resid_std_loc[l], 0.05, 1.0))
-                theta_l = pm.Normal(f"r0_fourier_coef_loc_l{l}", mu=th0, sigma=scale, dims=("fourier_coeff",))
-                f_w_l = Xw @ theta_l  # (W,)
-                f_w_l_center = f_w_l - pt.mean(f_w_l)
-                # include global baseline if present
-                r0_scale_l = pt.exp(f_w_l_center) * (r0_global_loc[l] if r0_global_loc is not None else 1.0)
-
-            elif force_r0_weekly_scale or (not op.has_r0_modifiers):
-                r0_sigma_l = pm.HalfNormal(f"r0_weekly_sigma_loc_l{l}", 0.02)
-                eps2_l = pm.Normal(f"r0_rw2_eps_l{l}", 0.0, r0_sigma_l, dims=("week",))
-                eps1_l = pt.cumsum(eps2_l)
-                eps_l = pt.cumsum(eps1_l)
-                eps_center_l = eps_l - pt.mean(eps_l)
-                r0_scale_l = pt.exp(eps_center_l) * (r0_global_loc[l] if r0_global_loc is not None else 1.0)
-
-            r0_scale_ls.append(r0_scale_l)
-
-            sigma_age_l = pm.HalfNormal(f"sigma_age_loc_l{l}", 0.15)
-            z_age_l = pm.Normal(f"z_age_loc_l{l}", 0.0, 1.0, dims=("age",))
-            sigma_age_ls.append(sigma_age_l); z_age_ls.append(z_age_l)
-
-            sigma_week_l = pm.HalfNormal(f"sigma_week_loc_l{l}", 0.35)
-            z_week_l = pm.Normal(f"z_week_l{l}", 0.0, 1.0, dims=("week",))
-            sigma_week_ls.append(sigma_week_l); z_week_ls.append(z_week_l)
-
-            beta0_ls.append(pm.Normal(f"beta0_loc_l{l}", 0.5, 1.0))
-            lag_w_ls.append(pm.Dirichlet(f"lag_weights_l{l}", a=np.array([0.25, 0.5, 98.5, 0.5, 0.25])))
-
-            if use_nb:
-                alpha_nb_ls.append(pm.LogNormal(f"alpha_nb_loc_l{l}", mu=np.log(25.0), sigma=0.5))
-
-        # Stack back
-        mods_loc = pm.Deterministic("mods_loc", pt.stack(mods_loc_ls, axis=1), dims=("modifier", "location"))
-        pm.Deterministic("mods_mu_log_loc", pt.stack(mods_mu_log_ls, axis=1), dims=("modifier", "location"))
-        pR = pm.Deterministic("pR", pt.stack(pR_ls, axis=1), dims=("age", "location"))
-        if op.has_lambda_ext:
-            lambda_ext_loc = pm.Deterministic("lambda_ext_loc", pt.stack(lambda_ls, axis=0), dims=("location",))
-            pm.Deterministic("inv_lambda_ext_loc", 1.0 / (lambda_ext_loc + 1e-16), dims=("location",))
-        else:
-            lambda_ext_loc = None
-
-        if force_r0_fourier_scale:
-            r0_weekly_scale_full = pm.Deterministic(
-                "r0_weekly_scale",
-                pt.stack(
-                    [ (r if r is not None else pt.ones((W,))) for r in r0_scale_ls ],
-                    axis=1
-                ) * (base_scale),
-                dims=("week", "location"),
-            )
-        elif force_r0_weekly_scale or (not op.has_r0_modifiers):
-            r0_weekly_scale_full = pm.Deterministic(
-                "r0_weekly_scale",
-                pt.stack([r if r is not None else pt.ones((W,)) for r in r0_scale_ls], axis=1),
-                dims=("week", "location"),
-            )
-        else:
-            r0_weekly_scale_full = None
-
-        # forward pass
+        # Single Op call that parallelizes internally over scenarios
         if op.has_lambda_ext and (r0_weekly_scale_full is not None):
-            weekly_pred_t, S_final_t = op(mods_vec, pR, lambda_ext_loc=lambda_ext_loc,
+            weekly_pred_t, S_final_t = op(mods_vec, pR_scen_shared, lambda_ext_loc=lambda_ext_loc,
                                           mods_loc=mods_loc, r0_weekly_scale=r0_weekly_scale_full)
         elif op.has_lambda_ext:
-            weekly_pred_t, S_final_t = op(mods_vec, pR, lambda_ext_loc=lambda_ext_loc, mods_loc=mods_loc)
+            weekly_pred_t, S_final_t = op(mods_vec, pR_scen_shared, lambda_ext_loc=lambda_ext_loc, mods_loc=mods_loc)
         elif r0_weekly_scale_full is not None:
-            weekly_pred_t, S_final_t = op(mods_vec, pR, mods_loc=mods_loc, r0_weekly_scale=r0_weekly_scale_full)
+            weekly_pred_t, S_final_t = op(mods_vec, pR_scen_shared, mods_loc=mods_loc, r0_weekly_scale=r0_weekly_scale_full)
         else:
-            weekly_pred_t, S_final_t = op(mods_vec, pR, mods_loc=mods_loc)
+            weekly_pred_t, S_final_t = op(mods_vec, pR_scen_shared, mods_loc=mods_loc)
 
-        weekly = pm.Deterministic("weekly_pred", weekly_pred_t, dims=("age", "week", "location"))
+        pm.Deterministic("weekly_pred", weekly_pred_t, dims=("scenario","age","week","location"))
+        pm.Deterministic("S_final", S_final_t, dims=("scenario","age","location"))
 
-        # Age scaling
-        theta_age = pt.stack([z_age_ls[l] * sigma_age_ls[l] for l in range(L)], axis=1)
-        theta_age_loc = pm.Deterministic("theta_age_loc", theta_age, dims=("age", "location"))
-        scale_raw = pt.exp(theta_age_loc)
-        w = 1.0 - pR
-        w_sum = pt.sum(w, axis=0, keepdims=True)
-        w_norm = w / (w_sum + 1e-12)
-        norm = pt.sum(w_norm * scale_raw, axis=0, keepdims=True)
-        age_scale = pm.Deterministic("age_scale", scale_raw / (norm + 1e-12), dims=("age", "location"))
+        # Apply age scale & sum over age
+        weekly_scaled_s = weekly_pred_t * scale_raw[None, :, None, :]  # (S,A,W,L)
+        weekly_sum_age_s = pm.Deterministic(
+            "weekly_pred_sum_age", pt.sum(weekly_scaled_s, axis=1), dims=("scenario","week","location")
+        )
 
-        weekly_scaled = pm.Deterministic("weekly_pred_scaled", weekly * age_scale[:, None, :],
-                                         dims=("age", "week", "location"))
-        weekly_sum_age = pm.Deterministic("weekly_pred_sum_age", weekly_scaled.sum(axis=0),
-                                          dims=("week", "location"))
-        pm.Deterministic("S_final", S_final_t, dims=("age", "location"))
+        # Lag per scenario
+        def _lag_apply(Y):  # Y: (W,L) -> (W,L)
+            top_pad = pt.repeat(Y[:1, :], pads, axis=0)
+            bot_pad = pt.repeat(Y[-1:, :], pads, axis=0)
+            padded = pt.concatenate([top_pad, Y, bot_pad], axis=0)
+            out = pt.zeros_like(Y)
+            for k, sft in enumerate(shifts):
+                start = pads + sft
+                Yk = padded[start:start + W, :]
+                wk = lag_weights[:, k]
+                out = out + Yk * wk[None, :]
+            return out
 
-        # Weekly residuals + lag
-        delta_week_cum = pt.stack([pt.cumsum(z_week_ls[l] * sigma_week_ls[l]) for l in range(L)], axis=1)
-        delta_week = pm.Deterministic("delta_week",
-                                      delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
-                                      dims=("week", "location"))
+        shifted_list = []
+        for s in range(S):
+            shifted_list.append(_lag_apply(weekly_sum_age_s[s, :, :]))
+        weekly_sum_age_shifted_s = pt.stack(shifted_list, axis=0)  # (S,W,L)
+        pm.Deterministic("weekly_pred_sum_age_shifted", weekly_sum_age_shifted_s,
+                         dims=("scenario","week","location"))
 
-        S_lag = 5
-        pads = S_lag // 2
-        shifts = list(range(-pads, pads + 1))
-        lag_weights = pm.Deterministic("lag_weights", pt.stack(lag_w_ls, axis=0), dims=("location", "lag"))
+        # Build mu per scenario
+        rate_pred_s = weekly_sum_age_shifted_s / (pop[None, None, :] + 1e-12)  # (S,W,L)
+        log_rate_s = pt.log(rate_pred_s + 1e-12) + beta0_loc[None, None, :] + delta_week[None, :, :]
+        mu_obs_s = pt.exp(log_rate_s) * pop[None, None, :]  # (S,W,L)
 
-        top_pad = pt.repeat(weekly_sum_age[:1, :], pads, axis=0)
-        bot_pad = pt.repeat(weekly_sum_age[-1:, :], pads, axis=0)
-        padded = pt.concatenate([top_pad, weekly_sum_age, bot_pad], axis=0)
-        shifted_sum = pt.zeros_like(weekly_sum_age)
-        for k, s in enumerate(shifts):
-            start = pads + s
-            Yk = padded[start:start + W, :]
-            wk = lag_weights[:, k]
-            shifted_sum = shifted_sum + Yk * wk[None, :]
-        weekly_sum_age_shifted = pm.Deterministic("weekly_pred_sum_age_shifted", shifted_sum,
-                                                  dims=("week", "location"))
-
-        # likelihood
-        beta0_loc = pm.Deterministic("beta0_loc", pt.stack(beta0_ls, axis=0), dims=("location",))
-        pop = pt.as_tensor_variable(pop_loc)
-        rate_pred = weekly_sum_age_shifted / (pop[None, :] + 1e-12)
-        log_rate = pt.log(rate_pred + 1e-12) + beta0_loc[None, :] + delta_week
-        mu_obs = pt.exp(log_rate) * pop[None, :]
-
+        # ---- Mixture likelihood via log-mean-exp (equal weights) + censoring on unobserved weeks ----
         if y_obs is not None:
-            y_obs = np.asarray(y_obs, dtype=np.float64)
-            assert y_obs.shape == (W, L), f"y_obs must be (W, L); got {y_obs.shape}"
-            if use_nb:
-                alpha_nb_loc = pm.Deterministic("alpha_nb_loc", pt.stack(alpha_nb_ls, axis=0), dims=("location",))
-                pm.NegativeBinomial("y", mu=mu_obs, alpha=alpha_nb_loc, observed=y_obs, dims=("week", "location"))
+            if obs_weeks_arr is None:
+                y_full = np.asarray(y_obs, dtype=np.float64)
+                assert y_full.shape == (W, L)
+                if use_nb:
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    nb_dist = pm.NegativeBinomial.dist(mu=mu_obs_s, alpha=alpha_nb_loc[None, None, :])  # (S,W,L)
+                    logp_s = pm.logp(nb_dist, pt.repeat(y_full[None, :, :], S, axis=0))  # (S,W,L)
+                else:
+                    pois_dist = pm.Poisson.dist(mu=mu_obs_s)
+                    logp_s = pm.logp(pois_dist, pt.repeat(y_full[None, :, :], S, axis=0))  # (S,W,L)
             else:
-                pm.Poisson("y", mu=mu_obs, observed=y_obs, dims=("week", "location"))
+                y_slice = np.asarray(y_obs, dtype=np.float64)
+                W_obs = int(obs_weeks_arr.size)
+                assert y_slice.shape == (W_obs, L)
+                mu_slice_s = mu_obs_s[:, obs_weeks_arr, :]  # (S,W_obs,L)
+                if use_nb:
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    nb_dist = pm.NegativeBinomial.dist(mu=mu_slice_s, alpha=alpha_nb_loc[None, None, :])
+                    logp_s = pm.logp(nb_dist, pt.repeat(y_slice[None, :, :], S, axis=0))  # (S,W_obs,L)
+                else:
+                    pois_dist = pm.Poisson.dist(mu=mu_slice_s)
+                    logp_s = pm.logp(pois_dist, pt.repeat(y_slice[None, :, :], S, axis=0))  # (S,W_obs,L)
 
-    return m
+                # Censored contribution on unobserved weeks
+                if (unobs_mask is not None) and (censor_cap_factor is not None):
+                    idx_unobs = np.nonzero(unobs_mask)[0].astype("int64")
+                    if idx_unobs.size > 0:
+                        # cap = floor(1.5 * min(first,last)) from observed edge weeks
+                        first_vals = y_slice[0, :]
+                        last_vals  = y_slice[-1, :]
+                        caps_loc = np.floor(censor_cap_factor * np.maximum(np.minimum(first_vals, last_vals), 0.0)).astype(np.int64)
+                        mu_unobs_s = mu_obs_s[:, idx_unobs, :]  # (S,W_unobs,L)
+                        cap_vec = pt.as_tensor_variable(caps_loc).astype("int64")      # (L,)
+                        cap_mat = pt.repeat(cap_vec[None, :], idx_unobs.size, axis=0)  # (W_unobs,L)
+                        cap_s   = pt.repeat(cap_mat[None, :, :], S, axis=0)            # (S,W_unobs,L)
+                        if use_nb:
+                            nb_c = pm.NegativeBinomial.dist(mu=mu_unobs_s, alpha=alpha_nb_loc[None, None, :])
+                            log_cdf_s = pm.logcdf(nb_c, cap_s)
+                        else:
+                            pois_c = pm.Poisson.dist(mu=mu_unobs_s)
+                            log_cdf_s = pm.logcdf(pois_c, cap_s)
+                        # augment per-scenario log-likelihood with the censored weeks
+                        logp_s = pt.concatenate([logp_s, log_cdf_s], axis=1)
+
+            # reduce over weeks & locations to get per-scenario scalar log-likelihood
+            logp_s_total = pt.sum(logp_s, axis=(1, 2))  # (S,)
+            log_mean_exp = pm.math.logsumexp(logp_s_total) - pt.log(S)
+            pm.Potential("mixture_ll", log_mean_exp)
+
+        assert isinstance(m, pm.Model)
+        return m
+
 
 # ------------------------------ blocked step helper ------------------------------
 
@@ -1205,7 +1312,7 @@ def make_location_blocked_step(
     if not free:
         return step_cls(vars=[], **kwargs)
 
-    import os, re
+    import re
     loc_re = re.compile(r"_l(?P<idx>\d+)(?:$|_)")
 
     by_loc: dict[int, list] = {}
