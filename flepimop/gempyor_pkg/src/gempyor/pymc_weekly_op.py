@@ -806,6 +806,7 @@ def build_weekly_model(
          tensors with a leading scenario dimension.
       - Censoring: for weeks not in `obs_weeks`, add P(Y ≤ cap) with cap = floor(1.5 × min(first,last)).
       - Soft prior on terminal susceptible fraction S(T)/N via Beta(logp).
+      - NEW: soft penalty on end-point cumulative incidence mismatch (observed vs model).
     """
     if op is None:
         op = WeeklyHospAndFinalSOp(pipeline)
@@ -1147,6 +1148,19 @@ def build_weekly_model(
                                             observed=y_np, dims=("week", "location"))
                     else:
                         pm.Poisson("y", mu=mu_obs, observed=y_np, dims=("week", "location"))
+
+                    # ==== NEW: cumulative end-point penalty (full-season) ====
+                    # Predicted cumulative at final week:
+                    C_pred_full = pt.cumsum(weekly_sum_age_shifted, axis=0)  # (W, L)
+                    C_pred_end = C_pred_full[-1, :]                           # (L,)
+                    # Observed cumulative at final week (sum over all weeks provided):
+                    C_obs_end_vec = pt.as_tensor_variable(y_np.sum(axis=0))   # (L,)
+                    # Scale for penalty (relative, prevents domination on big locations):
+                    sigma_cum = pt.maximum(1.0, 0.15 * pt.sqrt(C_obs_end_vec + 1.0))
+                    pen_dist = pm.Normal.dist(mu=C_pred_end, sigma=sigma_cum)
+                    pm.Potential("cum_endpoint_penalty", pm.logp(pen_dist, C_obs_end_vec).sum())
+                    # =========================================================
+
                 else:
                     assert y_np.shape == (W_obs, L), \
                         f"y_obs must be shape (len(obs_weeks), L); got {y_np.shape}, expected ({W_obs}, {L})"
@@ -1176,6 +1190,18 @@ def build_weekly_model(
                                 pois_dist = pm.Poisson.dist(mu=mu_unobs)
                                 log_cdf = pm.logcdf(pois_dist, cap_mat)
                             pm.Potential("censor_unobs_weeks", pt.sum(log_cdf))
+
+                    # ==== NEW: cumulative end-point penalty (last observed week) ====
+                    # We penalize mismatch at the *latest observed week index*:
+                    t_star = int(np.max(obs_weeks_arr))
+                    C_pred_full = pt.cumsum(weekly_sum_age_shifted, axis=0)  # (W, L)
+                    C_pred_end = C_pred_full[t_star, :]                       # (L,)
+                    # Observed cumulative up to last observed week (sum of provided y):
+                    C_obs_end_vec = pt.as_tensor_variable(y_np.sum(axis=0))   # (L,)
+                    sigma_cum = pt.maximum(1.0, 0.15 * pt.sqrt(C_obs_end_vec + 1.0))
+                    pen_dist = pm.Normal.dist(mu=C_pred_end, sigma=sigma_cum)
+                    pm.Potential("cum_endpoint_penalty", pm.logp(pen_dist, C_obs_end_vec).sum())
+                    # =================================================================
 
             assert isinstance(m, pm.Model)
             return m
