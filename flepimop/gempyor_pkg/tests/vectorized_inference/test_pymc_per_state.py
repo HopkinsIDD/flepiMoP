@@ -1027,7 +1027,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             )
             # ---- presence-filtered posterior predictive var_names (compatible with scenario path) ----
             present = set(model.named_vars.keys())
-            pp_vars = [v for v in ("y", "weekly_pred_sum_age_shifted", "weekly_pred", "weekly_pred_scaled") if v in present]
+            pp_vars = [v for v in ("weekly_pred_sum_age_shifted", "weekly_pred", "weekly_pred_scaled") if v in present]
             ppc = pm.sample_posterior_predictive(
                 idata,
                 var_names=pp_vars,

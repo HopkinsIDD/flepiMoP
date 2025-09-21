@@ -789,8 +789,8 @@ def build_weekly_model(
     # ---- NEW: right-censor unobserved weeks at cap_factor × min(first,last) ----
     censor_cap_factor: float | None = 1.5,
     # ---- NEW: soft prior on terminal susceptible fraction S(T)/N ----
-    sT_mean: float = 0.70,
-    sT_ci: tuple[float, float] = (0.50, 0.95),   # interpreted as ~95% interval
+    sT_mean: float = 0.85,
+    sT_ci: tuple[float, float] = (0.65, 0.95),   # interpreted as ~95% interval
     sT_weight: float = 1.0,                      # >1.0 strengthens, <1.0 weakens
 ) -> pm.Model:
     """
@@ -1032,7 +1032,7 @@ def build_weekly_model(
         # Weekly residual structure (delta_week)
         if L == 1:
             sigma_week_loc = pm.HalfNormal("sigma_week_loc", 0.1, dims=("location",))
-            z_week = pm.Normal("z_week", 0.0, 1.0, dims=("week", "location"))
+            z_week = pm.Normal("z_week", 0.0, 0.5, dims=("week", "location"))
             delta_week_cum = pt.cumsum(z_week * sigma_week_loc[None, :], axis=0)
             delta_week = pm.Deterministic(
                 "delta_week", delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
@@ -1062,9 +1062,9 @@ def build_weekly_model(
 
         # Baseline intercept
         if L == 1:
-            beta0_loc = pm.Normal("beta0_loc", 0.0, 0.5, dims=("location",))
+            beta0_loc = pm.Normal("beta0_loc", 0.0, 0.3, dims=("location",))
         else:
-            beta0_ls = [pm.Normal(f"beta0_loc_l{l}", 0.5, 1.0) for l in range(L)]
+            beta0_ls = [pm.Normal(f"beta0_loc_l{l}", 0.0, 0.3) for l in range(L)]
             beta0_loc = pm.Deterministic("beta0_loc", pt.stack(beta0_ls, axis=0), dims=("location",))
 
         pop = pt.as_tensor_variable(pop_loc)
@@ -1142,7 +1142,7 @@ def build_weekly_model(
                 if obs_weeks_arr is None:
                     assert y_np.shape == (W, L), f"y_obs must be shape (W, L); got {y_np.shape}"
                     if use_nb:
-                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                         pm.NegativeBinomial("y", mu=mu_obs, alpha=alpha_nb_loc,
                                             observed=y_np, dims=("week", "location"))
                     else:
@@ -1152,7 +1152,7 @@ def build_weekly_model(
                         f"y_obs must be shape (len(obs_weeks), L); got {y_np.shape}, expected ({W_obs}, {L})"
                     mu_slice = pt.take(mu_obs, obs_weeks_arr, axis=0)  # (W_obs, L)
                     if use_nb:
-                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                         pm.NegativeBinomial("y", mu=mu_slice, alpha=alpha_nb_loc,
                                             observed=y_np, dims=("obs_week", "location"))
                     else:
@@ -1239,7 +1239,7 @@ def build_weekly_model(
                 y_full = np.asarray(y_obs, dtype=np.float64)
                 assert y_full.shape == (W, L)
                 if use_nb:
-                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                     nb_dist = pm.NegativeBinomial.dist(mu=mu_obs_s, alpha=alpha_nb_loc[None, None, :])  # (S,W,L)
                     logp_s = pm.logp(nb_dist, pt.repeat(y_full[None, :, :], S, axis=0))  # (S,W,L)
                 else:
@@ -1251,7 +1251,7 @@ def build_weekly_model(
                 assert y_slice.shape == (W_obs, L)
                 mu_slice_s = mu_obs_s[:, obs_weeks_arr, :]  # (S,W_obs,L)
                 if use_nb:
-                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                     nb_dist = pm.NegativeBinomial.dist(mu=mu_slice_s, alpha=alpha_nb_loc[None, None, :])
                     logp_s = pm.logp(nb_dist, pt.repeat(y_slice[None, :, :], S, axis=0))  # (S,W_obs,L)
                 else:
