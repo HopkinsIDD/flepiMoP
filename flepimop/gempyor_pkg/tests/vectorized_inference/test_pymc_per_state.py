@@ -899,7 +899,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     """
     # ---------- quick knobs ----------
     PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "10"))
-    TUNE = int(os.environ.get("TUNE", "900"))
+    TUNE = int(os.environ.get("TUNE", "1000"))
     DRAWS = int(os.environ.get("DRAWS", "300"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))

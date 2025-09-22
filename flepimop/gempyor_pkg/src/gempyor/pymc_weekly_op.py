@@ -791,7 +791,7 @@ def build_weekly_model(
     # ---- NEW: soft prior on terminal susceptible fraction S(T)/N ----
     sT_mean: float = 0.85,
     sT_ci: tuple[float, float] = (0.65, 0.95),   # interpreted as ~95% interval
-    sT_weight: float = 1.0,                      # >1.0 strengthens, <1.0 weakens
+    sT_weight: float = 0.01,                      # >1.0 strengthens, <1.0 weakens
 ) -> pm.Model:
     """
     If L == 1: build the original vectorized model.
