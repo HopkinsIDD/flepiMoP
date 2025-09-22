@@ -789,9 +789,9 @@ def build_weekly_model(
     # ---- NEW: right-censor unobserved weeks at cap_factor × min(first,last) ----
     censor_cap_factor: float | None = 1.5,
     # ---- NEW: soft prior on terminal susceptible fraction S(T)/N ----
-    sT_mean: float = 0.75,
-    sT_ci: tuple[float, float] = (0.50, 0.95),   # interpreted as ~95% interval
-    sT_weight: float = 0.1,                      # >1.0 strengthens, <1.0 weakens
+    sT_mean=0.4, 
+    sT_ci=(0.05, 0.95), 
+    sT_weight=0.01                   # >1.0 strengthens, <1.0 weakens
 ) -> pm.Model:
     """
     If L == 1: build the original vectorized model.
@@ -806,6 +806,7 @@ def build_weekly_model(
          tensors with a leading scenario dimension.
       - Censoring: for weeks not in `obs_weeks`, add P(Y ≤ cap) with cap = floor(1.5 × min(first,last)).
       - Soft prior on terminal susceptible fraction S(T)/N via Beta(logp).
+      - NEW: soft penalty on end-point cumulative incidence mismatch (observed vs model).
     """
     if op is None:
         op = WeeklyHospAndFinalSOp(pipeline)
@@ -1032,7 +1033,7 @@ def build_weekly_model(
         # Weekly residual structure (delta_week)
         if L == 1:
             sigma_week_loc = pm.HalfNormal("sigma_week_loc", 0.1, dims=("location",))
-            z_week = pm.Normal("z_week", 0.0, 1.0, dims=("week", "location"))
+            z_week = pm.Normal("z_week", 0.0, 0.5, dims=("week", "location"))
             delta_week_cum = pt.cumsum(z_week * sigma_week_loc[None, :], axis=0)
             delta_week = pm.Deterministic(
                 "delta_week", delta_week_cum - pt.mean(delta_week_cum, axis=0, keepdims=True),
@@ -1062,9 +1063,9 @@ def build_weekly_model(
 
         # Baseline intercept
         if L == 1:
-            beta0_loc = pm.Normal("beta0_loc", 0.0, 0.5, dims=("location",))
+            beta0_loc = pm.Normal("beta0_loc", 0.0, 0.3, dims=("location",))
         else:
-            beta0_ls = [pm.Normal(f"beta0_loc_l{l}", 0.5, 1.0) for l in range(L)]
+            beta0_ls = [pm.Normal(f"beta0_loc_l{l}", 0.0, 0.3) for l in range(L)]
             beta0_loc = pm.Deterministic("beta0_loc", pt.stack(beta0_ls, axis=0), dims=("location",))
 
         pop = pt.as_tensor_variable(pop_loc)
@@ -1142,17 +1143,30 @@ def build_weekly_model(
                 if obs_weeks_arr is None:
                     assert y_np.shape == (W, L), f"y_obs must be shape (W, L); got {y_np.shape}"
                     if use_nb:
-                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                         pm.NegativeBinomial("y", mu=mu_obs, alpha=alpha_nb_loc,
                                             observed=y_np, dims=("week", "location"))
                     else:
                         pm.Poisson("y", mu=mu_obs, observed=y_np, dims=("week", "location"))
+
+                    # ==== NEW: cumulative end-point penalty (full-season) ====
+                    # Predicted cumulative at final week:
+                    C_pred_full = pt.cumsum(weekly_sum_age_shifted, axis=0)  # (W, L)
+                    C_pred_end = C_pred_full[-1, :]                           # (L,)
+                    # Observed cumulative at final week (sum over all weeks provided):
+                    C_obs_end_vec = pt.as_tensor_variable(y_np.sum(axis=0))   # (L,)
+                    # Scale for penalty (relative, prevents domination on big locations):
+                    sigma_cum = pt.maximum(1.0, 0.15 * pt.sqrt(C_obs_end_vec + 1.0))
+                    pen_dist = pm.Normal.dist(mu=C_pred_end, sigma=sigma_cum)
+                    pm.Potential("cum_endpoint_penalty", pm.logp(pen_dist, C_obs_end_vec).sum())
+                    # =========================================================
+
                 else:
                     assert y_np.shape == (W_obs, L), \
                         f"y_obs must be shape (len(obs_weeks), L); got {y_np.shape}, expected ({W_obs}, {L})"
                     mu_slice = pt.take(mu_obs, obs_weeks_arr, axis=0)  # (W_obs, L)
                     if use_nb:
-                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                        alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                         pm.NegativeBinomial("y", mu=mu_slice, alpha=alpha_nb_loc,
                                             observed=y_np, dims=("obs_week", "location"))
                     else:
@@ -1165,7 +1179,8 @@ def build_weekly_model(
                             # cap = floor(1.5 * min(first,last))
                             first_vals = y_np[0, :]
                             last_vals = y_np[-1, :]
-                            caps_loc = np.floor(censor_cap_factor * np.maximum(np.minimum(first_vals, last_vals), 150.0)).astype(np.int64)
+                            max_val = np.maximum(y_np, 0.0)
+                            caps_loc = np.floor(censor_cap_factor * np.maximum(np.minimum(first_vals, last_vals), 0.2*max_val)).astype(np.int64)
                             mu_unobs = pt.take(mu_obs, idx_unobs, axis=0)  # (W_unobs, L)
                             cap_vec = pt.as_tensor_variable(caps_loc).astype("int64")
                             cap_mat = pt.repeat(cap_vec[None, :], idx_unobs.size, axis=0)  # (W_unobs, L)
@@ -1176,6 +1191,18 @@ def build_weekly_model(
                                 pois_dist = pm.Poisson.dist(mu=mu_unobs)
                                 log_cdf = pm.logcdf(pois_dist, cap_mat)
                             pm.Potential("censor_unobs_weeks", pt.sum(log_cdf))
+
+                    # ==== NEW: cumulative end-point penalty (last observed week) ====
+                    # We penalize mismatch at the *latest observed week index*:
+                    t_star = int(np.max(obs_weeks_arr))
+                    C_pred_full = pt.cumsum(weekly_sum_age_shifted, axis=0)  # (W, L)
+                    C_pred_end = C_pred_full[t_star, :]                       # (L,)
+                    # Observed cumulative up to last observed week (sum of provided y):
+                    C_obs_end_vec = pt.as_tensor_variable(y_np.sum(axis=0))   # (L,)
+                    sigma_cum = pt.maximum(1.0, 0.15 * pt.sqrt(C_obs_end_vec + 1.0))
+                    pen_dist = pm.Normal.dist(mu=C_pred_end, sigma=sigma_cum)
+                    pm.Potential("cum_endpoint_penalty", pm.logp(pen_dist, C_obs_end_vec).sum())
+                    # =================================================================
 
             assert isinstance(m, pm.Model)
             return m
@@ -1239,7 +1266,7 @@ def build_weekly_model(
                 y_full = np.asarray(y_obs, dtype=np.float64)
                 assert y_full.shape == (W, L)
                 if use_nb:
-                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                     nb_dist = pm.NegativeBinomial.dist(mu=mu_obs_s, alpha=alpha_nb_loc[None, None, :])  # (S,W,L)
                     logp_s = pm.logp(nb_dist, pt.repeat(y_full[None, :, :], S, axis=0))  # (S,W,L)
                 else:
@@ -1251,7 +1278,7 @@ def build_weekly_model(
                 assert y_slice.shape == (W_obs, L)
                 mu_slice_s = mu_obs_s[:, obs_weeks_arr, :]  # (S,W_obs,L)
                 if use_nb:
-                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(25.0), sigma=0.5, dims=("location",))
+                    alpha_nb_loc = pm.LogNormal("alpha_nb_loc", mu=np.log(50.0), sigma=0.5, dims=("location",))
                     nb_dist = pm.NegativeBinomial.dist(mu=mu_slice_s, alpha=alpha_nb_loc[None, None, :])
                     logp_s = pm.logp(nb_dist, pt.repeat(y_slice[None, :, :], S, axis=0))  # (S,W_obs,L)
                 else:
@@ -1265,7 +1292,8 @@ def build_weekly_model(
                         # cap = floor(1.5 * min(first,last)) from observed edge weeks
                         first_vals = y_slice[0, :]
                         last_vals  = y_slice[-1, :]
-                        caps_loc = np.floor(censor_cap_factor * np.maximum(np.minimum(first_vals, last_vals), 0.0)).astype(np.int64)
+                        max_val = np.maximum(y_slice, 0.0)
+                        caps_loc = np.floor(censor_cap_factor * np.maximum(np.minimum(first_vals, last_vals), 0.2*max_val)).astype(np.int64)
                         mu_unobs_s = mu_obs_s[:, idx_unobs, :]  # (S,W_unobs,L)
                         cap_vec = pt.as_tensor_variable(caps_loc).astype("int64")      # (L,)
                         cap_mat = pt.repeat(cap_vec[None, :], idx_unobs.size, axis=0)  # (W_unobs,L)

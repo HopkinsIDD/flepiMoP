@@ -51,6 +51,12 @@ os.environ.setdefault("NUMBA_NUM_THREADS", str(min(4, max(1, os.cpu_count() or 1
 # -----------------------------------------------------------------------
 # Regular imports
 # -----------------------------------------------------------------------
+
+import pytensor
+from pytensor import config
+config.cxx = "/usr/bin/clang++"
+print("PyTensor cxx =", config.cxx)
+
 from pathlib import Path
 import shutil
 import numpy as np
@@ -898,8 +904,8 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     After the FIRST state's NetCDF is written, re-open it and verify it's non-empty.
     """
     # ---------- quick knobs ----------
-    PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "10"))
-    TUNE = int(os.environ.get("TUNE", "1000"))
+    PRIOR_SAMPLES = int(os.environ.get("PRIOR_SAMPLES", "100"))
+    TUNE = int(os.environ.get("TUNE", "900"))
     DRAWS = int(os.environ.get("DRAWS", "300"))
     CHAINS = int(os.environ.get("CHAINS", "2"))
     CORES = min(CHAINS, max(1, os.cpu_count() or 1))
@@ -910,7 +916,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     FOURIER_HARMONICS = int(os.environ.get("FOURIER_HARMONICS", "64"))
     FOURIER_PERIOD_DAYS = float(os.environ.get("FOURIER_PERIOD_DAYS", "365.25"))
     PROGRESS_BAR = bool(int(os.environ.get("PROGRESS_BAR", "1")))
-    USE_NB = bool(int(os.environ.get("USE_NB", "1")))
+    USE_NB = bool(int(os.environ.get("USE_NB", "0")))
     S_SCEN = int(os.environ.get("PR_SCENARIOS", "0"))
     PR_ALPHA = float(os.environ.get("PR_BETA_ALPHA", "8.0"))
     PR_BETA = float(os.environ.get("PR_BETA_BETA", "12.0"))
@@ -982,6 +988,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             fourier_harmonics=FOURIER_HARMONICS,
             fourier_period_days=FOURIER_PERIOD_DAYS,
             pR_scenarios=pR_scen,
+            sT_mean=0.4, sT_ci=(0.05, 0.95), sT_weight=0.01,
         ) as prior_model:
             present = set(prior_model.named_vars.keys())
             requested = ["weekly_pred", "mods_loc", "mods_mu_log_loc", "r0_weekly_scale"]
@@ -1014,14 +1021,14 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             obs_weeks=np.asarray(obs_weeks, dtype=int),
             pR_scenarios=pR_scen,                # <<<<<< scenario mixture in-model
             # censor_cap_factor left at default (1.5×min(first,last))
-            sT_mean=0.7, sT_ci=(0.50, 0.95), sT_weight=1.0,
+            sT_mean=0.4, sT_ci=(0.05, 0.95), sT_weight=0.01,
         ) as model:
             idata = pm.sample(
                 draws=DRAWS,
                 tune=TUNE,
                 chains=CHAINS,
                 cores=CORES,
-                step=pm.DEMetropolisZ(tune_interval=100),
+                step=pm.DEMetropolisZ(tune_interval=50),
                 random_seed=777 + i,
                 progressbar=PROGRESS_BAR,
             )
@@ -1048,8 +1055,8 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
 
         # Plots
         _panel_per_location(idata, y_full, np.arange(y_full.shape[0]), (state_i,), pipe, outdir)
-        if i in four_idx:
-            _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
+        # if i in four_idx:
+        _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
 
         # Save one file per state
         nc_path = outdir / f"inference_idata_{state_i}.nc"
