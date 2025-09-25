@@ -32,6 +32,9 @@ dependencies = [
     "sympy",
     "tqdm",
     "xarray",
+    "pymc",
+    "arviz",
+    "pytensor",
 ]
 name = "gempyor"
 readme = "README.md"
@@ -40,7 +43,7 @@ version = "2.1"
 
 [project.optional-dependencies]
 aws = ["boto3", "botocore"]
-dev = ["pytest", "mock", "pylint", "black", "sphinx", "click", "click-man"]
+dev = ["pytest","pytest-benchmark", "mock", "pylint", "black", "sphinx", "click", "click-man"]
 
 [project.urls]
 Homepage = "https://www.flepimop.org/"

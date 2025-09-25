@@ -1,0 +1,748 @@
+# src/gempyor/hosp_weekly_pipeline.py
+from __future__ import annotations
+
+import os
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+from pathlib import Path
+import datetime as dt
+import warnings  # <<< NEW
+
+import numpy as np
+import confuse
+from scipy.sparse import csr_matrix
+
+# <<< NEW (optional dependency; only used if config points to a parquet file)
+try:
+    import pandas as pd
+except Exception:  # pragma: no cover
+    pd = None
+# >>> NEW
+
+from gempyor.model_info import ModelInfo
+from gempyor.vectorization_experiments import (
+    RHSfactory,
+    # proportion + exponents
+    _compute_proportion_sums_exponents_manual,
+    _compute_proportion_sums_exponents_from_sums,  # imported but not used; kept for parity
+    # mobility + param scaling
+    _compute_transition_rates,
+    # elementwise hotspot (autotuned inside factory)
+    compute_transition_amounts_meta,
+)
+
+# ==========================================================
+# Helpers (self-contained)
+# ==========================================================
+
+def _make_incidence_resolver(compartments_df, transitions_arr):
+    """
+    Build a function that resolves a source.incidence filter into transition-row indices.
+    We treat the source as the *destination* compartment(s) of a transition whose
+    infection_stage (prefix match allowed), vaccination_stage, variant_type, age_strata match.
+    """
+    dst_row = transitions_arr[1, :].astype(np.int64)
+
+    def _resolve(infection_stage=None, vaccination_stage=None, variant_type=None, age_strata=None) -> np.ndarray:
+        mask = np.ones(len(compartments_df), dtype=bool)
+        if infection_stage is not None:
+            cs = compartments_df["infection_stage"].astype(str)
+            mask &= (cs == str(infection_stage)) | cs.str.startswith(str(infection_stage))
+        if vaccination_stage is not None:
+            mask &= compartments_df["vaccination_stage"].astype(str).eq(str(vaccination_stage))
+        if variant_type is not None:
+            mask &= compartments_df["variant_type"].astype(str).eq(str(variant_type))
+        if age_strata is not None:
+            mask &= compartments_df["age_strata"].astype(str).eq(str(age_strata))
+        dst_comp_indices = compartments_df.index.values[mask]
+        return np.nonzero(np.isin(dst_row, dst_comp_indices))[0].astype(np.int64, copy=False)
+
+    return _resolve
+
+
+def _extract_prob(spec: dict | float | int | None) -> float:
+    """Pull a scalar probability from the YAML node; default 1.0."""
+    if spec is None:
+        return 1.0
+    if isinstance(spec, (float, int)):
+        return float(spec)
+    v = spec.get("value", None)
+    if isinstance(v, (float, int)):
+        return float(v)
+    if isinstance(v, dict):
+        inner = v.get("value", v.get("val", v.get("mult", None)))
+        if isinstance(inner, (float, int)):
+            return float(inner)
+    return 1.0
+
+
+def _extract_delay_days(spec: dict | float | int | None) -> float:
+    """Pull a scalar delay in *days* from the YAML node; default 0."""
+    if spec is None:
+        return 0.0
+    if isinstance(spec, (float, int)):
+        return float(spec)
+    v = spec.get("value", None)
+    if isinstance(v, (float, int)):
+        return float(v)
+    if isinstance(v, dict):
+        inner = v.get("value", v.get("val", v.get("days", None)))
+        if isinstance(inner, (float, int)):
+            return float(inner)
+    return 0.0
+
+
+def _compile_outcomes_from_config(
+    outcomes_cfg: dict[str, dict],
+    compartments_df,
+    transitions: np.ndarray,
+    n_nodes: int,
+    bin_width_days: float,
+) -> tuple[
+    dict[str, np.ndarray],      # resolve_map: outcome -> rows (Tn,) (leaf-incidence only; others -> empty)
+    dict[str, np.ndarray],      # prob_map  : outcome -> (L,) vector
+    dict[str, int],             # delay_steps_map: outcome -> int shift in *steps*
+    dict[str, list[str]],       # sum_map   : outcome -> list of child outcome names
+    list[str],                  # order     : stable order of all names
+]:
+    """
+    Parse the YAML 'outcomes' block into minimal runtime instructions:
+    - Leaves with incidence sources map to explicit transition rows.
+    - Nodes that alias another outcome via `source: <name>` are represented in sum_map.
+    - Nodes that sum over a list keep their children in sum_map.
+    - Every node records its own probability (as vector of length L) and delay in steps.
+    """
+    resolve_rows: dict[str, np.ndarray] = {}
+    prob_map: dict[str, np.ndarray] = {}
+    delay_steps: dict[str, int] = {}
+    sum_map: dict[str, list[str]] = {}
+    names_in_order: list[str] = []
+
+    resolver = _make_incidence_resolver(compartments_df, transitions)
+
+    for name, spec in outcomes_cfg.items():
+        if not isinstance(spec, dict):
+            continue
+        names_in_order.append(name)
+
+        # Probability vector (uniform across locations unless config states otherwise)
+        p = _extract_prob(spec.get("probability"))
+        prob_map[name] = np.full(n_nodes, float(p), dtype=np.float64)
+
+        # Delay in *steps*: convert days -> steps using the bin width
+        d_days = _extract_delay_days(spec.get("delay"))
+        shift = int(round(float(d_days) / float(bin_width_days))) if bin_width_days > 0 else 0
+        delay_steps[name] = int(max(0, shift))
+
+        # Resolve source
+        if "sum" in spec:
+            children = spec["sum"]
+            if isinstance(children, (list, tuple)):
+                sum_map[name] = [str(c) for c in children]
+            else:
+                raise ValueError(f"Outcome '{name}' has non-list 'sum'.")
+            resolve_rows[name] = np.array([], dtype=np.int64)
+            continue
+
+        source = spec.get("source", None)
+        if source is None:
+            resolve_rows[name] = np.array([], dtype=np.int64)
+            continue
+
+        # alias -> treat as sum of one
+        if isinstance(source, str):
+            sum_map[name] = [source]
+            resolve_rows[name] = np.array([], dtype=np.int64)
+            continue
+
+        # direct incidence specification
+        if isinstance(source, dict) and "incidence" in source:
+            filt = source["incidence"]
+            rows = resolver(
+                infection_stage=filt.get("infection_stage"),
+                vaccination_stage=filt.get("vaccination_stage"),
+                variant_type=filt.get("variant_type"),
+                age_strata=filt.get("age_strata"),
+            )
+            resolve_rows[name] = np.asarray(rows, dtype=np.int64)
+            continue
+
+        resolve_rows[name] = np.array([], dtype=np.int64)
+
+    # Ensure every sum target exists
+    for name, children in list(sum_map.items()):
+        for ch in children:
+            if ch not in resolve_rows:
+                resolve_rows[ch] = np.array([], dtype=np.int64)
+                prob_map[ch] = np.ones(n_nodes, dtype=np.float64)
+                delay_steps[ch] = 0
+
+    return resolve_rows, prob_map, delay_steps, sum_map, names_in_order
+
+
+def _param_slice_step(parameters: np.ndarray, t: float) -> np.ndarray:
+    """
+    Step-mode slice of parameters at floor(t) day.
+
+    Supports shapes:
+      (P, T, L) -> return (P, L)
+      (P, T)    -> return (P, 1)  (broadcast at call site if needed)
+    """
+    if parameters.ndim == 3:
+        P, T, L = parameters.shape
+        i = int(np.clip(np.floor(t), 0, T - 1))
+        return parameters[:, i, :]
+    elif parameters.ndim == 2:
+        P, T = parameters.shape
+        i = int(np.clip(np.floor(t), 0, T - 1))
+        return parameters[:, i : i + 1]
+    else:
+        raise ValueError(f"Unsupported parameter shape for step slicing: {parameters.shape}")
+
+
+def _compute_amounts_for_step(
+    *,
+    states_current: np.ndarray,                 # (C, L)
+    transitions: np.ndarray,                    # (5, Tn)
+    proportion_info: np.ndarray,                # (3, Pk)
+    transition_sum_compartments: np.ndarray,    # (S,)
+    param_t_slice: np.ndarray,                  # (P_parsed, L)  **PARSED param slice**
+    percent_day_away: float,
+    prop_who_move: np.ndarray,                  # (L,)
+    mobility_data: np.ndarray,                  # (nnz,)
+    mobility_indptr: np.ndarray,                # (L+1,)
+    mobility_indices: np.ndarray,               # (nnz,)
+    population: np.ndarray,                     # (L,),
+    # These two are unused when you pass a PARSED slice, but kept for back-compat.
+    param_expr_lookup: dict[int, str] | None = None,
+    param_name_to_row: dict[str, int] | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    For a single step time t, compute:
+      - transition amounts (Tn, L)
+      - source_numbers (Tn, L)  (useful for diagnostics)
+
+    IMPORTANT:
+      • If param_t_slice is **PARSED** (rows == len(unique_strings)), pass param_expr_lookup=None.
+      • If param_t_slice is **BASE** (rows == #base params), provide param_expr_lookup & param_name_to_row.
+    """
+    total_base, source_numbers, single_prop_mask = _compute_proportion_sums_exponents_manual(
+        states_current, transitions, proportion_info, transition_sum_compartments, param_t_slice
+    )
+    total_rates = _compute_transition_rates(
+        total_rates_base=total_base,
+        source_numbers=source_numbers,
+        transitions=transitions,
+        param_t=param_t_slice,
+        percent_day_away=float(percent_day_away),
+        proportion_who_move=np.asarray(prop_who_move, dtype=np.float64),
+        mobility_data=np.asarray(mobility_data, dtype=np.float64),
+        mobility_data_indices=np.asarray(mobility_indptr, dtype=np.int64),
+        mobility_row_indices=np.asarray(mobility_indices, dtype=np.int64),
+        population=np.asarray(population, dtype=np.float64),
+        single_prop_mask=np.asarray(single_prop_mask, dtype=np.uint8),
+        param_expr_lookup=param_expr_lookup,
+        param_name_to_row=param_name_to_row,
+    )
+    amounts = compute_transition_amounts_meta(source_numbers, total_rates)
+    return amounts, source_numbers
+
+
+# ==========================================================
+# Time/aggregation helpers (MMWR weeks)
+# ==========================================================
+
+def _mmwr_assign_from_daily(start: dt.date, T_days: int) -> tuple[np.ndarray, int]:
+    """
+    Build week assignments (0..W-1) for T_days consecutive *daily* bins starting at `start`,
+    aligned to MMWR (Sunday starts).
+    """
+    if T_days <= 0:
+        return np.zeros(0, dtype=np.int64), 0
+    offset_to_sun = (6 - start.weekday()) % 7  # Monday=0..Sunday=6
+    first_len = 7 if offset_to_sun == 0 else offset_to_sun
+    first_len = min(first_len, T_days)
+
+    assign = np.empty(T_days, dtype=np.int64)
+    assign[:first_len] = 0
+    if T_days > first_len:
+        rest = T_days - first_len
+        assign[first_len:] = 1 + (np.arange(rest, dtype=np.int64) // 7)
+    n_weeks = int(assign.max()) + 1
+    return assign, n_weeks
+
+
+def _steps_to_weeks_assign(start: dt.date, T_days: int, T_steps: int, dt_days: float) -> tuple[np.ndarray, int]:
+    """
+    Map each *step interval* (length dt_days) to an MMWR week index by day-of-step-start.
+    """
+    assign_days, n_weeks = _mmwr_assign_from_daily(start, T_days)
+    if T_steps <= 0:
+        return np.zeros(0, dtype=np.int64), n_weeks
+    day_idx = np.floor(np.arange(T_steps, dtype=np.float64) * float(dt_days)).astype(np.int64)
+    day_idx = np.clip(day_idx, 0, max(0, T_days - 1))
+    return assign_days[day_idx], n_weeks
+
+
+# ==========================================================
+# Age group extraction (used to aggregate outputs)
+# ==========================================================
+
+def _age_group_hosp_outcomes(outcomes_cfg: dict) -> dict[str, list[str]]:
+    groups: dict[str, list[str]] = {}
+    for name, spec in outcomes_cfg.items():
+        if not isinstance(name, str):
+            continue
+        if not name.startswith("incidH_"):
+            continue
+        parts = name.split("_")
+        age_tokens = [p for p in parts if p.startswith("age")]
+        if not age_tokens:
+            continue
+        age = age_tokens[-1]
+        groups.setdefault(age, []).append(name)
+    # stable order by age token
+    return dict(sorted(groups.items(), key=lambda kv: kv[0]))
+
+
+# ==========================================================
+# Main pipeline
+# ==========================================================
+
+class WeeklyHospPipeline:
+    """
+    Build once; call evaluate(mod_values) -> (A, W, L) hospitalization incidence.
+
+    A: # age groups parsed from config's incidH_* leaves
+    W: # MMWR weeks covering the series length from the solver step grid
+    L: # locations
+    """
+
+    def __init__(
+        self,
+        config_path: str | Path,
+        *,
+        dt_days: float = 1.0,
+        age_props_csv: str | Path | None = None,
+        age_props_location_col: str | None = None,
+    ):
+        self.config_path = Path(config_path)
+        self.dt = float(dt_days)  # integration & outcome step (e.g., 1.0 day)
+
+        conf = confuse.Configuration("WeeklyHospPipeline", __name__)
+        conf.set_file(str(self.config_path))
+
+        self.model = ModelInfo(
+            config=conf,
+            config_filepath=str(self.config_path),
+            path_prefix=str(self.config_path.parent),
+            setup_name=conf["setup_name"].get(str) if "setup_name" in conf else "Structured_Example",
+            seir_modifiers_scenario="none",
+        )
+
+        # ---- Core model pieces
+        self.initial_array = self.model.initial_conditions.get_from_config(sim_id=0, modinf=self.model)
+        self.unique_strings, self.transitions, self.transition_sum_compartments, self.proportion_info = (
+            self.model.compartments.get_transition_array()
+        )
+        self.NC, self.NL = self.initial_array.shape
+
+        # >>> NEW: optionally scale initial conditions by age-specific proportions
+        if age_props_csv is not None:
+            import pandas as pd
+            df = pd.read_csv(age_props_csv)
+            if age_props_location_col and age_props_location_col in df.columns:
+                # expect columns: [age_group columns..., <location_col>]
+                df = df.set_index(age_props_location_col)
+                def _to_subpop_code(v):
+                    # Accept ints/strings like 1, "1", 01, 1000, "01000", 10, 10000, etc.
+                    s = str(v).strip()
+                    # if it's already 5 chars like "01000" or "10000", keep it
+                    if s.isdigit() and len(s) == 5:
+                        return s
+                    # pure 1–2 digit state FIPS? -> pad to 2 and add "000"
+                    if s.isdigit() and len(s) <= 2:
+                        return f"{int(s):02d}000"
+                    # 3–4 digit numeric like 1000 -> zero-pad to 5 ("01000")
+                    if s.isdigit() and len(s) in (3, 4):
+                        return f"{int(s):05d}"
+                    # last resort: try int-cast then 5-digit pad
+                    try:
+                        return f"{int(float(s)):05d}"
+                    except Exception:
+                        return s  # will fail later with a clear error if it doesn't match
+
+                df.index = df.index.map(_to_subpop_code)
+
+                if not all(loc in df.index for loc in self.model.subpop_struct.subpop_names):
+                    missing = set(self.model.subpop_struct.subpop_names) - set(df.index)
+                    raise ValueError(f"Missing age proportions for locations: {missing}")
+                ages = sorted([c for c in df.columns if c.startswith("age")])
+                props = df.loc[self.model.subpop_struct.subpop_names, ages].to_numpy(dtype=np.float64).T  # (A,L)
+            else:
+                ages = sorted([c for c in df.columns if c.startswith("age")])
+                props = df[ages].iloc[0].to_numpy(dtype=np.float64)[:, None]  # (A,1)
+                props = np.tile(props, (1, self.NL))
+            # normalize defensively per location
+            props /= np.sum(props, axis=0, keepdims=True) + 1e-12
+            self.age_props = props  # (A,L)
+
+            # scale initial_array: split per-age population evenly across matching compartments
+            total_per_loc = self.initial_array.sum(axis=0, keepdims=True)  # (1,L)
+            comp_df = self.model.compartments.compartments
+            age_strata = comp_df["age_strata"].astype(str).values
+            for a_idx, age in enumerate(sorted(set(age_strata))):
+                mask_age = (age_strata == age)
+                n_rows = mask_age.sum()
+                if n_rows == 0:
+                    continue
+                mass = props[a_idx, :][None, :] * total_per_loc
+                self.initial_array[mask_age, :] = mass / n_rows
+        else:
+            self.age_props = None
+        # <<< END new block
+
+        self.start_date: dt.date = self.model.ti
+        self.end_date: dt.date = self.model.tf
+        # number of *calendar days* (inclusive)
+        self.T = (self.end_date - self.start_date).days + 1
+
+        # Parameters — BASE space (order of names as in seir.parameters YAML)
+        self.param_defs = conf["seir"]["parameters"].get()
+        self.param_names = np.array(list(self.param_defs.keys()))
+        self.param_name_to_row_base = {name: i for i, name in enumerate(self.param_names)}
+
+        # Draw base (P_base, T, L); keep as base — modifiers apply here, then we PARSE.
+        self.base_params = self.model.parameters.parameters_quick_draw(self.T, self.NL)
+
+        # Mobility / precomputed
+        mob: csr_matrix = self.model.mobility
+        self.population = self.model.subpop_pop
+        self.mobility_data = mob.data
+        self.mobility_indptr = mob.indptr
+        self.mobility_indices = mob.indices
+        prop_move = np.zeros(self.NL, dtype=np.float64)
+        for i in range(self.NL):
+            pop_i = float(self.population[i])
+            total_flux = float(self.mobility_data[self.mobility_indptr[i] : self.mobility_indptr[i + 1]].sum())
+            prop_move[i] = min(total_flux / pop_i, 1.0) if pop_i > 0 else 0.0
+        self.prop_move = prop_move
+
+        # ---------- Optional seeding wiring ----------
+        self.seeding_on = False
+        self.seeding_amounts = None
+        self.seeding_data = None
+        try:
+            seeding_nb_dict, seeding_amounts = self.model.get_seeding_data(sim_id=0)
+            def _to_py(d):
+                return {str(k): np.ascontiguousarray(v) for k, v in d.items()}
+            sd = _to_py(seeding_nb_dict)
+            seeding_data = {
+                "day_start_idx": np.ascontiguousarray(sd["day_start_idx"], dtype=np.int64),
+                "seeding_subpops": np.ascontiguousarray(sd["seeding_subpops"], dtype=np.int64),
+                "seeding_sources": np.ascontiguousarray(sd["seeding_sources"], dtype=np.int64),
+                "seeding_destinations": np.ascontiguousarray(sd["seeding_destinations"], dtype=np.int64),
+            }
+            seeding_amounts = np.ascontiguousarray(seeding_amounts, dtype=np.float64)
+            daily_incidence = np.zeros((self.T, self.NC, self.NL), dtype=np.float64)
+
+            self.seeding_on = True
+            self.seeding_amounts = seeding_amounts
+            self.seeding_data = seeding_data
+        except Exception:
+            seeding_data = None
+            seeding_amounts = None
+            daily_incidence = None
+            self.seeding_on = False
+
+        # Base precomputed for RHSfactory
+        self.precomputed = {
+            "ncompartments": self.NC,
+            "nspatial_nodes": self.NL,
+            "transitions": self.transitions.astype(np.int64, copy=False),
+            "proportion_info": self.proportion_info.astype(np.int64, copy=False),
+            "transition_sum_compartments": self.transition_sum_compartments.astype(np.int64, copy=False),
+            "percent_day_away": 0.5,
+            "proportion_who_move": self.prop_move,
+            "mobility_data": self.mobility_data,
+            "mobility_data_indices": self.mobility_indptr.astype(np.int64, copy=False),
+            "mobility_row_indices": self.mobility_indices.astype(np.int64, copy=False),
+            "population": self.population,
+        }
+        if self.seeding_on:
+            self.precomputed.update(
+                {
+                    "seeding_data": seeding_data,
+                    "seeding_amounts": seeding_amounts,
+                    "daily_incidence": daily_incidence,
+                }
+            )
+
+        # Solver factory
+        self.factory = RHSfactory(
+            precomputed=self.precomputed,
+            param_time_mode="step",
+        )
+
+        # ---- Outcomes: compile from config
+        self.outcomes_cfg = conf["outcomes"]["outcomes"].get()
+        (
+            self._out_resolve_rows,
+            self._out_prob_map,
+            self._out_delay_steps,
+            self._out_sum_map,
+            self._out_all_names,
+        ) = _compile_outcomes_from_config(
+            self.outcomes_cfg,
+            self.model.compartments.compartments,
+            self.transitions,
+            self.NL,
+            bin_width_days=self.dt,
+        )
+
+        # >>> NEW: optionally scale leaf probabilities by per-subpop relative ratios from a parquet file
+        try:
+            use_file = False
+            if "outcomes" in conf and "param_from_file" in conf["outcomes"]:
+                use_file = bool(conf["outcomes"]["param_from_file"].get())
+            if use_file:
+                if pd is None:
+                    warnings.warn("[WeeklyHospPipeline] pandas/pyarrow not available; ignoring param_from_file.", RuntimeWarning)
+                else:
+                    rel_file = Path(self.model.path_prefix) / conf["outcomes"]["param_subpop_file"].as_str()
+                    if not rel_file.exists():
+                        warnings.warn(f"[WeeklyHospPipeline] relative-probability file not found: {rel_file}; using YAML probabilities.", RuntimeWarning)
+                    else:
+                        df = pd.read_parquet(rel_file)  # expects columns: outcome, quantity, subpop, value
+                        required = {"outcome", "quantity", "subpop", "value"}
+                        if not required.issubset(set(df.columns)):
+                            warnings.warn(f"[WeeklyHospPipeline] file {rel_file} missing required columns {required}; using YAML probabilities.", RuntimeWarning)
+                        else:
+                            df = df[df["quantity"] == "relative_probability"].copy()
+                            # Align order to model subpops
+                            subpops = list(self.model.subpop_names)
+                            # Build outcome -> vector(len L) if complete coverage
+                            for name in self._out_all_names:
+                                # Only apply to leaf-incidence nodes (direct source to incidence)
+                                if self._out_resolve_rows.get(name, np.array([])).size == 0:
+                                    continue
+                                block = df[df["outcome"] == name]
+                                if block.empty:
+                                    continue  # silent skip: no override for this leaf
+                                # Pivot to (subpop -> value)
+                                vec = np.full(self.NL, np.nan, dtype=float)
+                                m = block.set_index("subpop")["value"]
+                                missing = [sp for sp in subpops if sp not in m.index]
+                                if missing:
+                                    warnings.warn(f"[WeeklyHospPipeline] outcome '{name}' missing {len(missing)} subpops in {rel_file}; skipping scaling for this outcome.", RuntimeWarning)
+                                    continue
+                                for i, sp in enumerate(subpops):
+                                    vec[i] = float(m.loc[sp])
+                                # numeric hygiene: clip & handle NaNs/inf
+                                vec = np.where(np.isfinite(vec), vec, 1.0)
+                                vec = np.clip(vec, 0.0, 1.0)
+                                # multiply into per-location probability
+                                self._out_prob_map[name] = np.clip(self._out_prob_map[name] * vec, 0.0, 1.0)
+                        # Keep for debugging
+                        self._relprob_source_path = str(rel_file)
+        except Exception as e:  # pragma: no cover
+            warnings.warn(f"[WeeklyHospPipeline] Error applying relative probabilities from file: {e!r}; using YAML probabilities.", RuntimeWarning)
+        # <<< NEW
+
+        # Age groups for aggregation
+        self.age_to_names = _age_group_hosp_outcomes(self.outcomes_cfg)
+        self.age_labels = list(self.age_to_names.keys())
+        if not self.age_labels:
+            raise ValueError("No age-specific hospitalization outcomes (incidH_*_age...) found.")
+
+        # Modifiers — compile against BASE parameter names/order
+        from gempyor.vectorized_modifiers import compile_seir_modifiers
+        self.mod_applier = compile_seir_modifiers(
+            seir_modifiers_cfg=conf["seir_modifiers"].get(),
+            start_date=self.start_date,
+            n_days=self.T,
+            n_loc=self.NL,
+            param_names=self.param_names,
+        )
+        self.leaf_order = self.mod_applier.list_leaf_modifiers()
+
+        # Expose attributes used by tests/helpers
+        self.param_expr_lookup = None
+
+
+    # -------------------------- public API --------------------------
+
+    def modifier_order(self) -> tuple[str, ...]:
+        return self.leaf_order
+
+    def evaluate(
+        self,
+        mod_values: np.ndarray,
+        *,
+        rtol: float = 1e-3,
+        atol: float = 1e-6,
+    ) -> tuple[np.ndarray, list[str], int]:
+        """
+        Apply *replacing* modifier values (aligned to self.modifier_order()), run model,
+        and return age × weeks × locations hospitalization incidence.
+
+        Notes:
+            • Probability and delay are applied per outcome node.
+            • Nodes with `source: 'other_name'` are handled as aliases via the sum pass.
+            • Sums of many children are resolved after the leaf-incidence pass.
+            • Weekly aggregation follows MMWR (Sunday starts) using step-start days.
+        """
+        mod_values = np.asarray(mod_values, dtype=np.float64)
+        if mod_values.shape != (len(self.leaf_order),):
+            raise ValueError(f"mod_values must be length {len(self.leaf_order)} in order {self.leaf_order}")
+
+        # 1) Replace each leaf's multiplier with provided values (applied to **BASE** tensor)
+        params_mod_base = self.mod_applier.apply_to_params(
+            self.base_params,          # (P_base, T, L)
+            leaf_value_array=mod_values,
+            scenario="none",
+        )
+
+        # 2) PARSE into the unique_strings space (P_parsed == len(unique_strings))
+        parsed_params = self.model.compartments.parse_parameters(
+            params_mod_base,
+            list(self.param_defs.keys()),
+            self.unique_strings,
+        )  # shape: (P_parsed, T, L)
+
+        # 3) Integrate on a sub-daily grid covering [0 .. T-1] days (open end)
+        total_days = float(self.T - 1)
+        n_steps = int(round(total_days / self.dt))
+        n_steps = max(1, n_steps)
+        t_eval = np.linspace(0.0, total_days, n_steps + 1, dtype=np.float64)
+
+        res = self.factory.solve(
+            y0=self.initial_array.ravel(),
+            parameters=parsed_params,                 # **PARSED** tensor; direct indexing by transitions[2]
+            t_span=(t_eval[0], t_eval[-1]),
+            t_eval=t_eval,
+            method="RK45",
+            rtol=rtol,
+            atol=atol,
+        )
+        if not res.success:
+            raise RuntimeError(f"Integration failed: {res.message}")
+
+        states = res.y.T.reshape(len(t_eval), self.NC, self.NL)  # (T_pts, C, L)
+
+        # 4) Build only leaf incidence outcomes on the step grid, then resolve sums/aliases
+        series = {name: np.zeros((n_steps, self.NL), dtype=np.float64) for name in self._out_all_names}
+
+        for i in range(n_steps):
+            t0 = t_eval[i]
+            # Slice **PARSED** parameters for reconstruction
+            param_t_slice = _param_slice_step(parsed_params, t0)  # (P_parsed, L)
+            amounts, _src = _compute_amounts_for_step(
+                states_current=states[i],
+                transitions=self.transitions,
+                proportion_info=self.proportion_info,
+                transition_sum_compartments=self.transition_sum_compartments,
+                param_t_slice=param_t_slice,                    # PARSED slice (no expressions)
+                percent_day_away=self.precomputed["percent_day_away"],
+                prop_who_move=self.prop_move,
+                mobility_data=self.mobility_data,
+                mobility_indptr=self.mobility_indptr,
+                mobility_indices=self.mobility_indices,
+                population=self.population,
+                # expression args unused with PARSED slice:
+                param_expr_lookup=None,
+                param_name_to_row=None,
+            )  # (Tn, L)
+
+            for name, rows in self._out_resolve_rows.items():
+                if rows.size == 0:
+                    continue  # not a leaf-incidence node
+                inc_vec = amounts[rows, :].sum(axis=0)  # (L,)
+                p_vec = self._out_prob_map.get(name, np.ones(self.NL, dtype=np.float64))
+                shift = int(self._out_delay_steps.get(name, 0))
+                j = i + shift
+                if j < n_steps:
+                    series[name][j, :] += inc_vec * p_vec
+
+        # 5) Resolve sums/aliases in a topological loop (children must exist first)
+        unresolved = set(self._out_sum_map.keys())
+        guard = 0
+        while unresolved and guard < 10000:
+            guard += 1
+            progress = False
+            for name in list(unresolved):
+                children = self._out_sum_map[name]
+                if not all(ch in series for ch in children):
+                    continue
+                combined = np.zeros_like(series[name])
+                for ch in children:
+                    combined += series[ch]
+                p_vec = self._out_prob_map.get(name, np.ones(self.NL, dtype=np.float64))
+                shift = int(self._out_delay_steps.get(name, 0))
+                if shift:
+                    out = np.zeros_like(combined)
+                    if shift < combined.shape[0]:
+                        out[shift:, :] = combined[:-shift, :] * p_vec
+                else:
+                    out = combined * p_vec
+                series[name] = out
+                unresolved.remove(name)
+                progress = True
+            if not progress:
+                break
+        if unresolved:
+            raise RuntimeError(f"Unresolved sum outcomes remain: {unresolved}")
+
+        # 6) Weekly aggregation per age group
+        assign_steps, n_weeks = _steps_to_weeks_assign(
+            start=self.start_date,
+            T_days=self.T - 1,  # step-start days cover [0..T-2]
+            T_steps=n_steps,
+            dt_days=self.dt,
+        )
+
+        def _sum_to_weeks(step_arr: np.ndarray) -> np.ndarray:
+            """Sum (n_steps, L) into (W, L) using assign_steps."""
+            W = int(n_weeks)
+            L = step_arr.shape[1]
+            out = np.zeros((W, L), dtype=np.float64)
+            for w in range(W):
+                mask = (assign_steps == w)
+                if mask.any():
+                    out[w, :] = step_arr[mask, :].sum(axis=0)
+            return out
+
+        A = len(self.age_labels)
+        weekly_age = np.zeros((A, n_weeks, self.NL), dtype=np.float64)
+
+        # Primary hospitalization totals per age group use "incidH_*_age..." leaves
+        for a_idx, age in enumerate(self.age_labels):
+            step_sum = None
+            for out_name in self.age_to_names[age]:
+                if out_name in series:
+                    arr = series[out_name]
+                    step_sum = arr if step_sum is None else (step_sum + arr)
+            if step_sum is None:
+                step_sum = np.zeros((n_steps, self.NL), dtype=np.float64)
+            weekly_age[a_idx, :, :] = _sum_to_weeks(step_sum)
+
+        return weekly_age, self.age_labels, n_weeks
+
+
+# -------------------------- convenience entrypoint --------------------------
+
+def build_pipeline_from_config(
+    config_path: str | Path,
+    *,
+    dt_days: float = 1.0,
+    age_props_csv: str | Path | None = None,
+    age_props_location_col: str | None = None,
+) -> WeeklyHospPipeline:
+    return WeeklyHospPipeline(
+        config_path,
+        dt_days=dt_days,
+        age_props_csv=age_props_csv,
+        age_props_location_col=age_props_location_col,
+    )
