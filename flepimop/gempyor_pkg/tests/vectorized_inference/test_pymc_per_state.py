@@ -70,6 +70,8 @@ import matplotlib.pyplot as plt
 import pymc as pm
 import re
 import confuse
+import yaml
+from copy import deepcopy
 
 from gempyor.vectorization_experiments import autotune_all, get_autotune_config
 from gempyor.hosp_weekly_pipeline import build_pipeline_from_config, WeeklyHospPipeline
@@ -84,10 +86,132 @@ from gempyor.vectorized_modifiers import compile_seir_modifiers
 from gempyor.model_info import ModelInfo  # adjust path if your repo layout differs
 
 
+# ============================= Calibrated age means (your targets) =============================
+AGE_TARGET = {
+    "age0to4":    0.006836,
+    "age5to17":   0.001936,
+    "age18to49":  0.002085,
+    "age50to64":  0.004945,
+    "age65to100": 0.018596,
+}
+
+VAX_KEYS = ("1dose", "waned", "unvaccinated")
+AGE_KEYS = tuple(AGE_TARGET.keys())
+
+# Match the *hospitalization* outcome leaves we want to scale
+# _INC_HOSP = # AFTER (accepts age0to4, age65to100, age85p, age85+ etc.)
+_INC_HOSP = re.compile(
+    r"^incidH_(?P<vax>1dose|waned|unvaccinated)_(?P<variant>[^_]+)_(?P<age>age[0-9A-Za-z+]+)$"
+)
+
+
+# ============================= YAML probability scaling =============================
+
+def _collect_age_group_hosp_leaves(cfg_dict: dict) -> dict[str, list[tuple[str, dict]]]:
+    """
+    Build a mapping:
+        age -> list of (yaml_key, node_dict)
+    Only includes 'incidH_*_age...' leaves (probability scalars we want to edit).
+    """
+    out = {age: [] for age in AGE_KEYS}
+    try:
+        outcomes = cfg_dict["outcomes"]["outcomes"]
+    except Exception as e:
+        raise RuntimeError(f"Could not find outcomes.outcomes in YAML: {e}")
+
+    for k, node in outcomes.items():
+        m = _INC_HOSP.match(k)
+        if not m:
+            continue
+        age = m.group("age")
+        if age not in out:
+            continue
+        # Ensure the scalar path exists in typical nested form; be tolerant to {probability: <num>}
+        try:
+            nd = node.get("probability")
+            if isinstance(nd, (int, float)):
+                # normalize to nested form so downstream code is uniform
+                node["probability"] = {"value": {"distribution": "fixed", "value": float(nd)}}
+            else:
+                # make sure nested path exists
+                _ = node["probability"]["value"]["value"]
+        except Exception as e:
+            raise RuntimeError(f"Missing probability scalar at '{k}': {e}")
+        out[age].append((k, node))
+
+    # Keep a stable order: vax category, then key
+    for age in out:
+        out[age].sort(
+            key=lambda kv: (
+                VAX_KEYS.index(_INC_HOSP.match(kv[0]).group("vax")) if _INC_HOSP.match(kv[0]) else 99,
+                kv[0],
+            )
+        )
+    return out
+
+
+def _mean_scalar_prob(nodes: list[tuple[str, dict]]) -> float:
+    vals = []
+    for _, nd in nodes:
+        vals.append(float(nd["probability"]["value"]["value"]))
+    return float(np.mean(vals)) if vals else np.nan
+
+
+def _apply_age_scaling(cfg_dict: dict, age_targets: dict[str, float], *, clip_hi: float = 0.5, clip_lo: float = 1e-12) -> dict:
+    """
+    For each age in age_targets:
+      • compute current mean of the three vax-specific 'incidH_*_age' scalar probabilities
+      • factor = target / current_mean
+      • multiply each by factor and clip to [clip_lo, clip_hi]
+    Preserves within-age ratios (vax differences) while aligning the age mean.
+    """
+    cfg = deepcopy(cfg_dict)
+    age_map = _collect_age_group_hosp_leaves(cfg)
+
+    print("\n[age-scale] Calibrating age-specific hospitalization probabilities...")
+    for age in AGE_KEYS:
+        nodes = age_map.get(age, [])
+        if not nodes:
+            print(f"[age-scale] WARN: no incidH leaves found for {age}; skipping.")
+            continue
+
+        cur_mean = _mean_scalar_prob(nodes)
+        tgt = float(age_targets[age])
+        if cur_mean <= 0 or not np.isfinite(cur_mean):
+            print(f"[age-scale] WARN: invalid current mean for {age} (got {cur_mean}); skipping.")
+            continue
+
+        factor = tgt / cur_mean
+        print(f"[age-scale] {age}: mean {cur_mean:.6f} -> target {tgt:.6f} (×{factor:.3f})")
+
+        # Apply scaling
+        for key, nd in nodes:
+            old = float(nd["probability"]["value"]["value"])
+            new = float(np.clip(old * factor, clip_lo, clip_hi))
+            nd["probability"]["value"]["value"] = new
+            vax = _INC_HOSP.match(key).group("vax") if _INC_HOSP.match(key) else "NA"
+            print(f"  - {key:<45s} {vax:>13s}: {old:.8f} -> {new:.8f}")
+
+        # Report achieved mean post-clip
+        new_mean = _mean_scalar_prob(nodes)
+        if not np.isclose(new_mean, tgt, rtol=0.05, atol=1e-9):
+            print(f"[age-scale] NOTE: {age} achieved mean {new_mean:.6f} (cap={clip_hi}); may sit below target if many values clipped.")
+
+    return cfg
+
+
+def _write_yaml(cfg_dict: dict, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        yaml.safe_dump(cfg_dict, f, sort_keys=False)
+
+
 # ============================= helpers =============================
 
 def _materialize_structured_example(tmp_path_factory) -> Path:
-    """Copy Structured_Example.yml & inputs into a temp root with absolute paths (seeding ON)."""
+    """
+    Copy Structured_Example.yml & inputs into a temp root with absolute paths (seeding ON).
+    """
     tmp_root = tmp_path_factory.mktemp("weekly_infer_realdata_all_states_fourier")
 
     repo_root = Path(__file__).resolve().parents[4]  # flepiMoP/
@@ -485,7 +609,7 @@ def _enable_fast_and_disable_mobility(pipe: WeeklyHospPipeline, op: WeeklyHospAn
         pass
 
 
-# ============================= NEW safeguards (canonical FIPS mapping) =============================
+# ============================= FIPS mapping & selected patch =============================
 
 FIPS_2 = {
     "Alabama": "01", "Alaska": "02", "Arizona": "04", "Arkansas": "05", "California": "06",
@@ -594,34 +718,6 @@ def _patch_config_selected_block(base_cfg_path: Path, out_cfg_path: Path, *, sel
     out_cfg_path.write_text("\n".join(out) + "\n")
 
 
-def _concat_idatas_along_location(idatas: list[az.InferenceData]) -> az.InferenceData:
-    out = az.InferenceData()
-    group_names = set().union(*[idata.groups() for idata in idatas])
-    for grp in sorted(group_names):
-        dsets = [getattr(idata, grp) for idata in idatas if getattr(idata, grp, None) is not None]
-        if not dsets:
-            continue
-        loc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" in da.dims]
-        noloc_vars = [vn for vn, da in dsets[0].data_vars.items() if "location" not in da.dims]
-
-        ds_loc_cat = None
-        if loc_vars:
-            parts = [ds[loc_vars] for ds in dsets]
-            ds_loc_cat = xr.concat(parts, dim="location")
-
-        ds_noloc = dsets[0][noloc_vars] if noloc_vars else None
-
-        if ds_loc_cat is not None and ds_noloc is not None:
-            ds_comb = xr.merge([ds_loc_cat, ds_noloc], combine_attrs="override")
-        elif ds_loc_cat is not None:
-            ds_comb = ds_loc_cat
-        else:
-            ds_comb = ds_noloc
-
-        setattr(out, grp, ds_comb)
-    return out
-
-
 # ============================= TRIAD support (only for 4 random states) =============================
 
 def _precompute_sr_mass0(pipe: WeeklyHospPipeline) -> np.ndarray:
@@ -699,7 +795,6 @@ def _triad_plot_for_state(outdir: Path,
         if const is None or "pR_scenarios_data" not in const:
             raise AssertionError("pR_scenarios_data not found in constant_data for scenario path.")
         pR_mean = const["pR_scenarios_data"].mean(dim="scenario").values  # (A, 1)
-        # tile to match (chain, draw, A, 1) for simplicity
         pR_post = np.broadcast_to(pR_mean, (chains, draws, pR_mean.shape[0], pR_mean.shape[1]))
 
     sr_mass0 = _precompute_sr_mass0(pipe)
@@ -871,16 +966,12 @@ def _build_pr_scenarios_for_state(pipe: WeeklyHospPipeline,
     """
     A = len(tuple(pipe.age_labels))
     qs = np.linspace(0.1, 0.9, S)  # middle mass; adjust via env if desired
-    # Use scipy-free Beta quantiles approximation via logit-normal matching
-    # but to keep things simple and dependency-free, sample a dense grid and
-    # pick nearest quantiles.
     rng = np.random.default_rng(12345)
-    grid = rng.beta(alpha, beta, size=(20000,))  # approximate inverse-CDF
+    grid = rng.beta(alpha, beta, size=(20000,))
     grid.sort()
     idx = (qs * (grid.size - 1)).astype(int)
     vals = grid[idx]  # length S
     pr = np.tile(vals[:, None, None], (1, A, 1))  # (S, A, 1)
-    # Lightly taper older ages to higher pR if desired (optional; leave flat)
     return pr
 
 
@@ -920,6 +1011,8 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
     S_SCEN = int(os.environ.get("PR_SCENARIOS", "0"))
     PR_ALPHA = float(os.environ.get("PR_BETA_ALPHA", "8.0"))
     PR_BETA = float(os.environ.get("PR_BETA_BETA", "12.0"))
+    CLIP_HI = float(os.environ.get("PROB_CLIP_HI", "0.5"))
+    CLIP_LO = float(os.environ.get("PROB_CLIP_LO", "1e-12"))
     # ----------------------------------
 
     base_cfg_path = _materialize_structured_example(tmp_path_factory)
@@ -939,6 +1032,9 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
 
     first_nc_checked = False
 
+    # === Preload the BASE config once (we'll clone & patch per-state) ===
+    base_cfg_dict = yaml.safe_load(Path(base_cfg_path).read_text())
+
     for i in range(L_total):
         code_i = model_codes[i]
         state_i = csv_states[i]
@@ -947,13 +1043,26 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
         else:
             print(f"\n=== [{i+1}/{L_total}] State={state_i} (code {code_i}) ===")
 
-        cfg_state = base_cfg_path.with_name(f"{base_cfg_path.stem}__{code_i}.yml")
-        _patch_config_selected_block(base_cfg_path, cfg_state, selected_code=code_i)
+        # ---- emit a per-state config with 'selected' injected ----
+        cfg_state_unpatched = base_cfg_path.with_name(f"{Path(base_cfg_path).stem}__{code_i}.yml")
+        _patch_config_selected_block(base_cfg_path, cfg_state_unpatched, selected_code=code_i)
+
+        # ---- LOAD that per-state YAML, apply AGE_TARGET scaling to the incidH_*_age probabilities ----
+        cfg_dict = yaml.safe_load(Path(cfg_state_unpatched).read_text())
+        cfg_patched = _apply_age_scaling(cfg_dict, AGE_TARGET, clip_hi=CLIP_HI, clip_lo=CLIP_LO)
+
+        # IMPORTANT: keep Parquet location multipliers ON (param_from_file: true) so they apply on top.
+        # We only altered the base age pattern (global), preserving within-age ratios;
+        # parquet will still multiply per-location relative adjustments.
+
+        # ---- write patched YAML to temp file, then build the pipeline from that ----
+        cfg_state_patched = cfg_state_unpatched.with_name(cfg_state_unpatched.stem + "__agescaled.yml")
+        _write_yaml(cfg_patched, cfg_state_patched)
 
         try:
-            pipe = build_pipeline_from_config(cfg_state, dt_days=0.5, fast_mode=True, disable_mobility=True)
+            pipe = build_pipeline_from_config(cfg_state_patched, dt_days=0.5, fast_mode=True, disable_mobility=True)
         except TypeError:
-            pipe = build_pipeline_from_config(cfg_state, dt_days=0.5)
+            pipe = build_pipeline_from_config(cfg_state_patched, dt_days=0.5)
         # Bound scenario worker threads inside the Op (if supported by Op implementation)
         os.environ.setdefault("WEEKLY_OP_SCEN_THREADS", str(min(S_SCEN, CORES)))
         op = WeeklyHospAndFinalSOp(pipe, fast_mode=True, disable_mobility=True)
@@ -975,7 +1084,7 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
 
         y_obs = y_full[obs_weeks, :]
 
-        # --------- Build pR scenarios for this state ---------
+        # --------- Build pR scenarios for this state (optional) ---------
         pR_scen = None
         if S_SCEN > 0:
             pR_scen = _build_pr_scenarios_for_state(pipe, alpha=PR_ALPHA, beta=PR_BETA, S=S_SCEN)  # (S,A,1)
@@ -1020,7 +1129,6 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
             fourier_period_days=FOURIER_PERIOD_DAYS,
             obs_weeks=np.asarray(obs_weeks, dtype=int),
             pR_scenarios=pR_scen,                # <<<<<< scenario mixture in-model
-            # censor_cap_factor left at default (1.5×min(first,last))
             sT_mean=0.4, sT_ci=(0.05, 0.95), sT_weight=0.01,
         ) as model:
             idata = pm.sample(
@@ -1055,7 +1163,6 @@ def test_pymc_weekly_inference_all_states_per_file_fourier(tmp_path_factory):
 
         # Plots
         _panel_per_location(idata, y_full, np.arange(y_full.shape[0]), (state_i,), pipe, outdir)
-        # if i in four_idx:
         _triad_plot_for_state(outdir, state_i, pipe, op, idata, y_full)
 
         # Save one file per state
