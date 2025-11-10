@@ -28,7 +28,7 @@ This installation script is currently only designed for Linux/MacOS operating sy
 {% endhint %}
 
 ```shell
-$ curl -LsSf -o flepimop-install "https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/refs/heads/main/bin/lint"
+$ curl -LsSf -o flepimop-install "https://raw.githubusercontent.com/HopkinsIDD/flepiMoP/refs/heads/main/bin/flepimop-install"
 $ chmod +x flepimop-install
 ```
 
