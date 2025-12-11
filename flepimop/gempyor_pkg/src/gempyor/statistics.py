@@ -265,7 +265,7 @@ class Statistic:
                 gt_data, loc=model_data, scale=self.params.get("sd", sd) * model_data
             ),  # scale = standard deviation
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            "nbinom": lambda gt_data, model_data, n, p: scipy.stats.nbinom.logpmf(
+            "nbinom": lambda gt_data, model_data, alpha: scipy.stats.nbinom.logpmf(
                 k=gt_data,
                 n=1.0 / self.params.get("alpha"),
                 p=1.0 / (1.0 + self.params.get("alpha") * model_data),
