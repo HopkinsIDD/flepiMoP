@@ -267,8 +267,8 @@ class Statistic:
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             "nbinom": lambda gt_data, model_data, alpha: scipy.stats.nbinom.logpmf(
                 k=gt_data,
-                n=1.0 / self.params.get("alpha"),
-                p=1.0 / (1.0 + self.params.get("alpha") * model_data),
+                n=1.0 / alpha,
+                p=1.0 / (1.0 + alpha * model_data),
             ),
             "rmse": lambda gt_data, model_data: -np.log(
                 np.sqrt(np.nansum((gt_data - model_data) ** 2))
