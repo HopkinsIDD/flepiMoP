@@ -1,5 +1,8 @@
 # flepiMoP
 
+> [!WARNING]
+> Active feature development for `flepiMoP` has been paused in favor of [`flepimop2`](https://github.com/ACCIDDA/flepimop2). New features will not be actively developed, but minimal maintenance will continue.
+
 Welcome to the Johns Hopkins University Infectious Disease Dynamics's `Flexible Epidemic Modeling Pipeline`. “FlepiMoP” provides a framework for quickly coding and simulating compartmental infectious disease models to project epidemic trajectories and their healthcare impacts, and to evaluate the impact of potential interventions. The package is a work-in-progress but is extensively documented https://iddynamics.gitbook.io/flepimop/, with instructions describing how to install the package, code up your model, run forward simulations, and infer model parameters from timeseries data. More details of the project are available on our dedicated website https://www.flepimop.org/. 
 
 We recommend that most new users use the code from the stable `main` branch. Please post questions to GitHub issues with the `question` tag. We are prioritizing direct support for individuals engaged in public health planning and emergency response.
